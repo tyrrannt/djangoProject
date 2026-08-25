@@ -1,0 +1,142 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+{% endblock %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="font-weight-bold text-dark mb-1">{{ title }}</h2>
+                <p class="text-muted mb-0">Фиксация перемещения и базирования воздушного судна</p>
+            </div>
+            <div>
+                <a href="{% url 'flight_planning:aircraft_movement_list' %}"
+                   class="btn btn-outline-dark btn-px-3 py-2 d-flex align-items-center">
+                    <i class='bx bx-arrow-back text-4 me-2'></i> Вернуться в журнал
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- start: page form -->
+    <form class="ecommerce-form action-buttons-fixed" method="post" action="">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-2-5 col-xl-1-5">
+                                <i class="card-big-info-icon bx bx-transfer-alt text-primary"></i>
+                                <h4 class="font-weight-bold text-dark mt-3">Данные перемещения</h4>
+                                <p class="card-big-info-desc text-muted">
+                                    Укажите воздушное судно, МПД назначения, дату прибытия и основание перемещения.
+                                </p>
+                            </div>
+                            <div class="col-lg-3-5 col-xl-4-5">
+                                {% if form.errors %}
+                                    <div class="alert alert-danger">
+                                        <ul class="mb-0">
+                                            {% for field in form %}
+                                                {% for error in field.errors %}
+                                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                                {% endfor %}
+                                            {% endfor %}
+                                            {% for error in form.non_field_errors %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0 font-weight-semibold">
+                                        {{ form.aircraft.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.aircraft }}
+                                        {% if form.aircraft.help_text %}
+                                            <span class="help-block text-muted small">{{ form.aircraft.help_text }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0 font-weight-semibold">
+                                        {{ form.mpd.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.mpd }}
+                                        {% if form.mpd.help_text %}
+                                            <span class="help-block text-muted small">{{ form.mpd.help_text }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0 font-weight-semibold">
+                                        {{ form.date.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.date }}
+                                        {% if form.date.help_text %}
+                                            <span class="help-block text-muted small">{{ form.date.help_text }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group row align-items-start pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0 font-weight-semibold pt-2">
+                                        {{ form.comment.label }}
+                                    </label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.comment }}
+                                        {% if form.comment.help_text %}
+                                            <span class="help-block text-muted small">{{ form.comment.help_text }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div class="row action-buttons mt-3">
+            <div class="col-12 col-md-auto">
+                <button type="submit"
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
+            </div>
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'flight_planning:aircraft_movement_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Отмена
+                </a>
+            </div>
+        </div>
+    </form>
+    <!-- end: page form -->
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script>
+        $(document).ready(function () {
+            $('select').select2({
+                theme: 'bootstrap'
+            });
+        });
+    </script>
+{% endblock %}

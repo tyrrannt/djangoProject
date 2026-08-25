@@ -6,16 +6,15 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/css/flight_planning.css' %}"/>
-{#    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">#}
 {% endblock %}
 
 {% block title %}
-    Планирование пилотов по МПД
+    Планирование пилотов и экипажей ВС по МПД
 {% endblock %}
 
 {% block content %}
     <div class="planning-container">
-        <!-- Навигация по месяцам -->
+        <!-- Навигация по месяцам и панель действий -->
         <div class="month-nav">
             <div class="nav-buttons">
                 <select id="themeSelector" class="theme-selector">
@@ -23,7 +22,15 @@
                     <option value="theme-classic">Классическая тема</option>
                     <option value="theme-corporate">Корпоративная тема</option>
                 </select>
-                <a href="{% url 'flight_planning:my_schedule' %}" class="nav-btn" style="background-color: #28a745; margin-right: 10px;">Мой график</a>
+                <button type="button" class="nav-btn" id="openCrewBuilderBtn" style="background-color: #6f42c1; margin-right: 6px; cursor: pointer;">
+                    <i class='bx bx-group me-1'></i> Собрать экипаж
+                </button>
+                <a href="{% url 'flight_planning:aircraft_movement_list' %}" class="nav-btn" style="background-color: #007bff; margin-right: 6px;">
+                    <i class='bx bxs-plane me-1'></i> Журнал ВС
+                </a>
+                <a href="{% url 'flight_planning:my_schedule' %}" class="nav-btn" style="background-color: #28a745; margin-right: 10px;">
+                    <i class='bx bx-user me-1'></i> Мой график
+                </a>
                 <a href="?year={{ prev_year }}&month={{ prev_month }}"
                    class="nav-btn">← {{ prev_month_name|default:"Предыдущий" }}</a>
             </div>
@@ -48,36 +55,86 @@
                         {% endfor %}
                     </tr>
                     </thead>
-                    <!-- Только изменённая часть tbody -->
                     <tbody>
                     {% for mpd in mpds %}
-                        <tr data-mpd-id="{{ mpd.id }}">
+                        <tr data-mpd-id="{{ mpd.id }}" data-mpd-name="{{ mpd.name }}">
                             <td class="mpd-name" title="{{ mpd.code|default:'' }}">
-                                {{ mpd.name }}
+                                <strong>{{ mpd.name }}</strong>
                             </td>
                             {% for date in dates %}
-                                {% with assignments=assignment_map|get_item:mpd.id|get_item:date.isoformat %}
-                                    <td class="plan-cell {% if assignments %}assigned{% endif %}"
-                                        data-date="{{ date.isoformat }}"
+                                {% with date_str=date|date:"Y-m-d" %}
+                                {% with cell_crews=crew_map|get_item:mpd.id|get_item:date_str assignments=assignment_map|get_item:mpd.id|get_item:date_str %}
+                                    <td class="plan-cell {% if assignments or cell_crews %}assigned{% endif %}"
+                                        data-date="{{ date_str }}"
                                         data-mpd-id="{{ mpd.id }}"
+                                        data-mpd-name="{{ mpd.name }}"
                                         data-weekday="{{ date|date:'w' }}">
-                                        <div class="pilots-container" data-date="{{ date.isoformat }}"
-                                             data-mpd-id="{{ mpd.id }}">
+                                        
+                                        <!-- Блоки сформированных экипажей -->
+                                        <div class="crews-container" data-date="{{ date_str }}" data-mpd-id="{{ mpd.id }}">
+                                            {% if cell_crews %}
+                                                {% for crew in cell_crews %}
+                                                    <div class="crew-block flight-{{ crew.flight_type }}" data-crew-id="{{ crew.id }}" data-aircraft-id="{{ crew.aircraft_id }}">
+                                                        <div class="crew-header" data-crew-id="{{ crew.id }}">
+                                                            <span class="crew-aircraft-title" title="{{ crew.aircraft_type }}">
+                                                                ✈ {{ crew.aircraft_number }}
+                                                            </span>
+                                                            <span class="crew-flight-tag tag-{{ crew.flight_type }}" title="{{ crew.flight_type_label }}">
+                                                                {% if crew.flight_type == 'standard' %}Обычный{% elif crew.flight_type == 'check_flight_engineer' %}Пр. БМ{% elif crew.flight_type == 'check_pilot' %}Пр. Пилот{% elif crew.flight_type == 'double_check' %}Дв. Пров.{% endif %}
+                                                            </span>
+                                                            <div class="crew-actions-group">
+                                                                {% if crew.notes %}
+                                                                    <button type="button" class="crew-action-btn btn-crew-note has-note text-warning" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" data-note-text="{{ crew.latest_note.message }}" data-note-author="{{ crew.latest_note.author_name }}" data-note-time="{{ crew.latest_note.created_at_time }}" title="💬 [{{ crew.latest_note.author_name }}]: {{ crew.latest_note.message }}">💬</button>
+                                                                {% elif crew.can_add_note %}
+                                                                    <button type="button" class="crew-action-btn btn-crew-note" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" title="Добавить пометку к полету">💬</button>
+                                                                {% endif %}
+                                                                <button type="button" class="crew-action-btn btn-edit-crew" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" data-mpd-id="{{ mpd.id }}" title="Редактировать экипаж">✏️</button>
+                                                                <button type="button" class="crew-action-btn btn-delete-crew" data-crew-id="{{ crew.id }}" title="Расформировать экипаж">×</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="crew-members-list">
+                                                            {% for m in crew.members %}
+                                                                <div class="crew-member-badge" title="{{ m.role_label }}: {{ m.name }}">
+                                                                    <span>
+                                                                        <span class="role-tag role-{{ m.role }}">
+                                                                            {% if m.role == 'commander' %}КВС{% elif m.role == 'copilot' %}2П{% elif m.role == 'pilot_instructor' %}Инстр{% elif m.role == 'flight_engineer' %}БМ{% elif m.role == 'flight_engineer_instructor' %}БМИ{% endif %}
+                                                                        </span>
+                                                                        {{ m.name|FIO_format }}
+                                                                    </span>
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                        {% if crew.notes %}
+                                                            <div class="crew-note-badge-preview btn-crew-note" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" title="💬 [{{ crew.latest_note.author_name }}]: {{ crew.latest_note.message }}">
+                                                                <i class="bx bx-message-rounded-dots text-warning me-1"></i>
+                                                                <span class="crew-note-snippet">{{ crew.latest_note.message }}</span>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Индивидуальные назначения (вне экипажей) -->
+                                        <div class="pilots-container" data-date="{{ date_str }}" data-mpd-id="{{ mpd.id }}">
                                             {% if assignments %}
                                                 {% for assignment in assignments %}
-                                                    <span class="employee-badge {% if assignment.is_commander %}commander{% endif %} {% if assignment.is_instructor %}instructor{% endif %}"
-                                                          data-pilot-id="{{ assignment.pilot_id }}"
-                                                          data-assignment-id="{{ assignment.assignment_id }}"
-                                                          data-pilot-name="{{ assignment.pilot_name }}"
-                                                          data-pilot-job="{{ assignment.pilot_job }}"
-                                                          data-is-commander="{{ assignment.is_commander|yesno:'true,false' }}"
-                                                          data-is-instructor="{{ assignment.is_instructor|yesno:'true,false' }}">
-                                        {{ assignment.pilot_name|FIO_format }}
-                                    </span>
+                                                    {% if not assignment.crew_id %}
+                                                        <span class="employee-badge {% if assignment.is_commander %}commander{% endif %} {% if assignment.is_instructor %}instructor{% endif %}"
+                                                              data-pilot-id="{{ assignment.pilot_id }}"
+                                                              data-assignment-id="{{ assignment.assignment_id }}"
+                                                              data-pilot-name="{{ assignment.pilot_name }}"
+                                                              data-pilot-job="{{ assignment.pilot_job }}"
+                                                              data-is-commander="{{ assignment.is_commander|yesno:'true,false' }}"
+                                                              data-is-instructor="{{ assignment.is_instructor|yesno:'true,false' }}">
+                                                            {{ assignment.pilot_name|FIO_format }}
+                                                        </span>
+                                                    {% endif %}
                                                 {% endfor %}
                                             {% endif %}
                                         </div>
                                     </td>
+                                {% endwith %}
                                 {% endwith %}
                             {% endfor %}
                         </tr>
@@ -86,13 +143,16 @@
                 </table>
             </div>
 
-            <!-- Панель пилотов - обновлённая часть -->
+            <!-- Боковая панель сотрудников -->
             <div class="pilots-panel">
+                <div class="p-2 border-bottom font-weight-semibold text-center bg-light">
+                    Летный состав для назначения
+                </div>
                 <div class="pilots-list-container">
                     {% for pilot in pilots %}
                         {% with job_name=pilot.user_work_profile.job.name|default:"" %}
                             {% with job_lower=job_name|lower %}
-                                {% with is_commander=job_lower|contains:"командир" is_instructor=job_lower|contains:"пилот-инструктор" %}
+                                {% with is_commander=job_lower|contains:"командир" is_instructor=job_lower|contains:"инструктор" %}
                                 <div class="pilot-item"
                                      data-pilot-id="{{ pilot.id }}"
                                      data-pilot-name="{{ pilot.title|default:pilot.username|FIO_format }}"
@@ -103,10 +163,10 @@
                                     <small style="color: #888; display: block;">
                                         {{ job_name|default:"Должность не указана" }}
                                         {% if is_commander %}
-                                            <span style="color: #dc3545;"> ★ Командир</span>
+                                            <span style="color: #dc3545;"> ★ КВС</span>
                                         {% endif %}
                                         {% if is_instructor %}
-                                            <span style="color: #dc3545;"> ★ Инструктор</span>
+                                            <span style="color: #6f42c1;"> ★ Инструктор</span>
                                         {% endif %}
                                     </small>
                                 </div>
@@ -114,7 +174,7 @@
                             {% endwith %}
                         {% endwith %}
                     {% empty %}
-                        <p style="color: #999;">Нет активных пилотов</p>
+                        <p style="color: #999;" class="p-3">Нет активных пилотов</p>
                     {% endfor %}
                 </div>
             </div>
@@ -130,9 +190,134 @@
         </div>
     </div>
 
+    <!-- Модальное окно сборщика экипажа -->
+    <div class="modal-overlay" id="crewBuilderOverlay" style="display: none;"></div>
+    <div class="modal-window large-modal" id="crewBuilderModal" style="display: none;">
+        <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span class="font-weight-bold" id="crewBuilderTitle"><i class='bx bx-group me-2'></i> Сборка экипажа ВС</span>
+            <button type="button" class="btn-close btn-close-white" id="closeCrewBuilderCross" style="cursor: pointer;"></button>
+        </div>
+        <div class="modal-body p-3">
+            <form id="crewBuilderForm">
+                <input type="hidden" id="cbCrewId" value="">
+                <div class="crew-builder-grid">
+                    <div>
+                        <label class="form-label font-weight-semibold">Место деятельности (МПД) <span class="text-danger">*</span></label>
+                        <select id="cbMpdSelect" class="form-control form-control-modern" required>
+                            <option value="">Выберите МПД...</option>
+                            {% for mpd in mpds %}
+                                <option value="{{ mpd.id }}">{{ mpd.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-semibold">Воздушное судно (Борт) <span class="text-muted">(на МПД)</span></label>
+                        <select id="cbAircraftSelect" class="form-control form-control-modern">
+                            <option value="">— Резервный экипаж (без борта) —</option>
+                        </select>
+                        <small class="text-muted" id="cbAircraftHint">Выберите МПД для загрузки базирующихся ВС</small>
+                    </div>
+                </div>
+
+                <div class="crew-builder-grid">
+                    <div>
+                        <label class="form-label font-weight-semibold">Дата начала <span class="text-danger">*</span></label>
+                        <input type="date" id="cbStartDate" class="form-control form-control-modern" required/>
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-semibold">Дата окончания <span class="text-danger">*</span></label>
+                        <input type="date" id="cbEndDate" class="form-control form-control-modern" required/>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold">Тип полета <span class="text-danger">*</span></label>
+                    <select id="cbFlightTypeSelect" class="form-control form-control-modern">
+                        <option value="standard">Обычный / Производственный полет (КВС + 2П + Бортмеханик)</option>
+                        <option value="check_flight_engineer">Проверочный полет бортмеханика (КВС + 2П + Бортмеханик + БМ-Инструктор)</option>
+                        <option value="check_pilot">Проверочный полет пилотов (КВС + Пилот-инструктор + Бортмеханик)</option>
+                        <option value="double_check">Двойной проверочный полет (КВС + Пилот-инструктор + Бортмеханик + БМ-Инструктор)</option>
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label font-weight-semibold d-flex justify-content-between align-items-center">
+                        <span>Состав экипажа</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary py-0" id="cbAddMemberSlotBtn">+ Добавить роль</button>
+                    </label>
+                    <div id="cbMembersSlotsContainer">
+                        <!-- Динамические слоты ролей -->
+                    </div>
+                </div>
+
+                <div class="crew-validation-alert" id="cbValidationAlert" style="display: none;">
+                    <div id="cbValidationText"></div>
+                </div>
+
+                <div class="mb-2 mt-2">
+                    <label class="form-label font-weight-semibold">Примечание</label>
+                    <input type="text" id="cbComment" class="form-control form-control-modern" placeholder="Номер приказа, рейс, служебная записка..."/>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cbCancelBtn">Отмена</button>
+            <button type="button" class="btn btn-success font-weight-semibold" id="cbSubmitBtn">
+                <i class='bx bx-check-circle me-1'></i> Сформировать экипаж
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно выбора действия при перетаскивании сотрудника -->
+    <div class="modal-overlay" id="assignChoiceOverlay" style="display: none;"></div>
+    <div class="modal-window" id="assignChoiceModal" style="display: none;">
+        <div class="modal-header bg-primary text-white">
+            <span class="font-weight-bold"><i class='bx bx-user-plus me-2'></i> Варианты назначения сотрудника</span>
+        </div>
+        <div class="modal-body p-3">
+            <p class="mb-2">Сотрудник: <strong id="acPilotName"></strong></p>
+            <p class="mb-3 text-muted small">МПД: <span id="acMpdName"></span> | Период: <span id="acPeriod"></span></p>
+
+            <div id="acExistingCrewsContainer" style="display:none;" class="mb-3">
+                <h6 class="font-weight-bold text-dark mb-2">1. Включить в существующий экипаж на этом МПД:</h6>
+                <div class="mb-2">
+                    <label class="form-label small">Выберите экипаж:</label>
+                    <select id="acCrewSelect" class="form-control form-control-modern mb-2"></select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Роль в экипаже:</label>
+                    <select id="acRoleSelect" class="form-control form-control-modern">
+                        <option value="commander">КВС (Командир воздушного судна)</option>
+                        <option value="copilot">Второй пилот</option>
+                        <option value="pilot_instructor">Пилот-инструктор (проверяющий)</option>
+                        <option value="flight_engineer">Бортмеханик</option>
+                        <option value="flight_engineer_instructor">Бортмеханик-инструктор</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary w-100 mb-3" id="acJoinCrewBtn">
+                    <i class='bx bx-link-alt me-1'></i> Включить в выбранный экипаж
+                </button>
+                <hr>
+            </div>
+
+            <div class="assign-choice-card" id="acCreateCrewCard">
+                <h6 class="font-weight-bold text-primary mb-1"><i class='bx bx-group me-1'></i> Собрать новый экипаж с этим сотрудником</h6>
+                <small class="text-muted">Открыть мастер сборщика экипажа с автозаполнением выбранных параметров</small>
+            </div>
+
+            <div class="assign-choice-card" id="acStandaloneAssignCard">
+                <h6 class="font-weight-bold text-dark mb-1"><i class='bx bx-user me-1'></i> Индивидуальное назначение на МПД</h6>
+                <small class="text-muted">Назначить сотрудника на точку без привязки к конкретному экипажу ВС</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="acCancelBtn">Отмена</button>
+        </div>
+    </div>
+
     <!-- Универсальное модальное окно -->
-    <div class="modal-overlay" id="modalOverlay"></div>
-    <div class="modal-window" id="modalWindow">
+    <div class="modal-overlay" id="modalOverlay" style="display: none;"></div>
+    <div class="modal-window" id="modalWindow" style="display: none;">
         <div class="modal-header" id="modalHeader">
             <span id="modalTitle">Заголовок</span>
         </div>
@@ -145,23 +330,66 @@
         </div>
     </div>
 
-    <!-- Специальное модальное окно для конфликта -->
-    <div class="modal-overlay" id="conflictOverlay"></div>
-    <div class="modal-window conflict-modal" id="conflictModalWindow">
-        <div class="modal-header">
-            <span>⚠️ Конфликт назначений</span>
+    <!-- Специальное модальное окно для конфликтов (занятость на других МПД/экипажах) -->
+    <div class="modal-overlay" id="conflictOverlay" style="display: none; z-index: 10010;"></div>
+    <div class="modal-window conflict-modal" id="conflictModalWindow" style="display: none; z-index: 10020; width: 560px;">
+        <div class="modal-header bg-warning text-dark d-flex align-items-center">
+            <span class="font-weight-bold"><i class='bx bx-error-circle me-1'></i> Конфликт занятости сотрудников</span>
         </div>
-        <div class="modal-body" id="conflictModalBody">
-            <p>Пилот уже назначен на следующие даты:</p>
-            <div id="conflictList"></div>
+        <div class="modal-body p-3" id="conflictModalBody">
+            <p id="conflictModalIntro" class="mb-2 text-muted">Сотрудники уже задействованы на других МПД или в других экипажах на выбранные даты:</p>
+            <div id="conflictList" style="max-height: 260px; overflow-y: auto;"></div>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" id="conflictCancelBtn">Отмена</button>
-            <button class="btn btn-warning" id="conflictConfirmBtn">Заменить (снять старые)</button>
+        <div class="modal-footer d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" id="conflictCancelBtn">Заменить сотрудника (Отмена)</button>
+            <button type="button" class="btn btn-warning font-weight-bold" id="conflictConfirmBtn">Снять со старых назначений и перевести</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно пометок к полету (для второго пилота и экипажа) -->
+    <div class="modal-overlay" id="crewNoteOverlay" style="display: none; z-index: 10030;"></div>
+    <div class="modal-window large-modal" id="crewNoteModal" style="display: none; z-index: 10040; width: 540px;">
+        <div class="modal-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <span class="font-weight-bold" id="crewNoteTitle"><i class='bx bx-message-rounded-dots me-2'></i> Пометки к полету</span>
+            <button type="button" class="btn-close" id="closeCrewNoteCross" style="cursor: pointer;"></button>
+        </div>
+        <div class="modal-body p-3">
+            <input type="hidden" id="cnCrewId" value="">
+            <div class="mb-2 p-2 bg-light rounded border d-flex justify-content-between align-items-center small">
+                <div>
+                    <strong id="cnAircraftNumber">✈ Борт</strong> • <span id="cnMpdName">МПД</span> • <span id="cnDate">Дата</span>
+                </div>
+                <span id="cnDateStatusBadge" class="badge bg-success">Доступно</span>
+            </div>
+
+            <!-- Список существующих пометок -->
+            <label class="form-label font-weight-semibold mb-1">История сообщений к полету:</label>
+            <div id="cnNotesHistory" class="crew-notes-history-box">
+                <!-- Заполняется динамически -->
+            </div>
+
+            <!-- Форма добавления новой пометки (если дата разрешена) -->
+            <div id="cnAddNoteFormContainer">
+                <label class="form-label font-weight-semibold mb-1" for="cnMessageInput">Новое сообщение / пометка:</label>
+                <textarea id="cnMessageInput" class="form-control form-control-modern" rows="3" placeholder="Укажите причину переноса рейса, отмены или оперативную ситуацию..."></textarea>
+                <small class="text-muted d-block mt-1">Доступно для рейсов на вчера, сегодня и завтра.</small>
+            </div>
+            <div id="cnDateRestrictedAlert" class="alert alert-secondary py-2 mt-2 mb-0" style="display: none; font-size: 0.85rem;">
+                <i class='bx bx-info-circle me-1'></i> Добавление пометок ограничено: разрешено только для рейсов на вчера, сегодня и завтра.
+            </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" id="cnCloseBtn">Закрыть</button>
+            <button type="button" class="btn btn-warning font-weight-bold" id="cnSubmitBtn"><i class='bx bx-send me-1'></i> Отправить пометку</button>
         </div>
     </div>
 {% endblock %}
 
 {% block custom_script %}
+    <script>
+        window.CREW_MAP = {{ crew_map_json|safe }};
+        window.MPD_AIRCRAFT_MAP = {{ mpd_aircraft_json|safe }};
+        window.ALL_PILOTS = {{ pilots_js_json|safe }};
+    </script>
     <script src="{% static 'admin_templates/js/flight_planning.js' %}"></script>
 {% endblock %}

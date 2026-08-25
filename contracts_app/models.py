@@ -140,6 +140,16 @@ class Estate(models.Model):
     passport = models.CharField(verbose_name='Паспорт', max_length=100, default='', blank=True)
     ownership_right = models.CharField(verbose_name='Право владения', max_length=100, default='', blank=True)
     year_of_manufacture = models.CharField(verbose_name='Год выпуска авто', max_length=100, default='', blank=True)
+    decommission_date = models.DateField(verbose_name='Дата вывода из эксплуатации', null=True, blank=True,
+                                         help_text='Если дата указана, воздушное судно/имущество считается выведенным из эксплуатации')
+
+    @property
+    def is_decommissioned(self):
+        """
+        Проверяет, выведено ли воздушное судно/имущество из эксплуатации.
+        Возвращает True, если дата вывода из эксплуатации заполнена.
+        """
+        return self.decommission_date is not None
 
     def __str__(self):
         return f'{self.registration_number}'
@@ -147,8 +157,10 @@ class Estate(models.Model):
     def get_data(self):
         return {
             'pk': self.pk,
-            'type_property': self.type_property.type_property,
+            'type_property': self.type_property.type_property if self.type_property else '',
             'registration_number': self.registration_number,
+            'decommission_date': self.decommission_date.strftime('%d.%m.%Y') if self.decommission_date else '',
+            'is_decommissioned': self.is_decommissioned,
         }
 
 

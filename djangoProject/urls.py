@@ -16,6 +16,7 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
@@ -26,6 +27,7 @@ handler404 = library_views.show_404
 handler500 = library_views.show_500
 
 urlpatterns = [
+    path('.well-known/appspecific/com.chrome.devtools.json', lambda request: JsonResponse({})),
     path('', include('library_app.urls')),
     path('bklproxmoxadmin/', admin.site.urls),
 

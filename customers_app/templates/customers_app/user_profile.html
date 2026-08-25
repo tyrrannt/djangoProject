@@ -624,7 +624,7 @@
                             <i class="fas fa-calendar-alt me-2"></i>Планировщик событий
                         </button>
                     </li>
-                    {% if grouped_schedule %}
+                    {% if grouped_schedule or user.is_superuser %}
                     <li class="nav-item">
                         <button class="nav-link" data-bs-target="#graff" data-bs-toggle="tab">
                             <i class="fa-solid fa-helicopter me-2"></i>Мой график

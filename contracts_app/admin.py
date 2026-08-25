@@ -21,7 +21,10 @@ class TypeDocumentsAdmin(ModelAdmin):
 
 @admin.register(Estate)
 class EstateAdmin(ModelAdmin):
-    pass
+    list_display = ['registration_number', 'type_property', 'release_date', 'decommission_date', 'is_decommissioned']
+    list_filter = ['type_property', 'decommission_date']
+    search_fields = ['registration_number', 'factory_number', 'passport']
+    date_hierarchy = 'release_date'
 
 
 @admin.register(Posts)
