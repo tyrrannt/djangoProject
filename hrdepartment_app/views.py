@@ -6352,6 +6352,10 @@ def generate_student_agreement(request, pk):
         if modules:
             modules_list = [str(module.full_unit_name) for module in modules]
             show_modules = True
+            modules_text = '\n'.join(
+                str(module.full_unit_name)
+                for module in modules
+            )
         else:
             modules_list = []
             show_modules = False
@@ -6411,7 +6415,7 @@ def generate_student_agreement(request, pk):
             'terms': terms,
 
             # Модули
-            'modules_text': modules_list,
+            'modules_text': modules_text,
             'show_modules': show_modules,
 
             # Финансы
