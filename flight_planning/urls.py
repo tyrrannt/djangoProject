@@ -48,4 +48,5 @@ urlpatterns = [
     path('api/crew/day-info/', views.get_day_crew_info_api, name='get_day_crew_info_api'),
     path('api/crew/validate/', views.validate_crew_api, name='validate_crew_api'),
     path('api/crew/add-member/', views.add_member_to_crew_api, name='add_member_to_crew_api'),
+    path('api/crew/batch-swap-aircraft/', views.batch_swap_aircraft_api, name='batch_swap_aircraft_api'),
 ]

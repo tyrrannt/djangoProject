@@ -4,6 +4,68 @@ from typing import List, Dict, Any, Optional, Tuple
 from .models import PilotAssignment, AircraftMovement
 
 
+def handle_aircraft_movement_crew_fallback(
+    aircraft_id: int,
+    new_mpd_id: int,
+    movement_date: date
+) -> Tuple[int, List[str]]:
+    """
+    При перемещении борта ВС на новый МПД:
+    находит все запланированные экипажи с этим бортом на других МПД (на дату >= movement_date),
+    и автоматически переводит их в статус «Резервный экипаж» (снимает борт: aircraft = None),
+    сохраняя состав экипажа и назначения пилотов на их базах.
+
+    Returns:
+        (Количество переведенных в резерв экипажей, список названий затронутых МПД)
+    """
+    from .models import FlightCrew
+    from contracts_app.models import Estate
+
+    aircraft = Estate.objects.filter(id=aircraft_id).first()
+    if not aircraft:
+        return 0, []
+
+    affected_crews = FlightCrew.objects.filter(
+        aircraft_id=aircraft_id,
+        date__gte=movement_date
+    ).exclude(mpd_id=new_mpd_id).select_related('mpd')
+
+    count = affected_crews.count()
+    if count == 0:
+        return 0, []
+
+    mpd_names = sorted(list(set(affected_crews.values_list('mpd__name', flat=True))))
+
+    # Сбрасываем борт в резерв у всех затронутых экипажей
+    for crew in affected_crews:
+        crew.aircraft = None
+        if not crew.name or crew.name == 'standard':
+            crew.name = 'Резерв'
+        crew.save()
+
+    return count, mpd_names
+
+
+def clean_empty_flight_crews(
+    mpd_id: Optional[int] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None
+) -> int:
+    """
+    Удаляет экипажи-призраки (в которых не осталось ни одного члена экипажа).
+    """
+    from .models import FlightCrew
+    qs = FlightCrew.objects.filter(members__isnull=True)
+    if mpd_id:
+        qs = qs.filter(mpd_id=mpd_id)
+    if start_date:
+        qs = qs.filter(date__gte=start_date)
+    if end_date:
+        qs = qs.filter(date__lte=end_date)
+    deleted_count, _ = qs.delete()
+    return deleted_count
+
+
 def record_aircraft_movement(
     aircraft_id: int,
     mpd_id: int,
@@ -12,7 +74,8 @@ def record_aircraft_movement(
     comment: str = ""
 ) -> AircraftMovement:
     """
-    Регистрирует перемещение/базирование воздушного судна на МПД.
+    Регистрирует перемещение/базирование воздушного судна на МПД
+    и автоматически переводит в Резерв экипажи с этим бортом на других МПД с даты movement_date.
 
     Args:
         aircraft_id: ID воздушного судна (Estate).
@@ -24,13 +87,16 @@ def record_aircraft_movement(
     Returns:
         Созданный объект AircraftMovement.
     """
-    return AircraftMovement.objects.create(
+    movement = AircraftMovement.objects.create(
         aircraft_id=aircraft_id,
         mpd_id=mpd_id,
         date=movement_date,
         created_by=created_by,
         comment=comment
     )
+    handle_aircraft_movement_crew_fallback(aircraft_id, mpd_id, movement_date)
+    return movement
+
 
 def format_short_name(full_name: str) -> str:
     parts = full_name.split()
@@ -331,26 +397,45 @@ def create_or_update_flight_crew_range(
             # Ищем существующий экипаж
             crew_qs = FlightCrew.objects.filter(mpd=mpd, date=current)
             if aircraft:
+                # 1. Ищем существующий экипаж с этим бортом
                 crew_obj = crew_qs.filter(aircraft=aircraft).first()
+                if not crew_obj:
+                    # 2. Если экипажа с этим бортом нет, проверяем, есть ли на эту дату резервный экипаж (без борта)
+                    # Если есть резервный экипаж — переводим его на этот борт ВС
+                    reserve_crew = crew_qs.filter(aircraft__isnull=True).first()
+                    if reserve_crew:
+                        crew_obj = reserve_crew
+                        crew_obj.aircraft = aircraft
+                    else:
+                        crew_obj = FlightCrew.objects.create(
+                            mpd=mpd,
+                            aircraft=aircraft,
+                            date=current,
+                            flight_type=flight_type,
+                            name=crew_name,
+                            comment=comment,
+                            created_by=created_by
+                        )
             else:
                 crew_obj = crew_qs.filter(aircraft__isnull=True, name=crew_name).first()
+                if not crew_obj:
+                    crew_obj = crew_qs.filter(aircraft__isnull=True).first()
+                if not crew_obj:
+                    crew_obj = FlightCrew.objects.create(
+                        mpd=mpd,
+                        aircraft=None,
+                        date=current,
+                        flight_type=flight_type,
+                        name=crew_name,
+                        comment=comment,
+                        created_by=created_by
+                    )
 
-            if not crew_obj:
-                crew_obj = FlightCrew.objects.create(
-                    mpd=mpd,
-                    aircraft=aircraft,
-                    date=current,
-                    flight_type=flight_type,
-                    name=crew_name,
-                    comment=comment,
-                    created_by=created_by
-                )
-            else:
-                crew_obj.flight_type = flight_type
-                crew_obj.aircraft = aircraft
-                crew_obj.name = crew_name
-                crew_obj.comment = comment
-                crew_obj.save()
+            crew_obj.flight_type = flight_type
+            crew_obj.aircraft = aircraft
+            crew_obj.name = crew_name
+            crew_obj.comment = comment
+            crew_obj.save()
 
             # Удаляем старых участников, не вошедших в новый состав
             old_member_ids = set(crew_obj.members.values_list('member_id', flat=True))
@@ -397,6 +482,9 @@ def create_or_update_flight_crew_range(
                     assignment.crew = crew_obj
                     assignment.role_in_crew = role
                     assignment.save()
+
+            # Автоматическая очистка экипажей-призраков, оставшихся без участников
+            clean_empty_flight_crews(mpd_id=mpd.id, start_date=current, end_date=current)
 
             created_crews.append(crew_obj.id)
             current += timedelta(days=1)
@@ -532,6 +620,9 @@ def update_flight_crew(
                 assignment.role_in_crew = role
                 assignment.save()
 
+        # Очищаем любые оставшиеся пустыми экипажи
+        clean_empty_flight_crews(mpd_id=mpd.id, start_date=target_date, end_date=target_date)
+
     return {
         'status': 'success',
         'crew_id': crew_obj.id,
@@ -540,6 +631,152 @@ def update_flight_crew(
         'aircraft_name': aircraft.registration_number if aircraft else 'Резерв'
     }
 
+
+def batch_swap_aircraft(
+    mpd_id: int,
+    start_date: date,
+    end_date: date,
+    old_aircraft_id: Optional[Any],
+    new_aircraft_id: Optional[Any],
+    created_by=None
+) -> Dict[str, Any]:
+    """
+    Выполняет пакетную замену борта ВС в экипажах на указанном МПД в заданном интервале дат.
+
+    Поддерживает сценарии:
+    - Замена конкретного борта (old_aircraft_id: int) на новый борт (new_aircraft_id: int)
+    - Перевод экипажей конкретного борта в Резерв (new_aircraft_id: None / 'reserve')
+    - Назначение борта всем резервным экипажам без ВС (old_aircraft_id: None / 'reserve' -> new_aircraft_id: int)
+    - Замена всех экипажей на МПД на новый борт (old_aircraft_id: 'all' -> new_aircraft_id: int)
+    """
+    from django.db import transaction
+    from .models import FlightCrew, CrewMember, PilotAssignment
+    from hrdepartment_app.models import PlaceProductionActivity
+    from contracts_app.models import Estate
+
+    try:
+        mpd = PlaceProductionActivity.objects.get(id=mpd_id)
+    except PlaceProductionActivity.DoesNotExist:
+        return {'status': 'error', 'errors': ['МПД не найдено.']}
+
+    if start_date > end_date:
+        return {'status': 'error', 'errors': ['Начальная дата не может быть позже конечной.']}
+
+    # Нормализация old_aircraft_id
+    filter_mode = 'specific'
+    old_aircraft = None
+    if old_aircraft_id in [None, '', 'reserve', 'null']:
+        filter_mode = 'reserve'
+    elif old_aircraft_id == 'all':
+        filter_mode = 'all'
+    else:
+        try:
+            old_aircraft_id_int = int(old_aircraft_id)
+            old_aircraft = Estate.objects.filter(id=old_aircraft_id_int).first()
+            if not old_aircraft:
+                return {'status': 'error', 'errors': ['Исходное воздушное судно не найдено.']}
+        except (ValueError, TypeError):
+            filter_mode = 'all'
+
+    # Нормализация new_aircraft_id
+    to_reserve = False
+    new_aircraft = None
+    if new_aircraft_id in [None, '', 'reserve', 'null', 0, '0']:
+        to_reserve = True
+    else:
+        try:
+            new_aircraft_id_int = int(new_aircraft_id)
+            new_aircraft = Estate.objects.filter(id=new_aircraft_id_int).first()
+            if not new_aircraft:
+                return {'status': 'error', 'errors': ['Целевое воздушное судно не найдено.']}
+        except (ValueError, TypeError):
+            to_reserve = True
+
+    # 1. Проверка конфликтов для new_aircraft (не занят ли на других МПД)
+    if new_aircraft:
+        conflicts = []
+        existing_other_crews = FlightCrew.objects.filter(
+            aircraft=new_aircraft,
+            date__gte=start_date,
+            date__lte=end_date
+        ).exclude(mpd_id=mpd_id).select_related('mpd')
+
+        for ex in existing_other_crews:
+            conflicts.append(
+                f"Борт {new_aircraft.registration_number} на дату {ex.date.strftime('%d.%m.%Y')} уже занят экипажем на {ex.mpd.name}."
+            )
+
+        if conflicts:
+            return {
+                'status': 'error',
+                'errors': conflicts
+            }
+
+    # 2. Выборка целевых экипажей на МПД
+    crews_qs = FlightCrew.objects.filter(
+        mpd=mpd,
+        date__gte=start_date,
+        date__lte=end_date
+    ).select_related('aircraft', 'mpd').prefetch_related('members')
+
+    if filter_mode == 'specific' and old_aircraft:
+        crews_qs = crews_qs.filter(aircraft=old_aircraft)
+    elif filter_mode == 'reserve':
+        crews_qs = crews_qs.filter(aircraft__isnull=True)
+
+    target_crews = list(crews_qs)
+    if not target_crews:
+        return {
+            'status': 'success',
+            'updated_count': 0,
+            'message': 'Экипажей, соответствующих условиям фильтра, не найдено.'
+        }
+
+    updated_count = 0
+    with transaction.atomic():
+        for crew in target_crews:
+            if to_reserve:
+                crew.aircraft = None
+                if not crew.name or crew.name == 'standard':
+                    crew.name = 'Резерв'
+                crew.save()
+                updated_count += 1
+            else:
+                # Проверяем, нет ли на этом же МПД на эту дату другого экипажа с new_aircraft
+                duplicate_crew = FlightCrew.objects.filter(
+                    mpd=mpd,
+                    date=crew.date,
+                    aircraft=new_aircraft
+                ).exclude(id=crew.id).first()
+
+                if duplicate_crew:
+                    # Если уже есть экипаж с этим бортом, переносим участников
+                    for m in crew.members.all():
+                        CrewMember.objects.update_or_create(
+                            crew=duplicate_crew,
+                            member=m.member,
+                            defaults={'role': m.role}
+                        )
+                        PilotAssignment.objects.filter(
+                            pilot=m.member,
+                            date=crew.date
+                        ).update(crew=duplicate_crew, role_in_crew=m.role)
+                    crew.delete()
+                    updated_count += 1
+                else:
+                    crew.aircraft = new_aircraft
+                    crew.save()
+                    updated_count += 1
+
+        clean_empty_flight_crews(mpd_id=mpd_id, start_date=start_date, end_date=end_date)
+
+    new_ac_name = new_aircraft.registration_number if new_aircraft else "Резерв"
+    old_ac_name = old_aircraft.registration_number if old_aircraft else ("Резерв" if filter_mode == 'reserve' else "Все")
+    return {
+        'status': 'success',
+        'updated_count': updated_count,
+        'message': f"Успешно заменен борт ({old_ac_name} → {new_ac_name}) в {updated_count} экипажах на МПД «{mpd.name}»."
+    }
 
 
 def delete_flight_crew(crew_id: int) -> bool:
@@ -554,5 +791,6 @@ def delete_flight_crew(crew_id: int) -> bool:
         return True
     except FlightCrew.DoesNotExist:
         return False
+
 
 

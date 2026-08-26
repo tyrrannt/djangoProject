@@ -1,0 +1,669 @@
+:root {
+    /* Нейтральная тема (Светлая и мягкая) */
+    --fp-bg-body: #f8f9fa;
+    --fp-bg-container: #ffffff;
+    --fp-bg-sidebar: #fdfdfd;
+    --fp-border-color: #e9ecef;
+    
+    --fp-primary: #6c757d; /* Спокойный серый */
+    --fp-primary-hover: #5a6268;
+    --fp-text-on-primary: #ffffff;
+    
+    --fp-success: #adb5bd; /* Светло-серый для обычных бейджей */
+    --fp-success-bg: #f1f3f5; /* Очень светлый фон ячейки */
+    --fp-success-hover: #e9ecef;
+    
+    --fp-danger: #495057; /* Темно-серый для командиров */
+    --fp-danger-hover: #343a40;
+    
+    --fp-warning: #ced4da;
+    --fp-warning-bg: #f8f9fa;
+    
+    --fp-selection: #dee2e6;
+    --fp-drag-over: #e9ecef;
+    
+    --fp-text-main: #212529;
+    --fp-text-muted: #6c757d;
+    
+    --fp-weekend-bg: #fafafa;
+    --fp-sticky-bg: #fdfdfd;
+}
+
+/* ... остальные темы без изменений ... */
+
+/* Модальные окна - восстановление стилей */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999; /* Максимальный приоритет */
+}
+
+.modal-window {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    width: 500px;
+    max-width: 95%;
+}
+
+#modalOverlay {
+    z-index: 20000 !important;
+}
+
+#modalWindow {
+    z-index: 20010 !important;
+}
+
+/* Основной контейнер */
+.planning-container {
+    max-width: 100%;
+    background: var(--fp-bg-container);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Навигация по месяцам */
+.month-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: var(--fp-bg-container);
+    border-bottom: 1px solid var(--fp-border-color);
+}
+
+.month-nav h2 {
+    margin: 0;
+    color: var(--fp-text-main);
+    font-size: 1.5rem;
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.nav-btn {
+    padding: 8px 16px;
+    background: var(--fp-primary);
+    color: var(--fp-text-on-primary);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.nav-btn:hover {
+    background: var(--fp-primary-hover);
+}
+
+/* Двухколоночный макет */
+.main-layout {
+    display: flex;
+    gap: 0;
+}
+
+/* Контейнер таблицы с прокруткой */
+.table-wrapper {
+    flex: 1;
+    overflow: auto;
+    max-height: calc(100vh - 120px);
+    position: relative;
+}
+
+/* Панель пилотов справа */
+.pilots-panel {
+    width: 260px;
+    background: var(--fp-bg-sidebar);
+    border-left: 1px solid var(--fp-border-color);
+    padding: 15px;
+    max-height: calc(80vh - 120px);
+    overflow-y: auto;
+}
+
+.pilot-item {
+    padding: 10px 12px;
+    margin: 8px 0;
+    background: var(--fp-bg-container);
+    border: 1px solid var(--fp-border-color);
+    border-radius: 6px;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.pilot-item:hover {
+    background: var(--fp-success-bg);
+    border-color: var(--fp-primary);
+    transform: translateX(-2px);
+}
+
+/* Таблица */
+.planning-table {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+    font-size: 13px;
+}
+
+.planning-table th,
+.planning-table td {
+    border: 1px solid var(--fp-border-color);
+    padding: 10px 12px;
+    text-align: center;
+    min-width: 120px;
+    vertical-align: top;
+}
+
+.planning-table th {
+    background: var(--fp-bg-sidebar);
+    font-weight: 600;
+    color: var(--fp-text-muted);
+}
+
+/* Фиксация первого столбца */
+.planning-table th:first-child,
+.planning-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--fp-bg-container);
+    z-index: 10;
+    font-weight: 600;
+    text-align: left;
+    min-width: 180px;
+}
+
+.planning-table th:first-child {
+    background: var(--fp-bg-sidebar);
+    z-index: 20;
+}
+
+/* Фиксация первой строки */
+.planning-table thead tr th {
+    position: sticky;
+    top: 0;
+    background: var(--fp-bg-sidebar);
+    z-index: 5;
+}
+
+/* Ячейки таблицы */
+.plan-cell {
+    cursor: pointer;
+    transition: background 0.1s ease;
+    position: relative;
+    min-height: 60px;
+}
+
+.plan-cell.selected {
+    background-color: var(--fp-selection) !important;
+}
+
+.plan-cell.assigned {
+    background-color: var(--fp-success-bg);
+}
+
+.plan-cell.assigned:hover {
+    background-color: var(--fp-success-hover);
+}
+
+.plan-cell.drag-over {
+    background-color: var(--fp-drag-over);
+}
+
+/* Контейнер для пилотов в ячейке */
+.pilots-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    width: 100%;
+}
+
+.employee-badge {
+    display: block; /* Изменено с inline-block */
+    width: 100%; /* Занимает всю ширину контейнера */
+    padding: 4px 8px;
+    background: var(--fp-success);
+    color: var(--fp-text-on-primary);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.2s;
+}
+
+.employee-badge:hover {
+    opacity: 0.9;
+}
+
+.weekend {
+    background-color: var(--fp-weekend-bg);
+}
+
+/* Модальные окна */
+.modal-window .modal-header {
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    font-weight: bold;
+}
+
+.modal-window .btn-primary {
+    background: var(--fp-primary);
+    color: var(--fp-text-on-primary);
+}
+
+.error-modal .modal-header {
+    background: #dc3545;
+    color: white;
+}
+
+.success-modal .modal-header {
+    background: var(--fp-success);
+    color: var(--fp-text-on-primary);
+}
+
+.conflict-modal .modal-header {
+    background: var(--fp-warning);
+    color: white;
+}
+
+/* Информация о выделении */
+.selection-info {
+    padding: 10px 20px;
+    background: var(--fp-bg-sidebar);
+    font-size: 12px;
+    color: var(--fp-text-muted);
+    border-top: 1px solid var(--fp-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-clear-selection {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* Стиль для бейджа командира и инструктора */
+.employee-badge.commander,
+.employee-badge.instructor {
+    background: var(--fp-danger);
+    position: relative;
+    padding-left: 20px;
+}
+
+.employee-badge.commander::before,
+.employee-badge.instructor::before {
+    content: "★";
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #ffd700;
+}
+
+.employee-badge.commander:hover,
+.employee-badge.instructor:hover {
+    opacity: 0.9;
+}
+
+/* Красная полоска слева от ячейки для командиров и инструкторов */
+.plan-cell.has-commander,
+.plan-cell.has-instructor {
+    position: relative;
+    overflow: hidden;
+}
+
+.plan-cell.has-commander::before,
+.plan-cell.has-instructor::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--fp-danger);
+    z-index: 5;
+}
+
+/* Селектор тем */
+.theme-selector {
+    padding: 6px;
+    border-radius: 4px;
+    border: 1px solid var(--fp-border-color);
+    background: var(--fp-bg-container);
+    color: var(--fp-text-main);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* ========================================================
+   ЭКИПАЖИ ВОЗДУШНЫХ СУДОВ В ТАБЛИЦЕ ПЛАНИРОВАНИЯ
+   ======================================================== */
+.crew-block {
+    background: #ffffff;
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    padding: 4px 5px;
+    margin-bottom: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: all 0.2s ease;
+    text-align: left;
+}
+.crew-block:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+}
+.crew-block.flight-standard {
+    border-left: 3.5px solid #3b82f6;
+}
+.crew-block.flight-check_flight_engineer {
+    border-left: 3.5px solid #f59e0b;
+}
+.crew-block.flight-check_pilot {
+    border-left: 3.5px solid #8b5cf6;
+}
+.crew-block.flight-double_check {
+    border-left: 3.5px solid #ef4444;
+}
+
+.crew-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #1e293b;
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 2px;
+    margin-bottom: 3px;
+}
+.crew-aircraft-title {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: #1e40af;
+}
+.crew-flight-tag {
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+.tag-standard { background: #dbeafe; color: #1e40af; }
+.tag-check_flight_engineer { background: #fef3c7; color: #92400e; }
+.tag-check_pilot { background: #ede9fe; color: #5b21b6; }
+.tag-double_check { background: #fee2e2; color: #991b1b; }
+
+.crew-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.crew-member-badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.73rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    line-height: 1.15;
+}
+.crew-member-badge .role-tag {
+    font-size: 0.63rem;
+    font-weight: 700;
+    padding: 1px 3px;
+    border-radius: 3px;
+    margin-right: 3px;
+}
+.role-commander { background: #fee2e2; color: #991b1b; }
+.role-copilot { background: #e0f2fe; color: #0369a1; }
+.role-pilot_instructor { background: #ede9fe; color: #6d28d9; }
+.role-flight_engineer { background: #ecfdf5; color: #065f46; }
+.role-flight_engineer_instructor { background: #fef3c7; color: #92400e; }
+
+.crew-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.crew-action-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 0.78rem;
+    color: #94a3b8;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+.crew-action-btn.btn-edit-crew {
+    color: #3b82f6;
+    font-size: 0.72rem;
+}
+.crew-action-btn.btn-edit-crew:hover {
+    color: #1d4ed8;
+    transform: scale(1.15);
+}
+.crew-action-btn.btn-delete-crew {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+.crew-action-btn.btn-delete-crew:hover {
+    color: #dc2626;
+    transform: scale(1.15);
+}
+
+/* Модальные окна экипажей */
+.modal-window.large-modal {
+    width: 680px;
+    max-width: 96%;
+}
+.crew-builder-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.crew-role-slot {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.crew-role-slot label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    min-width: 170px;
+    margin-bottom: 0;
+}
+.crew-role-slot select {
+    flex: 1;
+    font-size: 0.83rem;
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+}
+.crew-validation-alert {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-top: 10px;
+}
+.crew-validation-alert.valid {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+.crew-validation-alert.invalid {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+.assign-choice-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.assign-choice-card:hover {
+    border-color: #3b82f6;
+    background: #f0f7ff;
+}
+
+/* Стили элементов конфликтов */
+.conflict-item {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #f59e0b;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    font-size: 0.84rem;
+    color: #92400e;
+}
+.conflict-item .conflict-date-title {
+    font-weight: 700;
+    color: #78350f;
+    margin-bottom: 2px;
+}
+.conflict-item .conflict-desc {
+    color: #b45309;
+    font-size: 0.8rem;
+}
+
+/* ========================================================
+   ПОМЕТКИ И ОПЕРАТИВНЫЕ СООБЩЕНИЯ К ЭКИПАЖУ
+   ======================================================== */
+.crew-action-btn.btn-crew-note {
+    color: #64748b;
+    font-size: 0.82rem;
+}
+.crew-action-btn.btn-crew-note:hover {
+    color: #d97706;
+    transform: scale(1.18);
+}
+.crew-action-btn.btn-crew-note.has-note {
+    color: #f59e0b;
+    font-weight: bold;
+    animation: pulse-note 2s infinite ease-in-out;
+}
+@keyframes pulse-note {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+}
+
+.crew-note-badge-preview {
+    margin-top: 4px;
+    padding: 3px 6px;
+    background: #fffbeb;
+    border: 1px dashed #fcd34d;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    color: #92400e;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: all 0.15s ease;
+}
+.crew-note-badge-preview:hover {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+.crew-note-snippet {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.crew-notes-history-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.crew-note-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #f59e0b;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 0.83rem;
+}
+.crew-note-item:last-child {
+    margin-bottom: 0;
+}
+.crew-note-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.73rem;
+    color: #64748b;
+    margin-bottom: 3px;
+}
+.crew-note-author {
+    font-weight: 600;
+    color: #334155;
+}
+.crew-note-time {
+    color: #94a3b8;
+}
+.crew-note-text {
+    color: #1e293b;
+    word-break: break-word;
+}
+.crew-note-del-btn {
+    border: none;
+    background: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 0 4px;
+    font-size: 0.78rem;
+    opacity: 0.7;
+}
+.crew-note-del-btn:hover {
+    opacity: 1;
+}
+
+
+

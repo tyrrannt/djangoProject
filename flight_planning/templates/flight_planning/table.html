@@ -5,7 +5,7 @@
 {% load widget_tweaks %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/css/flight_planning.css' %}"/>
+    <link rel="stylesheet" href="{% static_version 'admin_templates/css/flight_planning.css' %}"/>
 {% endblock %}
 
 {% block title %}
@@ -24,6 +24,9 @@
                 </select>
                 <button type="button" class="nav-btn" id="openCrewBuilderBtn" style="background-color: #6f42c1; margin-right: 6px; cursor: pointer;">
                     <i class='bx bx-group me-1'></i> Собрать экипаж
+                </button>
+                <button type="button" class="nav-btn" id="openBatchSwapModalBtn" style="background-color: #e11d48; margin-right: 6px; cursor: pointer;" title="Пакетная замена борта ВС на интервал дат">
+                    <i class='bx bx-sync me-1'></i> Замена борта
                 </button>
                 <a href="{% url 'flight_planning:aircraft_movement_list' %}" class="nav-btn" style="background-color: #007bff; margin-right: 6px;">
                     <i class='bx bxs-plane me-1'></i> Журнал ВС
@@ -274,6 +277,72 @@
         </div>
     </div>
 
+    <!-- Модальное окно пакетной замены борта ВС на интервал дат -->
+    <div class="modal-overlay" id="batchSwapOverlay" style="display: none; z-index: 10050;"></div>
+    <div class="modal-window large-modal" id="batchSwapModal" style="display: none; z-index: 10060; width: 560px;">
+        <div class="modal-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <span class="font-weight-bold" id="batchSwapTitle"><i class='bx bx-sync me-2'></i> Пакетная замена борта ВС в экипажах</span>
+            <button type="button" class="btn-close btn-close-white" id="closeBatchSwapCross" style="cursor: pointer;"></button>
+        </div>
+        <div class="modal-body p-3">
+            <form id="batchSwapForm">
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold">Место деятельности (МПД) <span class="text-danger">*</span></label>
+                    <select id="bsMpdSelect" class="form-control form-control-modern" required>
+                        <option value="">— Выберите МПД —</option>
+                        {% for mpd in mpds %}
+                            <option value="{{ mpd.id }}">{{ mpd.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="crew-builder-grid mb-3">
+                    <div>
+                        <label class="form-label font-weight-semibold">Дата начала <span class="text-danger">*</span></label>
+                        <input type="date" id="bsStartDate" class="form-control form-control-modern" required/>
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-semibold">Дата окончания <span class="text-danger">*</span></label>
+                        <input type="date" id="bsEndDate" class="form-control form-control-modern" required/>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold">Заменяемый борт (Текущий в экипажах) <span class="text-danger">*</span></label>
+                    <select id="bsOldAircraftSelect" class="form-control form-control-modern" required>
+                        <option value="all">Все экипажи на МПД в этом периоде</option>
+                        <option value="reserve">Все резервные экипажи (без борта ВС)</option>
+                        <optgroup label="Конкретный борт" id="bsOldAircraftOptGroup">
+                            <!-- Заполняется динамически -->
+                        </optgroup>
+                    </select>
+                    <small class="text-muted">Выберите, в каких именно экипажах требуется произвести замену</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold">Новый борт (Назначить) <span class="text-danger">*</span></label>
+                    <select id="bsNewAircraftSelect" class="form-control form-control-modern" required>
+                        <option value="reserve">⚠️ Перевести в Резерв (снять привязку к ВС)</option>
+                        <optgroup label="Назначить воздушное судно" id="bsNewAircraftOptGroup">
+                            <!-- Заполняется динамически -->
+                        </optgroup>
+                    </select>
+                    <small class="text-muted">Выберите борт для назначения или опцию перевода в резерв</small>
+                </div>
+
+                <div class="alert alert-info py-2 mb-0" style="font-size: 0.85rem;">
+                    <i class='bx bx-info-circle me-1'></i> <strong>Важно:</strong> Замена выполнится для всех подходящих экипажей на указанный диапазон дат. Состав членов экипажей и их график сохранятся.
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" id="bsCancelBtn">Отмена</button>
+            <button type="button" class="btn btn-danger font-weight-bold" id="bsSubmitBtn">
+                <i class='bx bx-check-circle me-1'></i> Выполнить замену
+            </button>
+        </div>
+    </div>
+
     <!-- Модальное окно выбора действия при перетаскивании сотрудника -->
     <div class="modal-overlay" id="assignChoiceOverlay" style="display: none;"></div>
     <div class="modal-window" id="assignChoiceModal" style="display: none;">
@@ -321,9 +390,9 @@
         </div>
     </div>
 
-    <!-- Универсальное модальное окно -->
-    <div class="modal-overlay" id="modalOverlay" style="display: none;"></div>
-    <div class="modal-window" id="modalWindow" style="display: none;">
+    <!-- Универсальное модальное окно (поверх всех окон) -->
+    <div class="modal-overlay" id="modalOverlay" style="display: none; z-index: 20000;"></div>
+    <div class="modal-window" id="modalWindow" style="display: none; z-index: 20010;">
         <div class="modal-header" id="modalHeader">
             <span id="modalTitle">Заголовок</span>
         </div>
@@ -395,7 +464,10 @@
     <script>
         window.CREW_MAP = {{ crew_map_json|safe }};
         window.MPD_AIRCRAFT_MAP = {{ mpd_aircraft_json|safe }};
+        window.MPD_AIRCRAFT_INTERVALS_MAP = {{ mpd_aircraft_intervals_json|safe }};
+        window.ALL_AIRCRAFT_INTERVALS = {{ all_aircraft_intervals_json|safe }};
         window.ALL_PILOTS = {{ pilots_js_json|safe }};
+        window.ALL_AIRCRAFT = {{ all_aircraft_json|safe }};
     </script>
-    <script src="{% static 'admin_templates/js/flight_planning.js' %}"></script>
+    <script src="{% static_version 'admin_templates/js/flight_planning.js' %}"></script>
 {% endblock %}

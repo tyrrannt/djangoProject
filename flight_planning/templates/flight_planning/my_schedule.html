@@ -1,8 +1,9 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load planning_extras %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/css/flight_planning.css' %}"/>
+    <link rel="stylesheet" href="{% static_version 'admin_templates/css/flight_planning.css' %}"/>
     <style>
         .schedule-list {
             margin-top: 20px;

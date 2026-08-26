@@ -82,6 +82,135 @@ def get_mpd_aircraft_map(target_date: Optional[date] = None) -> Dict[int, List[D
     return mpd_map
 
 
+def get_mpd_aircraft_intervals_map(year: int, month: int) -> Dict[int, List[Dict[str, Any]]]:
+    """
+    Возвращает карту распределения воздушных судов по МПД за указанный месяц с учетом всех перемещений.
+    Для каждого МПД возвращает список ВС, которые базировались на нем хотя бы 1 день в течение месяца,
+    с точными датами присутствия (from_date, to_date) и читаемыми текстовыми метками периодов.
+    """
+    month_start = date(year, month, 1)
+    if month == 12:
+        month_end = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        month_end = date(year, month + 1, 1) - timedelta(days=1)
+
+    active_aircrafts = get_active_aircraft(month_start)
+    active_aircraft_map = {ac.id: ac for ac in active_aircrafts}
+
+    all_movements = AircraftMovement.objects.filter(
+        aircraft_id__in=active_aircraft_map.keys()
+    ).select_related('aircraft', 'mpd', 'aircraft__type_property').order_by('aircraft_id', 'date', 'created_at', 'id')
+
+    aircraft_movements: Dict[int, List[AircraftMovement]] = {}
+    for m in all_movements:
+        if m.aircraft_id not in aircraft_movements:
+            aircraft_movements[m.aircraft_id] = []
+        aircraft_movements[m.aircraft_id].append(m)
+
+    mpd_intervals_map: Dict[int, List[Dict[str, Any]]] = {}
+
+    for ac_id, ac in active_aircraft_map.items():
+        movs = aircraft_movements.get(ac_id, [])
+        if not movs:
+            continue
+
+        for i, mov in enumerate(movs):
+            m_start = mov.date
+            if i + 1 < len(movs):
+                m_end = movs[i + 1].date - timedelta(days=1)
+            else:
+                m_end = None
+
+            if m_start > month_end:
+                continue
+            if m_end is not None and m_end < month_start:
+                continue
+
+            overlap_from = max(m_start, month_start)
+            overlap_to = min(m_end, month_end) if m_end is not None else month_end
+
+            if m_start <= month_start and (m_end is None or m_end >= month_end):
+                is_full_month = True
+                period_label = "весь месяц"
+            elif m_start <= month_start and m_end is not None and m_end < month_end:
+                is_full_month = False
+                period_label = f"по {m_end.strftime('%d.%m')}"
+            elif m_start > month_start and (m_end is None or m_end >= month_end):
+                is_full_month = False
+                period_label = f"с {m_start.strftime('%d.%m')}"
+            else:
+                is_full_month = False
+                period_label = f"с {m_start.strftime('%d.%m')} по {m_end.strftime('%d.%m')}"
+
+            mpd_id = mov.mpd_id
+            if mpd_id not in mpd_intervals_map:
+                mpd_intervals_map[mpd_id] = []
+
+            type_name = ac.type_property.type_property if ac.type_property else ''
+            mpd_intervals_map[mpd_id].append({
+                'aircraft_id': ac.id,
+                'registration_number': ac.registration_number,
+                'type_property': type_name,
+                'from_date': m_start.isoformat(),
+                'to_date': m_end.isoformat() if m_end else None,
+                'overlap_from': overlap_from.isoformat(),
+                'overlap_to': overlap_to.isoformat(),
+                'period_label': period_label,
+                'is_full_month': is_full_month,
+                'movement_id': mov.id
+            })
+
+    for mpd_id in mpd_intervals_map:
+        mpd_intervals_map[mpd_id].sort(key=lambda x: (x['overlap_from'], x['registration_number']))
+
+    return mpd_intervals_map
+
+
+def get_all_aircraft_intervals() -> List[Dict[str, Any]]:
+    """
+    Возвращает список всех активных ВС с полной цепочкой интервалов их дислокации по МПД.
+    """
+    active_aircrafts = get_active_aircraft()
+    active_aircraft_map = {ac.id: ac for ac in active_aircrafts}
+
+    all_movements = AircraftMovement.objects.filter(
+        aircraft_id__in=active_aircraft_map.keys()
+    ).select_related('aircraft', 'mpd', 'aircraft__type_property').order_by('aircraft_id', 'date', 'created_at', 'id')
+
+    aircraft_movements: Dict[int, List[AircraftMovement]] = {}
+    for m in all_movements:
+        if m.aircraft_id not in aircraft_movements:
+            aircraft_movements[m.aircraft_id] = []
+        aircraft_movements[m.aircraft_id].append(m)
+
+    result = []
+    for ac_id, ac in active_aircraft_map.items():
+        movs = aircraft_movements.get(ac_id, [])
+        type_name = ac.type_property.type_property if ac.type_property else ''
+        intervals = []
+        for i, mov in enumerate(movs):
+            m_start = mov.date
+            m_end = (movs[i + 1].date - timedelta(days=1)) if (i + 1 < len(movs)) else None
+            intervals.append({
+                'mpd_id': mov.mpd_id,
+                'mpd_name': mov.mpd.name,
+                'from_date': m_start.isoformat(),
+                'to_date': m_end.isoformat() if m_end else None,
+                'is_current': (m_end is None)
+            })
+
+        result.append({
+            'id': ac.id,
+            'reg': ac.registration_number,
+            'type': type_name,
+            'intervals': intervals
+        })
+
+    result.sort(key=lambda x: x['reg'])
+    return result
+
+
+
 def get_crews_for_month(year: int, month: int, mpd_id: Optional[int] = None) -> QuerySet[FlightCrew]:
     """
     Возвращает список экипажей за указанный месяц с подгрузкой связанных данных (включая пометки).

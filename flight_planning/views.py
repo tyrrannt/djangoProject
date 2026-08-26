@@ -24,6 +24,8 @@ from .selectors import (
     get_latest_aircraft_locations,
     get_aircraft_movement_history,
     get_mpd_aircraft_map,
+    get_mpd_aircraft_intervals_map,
+    get_all_aircraft_intervals,
     get_crews_for_month,
     get_mpd_crew_map,
     get_available_aircraft_for_mpd,
@@ -33,11 +35,13 @@ from .selectors import (
 from .services import (
     get_grouped_pilot_schedule,
     record_aircraft_movement,
+    handle_aircraft_movement_crew_fallback,
     validate_crew_composition,
     check_crew_member_conflicts,
     create_or_update_flight_crew_range,
     update_flight_crew,
-    delete_flight_crew
+    delete_flight_crew,
+    batch_swap_aircraft
 )
 
 # Должности летного состава для планирования
@@ -267,8 +271,10 @@ def planning_table(request):
     # Получаем карту экипажей за месяц
     crew_map = get_mpd_crew_map(year, month)
 
-    # Карта актуального распределения ВС по МПД
+    # Карта актуального распределения ВС по МПД и полная карта интервалов присутствия за месяц
     mpd_aircraft_map = get_mpd_aircraft_map()
+    mpd_aircraft_intervals_map = get_mpd_aircraft_intervals_map(year, month)
+    all_aircraft_intervals = get_all_aircraft_intervals()
 
     # Сериализуемый список всех пилотов для JavaScript модальных окон
     pilots_js_list = []
@@ -300,6 +306,17 @@ def planning_table(request):
     prev_month_date = first_day - timedelta(days=1)
     next_month_date = last_day + timedelta(days=1)
 
+    # Все активные воздушные суда для мастера сборки и пакетной замены
+    all_active_aircraft = get_active_aircraft(first_day)
+    all_aircraft_list = [
+        {
+            'id': ac.id,
+            'reg': ac.registration_number,
+            'type': ac.type_property.type_property if ac.type_property else ''
+        }
+        for ac in all_active_aircraft
+    ]
+
     context = {
         'mpds': mpds,
         'pilots': pilots,
@@ -315,7 +332,10 @@ def planning_table(request):
         'crew_map': crew_map,
         'crew_map_json': json.dumps(crew_map),
         'mpd_aircraft_json': json.dumps(mpd_aircraft_map),
+        'mpd_aircraft_intervals_json': json.dumps(mpd_aircraft_intervals_map),
+        'all_aircraft_intervals_json': json.dumps(all_aircraft_intervals),
         'pilots_js_json': json.dumps(pilots_js_list),
+        'all_aircraft_json': json.dumps(all_aircraft_list),
     }
 
     return render(request, 'flight_planning/table.html', context)
@@ -660,6 +680,7 @@ def aircraft_movement_list_view(request):
 def aircraft_movement_create_view(request):
     """
     Создание новой записи в журнале перемещения ВС.
+    Автоматически переводит будущие экипажи на старых МПД с этим бортом в Резерв.
     """
     if request.method == 'POST':
         form = AircraftMovementForm(request.POST)
@@ -667,10 +688,20 @@ def aircraft_movement_create_view(request):
             movement = form.save(commit=False)
             movement.created_by = request.user
             movement.save()
-            messages.success(
-                request,
-                f"Перемещение борта {movement.aircraft.registration_number} на МПД '{movement.mpd.name}' успешно зарегистрировано."
+
+            # Сброс экипажей на старых МПД в статус Резерв
+            fallback_count, affected_mpds = handle_aircraft_movement_crew_fallback(
+                aircraft_id=movement.aircraft_id,
+                new_mpd_id=movement.mpd_id,
+                movement_date=movement.date
             )
+
+            msg = f"Перемещение борта {movement.aircraft.registration_number} на МПД '{movement.mpd.name}' успешно зарегистрировано."
+            if fallback_count > 0:
+                mpds_str = ", ".join(affected_mpds)
+                msg += f" {fallback_count} запланированных экипажей на МПД [{mpds_str}] с {movement.date.strftime('%d.%m.%Y')} переведены в Резерв."
+
+            messages.success(request, msg)
             return redirect('flight_planning:aircraft_movement_list')
     else:
         initial = {}
@@ -692,17 +723,28 @@ def aircraft_movement_create_view(request):
 def aircraft_movement_update_view(request, pk):
     """
     Редактирование существующей записи журнала перемещения ВС.
+    Автоматически переводит будущие экипажи на старых МПД с этим бортом в Резерв.
     """
     movement = get_object_or_404(AircraftMovement, pk=pk)
 
     if request.method == 'POST':
         form = AircraftMovementForm(request.POST, instance=movement)
         if form.is_valid():
-            form.save()
-            messages.success(
-                request,
-                f"Запись о перемещении борта {movement.aircraft.registration_number} успешно обновлена."
+            movement = form.save()
+
+            # Сброс экипажей на старых МПД в статус Резерв
+            fallback_count, affected_mpds = handle_aircraft_movement_crew_fallback(
+                aircraft_id=movement.aircraft_id,
+                new_mpd_id=movement.mpd_id,
+                movement_date=movement.date
             )
+
+            msg = f"Запись о перемещении борта {movement.aircraft.registration_number} успешно обновлена."
+            if fallback_count > 0:
+                mpds_str = ", ".join(affected_mpds)
+                msg += f" {fallback_count} запланированных экипажей на МПД [{mpds_str}] с {movement.date.strftime('%d.%m.%Y')} переведены в Резерв."
+
+            messages.success(request, msg)
             return redirect('flight_planning:aircraft_movement_list')
     else:
         form = AircraftMovementForm(instance=movement)
@@ -1580,6 +1622,53 @@ def aircraft_basing_report_view(request):
     }
 
     return render(request, 'flight_planning/aircraft_basing_report.html', context)
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def batch_swap_aircraft_api(request):
+    """
+    API эндпоинт для пакетной замены борта ВС в экипажах на интервал дат.
+    """
+    try:
+        data = json.loads(request.body)
+        mpd_id = data.get('mpd_id')
+        start_date_str = data.get('start_date')
+        end_date_str = data.get('end_date') or start_date_str
+        old_aircraft_id = data.get('old_aircraft_id')
+        new_aircraft_id = data.get('new_aircraft_id')
+
+        if not mpd_id or not start_date_str or not end_date_str:
+            return JsonResponse({'error': 'Необходимо указать МПД, начальную и конечную дату.'}, status=400)
+
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'error': 'Некорректный формат даты (ожидается YYYY-MM-DD).'}, status=400)
+
+        result = batch_swap_aircraft(
+            mpd_id=int(mpd_id),
+            start_date=start_date,
+            end_date=end_date,
+            old_aircraft_id=old_aircraft_id,
+            new_aircraft_id=new_aircraft_id,
+            created_by=request.user
+        )
+
+        if result.get('status') == 'error':
+            return JsonResponse({'error': ' '.join(result.get('errors', [])), 'errors': result.get('errors')}, status=400)
+
+        return JsonResponse({
+            'status': 'success',
+            'message': result.get('message', 'Замена борта выполнена успешно.'),
+            'updated_count': result.get('updated_count', 0)
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 
 
 
