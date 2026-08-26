@@ -1,0 +1,518 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block custom_css %}
+    <style>
+        /* Общие стили отчета */
+        .report-page-container {
+            padding: 20px 0 60px 0;
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+        .report-header-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .report-title {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .report-subtitle {
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+
+        /* Карточки KPI */
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            height: 100%;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+        }
+        .kpi-card-idle { border-top: 4px solid #64748b; }
+        .kpi-card-low { border-top: 4px solid #0284c7; }
+        .kpi-card-optimal { border-top: 4px solid #16a34a; }
+        .kpi-card-high { border-top: 4px solid #dc2626; }
+
+        .kpi-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .kpi-value {
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+        .kpi-subtext {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* Секции групп */
+        .group-section {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .group-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .group-header-idle { background: #f8fafc; border-left: 6px solid #64748b; }
+        .group-header-low { background: #f0f9ff; border-left: 6px solid #0284c7; }
+        .group-header-optimal { background: #f0fdf4; border-left: 6px solid #16a34a; }
+        .group-header-high { background: #fef2f2; border-left: 6px solid #dc2626; }
+
+        .group-title-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+        .group-desc-text {
+            font-size: 0.83rem;
+            color: #64748b;
+            margin-bottom: 0;
+        }
+
+        /* Таблицы */
+        .report-table {
+            margin-bottom: 0;
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+        .report-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #cbd5e1;
+            padding: 10px 12px;
+            white-space: nowrap;
+        }
+        .report-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+        .report-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Прогресс-бары загрузки */
+        .utilization-progress-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+        }
+        .utilization-progress-bar {
+            flex: 1;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .utilization-progress-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        .utilization-progress-fill.idle { background-color: #94a3b8; }
+        .utilization-progress-fill.low { background-color: #0284c7; }
+        .utilization-progress-fill.optimal { background-color: #16a34a; }
+        .utilization-progress-fill.high { background-color: #dc2626; }
+
+        .utilization-pct-text {
+            font-weight: 700;
+            font-size: 0.82rem;
+            min-width: 44px;
+            text-align: right;
+        }
+
+        .badge-role {
+            font-size: 0.72rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+            margin: 1px;
+            display: inline-block;
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .badge-aircraft {
+            font-size: 0.72rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            display: inline-block;
+            margin: 1px;
+        }
+
+        /* Панель фильтров */
+        .filter-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+
+        /* Печатные стили */
+        @media print {
+            body {
+                background: #ffffff !important;
+                font-size: 9pt !important;
+                color: #000000 !important;
+            }
+            .d-print-none, nav, header, aside, .sidebar-wrapper, .filter-panel, .btn, footer {
+                display: none !important;
+            }
+            .report-page-container {
+                padding: 0 !important;
+                background: #ffffff !important;
+            }
+            .report-header-card, .group-section, .kpi-card {
+                box-shadow: none !important;
+                border: 1px solid #cccccc !important;
+                margin-bottom: 12px !important;
+                padding: 10px !important;
+            }
+            .group-section {
+                page-break-inside: avoid;
+            }
+            .report-table th, .report-table td {
+                padding: 4px 6px !important;
+                font-size: 8pt !important;
+                border-color: #cccccc !important;
+            }
+            .utilization-progress-bar {
+                display: none !important;
+            }
+            .print-header {
+                display: block !important;
+                margin-bottom: 15px;
+                border-bottom: 2px solid #000000;
+                padding-bottom: 8px;
+            }
+            .print-signatures {
+                display: block !important;
+                margin-top: 30px;
+                page-break-inside: avoid;
+            }
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .print-header, .print-signatures {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="report-page-container">
+    <div class="container-fluid px-4">
+
+        <!-- Шапка для печати (видна только на печати) -->
+        <div class="print-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="m-0 font-weight-bold">ООО «Авиакомпания «БАРКОЛ»</h4>
+                    <p class="m-0 text-muted small">{{ user_division }}</p>
+                </div>
+                <div class="text-end small text-muted">
+                    <div>Дата формирования: {{ generation_time }}</div>
+                    <div>Сформировал: {{ current_user.get_full_name|default:current_user.username }}{% if current_user.user_work_profile.job %} ({{ current_user.user_work_profile.job.name }}){% endif %}</div>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <h5 class="m-0 font-weight-bold text-uppercase">Аналитический отчет по производственной загрузке летного состава</h5>
+                <p class="m-0 text-muted">Отчетный период: {{ report.month_name }} ({{ report.total_month_days }} календарных дней)</p>
+            </div>
+        </div>
+
+        <!-- Шапка отчета в интерфейсе (скрывается на печати) -->
+        <div class="report-header-card d-print-none">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-primary me-2 px-3 py-2" style="font-size: 0.85rem;"><i class='bx bx-bar-chart-alt-2 me-1'></i> Аналитика</span>
+                        <span class="text-muted small">ООО «Авиакомпания «БАРКОЛ» • {{ user_division }}</span>
+                    </div>
+                    <h1 class="report-title">Аналитический отчет по производственной загрузке летного состава</h1>
+                    <p class="report-subtitle mb-0">
+                        Отчетный период: <strong class="text-dark">{{ report.month_name }}</strong> • Календарных дней: <strong class="text-dark">{{ report.total_month_days }}</strong>
+                    </p>
+                </div>
+                <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
+                    <button type="button" class="btn btn-primary px-3 py-2 me-2 font-weight-bold shadow-sm" onclick="window.print()">
+                        <i class='bx bx-printer me-1'></i> Печать отчета / PDF
+                    </button>
+                    <a href="{% url 'flight_planning:aircraft_basing_report' %}" class="btn btn-outline-primary px-3 py-2 me-2" title="Открыть отчет по базированию воздушных судов">
+                        <i class='bx bx-file me-1'></i> Базирование ВС
+                    </a>
+                    <a href="{% url 'flight_planning:planning_table' %}?year={{ year }}&month={{ month }}" class="btn btn-outline-secondary px-3 py-2">
+                        <i class='bx bx-calendar me-1'></i> Сетка планирования
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Панель фильтров и выбора периода (скрывается на печати) -->
+        <div class="filter-panel d-print-none">
+            <form method="GET" action="{% url 'flight_planning:flight_personnel_utilization_report' %}" class="row g-3 align-items-end">
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label font-weight-semibold text-muted small mb-1">Месяц:</label>
+                    <select name="month" class="form-select form-select-sm">
+                        {% for m_num, m_name in months_list %}
+                            <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label font-weight-semibold text-muted small mb-1">Год:</label>
+                    <select name="year" class="form-select form-select-sm">
+                        {% for y in years_list %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }} г.</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label font-weight-semibold text-muted small mb-1">Категория летного состава:</label>
+                    <select name="job_category" class="form-select form-select-sm">
+                        {% for cat_key, cat_name in job_categories %}
+                            <option value="{{ cat_key }}" {% if cat_key == job_category %}selected{% endif %}>{{ cat_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary flex-grow-1">
+                        <i class='bx bx-filter-alt me-1'></i> Сформировать
+                    </button>
+                    <a href="{% url 'flight_planning:flight_personnel_utilization_report' %}?year={{ prev_year }}&month={{ prev_month }}{% if job_category %}&job_category={{ job_category }}{% endif %}" class="btn btn-sm btn-outline-secondary" title="Предыдущий месяц">
+                        <i class='bx bx-chevron-left'></i>
+                    </a>
+                    <a href="{% url 'flight_planning:flight_personnel_utilization_report' %}?year={{ next_year }}&month={{ next_month }}{% if job_category %}&job_category={{ job_category }}{% endif %}" class="btn btn-sm btn-outline-secondary" title="Следующий месяц">
+                        <i class='bx bx-chevron-right'></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Сводный KPI Dashboard (Executive Summary) -->
+        <div class="row g-3 mb-4">
+            <!-- Всего персонала -->
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="kpi-card">
+                    <div class="kpi-title">Всего персонала</div>
+                    <div class="kpi-value">{{ report.total_pilots }} <span class="fs-6 font-weight-normal text-muted">чел.</span></div>
+                    <div class="kpi-subtext">Летный состав в штате</div>
+                </div>
+            </div>
+            <!-- Резерв 0% -->
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="kpi-card kpi-card-idle">
+                    <div class="kpi-title text-secondary">Резерв (0%)</div>
+                    <div class="kpi-value text-secondary">{{ report.groups.0.count }} <span class="fs-6 font-weight-normal text-muted">({{ report.groups.0.share_percent }}%)</span></div>
+                    <div class="kpi-subtext">Без назначений в месяце</div>
+                </div>
+            </div>
+            <!-- Низкая загрузка 1-30% -->
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="kpi-card kpi-card-low">
+                    <div class="kpi-title text-info">Низкая (1–30%)</div>
+                    <div class="kpi-value text-info">{{ report.groups.1.count }} <span class="fs-6 font-weight-normal text-muted">({{ report.groups.1.share_percent }}%)</span></div>
+                    <div class="kpi-subtext">1–9 дней в плане</div>
+                </div>
+            </div>
+            <!-- Штатная загрузка 31-70% -->
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="kpi-card kpi-card-optimal">
+                    <div class="kpi-title text-success">Штатная (31–70%)</div>
+                    <div class="kpi-value text-success">{{ report.groups.2.count }} <span class="fs-6 font-weight-normal text-muted">({{ report.groups.2.share_percent }}%)</span></div>
+                    <div class="kpi-subtext">10–20 дней (оптимум)</div>
+                </div>
+            </div>
+            <!-- Интенсивная загрузка >70% -->
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="kpi-card kpi-card-high">
+                    <div class="kpi-title text-danger">Интенсивная (&gt;70%)</div>
+                    <div class="kpi-value text-danger">{{ report.groups.3.count }} <span class="fs-6 font-weight-normal text-muted">({{ report.groups.3.share_percent }}%)</span></div>
+                    <div class="kpi-subtext">21+ день (перегрузка)</div>
+                </div>
+            </div>
+            <!-- Средняя загрузка -->
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <div class="kpi-card">
+                    <div class="kpi-title">Средняя загрузка</div>
+                    <div class="kpi-value text-primary">{{ report.avg_utilization }}%</div>
+                    <div class="kpi-subtext">Всего: {{ report.total_man_days }} чел.-дн.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 Группы отчета -->
+        {% for group in report.groups %}
+            <div class="group-section" id="{{ group.id }}">
+                <div class="group-header group-header-{{ group.class_name }}">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h3 class="group-title-text m-0">{{ forloop.counter }}. {{ group.title }}</h3>
+                            <span class="badge bg-{{ group.color }}">{{ group.badge }}</span>
+                            <span class="badge bg-light text-dark border">{{ group.count }} чел. ({{ group.share_percent }}%)</span>
+                        </div>
+                        <p class="group-desc-text mt-1">{{ group.description }}</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;" class="text-center">№</th>
+                                <th style="min-width: 180px;">ФИО сотрудника</th>
+                                <th style="min-width: 160px;">Штатная должность</th>
+                                <th style="width: 90px;" class="text-center">Дней на МПД</th>
+                                <th style="width: 80px;" class="text-center">Свободно</th>
+                                <th style="width: 150px;">Загрузка (%)</th>
+                                <th style="min-width: 180px;">МПД базирования</th>
+                                <th style="min-width: 130px;">Борта ВС</th>
+                                <th style="min-width: 120px;">Роли в экипажах</th>
+                                <th style="width: 90px;" class="text-center">Проверки</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if group.pilots %}
+                                {% for pilot in group.pilots %}
+                                    <tr>
+                                        <td class="text-center text-muted small">{{ forloop.counter }}</td>
+                                        <td>
+                                            <strong class="text-dark">{{ pilot.full_name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">{{ pilot.job }}</span>
+                                        </td>
+                                        <td class="text-center font-weight-bold">
+                                            {% if pilot.assigned_days > 0 %}
+                                                <span class="badge bg-primary text-white px-2 py-1">{{ pilot.assigned_days }} дн.</span>
+                                            {% else %}
+                                                <span class="text-muted">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center text-muted">
+                                            {{ pilot.free_days }} дн.
+                                        </td>
+                                        <td>
+                                            <div class="utilization-progress-wrapper">
+                                                <div class="utilization-progress-bar">
+                                                    <div class="utilization-progress-fill {{ group.class_name }}" style="width: {{ pilot.utilization_percent }}%;"></div>
+                                                </div>
+                                                <span class="utilization-pct-text text-{{ group.color }}">{{ pilot.utilization_percent }}%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if pilot.assigned_days > 0 %}
+                                                <span class="small">{{ pilot.mpd_summary }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">В резерве базы</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if pilot.aircraft_summary != "—" %}
+                                                <span class="badge-aircraft">✈ {{ pilot.aircraft_summary }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if pilot.roles_summary != "—" %}
+                                                <span class="badge-role">{{ pilot.roles_summary }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if pilot.check_flights_count > 0 %}
+                                                <span class="badge bg-warning text-dark" title="Участие в проверочных полетах">{{ pilot.check_flights_count }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-3">
+                                        <em>В данной группе нет сотрудников за отчетный период.</em>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- Подписи для официальной печати (видны только на печати) -->
+        <div class="print-signatures">
+            <div class="row pt-4">
+                <div class="col-6">
+                    <p class="mb-4"><strong>Командир летного отряда / Летный директор:</strong></p>
+                    <p>___________________ / ___________________ /</p>
+                </div>
+                <div class="col-6 text-end">
+                    <p class="mb-4"><strong>Начальник отдела кадров:</strong></p>
+                    <p>___________________ / ___________________ /</p>
+                </div>
+            </div>
+            <div class="row pt-2 text-muted small">
+                <div class="col-12 text-center">
+                    М.П. • Документ сформирован автоматически в Корпоративной Информационной Системе ООО АК «БАРКОЛ» • {{ generation_time }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Установка заголовка вкладки
+        document.title = "Отчет по загрузке персонала ({{ report.month_name }}) — Авиакомпания БАРКОЛ";
+    });
+</script>
+{% endblock %}

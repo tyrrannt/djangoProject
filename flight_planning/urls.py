@@ -16,6 +16,10 @@ urlpatterns = [
     # Личный график пилота
     path('my-schedule/', views.my_schedule_view, name='my_schedule'),
 
+    # Отчеты
+    path('reports/utilization/', views.personnel_utilization_report_view, name='flight_personnel_utilization_report'),
+    path('reports/basing/', views.aircraft_basing_report_view, name='aircraft_basing_report'),
+
     # Журнал перемещений воздушных судов
     path('movements/', views.aircraft_movement_list_view, name='aircraft_movement_list'),
     path('movements/add/', views.aircraft_movement_create_view, name='aircraft_movement_add'),

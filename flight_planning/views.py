@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 
 from customers_app.models import DataBaseUser
 from hrdepartment_app.models import PlaceProductionActivity
-from contracts_app.models import Estate
+from contracts_app.models import Estate, TypeProperty
 from .models import PilotAssignment, AircraftMovement, FlightCrew, CrewMember, FlightCrewNote, CREW_ROLES
 from .forms import AircraftMovementForm
 from .selectors import (
@@ -26,7 +26,9 @@ from .selectors import (
     get_mpd_aircraft_map,
     get_crews_for_month,
     get_mpd_crew_map,
-    get_available_aircraft_for_mpd
+    get_available_aircraft_for_mpd,
+    get_personnel_utilization_report_data,
+    get_aircraft_basing_report_data
 )
 from .services import (
     get_grouped_pilot_schedule,
@@ -1243,6 +1245,343 @@ def delete_crew_note_api(request, note_id: int):
         return JsonResponse({'error': 'Пометка не найдена.'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def personnel_utilization_report_view(request):
+    """
+    Отображает аналитический отчет по производственной загрузке летного состава
+    с распределением по 4 авиационно-кадровым группам:
+    1. Оперативный резерв и нераспределенный состав (0%)
+    2. Минимальная производственная нагрузка (1–30%)
+    3. Штатная производственная загрузка (31–70%)
+    4. Интенсивная летная нагрузка (свыше 70%)
+    """
+    now = timezone.now()
+    year = request.GET.get('year', now.year)
+    month = request.GET.get('month', now.month)
+    job_category = request.GET.get('job_category', '').strip()
+
+    try:
+        year = int(year)
+        month = int(month)
+    except (ValueError, TypeError):
+        year = now.year
+        month = now.month
+
+    if month < 1:
+        month = 1
+    elif month > 12:
+        month = 12
+
+    # Получаем сгруппированные данные отчета
+    report_data = get_personnel_utilization_report_data(year=year, month=month, job_category=job_category or None)
+
+    # Навигация по месяцам
+    first_day = datetime(year, month, 1).date()
+    prev_month_date = first_day - timedelta(days=1)
+    if month == 12:
+        next_month_date = datetime(year + 1, 1, 1).date()
+    else:
+        next_month_date = datetime(year, month + 1, 1).date()
+
+    MONTHS_LIST = [
+        (1, 'Январь'), (2, 'Февраль'), (3, 'Март'), (4, 'Апрель'),
+        (5, 'Май'), (6, 'Июнь'), (7, 'Июль'), (8, 'Август'),
+        (9, 'Сентябрь'), (10, 'Октябрь'), (11, 'Ноябрь'), (12, 'Декабрь')
+    ]
+
+    JOB_CATEGORIES = [
+        ('', 'Все должности летного состава'),
+        ('commander', 'КВС (Командиры воздушных судов)'),
+        ('copilot', 'Вторые пилоты'),
+        ('instructor', 'Пилоты-инструкторы / Инспекторы'),
+        ('flight_engineer', 'Бортмеханики / Бортинженеры'),
+    ]
+
+    years_list = list(range(now.year - 2, now.year + 3))
+
+    user_division = ""
+    try:
+        if hasattr(request.user, 'user_work_profile') and request.user.user_work_profile and request.user.user_work_profile.divisions:
+            user_division = request.user.user_work_profile.divisions.name or str(request.user.user_work_profile.divisions)
+    except Exception:
+        pass
+
+    if not user_division:
+        user_division = "Служба планирования и организации полетов"
+
+    context = {
+        'report': report_data,
+        'year': year,
+        'month': month,
+        'job_category': job_category,
+        'prev_year': prev_month_date.year,
+        'prev_month': prev_month_date.month,
+        'next_year': next_month_date.year,
+        'next_month': next_month_date.month,
+        'months_list': MONTHS_LIST,
+        'years_list': years_list,
+        'job_categories': JOB_CATEGORIES,
+        'generation_time': now.strftime('%d.%m.%Y %H:%M'),
+        'current_user': request.user,
+        'user_division': user_division,
+    }
+
+    return render(request, 'flight_planning/utilization_report.html', context)
+
+
+def generate_basing_excel_response(report_data: dict, company_name: str, user_division: str, author_name: str) -> HttpResponse:
+    """
+    Генерирует официальный файл Excel (.xlsx) с отчетом «Базирование ВС на дату»
+    со строгим табличным оформлением и автоподбором ширины столбцов.
+    """
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Базирование {report_data['target_date_short']}"
+    ws.views.sheetView[0].showGridLines = True
+
+    # Стили
+    company_font = Font(name="Calibri", size=11, bold=True, color="1E293B")
+    division_font = Font(name="Calibri", size=10, italic=True, color="475569")
+    title_font = Font(name="Calibri", size=14, bold=True, color="0F172A")
+    header_font = Font(name="Calibri", size=11, bold=True, color="0F172A")
+    data_font = Font(name="Calibri", size=10, color="000000")
+    bold_data_font = Font(name="Calibri", size=10, bold=True, color="000000")
+    reserve_font = Font(name="Calibri", size=10, bold=True, color="B91C1C")
+    footer_font = Font(name="Calibri", size=9, italic=True, color="64748B")
+
+    header_fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+    mpd_bg_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+
+    thin_border_side = Side(border_style="thin", color="CBD5E1")
+    table_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=thin_border_side,
+        bottom=thin_border_side
+    )
+    header_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=thin_border_side,
+        bottom=Side(border_style="medium", color="475569")
+    )
+
+    # 1. Шапка документа
+    ws.merge_cells("A1:F1")
+    ws["A1"] = company_name
+    ws["A1"].font = company_font
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
+
+    ws.merge_cells("A2:F2")
+    ws["A2"] = user_division
+    ws["A2"].font = division_font
+    ws["A2"].alignment = Alignment(horizontal="left", vertical="center")
+
+    ws.merge_cells("A4:F4")
+    ws["A4"] = f"БАЗИРОВАНИЕ ВС НА {report_data['target_date_formatted']} год"
+    ws["A4"].font = title_font
+    ws["A4"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[4].height = 28
+
+    # 2. Заголовки колонок
+    headers = ["№", "МПД", "Тип ВС", "№", "Дата прибытия", "Примечания"]
+    header_row_idx = 6
+
+    for col_idx, h_text in enumerate(headers, start=1):
+        cell = ws.cell(row=header_row_idx, column=col_idx, value=h_text)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = header_border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[header_row_idx].height = 24
+
+    current_row = header_row_idx + 1
+
+    # 3. Данные по МПД
+    for group in report_data['mpd_groups']:
+        aircrafts = group['aircrafts']
+
+        for i, ac in enumerate(aircrafts):
+            is_first = (i == 0)
+
+            # Колонка 1: Порядковый номер МПД
+            cell_num = ws.cell(row=current_row, column=1, value=f"{group['index']}." if is_first else "")
+            cell_num.font = bold_data_font if is_first else data_font
+            cell_num.alignment = Alignment(horizontal="center", vertical="top")
+            cell_num.border = table_border
+            if is_first:
+                cell_num.fill = mpd_bg_fill
+
+            # Колонка 2: Название МПД
+            cell_mpd = ws.cell(row=current_row, column=2, value=group['mpd_name'] if is_first else "")
+            cell_mpd.font = bold_data_font if is_first else data_font
+            cell_mpd.alignment = Alignment(horizontal="left", vertical="top")
+            cell_mpd.border = table_border
+            if is_first:
+                cell_mpd.fill = mpd_bg_fill
+
+            # Колонка 3: Тип ВС
+            cell_type = ws.cell(row=current_row, column=3, value=ac['type_name'])
+            cell_type.font = data_font
+            cell_type.alignment = Alignment(horizontal="center", vertical="center")
+            cell_type.border = table_border
+
+            # Колонка 4: Номер ВС
+            cell_reg = ws.cell(row=current_row, column=4, value=ac['registration_number'])
+            cell_reg.font = bold_data_font
+            cell_reg.alignment = Alignment(horizontal="center", vertical="center")
+            cell_reg.border = table_border
+
+            # Колонка 5: Дата прибытия
+            cell_date = ws.cell(row=current_row, column=5, value=ac['arrival_date_formatted'])
+            cell_date.font = data_font
+            cell_date.alignment = Alignment(horizontal="center", vertical="center")
+            cell_date.border = table_border
+
+            # Колонка 6: Примечания
+            cell_comment = ws.cell(row=current_row, column=6, value=ac['comment'])
+            cell_comment.font = reserve_font if ac['is_reserve'] else data_font
+            cell_comment.alignment = Alignment(horizontal="left", vertical="center")
+            cell_comment.border = table_border
+
+            ws.row_dimensions[current_row].height = 20
+            current_row += 1
+
+    # 4. Итоговая строка
+    current_row += 1
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=6)
+    type_str = ", ".join([f"{t['type_name']}: {t['count']}" for t in report_data['type_counts']]) if report_data['type_counts'] else "нет данных"
+    summary_text = (
+        f"ИТОГО: ВС на базировании: {report_data['total_aircrafts']} ед. "
+        f"(Задействовано МПД: {report_data['total_mpds']}, В резерве: {report_data['total_reserve']}). "
+        f"Распределение по типам: {type_str}"
+    )
+    cell_summary = ws.cell(row=current_row, column=1, value=summary_text)
+    cell_summary.font = bold_data_font
+    cell_summary.alignment = Alignment(horizontal="left", vertical="center")
+
+    current_row += 2
+    footer_text = (
+        f"Составитель: {author_name} ({user_division}) | "
+        f"Дата и время формирования: {timezone.now().strftime('%d.%m.%Y %H:%M')}"
+    )
+    ws.cell(row=current_row, column=1, value=footer_text).font = footer_font
+
+    # Автоматическая настройка ширины колонок
+    col_widths = {1: 8, 2: 38, 3: 16, 4: 16, 5: 18, 6: 32}
+    for col_idx, width in col_widths.items():
+        col_letter = get_column_letter(col_idx)
+        ws.column_dimensions[col_letter].width = width
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    filename = f"basing_aircraft_{report_data['target_date_formatted']}.xlsx"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def aircraft_basing_report_view(request):
+    """
+    Отображает официальный отчет
+    «БАЗИРОВАНИЕ ВС НА [Дата] год»
+    с группировкой бортов по МПД, указанием типа ВС, номера, даты прибытия и примечаний (в т.ч. Резерв).
+    Поддерживает фильтрацию по дате, МПД, типу ВС, печатную форму и выгрузку в Excel.
+    """
+    date_str = request.GET.get('date', '').strip()
+    mpd_id = request.GET.get('mpd', '').strip()
+    type_id = request.GET.get('type', '').strip()
+    export_format = request.GET.get('export', '').strip().lower()
+
+    # Определение даты среза
+    target_date = timezone.now().date()
+    if date_str:
+        for fmt in ('%Y-%m-%d', '%d.%m.%Y', '%d-%m-%Y', '%d/%m/%Y'):
+            try:
+                target_date = datetime.strptime(date_str, fmt).date()
+                break
+            except (ValueError, TypeError):
+                continue
+
+    try:
+        mpd_id_int = int(mpd_id) if mpd_id else None
+    except ValueError:
+        mpd_id_int = None
+
+    try:
+        type_id_int = int(type_id) if type_id else None
+    except ValueError:
+        type_id_int = None
+
+    # Получаем сгруппированные данные отчета через селектор
+    report_data = get_aircraft_basing_report_data(
+        target_date=target_date,
+        mpd_id=mpd_id_int,
+        aircraft_type_id=type_id_int
+    )
+
+    # Определение подразделения пользователя
+    user_division = ""
+    try:
+        if hasattr(request.user, 'user_work_profile') and request.user.user_work_profile and request.user.user_work_profile.divisions:
+            user_division = request.user.user_work_profile.divisions.name or str(request.user.user_work_profile.divisions)
+    except Exception:
+        pass
+
+    if not user_division:
+        user_division = "Служба планирования и организации полетов"
+
+    author_name = (
+        request.user.title
+        if (hasattr(request.user, 'title') and request.user.title)
+        else (request.user.get_full_name() or request.user.username)
+    )
+    company_name = "ООО «Авиакомпания «БАРКОЛ»"
+
+    # Экспорт в Excel при наличии параметра ?export=excel
+    if export_format == 'excel':
+        return generate_basing_excel_response(
+            report_data=report_data,
+            company_name=company_name,
+            user_division=user_division,
+            author_name=author_name
+        )
+
+    # Справочники для фильтрации
+    mpds_list = PlaceProductionActivity.objects.filter(in_planning=True).order_by('name')
+    types_list = TypeProperty.objects.filter(estate__isnull=False).distinct().order_by('type_property')
+
+    prev_date = target_date - timedelta(days=1)
+    next_date = target_date + timedelta(days=1)
+
+    context = {
+        'report': report_data,
+        'target_date': target_date,
+        'target_date_str': target_date.strftime('%Y-%m-%d'),
+        'target_date_formatted': target_date.strftime('%d.%m.%Y'),
+        'target_date_short': target_date.strftime('%d.%m.%y'),
+        'prev_date_str': prev_date.strftime('%Y-%m-%d'),
+        'next_date_str': next_date.strftime('%Y-%m-%d'),
+        'mpds_list': mpds_list,
+        'types_list': types_list,
+        'selected_mpd_id': mpd_id_int,
+        'selected_type_id': type_id_int,
+        'user_division': user_division,
+        'author_name': author_name,
+        'company_name': company_name,
+        'generation_time': timezone.now().strftime('%d.%m.%Y %H:%M'),
+        'title': f"Базирование ВС на {target_date.strftime('%d.%m.%Y')} год",
+    }
+
+    return render(request, 'flight_planning/aircraft_basing_report.html', context)
+
+
 
 
 

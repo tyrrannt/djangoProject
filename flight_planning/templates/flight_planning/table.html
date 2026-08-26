@@ -28,6 +28,12 @@
                 <a href="{% url 'flight_planning:aircraft_movement_list' %}" class="nav-btn" style="background-color: #007bff; margin-right: 6px;">
                     <i class='bx bxs-plane me-1'></i> Журнал ВС
                 </a>
+                <a href="{% url 'flight_planning:aircraft_basing_report' %}" target="_blank" class="nav-btn" style="background-color: #0284c7; margin-right: 6px;" title="Открыть отчет по базированию ВС на дату в отдельном окне">
+                    <i class='bx bx-file me-1'></i> Базирование ВС
+                </a>
+                <a href="{% url 'flight_planning:flight_personnel_utilization_report' %}?year={{ year }}&month={{ month }}" target="_blank" class="nav-btn" style="background-color: #0d9488; margin-right: 6px;" title="Открыть аналитический отчет по загрузке персонала в отдельном окне">
+                    <i class='bx bx-bar-chart-alt-2 me-1'></i> Отчет по загрузке
+                </a>
                 <a href="{% url 'flight_planning:my_schedule' %}" class="nav-btn" style="background-color: #28a745; margin-right: 10px;">
                     <i class='bx bx-user me-1'></i> Мой график
                 </a>

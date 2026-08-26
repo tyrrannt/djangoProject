@@ -1,0 +1,574 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block custom_css %}
+    <style>
+        /* Базовые экранные стили отчета */
+        .report-page-container {
+            padding: 20px 0 60px 0;
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .report-header-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .report-org-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .report-dept-title {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .report-main-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .report-subtitle {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        /* KPI карточки */
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            height: 100%;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+        }
+        .kpi-card-primary { border-top: 4px solid #0284c7; }
+        .kpi-card-success { border-top: 4px solid #16a34a; }
+        .kpi-card-warning { border-top: 4px solid #d97706; }
+        .kpi-card-info { border-top: 4px solid #6366f1; }
+
+        .kpi-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+        .kpi-desc {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* Фильтр */
+        .filter-panel {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Таблица отчета */
+        .basing-table-container {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .table-basing {
+            width: 100%;
+            margin-bottom: 0;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+
+        .table-basing thead th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .table-basing tbody td {
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            vertical-align: middle;
+            color: #1e293b;
+        }
+
+        .table-basing tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .td-mpd-num {
+            font-weight: 700;
+            text-align: center;
+            vertical-align: top !important;
+            background-color: #ffffff;
+            width: 4%;
+            font-size: 0.95rem;
+            color: #0f172a;
+        }
+
+        .td-mpd-name {
+            font-weight: 700;
+            vertical-align: top !important;
+            background-color: #ffffff;
+            width: 32%;
+            font-size: 0.95rem;
+            color: #0f172a;
+        }
+
+        .td-aircraft-type {
+            text-align: center;
+            width: 16%;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .td-aircraft-num {
+            text-align: center;
+            width: 14%;
+            font-weight: 700;
+            color: #0284c7;
+            font-size: 0.95rem;
+        }
+
+        .td-arrival-date {
+            text-align: center;
+            width: 14%;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .td-notes {
+            width: 20%;
+            color: #475569;
+        }
+
+        .reserve-badge {
+            display: inline-block;
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .type-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        .type-badge-pill .count {
+            background: #0284c7;
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 0.75rem;
+            margin-left: 6px;
+        }
+
+        .date-nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .date-nav-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+
+        /* Печатная форма */
+        @media print {
+            body {
+                background: #ffffff !important;
+                font-size: 11pt !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .sidebar-left, .header, .sidebar-right, .page-header,
+            .no-print, .btn, .filter-panel, .kpi-row, .nav-actions,
+            #themeSelector {
+                display: none !important;
+            }
+            .content-body, .report-page-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                background: #ffffff !important;
+                min-height: auto !important;
+            }
+            .report-header-card, .basing-table-container {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin-bottom: 12px !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .table-basing {
+                border: 1.5pt solid #000000 !important;
+                font-size: 10pt !important;
+            }
+            .table-basing thead th {
+                background-color: #f2f2f2 !important;
+                color: #000000 !important;
+                border: 1pt solid #000000 !important;
+                padding: 6px 8px !important;
+                font-size: 9.5pt !important;
+            }
+            .table-basing tbody td {
+                border: 0.75pt solid #000000 !important;
+                color: #000000 !important;
+                padding: 5px 8px !important;
+            }
+            .td-mpd-num, .td-mpd-name, .td-aircraft-num {
+                color: #000000 !important;
+            }
+            .reserve-badge {
+                border: none !important;
+                background: transparent !important;
+                color: #000000 !important;
+                font-weight: bold !important;
+                padding: 0 !important;
+            }
+            .print-footer {
+                display: flex !important;
+                justify-content: space-between;
+                margin-top: 30px;
+                font-size: 9.5pt;
+                border-top: 1pt solid #000000;
+                padding-top: 8px;
+            }
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        .print-only {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+    <div class="report-page-container">
+        <!-- Шапка отчета и кнопки действий -->
+        <div class="report-header-card">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="report-org-title">{{ company_name }}</div>
+                    <div class="report-dept-title">{{ user_division }}</div>
+                    <h1 class="report-main-title">БАЗИРОВАНИЕ ВС НА {{ target_date_formatted }} год</h1>
+                    <p class="report-subtitle mb-0">
+                        Официальный отчет о дислокации и распределении воздушных судов авиакомпании по местам производственной деятельности (МПД)
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 no-print nav-actions">
+                    <button type="button" onclick="window.print()" class="btn btn-dark btn-px-3 py-2 d-flex align-items-center shadow-sm">
+                        <i class='bx bx-printer text-4 me-2'></i> Печать отчета
+                    </button>
+                    <a href="{% url 'flight_planning:aircraft_basing_report' %}?date={{ target_date_str }}{% if selected_mpd_id %}&mpd={{ selected_mpd_id }}{% endif %}{% if selected_type_id %}&type={{ selected_type_id }}{% endif %}&export=excel"
+                       class="btn btn-success btn-px-3 py-2 d-flex align-items-center shadow-sm"
+                       title="Выгрузить отчет в формате Microsoft Excel">
+                        <i class='bx bx-download text-4 me-2'></i> Экспорт в Excel
+                    </a>
+                    <a href="{% url 'flight_planning:aircraft_movement_list' %}"
+                       class="btn btn-outline-primary btn-px-3 py-2 d-flex align-items-center">
+                        <i class='bx bx-transfer text-4 me-2'></i> Журнал перемещений ВС
+                    </a>
+                    <a href="{% url 'flight_planning:planning_table' %}"
+                       class="btn btn-outline-secondary btn-px-3 py-2 d-flex align-items-center">
+                        <i class='bx bx-calendar text-4 me-2'></i> Сетка планирования
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI и сводные показатели -->
+        <div class="row g-3 mb-4 kpi-row no-print">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card kpi-card-primary">
+                    <div class="kpi-label">Всего ВС на базировании</div>
+                    <div class="kpi-value">{{ report.total_aircrafts }} <small class="fs-6 text-muted font-weight-normal">ед.</small></div>
+                    <div class="kpi-desc">Активных бортов в эксплуатации</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card kpi-card-success">
+                    <div class="kpi-label">Задействовано МПД</div>
+                    <div class="kpi-value">{{ report.total_mpds }} <small class="fs-6 text-muted font-weight-normal">баз</small></div>
+                    <div class="kpi-desc">Мест дислокации ВС</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card kpi-card-warning">
+                    <div class="kpi-label">Бортов в резерве</div>
+                    <div class="kpi-value">{{ report.total_reserve }} <small class="fs-6 text-muted font-weight-normal">ед.</small></div>
+                    <div class="kpi-desc">Оперативный резерв ВС</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card kpi-card-info">
+                    <div class="kpi-label">Типы воздушных судов</div>
+                    <div class="d-flex flex-wrap mt-2">
+                        {% for item in report.type_counts %}
+                            <span class="type-badge-pill mb-1">
+                                {{ item.type_name }}
+                                <span class="count">{{ item.count }}</span>
+                            </span>
+                        {% empty %}
+                            <span class="text-muted text-2">—</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Панель фильтрации и быстрой навигации по датам -->
+        <div class="filter-panel no-print">
+            <form method="GET" action="{% url 'flight_planning:aircraft_basing_report' %}" class="row g-3 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label font-weight-bold text-2 text-dark mb-1">
+                        <i class='bx bx-calendar text-primary me-1'></i> Дата среза базирования
+                    </label>
+                    <div class="input-group">
+                        <a href="{% url 'flight_planning:aircraft_basing_report' %}?date={{ prev_date_str }}{% if selected_mpd_id %}&mpd={{ selected_mpd_id }}{% endif %}{% if selected_type_id %}&type={{ selected_type_id }}{% endif %}"
+                           class="date-nav-btn" title="Предыдущий день">
+                            <i class='bx bx-chevron-left'></i>
+                        </a>
+                        <input type="date" name="date" value="{{ target_date_str }}" class="form-control form-control-modern text-center font-weight-semibold"/>
+                        <a href="{% url 'flight_planning:aircraft_basing_report' %}?date={{ next_date_str }}{% if selected_mpd_id %}&mpd={{ selected_mpd_id }}{% endif %}{% if selected_type_id %}&type={{ selected_type_id }}{% endif %}"
+                           class="date-nav-btn" title="Следующий день">
+                            <i class='bx bx-chevron-right'></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <label class="form-label font-weight-bold text-2 text-dark mb-1">
+                        <i class='bx bx-map-pin text-primary me-1'></i> Фильтр по МПД
+                    </label>
+                    <select name="mpd" class="form-control form-control-modern">
+                        <option value="">Все МПД базирования</option>
+                        {% for m in mpds_list %}
+                            <option value="{{ m.id }}" {% if selected_mpd_id == m.id %}selected{% endif %}>
+                                {{ m.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <label class="form-label font-weight-bold text-2 text-dark mb-1">
+                        <i class='bx bxs-plane-take-off text-primary me-1'></i> Фильтр по типу ВС
+                    </label>
+                    <select name="type" class="form-control form-control-modern">
+                        <option value="">Все типы ВС</option>
+                        {% for t in types_list %}
+                            <option value="{{ t.id }}" {% if selected_type_id == t.id %}selected{% endif %}>
+                                {{ t.type_property }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1 font-weight-semibold">
+                        <i class='bx bx-filter-alt me-1'></i> Применить
+                    </button>
+                    <a href="{% url 'flight_planning:aircraft_basing_report' %}" class="btn btn-outline-secondary" title="Сбросить на текущую дату">
+                        <i class='bx bx-reset'></i> Сегодня
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Главная таблица отчета -->
+        <div class="basing-table-container">
+            <div class="table-responsive">
+                <table class="table table-basing">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">№</th>
+                            <th style="width: 32%;">МПД</th>
+                            <th style="width: 15%;">Тип ВС</th>
+                            <th style="width: 12%;">№</th>
+                            <th style="width: 16%;">Дата прибытия</th>
+                            <th style="width: 20%;">Примечания</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in report.mpd_groups %}
+                            {% for ac in group.aircrafts %}
+                                <tr>
+                                    {% if forloop.first %}
+                                        <td class="td-mpd-num" rowspan="{{ group.aircraft_count }}">
+                                            {{ group.index }}.
+                                        </td>
+                                        <td class="td-mpd-name" rowspan="{{ group.aircraft_count }}">
+                                            {{ group.mpd_name }}
+                                        </td>
+                                    {% endif %}
+                                    <td class="td-aircraft-type">
+                                        {{ ac.type_name }}
+                                    </td>
+                                    <td class="td-aircraft-num">
+                                        {{ ac.registration_number }}
+                                    </td>
+                                    <td class="td-arrival-date">
+                                        {{ ac.arrival_date_formatted }}
+                                    </td>
+                                    <td class="td-notes">
+                                        {% if ac.is_reserve %}
+                                            <span class="reserve-badge">{{ ac.comment|default:"Резерв" }}</span>
+                                        {% else %}
+                                            {{ ac.comment|default:"" }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class='bx bx-info-circle fs-3 d-block mb-2 text-secondary'></i>
+                                    На выбранную дату ({{ target_date_formatted }} г.) данных о базировании воздушных судов не найдено.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if report.total_aircrafts > 0 %}
+                        <tfoot>
+                            <tr style="background-color: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                                <td colspan="2" class="text-end pe-3">ИТОГО:</td>
+                                <td class="text-center">{{ report.total_aircrafts }} ед.</td>
+                                <td colspan="3" class="text-muted text-2 font-weight-normal ps-3">
+                                    Задействовано МПД: <strong>{{ report.total_mpds }}</strong> |
+                                    В резерве: <strong>{{ report.total_reserve }}</strong> ед. |
+                                    {% for item in report.type_counts %}
+                                        {{ item.type_name }}: <strong>{{ item.count }}</strong>{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Секция нераспределенных бортов (если имеются активные ВС без зафиксированных перемещений) -->
+        {% if report.unassigned_aircrafts %}
+            <div class="card card-modern mb-4 no-print border-warning">
+                <div class="card-header bg-light-warning py-2 px-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 font-weight-bold text-dark">
+                        <i class='bx bx-help-circle text-warning me-2'></i> Активные воздушные суда без зафиксированного перемещения ({{ report.unassigned_aircrafts|length }})
+                    </h6>
+                    <small class="text-muted">Не учтены в основном отчете по МПД</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0 text-2">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Бортовой номер</th>
+                                    <th>Тип ВС</th>
+                                    <th>Статус</th>
+                                    <th>Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for uac in report.unassigned_aircrafts %}
+                                    <tr>
+                                        <td class="ps-3 font-weight-bold text-primary">{{ uac.registration_number }}</td>
+                                        <td>{{ uac.type_name }}</td>
+                                        <td><span class="badge bg-light text-dark border">Нет записей о базировании</span></td>
+                                        <td>
+                                            <a href="{% url 'flight_planning:aircraft_movement_add' %}?aircraft={{ uac.aircraft_id }}" class="btn btn-xs btn-outline-primary">
+                                                <i class='bx bx-plus me-1'></i> Добавить базирование
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Подвал отчета для печати -->
+        <div class="print-footer print-only">
+            <div>
+                <strong>Составитель:</strong> {{ author_name }} ({{ user_division }})<br>
+                <strong>Подпись:</strong> ______________________
+            </div>
+            <div class="text-end">
+                <strong>Дата и время формирования:</strong> {{ generation_time }}<br>
+                <strong>ООО «Авиакомпания «БАРКОЛ»</strong>
+            </div>
+        </div>
+    </div>
+{% endblock %}
