@@ -238,6 +238,46 @@
         .print-header, .print-signatures {
             display: none;
         }
+
+        /* Адаптивность под планшеты и мобильные устройства */
+        @media (max-width: 992px) {
+            .report-header-card {
+                padding: 16px;
+            }
+            .report-title {
+                font-size: 1.3rem;
+            }
+            .kpi-value {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .report-header-card {
+                padding: 12px;
+            }
+            .report-title {
+                font-size: 1.15rem;
+            }
+            .kpi-card {
+                padding: 10px;
+            }
+            .kpi-value {
+                font-size: 1.25rem;
+            }
+            .group-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            .group-title-text {
+                font-size: 1rem;
+            }
+            .personnel-table th, .personnel-table td {
+                padding: 6px 8px;
+                font-size: 0.82rem;
+            }
+        }
     </style>
 {% endblock %}
 

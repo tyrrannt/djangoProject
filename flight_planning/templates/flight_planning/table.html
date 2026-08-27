@@ -16,36 +16,31 @@
     <div class="planning-container">
         <!-- Навигация по месяцам и панель действий -->
         <div class="month-nav">
-            <div class="nav-buttons">
-                <select id="themeSelector" class="theme-selector">
+            <div class="nav-buttons-left">
+                <select id="themeSelector" class="theme-selector" title="Выбор цветовой темы таблицы">
                     <option value="theme-neutral">Нейтральная тема</option>
                     <option value="theme-classic">Классическая тема</option>
                     <option value="theme-corporate">Корпоративная тема</option>
                 </select>
-                <button type="button" class="nav-btn" id="openCrewBuilderBtn" style="background-color: #6f42c1; margin-right: 6px; cursor: pointer;">
+                {% if is_planner %}
+                <button type="button" class="nav-btn btn-planner-action" id="openCrewBuilderBtn" style="background-color: #6f42c1; cursor: pointer;">
                     <i class='bx bx-group me-1'></i> Собрать экипаж
                 </button>
-                <button type="button" class="nav-btn" id="openBatchSwapModalBtn" style="background-color: #e11d48; margin-right: 6px; cursor: pointer;" title="Пакетная замена борта ВС на интервал дат">
+                <button type="button" class="nav-btn btn-planner-action" id="openBatchSwapModalBtn" style="background-color: #e11d48; cursor: pointer;" title="Пакетная замена борта ВС на интервал дат">
                     <i class='bx bx-sync me-1'></i> Замена борта
                 </button>
-                <a href="{% url 'flight_planning:aircraft_movement_list' %}" class="nav-btn" style="background-color: #007bff; margin-right: 6px;">
-                    <i class='bx bxs-plane me-1'></i> Журнал ВС
-                </a>
-                <a href="{% url 'flight_planning:aircraft_basing_report' %}" target="_blank" class="nav-btn" style="background-color: #0284c7; margin-right: 6px;" title="Открыть отчет по базированию ВС на дату в отдельном окне">
-                    <i class='bx bx-file me-1'></i> Базирование ВС
-                </a>
-                <a href="{% url 'flight_planning:flight_personnel_utilization_report' %}?year={{ year }}&month={{ month }}" target="_blank" class="nav-btn" style="background-color: #0d9488; margin-right: 6px;" title="Открыть аналитический отчет по загрузке персонала в отдельном окне">
-                    <i class='bx bx-bar-chart-alt-2 me-1'></i> Отчет по загрузке
-                </a>
-                <a href="{% url 'flight_planning:my_schedule' %}" class="nav-btn" style="background-color: #28a745; margin-right: 10px;">
-                    <i class='bx bx-user me-1'></i> Мой график
-                </a>
-                <a href="?year={{ prev_year }}&month={{ prev_month }}"
-                   class="nav-btn">← {{ prev_month_name|default:"Предыдущий" }}</a>
+                {% endif %}
             </div>
-            <h2>{{ month_name|default:month }}/{{ year }}</h2>
-            <div class="nav-buttons">
-                <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn">Следующий →</a>
+            <div class="nav-month-controls">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}"
+                   class="nav-btn nav-btn-prev" title="Предыдущий месяц">
+                    <i class='bx bx-chevron-left'></i> <span class="d-none d-sm-inline">{{ prev_month_name|default:"Назад" }}</span>
+                </a>
+                <h2 class="month-heading">{{ month_name|default:month }} {{ year }}</h2>
+                <a href="?year={{ next_year }}&month={{ next_month }}"
+                   class="nav-btn nav-btn-next" title="Следующий месяц">
+                    <span class="d-none d-sm-inline">Вперед</span> <i class='bx bx-chevron-right'></i>
+                </a>
             </div>
         </div>
 
@@ -94,11 +89,13 @@
                                                             <div class="crew-actions-group">
                                                                 {% if crew.notes %}
                                                                     <button type="button" class="crew-action-btn btn-crew-note has-note text-warning" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" data-note-text="{{ crew.latest_note.message }}" data-note-author="{{ crew.latest_note.author_name }}" data-note-time="{{ crew.latest_note.created_at_time }}" title="💬 [{{ crew.latest_note.author_name }}]: {{ crew.latest_note.message }}">💬</button>
-                                                                {% elif crew.can_add_note %}
+                                                                {% elif crew.can_add_note or is_planner %}
                                                                     <button type="button" class="crew-action-btn btn-crew-note" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" title="Добавить пометку к полету">💬</button>
                                                                 {% endif %}
+                                                                {% if is_planner %}
                                                                 <button type="button" class="crew-action-btn btn-edit-crew" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" data-mpd-id="{{ mpd.id }}" title="Редактировать экипаж">✏️</button>
                                                                 <button type="button" class="crew-action-btn btn-delete-crew" data-crew-id="{{ crew.id }}" title="Расформировать экипаж">×</button>
+                                                                {% endif %}
                                                             </div>
                                                         </div>
                                                         <div class="crew-members-list">
@@ -462,6 +459,8 @@
 
 {% block custom_script %}
     <script>
+        window.IS_PLANNER = {{ is_planner|yesno:"true,false" }};
+        window.CAN_VIEW_REPORTS = {{ can_view_reports|yesno:"true,false" }};
         window.CREW_MAP = {{ crew_map_json|safe }};
         window.MPD_AIRCRAFT_MAP = {{ mpd_aircraft_json|safe }};
         window.MPD_AIRCRAFT_INTERVALS_MAP = {{ mpd_aircraft_intervals_json|safe }};

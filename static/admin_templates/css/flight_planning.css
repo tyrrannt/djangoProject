@@ -74,53 +74,86 @@
     overflow: hidden;
 }
 
-/* Навигация по месяцам */
+/* Навигация по месяцам и панель управления */
 .month-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 18px;
     background: var(--fp-bg-container);
     border-bottom: 1px solid var(--fp-border-color);
 }
 
-.month-nav h2 {
-    margin: 0;
-    color: var(--fp-text-main);
-    font-size: 1.5rem;
+.nav-buttons-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.nav-buttons {
+.nav-month-controls {
     display: flex;
-    gap: 10px;
     align-items: center;
+    gap: 10px;
+}
+
+.month-heading {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--fp-text-main);
+    text-align: center;
+    white-space: nowrap;
 }
 
 .nav-btn {
-    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 14px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #ffffff !important;
     background: var(--fp-primary);
-    color: var(--fp-text-on-primary);
     text-decoration: none;
-    border-radius: 4px;
-    transition: background 0.2s;
+    border-radius: 6px;
+    border: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
 .nav-btn:hover {
-    background: var(--fp-primary-hover);
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.theme-selector {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--fp-border-color);
+    background: var(--fp-bg-container);
+    color: var(--fp-text-main);
+    font-size: 0.85rem;
+    cursor: pointer;
 }
 
 /* Двухколоночный макет */
 .main-layout {
     display: flex;
     gap: 0;
+    min-height: 550px;
 }
 
 /* Контейнер таблицы с прокруткой */
 .table-wrapper {
     flex: 1;
     overflow: auto;
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - 140px);
     position: relative;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Панель пилотов справа */
@@ -128,8 +161,8 @@
     width: 260px;
     background: var(--fp-bg-sidebar);
     border-left: 1px solid var(--fp-border-color);
-    padding: 15px;
-    max-height: calc(80vh - 120px);
+    padding: 12px;
+    max-height: calc(100vh - 140px);
     overflow-y: auto;
 }
 
@@ -664,6 +697,134 @@
 .crew-note-del-btn:hover {
     opacity: 1;
 }
+
+
+/* ========================================================
+   АДАПТИВНОСТЬ ПОД ПЛАНШЕТЫ И МОБИЛЬНЫЕ УСТРОЙСТВА
+   ======================================================== */
+
+/* Планшеты (992px и менее) */
+@media (max-width: 992px) {
+    .main-layout {
+        flex-direction: column-reverse;
+        min-height: auto;
+    }
+    .pilots-panel {
+        width: 100%;
+        max-height: 220px;
+        border-left: none;
+        border-top: 1px solid var(--fp-border-color);
+        display: flex;
+        flex-direction: column;
+    }
+    .pilots-list-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        overflow-y: auto;
+    }
+    .pilot-item {
+        flex: 1 1 calc(50% - 6px);
+        margin: 0;
+        min-width: 160px;
+    }
+    .month-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .nav-buttons-left, .nav-month-controls {
+        justify-content: space-between;
+        width: 100%;
+    }
+    .table-wrapper {
+        max-height: 60vh;
+    }
+}
+
+/* Мобильные устройства и смартфоны (768px и менее) */
+@media (max-width: 768px) {
+    .month-heading {
+        font-size: 1.15rem;
+    }
+    .nav-btn {
+        padding: 5px 10px;
+        font-size: 0.82rem;
+    }
+    .pilot-item {
+        flex: 1 1 100%;
+    }
+    .planning-table th, .planning-table td {
+        min-width: 85px;
+        padding: 4px 6px;
+    }
+    .planning-table th:first-child, .planning-table td.mpd-name {
+        min-width: 130px;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background-color: var(--fp-sticky-bg);
+        box-shadow: 2px 0 5px rgba(0,0,0,0.06);
+    }
+    .modal-window {
+        width: 95% !important;
+        max-width: 95% !important;
+        margin: 0 auto;
+        border-radius: 8px;
+    }
+    .large-modal {
+        width: 95% !important;
+    }
+    .crew-builder-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+    .crew-role-slot {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .crew-role-slot label {
+        min-width: 100%;
+    }
+    .crew-role-slot select {
+        width: 100%;
+    }
+}
+
+/* Маленькие смартфоны (480px и менее) */
+@media (max-width: 480px) {
+    .month-nav {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+    .nav-buttons-left {
+        flex-direction: column;
+        width: 100%;
+    }
+    .theme-selector, .btn-planner-action {
+        width: 100%;
+    }
+    .nav-month-controls {
+        justify-content: center;
+        gap: 8px;
+    }
+    .planning-table th, .planning-table td {
+        min-width: 75px;
+        font-size: 0.76rem;
+    }
+    .planning-table th:first-child, .planning-table td.mpd-name {
+        min-width: 110px;
+        font-size: 0.78rem;
+    }
+    .crew-aircraft-title {
+        font-size: 0.72rem;
+    }
+    .crew-member-badge {
+        font-size: 0.7rem;
+    }
+}
+
 
 
 

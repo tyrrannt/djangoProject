@@ -497,7 +497,7 @@ $(function () {
         openCrewBuilderForEdit(crewId, mpdId, dateStr);
     });
 
-    // Клик по шапке экипажа также открывает редактирование
+    // Клик по шапке экипажа открывает редактирование (для планировщиков) или пометки/инфо (для остальных)
     $(document).on('click', '.crew-header', function (e) {
         if ($(e.target).closest('.btn-delete-crew, .btn-crew-note').length > 0) return;
         const crewId = $(this).data('crew-id');
@@ -505,7 +505,11 @@ $(function () {
         const dateStr = $cell.data('date');
         const mpdId = $cell.data('mpd-id');
         if (crewId) {
-            openCrewBuilderForEdit(crewId, mpdId, dateStr);
+            if (window.IS_PLANNER === false) {
+                openCrewNoteModal(crewId);
+            } else {
+                openCrewBuilderForEdit(crewId, mpdId, dateStr);
+            }
         }
     });
 
@@ -769,55 +773,60 @@ $(function () {
         });
     });
 
-    // Drag-and-drop для пилотов
-    $('.pilot-item').draggable({
-        revert: 'invalid',
-        cursor: 'move',
-        helper: 'clone',
-        opacity: 0.75,
-        start: function () {
-            dragPilot = {
-                id: $(this).data('pilot-id'),
-                name: $(this).data('pilot-name'),
-                job: $(this).data('pilot-job'),
-                isCommander: $(this).data('is-commander'),
-                isInstructor: $(this).data('is-instructor')
-            };
-        }
-    });
-
-    // Droppable для ячеек
-    $('.plan-cell').droppable({
-        accept: '.pilot-item',
-        tolerance: 'pointer',
-        drop: function (e, ui) {
-            if (!dragPilot) return;
-
-            let targetCells = selectedCells;
-            if (targetCells.length === 0) {
-                targetCells = [this];
+    // Drag-and-drop для пилотов (только при наличии прав планирования)
+    if (window.IS_PLANNER !== false) {
+        $('.pilot-item').draggable({
+            revert: 'invalid',
+            cursor: 'move',
+            helper: 'clone',
+            opacity: 0.75,
+            start: function () {
+                dragPilot = {
+                    id: $(this).data('pilot-id'),
+                    name: $(this).data('pilot-name'),
+                    job: $(this).data('pilot-job'),
+                    isCommander: $(this).data('is-commander'),
+                    isInstructor: $(this).data('is-instructor')
+                };
             }
+        });
 
-            const mpdIds = [...new Set(targetCells.map(cell => $(cell).data('mpd-id')))];
-            if (mpdIds.length > 1) {
-                showModal({
-                    title: 'Ошибка',
-                    message: 'Нельзя назначить пилота на разные МПД одновременно',
-                    type: 'error',
-                    showCancel: false
-                });
-                return;
+        // Droppable для ячеек
+        $('.plan-cell').droppable({
+            accept: '.pilot-item',
+            tolerance: 'pointer',
+            drop: function (e, ui) {
+                if (!dragPilot) return;
+
+                let targetCells = selectedCells;
+                if (targetCells.length === 0) {
+                    targetCells = [this];
+                }
+
+                const mpdIds = [...new Set(targetCells.map(cell => $(cell).data('mpd-id')))];
+                if (mpdIds.length > 1) {
+                    showModal({
+                        title: 'Ошибка',
+                        message: 'Нельзя назначить пилота на разные МПД одновременно',
+                        type: 'error',
+                        showCancel: false
+                    });
+                    return;
+                }
+
+                const mpdId = mpdIds[0];
+                const mpdName = $(targetCells[0]).data('mpd-name') || 'МПД';
+                const dates = targetCells.map(cell => $(cell).data('date')).sort();
+                const startDate = dates[0];
+                const endDate = dates[dates.length - 1];
+
+                checkAndOpenAssignChoice(dragPilot, mpdId, mpdName, startDate, endDate, targetCells);
             }
-
-            const mpdId = mpdIds[0];
-            const mpdName = $(targetCells[0]).data('mpd-name') || 'МПД';
-            const dates = targetCells.map(cell => $(cell).data('date')).sort();
-            const startDate = dates[0];
-            const endDate = dates[dates.length - 1];
-
-            checkAndOpenAssignChoice(dragPilot, mpdId, mpdName, startDate, endDate, targetCells);
-        }
-    });
+        });
+    } else {
+        // Для наблюдателей/пилотов курсор обычный
+        $('.pilot-item').css('cursor', 'default');
+    }
 
     // ========================================================
     // ВАРИАНТЫ НАЗНАЧЕНИЯ ПРИ DRAG & DROP

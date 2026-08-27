@@ -64,3 +64,55 @@ def static_version_filter(path):
     """Фильтр-обертка для static_version"""
     return static_version(path)
 
+
+@register.filter(name="can_view_flight_planning")
+def filter_can_view_flight_planning(user) -> bool:
+    """Шаблонный фильтр для проверки базовых прав доступа к разделу планирования полетов.
+
+    Args:
+        user (DataBaseUser): Объект текущего пользователя.
+
+    Returns:
+        bool: True при наличии доступа, иначе False.
+    """
+    try:
+        from flight_planning.permissions import can_view_flight_planning
+        return can_view_flight_planning(user)
+    except Exception:
+        return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name__in=["Планирование полетов", "Руководство полетов", "Летный состав"]).exists()))
+
+
+@register.filter(name="can_view_flight_reports")
+def filter_can_view_flight_reports(user) -> bool:
+    """Шаблонный фильтр для проверки прав доступа к аналитическим отчетам полетов.
+
+    Args:
+        user (DataBaseUser): Объект текущего пользователя.
+
+    Returns:
+        bool: True при наличии доступа к отчетам, иначе False.
+    """
+    try:
+        from flight_planning.permissions import can_view_flight_reports
+        return can_view_flight_reports(user)
+    except Exception:
+        return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name__in=["Планирование полетов", "Руководство полетов"]).exists()))
+
+
+@register.filter(name="is_flight_planner")
+def filter_is_flight_planner(user) -> bool:
+    """Шаблонный фильтр для проверки прав диспетчера планирования полетов.
+
+    Args:
+        user (DataBaseUser): Объект текущего пользователя.
+
+    Returns:
+        bool: True при наличии прав планировщика, иначе False.
+    """
+    try:
+        from flight_planning.permissions import is_flight_planner
+        return is_flight_planner(user)
+    except Exception:
+        return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name="Планирование полетов").exists()))
+
+

@@ -222,6 +222,11 @@ class FlightCrew(models.Model):
         ordering = ['date', 'mpd__name']
         verbose_name = "Летный экипаж"
         verbose_name_plural = "Летные экипажи"
+        permissions = [
+            ("can_manage_flight_planning", "Может управлять планированием полетов (полный доступ)"),
+            ("can_view_flight_planning", "Может просматривать таблицу планирования полетов"),
+            ("can_view_flight_reports", "Может просматривать отчеты по планированию полетов"),
+        ]
 
     def __str__(self):
         ac_title = self.aircraft.registration_number if self.aircraft else "Резервный экипаж"

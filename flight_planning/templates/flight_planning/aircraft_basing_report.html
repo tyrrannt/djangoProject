@@ -307,6 +307,50 @@
         .print-only {
             display: none;
         }
+
+        /* Адаптивность под планшеты и мобильные устройства */
+        @media (max-width: 992px) {
+            .report-header-card {
+                padding: 16px;
+            }
+            .report-main-title {
+                font-size: 1.3rem;
+            }
+            .kpi-value {
+                font-size: 1.45rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .report-header-card {
+                padding: 12px;
+            }
+            .report-main-title {
+                font-size: 1.15rem;
+            }
+            .report-org-title {
+                font-size: 0.95rem;
+            }
+            .nav-actions {
+                width: 100%;
+            }
+            .nav-actions .btn {
+                flex: 1 1 calc(50% - 6px);
+                font-size: 0.8rem;
+                padding: 6px 8px !important;
+                justify-content: center;
+            }
+            .kpi-card {
+                padding: 12px !important;
+            }
+            .kpi-value {
+                font-size: 1.3rem !important;
+            }
+            .table-basing th, .table-basing td {
+                padding: 6px 8px;
+                font-size: 0.82rem;
+            }
+        }
     </style>
 {% endblock %}
 
@@ -546,9 +590,13 @@
                                         <td>{{ uac.type_name }}</td>
                                         <td><span class="badge bg-light text-dark border">Нет записей о базировании</span></td>
                                         <td>
+                                            {% if is_planner %}
                                             <a href="{% url 'flight_planning:aircraft_movement_add' %}?aircraft={{ uac.aircraft_id }}" class="btn btn-xs btn-outline-primary">
                                                 <i class='bx bx-plus me-1'></i> Добавить базирование
                                             </a>
+                                            {% else %}
+                                            <span class="text-muted">—</span>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}

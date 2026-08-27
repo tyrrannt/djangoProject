@@ -5,37 +5,100 @@
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'admin_templates/css/flight_planning.css' %}"/>
     <style>
-        .schedule-list {
-            margin-top: 20px;
-            width: 100%;
-            border-collapse: collapse;
+        .my-schedule-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            padding: 20px;
+            margin-bottom: 24px;
         }
-        .schedule-list th, .schedule-list td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        .schedule-list th {
-            background-color: #f4f4f4;
-        }
-        .schedule-list tr:nth-child(even) {
-            background-color: #fafafa;
-        }
-        .schedule-header {
+        .schedule-nav-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
             margin-bottom: 20px;
         }
-        .nav-link {
-            text-decoration: none;
-            padding: 8px 16px;
-            background-color: #1d2127;
-            color: white;
-            border-radius: 4px;
+        .schedule-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            text-align: center;
         }
-        .nav-link:hover {
-            background-color: #0056b3;
+        .schedule-table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .schedule-table-custom th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .schedule-table-custom td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.92rem;
+            color: #1e293b;
+            vertical-align: middle;
+        }
+        .schedule-table-custom tr:last-child td {
+            border-bottom: none;
+        }
+        .schedule-table-custom tr.row-work {
+            background-color: #ffffff;
+        }
+        .schedule-table-custom tr.row-work:hover {
+            background-color: #f0fdf4;
+        }
+        .schedule-table-custom tr.row-gap {
+            background-color: #f8fafc;
+            color: #94a3b8;
+        }
+        .days-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            background-color: #e0f2fe;
+            color: #0284c7;
+        }
+        .days-badge-gap {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+        @media (max-width: 768px) {
+            .my-schedule-card {
+                padding: 12px;
+            }
+            .schedule-nav-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .schedule-title {
+                font-size: 1.15rem;
+                order: -1;
+            }
+            .schedule-table-custom th, .schedule-table-custom td {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
         }
     </style>
 {% endblock %}
@@ -46,53 +109,67 @@
 
 {% block content %}
     <div class="planning-container">
-        <div class="schedule-header">
-            <div>
-                <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-link">← Предыдущий месяц</a>
+        <div class="my-schedule-card">
+            <div class="schedule-nav-header">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn">
+                    <i class='bx bx-chevron-left me-1'></i> Предыдущий месяц
+                </a>
+                <h2 class="schedule-title">
+                    <i class='bx bx-calendar-event text-primary me-2'></i>Мой график: {{ month_name|default:month }} {{ year }}
+                </h2>
+                <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn">
+                    Следующий месяц <i class='bx bx-chevron-right ms-1'></i>
+                </a>
             </div>
-            <h2>Мой график: {{ month_name|default:month }}/{{ year }}</h2>
-            <div>
-                <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-link">Следующий месяц →</a>
-            </div>
-        </div>
 
-        {% if grouped_schedule %}
-            <table class="schedule-list">
-                <thead>
-                <tr>
-                    <th>Период</th>
-                    <th>Дней</th>
-                    <th>Место деятельности (МПД) / Статус</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for item in grouped_schedule %}
-                    <tr {% if item.is_gap %}style="color: #999; font-style: italic; background-color: #fcfcfc;"{% endif %}>
-                        <td>
-                            {% if item.start_date == item.end_date %}
-                                {{ item.start_date|date:"d" }}
-                            {% else %}
-                                {{ item.start_date|date:"d" }}-{{ item.end_date|date:"d" }}
-                            {% endif %}
-                            {{ item.start_date|date:"E" }}
-                        </td>
-                        <td>{{ item.days_count }}</td>
-                        <td>
-                            {% if item.is_gap %}
-                                <span style="color: #6c757d;">— {{ item.mpd_name }} —</span>
-                            {% else %}
-                                <strong>{{ item.mpd_name }}</strong>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <div style="text-align: center; margin-top: 50px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                <p>На выбранный месяц назначений не найдено.</p>
-            </div>
-        {% endif %}
-        
+            {% if grouped_schedule %}
+                <div class="table-responsive">
+                    <table class="schedule-table-custom">
+                        <thead>
+                        <tr>
+                            <th style="width: 35%;">Период</th>
+                            <th style="width: 20%; text-align: center;">Дней</th>
+                            <th style="width: 45%;">Место деятельности (МПД) / Статус</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in grouped_schedule %}
+                            <tr class="{% if item.is_gap %}row-gap{% else %}row-work{% endif %}">
+                                <td>
+                                    <strong>
+                                        {% if item.start_date == item.end_date %}
+                                            {{ item.start_date|date:"d" }}
+                                        {% else %}
+                                            {{ item.start_date|date:"d" }}–{{ item.end_date|date:"d" }}
+                                        {% endif %}
+                                        {{ item.start_date|date:"E" }}
+                                    </strong>
+                                </td>
+                                <td style="text-align: center;">
+                                    <span class="days-badge {% if item.is_gap %}days-badge-gap{% endif %}">
+                                        {{ item.days_count }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if item.is_gap %}
+                                        <span class="text-muted fst-italic">— {{ item.mpd_name }} —</span>
+                                    {% else %}
+                                        <span class="font-weight-bold text-dark">
+                                            <i class='bx bxs-map-pin text-danger me-1'></i>{{ item.mpd_name }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 bg-light rounded-3 border">
+                    <i class='bx bx-calendar-x text-muted' style="font-size: 3rem;"></i>
+                    <p class="mt-3 text-muted mb-0">На выбранный месяц назначений не найдено.</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
 {% endblock %}

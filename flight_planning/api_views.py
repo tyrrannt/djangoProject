@@ -6,17 +6,28 @@ from rest_framework import generics
 from django.utils import timezone
 from .models import PilotAssignment
 from hrdepartment_app.models import PlaceProductionActivity
+from .permissions import CanViewFlightPlanning
 from .selectors import get_pilot_assignments_for_month
 from .services import get_grouped_pilot_schedule
 from .serializers import GroupedScheduleSerializer, MPDSerializer
 
+
 class MyScheduleAPIView(APIView):
-    """
-    API View to get the authenticated pilot's grouped schedule for a given month.
-    """
-    permission_classes = [IsAuthenticated]
+    """API-представление для получения сгруппированного графика текущего пилота за месяц."""
+
+    permission_classes = [IsAuthenticated, CanViewFlightPlanning]
 
     def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос графика пользователя.
+
+        Args:
+            request (Request): HTTP-запрос DRF с параметрами 'year' и 'month'.
+            *args: Дополнительные позиционные аргументы.
+            **kwargs: Дополнительные именованные аргументы.
+
+        Returns:
+            Response: Ответ со списком сгруппированных смен графика.
+        """
         year = request.query_params.get('year', timezone.now().year)
         month = request.query_params.get('month', timezone.now().month)
 
@@ -41,10 +52,11 @@ class MyScheduleAPIView(APIView):
             'schedule': serializer.data
         })
 
+
 class MPDListAPIView(generics.ListAPIView):
-    """
-    API View to list all planning-enabled MPDs.
-    """
-    permission_classes = [IsAuthenticated]
+    """API-представление для получения списка МПД, участвующих в планировании полетов."""
+
+    permission_classes = [IsAuthenticated, CanViewFlightPlanning]
     serializer_class = MPDSerializer
     queryset = PlaceProductionActivity.objects.filter(in_planning=True).order_by('name')
+

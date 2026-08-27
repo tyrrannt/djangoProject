@@ -18,6 +18,14 @@ from hrdepartment_app.models import PlaceProductionActivity
 from contracts_app.models import Estate, TypeProperty
 from .models import PilotAssignment, AircraftMovement, FlightCrew, CrewMember, FlightCrewNote, CREW_ROLES
 from .forms import AircraftMovementForm
+from .permissions import (
+    is_flight_planner,
+    can_view_flight_reports,
+    can_view_flight_planning,
+    flight_planner_required,
+    flight_reports_required,
+    flight_planning_view_required
+)
 from .selectors import (
     get_pilot_assignments_for_month,
     get_active_aircraft,
@@ -85,14 +93,13 @@ def get_pilot_allowed_roles(job_name: str) -> list:
 
 @login_required
 def my_schedule_view(request):
-    """
-    Отображает страницу личного графика для текущего пилота.
+    """Отображает страницу личного графика для текущего пилота или бортмеханика.
 
     Args:
-        request: Объект HttpRequest.
+        request (HttpRequest): Объект HTTP-запроса.
 
     Returns:
-        Объект HttpResponse с отрендеренным шаблоном.
+        HttpResponse: Отрендеренная страница личного графика.
     """
     year = request.GET.get('year', timezone.now().year)
     month = request.GET.get('month', timezone.now().month)
@@ -129,6 +136,8 @@ def my_schedule_view(request):
         'next_year': next_month_date.year,
         'next_month': next_month_date.month,
         'month_name': first_day.strftime('%B %Y'),
+        'is_planner': is_flight_planner(request.user),
+        'can_view_reports': can_view_flight_reports(request.user),
     }
 
     return render(request, 'flight_planning/my_schedule.html', context)
@@ -137,14 +146,13 @@ def my_schedule_view(request):
 @login_required
 @require_http_methods(["GET"])
 def get_my_assignments_api(request):
-    """
-    Возвращает назначения текущего пользователя за указанный месяц в формате JSON.
+    """Возвращает назначения текущего пользователя за указанный месяц в формате JSON.
 
     Args:
-        request: Объект HttpRequest с параметрами year и month.
+        request (HttpRequest): Объект HttpRequest с параметрами year и month.
 
     Returns:
-        JsonResponse со списком назначений.
+        JsonResponse: JSON-ответ со списком назначений.
     """
     year = request.GET.get('year')
     month = request.GET.get('month')
@@ -180,9 +188,18 @@ def get_my_assignments_api(request):
 
 
 @login_required
+@flight_planning_view_required
 def planning_table(request):
-    """
-    Главная страница с таблицей планирования
+    """Главная страница с интерактивной таблицей-шахматкой планирования полетов.
+
+    Доступна для просмотра летному составу, руководству и планировщикам.
+    Для пользователей без прав планировщика функции редактирования отключены.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+
+    Returns:
+        HttpResponse: Отрендеренная страница таблицы планирования.
     """
     # Получаем год и месяц из GET параметров, либо текущие
     year = request.GET.get('year', timezone.now().year)
@@ -317,6 +334,9 @@ def planning_table(request):
         for ac in all_active_aircraft
     ]
 
+    is_planner = is_flight_planner(request.user)
+    can_reports = can_view_flight_reports(request.user)
+
     context = {
         'mpds': mpds,
         'pilots': pilots,
@@ -336,6 +356,8 @@ def planning_table(request):
         'all_aircraft_intervals_json': json.dumps(all_aircraft_intervals),
         'pilots_js_json': json.dumps(pilots_js_list),
         'all_aircraft_json': json.dumps(all_aircraft_list),
+        'is_planner': is_planner,
+        'can_view_reports': can_reports,
     }
 
     return render(request, 'flight_planning/table.html', context)
@@ -362,11 +384,17 @@ def get_assignments_api(request):
 
 
 @login_required
+@flight_planner_required
 @csrf_exempt
 @require_http_methods(["POST"])
 def assign_pilot_api(request):
-    """
-    Назначить пилота на диапазон дат для МПД
+    """Назначает пилота на диапазон дат для МПД с проверкой конфликтов.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с JSON телом (pilot_id, mpd_id, start_date, end_date).
+
+    Returns:
+        JsonResponse: Результат назначения или список конфликтов при их наличии.
     """
     try:
         data = json.loads(request.body)
@@ -418,7 +446,7 @@ def assign_pilot_api(request):
                         job_lower = job_name.lower()
                         is_commander = 'командир' in job_lower
                         is_instructor = 'пилот-инструктор' in job_lower
-        except:
+        except Exception:
             pass
 
         # Если есть конфликты, возвращаем их для подтверждения
@@ -469,11 +497,17 @@ def assign_pilot_api(request):
 
 
 @login_required
+@flight_planner_required
 @csrf_exempt
 @require_http_methods(["POST"])
 def resolve_conflict_api(request):
-    """
-    Разрешить конфликт — удалить старые назначения и создать новые
+    """Разрешает конфликт назначений — удаляет старые конфликтующие назначения и создает новые.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с JSON телом (conflicts, pilot_id, mpd_id, start_date, end_date).
+
+    Returns:
+        JsonResponse: Результат создания обновленных назначений.
     """
     try:
         data = json.loads(request.body)
@@ -533,11 +567,17 @@ def resolve_conflict_api(request):
 
 
 @login_required
+@flight_planner_required
 @csrf_exempt
 @require_http_methods(["POST"])
 def remove_assignments_api(request):
-    """
-    Удалить назначения по списку ID
+    """Удаляет назначения пилотов по списку идентификаторов.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с JSON телом (assignment_ids).
+
+    Returns:
+        JsonResponse: Количество удаленных записей.
     """
     try:
         data = json.loads(request.body)
@@ -593,10 +633,17 @@ def get_pilot_job_info(request):
 
 
 @login_required
+@flight_planning_view_required
 def aircraft_movement_list_view(request):
-    """
-    Отображает страницу журнала перемещений воздушных судов (ВС) по МПД.
+    """Отображает страницу журнала перемещений воздушных судов (ВС) по МПД.
+
     Включает сводную информацию о текущей дислокации бортов и фильтрацию истории.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+
+    Returns:
+        HttpResponse: Отрендеренная страница журнала перемещений или JsonResponse для Ajax.
     """
     aircraft_id = request.GET.get('aircraft')
     mpd_id = request.GET.get('mpd')
@@ -662,6 +709,9 @@ def aircraft_movement_list_view(request):
         ]
         return JsonResponse({'data': data})
 
+    is_planner = is_flight_planner(request.user)
+    can_reports = can_view_flight_reports(request.user)
+
     context = {
         'title': 'Журнал перемещения воздушных судов по МПД',
         'movements': movements,
@@ -672,15 +722,24 @@ def aircraft_movement_list_view(request):
         'selected_mpd_id': int(mpd_id) if mpd_id and mpd_id.isdigit() else None,
         'selected_date_from': date_from or '',
         'selected_date_to': date_to or '',
+        'is_planner': is_planner,
+        'can_view_reports': can_reports,
     }
     return render(request, 'flight_planning/aircraft_movement_list.html', context)
 
 
 @login_required
+@flight_planner_required
 def aircraft_movement_create_view(request):
-    """
-    Создание новой записи в журнале перемещения ВС.
+    """Создание новой записи в журнале перемещения ВС.
+
     Автоматически переводит будущие экипажи на старых МПД с этим бортом в Резерв.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+
+    Returns:
+        HttpResponse: Перенаправление на список или страница формы.
     """
     if request.method == 'POST':
         form = AircraftMovementForm(request.POST)
@@ -715,15 +774,25 @@ def aircraft_movement_create_view(request):
         'title': 'Добавить перемещение воздушного судна',
         'form': form,
         'is_edit': False,
+        'is_planner': True,
+        'can_view_reports': can_view_flight_reports(request.user),
     }
     return render(request, 'flight_planning/aircraft_movement_form.html', context)
 
 
 @login_required
+@flight_planner_required
 def aircraft_movement_update_view(request, pk):
-    """
-    Редактирование существующей записи журнала перемещения ВС.
+    """Редактирование существующей записи журнала перемещения ВС.
+
     Автоматически переводит будущие экипажи на старых МПД с этим бортом в Резерв.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        pk (int): Идентификатор записи перемещения.
+
+    Returns:
+        HttpResponse: Перенаправление на список или страница формы.
     """
     movement = get_object_or_404(AircraftMovement, pk=pk)
 
@@ -754,15 +823,24 @@ def aircraft_movement_update_view(request, pk):
         'form': form,
         'movement': movement,
         'is_edit': True,
+        'is_planner': True,
+        'can_view_reports': can_view_flight_reports(request.user),
     }
     return render(request, 'flight_planning/aircraft_movement_form.html', context)
 
 
 @login_required
+@flight_planner_required
 @require_http_methods(["POST"])
 def aircraft_movement_delete_view(request, pk):
-    """
-    Удаление записи о перемещении ВС. Поддерживает как стандартный POST, так и AJAX запрос.
+    """Удаление записи о перемещении ВС. Поддерживает как стандартный POST, так и AJAX запрос.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        pk (int): Идентификатор записи перемещения.
+
+    Returns:
+        HttpResponse: JSON-ответ или редирект на список перемещений.
     """
     movement = get_object_or_404(AircraftMovement, pk=pk)
     aircraft_reg = movement.aircraft.registration_number
@@ -795,10 +873,16 @@ def get_aircraft_locations_api(request):
 
 
 @login_required
+@flight_planner_required
 @require_http_methods(["POST"])
 def save_crew_api(request):
-    """
-    API эндпоинт для создания или обновления летного экипажа (на день или диапазон дат).
+    """API эндпоинт для создания или обновления летного экипажа (на день или диапазон дат).
+
+    Args:
+        request (HttpRequest): HTTP-запрос с JSON телом экипажа.
+
+    Returns:
+        JsonResponse: Результат сохранения экипажа или список ошибок/конфликтов.
     """
     try:
         data = json.loads(request.body)
@@ -885,8 +969,14 @@ def save_crew_api(request):
 @login_required
 @require_http_methods(["GET"])
 def get_crew_detail_api(request, crew_id: int):
-    """
-    API получения детальной информации по конкретному экипажу для редактирования.
+    """API получения детальной информации по конкретному экипажу для редактирования.
+
+    Args:
+        request (HttpRequest): HTTP-запрос.
+        crew_id (int): Идентификатор экипажа.
+
+    Returns:
+        JsonResponse: Данные экипажа и его состава.
     """
     try:
         crew = FlightCrew.objects.select_related('aircraft', 'mpd').prefetch_related('members__member').get(id=crew_id)
@@ -931,10 +1021,16 @@ def get_crew_detail_api(request, crew_id: int):
 
 
 @login_required
+@flight_planner_required
 @require_http_methods(["POST"])
 def validate_crew_api(request):
-    """
-    API валидации состава экипажа на лету.
+    """API валидации состава экипажа на лету по авиационным правилам.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с типом полета и списком членов.
+
+    Returns:
+        JsonResponse: Результат валидации и список замечаний.
     """
     try:
         data = json.loads(request.body)
@@ -951,10 +1047,16 @@ def validate_crew_api(request):
 
 
 @login_required
+@flight_planner_required
 @require_http_methods(["POST"])
 def delete_crew_api(request):
-    """
-    API удаления экипажа по ID.
+    """API удаления экипажа по идентификатору.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с JSON телом (crew_id).
+
+    Returns:
+        JsonResponse: Результат операции удаления.
     """
     try:
         data = json.loads(request.body)
@@ -973,11 +1075,13 @@ def delete_crew_api(request):
 @login_required
 @require_http_methods(["GET"])
 def get_day_crew_info_api(request):
-    """
-    Возвращает полную информацию по МПД на выбранную дату:
-    - Доступные воздушные суда на этом МПД
-    - Существующие экипажи на этом МПД
-    - Индивидуальные назначения вне экипажа
+    """Возвращает полную информацию по МПД на выбранную дату (ВС, экипажи, назначения).
+
+    Args:
+        request (HttpRequest): HTTP-запрос с параметрами mpd_id и date.
+
+    Returns:
+        JsonResponse: Сводная информация по МПД на дату.
     """
     mpd_id = request.GET.get('mpd_id')
     date_str = request.GET.get('date')
@@ -1061,10 +1165,16 @@ def get_day_crew_info_api(request):
 
 
 @login_required
+@flight_planner_required
 @require_http_methods(["POST"])
 def add_member_to_crew_api(request):
-    """
-    API добавления сотрудника в существующий экипаж с проверкой занятости на других МПД/экипажах.
+    """API добавления сотрудника в существующий экипаж с проверкой занятости на других МПД/экипажах.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с JSON телом (crew_id, pilot_id, role, force_override).
+
+    Returns:
+        JsonResponse: Результат добавления в экипаж или список конфликтов.
     """
     try:
         data = json.loads(request.body)
@@ -1137,10 +1247,17 @@ def add_member_to_crew_api(request):
 
 
 @login_required
+@login_required
 @require_http_methods(["GET"])
 def get_crew_notes_api(request, crew_id: int):
-    """
-    API получения списка пометок и сообщений к экипажу/полету.
+    """API получения списка пометок и сообщений к экипажу/полету.
+
+    Args:
+        request (HttpRequest): HTTP-запрос.
+        crew_id (int): Идентификатор экипажа.
+
+    Returns:
+        JsonResponse: Список пометок и флаги прав текущего пользователя.
     """
     try:
         crew = FlightCrew.objects.select_related('aircraft', 'mpd').prefetch_related('notes__author', 'members__member').get(id=crew_id)
@@ -1152,8 +1269,8 @@ def get_crew_notes_api(request, crew_id: int):
         # Проверка прав: только назначенный член экипажа (второй пилот/участник) или администратор/диспетчер
         membership = crew.members.filter(member=request.user).first()
         is_crew_member = membership is not None
-        is_admin = request.user.is_superuser or request.user.is_staff or request.user.has_perm('flight_planning.change_flightcrew')
-        can_user_add_note = is_date_allowed and (is_crew_member or is_admin)
+        is_admin = is_flight_planner(request.user)
+        can_user_add_note = (is_date_allowed and is_crew_member) or is_admin
 
         roles_dict = dict(CREW_ROLES)
         notes_data = [
@@ -1200,10 +1317,17 @@ def get_crew_notes_api(request, crew_id: int):
 @login_required
 @require_http_methods(["POST"])
 def save_crew_note_api(request, crew_id: int):
-    """
-    API добавления пометки к полету.
-    Ограничение 1: разрешено только для рейсов на вчера, сегодня и завтра (сегодня +- 1 день).
-    Ограничение 2: разрешено только назначенному в этот экипаж сотруднику (второму пилоту / члену экипажа) или администратору.
+    """API добавления пометки к полету.
+
+    Ограничение для экипажа: разрешено только для рейсов на вчера, сегодня и завтра (сегодня +- 1 день).
+    Диспетчеры/планировщики могут добавлять пометки на любые даты.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с текстом сообщения.
+        crew_id (int): Идентификатор экипажа.
+
+    Returns:
+        JsonResponse: Сохраненная пометка или сообщение об ошибке.
     """
     try:
         crew = FlightCrew.objects.select_related('aircraft', 'mpd').prefetch_related('members').get(id=crew_id)
@@ -1211,20 +1335,20 @@ def save_crew_note_api(request, crew_id: int):
         min_editable_date = today - timedelta(days=1)
         max_editable_date = today + timedelta(days=1)
 
-        if not (min_editable_date <= crew.date <= max_editable_date):
-            return JsonResponse({
-                'error': f'Ввод пометок разрешен только для рейсов на вчера ({min_editable_date.strftime("%d.%m.%Y")}), сегодня ({today.strftime("%d.%m.%Y")}) и завтра ({max_editable_date.strftime("%d.%m.%Y")}).'
-            }, status=403)
-
         # Проверка принадлежности к экипажу
         membership = crew.members.filter(member=request.user).first()
         is_crew_member = membership is not None
-        is_admin = request.user.is_superuser or request.user.is_staff or request.user.has_perm('flight_planning.change_flightcrew')
+        is_admin = is_flight_planner(request.user)
 
-        if not (is_crew_member or is_admin):
-            return JsonResponse({
-                'error': 'Вы не назначены в данный экипаж. Оставлять пометки к полету разрешено только назначенному второму пилоту (членам экипажа).'
-            }, status=403)
+        if not is_admin:
+            if not is_crew_member:
+                return JsonResponse({
+                    'error': 'Вы не назначены в данный экипаж. Оставлять пометки к полету разрешено только назначенному члену экипажа или диспетчеру.'
+                }, status=403)
+            if not (min_editable_date <= crew.date <= max_editable_date):
+                return JsonResponse({
+                    'error': f'Ввод пометок летным составом разрешен только для рейсов на вчера ({min_editable_date.strftime("%d.%m.%Y")}), сегодня ({today.strftime("%d.%m.%Y")}) и завтра ({max_editable_date.strftime("%d.%m.%Y")}).'
+                }, status=403)
 
         data = json.loads(request.body)
         message = data.get('message', '').strip()
@@ -1265,12 +1389,19 @@ def save_crew_note_api(request, crew_id: int):
 @login_required
 @require_http_methods(["POST"])
 def delete_crew_note_api(request, note_id: int):
-    """
-    API удаления пометки к полету (доступно автору или администратору).
+    """API удаления пометки к полету (доступно автору или диспетчеру).
+
+    Args:
+        request (HttpRequest): HTTP-запрос.
+        note_id (int): Идентификатор пометки.
+
+    Returns:
+        JsonResponse: Результат удаления пометки.
     """
     try:
         note = FlightCrewNote.objects.select_related('crew').get(id=note_id)
-        if not (request.user.is_superuser or request.user.is_staff or note.author_id == request.user.id):
+        is_admin = is_flight_planner(request.user)
+        if not (is_admin or note.author_id == request.user.id):
             return JsonResponse({'error': 'У вас нет прав на удаление этой пометки.'}, status=403)
 
         crew_id = note.crew_id
@@ -1290,14 +1421,18 @@ def delete_crew_note_api(request, note_id: int):
 
 
 @login_required
+@flight_reports_required
 def personnel_utilization_report_view(request):
-    """
-    Отображает аналитический отчет по производственной загрузке летного состава
-    с распределением по 4 авиационно-кадровым группам:
-    1. Оперативный резерв и нераспределенный состав (0%)
-    2. Минимальная производственная нагрузка (1–30%)
-    3. Штатная производственная загрузка (31–70%)
-    4. Интенсивная летная нагрузка (свыше 70%)
+    """Отображает аналитический отчет по производственной загрузке летного состава.
+
+    Группирует персонал по 4 авиационно-кадровым группам загрузки. Доступен руководству
+    и сотрудникам планирования.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+
+    Returns:
+        HttpResponse: Страница аналитического отчета по загрузке персонала.
     """
     now = timezone.now()
     year = request.GET.get('year', now.year)
@@ -1353,6 +1488,8 @@ def personnel_utilization_report_view(request):
     if not user_division:
         user_division = "Служба планирования и организации полетов"
 
+    is_planner = is_flight_planner(request.user)
+
     context = {
         'report': report_data,
         'year': year,
@@ -1368,15 +1505,24 @@ def personnel_utilization_report_view(request):
         'generation_time': now.strftime('%d.%m.%Y %H:%M'),
         'current_user': request.user,
         'user_division': user_division,
+        'is_planner': is_planner,
+        'can_view_reports': True,
     }
 
     return render(request, 'flight_planning/utilization_report.html', context)
 
 
 def generate_basing_excel_response(report_data: dict, company_name: str, user_division: str, author_name: str) -> HttpResponse:
-    """
-    Генерирует официальный файл Excel (.xlsx) с отчетом «Базирование ВС на дату»
-    со строгим табличным оформлением и автоподбором ширины столбцов.
+    """Генерирует официальный файл Excel (.xlsx) с отчетом «Базирование ВС на дату».
+
+    Args:
+        report_data (dict): Словарь с агрегированными данными базирования.
+        company_name (str): Наименование организации.
+        user_division (str): Наименование подразделения.
+        author_name (str): ФИО составителя отчета.
+
+    Returns:
+        HttpResponse: HTTP-ответ с прикрепленным Excel-файлом.
     """
     import openpyxl
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -1529,12 +1675,18 @@ def generate_basing_excel_response(report_data: dict, company_name: str, user_di
 
 
 @login_required
+@flight_reports_required
 def aircraft_basing_report_view(request):
-    """
-    Отображает официальный отчет
-    «БАЗИРОВАНИЕ ВС НА [Дата] год»
-    с группировкой бортов по МПД, указанием типа ВС, номера, даты прибытия и примечаний (в т.ч. Резерв).
-    Поддерживает фильтрацию по дате, МПД, типу ВС, печатную форму и выгрузку в Excel.
+    """Отображает официальный отчет «Базирование ВС на дату».
+
+    Группирует ВС по МПД, показывает тип, бортовой номер, дату прибытия и примечания.
+    Поддерживает фильтрацию и экспорт в Excel. Доступен руководству и планировщикам.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+
+    Returns:
+        HttpResponse: Страница отчета базирования или скачиваемый файл Excel.
     """
     date_str = request.GET.get('date', '').strip()
     mpd_id = request.GET.get('mpd', '').strip()
@@ -1602,6 +1754,8 @@ def aircraft_basing_report_view(request):
     prev_date = target_date - timedelta(days=1)
     next_date = target_date + timedelta(days=1)
 
+    is_planner = is_flight_planner(request.user)
+
     context = {
         'report': report_data,
         'target_date': target_date,
@@ -1619,17 +1773,25 @@ def aircraft_basing_report_view(request):
         'company_name': company_name,
         'generation_time': timezone.now().strftime('%d.%m.%Y %H:%M'),
         'title': f"Базирование ВС на {target_date.strftime('%d.%m.%Y')} год",
+        'is_planner': is_planner,
+        'can_view_reports': True,
     }
 
     return render(request, 'flight_planning/aircraft_basing_report.html', context)
 
 
 @login_required
+@flight_planner_required
 @csrf_exempt
 @require_http_methods(["POST"])
 def batch_swap_aircraft_api(request):
-    """
-    API эндпоинт для пакетной замены борта ВС в экипажах на интервал дат.
+    """API эндпоинт для пакетной замены борта ВС в экипажах на интервал дат.
+
+    Args:
+        request (HttpRequest): HTTP-запрос с параметрами замены ВС.
+
+    Returns:
+        JsonResponse: Результат пакетного обновления экипажей.
     """
     try:
         data = json.loads(request.body)
@@ -1668,6 +1830,7 @@ def batch_swap_aircraft_api(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 
 

@@ -66,6 +66,15 @@
         .action-btns .btn {
             margin-right: 4px;
         }
+        @media (max-width: 768px) {
+            .filter-box {
+                padding: 12px;
+            }
+            .action-btns .btn {
+                padding: 4px 6px;
+                font-size: 0.8rem;
+            }
+        }
     </style>
 {% endblock %}
 
@@ -80,23 +89,13 @@
                 <h2 class="font-weight-bold text-dark mb-1">Журнал перемещения воздушных судов по МПД</h2>
                 <p class="text-muted mb-0">Учет текущей дислокации и истории перемещений бортов</p>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{% url 'flight_planning:aircraft_basing_report' %}"
-                   class="btn btn-info text-white btn-px-3 py-2 d-flex align-items-center">
-                    <i class='bx bx-file text-4 me-2'></i> Отчет по базированию ВС
-                </a>
+            <div class="d-flex flex-wrap gap-2">
+                {% if is_planner %}
                 <a href="{% url 'flight_planning:aircraft_movement_add' %}"
                    class="btn btn-primary btn-px-4 py-2 d-flex align-items-center font-weight-semibold">
                     <i class='bx bx-plus-circle text-4 me-2'></i> Зафиксировать перемещение
                 </a>
-                <a href="{% url 'flight_planning:planning_table' %}"
-                   class="btn btn-outline-dark btn-px-3 py-2 d-flex align-items-center">
-                    <i class='bx bx-calendar text-4 me-2'></i> Сетка планирования
-                </a>
-                <a href="{% url 'flight_planning:my_schedule' %}"
-                   class="btn btn-outline-success btn-px-3 py-2 d-flex align-items-center">
-                    <i class='bx bx-user text-4 me-2'></i> Мой график
-                </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -252,6 +251,7 @@
                                         </small>
                                     </td>
                                     <td class="text-center action-btns">
+                                        {% if is_planner %}
                                         <a href="{% url 'flight_planning:aircraft_movement_update' m.pk %}"
                                            class="btn btn-sm btn-outline-primary" title="Редактировать">
                                             <i class='bx bx-edit'></i>
@@ -264,6 +264,9 @@
                                                 title="Удалить">
                                             <i class='bx bx-trash'></i>
                                         </button>
+                                        {% else %}
+                                        <span class="text-muted">—</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% empty %}

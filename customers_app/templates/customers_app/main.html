@@ -682,6 +682,55 @@
                             </li>
 
 
+                            {% if request.user|can_view_flight_planning %}
+                                <li class="nav-parent">
+                                    <a class="nav-link" href="#">
+                                        <i class="fa-solid fa-plane-departure" aria-hidden="true"></i>
+                                        <span>Планирование полетов</span>
+                                    </a>
+                                    <ul class="nav nav-children">
+                                        <li>
+                                            <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
+                                                <i class="bx bx-calendar-event" aria-hidden="true"></i>
+                                                <span>График экипажей</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'flight_planning:my_schedule' %}">
+                                                <i class="bx bx-user-check" aria-hidden="true"></i>
+                                                <span>Мой график</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'flight_planning:aircraft_movement_list' %}">
+                                                <i class="bx bxs-plane-take-off" aria-hidden="true"></i>
+                                                <span>Журнал перемещений ВС</span>
+                                            </a>
+                                        </li>
+                                        {% if request.user|can_view_flight_reports %}
+                                            <li class="nav-parent">
+                                                <a class="nav-link" href="#">
+                                                    <i class="bx bx-bar-chart-square" aria-hidden="true"></i>
+                                                    <span>Отчеты</span>
+                                                </a>
+                                                <ul class="nav nav-children">
+                                                    <li>
+                                                        <a class="nav-link" href="{% url 'flight_planning:aircraft_basing_report' %}">
+                                                            <span>Базирование ВС на дату</span>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="nav-link" href="{% url 'flight_planning:flight_personnel_utilization_report' %}">
+                                                            <span>Загрузка летного состава</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+
                             <li class="nav-parent">
                                 <a class="nav-link" href="#">
                                     <i class='bx bxs-help-circle' aria-hidden="true"></i>
@@ -712,15 +761,8 @@
                                             Хранилище паролей
                                         </a>
                                     </li>
-
-                                    {% if user|has_group:"Планирование" or user.is_superuser %}
-                                        <li>
-                                            <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
-                                                <i class='bx bxs-key' aria-hidden="true"></i>
-                                                Планирование
-                                            </a>
-                                        </li>
-                                    {% endif %}
+                                </ul>
+                            </li>
                                     {% if user.is_superuser %}
                                         <li class="nav-parent">
                                             <a class="nav-link" href="#">
