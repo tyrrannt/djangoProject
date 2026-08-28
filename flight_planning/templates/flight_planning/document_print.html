@@ -1,0 +1,320 @@
+{% load static %}
+{% load custom %}
+{% load planning_extras %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/boxicons/css/boxicons.min.css' %}"/>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 8pt;
+            color: #000000;
+            background: #ffffff;
+            margin: 0;
+            padding: 10px;
+        }
+        .print-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .print-header-signatures {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            font-size: 8.5pt;
+        }
+        .sig-block {
+            width: 42%;
+            line-height: 1.3;
+        }
+        .sig-line {
+            display: flex;
+            align-items: flex-end;
+            margin-top: 6px;
+        }
+        .sig-underline {
+            border-bottom: 1pt solid #000000;
+            flex: 1;
+            margin: 0 6px;
+            height: 12px;
+        }
+        .doc-title-box {
+            text-align: center;
+            margin-bottom: 12px;
+            border-bottom: 1.5pt solid #000000;
+            padding-bottom: 6px;
+        }
+        .doc-org {
+            font-size: 10pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .doc-main-title {
+            font-size: 12pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin: 3px 0;
+        }
+        .doc-meta {
+            font-size: 8.5pt;
+            color: #333333;
+        }
+        
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 6.8pt;
+            table-layout: fixed;
+            page-break-inside: auto;
+        }
+        .print-table th, .print-table td {
+            border: 0.75pt solid #000000;
+            padding: 2px 3px;
+            vertical-align: top;
+            overflow: hidden;
+            word-break: break-word;
+        }
+        .print-table thead th {
+            background-color: #f2f2f2 !important;
+            text-align: center;
+            font-weight: 700;
+        }
+        .print-table th.mpd-col, .print-table td.mpd-col {
+            width: 90px;
+            font-weight: 700;
+            font-size: 7pt;
+        }
+        .print-crew-item {
+            margin-bottom: 3px;
+            line-height: 1.15;
+        }
+        .print-crew-item:last-child {
+            margin-bottom: 0;
+        }
+        .print-aircraft {
+            font-weight: 700;
+            color: #000000;
+        }
+        .print-member {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .print-cell-changed {
+            background-color: #fef9c3 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        
+        .diff-print-section {
+            margin-top: 16px;
+            page-break-before: auto;
+        }
+        .diff-print-title {
+            font-size: 9pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            border-bottom: 1pt solid #000000;
+            padding-bottom: 2px;
+        }
+        .diff-print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7.5pt;
+        }
+        .diff-print-table th, .diff-print-table td {
+            border: 0.75pt solid #000000;
+            padding: 3px 5px;
+        }
+        .diff-print-table thead th {
+            background-color: #f2f2f2 !important;
+            font-weight: 700;
+        }
+        
+        .print-footer-signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 8.5pt;
+            page-break-inside: avoid;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                padding: 0;
+            }
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Панель действий в браузере (скрывается на печати) -->
+    <div class="no-print bg-light p-3 border-bottom mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Печатная форма документа № {{ document.number }}</strong>
+            <span class="text-muted ms-2">(Редакция v.{{ document.version }})</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" onclick="window.print()" class="btn btn-primary btn-sm font-weight-bold">
+                <i class='bx bx-printer me-1'></i> Печать / Экспорт в PDF
+            </button>
+            <a href="{% url 'flight_planning:document_detail' document.id %}" class="btn btn-outline-secondary btn-sm">
+                <i class='bx bx-arrow-back me-1'></i> Вернуться к карточке
+            </a>
+        </div>
+    </div>
+
+    <div class="print-container">
+        <!-- Шапка: Согласование и Утверждение -->
+        <div class="print-header-signatures">
+            <div class="sig-block">
+                <div><strong>СОГЛАСОВАНО:</strong></div>
+                <div>{{ author_job }}</div>
+                <div class="sig-line">
+                    <span>Подпись:</span>
+                    <span class="sig-underline"></span>
+                    <span>/ {{ document.author.title|default:document.author.username }} /</span>
+                </div>
+                <div class="text-muted" style="font-size: 7.5pt; margin-top: 2px;">
+                    «____» ________________ 2026 г.
+                </div>
+            </div>
+
+            <div class="sig-block" style="text-align: right;">
+                <div><strong>УТВЕРЖДАЮ:</strong></div>
+                <div>{{ approver_job }}</div>
+                <div class="sig-line" style="justify-content: flex-end;">
+                    <span>Подпись:</span>
+                    <span class="sig-underline" style="max-width: 120px;"></span>
+                    <span>/ {{ document.approved_by.title|default:"____________________" }} /</span>
+                </div>
+                <div style="font-size: 7.5pt; margin-top: 2px;">
+                    {% if document.approved_at %}
+                        «{{ document.approved_at|date:"d" }}» {{ document.approved_at|date:"E" }} {{ document.approved_at|date:"Y" }} г.
+                    {% else %}
+                        «____» ________________ 2026 г.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Заголовок документа -->
+        <div class="doc-title-box">
+            <div class="doc-org">ООО «Авиакомпания «БАРКОЛ»</div>
+            <div class="doc-main-title">ПЛАН РАССТАНОВКИ ЭКИПАЖЕЙ ВОЗДУШНЫХ СУДОВ</div>
+            <div class="doc-meta">
+                на <strong>{{ snapshot.month_name|upper }} {{ document.year }} ГОДА</strong> • Документ № <strong>{{ document.number }}</strong> (Редакция {{ document.version }}) от {{ document.created_at|date:"d.m.Y" }} г.
+                {% if document.reason %}
+                    <br><em>Основание: {{ document.reason }}</em>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Таблица расстановки экипажей -->
+        <table class="print-table">
+            <thead>
+            <tr>
+                <th class="mpd-col">МПД</th>
+                {% for date_str in snapshot.dates %}
+                    <th>{{ date_str|slice:"8:10" }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for mpd in snapshot.mpds %}
+                {% with mpd_key=mpd.id|stringformat:"s" %}
+                <tr>
+                    <td class="mpd-col">
+                        {{ mpd.short_name|default:mpd.name }}
+                    </td>
+                    {% for date_str in snapshot.dates %}
+                        <td>
+                            {% with crews_for_cell=snapshot.grid|get_item:mpd_key|get_item:date_str %}
+                                {% if crews_for_cell %}
+                                    {% for c in crews_for_cell %}
+                                        <div class="print-crew-item">
+                                            <div class="print-aircraft">{{ c.aircraft_reg }}</div>
+                                            {% for m in c.members %}
+                                                <div class="print-member" title="{{ m.role_label }}: {{ m.pilot_name }}">
+                                                    <strong>{{ m.role_label|slice:":3" }}:</strong> {{ m.pilot_name|slice:":12" }}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <span style="color: #ccc;">—</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endwith %}
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Приложение: Реестр изменений (если редакция >= 2 и есть diff) -->
+        {% if diff_list %}
+            <div class="diff-print-section">
+                <div class="diff-print-title">
+                    Приложение 1. Реестр внесенных изменений к плану расстановки экипажей
+                    <span style="font-weight: normal; text-transform: none; font-size: 7.5pt;">
+                        (к документу № {{ document.number }})
+                    </span>
+                </div>
+                <table class="diff-print-table">
+                    <thead>
+                    <tr>
+                        <th style="width: 70px;">Дата</th>
+                        <th style="width: 140px;">МПД</th>
+                        <th style="width: 100px;">Борт ВС</th>
+                        <th>Содержание изменения</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in diff_list %}
+                        <tr>
+                            <td>{{ item.date_formatted }}</td>
+                            <td>{{ item.mpd_name }}</td>
+                            <td>{{ item.aircraft }}</td>
+                            <td>{{ item.description }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        <!-- Подписи в подвале -->
+        <div class="print-footer-signatures">
+            <div>
+                Составил: ____________________ / {{ document.author.title|default:document.author.username }} /
+            </div>
+            <div>
+                Утвердил: ____________________ / {{ document.approved_by.title|default:"____________________" }} /
+            </div>
+            <div style="font-size: 7.5pt; color: #666;">
+                Сформировано в АС «Авиакомпания «БАРКОЛ»: {{ generation_date }}
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

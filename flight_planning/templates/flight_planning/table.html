@@ -29,6 +29,12 @@
                 <button type="button" class="nav-btn btn-planner-action" id="openBatchSwapModalBtn" style="background-color: #e11d48; cursor: pointer;" title="Пакетная замена борта ВС на интервал дат">
                     <i class='bx bx-sync me-1'></i> Замена борта
                 </button>
+                <a href="{% url 'flight_planning:employee_status_list' %}" class="nav-btn btn-planner-action" style="background-color: #0284c7; text-decoration: none; cursor: pointer;" title="Журнал и ввод состояний сотрудников (Отпуск, Больничный, Резерв, КПК, ВЛЭК)">
+                    <i class='bx bx-user-pin me-1'></i> Состояния персонала
+                </a>
+                <button type="button" class="nav-btn btn-planner-action" id="openSaveStateModalBtn" style="background-color: #059669; cursor: pointer;" title="Зафиксировать состояние и создать документ расстановки">
+                    <i class='bx bx-save me-1'></i> Сохранить состояние
+                </button>
                 {% endif %}
             </div>
             <div class="nav-month-controls">
@@ -41,20 +47,72 @@
                    class="nav-btn nav-btn-next" title="Следующий месяц">
                     <span class="d-none d-sm-inline">Вперед</span> <i class='bx bx-chevron-right'></i>
                 </a>
+                <a href="{% url 'flight_planning:planning_table' %}" id="todayNavBtn" class="nav-btn btn-today-nav ms-2" title="Перейти к сегодняшнему дню">
+                    <i class='bx bx-current-location me-1'></i> <span class="d-none d-md-inline">Сегодня</span>
+                </a>
             </div>
         </div>
 
+        <!-- Информационные плашки статуса документа / черновика -->
+        {% if pending_doc %}
+            <div class="alert alert-warning d-flex justify-content-between align-items-center m-2 py-2 px-3 border border-warning shadow-sm">
+                <div>
+                    <i class='bx bx-time-five me-2 text-warning fs-5 align-middle'></i>
+                    <strong>Документ № {{ pending_doc.number }}</strong> (Редакция v.{{ pending_doc.version }}) сформирован и ожидает утверждения руководством.
+                    {% if pending_doc.reason %}<small class="text-muted ms-2">Основание: {{ pending_doc.reason }}</small>{% endif %}
+                </div>
+                <a href="{% url 'flight_planning:document_detail' pending_doc.id %}" class="btn btn-sm btn-dark font-weight-bold">
+                    <i class='bx bx-show me-1'></i> Открыть документ
+                </a>
+            </div>
+        {% elif has_pending_changes and is_planner %}
+            <div class="alert alert-info d-flex justify-content-between align-items-center m-2 py-2 px-3 border border-info shadow-sm">
+                <div>
+                    <i class='bx bx-git-commit me-2 text-primary fs-5 align-middle'></i>
+                    <strong>Внимание:</strong> в рабочем плане есть изменения {% if latest_approved_doc %}({{ live_diff_count }} поз. относительно утвержденного документа № {{ latest_approved_doc.number }}){% else %}(план еще не зафиксирован){% endif %}.
+                </div>
+                <button type="button" class="btn btn-sm btn-success font-weight-bold" id="bannerSaveStateBtn">
+                    <i class='bx bx-save me-1'></i> Зафиксировать состояние
+                </button>
+            </div>
+        {% elif is_snapshot_view and active_display_doc %}
+            <div class="alert alert-success d-flex justify-content-between align-items-center m-2 py-2 px-3 border border-success shadow-sm">
+                <div>
+                    <i class='bx bx-check-shield me-2 text-success fs-5 align-middle'></i>
+                    Отображается официально утвержденный <strong>Документ № {{ active_display_doc.number }}</strong> (v.{{ active_display_doc.version }}) от {{ active_display_doc.approved_at|date:"d.m.Y" }}.
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'flight_planning:document_print' active_display_doc.id %}" target="_blank" class="btn btn-sm btn-outline-dark">
+                        <i class='bx bx-printer me-1'></i> Печать А4
+                    </a>
+                    <a href="{% url 'flight_planning:document_detail' active_display_doc.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class='bx bx-info-circle me-1'></i> Карточка
+                    </a>
+                </div>
+            </div>
+        {% elif no_approved_doc %}
+            <div class="alert alert-secondary d-flex justify-content-between align-items-center m-2 py-2 px-3 border shadow-sm">
+                <div>
+                    <i class='bx bx-info-circle me-2 fs-5 align-middle text-muted'></i>
+                    Официальный план расстановки экипажей на <strong>{{ month_name }} {{ year }} года</strong> еще находится в процессе формирования диспетчерской службой и не утвержден руководством.
+                </div>
+            </div>
+        {% endif %}
+
         <div class="main-layout">
             <!-- Контейнер таблицы -->
-            <div class="table-wrapper">
+            <div class="table-wrapper" id="planningTableWrapper">
                 <table class="planning-table" id="planningTable">
                     <thead>
                     <tr>
                         <th>Место деятельности (МПД)</th>
                         {% for date in dates %}
-                            <th>
+                            <th class="{% if date == today %}today-column-header{% endif %}" data-date="{{ date|date:'Y-m-d' }}">
                                 {{ date|date:"d.m" }}<br>
                                 <small>{{ date|date:"D" }}</small>
+                                {% if date == today %}
+                                    <span class="today-badge-pill">Сегодня</span>
+                                {% endif %}
                             </th>
                         {% endfor %}
                     </tr>
@@ -68,7 +126,7 @@
                             {% for date in dates %}
                                 {% with date_str=date|date:"Y-m-d" %}
                                 {% with cell_crews=crew_map|get_item:mpd.id|get_item:date_str assignments=assignment_map|get_item:mpd.id|get_item:date_str %}
-                                    <td class="plan-cell {% if assignments or cell_crews %}assigned{% endif %}"
+                                    <td class="plan-cell {% if assignments or cell_crews %}assigned{% endif %} {% if date == today %}today-column-cell{% endif %}"
                                         data-date="{{ date_str }}"
                                         data-mpd-id="{{ mpd.id }}"
                                         data-mpd-name="{{ mpd.name }}"
@@ -100,20 +158,34 @@
                                                         </div>
                                                         <div class="crew-members-list">
                                                             {% for m in crew.members %}
-                                                                <div class="crew-member-badge" title="{{ m.role_label }}: {{ m.name }}">
+                                                                {% with p_id=m.member_id %}
+                                                                {% with p_status=pilots_check_status_map|get_item:p_id %}
+                                                                <div class="crew-member-badge" title="{{ m.role_label }}: {{ m.name }}{% if p_status and p_status.has_issues %} ({{ p_status.summary_text }}){% endif %}">
                                                                     <span>
                                                                         <span class="role-tag role-{{ m.role }}">
                                                                             {% if m.role == 'commander' %}КВС{% elif m.role == 'copilot' %}2П{% elif m.role == 'pilot_instructor' %}Инстр{% elif m.role == 'flight_engineer' %}БМ{% elif m.role == 'flight_engineer_instructor' %}БМИ{% endif %}
                                                                         </span>
                                                                         {{ m.name|FIO_format }}
+                                                                        {% if p_status and p_status.has_expired %}
+                                                                            <i class='bx bx-error-circle text-danger ms-1 check-status-icon' data-pilot-id="{{ p_id }}" title="⚠️ {{ p_status.summary_text }}" style="cursor: pointer;"></i>
+                                                                        {% elif p_status and p_status.has_warning %}
+                                                                            <i class='bx bx-time-five text-warning ms-1 check-status-icon' data-pilot-id="{{ p_id }}" title="⏳ {{ p_status.summary_text }}" style="cursor: pointer;"></i>
+                                                                        {% endif %}
                                                                     </span>
                                                                 </div>
+                                                                {% endwith %}
+                                                                {% endwith %}
                                                             {% endfor %}
                                                         </div>
                                                         {% if crew.notes %}
                                                             <div class="crew-note-badge-preview btn-crew-note" data-crew-id="{{ crew.id }}" data-date="{{ date_str }}" title="💬 [{{ crew.latest_note.author_name }}]: {{ crew.latest_note.message }}">
                                                                 <i class="bx bx-message-rounded-dots text-warning me-1"></i>
                                                                 <span class="crew-note-snippet">{{ crew.latest_note.message }}</span>
+                                                            </div>
+                                                        {% elif crew.comment %}
+                                                            <div class="crew-note-badge-preview" title="💬 {{ crew.comment }}">
+                                                                <i class="bx bx-comment-detail text-muted me-1"></i>
+                                                                <span class="crew-note-snippet">{{ crew.comment }}</span>
                                                             </div>
                                                         {% endif %}
                                                     </div>
@@ -126,15 +198,23 @@
                                             {% if assignments %}
                                                 {% for assignment in assignments %}
                                                     {% if not assignment.crew_id %}
+                                                        {% with p_status=pilots_check_status_map|get_item:assignment.pilot_id %}
                                                         <span class="employee-badge {% if assignment.is_commander %}commander{% endif %} {% if assignment.is_instructor %}instructor{% endif %}"
                                                               data-pilot-id="{{ assignment.pilot_id }}"
                                                               data-assignment-id="{{ assignment.assignment_id }}"
                                                               data-pilot-name="{{ assignment.pilot_name }}"
                                                               data-pilot-job="{{ assignment.pilot_job }}"
                                                               data-is-commander="{{ assignment.is_commander|yesno:'true,false' }}"
-                                                              data-is-instructor="{{ assignment.is_instructor|yesno:'true,false' }}">
+                                                              data-is-instructor="{{ assignment.is_instructor|yesno:'true,false' }}"
+                                                              title="{% if p_status and p_status.has_issues %}{{ p_status.summary_text }}{% endif %}">
                                                             {{ assignment.pilot_name|FIO_format }}
+                                                            {% if p_status and p_status.has_expired %}
+                                                                <i class='bx bx-error-circle text-danger ms-1 check-status-icon' data-pilot-id="{{ assignment.pilot_id }}" title="⚠️ {{ p_status.summary_text }}" style="cursor: pointer;"></i>
+                                                            {% elif p_status and p_status.has_warning %}
+                                                                <i class='bx bx-time-five text-warning ms-1 check-status-icon' data-pilot-id="{{ assignment.pilot_id }}" title="⏳ {{ p_status.summary_text }}" style="cursor: pointer;"></i>
+                                                            {% endif %}
                                                         </span>
+                                                        {% endwith %}
                                                     {% endif %}
                                                 {% endfor %}
                                             {% endif %}
@@ -159,13 +239,26 @@
                         {% with job_name=pilot.user_work_profile.job.name|default:"" %}
                             {% with job_lower=job_name|lower %}
                                 {% with is_commander=job_lower|contains:"командир" is_instructor=job_lower|contains:"инструктор" %}
+                                {% with p_status=pilots_check_status_map|get_item:pilot.id %}
                                 <div class="pilot-item"
                                      data-pilot-id="{{ pilot.id }}"
                                      data-pilot-name="{{ pilot.title|default:pilot.username|FIO_format }}"
                                      data-pilot-job="{{ job_name }}"
                                      data-is-commander="{{ is_commander|yesno:"true,false" }}"
-                                     data-is-instructor="{{ is_instructor|yesno:"true,false" }}">
-                                    {{ pilot.title|default:pilot.username|FIO_format }}
+                                     data-is-instructor="{{ is_instructor|yesno:"true,false" }}"
+                                     data-has-expired="{{ p_status.has_expired|yesno:'true,false' }}"
+                                     data-has-warning="{{ p_status.has_warning|yesno:'true,false' }}"
+                                     title="{% if p_status and p_status.has_issues %}{{ p_status.summary_text }}{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>{{ pilot.title|default:pilot.username|FIO_format }}</span>
+                                        {% if p_status and p_status.has_expired %}
+                                            <i class='bx bx-error-circle text-danger fs-6 check-status-icon' data-pilot-id="{{ pilot.id }}" title="⚠️ {{ p_status.summary_text }}" style="cursor: pointer;"></i>
+                                        {% elif p_status and p_status.has_warning %}
+                                            <i class='bx bx-time-five text-warning fs-6 check-status-icon' data-pilot-id="{{ pilot.id }}" title="⏳ {{ p_status.summary_text }}" style="cursor: pointer;"></i>
+                                        {% else %}
+                                            <i class='bx bx-check-circle text-success fs-6' title="Все проверки в норме"></i>
+                                        {% endif %}
+                                    </div>
                                     <small style="color: #888; display: block;">
                                         {{ job_name|default:"Должность не указана" }}
                                         {% if is_commander %}
@@ -176,6 +269,7 @@
                                         {% endif %}
                                     </small>
                                 </div>
+                                {% endwith %}
                                 {% endwith %}
                             {% endwith %}
                         {% endwith %}
@@ -455,6 +549,85 @@
             <button type="button" class="btn btn-warning font-weight-bold" id="cnSubmitBtn"><i class='bx bx-send me-1'></i> Отправить пометку</button>
         </div>
     </div>
+
+    <!-- Модальное окно фиксации состояния / создания документа расстановки -->
+    <div class="modal-overlay" id="saveStateDocOverlay" style="display: none; z-index: 10050;"></div>
+    <div class="modal-window large-modal" id="saveStateDocModal" style="display: none; z-index: 10060; width: 620px;">
+        <div class="modal-header bg-success text-white d-flex justify-content-between align-items-center">
+            <span class="font-weight-bold"><i class='bx bx-file-blank me-2'></i> Фиксация состояния плана и создание документа</span>
+            <button type="button" class="btn-close btn-close-white" id="closeSaveStateDocCross" style="cursor: pointer;"></button>
+        </div>
+        <div class="modal-body p-3">
+            <div class="alert alert-info py-2 mb-3" style="font-size: 0.88rem;">
+                <i class='bx bx-info-circle me-1'></i> Будет сформирован официальный документ расстановки экипажей на <strong>{{ month_name }} {{ year }} года</strong> и отправлен на утверждение руководству.
+            </div>
+
+            {% if live_diff_list %}
+                <label class="form-label font-weight-semibold mb-1">Обнаруженные изменения относительно утвержденной версии:</label>
+                <div class="crew-notes-history-box mb-3" style="max-height: 140px;">
+                    {% for item in live_diff_list %}
+                        <div class="small py-1 border-bottom">
+                            <strong>{{ item.date_formatted }}</strong> ({{ item.mpd_name }}): {{ item.description }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label font-weight-semibold mb-1" for="docReasonInput">
+                    Основание / Причина создания документа (изменений):
+                    {% if latest_approved_doc %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                <textarea id="docReasonInput" class="form-control form-control-modern" rows="3"
+                          placeholder="{% if latest_approved_doc %}Укажите причину изменений (например: Замена КВС в связи с больничным, продление командировки...){% else %}Плановая расстановка экипажей на месяц{% endif %}">{% if not latest_approved_doc %}Плановая расстановка экипажей на {{ month_name }} {{ year }} г.{% endif %}</textarea>
+                <div id="docReasonError" class="text-danger small mt-1" style="display: none;">Пожалуйста, укажите причину / основание для внесения изменений!</div>
+            </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" id="saveStateDocCancelBtn">Отмена</button>
+            <button type="button" class="btn btn-success font-weight-bold" id="saveStateDocSubmitBtn">
+                <i class='bx bx-check-double me-1'></i> Зафиксировать и отправить на утверждение
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно детального статуса периодических проверок сотрудника -->
+    <div class="modal-overlay" id="pilotCheckDetailsOverlay" style="display: none; z-index: 10070;"></div>
+    <div class="modal-window large-modal" id="pilotCheckDetailsModal" style="display: none; z-index: 10080; width: 680px;">
+        <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span class="font-weight-bold" id="pcdPilotNameTitle"><i class='bx bx-check-shield me-2'></i> Периодические проверки сотрудника</span>
+            <button type="button" class="btn-close btn-close-white" id="closePilotCheckDetailsCross" style="cursor: pointer;"></button>
+        </div>
+        <div class="modal-body p-3">
+            <div id="pcdOverallStatusBanner" class="alert mb-3 py-2">
+                <!-- Заполняется динамически -->
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Вид проверки</th>
+                        <th>Тип ВС</th>
+                        <th>Начало</th>
+                        <th>Окончание</th>
+                        <th>Статус</th>
+                    </tr>
+                    </thead>
+                    <tbody id="pcdChecksTableBody">
+                        <!-- Динамические строки проверок -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-end mt-2">
+                <a href="{% url 'flight_planning:periodic_check_list' %}" id="pcdOpenJournalLink" class="btn btn-sm btn-outline-primary" target="_blank">
+                    <i class='bx bx-folder-open me-1'></i> Открыть в журнале проверок
+                </a>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="closePilotCheckDetailsBtn">Закрыть</button>
+        </div>
+    </div>
 {% endblock %}
 
 {% block custom_script %}
@@ -467,6 +640,8 @@
         window.ALL_AIRCRAFT_INTERVALS = {{ all_aircraft_intervals_json|safe }};
         window.ALL_PILOTS = {{ pilots_js_json|safe }};
         window.ALL_AIRCRAFT = {{ all_aircraft_json|safe }};
+        window.PILOTS_CHECK_STATUS_MAP = {{ pilots_check_status_json|safe }};
+        window.EMPLOYEE_STATUS_MAP = {{ employee_statuses_json|safe }};
     </script>
     <script src="{% static_version 'admin_templates/js/flight_planning.js' %}"></script>
 {% endblock %}

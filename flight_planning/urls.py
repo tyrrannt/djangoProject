@@ -26,6 +26,32 @@ urlpatterns = [
     path('movements/<int:pk>/update/', views.aircraft_movement_update_view, name='aircraft_movement_update'),
     path('movements/<int:pk>/delete/', views.aircraft_movement_delete_view, name='aircraft_movement_delete'),
 
+    # Документы расстановки экипажей (версионирование и утверждение)
+    path('documents/', views.document_list_view, name='document_list'),
+    path('documents/create/', views.document_create_view, name='document_create'),
+    path('documents/<int:pk>/', views.document_detail_view, name='document_detail'),
+    path('documents/<int:pk>/print/', views.document_print_view, name='document_print'),
+    path('documents/<int:pk>/approve/', views.document_approve_view, name='document_approve'),
+
+    # Периодические проверки персонала (Журнал, Матрица, Справочники)
+    path('checks/', views.periodic_check_list_view, name='periodic_check_list'),
+    path('checks/add/', views.periodic_check_create_view, name='periodic_check_create'),
+    path('checks/<int:pk>/update/', views.periodic_check_update_view, name='periodic_check_update'),
+    path('checks/<int:pk>/delete/', views.periodic_check_delete_view, name='periodic_check_delete'),
+    path('checks/types/add/', views.periodic_check_type_create_view, name='periodic_check_type_create'),
+    path('checks/types/<int:pk>/update/', views.periodic_check_type_update_view, name='periodic_check_type_update'),
+    path('checks/types/<int:pk>/delete/', views.periodic_check_type_delete_view, name='periodic_check_type_delete'),
+
+    # Состояния и статусы сотрудников (Отпуск, Больничный, Резерв, КПК, ВЛЭК)
+    path('statuses/', views.employee_status_list_view, name='employee_status_list'),
+    path('statuses/add/', views.employee_status_create_view, name='employee_status_create'),
+    path('statuses/<int:pk>/update/', views.employee_status_update_view, name='employee_status_update'),
+    path('statuses/<int:pk>/delete/', views.employee_status_delete_view, name='employee_status_delete'),
+    path('statuses/types/add/', views.employee_status_type_create_view, name='employee_status_type_create'),
+    path('statuses/types/<int:pk>/update/', views.employee_status_type_update_view, name='employee_status_type_update'),
+    path('statuses/types/<int:pk>/delete/', views.employee_status_type_delete_view, name='employee_status_type_delete'),
+    path('api/employee-statuses/<int:pilot_id>/', views.get_pilot_employee_statuses_api, name='get_pilot_employee_statuses_api'),
+
     # API v1 (REST)
     path('api/v1/', include(api_urlpatterns)),
 
@@ -37,6 +63,11 @@ urlpatterns = [
     path('api/remove/', views.remove_assignments_api, name='remove_assignments'),
     path('api/pilot-job-info/', views.get_pilot_job_info, name='get_pilot_job_info'),
     path('api/aircraft-locations/', views.get_aircraft_locations_api, name='get_aircraft_locations_api'),
+    path('api/pilot-checks/<int:pilot_id>/', views.get_pilot_checks_api, name='get_pilot_checks_api'),
+    path('api/calculate-check-date/', views.calculate_check_date_api, name='calculate_check_date_api'),
+    path('api/check-history/', views.get_check_history_api, name='get_check_history_api'),
+    path('api/employee-checks/<int:employee_id>/assignments/', views.get_employee_check_assignments_api, name='get_employee_check_assignments_api'),
+    path('api/employee-checks/assignments/save/', views.save_employee_check_assignments_api, name='save_employee_check_assignments_api'),
 
     # API для работы с экипажами
     path('api/crew/save/', views.save_crew_api, name='save_crew_api'),

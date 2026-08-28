@@ -1,0 +1,81 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title m-0 fw-bold text-primary">{{ title }}</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.employee.label }}</label>
+                            {{ form.employee }}
+                            {% if form.employee.errors %}<div class="text-danger small">{{ form.employee.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.status_type.label }}</label>
+                            {{ form.status_type }}
+                            {% if form.status_type.errors %}<div class="text-danger small">{{ form.status_type.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.start_date.label }}</label>
+                                {{ form.start_date }}
+                                {% if form.start_date.errors %}<div class="text-danger small">{{ form.start_date.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.end_date.label }}</label>
+                                {{ form.end_date }}
+                                {% if form.end_date.errors %}<div class="text-danger small">{{ form.end_date.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.document_number.label }}</label>
+                            {{ form.document_number }}
+                            {% if form.document_number.errors %}<div class="text-danger small">{{ form.document_number.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}<div class="text-danger small">{{ form.notes.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{% url 'flight_planning:employee_status_list' %}" class="btn btn-outline-secondary">
+                                <i class='bx bx-arrow-back me-1'></i> Назад к списку
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class='bx bx-save me-1'></i> Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+<script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        if ($.fn.select2) {
+            $('select').select2({ theme: 'bootstrap', width: '100%' });
+        }
+    });
+</script>
+{% endblock %}

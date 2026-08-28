@@ -1,0 +1,131 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="card-title m-0 font-weight-bold">
+                        <i class='bx bx-clipboard text-primary me-2'></i>
+                        {{ title }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <strong>Ошибка сохранения:</strong> Пожалуйста, исправьте ошибки в форме ниже.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label font-weight-bold">Сотрудник <span class="text-danger">*</span></label>
+                                {{ form.employee }}
+                                {% if form.employee.errors %}<div class="text-danger small">{{ form.employee.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label font-weight-bold">Вид проверки <span class="text-danger">*</span></label>
+                                {{ form.check_type }}
+                                {% if form.check_type.errors %}<div class="text-danger small">{{ form.check_type.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label font-weight-bold">Тип ВС</label>
+                                {{ form.aircraft_type }}
+                                {% if form.aircraft_type.errors %}<div class="text-danger small">{{ form.aircraft_type.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-bold">Дата сдачи / Начало <span class="text-danger">*</span></label>
+                                {{ form.start_date }}
+                                {% if form.start_date.errors %}<div class="text-danger small">{{ form.start_date.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-bold">Действует до / Окончание <span class="text-danger">*</span></label>
+                                {{ form.end_date }}
+                                {% if form.end_date.errors %}<div class="text-danger small">{{ form.end_date.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Номер сертификата / документа</label>
+                                {{ form.document_number }}
+                                {% if form.document_number.errors %}<div class="text-danger small">{{ form.document_number.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Кем выдано / Инструктор</label>
+                                {{ form.issued_by }}
+                                {% if form.issued_by.errors %}<div class="text-danger small">{{ form.issued_by.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Скан документа</label>
+                                {{ form.scan_file }}
+                                {% if form.scan_file.errors %}<div class="text-danger small">{{ form.scan_file.errors }}</div>{% endif %}
+                                {% if record and record.scan_file %}
+                                    <div class="mt-1 small">
+                                        Текущий файл: <a href="{{ record.scan_file.url }}" target="_blank">{{ record.scan_file.name }}</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Примечание</label>
+                                {{ form.notes }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <a href="{% url 'flight_planning:periodic_check_list' %}" class="btn btn-outline-secondary">
+                                <i class='bx bx-arrow-back me-1'></i> Назад к журналу
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold">
+                                <i class='bx bx-save me-1'></i> Сохранить запись
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+<script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+<script>
+$(document).ready(function() {
+    $('select').select2({ theme: 'bootstrap', width: '100%' });
+
+    function autoCalculateEndDate() {
+        const checkTypeId = $('#id_check_type').val();
+        const startDate = $('#checkStartDateInput').val();
+
+        if (checkTypeId && startDate) {
+            $.ajax({
+                url: '/flight/api/calculate-check-date/',
+                method: 'GET',
+                data: {
+                    check_type_id: checkTypeId,
+                    start_date: startDate
+                },
+                success: function(res) {
+                    if (res.end_date) {
+                        $('#checkEndDateInput').val(res.end_date);
+                    }
+                    if (res.aircraft_type_id) {
+                        $('#id_aircraft_type').val(res.aircraft_type_id).trigger('change');
+                    }
+                }
+            });
+        }
+    }
+
+    $('#id_check_type, #checkStartDateInput').on('change', function() {
+        autoCalculateEndDate();
+    });
+});
+</script>
+{% endblock %}

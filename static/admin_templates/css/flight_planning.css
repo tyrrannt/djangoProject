@@ -256,6 +256,85 @@
     background-color: var(--fp-drag-over);
 }
 
+/* Кнопка быстрого перехода к сегодняшнему дню */
+.btn-today-nav {
+    background: #0284c7 !important;
+    border: 1px solid #0369a1 !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+.btn-today-nav:hover {
+    background: #0369a1 !important;
+}
+
+/* Выделение колонки текущего дня (Сегодня) */
+.planning-table thead tr th.today-column-header {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-left: 2px solid #0369a1 !important;
+    border-right: 2px solid #0369a1 !important;
+    box-shadow: inset 0 -2px 0 #0369a1;
+}
+.planning-table thead tr th.today-column-header small {
+    color: #e0f2fe !important;
+    font-weight: 700;
+}
+.today-badge-pill {
+    display: inline-block;
+    background: #ffffff;
+    color: #0369a1;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-top: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.plan-cell.today-column-cell {
+    background-color: #f0f9ff !important;
+    border-left: 2px solid #38bdf8 !important;
+    border-right: 2px solid #38bdf8 !important;
+}
+.plan-cell.today-column-cell.assigned {
+    background-color: #e0f2fe !important;
+}
+.plan-cell.today-column-cell:hover {
+    background-color: #bae6fd !important;
+}
+
+/* Темы для сегодняшнего дня */
+body.theme-classic .planning-table thead tr th.today-column-header {
+    background: #1e3a8a !important;
+    border-left: 2px solid #172554 !important;
+    border-right: 2px solid #172554 !important;
+}
+body.theme-classic .today-badge-pill {
+    color: #1e3a8a;
+}
+body.theme-classic .plan-cell.today-column-cell {
+    background-color: #eff6ff !important;
+    border-left: 2px solid #60a5fa !important;
+    border-right: 2px solid #60a5fa !important;
+}
+
+body.theme-corporate .planning-table thead tr th.today-column-header {
+    background: #0f766e !important;
+    border-left: 2px solid #115e59 !important;
+    border-right: 2px solid #115e59 !important;
+}
+body.theme-corporate .today-badge-pill {
+    color: #0f766e;
+}
+body.theme-corporate .plan-cell.today-column-cell {
+    background-color: #f0fdfa !important;
+    border-left: 2px solid #2dd4bf !important;
+    border-right: 2px solid #2dd4bf !important;
+}
+
 /* Контейнер для пилотов в ячейке */
 .pilots-container {
     display: flex;

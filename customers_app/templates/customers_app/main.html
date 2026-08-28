@@ -696,6 +696,12 @@
                                             </a>
                                         </li>
                                         <li>
+                                            <a class="nav-link" href="{% url 'flight_planning:document_list' %}">
+                                                <i class="bx bx-file-blank" aria-hidden="true"></i>
+                                                <span>Журнал документов</span>
+                                            </a>
+                                        </li>
+                                        <li>
                                             <a class="nav-link" href="{% url 'flight_planning:my_schedule' %}">
                                                 <i class="bx bx-user-check" aria-hidden="true"></i>
                                                 <span>Мой график</span>
@@ -705,6 +711,18 @@
                                             <a class="nav-link" href="{% url 'flight_planning:aircraft_movement_list' %}">
                                                 <i class="bx bxs-plane-take-off" aria-hidden="true"></i>
                                                 <span>Журнал перемещений ВС</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'flight_planning:periodic_check_list' %}">
+                                                <i class="bx bx-check-shield" aria-hidden="true"></i>
+                                                <span>Периодические проверки</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'flight_planning:employee_status_list' %}">
+                                                <i class="bx bx-user-pin" aria-hidden="true"></i>
+                                                <span>Состояния сотрудников</span>
                                             </a>
                                         </li>
                                         {% if request.user|can_view_flight_reports %}

@@ -1,0 +1,1170 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <style>
+        .kpi-card {
+            border-radius: 8px;
+            padding: 18px 22px;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+        .kpi-card.kpi-total { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+        .kpi-card.kpi-valid { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+        .kpi-card.kpi-warning { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
+        .kpi-card.kpi-expired { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+
+        .kpi-title { font-size: 0.85rem; font-weight: 500; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 2rem; font-weight: 700; margin: 4px 0 0 0; }
+        .kpi-icon { position: absolute; right: 20px; bottom: 15px; font-size: 3.5rem; opacity: 0.15; }
+
+        .filter-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .check-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-valid { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .badge-warning-custom { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge-expired { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .badge-renewed { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 500; }
+
+        .matrix-table-wrapper {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        .matrix-table th, .matrix-table td {
+            border: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .matrix-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #334155;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .matrix-table td.pilot-name-cell {
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            left: 0;
+            background: #ffffff;
+            z-index: 11;
+            min-width: 240px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.02);
+        }
+        .matrix-cell-valid {
+            background-color: #f0fdf4;
+            color: #166534;
+            font-weight: 500;
+        }
+        .matrix-cell-warning {
+            background-color: #fffbeb;
+            color: #b45309;
+            font-weight: 600;
+        }
+        .matrix-cell-expired {
+            background-color: #fef2f2;
+            color: #991b1b;
+            font-weight: 700;
+        }
+        .matrix-cell-missing {
+            background-color: #fff1f2;
+            color: #e11d48;
+            font-weight: 600;
+        }
+        .matrix-cell-not-required {
+            background-color: #f8fafc;
+            color: #94a3b8;
+        }
+
+        .matrix-clickable-cell {
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .matrix-clickable-cell:hover {
+            filter: brightness(0.95);
+            outline: 2px solid #0284c7;
+            outline-offset: -2px;
+            z-index: 5;
+        }
+
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: #64748b;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 10px 18px;
+        }
+        .nav-tabs .nav-link.active {
+            color: #0284c7;
+            border-bottom-color: #0284c7;
+            background: transparent;
+        }
+
+        .modal-custom-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(2px);
+            z-index: 10050;
+            display: none;
+        }
+        .modal-custom-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+            z-index: 10060;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .content-body {
+            padding: 10px 15px 25px 15px !important;
+        }
+        .page-header {
+            margin: -10px -15px 15px -15px !important;
+        }
+
+        /* Запрет горизонтального дублирования select внутри модальных окон */
+        #addRecordModal .select2-container,
+        #quickAddRecordForm .select2-container {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        #addRecordModal select,
+        #quickAddRecordForm select {
+            display: block !important;
+            width: 100% !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: static !important;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 7px 12px;
+            font-size: 0.9rem;
+        }
+
+        .assign-check-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 8px 4px;
+            transition: background 0.15s ease;
+        }
+        .assign-check-item:last-child {
+            border-bottom: none;
+        }
+        .assign-check-item:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- KPI карточки -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-total">
+                <div class="kpi-title">Всего записей в базе</div>
+                <div class="kpi-value">{{ total_records_count }}</div>
+                <i class='bx bx-file kpi-icon'></i>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-valid">
+                <div class="kpi-title">Действуют</div>
+                <div class="kpi-value">{{ valid_records_count }}</div>
+                <i class='bx bx-check-shield kpi-icon'></i>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-warning">
+                <div class="kpi-title">Истекают (до 30 дн.)</div>
+                <div class="kpi-value">{{ warning_records_count }}</div>
+                <i class='bx bx-time-five kpi-icon'></i>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-expired">
+                <div class="kpi-title">Просрочены (не сданы)</div>
+                <div class="kpi-value">{{ expired_records_count }}</div>
+                <i class='bx bx-error-circle kpi-icon'></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная карточка с вкладками -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom-0 pb-0">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <ul class="nav nav-tabs border-bottom-0" id="checkTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if active_tab == 'records' %}active{% endif %}" href="?tab=records{% if filter_employee_id %}&employee_id={{ filter_employee_id }}{% endif %}{% if filter_check_type_id %}&check_type_id={{ filter_check_type_id }}{% endif %}{% if filter_aircraft_type_id %}&aircraft_type_id={{ filter_aircraft_type_id }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}">
+                            <i class='bx bx-list-ul me-1'></i> Журнал проверок
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if active_tab == 'matrix' %}active{% endif %}" href="?tab=matrix">
+                            <i class='bx bx-grid-alt me-1'></i> Сводная матрица квалификации
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if active_tab == 'types' %}active{% endif %}" href="?tab=types">
+                            <i class='bx bx-category me-1'></i> Виды проверок (Справочник)
+                        </a>
+                    </li>
+                </ul>
+
+                {% if is_planner %}
+                    {% if active_tab == 'records' or active_tab == 'matrix' %}
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary btn-sm px-3" id="openAddRecordBtn">
+                                <i class='bx bx-plus-circle me-1'></i> Внести запись о проверке
+                            </button>
+                        </div>
+                    {% elif active_tab == 'types' %}
+                        <a href="{% url 'flight_planning:periodic_check_type_create' %}" class="btn btn-outline-primary btn-sm px-3">
+                            <i class='bx bx-plus me-1'></i> Добавить вид проверки
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            {% if active_tab == 'records' %}
+                <!-- Фильтры журнала записей -->
+                <form method="get" class="filter-panel" id="recordsFilterForm">
+                    <input type="hidden" name="tab" value="records">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small font-weight-bold">Сотрудник</label>
+                            <select name="employee_id" class="form-select form-select-sm select2-filter">
+                                <option value="">Все сотрудники</option>
+                                {% for p in pilots_list %}
+                                    <option value="{{ p.id }}" {% if filter_employee_id == p.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ p.title|default:p.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small font-weight-bold">Вид проверки</label>
+                            <select name="check_type_id" class="form-select form-select-sm select2-filter">
+                                <option value="">Все виды проверок</option>
+                                {% for ct in check_types %}
+                                    <option value="{{ ct.id }}" {% if filter_check_type_id == ct.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ ct.name }} [{{ ct.aircraft_display }}]
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small font-weight-bold">Тип ВС</label>
+                            <select name="aircraft_type_id" class="form-select form-select-sm select2-filter">
+                                <option value="">Все типы ВС</option>
+                                {% for ac in aircraft_types %}
+                                    <option value="{{ ac.id }}" {% if filter_aircraft_type_id == ac.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ ac.type_property }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small font-weight-bold">Статус годности</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">Все статусы</option>
+                                <option value="valid" {% if filter_status == 'valid' %}selected{% endif %}>Действующие</option>
+                                <option value="warning" {% if filter_status == 'warning' %}selected{% endif %}>Истекают скоро (до 30 дн.)</option>
+                                <option value="expired" {% if filter_status == 'expired' %}selected{% endif %}>Просроченные (не пройденные)</option>
+                                <option value="renewed" {% if filter_status == 'renewed' %}selected{% endif %}>Продленные / В архиве</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small font-weight-bold">Поиск</label>
+                            <input type="text" name="q" value="{{ search_query }}" class="form-control form-control-sm" placeholder="Номер, организация, ФИО...">
+                        </div>
+                        <div class="col-md-1 d-flex gap-1">
+                            <button type="submit" class="btn btn-sm btn-dark w-100" title="Применить фильтры">
+                                <i class='bx bx-filter-alt'></i>
+                            </button>
+                            <a href="?tab=records" class="btn btn-sm btn-outline-secondary" title="Сбросить фильтры">
+                                <i class='bx bx-reset'></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Таблица записей журнала -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Сотрудник</th>
+                            <th>Должность</th>
+                            <th>Вид проверки</th>
+                            <th>Тип ВС</th>
+                            <th>Начало</th>
+                            <th>Окончание</th>
+                            <th>Статус годности</th>
+                            <th>Документ / Сертификат</th>
+                            <th>Кем выдано</th>
+                            {% if is_planner %}<th class="text-end">Действия</th>{% endif %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% if records %}
+                            {% for r in records %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ r.employee.title|default:r.employee.username }}</strong>
+                                    </td>
+                                    <td class="text-muted small">
+                                        {{ r.employee.user_work_profile.job.name|default:"—" }}
+                                    </td>
+                                    <td>
+                                        <strong>{{ r.check_type.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            {{ r.check_type.aircraft_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ r.start_date|date:"d.m.Y" }}</td>
+                                    <td>
+                                        <strong>{{ r.end_date|date:"d.m.Y" }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if r.is_superseded %}
+                                            <span class="check-badge-pill badge-renewed" title="Продлена новой проверкой до {{ r.get_successor.end_date|date:'d.m.Y' }}">
+                                                <i class='bx bx-check-double me-1 text-primary'></i> Продлена (новая до {{ r.get_successor.end_date|date:'d.m.Y' }})
+                                            </span>
+                                        {% elif r.end_date < today %}
+                                            <span class="check-badge-pill badge-expired">
+                                                <i class='bx bx-x-circle me-1'></i> Просрочена ({{ r.days_overdue }} дн. назад)
+                                            </span>
+                                        {% elif r.days_remaining <= 30 %}
+                                            <span class="check-badge-pill badge-warning-custom">
+                                                <i class='bx bx-time-five me-1'></i> Истекает ({{ r.days_remaining }} дн.)
+                                            </span>
+                                        {% else %}
+                                            <span class="check-badge-pill badge-valid">
+                                                <i class='bx bx-check-circle me-1'></i> Действует ({{ r.days_remaining }} дн.)
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ r.document_number|default:"—" }}
+                                        {% if r.scan_file %}
+                                            <a href="{{ r.scan_file.url }}" target="_blank" class="ms-1 text-primary" title="Открыть скан">
+                                                <i class='bx bx-file'></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">{{ r.issued_by|default:"—" }}</td>
+                                    {% if is_planner %}
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-success btn-renew-record py-0 px-2"
+                                                    data-employee-id="{{ r.employee.id }}"
+                                                    data-employee-name="{{ r.employee.title|default:r.employee.username }}"
+                                                    data-check-type-id="{{ r.check_type.id }}"
+                                                    data-check-type-name="{{ r.check_type.name }}"
+                                                    data-aircraft-type-id="{{ r.aircraft_type_id|default:'' }}"
+                                                    data-issued-by="{{ r.issued_by|default:'' }}"
+                                                    data-last-end="{{ r.end_date|date:'Y-m-d' }}"
+                                                    title="Продлить (Внести новую сдачу)">
+                                                <i class='bx bx-refresh me-1'></i> Продлить
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-info btn-view-history py-0 px-2"
+                                                    data-employee-id="{{ r.employee.id }}"
+                                                    data-employee-name="{{ r.employee.title|default:r.employee.username }}"
+                                                    data-check-type-id="{{ r.check_type.id }}"
+                                                    data-check-type-name="{{ r.check_type.name }}"
+                                                    title="История всех проверок">
+                                                <i class='bx bx-history'></i>
+                                            </button>
+                                            <a href="{% url 'flight_planning:periodic_check_update' r.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Редактировать запись">
+                                                <i class='bx bx-edit-alt'></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-record py-0 px-2" data-id="{{ r.id }}" data-name="{{ r.check_type.name }} ({{ r.employee.title }})" title="Удалить">
+                                                <i class='bx bx-trash'></i>
+                                            </button>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">
+                                    <i class='bx bx-info-circle fs-3 d-block mb-1'></i>
+                                    Записей о периодических проверках не найдено.
+                                </td>
+                            </tr>
+                        {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% elif active_tab == 'matrix' %}
+                <!-- Вкладка: Сводная матрица персонала -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="small text-muted">
+                        <i class='bx bx-info-circle me-1'></i> Нажмите на ячейку сотрудника для продления проверки / просмотра истории сдачи. Кнопка ⚙️ в строке сотрудника позволяет настроить обязательные для него проверки.
+                    </span>
+                </div>
+                <div class="matrix-table-wrapper border rounded">
+                    <table class="matrix-table">
+                        <thead>
+                        <tr>
+                            <th class="pilot-name-cell">Сотрудник / Должность</th>
+                            {% for ct in active_check_types %}
+                                <th title="{{ ct.name }} [{{ ct.aircraft_display }}] (Периодичность: {{ ct.validity_months }} мес.)">
+                                    {{ ct.name }}<br>
+                                    <small class="text-muted">[{{ ct.aircraft_display }}]</small>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in matrix_data %}
+                            <tr>
+                                <td class="pilot-name-cell">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div>{{ row.pilot.title|default:row.pilot.username }}</div>
+                                            <small class="text-muted">{{ row.job|default:"" }}</small>
+                                            {% if row.has_expired %}
+                                                <i class='bx bx-error-circle text-danger ms-1' title="Есть просроченные или не пройденные обязательные проверки!"></i>
+                                            {% elif row.has_warning %}
+                                                <i class='bx bx-time-five text-warning ms-1' title="Есть проверки, истекающие в течение 30 дней"></i>
+                                            {% endif %}
+                                        </div>
+                                        {% if is_planner %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-assign-checks ms-2 py-0 px-2"
+                                                    data-employee-id="{{ row.pilot.id }}"
+                                                    data-employee-name="{{ row.pilot.title|default:row.pilot.username }}"
+                                                    title="Настроить обязательные проверки для данного сотрудника">
+                                                <i class='bx bx-cog'></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                {% for cell in row.cells %}
+                                    <td class="{{ cell.css_class }} matrix-clickable-cell"
+                                        data-employee-id="{{ row.pilot.id }}"
+                                        data-employee-name="{{ row.pilot.title|default:row.pilot.username }}"
+                                        data-check-type-id="{{ cell.check_type.id }}"
+                                        data-check-type-name="{{ cell.check_type.name }}"
+                                        data-aircraft-type-id="{{ cell.record.aircraft_type_id|default:'' }}"
+                                        data-issued-by="{{ cell.record.issued_by|default:'' }}"
+                                        data-last-end="{{ cell.record.end_date|date:'Y-m-d'|default:'' }}"
+                                        data-has-record="{% if cell.record %}1{% else %}0{% endif %}"
+                                        data-is-required="{% if cell.is_required %}1{% else %}0{% endif %}"
+                                        title="{% if not cell.is_required %}Не требуется сотруднику (нажмите для внесения или настройки){% else %}Нажмите для продления или просмотра истории: {{ cell.check_type.name }}{% endif %}">
+                                        {% if not cell.is_required %}
+                                            {% if cell.record %}
+                                                <span class="text-muted small"><i class='bx bx-minus me-1'></i>{{ cell.text }}</span>
+                                            {% else %}
+                                                <span class="text-muted" style="opacity: 0.6;"><i class='bx bx-minus me-1'></i>Не требуется</span>
+                                            {% endif %}
+                                        {% elif cell.status == 'valid' %}
+                                            <i class='bx bx-check text-success me-1'></i>{{ cell.text }}
+                                        {% elif cell.status == 'warning' %}
+                                            <i class='bx bx-time-five text-warning me-1'></i>{{ cell.text }}
+                                        {% elif cell.status == 'expired' %}
+                                            <i class='bx bx-x text-danger me-1'></i>{{ cell.text }}
+                                        {% else %}
+                                            <span class="text-danger font-weight-bold">+ Внести</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% elif active_tab == 'types' %}
+                <!-- Вкладка: Справочник видов проверок -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Порядок</th>
+                            <th>Наименование проверки</th>
+                            <th>Код</th>
+                            <th>Тип ВС</th>
+                            <th>Периодичность</th>
+                            <th>Категория персонала</th>
+                            <th>Описание / Регламент</th>
+                            <th>Статус</th>
+                            {% if is_planner %}<th class="text-end">Действия</th>{% endif %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for ct in check_types %}
+                            <tr>
+                                <td>{{ ct.order }}</td>
+                                <td><strong>{{ ct.name }}</strong></td>
+                                <td><code>{{ ct.code|default:"—" }}</code></td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ ct.aircraft_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ ct.validity_months }} мес.</strong>
+                                    {% if ct.validity_days %}
+                                        + {{ ct.validity_days }} дн.
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ct.applies_to == 'pilots' %}
+                                        <span class="badge bg-primary">Пилоты</span>
+                                    {% elif ct.applies_to == 'flight_engineers' %}
+                                        <span class="badge bg-info text-dark">Бортмеханики</span>
+                                    {% elif ct.applies_to == 'technicians' %}
+                                        <span class="badge bg-secondary">Техники</span>
+                                    {% elif ct.applies_to == 'crew' %}
+                                        <span class="badge bg-primary">Весь экипаж</span>
+                                    {% else %}
+                                        <span class="badge bg-dark">Весь персонал</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-muted">{{ ct.description|default:"—" }}</td>
+                                <td>
+                                    {% if ct.is_active %}
+                                        <span class="badge bg-success">Активна</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Отключена</span>
+                                    {% endif %}
+                                </td>
+                                {% if is_planner %}
+                                    <td class="text-end">
+                                        <a href="{% url 'flight_planning:periodic_check_type_update' ct.id %}" class="btn btn-sm btn-outline-secondary" title="Редактировать">
+                                            <i class='bx bx-edit-alt'></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-type" data-id="{{ ct.id }}" data-name="{{ ct.name }}" title="Удалить">
+                                            <i class='bx bx-trash'></i>
+                                        </button>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+<!-- Модальное окно быстрого добавления / продления записи о проверке -->
+<div class="modal-custom-overlay" id="addRecordOverlay"></div>
+<div class="modal-custom-box p-4" id="addRecordModal">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+        <h5 class="m-0 font-weight-bold" id="addRecordModalHeaderTitle">
+            <i class='bx bx-plus-circle text-primary me-2'></i> Внесение записи о периодической проверке
+        </h5>
+        <button type="button" class="btn-close" id="closeAddRecordBtn"></button>
+    </div>
+    <form id="quickAddRecordForm" method="post" action="{% url 'flight_planning:periodic_check_create' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label class="form-label font-weight-bold">Сотрудник <span class="text-danger">*</span></label>
+                {{ record_form.employee }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label font-weight-bold">Вид проверки <span class="text-danger">*</span></label>
+                {{ record_form.check_type }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label font-weight-bold">Тип ВС</label>
+                {{ record_form.aircraft_type }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label font-weight-bold">Дата сдачи / Начало <span class="text-danger">*</span></label>
+                {{ record_form.start_date }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label font-weight-bold">Действует до / Окончание <span class="text-danger">*</span></label>
+                {{ record_form.end_date }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Номер сертификата / документа</label>
+                {{ record_form.document_number }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Кем выдано / Инструктор</label>
+                {{ record_form.issued_by }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Скан документа</label>
+                {{ record_form.scan_file }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Примечание</label>
+                {{ record_form.notes }}
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary" id="cancelAddRecordBtn">Отмена</button>
+            <button type="submit" class="btn btn-primary font-weight-bold" id="submitAddRecordBtn">
+                <i class='bx bx-save me-1'></i> Сохранить запись
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Модальное окно истории проверок сотрудника -->
+<div class="modal-custom-overlay" id="historyModalOverlay"></div>
+<div class="modal-custom-box p-4" id="historyModalBox" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <div>
+            <h5 class="m-0 font-weight-bold text-primary" id="historyModalTitle">
+                <i class='bx bx-history me-1'></i> История проверок
+            </h5>
+            <small class="text-muted" id="historyModalSubtitle"></small>
+        </div>
+        <button type="button" class="btn-close" id="closeHistoryModalBtn"></button>
+    </div>
+    <div id="historyModalContent">
+        <!-- Таблица истории загружается через AJAX -->
+    </div>
+    <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-3">
+        <button type="button" class="btn btn-secondary btn-sm" id="cancelHistoryModalBtn">Закрыть</button>
+        {% if is_planner %}
+            <button type="button" class="btn btn-success btn-sm font-weight-bold" id="renewFromHistoryBtn">
+                <i class='bx bx-refresh me-1'></i> Продлить (Внести новую сдачу)
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно настройки обязательных проверок для сотрудника -->
+<div class="modal-custom-overlay" id="assignChecksOverlay"></div>
+<div class="modal-custom-box p-4" id="assignChecksModal" style="max-width: 650px;">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <div>
+            <h5 class="m-0 font-weight-bold text-primary" id="assignChecksModalTitle">
+                <i class='bx bx-user-check me-2'></i> Закрепление проверок за сотрудником
+            </h5>
+            <small class="text-muted" id="assignChecksModalSubtitle"></small>
+        </div>
+        <button type="button" class="btn-close" id="closeAssignChecksBtn"></button>
+    </div>
+    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="small text-muted">Отметьте проверки, обязательные для данного сотрудника:</span>
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-secondary" id="btnSelectAllChecks">Выбрать все</button>
+            <button type="button" class="btn btn-outline-secondary" id="btnDeselectAllChecks">Снять все</button>
+            <button type="button" class="btn btn-outline-primary" id="btnDefaultJobChecks">По должности</button>
+        </div>
+    </div>
+    <form id="assignChecksForm">
+        {% csrf_token %}
+        <input type="hidden" id="assignEmployeeIdInput" name="employee_id">
+        <div id="assignChecksListContainer" class="border rounded p-3 bg-light" style="max-height: 380px; overflow-y: auto;">
+            <!-- Список проверок с чекбоксами загружается через AJAX -->
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
+            <button type="button" class="btn btn-secondary btn-sm" id="cancelAssignChecksBtn">Отмена</button>
+            <button type="submit" class="btn btn-primary btn-sm font-weight-bold" id="submitAssignChecksBtn">
+                <i class='bx bx-save me-1'></i> Сохранить закрепление
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+$(document).ready(function() {
+    if ($.fn.select2) {
+        $('.select2-filter').select2({ theme: 'bootstrap', width: '100%' });
+    }
+
+    let currentHistoryContext = null;
+    let currentAssignCheckTypesData = [];
+
+    // Функция открытия формы добавления / продления с очисткой контейнеров Select2
+    function openAddRecordModal(options = {}) {
+        $('#historyModalOverlay').hide();
+        $('#historyModalBox').hide();
+        $('#assignChecksOverlay').hide();
+        $('#assignChecksModal').hide();
+
+        $('#addRecordOverlay').show();
+        $('#addRecordModal').show();
+
+        $('#quickAddRecordForm select').each(function() {
+            if ($(this).data('select2')) {
+                try { $(this).select2('destroy'); } catch(e) {}
+            }
+        });
+        $('#quickAddRecordForm .select2-container').remove();
+        $('#quickAddRecordForm select').show().css('display', 'block');
+
+        if (options.employeeId) {
+            $('#id_employee').val(options.employeeId);
+        }
+        if (options.checkTypeId) {
+            $('#id_check_type').val(options.checkTypeId);
+        }
+        if (options.aircraftTypeId) {
+            $('#id_aircraft_type').val(options.aircraftTypeId);
+        }
+        if (options.issuedBy) {
+            $('#id_issued_by').val(options.issuedBy);
+        } else {
+            $('#id_issued_by').val('');
+        }
+
+        // Очищаем номер документа и файл для новой сдачи
+        $('#id_document_number').val('');
+        $('#id_scan_file').val('');
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        $('#checkStartDateInput').val(todayStr);
+
+        if (options.title) {
+            $('#addRecordModalHeaderTitle').html(`<i class='bx bx-refresh text-success me-2'></i> ${options.title}`);
+        } else {
+            $('#addRecordModalHeaderTitle').html(`<i class='bx bx-plus-circle text-primary me-2'></i> Внесение записи о периодической проверке`);
+        }
+
+        autoCalculateEndDate();
+    }
+
+    // Открытие формы добавления записи
+    $('#openAddRecordBtn').on('click', function(e) {
+        e.preventDefault();
+        openAddRecordModal();
+    });
+
+    $('#closeAddRecordBtn, #cancelAddRecordBtn, #addRecordOverlay').on('click', function(e) {
+        e.preventDefault();
+        $('#addRecordOverlay').hide();
+        $('#addRecordModal').hide();
+    });
+
+    // Обработка кнопки «Продлить» в таблице записей
+    $(document).on('click', '.btn-renew-record', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const empId = btn.data('employee-id');
+        const empName = btn.data('employee-name');
+        const ctId = btn.data('check-type-id');
+        const ctName = btn.data('check-type-name');
+        const acId = btn.data('aircraft-type-id');
+        const issuedBy = btn.data('issued-by');
+
+        openAddRecordModal({
+            employeeId: empId,
+            checkTypeId: ctId,
+            aircraftTypeId: acId,
+            issuedBy: issuedBy,
+            title: `Продление проверки: ${ctName} (${empName})`
+        });
+    });
+
+    // Функция загрузки и открытия модального окна истории проверок
+    function openHistoryModal(employeeId, employeeName, checkTypeId, checkTypeName) {
+        currentHistoryContext = {
+            employeeId: employeeId,
+            employeeName: employeeName,
+            checkTypeId: checkTypeId,
+            checkTypeName: checkTypeName
+        };
+
+        $('#historyModalTitle').html(`<i class='bx bx-history me-1'></i> История проверок: ${checkTypeName || 'Все виды проверок'}`);
+        $('#historyModalSubtitle').text(`Сотрудник: ${employeeName}`);
+        $('#historyModalContent').html(`
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                <span class="ms-2 text-muted">Загрузка истории проверок...</span>
+            </div>
+        `);
+
+        $('#historyModalOverlay').show();
+        $('#historyModalBox').show();
+
+        $.ajax({
+            url: '/flight/api/check-history/',
+            method: 'GET',
+            data: {
+                employee_id: employeeId,
+                check_type_id: checkTypeId || ''
+            },
+            success: function(res) {
+                if (res.status === 'success' && res.records && res.records.length > 0) {
+                    let rowsHtml = '';
+                    res.records.forEach(function(rec, idx) {
+                        let statusBadge = '';
+                        if (rec.is_superseded || rec.status === 'renewed') {
+                            statusBadge = `<span class="badge bg-secondary"><i class='bx bx-check-double me-1'></i> Продлена (Архив)</span>`;
+                        } else if (rec.status === 'expired') {
+                            statusBadge = `<span class="badge bg-danger">Просрочена (${rec.days_overdue} дн. назад)</span>`;
+                        } else if (rec.status === 'warning') {
+                            statusBadge = `<span class="badge bg-warning text-dark">Истекает (${rec.days_remaining} дн.)</span>`;
+                        } else {
+                            statusBadge = `<span class="badge bg-success">Действует (${rec.days_remaining} дн.)</span>`;
+                        }
+
+                        let scanLink = rec.scan_url ? `<a href="${rec.scan_url}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-1" title="Открыть скан"><i class='bx bx-file'></i> Скачать скан</a>` : '<span class="text-muted">—</span>';
+                        let isLatestBadge = (idx === 0) ? '<span class="badge bg-primary ms-1">Текущая</span>' : '<span class="badge bg-light text-muted border ms-1">Архив</span>';
+
+                        rowsHtml += `
+                            <tr>
+                                <td>
+                                    <strong>${rec.start_date}</strong> — <strong>${rec.end_date}</strong>
+                                    ${isLatestBadge}
+                                </td>
+                                <td><span class="badge bg-light text-dark border">${rec.aircraft_display}</span></td>
+                                <td>${statusBadge}</td>
+                                <td>${rec.document_number}</td>
+                                <td class="small">${rec.issued_by}</td>
+                                <td>${scanLink}</td>
+                            </tr>
+                        `;
+                    });
+
+                    $('#historyModalContent').html(`
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Период действия</th>
+                                        <th>Тип ВС</th>
+                                        <th>Статус</th>
+                                        <th>№ документа</th>
+                                        <th>Кем выдано</th>
+                                        <th>Скан</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    `);
+                } else {
+                    $('#historyModalContent').html(`
+                        <div class="text-center py-4 text-muted">
+                            <i class='bx bx-folder-open display-4 d-block mb-2 opacity-50'></i>
+                            Ранее внесенных записей по данной проверке не найдено.
+                        </div>
+                    `);
+                }
+            },
+            error: function() {
+                $('#historyModalContent').html(`
+                    <div class="alert alert-danger py-2 mb-0">
+                        Ошибка при загрузке истории проверок сотрудника.
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Клик по кнопке «История» в таблице журнала
+    $(document).on('click', '.btn-view-history', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        openHistoryModal(
+            btn.data('employee-id'),
+            btn.data('employee-name'),
+            btn.data('check-type-id'),
+            btn.data('check-type-name')
+        );
+    });
+
+    // Клик по ячейке в матрице квалификации
+    $(document).on('click', '.matrix-clickable-cell', function(e) {
+        e.preventDefault();
+        const cell = $(this);
+        const hasRecord = cell.data('has-record');
+        const empId = cell.data('employee-id');
+        const empName = cell.data('employee-name');
+        const ctId = cell.data('check-type-id');
+        const ctName = cell.data('check-type-name');
+        const acId = cell.data('aircraft-type-id');
+        const issuedBy = cell.data('issued-by');
+
+        if (hasRecord === 1 || hasRecord === '1') {
+            openHistoryModal(empId, empName, ctId, ctName);
+        } else {
+            openAddRecordModal({
+                employeeId: empId,
+                checkTypeId: ctId,
+                aircraftTypeId: acId,
+                issuedBy: issuedBy,
+                title: `Внесение сдачи проверки: ${ctName} (${empName})`
+            });
+        }
+    });
+
+    // Кнопка «Продлить» прямо из модального окна истории
+    $('#renewFromHistoryBtn').on('click', function(e) {
+        e.preventDefault();
+        if (currentHistoryContext) {
+            openAddRecordModal({
+                employeeId: currentHistoryContext.employeeId,
+                checkTypeId: currentHistoryContext.checkTypeId,
+                title: `Продление проверки: ${currentHistoryContext.checkTypeName} (${currentHistoryContext.employeeName})`
+            });
+        }
+    });
+
+    $('#closeHistoryModalBtn, #cancelHistoryModalBtn, #historyModalOverlay').on('click', function(e) {
+        e.preventDefault();
+        $('#historyModalOverlay').hide();
+        $('#historyModalBox').hide();
+    });
+
+    // ========================================================
+    // ЗАКРЕПЛЕНИЕ ОБЯЗАТЕЛЬНЫХ ПРОВЕРОК ЗА СОТРУДНИКОМ
+    // ========================================================
+    function openAssignChecksModal(employeeId, employeeName) {
+        $('#assignEmployeeIdInput').val(employeeId);
+        $('#assignChecksModalSubtitle').text(`Сотрудник: ${employeeName}`);
+        $('#assignChecksListContainer').html(`
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                <span class="ms-2 text-muted">Загрузка перечня проверок...</span>
+            </div>
+        `);
+
+        $('#assignChecksOverlay').show();
+        $('#assignChecksModal').show();
+
+        $.ajax({
+            url: `/flight/api/employee-checks/${employeeId}/assignments/`,
+            method: 'GET',
+            success: function(res) {
+                if (res.status === 'success') {
+                    currentAssignCheckTypesData = res.all_check_types || [];
+                    const assignedSet = new Set(res.assigned_check_type_ids || []);
+                    let listHtml = '';
+
+                    currentAssignCheckTypesData.forEach(ct => {
+                        const isChecked = assignedSet.has(ct.id) ? 'checked' : '';
+                        listHtml += `
+                            <div class="assign-check-item d-flex justify-content-between align-items-center">
+                                <div class="form-check m-0">
+                                    <input class="form-check-input check-type-assignment-cb" type="checkbox" name="check_type_ids" value="${ct.id}" id="chk_assign_${ct.id}" ${isChecked}>
+                                    <label class="form-check-label font-weight-bold ms-1" for="chk_assign_${ct.id}">
+                                        ${ct.name}
+                                    </label>
+                                    <span class="badge bg-light text-dark border ms-1">${ct.aircraft_display}</span>
+                                </div>
+                                <div class="small text-muted">
+                                    <span class="badge bg-secondary opacity-75">${ct.applies_to_display}</span>
+                                    <span class="ms-1">${ct.validity_months} мес.</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    $('#assignChecksListContainer').html(listHtml);
+                } else {
+                    $('#assignChecksListContainer').html(`<div class="alert alert-danger mb-0">${res.error || 'Ошибка загрузки проверок.'}</div>`);
+                }
+            },
+            error: function() {
+                $('#assignChecksListContainer').html(`<div class="alert alert-danger mb-0">Ошибка связи с сервером.</div>`);
+            }
+        });
+    }
+
+    $(document).on('click', '.btn-assign-checks', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const empId = btn.data('employee-id');
+        const empName = btn.data('employee-name');
+        openAssignChecksModal(empId, empName);
+    });
+
+    $('#closeAssignChecksBtn, #cancelAssignChecksBtn, #assignChecksOverlay').on('click', function(e) {
+        e.preventDefault();
+        $('#assignChecksOverlay').hide();
+        $('#assignChecksModal').hide();
+    });
+
+    $('#btnSelectAllChecks').on('click', function(e) {
+        e.preventDefault();
+        $('.check-type-assignment-cb').prop('checked', true);
+    });
+
+    $('#btnDeselectAllChecks').on('click', function(e) {
+        e.preventDefault();
+        $('.check-type-assignment-cb').prop('checked', false);
+    });
+
+    $('#btnDefaultJobChecks').on('click', function(e) {
+        e.preventDefault();
+        const empId = $('#assignEmployeeIdInput').val();
+        if (empId) {
+            // Перезагружаем дефолтные проверки
+            openAssignChecksModal(empId, $('#assignChecksModalSubtitle').text().replace('Сотрудник: ', ''));
+        }
+    });
+
+    $('#assignChecksForm').on('submit', function(e) {
+        e.preventDefault();
+        const empId = $('#assignEmployeeIdInput').val();
+        const selectedIds = [];
+        $('.check-type-assignment-cb:checked').each(function() {
+            selectedIds.push(parseInt($(this).val()));
+        });
+
+        const submitBtn = $('#submitAssignChecksBtn');
+        submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Сохранение...');
+
+        $.ajax({
+            url: '/flight/api/employee-checks/assignments/save/',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val()
+            },
+            data: JSON.stringify({
+                employee_id: empId,
+                check_type_ids: selectedIds
+            }),
+            success: function(res) {
+                if (res.status === 'success') {
+                    $('#assignChecksOverlay').hide();
+                    $('#assignChecksModal').hide();
+                    location.reload();
+                } else {
+                    alert(res.error || 'Ошибка при сохранении закреплений.');
+                    submitBtn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> Сохранить закрепление');
+                }
+            },
+            error: function() {
+                alert('Произошла ошибка при сохранении закреплений.');
+                submitBtn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> Сохранить закрепление');
+            }
+        });
+    });
+
+    // Автоматический расчет даты окончания при выборе проверки или изменении даты начала
+    function autoCalculateEndDate() {
+        const checkTypeId = $('#id_check_type').val();
+        const startDate = $('#checkStartDateInput').val();
+
+        if (checkTypeId && startDate) {
+            $.ajax({
+                url: '/flight/api/calculate-check-date/',
+                method: 'GET',
+                data: {
+                    check_type_id: checkTypeId,
+                    start_date: startDate
+                },
+                success: function(res) {
+                    if (res.end_date) {
+                        $('#checkEndDateInput').val(res.end_date);
+                    }
+                    if (res.aircraft_type_id) {
+                        $('#id_aircraft_type').val(res.aircraft_type_id);
+                    }
+                }
+            });
+        }
+    }
+
+    $('#id_check_type, #checkStartDateInput').on('change', function() {
+        autoCalculateEndDate();
+    });
+
+    // AJAX сохранение формы быстрого добавления / продления
+    $('#quickAddRecordForm').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        const formData = new FormData(this);
+
+        $.ajax({
+            url: form.attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(res) {
+                $('#addRecordOverlay').hide();
+                $('#addRecordModal').hide();
+                location.reload();
+            },
+            error: function(xhr) {
+                let errText = 'Ошибка валидации формы.';
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    errText = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+                }
+                alert(errText);
+            }
+        });
+    });
+
+    // Удаление записи о проверке
+    $('.btn-delete-record').on('click', function() {
+        const recordId = $(this).data('id');
+        const recordName = $(this).data('name');
+        if (confirm(`Вы действительно хотите удалить запись проверки «${recordName}»?`)) {
+            window.location.href = `/flight/checks/${recordId}/delete/`;
+        }
+    });
+
+    // Удаление вида проверки
+    $('.btn-delete-type').on('click', function() {
+        const typeId = $(this).data('id');
+        const typeName = $(this).data('name');
+        if (confirm(`Вы действительно хотите удалить вид проверки «${typeName}»?`)) {
+            window.location.href = `/flight/checks/types/${typeId}/delete/`;
+        }
+    });
+});
+</script>
+{% endblock %}

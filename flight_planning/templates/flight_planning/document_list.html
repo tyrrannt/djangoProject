@@ -1,0 +1,298 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
+    <style>
+        .filter-card {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        .status-badge-pending {
+            background-color: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fcd34d;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .status-badge-approved {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .status-badge-archived {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .status-badge-draft {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .doc-number-link {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0284c7;
+            text-decoration: none;
+        }
+        .doc-number-link:hover {
+            color: #0369a1;
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .filter-card {
+                padding: 12px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+    <div class="row mb-3">
+        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h2 class="font-weight-bold text-dark mb-1">Журнал документов расстановки экипажей</h2>
+                <p class="text-muted mb-0">История утвержденных версий, плановых документов и оперативных корректировок</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'flight_planning:planning_table' %}"
+                   class="btn btn-outline-dark btn-px-3 py-2 d-flex align-items-center">
+                    <i class='bx bx-calendar text-4 me-2'></i> Сетка планирования
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="filter-card">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label font-weight-semibold text-2">Год</label>
+                        <select name="year" class="form-select form-control-modern">
+                            <option value="">Все годы</option>
+                            {% for y in years_list %}
+                                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label font-weight-semibold text-2">Месяц</label>
+                        <select name="month" class="form-select form-control-modern">
+                            <option value="">Все месяцы</option>
+                            {% for m_val, m_title in months_list %}
+                                <option value="{{ m_val }}" {% if selected_month == m_val %}selected{% endif %}>{{ m_title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label font-weight-semibold text-2">Статус</label>
+                        <select name="status" class="form-select form-control-modern">
+                            <option value="">Все статусы</option>
+                            {% for s_val, s_title in status_choices %}
+                                <option value="{{ s_val }}" {% if selected_status == s_val %}selected{% endif %}>{{ s_title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class='bx bx-filter-alt me-1'></i> Применить
+                        </button>
+                        <a href="{% url 'flight_planning:document_list' %}" class="btn btn-outline-secondary" title="Сбросить фильтры">
+                            <i class='bx bx-reset'></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список документов -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover mb-0" id="documentsTable">
+                            <thead class="table-light">
+                            <tr>
+                                <th style="width: 140px;">Номер</th>
+                                <th style="width: 110px;">Период</th>
+                                <th style="width: 90px; text-align: center;">Редакция</th>
+                                <th style="width: 150px; text-align: center;">Статус</th>
+                                <th>Основание / Причина</th>
+                                <th>Составил</th>
+                                <th>Утвердил</th>
+                                <th style="width: 140px;">Дата создания</th>
+                                <th style="width: 140px; text-align: center;">Действия</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for doc in documents %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'flight_planning:document_detail' doc.id %}" class="doc-number-link">
+                                            № {{ doc.number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <strong>{{ doc.snapshot_data.month_name|default:doc.month }} {{ doc.year }}</strong>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <span class="badge bg-light text-dark border font-weight-bold">
+                                            v.{{ doc.version }}
+                                        </span>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        {% if doc.status == 'approved' %}
+                                            <span class="status-badge-approved">
+                                                <i class='bx bx-check-circle me-1'></i> Утвержден
+                                            </span>
+                                        {% elif doc.status == 'pending' %}
+                                            <span class="status-badge-pending">
+                                                <i class='bx bx-time-five me-1'></i> На утверждении
+                                            </span>
+                                        {% elif doc.status == 'archived' %}
+                                            <span class="status-badge-archived">
+                                                <i class='bx bx-archive me-1'></i> Архивный
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge-draft">
+                                                <i class='bx bx-edit me-1'></i> Черновик
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="max-width: 250px; word-break: break-word;">
+                                            {{ doc.reason|default:"Плановая расстановка" }}
+                                            {% if doc.diff_data %}
+                                                <br><small class="text-primary font-weight-semibold">Изменений: {{ doc.diff_data|length }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-dark font-weight-semibold">{{ doc.author.title|default:doc.author.username|default:"—" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if doc.approved_by %}
+                                            <small class="text-success font-weight-semibold">{{ doc.approved_by.title|default:doc.approved_by.username }}</small>
+                                            <br><small class="text-muted">{{ doc.approved_at|date:"d.m.Y H:i" }}</small>
+                                        {% else %}
+                                            <small class="text-muted fst-italic">— Не утвержден —</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ doc.created_at|date:"d.m.Y H:i" }}</small>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'flight_planning:document_detail' doc.id %}" class="btn btn-outline-primary" title="Открыть документ">
+                                                <i class='bx bx-show'></i>
+                                            </a>
+                                            <a href="{% url 'flight_planning:document_print' doc.id %}" target="_blank" class="btn btn-outline-dark" title="Печатная форма А4">
+                                                <i class='bx bx-printer'></i>
+                                            </a>
+                                            {% if can_approve and doc.is_pending %}
+                                                <button type="button" class="btn btn-success btn-approve-doc" data-doc-id="{{ doc.id }}" data-doc-number="{{ doc.number }}" title="Утвердить документ">
+                                                    <i class='bx bx-check'></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">
+                                        <i class='bx bx-folder-open text-muted' style="font-size: 2.5rem;"></i>
+                                        <p class="mt-2 mb-0">Документы расстановки экипажей не найдены.</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения утверждения -->
+    <div class="modal fade" id="approveConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title font-weight-bold">
+                        <i class='bx bx-check-shield me-2'></i> Утверждение документа
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Вы действительно хотите утвердить документ <strong id="approveModalDocNumber"></strong>?</p>
+                    <div class="alert alert-info py-2">
+                        <i class='bx bx-info-circle me-1'></i> После утверждения данный документ станет действующим официальным планом расстановки экипажей на указанный месяц.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <form id="approveForm" method="post" action="">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success font-weight-bold">
+                            <i class='bx bx-check me-1'></i> Утвердить документ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const approveButtons = document.querySelectorAll('.btn-approve-doc');
+            const approveModal = new bootstrap.Modal(document.getElementById('approveConfirmModal'));
+            const approveForm = document.getElementById('approveForm');
+            const docNumberSpan = document.getElementById('approveModalDocNumber');
+
+            approveButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const docId = this.getAttribute('data-doc-id');
+                    const docNumber = this.getAttribute('data-doc-number');
+                    docNumberSpan.textContent = '№ ' + docNumber;
+                    approveForm.action = `/flight/documents/${docId}/approve/`;
+                    approveModal.show();
+                });
+            });
+        });
+    </script>
+{% endblock %}

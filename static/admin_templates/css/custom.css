@@ -1,1 +1,46 @@
 /* Add here all your CSS customizations */
+
+/* Select2 accessibility and duplicate display prevention */
+select.select2-hidden-accessible,
+.select2-hidden-accessible {
+    border: 0 !important;
+    clip: rect(0 0 0 0) !important;
+    -webkit-clip-path: inset(50%) !important;
+    clip-path: inset(50%) !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    position: absolute !important;
+    width: 1px !important;
+    white-space: nowrap !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.select2-container {
+    box-sizing: border-box !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.select2-container--bootstrap {
+    display: block !important;
+    width: 100% !important;
+}
+
+.select2-container--bootstrap .select2-selection--single {
+    height: 38px !important;
+    line-height: 36px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    padding: 4px 12px !important;
+}
+
+.select2-container--bootstrap .select2-selection--single .select2-selection__rendered {
+    color: #495057 !important;
+    padding: 0 !important;
+    line-height: 28px !important;
+}

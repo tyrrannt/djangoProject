@@ -1,0 +1,710 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load planning_extras %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <style>
+        .kpi-card {
+            border-radius: 8px;
+            padding: 16px 20px;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+        .kpi-card.kpi-total { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+        .kpi-card.kpi-sick { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+        .kpi-card.kpi-vacation { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); }
+        .kpi-card.kpi-reserve { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); }
+        .kpi-card.kpi-training { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
+        
+        .kpi-title { font-size: 0.85rem; font-weight: 500; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 1.8rem; font-weight: 700; margin: 4px 0 0 0; }
+        .kpi-icon { position: absolute; right: 15px; bottom: 10px; font-size: 3rem; opacity: 0.2; }
+
+        .filter-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: #64748b;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 10px 18px;
+        }
+        .nav-tabs .nav-link.active {
+            color: #0284c7;
+            border-bottom-color: #0284c7;
+            background: transparent;
+        }
+
+        .matrix-table-wrapper {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        .matrix-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.82rem;
+        }
+        .matrix-table th, .matrix-table td {
+            border: 1px solid #e2e8f0;
+            padding: 6px 4px;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            min-width: 32px;
+        }
+        .matrix-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #334155;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        .matrix-table th.today-col, .matrix-table td.today-col {
+            background-color: #eff6ff !important;
+            border-left: 2px solid #3b82f6 !important;
+            border-right: 2px solid #3b82f6 !important;
+        }
+        .matrix-table td.pilot-name-cell {
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            left: 0;
+            background: #ffffff;
+            z-index: 6;
+            min-width: 220px;
+            max-width: 260px;
+            padding: 8px 12px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.03);
+            white-space: normal;
+        }
+
+        .status-cell-badge {
+            display: inline-block;
+            width: 28px;
+            height: 24px;
+            line-height: 22px;
+            text-align: center;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.72rem;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease;
+        }
+        .status-cell-badge:hover {
+            transform: scale(1.15);
+            z-index: 10;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .modal-custom-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(2px);
+            z-index: 10050;
+            display: none;
+        }
+        .modal-custom-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+            z-index: 10060;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .content-body {
+            padding: 10px 15px 25px 15px !important;
+        }
+        .page-header {
+            margin: -10px -15px 15px -15px !important;
+        }
+
+        /* Запрет горизонтального дублирования select внутри модальных окон */
+        #statusModalBox .select2-container,
+        #typeModalBox .select2-container,
+        #quickAddStatusForm .select2-container,
+        #quickAddTypeForm .select2-container {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        #statusModalBox select,
+        #typeModalBox select,
+        #quickAddStatusForm select,
+        #quickAddTypeForm select {
+            display: block !important;
+            width: 100% !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: static !important;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 7px 12px;
+            font-size: 0.9rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- KPI карточки -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-2">
+            <div class="kpi-card kpi-total">
+                <div class="kpi-title">Занято сегодня</div>
+                <div class="kpi-value">{{ total_active_today_count }}</div>
+                <i class='bx bx-user-x kpi-icon'></i>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+            <div class="kpi-card kpi-sick">
+                <div class="kpi-title">Больничный</div>
+                <div class="kpi-value">{{ sick_leave_today_count }}</div>
+                <i class='bx bx-plus-medical kpi-icon'></i>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-vacation">
+                <div class="kpi-title">В отпуске</div>
+                <div class="kpi-value">{{ vacation_today_count }}</div>
+                <i class='bx bx-sun kpi-icon'></i>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+            <div class="kpi-card kpi-reserve">
+                <div class="kpi-title">В резерве</div>
+                <div class="kpi-value">{{ reserve_today_count }}</div>
+                <i class='bx bx-shield-quarter kpi-icon'></i>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-training">
+                <div class="kpi-title">КПК / ВЛЭК / Медосмотр</div>
+                <div class="kpi-value">{{ training_today_count }}</div>
+                <i class='bx bx-book-reader kpi-icon'></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладки навигации -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom-0 pb-0">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <ul class="nav nav-tabs border-bottom-0" id="statusTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if active_tab == 'records' %}active{% endif %}" href="?tab=records{% if filter_employee_id %}&employee={{ filter_employee_id }}{% endif %}{% if filter_status_type_id %}&status_type={{ filter_status_type_id }}{% endif %}">
+                            <i class='bx bx-list-ul me-1'></i> Журнал записей
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if active_tab == 'matrix' %}active{% endif %}" href="?tab=matrix&year={{ year }}&month={{ month }}">
+                            <i class='bx bx-grid-alt me-1'></i> Сводная сетка занятости
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if active_tab == 'types' %}active{% endif %}" href="?tab=types">
+                            <i class='bx bx-category me-1'></i> Справочник видов состояний
+                        </a>
+                    </li>
+                </ul>
+
+                {% if is_planner %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'flight_planning:employee_status_create' %}" class="btn btn-primary btn-sm px-3" id="openAddStatusBtn">
+                            <i class='bx bx-plus-circle me-1'></i> Ввести состояние сотрудника
+                        </a>
+                        {% if active_tab == 'types' %}
+                            <a href="{% url 'flight_planning:employee_status_type_create' %}" class="btn btn-outline-primary btn-sm px-3" id="openAddTypeBtn">
+                                <i class='bx bx-plus me-1'></i> Добавить вид состояния
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-body">
+            {% if active_tab == 'records' %}
+                <!-- ================= TAB 1: ЖУРНАЛ ЗАПИСЕЙ ================= -->
+                <div class="filter-panel mb-3">
+                    <form method="get" class="row g-2 align-items-end">
+                        <input type="hidden" name="tab" value="records">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted mb-1">Сотрудник</label>
+                            <select name="employee" class="form-select form-control-modern form-select-sm select2-filter">
+                                <option value="">Все сотрудники</option>
+                                {% for p in pilots_list %}
+                                    <option value="{{ p.id }}" {% if filter_employee_id|slugify == p.id|slugify %}selected{% endif %}>
+                                        {{ p.title|default:p.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted mb-1">Вид состояния</label>
+                            <select name="status_type" class="form-select form-control-modern form-select-sm select2-filter">
+                                <option value="">Все виды</option>
+                                {% for st in status_types %}
+                                    <option value="{{ st.id }}" {% if filter_status_type_id|slugify == st.id|slugify %}selected{% endif %}>
+                                        {{ st.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">Поиск</label>
+                            <input type="text" name="q" value="{{ search_query }}" class="form-control form-control-modern form-control-sm" placeholder="Номер приказа, ФИО, примечание...">
+                        </div>
+                        <div class="col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Найти</button>
+                            <a href="?tab=records" class="btn btn-outline-secondary btn-sm" title="Сбросить фильтры"><i class='bx bx-reset'></i></a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Сотрудник</th>
+                                <th>Должность</th>
+                                <th>Состояние / Статус</th>
+                                <th>Период (С — ПО)</th>
+                                <th>Дней</th>
+                                <th>Документ / Приказ</th>
+                                <th>Примечание</th>
+                                {% if is_planner %}<th class="text-end">Действия</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in records %}
+                                <tr>
+                                    <td><strong>{{ r.employee.title|default:r.employee.username }}</strong></td>
+                                    <td class="text-muted small">{{ r.employee.user_work_profile.job.name|default:"—" }}</td>
+                                    <td>
+                                        <span class="status-pill" style="background-color: {{ r.status_type.color }};">
+                                            {{ r.status_type.name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">{{ r.start_date|date:"d.m.Y" }}</span> — <span class="fw-bold">{{ r.end_date|date:"d.m.Y" }}</span>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">{{ r.duration_days }} дн.</span></td>
+                                    <td>{{ r.document_number|default:"—" }}</td>
+                                    <td class="text-muted small">{{ r.notes|truncatechars:40|default:"—" }}</td>
+                                    {% if is_planner %}
+                                        <td class="text-end">
+                                            <a href="{% url 'flight_planning:employee_status_update' r.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Редактировать">
+                                                <i class='bx bx-edit-alt'></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="confirmDeleteRecord({{ r.id }}, '{{ r.status_type.name }}', '{{ r.employee.title }}')" title="Удалить">
+                                                <i class='bx bx-trash'></i>
+                                            </button>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        <i class='bx bx-folder-open display-4 d-block mb-2 text-muted opacity-50'></i>
+                                        Записи состояний сотрудников не найдены.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% elif active_tab == 'matrix' %}
+                <!-- ================= TAB 2: СВОДНАЯ СЕТКА ЗАНЯТОСТИ ================= -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="?tab=matrix&year={{ prev_year }}&month={{ prev_month }}" class="btn btn-sm btn-outline-secondary">
+                            <i class='bx bx-chevron-left'></i>
+                        </a>
+                        <h4 class="m-0 fw-bold text-primary">{{ month_name }}</h4>
+                        <a href="?tab=matrix&year={{ next_year }}&month={{ next_month }}" class="btn btn-sm btn-outline-secondary">
+                            <i class='bx bx-chevron-right'></i>
+                        </a>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <span class="small text-muted fw-bold">Обозначения:</span>
+                        {% for st in status_types %}
+                            <span class="badge" style="background-color: {{ st.color }}; color: #fff; font-size: 0.75rem;">{{ st.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="matrix-table-wrapper border rounded">
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th class="pilot-name-cell">Сотрудник / Должность</th>
+                                {% for d in days_list %}
+                                    <th class="{% if d == today %}today-col{% endif %}" title="{{ d|date:'d.m.Y' }}">
+                                        {{ d|date:"d" }}<br>
+                                        <span style="font-size: 0.65rem; font-weight: normal; opacity: 0.8;">{{ d|date:"D"|slice:":2" }}</span>
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in matrix_rows %}
+                                <tr>
+                                    <td class="pilot-name-cell">
+                                        <div class="text-truncate" style="max-width: 240px;" title="{{ row.pilot_name }}">
+                                            <strong>{{ row.pilot_name }}</strong>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.72rem;">{{ row.job|default:"—" }}</div>
+                                    </td>
+                                    {% for cell in row.cells %}
+                                        <td class="{% if cell.is_today %}today-col{% endif %}">
+                                            {% if cell.has_status %}
+                                                <span class="status-cell-badge" style="background-color: {{ cell.color }};" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ cell.tooltip }}">
+                                                    {{ cell.abbr }}
+                                                </span>
+                                            {% else %}
+                                                <span style="color: #cbd5e1;">·</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="35" class="text-center py-4 text-muted">Сотрудники не найдены.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% elif active_tab == 'types' %}
+                <!-- ================= TAB 3: СПРАВОЧНИК ВИДОВ СОСТОЯНИЙ ================= -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Порядок</th>
+                                <th>Цвет</th>
+                                <th>Наименование вида состояния</th>
+                                <th>Системный код</th>
+                                <th>Блокирует назначение</th>
+                                <th>Описание регламента</th>
+                                <th>Активен</th>
+                                {% if is_planner %}<th class="text-end">Действия</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for st in status_types %}
+                                <tr>
+                                    <td>{{ st.order }}</td>
+                                    <td>
+                                        <span class="d-inline-block rounded border" style="width: 24px; height: 24px; background-color: {{ st.color }}; vertical-align: middle;"></span>
+                                    </td>
+                                    <td><strong>{{ st.name }}</strong></td>
+                                    <td><code>{{ st.code|default:"—" }}</code></td>
+                                    <td>
+                                        {% if st.is_blocking %}
+                                            <span class="badge bg-warning text-dark"><i class='bx bx-error-circle me-1'></i>Да (Предупреждать)</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-muted border">Нет</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted small">{{ st.description|default:"—" }}</td>
+                                    <td>
+                                        {% if st.is_active %}
+                                            <span class="badge bg-success">Активен</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Отключен</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if is_planner %}
+                                        <td class="text-end">
+                                            <a href="{% url 'flight_planning:employee_status_type_update' st.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Редактировать">
+                                                <i class='bx bx-edit-alt'></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="confirmDeleteType({{ st.id }}, '{{ st.name }}')" title="Удалить">
+                                                <i class='bx bx-trash'></i>
+                                            </button>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">Виды состояний не настроены.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+<!-- Модальное окно быстрого добавления состояния -->
+<div class="modal-custom-overlay" id="statusModalOverlay"></div>
+<div class="modal-custom-box p-4" id="statusModalBox">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <h5 class="m-0 fw-bold text-primary"><i class='bx bx-user-plus me-1'></i> Ввести состояние сотрудника</h5>
+        <button type="button" class="btn-close" id="closeAddStatusBtn"></button>
+    </div>
+    <form id="quickAddStatusForm" method="post" action="{% url 'flight_planning:employee_status_create' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ record_form.employee.label }}</label>
+            {{ record_form.employee }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ record_form.status_type.label }}</label>
+            {{ record_form.status_type }}
+        </div>
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label fw-bold">{{ record_form.start_date.label }}</label>
+                {{ record_form.start_date }}
+            </div>
+            <div class="col-6">
+                <label class="form-label fw-bold">{{ record_form.end_date.label }}</label>
+                {{ record_form.end_date }}
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ record_form.document_number.label }}</label>
+            {{ record_form.document_number }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ record_form.notes.label }}</label>
+            {{ record_form.notes }}
+        </div>
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+            <button type="button" class="btn btn-secondary btn-sm" id="cancelAddStatusBtn">Отмена</button>
+            <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
+        </div>
+    </form>
+</div>
+
+<!-- Модальное окно быстрого добавления вида состояния -->
+<div class="modal-custom-overlay" id="typeModalOverlay"></div>
+<div class="modal-custom-box p-4" id="typeModalBox">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <h5 class="m-0 fw-bold text-primary"><i class='bx bx-category-alt me-1'></i> Добавить вид состояния</h5>
+        <button type="button" class="btn-close" id="closeAddTypeBtn"></button>
+    </div>
+    <form id="quickAddTypeForm" method="post" action="{% url 'flight_planning:employee_status_type_create' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ type_form.name.label }}</label>
+            {{ type_form.name }}
+        </div>
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label fw-bold">{{ type_form.code.label }}</label>
+                {{ type_form.code }}
+            </div>
+            <div class="col-6">
+                <label class="form-label fw-bold">{{ type_form.color.label }}</label>
+                {{ type_form.color }}
+            </div>
+        </div>
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label fw-bold">{{ type_form.order.label }}</label>
+                {{ type_form.order }}
+            </div>
+            <div class="col-6 d-flex align-items-center pt-4">
+                <div class="form-check">
+                    {{ type_form.is_blocking }}
+                    <label class="form-check-label fw-bold text-dark small" for="{{ type_form.is_blocking.id_for_label }}">
+                        Предупреждать при назначении
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ type_form.description.label }}</label>
+            {{ type_form.description }}
+        </div>
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+            <button type="button" class="btn btn-secondary btn-sm" id="cancelAddTypeBtn">Отмена</button>
+            <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    function openAddStatusModal() {
+        $('#statusModalOverlay').show();
+        $('#statusModalBox').show();
+        // Удаляем любые остаточные Select2 контейнеры внутри модалки
+        $('#quickAddStatusForm select').each(function() {
+            if ($(this).data('select2')) {
+                try { $(this).select2('destroy'); } catch(e) {}
+            }
+        });
+        $('#quickAddStatusForm .select2-container').remove();
+        $('#quickAddStatusForm select').show().css('display', 'block');
+    }
+
+    function closeAddStatusModal() {
+        $('#statusModalOverlay').hide();
+        $('#statusModalBox').hide();
+    }
+
+    function openAddTypeModal() {
+        $('#typeModalOverlay').show();
+        $('#typeModalBox').show();
+    }
+
+    function closeAddTypeModal() {
+        $('#typeModalOverlay').hide();
+        $('#typeModalBox').hide();
+    }
+
+    // Обработчики кнопок открытия и закрытия модальных окон
+    $(document).on('click', '#openAddStatusBtn', function(e) {
+        e.preventDefault();
+        openAddStatusModal();
+    });
+
+    $(document).on('click', '#closeAddStatusBtn, #cancelAddStatusBtn, #statusModalOverlay', function(e) {
+        e.preventDefault();
+        closeAddStatusModal();
+    });
+
+    $(document).on('click', '#openAddTypeBtn', function(e) {
+        e.preventDefault();
+        openAddTypeModal();
+    });
+
+    $(document).on('click', '#closeAddTypeBtn, #cancelAddTypeBtn, #typeModalOverlay', function(e) {
+        e.preventDefault();
+        closeAddTypeModal();
+    });
+
+    // AJAX отправка формы добавления статуса
+    $('#quickAddStatusForm').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        $.ajax({
+            url: form.attr('action'),
+            method: 'POST',
+            data: form.serialize(),
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(res) {
+                closeAddStatusModal();
+                location.reload();
+            },
+            error: function(xhr) {
+                let errText = 'Ошибка валидации формы.';
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    errText = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+                }
+                alert(errText);
+            }
+        });
+    });
+
+    // AJAX отправка формы добавления типа статуса
+    $('#quickAddTypeForm').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        $.ajax({
+            url: form.attr('action'),
+            method: 'POST',
+            data: form.serialize(),
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(res) {
+                closeAddTypeModal();
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Ошибка при сохранении вида состояния.');
+            }
+        });
+    });
+
+    function confirmDeleteRecord(id, statusName, empName) {
+        if (confirm(`Удалить запись «${statusName}» для сотрудника ${empName}?`)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/flight/statuses/${id}/delete/`;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function confirmDeleteType(id, typeName) {
+        if (confirm(`Удалить вид состояния «${typeName}»?`)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/flight/statuses/types/${id}/delete/`;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    $(document).ready(function() {
+        // Инициализация Select2 для фильтров
+        if ($.fn.select2) {
+            $('.select2-filter').select2({ theme: 'bootstrap', width: '100%' });
+        }
+
+        // Инициализация тултипов Bootstrap
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

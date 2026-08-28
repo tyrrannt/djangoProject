@@ -1,0 +1,81 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="card-title m-0 font-weight-bold">
+                        <i class='bx bx-cog text-primary me-2'></i>
+                        {{ title }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <strong>Ошибка сохранения:</strong> Пожалуйста, исправьте ошибки в форме ниже.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label font-weight-bold">Наименование проверки <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-bold">Код / Шифр</label>
+                                {{ form.code }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-bold">Тип ВС</label>
+                                {{ form.aircraft_type }}
+                                <small class="text-muted">Оставьте пустым для универсальных проверок (*)</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-bold">Категория персонала <span class="text-danger">*</span></label>
+                                {{ form.applies_to }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-bold">Периодичность (в месяцах) <span class="text-danger">*</span></label>
+                                {{ form.validity_months }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-bold">Дополнительные дни</label>
+                                {{ form.validity_days }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-bold">Порядок сортировки</label>
+                                {{ form.order }}
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center pt-4">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label font-weight-bold" for="{{ form.is_active.id_for_label }}">
+                                        Активный вид проверки
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Описание / Нормативное основание</label>
+                                {{ form.description }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <a href="{% url 'flight_planning:periodic_check_list' %}?tab=types" class="btn btn-outline-secondary">
+                                <i class='bx bx-arrow-back me-1'></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold">
+                                <i class='bx bx-save me-1'></i> Сохранить вид проверки
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

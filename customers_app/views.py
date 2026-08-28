@@ -332,17 +332,32 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
         # ----- 3. ГРАФИК ПЛАНИРОВАНИЯ (для пилотов) -----
         from flight_planning.selectors import get_pilot_assignments_for_month
-        from flight_planning.services import get_grouped_pilot_schedule
+        from flight_planning.services import (
+            get_grouped_pilot_schedule,
+            get_latest_approved_document,
+            get_pilot_schedule_from_snapshot
+        )
+        from flight_planning.permissions import is_flight_planner
         try:
-            assignments = get_pilot_assignments_for_month(
-                pilot_id=user_obj.id,
-                year=today.year,
-                month=today.month
-            )
-            grouped_schedule = get_grouped_pilot_schedule(list(assignments), today.year, today.month)
-            if len(grouped_schedule) > 1:
+            is_planner = is_flight_planner(user_obj)
+            latest_approved_doc = get_latest_approved_document(today.year, today.month)
+            if not is_planner and latest_approved_doc:
+                grouped_schedule = get_pilot_schedule_from_snapshot(
+                    latest_approved_doc.snapshot_data,
+                    user_obj.id,
+                    today.year,
+                    today.month
+                )
+            else:
+                assignments = get_pilot_assignments_for_month(
+                    pilot_id=user_obj.id,
+                    year=today.year,
+                    month=today.month
+                )
+                grouped_schedule = get_grouped_pilot_schedule(list(assignments), today.year, today.month)
+            if grouped_schedule and len(grouped_schedule) > 1:
                 context['grouped_schedule'] = grouped_schedule
-            elif grouped_schedule[0]['mpd_name'] != 'Пропуск':
+            elif grouped_schedule and len(grouped_schedule) == 1 and grouped_schedule[0].get('mpd_name') != 'Пропуск':
                 context['grouped_schedule'] = grouped_schedule
             else:
                 context['grouped_schedule'] = None

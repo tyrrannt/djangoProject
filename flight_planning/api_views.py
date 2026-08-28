@@ -6,9 +6,13 @@ from rest_framework import generics
 from django.utils import timezone
 from .models import PilotAssignment
 from hrdepartment_app.models import PlaceProductionActivity
-from .permissions import CanViewFlightPlanning
+from .permissions import CanViewFlightPlanning, is_flight_planner
 from .selectors import get_pilot_assignments_for_month
-from .services import get_grouped_pilot_schedule
+from .services import (
+    get_grouped_pilot_schedule,
+    get_latest_approved_document,
+    get_pilot_schedule_from_snapshot
+)
 from .serializers import GroupedScheduleSerializer, MPDSerializer
 
 
@@ -19,6 +23,9 @@ class MyScheduleAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         """Обрабатывает GET-запрос графика пользователя.
+
+        Для летного состава возвращается официально утвержденный график (при наличии).
+        Для планировщиков или при отсутствии утвержденного документа — текущие назначения.
 
         Args:
             request (Request): HTTP-запрос DRF с параметрами 'year' и 'month'.
@@ -37,18 +44,31 @@ class MyScheduleAPIView(APIView):
         except ValueError:
             return Response({'error': 'Invalid year or month'}, status=400)
 
-        assignments = get_pilot_assignments_for_month(
-            pilot_id=request.user.id,
-            year=year,
-            month=month
-        )
+        is_planner = is_flight_planner(request.user)
+        latest_approved_doc = get_latest_approved_document(year, month)
 
-        grouped_schedule = get_grouped_pilot_schedule(list(assignments), year, month)
+        if not is_planner and latest_approved_doc:
+            grouped_schedule = get_pilot_schedule_from_snapshot(
+                latest_approved_doc.snapshot_data,
+                request.user.id,
+                year,
+                month
+            )
+        else:
+            assignments = get_pilot_assignments_for_month(
+                pilot_id=request.user.id,
+                year=year,
+                month=month
+            )
+            grouped_schedule = get_grouped_pilot_schedule(list(assignments), year, month)
+
         serializer = GroupedScheduleSerializer(grouped_schedule, many=True)
-        
+
         return Response({
             'year': year,
             'month': month,
+            'is_official': bool(latest_approved_doc),
+            'document_id': latest_approved_doc.id if latest_approved_doc else None,
             'schedule': serializer.data
         })
 

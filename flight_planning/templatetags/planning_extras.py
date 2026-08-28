@@ -16,6 +16,26 @@ def get_item(dictionary, key):
     return dictionary.get(key, {})
 
 
+@register.filter(name='abs')
+def abs_filter(val):
+    """Возвращает абсолютное значение числа (модуль).
+
+    Args:
+        val: Число или строка с числом.
+
+    Returns:
+        int | float: Модуль числа или исходное значение при ошибке.
+    """
+    try:
+        return abs(int(val))
+    except (ValueError, TypeError):
+        try:
+            return abs(float(val))
+        except (ValueError, TypeError):
+            return val
+
+
+
 @register.simple_tag
 def static_version(path):
     """

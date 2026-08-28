@@ -1,0 +1,81 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title m-0 fw-bold text-primary">{{ title }}</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.code.label }}</label>
+                                {{ form.code }}
+                                {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.color.label }}</label>
+                                {{ form.color }}
+                                {% if form.color.errors %}<div class="text-danger small">{{ form.color.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.order.label }}</label>
+                                {{ form.order }}
+                                {% if form.order.errors %}<div class="text-danger small">{{ form.order.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center pt-4">
+                                <div class="form-check">
+                                    {{ form.is_blocking }}
+                                    <label class="form-check-label fw-bold" for="{{ form.is_blocking.id_for_label }}">
+                                        {{ form.is_blocking.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label fw-bold" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{% url 'flight_planning:employee_status_list' %}?tab=types" class="btn btn-outline-secondary">
+                                <i class='bx bx-arrow-back me-1'></i> Назад к справочнику
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class='bx bx-save me-1'></i> Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+{% endblock %}

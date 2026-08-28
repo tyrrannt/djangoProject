@@ -101,11 +101,16 @@ function showConflictModal(conflictData, onConfirm, onCancel) {
     if (conflictData && conflictData.conflicts && conflictData.conflicts.length > 0) {
         conflictData.conflicts.forEach(c => {
             const dateTitle = c.date_formatted || c.date;
-            const pilotInfo = c.pilot_name ? ` — ${c.pilot_name}` : '';
+            const pilotInfo = c.pilot_name ? ` — <strong>${c.pilot_name}</strong>` : '';
             const desc = c.description || (c.old_mpd_name ? `Назначен на «${c.old_mpd_name}»` : '');
+            let statusBadge = '';
+            if (c.conflict_kind === 'employee_status') {
+                const color = c.status_color || '#ef4444';
+                statusBadge = `<span class="badge ms-2" style="background-color: ${color}; color: #ffffff; font-size: 0.75rem;">${c.status_name || 'Особый статус'}</span>`;
+            }
             $list.append(`
                 <div class="conflict-item">
-                    <div class="conflict-date-title">📅 ${dateTitle}${pilotInfo}</div>
+                    <div class="conflict-date-title">📅 ${dateTitle}${pilotInfo}${statusBadge}</div>
                     <div class="conflict-desc">${desc}</div>
                 </div>
             `);
@@ -1419,11 +1424,28 @@ $(function () {
             });
         }
 
+        const startDateVal = $('#cbStartDate').val();
+        const endDateVal = $('#cbEndDate').val();
+
         let optionsHtml = '<option value="">— Выберите сотрудника —</option>';
         filteredCandidates.forEach(p => {
             const sel = (selectedPilotId && selectedPilotId == p.id) ? 'selected' : '';
             const jobBadge = p.job ? ` — [${p.job}]` : '';
-            optionsHtml += `<option value="${p.id}" ${sel}>${p.name}${jobBadge}</option>`;
+
+            // Индикация активного состояния/статуса сотрудника
+            let statusSuffix = '';
+            if (window.EMPLOYEE_STATUS_MAP && window.EMPLOYEE_STATUS_MAP[p.id]) {
+                const pStatuses = window.EMPLOYEE_STATUS_MAP[p.id];
+                const activeSt = pStatuses.find(st => {
+                    if (!startDateVal || !endDateVal) return true;
+                    return (startDateVal <= st.end_date && endDateVal >= st.start_date);
+                });
+                if (activeSt) {
+                    statusSuffix = ` ⚠️ [${activeSt.status_name}: ${activeSt.period_display}]`;
+                }
+            }
+
+            optionsHtml += `<option value="${p.id}" ${sel}>${p.name}${jobBadge}${statusSuffix}</option>`;
         });
 
         const slotHtml = `
@@ -1465,6 +1487,8 @@ $(function () {
 
     function validateCrewLive() {
         const flightType = $('#cbFlightTypeSelect').val();
+        const startDate = $('#cbStartDate').val();
+        const endDate = $('#cbEndDate').val();
         const members = [];
 
         $('.crew-role-slot').each(function () {
@@ -1487,17 +1511,28 @@ $(function () {
             url: '/flight/api/crew/validate/',
             method: 'POST',
             headers: {'X-CSRFToken': getCookie('csrftoken')},
-            data: JSON.stringify({ flight_type: flightType, members: members }),
+            data: JSON.stringify({
+                flight_type: flightType,
+                members: members,
+                start_date: startDate,
+                end_date: endDate
+            }),
             contentType: 'application/json',
             success: function (res) {
                 $alert.show();
+                let htmlMessage = '';
                 if (res.is_valid) {
                     $alert.removeClass('invalid').addClass('valid');
-                    $text.html('✓ <strong>Состав экипажа полностью соответствует правилам</strong>');
+                    htmlMessage = '✓ <strong>Состав экипажа полностью соответствует правилам</strong>';
                 } else {
                     $alert.removeClass('valid').addClass('invalid');
-                    $text.html('⚠️ ' + (res.errors ? res.errors.join('<br>⚠️ ') : 'Ошибка валидации'));
+                    htmlMessage = '⚠️ ' + (res.errors ? res.errors.join('<br>⚠️ ') : 'Ошибка валидации');
                 }
+
+                if (res.status_warnings && res.status_warnings.length > 0) {
+                    htmlMessage += '<div class="mt-2 pt-2 border-top text-warning fw-bold"><i class="bx bx-error me-1"></i>Предупреждение о статусах занятости персонала:<br>• ' + res.status_warnings.join('<br>• ') + '</div>';
+                }
+                $text.html(htmlMessage);
             },
             error: function () {
                 $alert.hide();
@@ -1542,6 +1577,66 @@ $(function () {
                 showCancel: false
             });
             return;
+        }
+
+        // Предупреждение о статусах занятости персонала (Отпуск, Больничный, Резерв, КПК, ВЛЭК и др.)
+        if (!forceOverride && window.EMPLOYEE_STATUS_MAP) {
+            let statusWarnings = [];
+            members.forEach(m => {
+                const pStatuses = window.EMPLOYEE_STATUS_MAP[m.member_id];
+                if (pStatuses && Array.isArray(pStatuses)) {
+                    const activeSt = pStatuses.find(st => (startDate <= st.end_date && endDate >= st.start_date));
+                    if (activeSt && activeSt.is_blocking) {
+                        const pilotObj = window.ALL_PILOTS ? window.ALL_PILOTS.find(p => p.id === m.member_id) : null;
+                        const pName = pilotObj ? pilotObj.name : `Сотрудник #${m.member_id}`;
+                        const docInfo = activeSt.document_number ? ` (док. №${activeSt.document_number})` : '';
+                        statusWarnings.push(`• <strong>${pName}</strong>: статус «${activeSt.status_name}» (${activeSt.period_display})${docInfo}`);
+                    }
+                }
+            });
+
+            if (statusWarnings.length > 0) {
+                showModal({
+                    title: '⚠️ Предупреждение: статус занятости сотрудника',
+                    message: `Внимание: Следующие сотрудники находятся в особом статусе/состоянии на выбранные даты:<br><br>${statusWarnings.join('<br>')}<br><br><span class="text-muted small">Вы действительно хотите назначить сотрудника в экипаж?</span>`,
+                    type: 'warning',
+                    showCancel: true,
+                    confirmText: 'Все равно сохранить',
+                    cancelText: 'Отмена',
+                    onConfirm: function () {
+                        submitCrewForm(true);
+                    }
+                });
+                return;
+            }
+        }
+
+        // Рекомендательная проверка сроков действия периодических проверок персонала
+        if (!forceOverride && window.PILOTS_CHECK_STATUS_MAP) {
+            let checkWarnings = [];
+            members.forEach(m => {
+                const pStatus = window.PILOTS_CHECK_STATUS_MAP[m.member_id];
+                if (pStatus && (pStatus.has_expired || pStatus.has_missing)) {
+                    const pilotObj = window.ALL_PILOTS ? window.ALL_PILOTS.find(p => p.id === m.member_id) : null;
+                    const pName = pilotObj ? pilotObj.name : `Сотрудник #${m.member_id}`;
+                    checkWarnings.push(`• <strong>${pName}</strong>: ${pStatus.summary_text || 'Просрочены/не пройдены проверки'}`);
+                }
+            });
+
+            if (checkWarnings.length > 0) {
+                showModal({
+                    title: '⚠️ Предупреждение: периодические проверки',
+                    message: `Внимание: У следующих членов экипажа имеются непройденные или просроченные периодические проверки:<br><br>${checkWarnings.join('<br>')}<br><br><span class="text-muted small">Назначение носит рекомендательный характер. Назначенный сотрудник будет отмечен предупреждающим значком ⚠️ в сетке планирования.</span><br><br>Продолжить сохранение экипажа?`,
+                    type: 'warning',
+                    showCancel: true,
+                    confirmText: 'Все равно сохранить',
+                    cancelText: 'Отмена',
+                    onConfirm: function () {
+                        submitCrewForm(true);
+                    }
+                });
+                return;
+            }
         }
 
         showModal({
@@ -1835,4 +1930,211 @@ $(function () {
     if (savedTheme) {
         $('#themeSelector').val(savedTheme).trigger('change');
     }
+
+    // ========================================================
+    // ФИКСАЦИЯ СОСТОЯНИЯ / СОЗДАНИЕ ДОКУМЕНТА РАССТАНОВКИ
+    // ========================================================
+    function openSaveStateModal() {
+        $('#docReasonError').hide();
+        $('#saveStateDocOverlay').show();
+        $('#saveStateDocModal').show();
+    }
+
+    function closeSaveStateModal() {
+        $('#saveStateDocOverlay').hide();
+        $('#saveStateDocModal').hide();
+    }
+
+    $('#openSaveStateModalBtn, #bannerSaveStateBtn').on('click', function () {
+        openSaveStateModal();
+    });
+
+    $('#closeSaveStateDocCross, #saveStateDocCancelBtn, #saveStateDocOverlay').on('click', function () {
+        closeSaveStateModal();
+    });
+
+    $('#saveStateDocSubmitBtn').on('click', function () {
+        const reason = $('#docReasonInput').val().trim();
+        const urlParams = new URLSearchParams(window.location.search);
+        const now = new Date();
+        const year = urlParams.get('year') || now.getFullYear();
+        const month = urlParams.get('month') || (now.getMonth() + 1);
+
+        if ($('#docReasonInput').prev().find('.text-danger').length > 0 && !reason) {
+            $('#docReasonError').show();
+            $('#docReasonInput').focus();
+            return;
+        }
+
+        $('#docReasonError').hide();
+        $('#saveStateDocSubmitBtn').prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Сохранение...');
+
+        $.ajax({
+            url: '/flight/documents/create/',
+            method: 'POST',
+            headers: {'X-CSRFToken': getCookie('csrftoken')},
+            data: {
+                year: year,
+                month: month,
+                reason: reason
+            },
+            success: function (res) {
+                closeSaveStateModal();
+                showModal({
+                    title: 'Документ сформирован!',
+                    message: res.message || 'Документ успешно сформирован и отправлен на утверждение.',
+                    type: 'success',
+                    showCancel: false,
+                    onConfirm: function () {
+                        if (res.redirect_url) {
+                            window.location.href = res.redirect_url;
+                        } else {
+                            window.location.reload();
+                        }
+                    }
+                });
+            },
+            error: function (xhr) {
+                $('#saveStateDocSubmitBtn').prop('disabled', false).html('<i class="bx bx-check-double me-1"></i> Зафиксировать и отправить на утверждение');
+                const err = xhr.responseJSON?.error || 'Ошибка при формировании документа расстановки.';
+                showModal({
+                    title: 'Ошибка',
+                    message: err,
+                    type: 'error',
+                    showCancel: false
+                });
+            }
+        });
+    });
+
+    // ========================================================
+    // АВТОПРОКРУТКА И ЦЕНТРИРОВАНИЕ НА ТЕКУЩИЙ ДЕНЬ (СЕГОДНЯ)
+    // ========================================================
+    function scrollToToday(smooth = true) {
+        const $wrapper = $('#planningTableWrapper');
+        const $todayTh = $('th.today-column-header');
+
+        if ($wrapper.length && $todayTh.length) {
+            const wrapperWidth = $wrapper.width();
+            const $mpdTh = $('th:first-child');
+            const mpdWidth = $mpdTh.outerWidth() || 180;
+
+            const todayOffsetLeft = $todayTh[0].offsetLeft;
+            const todayWidth = $todayTh.outerWidth() || 120;
+
+            const visibleAreaWidth = wrapperWidth - mpdWidth;
+            const targetScrollLeft = todayOffsetLeft - mpdWidth - (visibleAreaWidth / 2) + (todayWidth / 2);
+            const scrollValue = Math.max(0, targetScrollLeft);
+
+            if (smooth) {
+                $wrapper.stop().animate({ scrollLeft: scrollValue }, 400);
+            } else {
+                $wrapper.scrollLeft(scrollValue);
+            }
+        }
+    }
+
+    if ($('th.today-column-header').length) {
+        setTimeout(function () {
+            scrollToToday(false);
+        }, 150);
+    }
+
+    $('#todayNavBtn').on('click', function (e) {
+        if ($('th.today-column-header').length) {
+            e.preventDefault();
+            scrollToToday(true);
+        }
+    });
+
+    // ========================================================
+    // ДЕТАЛЬНЫЙ ПРОСМОТР ПЕРИОДИЧЕСКИХ ПРОВЕРОК СОТРУДНИКА
+    // ========================================================
+    function openPilotCheckDetails(pilotId) {
+        if (!pilotId) return;
+
+        const pilotObj = window.ALL_PILOTS ? window.ALL_PILOTS.find(p => p.id == pilotId) : null;
+        const pilotName = pilotObj ? pilotObj.name : `Сотрудник #${pilotId}`;
+
+        $('#pcdPilotNameTitle').html(`<i class="bx bx-check-shield me-2"></i> Проверки сотрудника: ${pilotName}`);
+        $('#pcdChecksTableBody').html('<tr><td colspan="5" class="text-center py-3"><i class="bx bx-loader-alt bx-spin"></i> Загрузка данных проверок...</td></tr>');
+        $('#pcdOverallStatusBanner').hide();
+
+        $('#pilotCheckDetailsOverlay').show();
+        $('#pilotCheckDetailsModal').show();
+
+        $.ajax({
+            url: `/flight/api/pilot-checks/${pilotId}/`,
+            method: 'GET',
+            success: function (res) {
+                if (res.status === 'success' && res.check_status) {
+                    const cs = res.check_status;
+                    let bannerHtml = '';
+                    if (cs.has_expired || cs.has_missing) {
+                        bannerHtml = `<div class="alert alert-danger py-2 mb-3"><i class="bx bx-error-circle me-1"></i> <strong>Внимание:</strong> Имеются просроченные или непройденные проверки: ${cs.summary_text}</div>`;
+                    } else if (cs.has_warning) {
+                        bannerHtml = `<div class="alert alert-warning py-2 mb-3"><i class="bx bx-time-five me-1"></i> <strong>Предупреждение:</strong> Имеются проверки, истекающие в ближайшие 30 дней: ${cs.summary_text}</div>`;
+                    } else {
+                        bannerHtml = `<div class="alert alert-success py-2 mb-3"><i class="bx bx-check-circle me-1"></i> Все обязательные периодические проверки в норме и действительны.</div>`;
+                    }
+                    $('#pcdOverallStatusBanner').html(bannerHtml).show();
+
+                    const checksList = cs.details || cs.checks || [];
+                    let rowsHtml = '';
+                    if (checksList.length > 0) {
+                        checksList.forEach(c => {
+                            const daysLeft = (c.days_remaining !== undefined && c.days_remaining !== null) ? c.days_remaining : c.days_left;
+                            let statusBadge = '';
+                            if (c.status === 'expired') {
+                                const overdueDays = (daysLeft !== null && daysLeft !== undefined) ? Math.abs(daysLeft) + ' дн. назад' : '';
+                                statusBadge = `<span class="badge bg-danger">Просрочена (${overdueDays})</span>`;
+                            } else if (c.status === 'warning') {
+                                statusBadge = `<span class="badge bg-warning text-dark">Истекает (${daysLeft} дн.)</span>`;
+                            } else if (c.status === 'valid') {
+                                statusBadge = `<span class="badge bg-success">Действует (${daysLeft} дн.)</span>`;
+                            } else {
+                                statusBadge = `<span class="badge bg-secondary">Не пройдена / Нет данных</span>`;
+                            }
+
+                            const checkTitle = c.check_name || c.check_type_name || 'Периодическая проверка';
+                            const startDateStr = c.start_date || '—';
+                            const endDateStr = c.end_date || '—';
+                            const acStr = c.aircraft_type_name || '* (Все ВС)';
+                            const docInfo = c.document_number ? `<br><small class="text-muted">№ ${c.document_number}</small>` : '';
+
+                            rowsHtml += `
+                                <tr>
+                                    <td><strong>${checkTitle}</strong>${docInfo}</td>
+                                    <td><span class="badge bg-light text-dark border">${acStr}</span></td>
+                                    <td>${startDateStr}</td>
+                                    <td><strong>${endDateStr}</strong></td>
+                                    <td>${statusBadge}</td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        rowsHtml = '<tr><td colspan="5" class="text-center text-muted py-3">Нет зарегистрированных проверок</td></tr>';
+                    }
+                    $('#pcdChecksTableBody').html(rowsHtml);
+                    $('#pcdOpenJournalLink').attr('href', `/flight/checks/?employee_id=${pilotId}`);
+                }
+            },
+            error: function () {
+                $('#pcdChecksTableBody').html('<tr><td colspan="5" class="text-center text-danger py-3">Не удалось загрузить данные о проверках</td></tr>');
+            }
+        });
+    }
+
+    $(document).on('click', '.check-status-icon', function (e) {
+        e.stopPropagation();
+        const pilotId = $(this).data('pilot-id');
+        openPilotCheckDetails(pilotId);
+    });
+
+    $('#closePilotCheckDetailsCross, #closePilotCheckDetailsBtn, #pilotCheckDetailsOverlay').on('click', function () {
+        $('#pilotCheckDetailsOverlay').hide();
+        $('#pilotCheckDetailsModal').hide();
+    });
 });
+
+
