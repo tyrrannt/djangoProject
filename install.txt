@@ -239,3 +239,70 @@ Supervisor автоматически запустит Gunicorn после эт�
 
 Полная копия базы:
 python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.Permission --indent 2 > dump.json
+
+Или же так:
+> У меня на проде бд располагается в базе MariaDB и прежде чем заливать все изменения я хочу сделать копию базы, как мне сделать копию всей базы?
+
+● Search(Inspect DATABASES in settings.py)
+● Read(/home/agy/djangoProject/djangoProject/settings.py) (ctrl+o to expand)
+
+▸ Thought for 2s, 304 tokens
+  Defining Database Setup
+  Для создания полной резервной копии (дампа) базы данных MariaDB на продакшене используется утилита mariadb-dump (или ее аналог mysqldump).
+
+  Ниже приведены самые надежные и проверенные варианты создания дампа.
+  ──────
+  ### Вариант 1. Рекомендуемый способ (со сжатием gzip и транзакционной целостностью)
+
+  Выполните команду в терминале на сервере (замените имя_пользователя и имя_базы_данных на ваши):
+
+    mariadb-dump -u имя_пользователя -p \
+      --single-transaction \
+      --quick \
+      --routines \
+      --triggers \
+      --events \
+      имя_базы_данных | gzip > "backup_$(date +%Y-%m-%d_%H-%M-%S).sql.gz"
+
+  (Если утилита mariadb-dump не найдена, используйте mysqldump — у них одинаковый синтаксис).
+
+  #### Что означают эти флаги:
+
+  • --single-transaction — создает целостный снимок БД для таблиц InnoDB без блокировки чтения/записи (сайт и пользователи продолжают работать без
+  остановок).
+  • --quick — читает строки таблицы построчно, не загружая всю базу в оперативную память.
+  • --routines, --triggers, --events — сохраняет хранимые процедуры, триггеры и события.
+  • | gzip — сжимает файл на лету (архив будет весить в 5–10 раз меньше).
+  • "backup_$(date +%Y-%m-%d_%H-%M-%S).sql.gz" — автоматически добавляет текущую дату и время в имя файла.
+  ──────
+  ### Вариант 2. Быстрый дамп с использованием данных из .env
+
+  Если вы находитесь в директории проекта, можно взять параметры прямо из файла конфигурации:
+
+    # Из папки djangoProject
+    source .env 2>/dev/null || true
+
+    mariadb-dump -u "${DATABASE_USERNAME}" -p"${DATABASE_PASSWORD}" -h "${DATABASE_HOST:-localhost}" \
+      --single-transaction --quick --routines --triggers "${DATABASE_NAME}" | gzip > "backup_${DATABASE_NAME}_$(date +%Y%m%d_%H%M%S).sql.gz"
+  ──────
+  ### Вариант 3. Если MariaDB работает в Docker-контейнере
+
+  Если база данных запущена в Docker:
+
+    docker exec -i имя_контейнера_mariadb mariadb-dump -u root -pПАРОЛЬ_ROOT \
+      --single-transaction --quick --routines --triggers имя_базы_данных | gzip > "backup_$(date +%Y-%m-%d_%H-%M-%S).sql.gz"
+  ──────
+  ### Как проверить созданный архив
+
+  1. Посмотреть размер созданного файла:
+    ls -lh backup_*.sql.gz
+
+  2. Проверить целостность архива:
+    gzip -t backup_*.sql.gz && echo "Архив корректен"
+
+  ──────
+  ### Как восстановить базу из копии (если понадобится откат)
+
+  Если в процессе деплоя что-то пойдет не так, восстановить базу из архива можно одной командой:
+
+    gunzip < backup_2026-08-28_18-15-00.sql.gz | mariadb -u имя_пользователя -p имя_базы_данных
