@@ -84,6 +84,7 @@ from .services import (
     ALL_STAFF_JOB_NAMES,
     format_short_job
 )
+from .importers import PeriodicCheckImporter
 from contracts_app.templatetags.custom import FIO_format
 
 # Должности летного состава для планирования
@@ -3375,6 +3376,93 @@ def get_pilot_employee_statuses_api(request, pilot_id: int):
     """
     status_data = get_pilot_employee_statuses(pilot_id)
     return JsonResponse({'status': 'success', 'data': status_data})
+
+
+@login_required
+@flight_planner_required
+def settings_view(request):
+    """Служебный раздел настроек модуля планирования полетов.
+
+    Предоставляет интерфейс импорта данных из внешних систем (Excel/CSV/буфер обмена),
+    скачивания эталонных шаблонов и управления служебными справочниками.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+
+    Returns:
+        HttpResponse: Отрендеренная страница настроек модуля.
+    """
+    total_checks_count = PeriodicCheckRecord.objects.count()
+    total_check_types_count = PeriodicCheckType.objects.count()
+    total_statuses_count = EmployeeStatusRecord.objects.count()
+    total_users_count = DataBaseUser.objects.filter(is_active=True).count()
+
+    context = {
+        'is_planner': is_flight_planner(request.user),
+        'total_checks_count': total_checks_count,
+        'total_check_types_count': total_check_types_count,
+        'total_statuses_count': total_statuses_count,
+        'total_users_count': total_users_count,
+    }
+    return render(request, 'flight_planning/settings.html', context)
+
+
+@login_required
+@flight_planner_required
+@require_http_methods(["POST"])
+def import_checks_api(request):
+    """API для выполнения импорта периодических мероприятий из файла или текста.
+
+    Поддерживает режимы предварительного просмотра (dry_run) и сохранения в базу данных.
+
+    Args:
+        request (HttpRequest): HTTP POST запрос с файлом или текстовым буфером.
+
+    Returns:
+        JsonResponse: Результат парсинга/импорта с детализацией по строкам.
+    """
+    file_obj = request.FILES.get('file')
+    text_data = request.POST.get('text_data', '')
+    dry_run = request.POST.get('dry_run', 'true').lower() in ['true', '1', 'yes']
+    auto_create_types = request.POST.get('auto_create_types', 'true').lower() in ['true', '1', 'yes']
+
+    if not file_obj and not text_data.strip():
+        return JsonResponse({
+            'success': False,
+            'summary_message': 'Пожалуйста, выберите файл (.xlsx, .csv, .tsv) или вставьте текст в поле ввода.'
+        }, status=400)
+
+    filename = getattr(file_obj, 'name', '') if file_obj else 'clipboard.txt'
+
+    result = PeriodicCheckImporter.process(
+        file_obj=file_obj,
+        text_content=text_data,
+        filename=filename,
+        user=request.user,
+        dry_run=dry_run,
+        auto_create_types=auto_create_types
+    )
+
+    return JsonResponse(result)
+
+
+@login_required
+def download_check_template_view(request):
+    """Генерация и скачивание эталонного CSV-шаблона для импорта мероприятий.
+
+    Args:
+        request (HttpRequest): HTTP GET запрос.
+
+    Returns:
+        HttpResponse: Файл шаблона в формате CSV (UTF-8 with BOM).
+    """
+    csv_content = PeriodicCheckImporter.generate_template_csv()
+    # Добавляем UTF-8 BOM для корректного открытия в Excel на Windows
+    bom_csv = '\ufeff' + csv_content
+    response = HttpResponse(bom_csv, content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="shablon_periodicheskie_meropriyatiya.csv"'
+    return response
+
 
 
 

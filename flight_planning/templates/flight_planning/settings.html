@@ -1,0 +1,1113 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load planning_extras %}
+
+{% block title %}Настройки и интеграция // Планирование полетов{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'admin_templates/css/flight_planning.css' %}"/>
+    <style>
+        :root {
+            --fp-primary: #2563eb;
+            --fp-primary-hover: #1d4ed8;
+            --fp-success: #10b981;
+            --fp-warning: #f59e0b;
+            --fp-danger: #ef4444;
+            --fp-dark: #0f172a;
+            --fp-slate-50: #f8fafc;
+            --fp-slate-100: #f1f5f9;
+            --fp-slate-200: #e2e8f0;
+            --fp-slate-400: #94a3b8;
+            --fp-slate-600: #475569;
+            --fp-card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            --fp-card-hover-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+        }
+
+        .settings-header-banner {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 12px;
+            padding: 24px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .settings-header-banner::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* KPI Карточки */
+        .kpi-stat-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 18px 20px;
+            border: 1px solid var(--fp-slate-200);
+            box-shadow: var(--fp-card-shadow);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .kpi-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--fp-card-hover-shadow);
+            border-color: #cbd5e1;
+        }
+        .kpi-stat-info .kpi-val {
+            font-size: 1.75rem;
+            font-weight: 800;
+            line-height: 1.2;
+            color: var(--fp-dark);
+            letter-spacing: -0.5px;
+        }
+        .kpi-stat-info .kpi-lbl {
+            font-size: 0.8rem;
+            color: var(--fp-slate-600);
+            font-weight: 600;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-icon-bubble {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            flex-shrink: 0;
+        }
+        .bubble-blue { background: #eff6ff; color: #2563eb; }
+        .bubble-emerald { background: #ecfdf5; color: #059669; }
+        .bubble-indigo { background: #e0e7ff; color: #4338ca; }
+        .bubble-violet { background: #f5f3ff; color: #7c3aed; }
+
+        /* Вкладки сегментированного типа */
+        .segmented-tabs-wrapper {
+            background: #e2e8f0;
+            padding: 4px;
+            border-radius: 10px;
+            display: inline-flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .segmented-tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--fp-slate-600);
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .segmented-tab-btn.active {
+            background: #ffffff;
+            color: var(--fp-dark);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Главная карточка настроек */
+        .modern-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--fp-slate-200);
+            box-shadow: var(--fp-card-shadow);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .modern-card-header {
+            padding: 18px 24px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--fp-slate-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .modern-card-body {
+            padding: 24px;
+        }
+
+        /* Шаги импорта */
+        .import-step-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+        }
+        .import-step-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--fp-dark);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Зона Drag-and-Drop */
+        .dropzone-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 36px 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .dropzone-box:hover, .dropzone-box.dragover {
+            border-color: #2563eb;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+        .dropzone-icon-glow {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            color: #2563eb;
+            box-shadow: 0 8px 16px -2px rgba(37, 99, 235, 0.2);
+            margin-bottom: 12px;
+            transition: transform 0.25s ease;
+        }
+        .dropzone-box:hover .dropzone-icon-glow {
+            transform: scale(1.08) translateY(-2px);
+        }
+        .file-selected-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+        }
+
+        /* Переключатель источника (Файл vs Вставка текста) */
+        .source-selector-pills {
+            display: inline-flex;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .source-pill-btn {
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--fp-slate-600);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .source-pill-btn.active {
+            background: #ffffff;
+            color: #2563eb;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Опции и чекбоксы */
+        .option-card-label {
+            background: var(--fp-slate-50);
+            border: 1px solid var(--fp-slate-200);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            height: 100%;
+            margin-bottom: 0;
+        }
+        .option-card-label:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+        .option-card-label input[type="checkbox"]:checked ~ .option-content .option-title {
+            color: #1d4ed8;
+        }
+
+        /* Кнопки действий */
+        .btn-action-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-action-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+            color: #ffffff;
+        }
+        .btn-action-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-action-success:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+            color: #ffffff;
+        }
+
+        /* Результаты и фильтры */
+        .results-summary-strip {
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .filter-chip {
+            padding: 6px 14px;
+            border-radius: 9999px;
+            border: 1px solid var(--fp-slate-200);
+            background: #ffffff;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--fp-slate-600);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-chip:hover {
+            border-color: #94a3b8;
+            color: var(--fp-dark);
+        }
+        .filter-chip.active {
+            background: var(--fp-dark);
+            color: #ffffff;
+            border-color: var(--fp-dark);
+        }
+        .filter-chip.chip-success.active { background: #059669; border-color: #059669; }
+        .filter-chip.chip-warning.active { background: #d97706; border-color: #d97706; }
+        .filter-chip.chip-danger.active { background: #dc2626; border-color: #dc2626; }
+
+        /* Таблица результатов */
+        .results-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        .results-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 14px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .results-table td {
+            padding: 12px 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.86rem;
+        }
+        .row-status-ok { background-color: #ffffff; }
+        .row-status-ok:hover { background-color: #f8fafc; }
+        .row-status-duplicate { background-color: #fffdf5; }
+        .row-status-duplicate:hover { background-color: #fefce8; }
+        .row-status-error { background-color: #fff5f5; }
+        .row-status-error:hover { background-color: #fef2f2; }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .pill-ok { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .pill-duplicate { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .pill-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .pill-preview { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+        /* Адаптивность под смартфоны */
+        @media (max-width: 768px) {
+            .settings-header-banner {
+                padding: 18px 16px;
+            }
+            .modern-card-body {
+                padding: 16px 14px;
+            }
+            .dropzone-box {
+                padding: 24px 14px;
+            }
+            .segmented-tabs-wrapper {
+                flex-direction: column;
+            }
+            .btn-touch {
+                width: 100%;
+                min-height: 46px;
+            }
+            .kpi-stat-card {
+                padding: 14px;
+            }
+            .kpi-stat-info .kpi-val {
+                font-size: 1.4rem;
+            }
+            .kpi-icon-bubble {
+                width: 42px;
+                height: 42px;
+                font-size: 1.35rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Верхний баннер раздела -->
+    <div class="settings-header-banner">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-75 text-white px-2 py-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                        СЛУЖЕБНЫЙ РАЗДЕЛ
+                    </span>
+                    <span class="text-white-50 small">•</span>
+                    <span class="text-white-50 small">Интеграция и справочники</span>
+                </div>
+                <h1 class="h3 font-weight-bold text-white mb-1">
+                    <i class='bx bx-slider-alt text-primary me-2'></i> Настройки и загрузка данных
+                </h1>
+                <p class="text-white-50 small mb-0 d-none d-md-block">
+                    Автоматизированный синтаксический анализ, интеллектуальное сопоставление летного состава и пакетный импорт отчетов
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'flight_planning:planning_table' %}" class="btn btn-outline-light btn-sm btn-touch px-3 font-weight-semibold">
+                    <i class='bx bx-calendar me-1'></i> К графику
+                </a>
+                <a href="{% url 'flight_planning:periodic_check_list' %}" class="btn btn-primary btn-sm btn-touch px-3 font-weight-semibold">
+                    <i class='bx bx-check-shield me-1'></i> Журнал мероприятий
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сводные KPI карточки -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-info">
+                    <div class="kpi-val">{{ total_checks_count }}</div>
+                    <div class="kpi-lbl">Мероприятий в базе</div>
+                </div>
+                <div class="kpi-icon-bubble bubble-blue">
+                    <i class='bx bx-check-shield'></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-info">
+                    <div class="kpi-val text-success">{{ total_check_types_count }}</div>
+                    <div class="kpi-lbl">Видов проверок</div>
+                </div>
+                <div class="kpi-icon-bubble bubble-emerald">
+                    <i class='bx bx-list-check'></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-info">
+                    <div class="kpi-val text-indigo">{{ total_statuses_count }}</div>
+                    <div class="kpi-lbl">Записей состояний</div>
+                </div>
+                <div class="kpi-icon-bubble bubble-indigo">
+                    <i class='bx bx-user-pin'></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-info">
+                    <div class="kpi-val text-dark">{{ total_users_count }}</div>
+                    <div class="kpi-lbl">Сотрудников портала</div>
+                </div>
+                <div class="kpi-icon-bubble bubble-violet">
+                    <i class='bx bx-group'></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Переключатель вкладок (Сегментированный) -->
+    <div class="segmented-tabs-wrapper">
+        <button type="button" class="segmented-tab-btn active" id="tabBtnImport">
+            <i class='bx bx-cloud-upload fs-5'></i> Импорт периодических мероприятий
+        </button>
+        <button type="button" class="segmented-tab-btn" id="tabBtnTemplate">
+            <i class='bx bx-file-blank fs-5'></i> Шаблоны и спецификация
+        </button>
+    </div>
+
+    <!-- ВКЛАДКА 1: ИМПОРТ МЕРОПРИЯТИЙ -->
+    <div id="sectionImport" class="tab-pane-content">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <div>
+                    <h2 class="h6 font-weight-bold mb-0 text-dark">
+                        <i class='bx bx-spreadsheet text-success me-2'></i> Мастер пакетной загрузки отчетов
+                    </h2>
+                    <small class="text-muted">Поддерживаются форматы Excel (.xlsx), CSV, TSV, а также прямая вставка скопированных строк</small>
+                </div>
+                <div>
+                    <a href="{% url 'flight_planning:download_check_template' %}" class="btn btn-sm btn-outline-success font-weight-semibold">
+                        <i class='bx bx-download me-1'></i> Скачать шаблон (.csv)
+                    </a>
+                </div>
+            </div>
+            <div class="modern-card-body">
+                <form id="importChecksForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- ШАГ 1: ВЫБОР ИСТОЧНИКА ДАННЫХ -->
+                    <div class="mb-4">
+                        <div class="import-step-title">
+                            <span class="import-step-badge">1</span>
+                            <span>Выберите источник данных</span>
+                        </div>
+
+                        <div class="source-selector-pills">
+                            <button type="button" class="source-pill-btn active" id="btnSourceFile">
+                                <i class='bx bx-file me-1'></i> Файл Excel / CSV
+                            </button>
+                            <button type="button" class="source-pill-btn" id="btnSourcePaste">
+                                <i class='bx bx-paste me-1'></i> Вставка из буфера (Ctrl+V)
+                            </button>
+                        </div>
+
+                        <!-- Dropzone для файлов -->
+                        <div id="fileSourceBox">
+                            <div class="dropzone-box" id="dropzoneArea">
+                                <div class="dropzone-icon-glow">
+                                    <i class='bx bx-cloud-upload'></i>
+                                </div>
+                                <div class="font-weight-bold text-dark fs-6 mb-1" id="dropzoneMainText">
+                                    Нажмите для выбора файла или перетащите его в эту область
+                                </div>
+                                <p class="text-muted small mb-0">
+                                    Поддерживаются: <strong>.xlsx</strong> (Excel), <strong>.csv</strong>, <strong>.tsv</strong>, <strong>.txt</strong> (до 15 МБ)
+                                </p>
+                                <div id="selectedFileContainer" style="display: none;">
+                                    <div class="file-selected-pill">
+                                        <i class='bx bx-check-circle text-success fs-5'></i>
+                                        <span id="selectedFileName">file.xlsx</span>
+                                        <span class="badge bg-white text-dark border ms-1" id="selectedFileSize">0 КБ</span>
+                                        <button type="button" class="btn-close btn-close-sm ms-1" id="btnRemoveFile" aria-label="Удалить"></button>
+                                    </div>
+                                </div>
+                                <input type="file" id="checkFileInput" name="file" accept=".xlsx,.csv,.tsv,.txt" style="display: none;"/>
+                            </div>
+                        </div>
+
+                        <!-- Textarea для вставки из буфера -->
+                        <div id="pasteSourceBox" style="display: none;">
+                            <div class="form-floating">
+                                <textarea id="pasteTextInput" name="text_data" class="form-control" style="height: 160px; font-family: monospace; font-size: 0.85rem;" placeholder="Вставьте данные из Excel..."></textarea>
+                                <label for="pasteTextInput">Вставьте скопированные ячейки таблицы (Ctrl+V)...</label>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                Разделители колонок (табуляция, точка с запятой или запятая) распознаются автоматически.
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- ШАГ 2: ПАРАМЕТРЫ ОБРАБОТКИ -->
+                    <div class="mb-4">
+                        <div class="import-step-title">
+                            <span class="import-step-badge">2</span>
+                            <span>Параметры и правила сопоставления</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="option-card-label" for="chkAutoCreateTypes">
+                                    <input class="form-check-input mt-1" type="checkbox" id="chkAutoCreateTypes" name="auto_create_types" checked>
+                                    <div class="option-content">
+                                        <div class="option-title font-weight-bold text-dark">Автосоздание видов мероприятий</div>
+                                        <div class="text-muted small">Если код проверки новый (напр. «ТР2»), система автоматически зарегистрирует его в справочнике с расчетом срока действия.</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="option-card-label" for="chkDryRun">
+                                    <input class="form-check-input mt-1" type="checkbox" id="chkDryRun" name="dry_run" checked>
+                                    <div class="option-content">
+                                        <div class="option-title font-weight-bold text-primary">Предварительный просмотр (Dry-Run)</div>
+                                        <div class="text-muted small">Проверить распознавание сотрудников, дат и выявить дубликаты перед фактической записью в базу данных.</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ШАГ 3: ЗАПУСК И УПРАВЛЕНИЕ -->
+                    <div>
+                        <div class="import-step-title">
+                            <span class="import-step-badge">3</span>
+                            <span>Запуск синтаксического анализа</span>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-action-primary btn-touch px-4" id="btnRunDryRun">
+                                <i class='bx bx-search-alt-2 me-1 fs-5'></i> Проверить и предпросмотреть
+                            </button>
+                            <button type="button" class="btn btn-action-success btn-touch px-4" id="btnRunImport">
+                                <i class='bx bx-check-double me-1 fs-5'></i> Загрузить в базу данных
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-touch px-3" id="btnResetForm">
+                                <i class='bx bx-reset me-1'></i> Очистить
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Индикатор загрузки / анимация -->
+                <div id="importSpinner" class="text-center py-5 my-3" style="display: none;">
+                    <div class="spinner-border text-primary" role="status" style="width: 3.5rem; height: 3.5rem;">
+                        <span class="visually-hidden">Обработка...</span>
+                    </div>
+                    <div class="mt-3 font-weight-bold text-dark fs-6">Выполняется синтаксический анализ и сопоставление данных...</div>
+                    <p class="text-muted small">Проверяются ФИО сотрудников, типы ВС, даты и контроль дубликатов</p>
+                </div>
+
+                <!-- БЛОК РЕЗУЛЬТАТОВ ИМПОРТА -->
+                <div id="importResultsContainer" class="mt-4 pt-3 border-top" style="display: none;">
+                    <!-- Сводная плашка -->
+                    <div class="results-summary-strip" id="summaryAlertBox">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class='bx bx-info-circle fs-4 text-primary'></i>
+                            <div id="summaryAlertText" class="font-weight-semibold text-dark"></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-action-success font-weight-bold px-3 py-2" id="btnConfirmAndSaveNow" style="display: none;">
+                            <i class='bx bx-cloud-upload me-1'></i> Подтвердить и записать в базу
+                        </button>
+                    </div>
+
+                    <!-- Панель фильтров и поиска -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div class="d-flex flex-wrap gap-2" id="resultsFilterButtons">
+                            <button type="button" class="filter-chip active" data-filter="all">
+                                Все строки (<span id="countAll">0</span>)
+                            </button>
+                            <button type="button" class="filter-chip chip-success" data-filter="created">
+                                <i class='bx bx-check text-success'></i> Готово / Добавлено (<span id="countCreated">0</span>)
+                            </button>
+                            <button type="button" class="filter-chip chip-warning" data-filter="duplicate">
+                                <i class='bx bx-duplicate text-warning'></i> Дубликаты (<span id="countDuplicate">0</span>)
+                            </button>
+                            <button type="button" class="filter-chip chip-danger" data-filter="error">
+                                <i class='bx bx-x text-danger'></i> Ошибки (<span id="countError">0</span>)
+                            </button>
+                        </div>
+                        <div class="search-box-wrap" style="max-width: 260px; width: 100%;">
+                            <input type="text" class="form-control form-control-sm" id="resultsSearchInput" placeholder="Поиск по ФИО или коду..."/>
+                        </div>
+                    </div>
+
+                    <!-- Таблица детализации результатов -->
+                    <div class="table-responsive-custom border rounded shadow-sm">
+                        <table class="results-table table-hover mb-0" id="resultsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 45px;" class="text-center">№</th>
+                                    <th>Сотрудник (Файл $\rightarrow$ База)</th>
+                                    <th>Мероприятие / Код</th>
+                                    <th>Тип ВС</th>
+                                    <th>Период действия</th>
+                                    <th style="width: 150px;">Статус</th>
+                                    <th>Детали / Причина</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody">
+                                <!-- Заполняется динамически -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВКЛАДКА 2: ШАБЛОНЫ И СПЕЦИФИКАЦИЯ -->
+    <div id="sectionTemplate" class="tab-pane-content" style="display: none;">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <div>
+                    <h2 class="h6 font-weight-bold mb-0 text-dark">
+                        <i class='bx bx-file-blank text-primary me-2'></i> Спецификация формата данных
+                    </h2>
+                    <small class="text-muted">Регламент колонок для автоматического сопоставления с базой данных</small>
+                </div>
+                <a href="{% url 'flight_planning:download_check_template' %}" class="btn btn-sm btn-success font-weight-bold px-3">
+                    <i class='bx bx-download me-1'></i> Скачать файл шаблона (.csv)
+                </a>
+            </div>
+            <div class="modern-card-body">
+                <div class="alert alert-info py-2 px-3 mb-4 d-flex align-items-center gap-2">
+                    <i class='bx bx-bulb fs-4 text-primary'></i>
+                    <div class="small">
+                        <strong>Совет:</strong> Вы можете экспортировать отчет напрямую из внешней ИС в Excel и загрузить полученный файл без предварительного редактирования. Сервис автоматически сопоставит колонки по ключевым словам.
+                    </div>
+                </div>
+
+                <div class="table-responsive-custom mb-4 border rounded">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 180px;">Колонка</th>
+                                <th style="width: 130px;">Обязательность</th>
+                                <th style="width: 220px;">Примеры значений</th>
+                                <th>Правило обработки</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Сотрудник</strong></td>
+                                <td><span class="badge bg-danger">Обязательно</span></td>
+                                <td><code>Абраменко Н.Ф.</code><br><code>Иванов Иван Иванович</code></td>
+                                <td>Интеллектуальный поиск сотрудника по фамилии с инициалами или полному имени. При отсутствии пользователя строка помечается ошибкой с указанием причины.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Должность</strong></td>
+                                <td><span class="badge bg-secondary">Опционально</span></td>
+                                <td><code>БМ ВС Ми-8</code>, <code>КВС Ми-8</code></td>
+                                <td>Должность сотрудника. Используется для точной идентификации при наличии однофамильцев в системе.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Код проверки</strong></td>
+                                <td><span class="badge bg-danger">Обязательно</span></td>
+                                <td><code>ППР</code>, <code>CRM</code>, <code>ТР2</code>, <code>ВЛЭК</code></td>
+                                <td>Краткий шифр или обозначение мероприятия. При включенном автосоздании новые коды регистрируются автоматически.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Должность в экипаже</strong></td>
+                                <td><span class="badge bg-secondary">Опционально</span></td>
+                                <td><code>БМ</code>, <code>КВС</code>, <code>2П</code>, <code>*</code></td>
+                                <td>Роль в экипаже. Знак <code>*</code> или пустое значение означает применимость для всех членов экипажа.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Тип ВС</strong></td>
+                                <td><span class="badge bg-secondary">Опционально</span></td>
+                                <td><code>Ми-8</code>, <code>Ми-8Т</code>, <code>R-44</code>, <code>*</code></td>
+                                <td>Привязка к типу ВС. Знак <code>*</code> или пустое поле — общее универсальное мероприятие.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Дата прохождения</strong></td>
+                                <td><span class="badge bg-danger">Обязательно</span></td>
+                                <td><code>09.09.25</code>, <code>09.09.2025</code>, <code>2025-09-09</code></td>
+                                <td>Дата сдачи / начала действия проверки. Поддерживаются форматы ДД.ММ.ГГ, ДД.ММ.ГГГГ и даты Excel.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Дата окончания</strong></td>
+                                <td><span class="badge bg-danger">Обязательно</span></td>
+                                <td><code>09.09.26</code>, <code>09.09.2026</code>, <code>2026-09-09</code></td>
+                                <td>Срок годности / Действует до.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Полное наименование</strong></td>
+                                <td><span class="badge bg-secondary">Опционально</span></td>
+                                <td><code>Проверка практич работы (БМ)</code></td>
+                                <td>Полное название мероприятия (используется при автосоздании нового вида проверки).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Номер документа</strong></td>
+                                <td><span class="badge bg-secondary">Опционально</span></td>
+                                <td><code>№ 102/25</code>, <code>Сертификат 554</code></td>
+                                <td>Номер подтверждающего свидетельства или протокола.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Кем выдано</strong></td>
+                                <td><span class="badge bg-secondary">Опционально</span></td>
+                                <td><code>АУЦ Баркол</code>, <code>ВЛЭК ГА</code></td>
+                                <td>Учебный центр, комиссия или инструктор.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card bg-light border-0 p-3 rounded">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class='bx bx-shield-quarter text-warning fs-4'></i>
+                        <span class="font-weight-bold text-dark">Правило защиты от дубликатов:</span>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Если в базе данных уже существует запись с совпадающими ФИО сотрудника, видом мероприятия, типом ВС, датами начала и окончания — система не создает повторную копию, а фиксирует строку в отчете как <strong>«Дубликат (Пропущено)»</strong>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+(function() {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Элементы вкладок
+        const tabBtnImport = document.getElementById('tabBtnImport');
+        const tabBtnTemplate = document.getElementById('tabBtnTemplate');
+        const sectionImport = document.getElementById('sectionImport');
+        const sectionTemplate = document.getElementById('sectionTemplate');
+
+        // Переключение основных вкладок
+        tabBtnImport.addEventListener('click', function() {
+            tabBtnImport.classList.add('active');
+            tabBtnTemplate.classList.remove('active');
+            sectionImport.style.display = 'block';
+            sectionTemplate.style.display = 'none';
+        });
+
+        tabBtnTemplate.addEventListener('click', function() {
+            tabBtnTemplate.classList.add('active');
+            tabBtnImport.classList.remove('active');
+            sectionImport.style.display = 'none';
+            sectionTemplate.style.display = 'block';
+        });
+
+        // Источник данных
+        const btnSourceFile = document.getElementById('btnSourceFile');
+        const btnSourcePaste = document.getElementById('btnSourcePaste');
+        const fileSourceBox = document.getElementById('fileSourceBox');
+        const pasteSourceBox = document.getElementById('pasteSourceBox');
+        const pasteTextInput = document.getElementById('pasteTextInput');
+
+        btnSourceFile.addEventListener('click', function() {
+            btnSourceFile.classList.add('active');
+            btnSourcePaste.classList.remove('active');
+            fileSourceBox.style.display = 'block';
+            pasteSourceBox.style.display = 'none';
+        });
+
+        btnSourcePaste.addEventListener('click', function() {
+            btnSourcePaste.classList.add('active');
+            btnSourceFile.classList.remove('active');
+            fileSourceBox.style.display = 'none';
+            pasteSourceBox.style.display = 'block';
+            pasteTextInput.focus();
+        });
+
+        // Dropzone
+        const dropzoneArea = document.getElementById('dropzoneArea');
+        const fileInput = document.getElementById('checkFileInput');
+        const dropzoneMainText = document.getElementById('dropzoneMainText');
+        const selectedFileContainer = document.getElementById('selectedFileContainer');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const selectedFileSize = document.getElementById('selectedFileSize');
+        const btnRemoveFile = document.getElementById('btnRemoveFile');
+
+        dropzoneArea.addEventListener('click', function(e) {
+            if (e.target !== btnRemoveFile && !btnRemoveFile.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            handleFileSelect(fileInput.files[0]);
+        });
+
+        btnRemoveFile.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fileInput.value = '';
+            selectedFileContainer.style.display = 'none';
+            dropzoneMainText.style.display = 'block';
+        });
+
+        function handleFileSelect(file) {
+            if (file) {
+                selectedFileName.innerText = file.name;
+                selectedFileSize.innerText = `${(file.size / 1024).toFixed(1)} КБ`;
+                selectedFileContainer.style.display = 'inline-block';
+                dropzoneMainText.style.display = 'none';
+            }
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzoneArea.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneArea.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzoneArea.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneArea.classList.remove('dragover');
+            });
+        });
+
+        dropzoneArea.addEventListener('drop', function(e) {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        // Форма и кнопки действий
+        const chkDryRun = document.getElementById('chkDryRun');
+        const chkAutoCreateTypes = document.getElementById('chkAutoCreateTypes');
+        const btnRunDryRun = document.getElementById('btnRunDryRun');
+        const btnRunImport = document.getElementById('btnRunImport');
+        const btnResetForm = document.getElementById('btnResetForm');
+        const importSpinner = document.getElementById('importSpinner');
+        const importResultsContainer = document.getElementById('importResultsContainer');
+        const resultsTableBody = document.getElementById('resultsTableBody');
+        const summaryAlertText = document.getElementById('summaryAlertText');
+        const btnConfirmAndSaveNow = document.getElementById('btnConfirmAndSaveNow');
+        const resultsSearchInput = document.getElementById('resultsSearchInput');
+
+        let currentFilter = 'all';
+        let latestRowsData = [];
+
+        btnResetForm.addEventListener('click', function() {
+            fileInput.value = '';
+            pasteTextInput.value = '';
+            selectedFileContainer.style.display = 'none';
+            dropzoneMainText.style.display = 'block';
+            importResultsContainer.style.display = 'none';
+            resultsTableBody.innerHTML = '';
+            chkDryRun.checked = true;
+        });
+
+        btnRunDryRun.addEventListener('click', function() {
+            chkDryRun.checked = true;
+            submitImport(true);
+        });
+
+        btnRunImport.addEventListener('click', function() {
+            chkDryRun.checked = false;
+            submitImport(false);
+        });
+
+        btnConfirmAndSaveNow.addEventListener('click', function() {
+            chkDryRun.checked = false;
+            submitImport(false);
+        });
+
+        // Фильтры
+        document.querySelectorAll('#resultsFilterButtons button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#resultsFilterButtons button').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.getAttribute('data-filter');
+                renderResultsTable(latestRowsData);
+            });
+        });
+
+        // Поиск по результатам
+        resultsSearchInput.addEventListener('input', function() {
+            renderResultsTable(latestRowsData);
+        });
+
+        function submitImport(isDryRun) {
+            const hasFile = fileInput.files && fileInput.files[0];
+            const hasText = pasteTextInput.value.trim().length > 0;
+
+            if (!hasFile && !hasText) {
+                alert('Пожалуйста, выберите файл таблицы (.xlsx, .csv, .tsv) или вставьте скопированный текст.');
+                return;
+            }
+
+            const formData = new FormData();
+            if (hasFile) {
+                formData.append('file', fileInput.files[0]);
+            }
+            if (hasText) {
+                formData.append('text_data', pasteTextInput.value.trim());
+            }
+            formData.append('dry_run', isDryRun ? 'true' : 'false');
+            formData.append('auto_create_types', chkAutoCreateTypes.checked ? 'true' : 'false');
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            importSpinner.style.display = 'block';
+            importResultsContainer.style.display = 'none';
+
+            fetch("{% url 'flight_planning:api_import_checks' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                importSpinner.style.display = 'none';
+                if (!data.success && !data.rows_result) {
+                    alert(data.summary_message || 'Ошибка обработки данных');
+                    return;
+                }
+                displayResults(data);
+            })
+            .catch(err => {
+                importSpinner.style.display = 'none';
+                alert('Произошла ошибка при отправке запроса: ' + err);
+            });
+        }
+
+        function displayResults(data) {
+            latestRowsData = data.rows_result || [];
+            importResultsContainer.style.display = 'block';
+
+            document.getElementById('countAll').innerText = latestRowsData.length;
+            document.getElementById('countCreated').innerText = data.created_count || 0;
+            document.getElementById('countDuplicate').innerText = data.duplicate_count || 0;
+            document.getElementById('countError').innerText = data.error_count || 0;
+
+            summaryAlertText.innerHTML = `<span>${data.summary_message}</span>`;
+
+            if (data.dry_run) {
+                btnConfirmAndSaveNow.style.display = (data.created_count > 0) ? 'inline-flex' : 'none';
+            } else {
+                btnConfirmAndSaveNow.style.display = 'none';
+            }
+
+            renderResultsTable(latestRowsData);
+            importResultsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderResultsTable(rows) {
+            resultsTableBody.innerHTML = '';
+            const searchVal = resultsSearchInput.value.trim().toLowerCase();
+
+            const filteredRows = rows.filter(r => {
+                // Фильтр по статусу
+                let statusMatch = true;
+                if (currentFilter === 'created') statusMatch = (r.status === 'created' || r.status === 'preview_ok');
+                else if (currentFilter === 'duplicate') statusMatch = (r.status === 'duplicate');
+                else if (currentFilter === 'error') statusMatch = (r.status === 'error');
+
+                if (!statusMatch) return false;
+
+                // Фильтр по поисковой строке
+                if (searchVal) {
+                    const textContent = `${r.raw_employee} ${r.matched_employee_name} ${r.raw_code} ${r.raw_name} ${r.matched_check_type_name}`.toLowerCase();
+                    if (!textContent.includes(searchVal)) return false;
+                }
+
+                return true;
+            });
+
+            if (filteredRows.length === 0) {
+                resultsTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Строки, соответствующие выбранному фильтру, отсутствуют</td></tr>`;
+                return;
+            }
+
+            filteredRows.forEach(r => {
+                let rowClass = 'row-status-ok';
+                let pillClass = 'pill-preview';
+                let icon = "<i class='bx bx-check-circle'></i>";
+
+                if (r.status === 'created') {
+                    rowClass = 'row-status-ok';
+                    pillClass = 'pill-ok';
+                    icon = "<i class='bx bx-check-double'></i>";
+                } else if (r.status === 'duplicate') {
+                    rowClass = 'row-status-duplicate';
+                    pillClass = 'pill-duplicate';
+                    icon = "<i class='bx bx-duplicate'></i>";
+                } else if (r.status === 'error') {
+                    rowClass = 'row-status-error';
+                    pillClass = 'pill-error';
+                    icon = "<i class='bx bx-x-circle'></i>";
+                }
+
+                const empDisplay = r.matched_employee_name
+                    ? `<strong class="text-dark">${r.matched_employee_name}</strong><br><small class="text-muted">В отчете: ${r.raw_employee}</small>`
+                    : `<span class="text-danger font-weight-bold">${r.raw_employee}</span>`;
+
+                const checkDisplay = r.matched_check_type_name
+                    ? `<strong class="text-dark">${r.matched_check_type_name}</strong> <span class="badge bg-light text-dark border ms-1">${r.raw_code}</span>`
+                    : `<code>${r.raw_code}</code> <small class="text-muted">${r.raw_name}</small>`;
+
+                const datesDisplay = r.parsed_start_date
+                    ? `<code>${r.parsed_start_date}</code> &rarr; <code>${r.parsed_end_date}</code>`
+                    : `<span class="text-danger">${r.raw_start_date} — ${r.raw_end_date}</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = rowClass;
+                tr.innerHTML = `
+                    <td class="text-center text-muted small font-weight-semibold">${r.row_number}</td>
+                    <td>${empDisplay}</td>
+                    <td>${checkDisplay}</td>
+                    <td><span class="badge bg-light text-dark border">${r.matched_aircraft_name || r.raw_aircraft || '*'}</span></td>
+                    <td class="small text-nowrap">${datesDisplay}</td>
+                    <td><span class="status-pill ${pillClass}">${icon} ${r.status_display}</span></td>
+                    <td class="small text-muted">${r.message}</td>
+                `;
+                resultsTableBody.appendChild(tr);
+            });
+        }
+    });
+})();
+</script>
+{% endblock %}

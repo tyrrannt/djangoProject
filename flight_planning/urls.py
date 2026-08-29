@@ -52,6 +52,11 @@ urlpatterns = [
     path('statuses/types/<int:pk>/delete/', views.employee_status_type_delete_view, name='employee_status_type_delete'),
     path('api/employee-statuses/<int:pilot_id>/', views.get_pilot_employee_statuses_api, name='get_pilot_employee_statuses_api'),
 
+    # Служебный раздел настроек и импорта данных
+    path('settings/', views.settings_view, name='settings'),
+    path('settings/template/checks/', views.download_check_template_view, name='download_check_template'),
+    path('api/import-checks/', views.import_checks_api, name='api_import_checks'),
+
     # API v1 (REST)
     path('api/v1/', include(api_urlpatterns)),
 
