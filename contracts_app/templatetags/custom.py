@@ -173,6 +173,28 @@ def FIO_format(value: Any, reverse: bool = False) -> str:
             return f"{last_name} {first_name[0]}.{patronymic[0]}."
 
 
+@register.filter(name="short_job")
+def short_job(value: Any, mode: str = "standard") -> str:
+    """Форматирует наименование должности сотрудника в краткий общепринятый авиационный вид.
+
+    Применяет точные отраслевые авиационные сокращения (напр. «КВС Ми-8», «2П Ми-8»,
+    «Б/М-инструктор Ми-8», «Авиатехник по экспл. ВС») для компактного вывода в шаблонах.
+
+    Args:
+        value (Any): Исходное наименование должности или объект Job.
+        mode (str): Режим сокращения: 'standard' (по умолчанию) или 'ultra'.
+
+    Returns:
+        str: Краткое наименование должности.
+    """
+    try:
+        from flight_planning.services import format_short_job
+        return format_short_job(value, mode=mode)
+    except Exception:
+        return str(value or "")
+
+
+
 @register.simple_tag()
 def multiply(first, second, *args, **kwargs):
     """Возвращает произведение двух чисел в виде кастомного шаблонного фильтра Django.
