@@ -345,7 +345,7 @@
                                 <option value="">Все сотрудники</option>
                                 {% for p in pilots_list %}
                                     <option value="{{ p.id }}" {% if filter_employee_id|slugify == p.id|slugify %}selected{% endif %}>
-                                        {{ p.title|default:p.username }}
+                                        {{ p.title|default:p.username|FIO_format }}
                                     </option>
                                 {% endfor %}
                             </select>
@@ -389,8 +389,8 @@
                         <tbody>
                             {% for r in records %}
                                 <tr>
-                                    <td><strong>{{ r.employee.title|default:r.employee.username }}</strong></td>
-                                    <td class="text-muted small d-none d-xl-table-cell">{{ r.employee.user_work_profile.job.name|default:"—" }}</td>
+                                    <td><strong title="{{ r.employee.title|default:r.employee.username }}">{{ r.employee.title|default:r.employee.username|FIO_format }}</strong></td>
+                                    <td class="text-muted small d-none d-xl-table-cell" title="{{ r.employee.user_work_profile.job.name|default:'' }}">{{ r.employee.user_work_profile.job.name|short_job|default:"—" }}</td>
                                     <td>
                                         <span class="status-pill" style="background-color: {{ r.status_type.color }};">
                                             {{ r.status_type.name }}
@@ -407,7 +407,7 @@
                                             <a href="{% url 'flight_planning:employee_status_update' r.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2 btn-touch" title="Редактировать" aria-label="Редактировать">
                                                 <i class='bx bx-edit-alt'></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 btn-touch" onclick="confirmDeleteRecord({{ r.id }}, '{{ r.status_type.name }}', '{{ r.employee.title }}')" title="Удалить" aria-label="Удалить">
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 btn-touch" onclick="confirmDeleteRecord({{ r.id }}, '{{ r.status_type.name }}', '{{ r.employee.title|FIO_format }}')" title="Удалить" aria-label="Удалить">
                                                 <i class='bx bx-trash'></i>
                                             </button>
                                         </td>
@@ -428,21 +428,15 @@
             {% elif active_tab == 'matrix' %}
                 <!-- ================= TAB 2: СВОДНАЯ СЕТКА ЗАНЯТОСТИ ================= -->
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <a href="?tab=matrix&year={{ prev_year }}&month={{ prev_month }}" class="btn btn-sm btn-outline-secondary btn-touch px-2" aria-label="Предыдущий месяц">
-                            <i class='bx bx-chevron-left'></i>
-                        </a>
-                        <h4 class="m-0 fw-bold text-primary">{{ month_name }}</h4>
-                        <a href="?tab=matrix&year={{ next_year }}&month={{ next_month }}" class="btn btn-sm btn-outline-secondary btn-touch px-2" aria-label="Следующий месяц">
-                            <i class='bx bx-chevron-right'></i>
-                        </a>
+                    <div>
+                        <h5 class="fw-bold mb-1">Сводная занятость персонала на {{ current_date|date:"F Y" }}</h5>
+                        <p class="text-muted small mb-0">Сетка запланированных отпусков, больничных, резервов и других состояний</p>
                     </div>
-                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <span class="small text-muted fw-bold">Обозначения:</span>
-                        {% for st in status_types %}
-                            <span class="badge" style="background-color: {{ st.color }}; color: #fff; font-size: 0.75rem;">{{ st.name }}</span>
-                        {% endfor %}
-                    </div>
+                    <form method="get" class="d-flex gap-2 align-items-center">
+                        <input type="hidden" name="tab" value="matrix">
+                        <input type="month" name="month" class="form-control form-control-modern form-control-sm" value="{{ current_date|date:'Y-m' }}" onchange="this.form.submit()">
+                        <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">Перейти</button></noscript>
+                    </form>
                 </div>
 
                 <div class="matrix-table-wrapper border rounded">
@@ -463,9 +457,9 @@
                                 <tr>
                                     <td class="pilot-name-cell">
                                         <div class="text-truncate" style="max-width: 240px;" title="{{ row.pilot_name }}">
-                                            <strong>{{ row.pilot_name }}</strong>
+                                            <strong>{{ row.pilot_name|FIO_format }}</strong>
                                         </div>
-                                        <div class="text-muted text-truncate" style="font-size: 0.72rem; max-width: 240px;">{{ row.job|default:"—" }}</div>
+                                        <div class="text-muted text-truncate" style="font-size: 0.72rem; max-width: 240px;" title="{{ row.job|default:'' }}">{{ row.job|short_job|default:"—" }}</div>
                                     </td>
                                     {% for cell in row.cells %}
                                         <td class="{% if cell.is_today %}today-col{% endif %}">

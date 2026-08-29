@@ -505,23 +505,23 @@ CHECK_APPLIES_TO = (
 
 
 class PeriodicCheckType(models.Model):
-    """Вид периодической проверки квалификации и годности персонала.
+    """Вид периодического мероприятия квалификации и годности персонала.
 
-    Определяет наименование проверки, привязку к типу воздушного судна (или
+    Определяет наименование мероприятия, привязку к типу воздушного судна (или
     универсальный характер), стандартную периодичность в месяцах и целевую категорию персонала.
 
     Attributes:
-        name (str): Наименование проверки (напр. "Тренажер", "ВЛЭК", "Опасные грузы").
-        code (str): Краткий символьный код / шифр проверки.
+        name (str): Наименование мероприятия (напр. "Тренажер", "ВЛЭК", "Опасные грузы").
+        code (str): Краткий символьный код / шифр мероприятия.
         aircraft_type (TypeProperty): Привязка к типу ВС (None = для всех типов *).
-        validity_months (int): Периодичность действия проверки в месяцах.
+        validity_months (int): Периодичность действия мероприятия в месяцах.
         validity_days (int): Дополнительные дни действия (по умолчанию 0).
-        applies_to (str): Категория персонала, подлежащая данной проверке.
-        description (str): Нормативное основание и описание программы проверки.
-        is_active (bool): Флаг активности вида проверки.
+        applies_to (str): Категория персонала, подлежащая данному мероприятию.
+        description (str): Нормативное основание и описание программы мероприятия.
+        is_active (bool): Флаг активности вида мероприятия.
         order (int): Порядковый номер для сортировки в отчетах.
     """
-    name = models.CharField(max_length=200, verbose_name="Наименование проверки")
+    name = models.CharField(max_length=200, verbose_name="Наименование мероприятия")
     code = models.CharField(max_length=50, blank=True, default="", verbose_name="Код / Обозначение")
     aircraft_type = models.ForeignKey(
         TypeProperty,
@@ -530,7 +530,7 @@ class PeriodicCheckType(models.Model):
         blank=True,
         verbose_name="Тип ВС",
         related_name="check_types",
-        help_text="Оставьте пустым для универсальных проверок (*)"
+        help_text="Оставьте пустым для универсальных мероприятий (*)"
     )
     validity_months = models.PositiveIntegerField(
         default=12,
@@ -556,7 +556,7 @@ class PeriodicCheckType(models.Model):
     is_active = models.BooleanField(
         default=True,
         db_index=True,
-        verbose_name="Активна"
+        verbose_name="Активно"
     )
     order = models.PositiveIntegerField(
         default=0,
@@ -573,14 +573,14 @@ class PeriodicCheckType(models.Model):
 
     class Meta:
         ordering = ['order', 'name']
-        verbose_name = "Вид периодической проверки"
-        verbose_name_plural = "Виды периодических проверок"
+        verbose_name = "Вид периодического мероприятия"
+        verbose_name_plural = "Виды периодических мероприятий"
         indexes = [
             models.Index(fields=['is_active', 'aircraft_type']),
         ]
 
     def __str__(self) -> str:
-        """Возвращает строковое представление вида проверки.
+        """Возвращает строковое представление вида мероприятия.
 
         Returns:
             str: Наименование, тип ВС и срок действия.
@@ -599,15 +599,15 @@ class PeriodicCheckType(models.Model):
 
 
 class PeriodicCheckRecord(models.Model):
-    """Запись о прохождении периодической проверки сотрудником.
+    """Запись о прохождении периодического мероприятия сотрудником.
 
-    Фиксирует факт сдачи/прохождения проверки, дату начала действия,
+    Фиксирует факт сдачи/прохождения мероприятия, дату начала действия,
     дату окончания (срок годности), номер подтверждающего документа и скан-копию.
 
     Attributes:
-        employee (DataBaseUser): Сотрудник, прошедший проверку.
-        check_type (PeriodicCheckType): Вид периодической проверки.
-        aircraft_type (TypeProperty): Тип ВС (наследуется из вида проверки или уточняется).
+        employee (DataBaseUser): Сотрудник, прошедший мероприятие.
+        check_type (PeriodicCheckType): Вид периодического мероприятия.
+        aircraft_type (TypeProperty): Тип ВС (наследуется из вида мероприятия или уточняется).
         start_date (date): Дата прохождения / начала действия.
         end_date (date): Дата окончания действия / срок годности.
         document_number (str): Номер свидетельства / сертификата / справки.
@@ -627,7 +627,7 @@ class PeriodicCheckRecord(models.Model):
     check_type = models.ForeignKey(
         PeriodicCheckType,
         on_delete=models.CASCADE,
-        verbose_name="Вид проверки",
+        verbose_name="Вид мероприятия",
         related_name="records"
     )
     aircraft_type = models.ForeignKey(
@@ -637,7 +637,7 @@ class PeriodicCheckRecord(models.Model):
         blank=True,
         verbose_name="Тип ВС",
         related_name="check_records",
-        help_text="Оставьте пустым для универсальных проверок (*)"
+        help_text="Оставьте пустым для универсальных мероприятий (*)"
     )
     start_date = models.DateField(
         verbose_name="Дата прохождения (Начало)",
@@ -675,7 +675,7 @@ class PeriodicCheckRecord(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Кто внес",
+        verbose_name="Автор записи",
         related_name="created_periodic_checks"
     )
     created_at = models.DateTimeField(
@@ -689,18 +689,18 @@ class PeriodicCheckRecord(models.Model):
 
     class Meta:
         ordering = ['-end_date', '-start_date']
-        verbose_name = "Запись о прохождении проверки"
-        verbose_name_plural = "Журнал прохождения проверок"
+        verbose_name = "Запись о прохождении мероприятия"
+        verbose_name_plural = "Журнал прохождения мероприятий"
         indexes = [
             models.Index(fields=['employee', 'check_type', '-end_date']),
             models.Index(fields=['end_date']),
         ]
 
     def __str__(self) -> str:
-        """Возвращает строковое представление записи проверки.
+        """Возвращает строковое представление записи мероприятия.
 
         Returns:
-            str: ФИО сотрудника, наименование проверки и дата окончания.
+            str: ФИО сотрудника, наименование мероприятия и дата окончания.
         """
         emp_name = self.employee.title or self.employee.username
         return f"{emp_name} — {self.check_type.name} (до {self.end_date.strftime('%d.%m.%Y')})"
@@ -1003,19 +1003,19 @@ class EmployeeStatusRecord(models.Model):
 
 
 class EmployeeRequiredCheck(models.Model):
-    """Закрепление обязательных периодических проверок за конкретным сотрудником.
+    """Закрепление обязательных периодических мероприятий за конкретным сотрудником.
 
-    Определяет индивидуальный перечень периодических проверок, обязательных
-    для сдачи конкретным пилотом, бортмехаником или техником.
-    Если проверка не закреплена за сотрудником, она не требуется к сдаче,
-    не блокирует вылеты и не отображается как просроченная.
+    Определяет индивидуальный перечень периодических мероприятий, обязательных
+    для прохождения конкретным пилотом, бортмехаником или техником.
+    Если мероприятие не закреплено за сотрудником, оно не требуется к сдаче,
+    не блокирует вылеты и не отображается как просроченное.
 
     Attributes:
         employee (DataBaseUser): Сотрудник (пилот, бортмеханик, инженер).
-        check_type (PeriodicCheckType): Вид периодической проверки.
+        check_type (PeriodicCheckType): Вид периодического мероприятия.
         is_required (bool): Флаг обязательности прохождения (по умолчанию True).
         notes (str): Примечание или основание закрепления/исключения.
-        assigned_by (DataBaseUser): Диспетчер/руководитель, закрепивший проверку.
+        assigned_by (DataBaseUser): Диспетчер/руководитель, закрепивший мероприятие.
         created_at (datetime): Дата назначения.
         updated_at (datetime): Дата изменения.
     """
@@ -1028,13 +1028,13 @@ class EmployeeRequiredCheck(models.Model):
     check_type = models.ForeignKey(
         PeriodicCheckType,
         on_delete=models.CASCADE,
-        verbose_name="Вид проверки",
+        verbose_name="Вид мероприятия",
         related_name="employee_assignments"
     )
     is_required = models.BooleanField(
         default=True,
-        verbose_name="Обязательна к сдаче",
-        help_text="Если флаг снят, проверка считается необязательной для данного сотрудника."
+        verbose_name="Обязательно к прохождению",
+        help_text="Если флаг снят, мероприятие считается необязательным для данного сотрудника."
     )
     notes = models.CharField(
         max_length=255,
@@ -1060,8 +1060,8 @@ class EmployeeRequiredCheck(models.Model):
     )
 
     class Meta:
-        verbose_name = "Закрепление проверки за сотрудником"
-        verbose_name_plural = "Закрепления проверок за персоналом"
+        verbose_name = "Закрепление мероприятия за сотрудником"
+        verbose_name_plural = "Закрепления мероприятий за персоналом"
         unique_together = ('employee', 'check_type')
         ordering = ['employee__last_name', 'check_type__order']
         indexes = [
@@ -1073,10 +1073,10 @@ class EmployeeRequiredCheck(models.Model):
         """Возвращает строковое представление закрепления.
 
         Returns:
-            str: ФИО сотрудника и название проверки.
+            str: ФИО сотрудника и название мероприятия.
         """
         emp_name = self.employee.title or self.employee.username
-        req_str = "Обязательна" if self.is_required else "Не требуется"
+        req_str = "Обязательно" if self.is_required else "Не требуется"
         return f"{emp_name} — {self.check_type.name} ({req_str})"
 
 

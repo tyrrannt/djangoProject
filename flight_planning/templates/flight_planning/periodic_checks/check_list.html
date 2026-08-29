@@ -1,17 +1,22 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load planning_extras %}
 
 {% block custom_css %}
     <style>
         .kpi-card {
             border-radius: 8px;
-            padding: 16px 20px;
+            padding: 14px 18px;
             color: #ffffff;
             position: relative;
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .kpi-card:hover {
             transform: translateY(-2px);
@@ -22,9 +27,30 @@
         .kpi-card.kpi-warning { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
         .kpi-card.kpi-expired { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
 
-        .kpi-title { font-size: 0.82rem; font-weight: 500; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
-        .kpi-value { font-size: 1.85rem; font-weight: 700; margin: 4px 0 0 0; }
-        .kpi-icon { position: absolute; right: 18px; bottom: 12px; font-size: 3.2rem; opacity: 0.15; }
+        .kpi-title {
+            font-size: 0.78rem;
+            font-weight: 500;
+            opacity: 0.92;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 4px 0 0 0;
+            line-height: 1.15;
+        }
+        .kpi-icon {
+            position: absolute;
+            right: 14px;
+            bottom: 10px;
+            font-size: 2.8rem;
+            opacity: 0.15;
+            pointer-events: none;
+        }
 
         .filter-panel {
             background: #f8fafc;
@@ -205,15 +231,19 @@
            ========================================================== */
         @media (max-width: 992px) {
             .kpi-card {
-                padding: 14px 16px;
+                padding: 12px 14px;
+            }
+            .kpi-title {
+                font-size: 0.72rem;
             }
             .kpi-value {
-                font-size: 1.5rem;
+                font-size: 1.45rem;
+                margin-top: 2px;
             }
             .kpi-icon {
-                font-size: 2.5rem;
-                right: 12px;
-                bottom: 8px;
+                font-size: 2.2rem;
+                right: 10px;
+                bottom: 6px;
             }
             .matrix-table th, .matrix-table td {
                 padding: 6px 8px;
@@ -227,16 +257,22 @@
 
         @media (max-width: 768px) {
             .kpi-card {
-                padding: 12px 14px;
+                padding: 10px 12px;
+                border-radius: 6px;
+                min-height: 62px;
             }
             .kpi-title {
-                font-size: 0.75rem;
+                font-size: 0.68rem;
+                line-height: 1.2;
+                letter-spacing: 0.2px;
+                opacity: 0.95;
             }
             .kpi-value {
-                font-size: 1.35rem;
+                font-size: 1.25rem;
+                margin-top: 2px;
             }
             .kpi-icon {
-                display: none;
+                display: none !important;
             }
             .filter-panel {
                 padding: 12px;
@@ -272,36 +308,50 @@
                 justify-content: center;
             }
         }
+
+        @media (max-width: 480px) {
+            .kpi-card {
+                padding: 8px 10px;
+                min-height: 56px;
+            }
+            .kpi-title {
+                font-size: 0.62rem;
+                letter-spacing: 0;
+            }
+            .kpi-value {
+                font-size: 1.15rem;
+            }
+        }
     </style>
 {% endblock %}
 
 {% block content %}
-    <!-- KPI карточки -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-3">
+    <!-- KPI карточки: 2x2 на смартфонах/планшетах, 4 в ряд на десктопах -->
+    <div class="row g-2 g-md-3 mb-3 mb-md-4">
+        <div class="col-6 col-lg-3">
             <div class="kpi-card kpi-total">
-                <div class="kpi-title">Всего записей в базе</div>
+                <div class="kpi-title">Всего записей</div>
                 <div class="kpi-value">{{ total_records_count }}</div>
                 <i class='bx bx-file kpi-icon'></i>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-6 col-lg-3">
             <div class="kpi-card kpi-valid">
                 <div class="kpi-title">Действуют</div>
                 <div class="kpi-value">{{ valid_records_count }}</div>
                 <i class='bx bx-check-shield kpi-icon'></i>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-6 col-lg-3">
             <div class="kpi-card kpi-warning">
                 <div class="kpi-title">Истекают (до 30 дн.)</div>
                 <div class="kpi-value">{{ warning_records_count }}</div>
                 <i class='bx bx-time-five kpi-icon'></i>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-6 col-lg-3">
             <div class="kpi-card kpi-expired">
-                <div class="kpi-title">Просрочены (не сданы)</div>
+                <div class="kpi-title">Просрочены</div>
                 <div class="kpi-value">{{ expired_records_count }}</div>
                 <i class='bx bx-error-circle kpi-icon'></i>
             </div>
@@ -315,7 +365,7 @@
                 <ul class="nav nav-tabs border-bottom-0" id="checkTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <a class="nav-link {% if active_tab == 'records' %}active{% endif %}" href="?tab=records{% if filter_employee_id %}&employee_id={{ filter_employee_id }}{% endif %}{% if filter_check_type_id %}&check_type_id={{ filter_check_type_id }}{% endif %}{% if filter_aircraft_type_id %}&aircraft_type_id={{ filter_aircraft_type_id }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}">
-                            <i class='bx bx-list-ul me-1'></i> Журнал проверок
+                            <i class='bx bx-list-ul me-1'></i> Журнал мероприятий
                         </a>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -325,7 +375,7 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <a class="nav-link {% if active_tab == 'types' %}active{% endif %}" href="?tab=types">
-                            <i class='bx bx-category me-1'></i> Виды проверок (Справочник)
+                            <i class='bx bx-category me-1'></i> Виды мероприятий (Справочник)
                         </a>
                     </li>
                 </ul>
@@ -333,13 +383,13 @@
                 {% if is_planner %}
                     {% if active_tab == 'records' or active_tab == 'matrix' %}
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openAddRecordBtn" aria-label="Внести запись о проверке" title="Внести запись о проверке">
-                                <i class='bx bx-plus-circle me-1'></i> <span class="d-none d-md-inline">Внести запись о проверке</span><span class="d-md-none">Внести запись</span>
+                            <button type="button" class="btn btn-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openAddRecordBtn" aria-label="Внести запись о мероприятии" title="Внести запись о мероприятии">
+                                <i class='bx bx-plus-circle me-1'></i> <span class="d-none d-md-inline">Внести запись о мероприятии</span><span class="d-md-none">Внести запись</span>
                             </button>
                         </div>
                     {% elif active_tab == 'types' %}
-                        <a href="{% url 'flight_planning:periodic_check_type_create' %}" class="btn btn-outline-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" aria-label="Добавить вид проверки" title="Добавить вид проверки">
-                            <i class='bx bx-plus me-1'></i> <span class="d-none d-md-inline">Добавить вид проверки</span><span class="d-md-none">Добавить вид</span>
+                        <a href="{% url 'flight_planning:periodic_check_type_create' %}" class="btn btn-outline-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" aria-label="Добавить вид мероприятия" title="Добавить вид мероприятия">
+                            <i class='bx bx-plus me-1'></i> <span class="d-none d-md-inline">Добавить вид мероприятия</span><span class="d-md-none">Добавить вид</span>
                         </a>
                     {% endif %}
                 {% endif %}
@@ -358,15 +408,15 @@
                                 <option value="">Все сотрудники</option>
                                 {% for p in pilots_list %}
                                     <option value="{{ p.id }}" {% if filter_employee_id == p.id|stringformat:"s" %}selected{% endif %}>
-                                        {{ p.title|default:p.username }}
+                                        {{ p.title|default:p.username|FIO_format }}
                                     </option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-md-2">
-                            <label class="form-label text-muted small font-weight-bold">Вид проверки</label>
+                            <label class="form-label text-muted small font-weight-bold">Вид мероприятия</label>
                             <select name="check_type_id" class="form-select form-select-sm select2-filter">
-                                <option value="">Все виды проверок</option>
+                                <option value="">Все виды мероприятий</option>
                                 {% for ct in check_types %}
                                     <option value="{{ ct.id }}" {% if filter_check_type_id == ct.id|stringformat:"s" %}selected{% endif %}>
                                         {{ ct.name }} [{{ ct.aircraft_display }}]
@@ -417,7 +467,7 @@
                         <tr>
                             <th>Сотрудник</th>
                             <th class="d-none d-xl-table-cell">Должность</th>
-                            <th>Вид проверки</th>
+                            <th>Вид мероприятия</th>
                             <th class="d-none d-md-table-cell">Тип ВС</th>
                             <th class="d-none d-lg-table-cell">Начало</th>
                             <th>Окончание</th>
@@ -432,10 +482,10 @@
                             {% for r in records %}
                                 <tr>
                                     <td>
-                                        <strong>{{ r.employee.title|default:r.employee.username }}</strong>
+                                        <strong title="{{ r.employee.title|default:r.employee.username }}">{{ r.employee.title|default:r.employee.username|FIO_format }}</strong>
                                     </td>
-                                    <td class="text-muted small d-none d-xl-table-cell">
-                                        {{ r.employee.user_work_profile.job.name|default:"—" }}
+                                    <td class="text-muted small d-none d-xl-table-cell" title="{{ r.employee.user_work_profile.job.name|default:'' }}">
+                                        {{ r.employee.user_work_profile.job.name|short_job|default:"—" }}
                                     </td>
                                     <td>
                                         <strong>{{ r.check_type.name }}</strong>
@@ -451,12 +501,12 @@
                                     </td>
                                     <td>
                                         {% if r.is_superseded %}
-                                            <span class="check-badge-pill badge-renewed" title="Продлена новой проверкой до {{ r.get_successor.end_date|date:'d.m.Y' }}">
-                                                <i class='bx bx-check-double me-1 text-primary'></i> <span class="d-none d-sm-inline">Продлена (до {{ r.get_successor.end_date|date:'d.m.Y' }})</span><span class="d-sm-none">Продлена</span>
+                                            <span class="check-badge-pill badge-renewed" title="Продлено новым мероприятием до {{ r.get_successor.end_date|date:'d.m.Y' }}">
+                                                <i class='bx bx-check-double me-1 text-primary'></i> <span class="d-none d-sm-inline">Продлено (до {{ r.get_successor.end_date|date:'d.m.Y' }})</span><span class="d-sm-none">Продлено</span>
                                             </span>
                                         {% elif r.end_date < today %}
                                             <span class="check-badge-pill badge-expired">
-                                                <i class='bx bx-x-circle me-1'></i> <span class="d-none d-sm-inline">Просрочена ({{ r.days_overdue }} дн. назад)</span><span class="d-sm-none">Просрочена</span>
+                                                <i class='bx bx-x-circle me-1'></i> <span class="d-none d-sm-inline">Просрочено ({{ r.days_overdue }} дн. назад)</span><span class="d-sm-none">Просрочено</span>
                                             </span>
                                         {% elif r.days_remaining <= 30 %}
                                             <span class="check-badge-pill badge-warning-custom">
@@ -469,41 +519,46 @@
                                         {% endif %}
                                     </td>
                                     <td class="d-none d-md-table-cell">
-                                        {{ r.document_number|default:"—" }}
+                                        {% if r.document_number %}
+                                            <span class="small font-monospace">{{ r.document_number }}</span>
+                                        {% else %}
+                                            <span class="text-muted small">—</span>
+                                        {% endif %}
                                         {% if r.scan_file %}
-                                            <a href="{{ r.scan_file.url }}" target="_blank" class="ms-1 text-primary" title="Открыть скан" aria-label="Открыть скан">
+                                            <a href="{{ r.scan_file.url }}" target="_blank" class="ms-1 text-primary" title="Открыть скан документа" aria-label="Открыть скан">
                                                 <i class='bx bx-file'></i>
                                             </a>
                                         {% endif %}
                                     </td>
-                                    <td class="small text-muted d-none d-lg-table-cell">{{ r.issued_by|default:"—" }}</td>
+                                    <td class="d-none d-lg-table-cell small text-muted text-truncate" style="max-width: 140px;" title="{{ r.issued_by }}">
+                                        {{ r.issued_by|default:"—" }}
+                                    </td>
                                     {% if is_planner %}
                                         <td class="text-end text-nowrap">
                                             <button type="button" class="btn btn-sm btn-outline-success btn-renew-record py-1 px-2 btn-touch"
                                                     data-employee-id="{{ r.employee.id }}"
-                                                    data-employee-name="{{ r.employee.title|default:r.employee.username }}"
+                                                    data-employee-name="{{ r.employee.title|default:r.employee.username|FIO_format }}"
                                                     data-check-type-id="{{ r.check_type.id }}"
                                                     data-check-type-name="{{ r.check_type.name }}"
                                                     data-aircraft-type-id="{{ r.aircraft_type_id|default:'' }}"
                                                     data-issued-by="{{ r.issued_by|default:'' }}"
-                                                    data-last-end="{{ r.end_date|date:'Y-m-d' }}"
                                                     title="Продлить (Внести новую сдачу)"
                                                     aria-label="Продлить">
-                                                <i class='bx bx-refresh me-md-1'></i> <span class="d-none d-md-inline">Продлить</span>
+                                                <i class='bx bx-refresh'></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-outline-info btn-view-history py-1 px-2 btn-touch"
-                                                    data-employee-id="{{ r.employee.id }}"
-                                                    data-employee-name="{{ r.employee.title|default:r.employee.username }}"
-                                                    data-check-type-id="{{ r.check_type.id }}"
-                                                    data-check-type-name="{{ r.check_type.name }}"
-                                                    title="История всех проверок"
-                                                    aria-label="История проверок">
-                                                <i class='bx bx-history'></i>
-                                            </button>
-                                            <a href="{% url 'flight_planning:periodic_check_update' r.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2 btn-touch" title="Редактировать запись" aria-label="Редактировать запись">
+                                            <a href="{% url 'flight_planning:periodic_check_update' r.id %}" class="btn btn-sm btn-outline-primary py-1 px-2 btn-touch" title="Редактировать" aria-label="Редактировать">
                                                 <i class='bx bx-edit-alt'></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-record py-1 px-2 btn-touch" data-id="{{ r.id }}" data-name="{{ r.check_type.name }} ({{ r.employee.title }})" title="Удалить" aria-label="Удалить">
+                                            <button type="button" class="btn btn-sm btn-view-history py-1 px-2 btn-touch btn-outline-info"
+                                                    data-employee-id="{{ r.employee.id }}"
+                                                    data-employee-name="{{ r.employee.title|default:r.employee.username|FIO_format }}"
+                                                    data-check-type-id="{{ r.check_type.id }}"
+                                                    data-check-type-name="{{ r.check_type.name }}"
+                                                    title="История сдачи"
+                                                    aria-label="История">
+                                                <i class='bx bx-history'></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-record py-1 px-2 btn-touch" data-id="{{ r.id }}" data-name="{{ r.check_type.name }} ({{ r.employee.title|FIO_format }})" title="Удалить" aria-label="Удалить">
                                                 <i class='bx bx-trash'></i>
                                             </button>
                                         </td>
@@ -514,7 +569,7 @@
                             <tr>
                                 <td colspan="10" class="text-center py-4 text-muted">
                                     <i class='bx bx-info-circle fs-3 d-block mb-1'></i>
-                                    Записей о периодических проверках не найдено.
+                                    Записей о периодических мероприятиях не найдено.
                                 </td>
                             </tr>
                         {% endif %}
@@ -526,7 +581,7 @@
                 <!-- Вкладка: Сводная матрица персонала -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="small text-muted">
-                        <i class='bx bx-info-circle me-1'></i> Нажмите на ячейку сотрудника для продления проверки / просмотра истории сдачи. Кнопка ⚙️ в строке сотрудника позволяет настроить обязательные для него проверки.
+                        <i class='bx bx-info-circle me-1'></i> Нажмите на ячейку сотрудника для продления мероприятия / просмотра истории сдачи. Кнопка ⚙️ в строке сотрудника позволяет настроить обязательные для него мероприятия.
                     </span>
                 </div>
                 <div class="matrix-table-wrapper border rounded">
@@ -548,20 +603,24 @@
                                 <td class="pilot-name-cell">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <div class="font-weight-bold">{{ row.pilot.title|default:row.pilot.username }}</div>
-                                            <small class="text-muted d-block text-truncate" style="max-width: 180px;">{{ row.job|default:"" }}</small>
+                                            <div class="font-weight-bold" title="{{ row.pilot.title|default:row.pilot.username }}">
+                                                {{ row.pilot.title|default:row.pilot.username|FIO_format }}
+                                            </div>
+                                            <small class="text-muted d-block text-truncate" style="max-width: 180px;" title="{{ row.job|default:'' }}">
+                                                {{ row.job|short_job|default:"" }}
+                                            </small>
                                             {% if row.has_expired %}
-                                                <i class='bx bx-error-circle text-danger ms-1' title="Есть просроченные или не пройденные обязательные проверки!"></i>
+                                                <i class='bx bx-error-circle text-danger ms-1' title="Есть просроченные или не пройденные обязательные мероприятия!"></i>
                                             {% elif row.has_warning %}
-                                                <i class='bx bx-time-five text-warning ms-1' title="Есть проверки, истекающие в течение 30 дней"></i>
+                                                <i class='bx bx-time-five text-warning ms-1' title="Есть мероприятия, истекающие в течение 30 дней"></i>
                                             {% endif %}
                                         </div>
                                         {% if is_planner %}
                                             <button type="button" class="btn btn-sm btn-outline-secondary btn-assign-checks ms-2 py-1 px-2 btn-touch"
                                                     data-employee-id="{{ row.pilot.id }}"
-                                                    data-employee-name="{{ row.pilot.title|default:row.pilot.username }}"
-                                                    title="Настроить обязательные проверки для данного сотрудника"
-                                                    aria-label="Настроить проверки">
+                                                    data-employee-name="{{ row.pilot.title|default:row.pilot.username|FIO_format }}"
+                                                    title="Настроить обязательные мероприятия для данного сотрудника"
+                                                    aria-label="Настроить мероприятия">
                                                 <i class='bx bx-cog'></i>
                                             </button>
                                         {% endif %}
@@ -570,7 +629,7 @@
                                 {% for cell in row.cells %}
                                     <td class="{{ cell.css_class }} matrix-clickable-cell"
                                         data-employee-id="{{ row.pilot.id }}"
-                                        data-employee-name="{{ row.pilot.title|default:row.pilot.username }}"
+                                        data-employee-name="{{ row.pilot.title|default:row.pilot.username|FIO_format }}"
                                         data-check-type-id="{{ cell.check_type.id }}"
                                         data-check-type-name="{{ cell.check_type.name }}"
                                         data-aircraft-type-id="{{ cell.record.aircraft_type_id|default:'' }}"
@@ -603,13 +662,13 @@
                 </div>
 
             {% elif active_tab == 'types' %}
-                <!-- Вкладка: Справочник видов проверок -->
+                <!-- Вкладка: Справочник видов мероприятий -->
                 <div class="table-responsive">
                     <table class="table table-hover align-middle border mb-0">
                         <thead class="table-light">
                         <tr>
                             <th class="d-none d-md-table-cell">Порядок</th>
-                            <th>Наименование проверки</th>
+                            <th>Наименование мероприятия</th>
                             <th class="d-none d-lg-table-cell">Код</th>
                             <th>Тип ВС</th>
                             <th>Периодичность</th>
@@ -652,9 +711,9 @@
                                 <td class="small text-muted d-none d-xl-table-cell">{{ ct.description|default:"—" }}</td>
                                 <td>
                                     {% if ct.is_active %}
-                                        <span class="badge bg-success">Активна</span>
+                                        <span class="badge bg-success">Активно</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">Отключена</span>
+                                        <span class="badge bg-secondary">Отключено</span>
                                     {% endif %}
                                 </td>
                                 {% if is_planner %}
@@ -676,12 +735,12 @@
         </div>
     </div>
 
-<!-- Модальное окно быстрого добавления / продления записи о проверке -->
+<!-- Модальное окно быстрого добавления / продления записи о мероприятии -->
 <div class="modal-custom-overlay" id="addRecordOverlay"></div>
 <div class="modal-custom-box p-4" id="addRecordModal">
     <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
         <h5 class="m-0 font-weight-bold" id="addRecordModalHeaderTitle">
-            <i class='bx bx-plus-circle text-primary me-2'></i> Внесение записи о периодической проверке
+            <i class='bx bx-plus-circle text-primary me-2'></i> Внесение записи о периодическом мероприятии
         </h5>
         <button type="button" class="btn-close" id="closeAddRecordBtn"></button>
     </div>
@@ -693,7 +752,7 @@
                 {{ record_form.employee }}
             </div>
             <div class="col-md-12">
-                <label class="form-label font-weight-bold">Вид проверки <span class="text-danger">*</span></label>
+                <label class="form-label font-weight-bold">Вид мероприятия <span class="text-danger">*</span></label>
                 {{ record_form.check_type }}
             </div>
             <div class="col-md-12">
@@ -734,13 +793,13 @@
     </form>
 </div>
 
-<!-- Модальное окно истории проверок сотрудника -->
+<!-- Модальное окно истории мероприятий сотрудника -->
 <div class="modal-custom-overlay" id="historyModalOverlay"></div>
 <div class="modal-custom-box p-4" id="historyModalBox" style="max-width: 800px;">
     <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
         <div>
             <h5 class="m-0 font-weight-bold text-primary" id="historyModalTitle">
-                <i class='bx bx-history me-1'></i> История проверок
+                <i class='bx bx-history me-1'></i> История мероприятий
             </h5>
             <small class="text-muted" id="historyModalSubtitle"></small>
         </div>
@@ -759,20 +818,20 @@
     </div>
 </div>
 
-<!-- Модальное окно настройки обязательных проверок для сотрудника -->
+<!-- Модальное окно настройки обязательных мероприятий для сотрудника -->
 <div class="modal-custom-overlay" id="assignChecksOverlay"></div>
 <div class="modal-custom-box p-4" id="assignChecksModal" style="max-width: 650px;">
     <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
         <div>
             <h5 class="m-0 font-weight-bold text-primary" id="assignChecksModalTitle">
-                <i class='bx bx-user-check me-2'></i> Закрепление проверок за сотрудником
+                <i class='bx bx-user-check me-2'></i> Закрепление мероприятий за сотрудником
             </h5>
             <small class="text-muted" id="assignChecksModalSubtitle"></small>
         </div>
         <button type="button" class="btn-close" id="closeAssignChecksBtn" aria-label="Закрыть"></button>
     </div>
     <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="small text-muted">Отметьте проверки, обязательные для данного сотрудника:</span>
+        <span class="small text-muted">Отметьте мероприятия, обязательные для данного сотрудника:</span>
         <div class="btn-group btn-group-sm flex-wrap">
             <button type="button" class="btn btn-outline-secondary" id="btnSelectAllChecks">Выбрать все</button>
             <button type="button" class="btn btn-outline-secondary" id="btnDeselectAllChecks">Снять все</button>
@@ -783,7 +842,7 @@
         {% csrf_token %}
         <input type="hidden" id="assignEmployeeIdInput" name="employee_id">
         <div id="assignChecksListContainer" class="border rounded p-3 bg-light" style="max-height: 380px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
-            <!-- Список проверок с чекбоксами загружается через AJAX -->
+            <!-- Список мероприятий с чекбоксами загружается через AJAX -->
         </div>
         <div class="d-flex justify-content-end flex-wrap gap-2 mt-3 pt-3 border-top">
             <button type="button" class="btn btn-secondary btn-sm btn-touch px-3" id="cancelAssignChecksBtn">Отмена</button>
@@ -848,7 +907,7 @@ $(document).ready(function() {
         if (options.title) {
             $('#addRecordModalHeaderTitle').html(`<i class='bx bx-refresh text-success me-2'></i> ${options.title}`);
         } else {
-            $('#addRecordModalHeaderTitle').html(`<i class='bx bx-plus-circle text-primary me-2'></i> Внесение записи о периодической проверке`);
+            $('#addRecordModalHeaderTitle').html(`<i class='bx bx-plus-circle text-primary me-2'></i> Внесение записи о периодическом мероприятии`);
         }
 
         autoCalculateEndDate();
@@ -882,11 +941,11 @@ $(document).ready(function() {
             checkTypeId: ctId,
             aircraftTypeId: acId,
             issuedBy: issuedBy,
-            title: `Продление проверки: ${ctName} (${empName})`
+            title: `Продление мероприятия: ${ctName} (${empName})`
         });
     });
 
-    // Функция загрузки и открытия модального окна истории проверок
+    // Функция загрузки и открытия модального окна истории мероприятий
     function openHistoryModal(employeeId, employeeName, checkTypeId, checkTypeName) {
         currentHistoryContext = {
             employeeId: employeeId,
@@ -895,12 +954,12 @@ $(document).ready(function() {
             checkTypeName: checkTypeName
         };
 
-        $('#historyModalTitle').html(`<i class='bx bx-history me-1'></i> История проверок: ${checkTypeName || 'Все виды проверок'}`);
+        $('#historyModalTitle').html(`<i class='bx bx-history me-1'></i> История мероприятий: ${checkTypeName || 'Все виды мероприятий'}`);
         $('#historyModalSubtitle').text(`Сотрудник: ${employeeName}`);
         $('#historyModalContent').html(`
             <div class="text-center py-4">
                 <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
-                <span class="ms-2 text-muted">Загрузка истории проверок...</span>
+                <span class="ms-2 text-muted">Загрузка истории мероприятий...</span>
             </div>
         `);
 
@@ -920,9 +979,9 @@ $(document).ready(function() {
                     res.records.forEach(function(rec, idx) {
                         let statusBadge = '';
                         if (rec.is_superseded || rec.status === 'renewed') {
-                            statusBadge = `<span class="badge bg-secondary"><i class='bx bx-check-double me-1'></i> Продлена (Архив)</span>`;
+                            statusBadge = `<span class="badge bg-secondary"><i class='bx bx-check-double me-1'></i> Продлено (Архив)</span>`;
                         } else if (rec.status === 'expired') {
-                            statusBadge = `<span class="badge bg-danger">Просрочена (${rec.days_overdue} дн. назад)</span>`;
+                            statusBadge = `<span class="badge bg-danger">Просрочено (${rec.days_overdue} дн. назад)</span>`;
                         } else if (rec.status === 'warning') {
                             statusBadge = `<span class="badge bg-warning text-dark">Истекает (${rec.days_remaining} дн.)</span>`;
                         } else {
@@ -930,7 +989,7 @@ $(document).ready(function() {
                         }
 
                         let scanLink = rec.scan_url ? `<a href="${rec.scan_url}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-1" title="Открыть скан"><i class='bx bx-file'></i> Скачать скан</a>` : '<span class="text-muted">—</span>';
-                        let isLatestBadge = (idx === 0) ? '<span class="badge bg-primary ms-1">Текущая</span>' : '<span class="badge bg-light text-muted border ms-1">Архив</span>';
+                        let isLatestBadge = (idx === 0) ? '<span class="badge bg-primary ms-1">Текущее</span>' : '<span class="badge bg-light text-muted border ms-1">Архив</span>';
 
                         rowsHtml += `
                             <tr>
@@ -970,7 +1029,7 @@ $(document).ready(function() {
                     $('#historyModalContent').html(`
                         <div class="text-center py-4 text-muted">
                             <i class='bx bx-folder-open display-4 d-block mb-2 opacity-50'></i>
-                            Ранее внесенных записей по данной проверке не найдено.
+                            Ранее внесенных записей по данному мероприятию не найдено.
                         </div>
                     `);
                 }
@@ -978,7 +1037,7 @@ $(document).ready(function() {
             error: function() {
                 $('#historyModalContent').html(`
                     <div class="alert alert-danger py-2 mb-0">
-                        Ошибка при загрузке истории проверок сотрудника.
+                        Ошибка при загрузке истории мероприятий сотрудника.
                     </div>
                 `);
             }
@@ -1017,7 +1076,7 @@ $(document).ready(function() {
                 checkTypeId: ctId,
                 aircraftTypeId: acId,
                 issuedBy: issuedBy,
-                title: `Внесение сдачи проверки: ${ctName} (${empName})`
+                title: `Внесение сдачи мероприятия: ${ctName} (${empName})`
             });
         }
     });
@@ -1029,7 +1088,7 @@ $(document).ready(function() {
             openAddRecordModal({
                 employeeId: currentHistoryContext.employeeId,
                 checkTypeId: currentHistoryContext.checkTypeId,
-                title: `Продление проверки: ${currentHistoryContext.checkTypeName} (${currentHistoryContext.employeeName})`
+                title: `Продление мероприятия: ${currentHistoryContext.checkTypeName} (${currentHistoryContext.employeeName})`
             });
         }
     });
@@ -1041,7 +1100,7 @@ $(document).ready(function() {
     });
 
     // ========================================================
-    // ЗАКРЕПЛЕНИЕ ОБЯЗАТЕЛЬНЫХ ПРОВЕРОК ЗА СОТРУДНИКОМ
+    // ЗАКРЕПЛЕНИЕ ОБЯЗАТЕЛЬНЫХ МЕРОПРИЯТИЙ ЗА СОТРУДНИКОМ
     // ========================================================
     function openAssignChecksModal(employeeId, employeeName) {
         $('#assignEmployeeIdInput').val(employeeId);
@@ -1049,7 +1108,7 @@ $(document).ready(function() {
         $('#assignChecksListContainer').html(`
             <div class="text-center py-4">
                 <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
-                <span class="ms-2 text-muted">Загрузка перечня проверок...</span>
+                <span class="ms-2 text-muted">Загрузка перечня мероприятий...</span>
             </div>
         `);
 
@@ -1086,7 +1145,7 @@ $(document).ready(function() {
 
                     $('#assignChecksListContainer').html(listHtml);
                 } else {
-                    $('#assignChecksListContainer').html(`<div class="alert alert-danger mb-0">${res.error || 'Ошибка загрузки проверок.'}</div>`);
+                    $('#assignChecksListContainer').html(`<div class="alert alert-danger mb-0">${res.error || 'Ошибка загрузки мероприятий.'}</div>`);
                 }
             },
             error: function() {
@@ -1123,7 +1182,7 @@ $(document).ready(function() {
         e.preventDefault();
         const empId = $('#assignEmployeeIdInput').val();
         if (empId) {
-            // Перезагружаем дефолтные проверки
+            // Перезагружаем дефолтные мероприятия
             openAssignChecksModal(empId, $('#assignChecksModalSubtitle').text().replace('Сотрудник: ', ''));
         }
     });
@@ -1167,7 +1226,7 @@ $(document).ready(function() {
         });
     });
 
-    // Автоматический расчет даты окончания при выборе проверки или изменении даты начала
+    // Автоматический расчет даты окончания при выборе мероприятия или изменении даты начала
     function autoCalculateEndDate() {
         const checkTypeId = $('#id_check_type').val();
         const startDate = $('#checkStartDateInput').val();
@@ -1224,20 +1283,20 @@ $(document).ready(function() {
         });
     });
 
-    // Удаление записи о проверке
+    // Удаление записи о мероприятии
     $('.btn-delete-record').on('click', function() {
         const recordId = $(this).data('id');
         const recordName = $(this).data('name');
-        if (confirm(`Вы действительно хотите удалить запись проверки «${recordName}»?`)) {
+        if (confirm(`Вы действительно хотите удалить запись мероприятия «${recordName}»?`)) {
             window.location.href = `/flight/checks/${recordId}/delete/`;
         }
     });
 
-    // Удаление вида проверки
+    // Удаление вида мероприятия
     $('.btn-delete-type').on('click', function() {
         const typeId = $(this).data('id');
         const typeName = $(this).data('name');
-        if (confirm(`Вы действительно хотите удалить вид проверки «${typeName}»?`)) {
+        if (confirm(`Вы действительно хотите удалить вид мероприятия «${typeName}»?`)) {
             window.location.href = `/flight/checks/types/${typeId}/delete/`;
         }
     });

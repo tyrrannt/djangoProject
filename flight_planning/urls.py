@@ -33,7 +33,7 @@ urlpatterns = [
     path('documents/<int:pk>/print/', views.document_print_view, name='document_print'),
     path('documents/<int:pk>/approve/', views.document_approve_view, name='document_approve'),
 
-    # Периодические проверки персонала (Журнал, Матрица, Справочники)
+    # Периодические мероприятия персонала (Журнал, Матрица, Справочники)
     path('checks/', views.periodic_check_list_view, name='periodic_check_list'),
     path('checks/add/', views.periodic_check_create_view, name='periodic_check_create'),
     path('checks/<int:pk>/update/', views.periodic_check_update_view, name='periodic_check_update'),

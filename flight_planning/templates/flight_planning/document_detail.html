@@ -188,18 +188,18 @@
         <div class="row g-2 g-md-3">
             <div class="col-6 col-md-3">
                 <div class="meta-label">Составил (Диспетчер)</div>
-                <div class="meta-value text-truncate">
+                <div class="meta-value text-truncate" title="{{ document.author.title|default:document.author.username }}">
                     <i class='bx bx-user text-primary me-1'></i>
-                    {{ document.author.title|default:document.author.username|default:"—" }}
+                    {{ document.author.title|default:document.author.username|FIO_format|default:"—" }}
                 </div>
                 <small class="text-muted d-block">{{ document.created_at|date:"d.m.Y в H:i" }}</small>
             </div>
             <div class="col-6 col-md-3">
                 <div class="meta-label">Утвердил (Руководитель)</div>
-                <div class="meta-value text-truncate">
+                <div class="meta-value text-truncate" title="{{ document.approved_by.title|default:document.approved_by.username }}">
                     {% if document.approved_by %}
                         <i class='bx bx-check-shield text-success me-1'></i>
-                        {{ document.approved_by.title|default:document.approved_by.username }}
+                        {{ document.approved_by.title|default:document.approved_by.username|FIO_format }}
                         <small class="text-muted d-block">{{ document.approved_at|date:"d.m.Y в H:i" }}</small>
                     {% else %}
                         <span class="text-muted fst-italic">— Ожидает —</span>
@@ -315,8 +315,8 @@
                                                         <small class="badge bg-light text-dark border" style="font-size: 0.65rem;">{{ c.flight_type_label }}</small>
                                                     </div>
                                                     {% for m in c.members %}
-                                                        <div class="crew-member-badge" style="font-size: 0.73rem; margin: 1px 0;">
-                                                            <strong>{{ m.role_label }}:</strong> {{ m.pilot_name }}
+                                                        <div class="crew-member-badge" style="font-size: 0.73rem; margin: 1px 0;" title="{{ m.pilot_name }}">
+                                                            <strong>{{ m.role_label }}:</strong> {{ m.pilot_name|FIO_format }}
                                                         </div>
                                                     {% endfor %}
                                                 </div>

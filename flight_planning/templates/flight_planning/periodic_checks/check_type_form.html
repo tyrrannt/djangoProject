@@ -48,7 +48,7 @@
 
                         <div class="row g-3">
                             <div class="col-12 col-md-8">
-                                <label class="form-label font-weight-bold">Наименование проверки <span class="text-danger">*</span></label>
+                                <label class="form-label font-weight-bold">Наименование мероприятия <span class="text-danger">*</span></label>
                                 {{ form.name }}
                             </div>
                             <div class="col-12 col-md-4">
@@ -58,7 +58,7 @@
                             <div class="col-12 col-md-6">
                                 <label class="form-label font-weight-bold">Тип ВС</label>
                                 {{ form.aircraft_type }}
-                                <small class="text-muted d-block mt-1">Оставьте пустым для универсальных проверок (*)</small>
+                                <small class="text-muted d-block mt-1">Оставьте пустым для универсальных мероприятий (*)</small>
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label font-weight-bold">Категория персонала <span class="text-danger">*</span></label>
@@ -80,7 +80,7 @@
                                 <div class="form-check">
                                     {{ form.is_active }}
                                     <label class="form-check-label font-weight-bold" for="{{ form.is_active.id_for_label }}">
-                                        Активный вид проверки
+                                        Активный вид мероприятия
                                     </label>
                                 </div>
                             </div>
@@ -94,8 +94,8 @@
                             <a href="{% url 'flight_planning:periodic_check_list' %}?tab=types" class="btn btn-outline-secondary btn-touch px-3" aria-label="Назад к справочнику" title="Назад к справочнику">
                                 <i class='bx bx-arrow-back me-1'></i> Назад
                             </a>
-                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch px-4" aria-label="Сохранить вид проверки" title="Сохранить вид проверки">
-                                <i class='bx bx-save me-1'></i> Сохранить вид проверки
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch px-4" aria-label="Сохранить вид мероприятия" title="Сохранить вид мероприятия">
+                                <i class='bx bx-save me-1'></i> Сохранить вид мероприятия
                             </button>
                         </div>
                     </form>

@@ -1619,14 +1619,14 @@ $(function () {
                 if (pStatus && (pStatus.has_expired || pStatus.has_missing)) {
                     const pilotObj = window.ALL_PILOTS ? window.ALL_PILOTS.find(p => p.id === m.member_id) : null;
                     const pName = pilotObj ? pilotObj.name : `Сотрудник #${m.member_id}`;
-                    checkWarnings.push(`• <strong>${pName}</strong>: ${pStatus.summary_text || 'Просрочены/не пройдены проверки'}`);
+                    checkWarnings.push(`• <strong>${pName}</strong>: ${pStatus.summary_text || 'Просрочены/не пройдены мероприятия'}`);
                 }
             });
 
             if (checkWarnings.length > 0) {
                 showModal({
-                    title: '⚠️ Предупреждение: периодические проверки',
-                    message: `Внимание: У следующих членов экипажа имеются непройденные или просроченные периодические проверки:<br><br>${checkWarnings.join('<br>')}<br><br><span class="text-muted small">Назначение носит рекомендательный характер. Назначенный сотрудник будет отмечен предупреждающим значком ⚠️ в сетке планирования.</span><br><br>Продолжить сохранение экипажа?`,
+                    title: '⚠️ Предупреждение: периодические мероприятия',
+                    message: `Внимание: У следующих членов экипажа имеются непройденные или просроченные периодические мероприятия:<br><br>${checkWarnings.join('<br>')}<br><br><span class="text-muted small">Назначение носит рекомендательный характер. Назначенный сотрудник будет отмечен предупреждающим значком ⚠️ в сетке планирования.</span><br><br>Продолжить сохранение экипажа?`,
                     type: 'warning',
                     showCancel: true,
                     confirmText: 'Все равно сохранить',
@@ -2048,7 +2048,7 @@ $(function () {
     });
 
     // ========================================================
-    // ДЕТАЛЬНЫЙ ПРОСМОТР ПЕРИОДИЧЕСКИХ ПРОВЕРОК СОТРУДНИКА
+    // ДЕТАЛЬНЫЙ ПРОСМОТР ПЕРИОДИЧЕСКИХ МЕРОПРИЯТИЙ СОТРУДНИКА
     // ========================================================
     function openPilotCheckDetails(pilotId) {
         if (!pilotId) return;
@@ -2056,8 +2056,8 @@ $(function () {
         const pilotObj = window.ALL_PILOTS ? window.ALL_PILOTS.find(p => p.id == pilotId) : null;
         const pilotName = pilotObj ? pilotObj.name : `Сотрудник #${pilotId}`;
 
-        $('#pcdPilotNameTitle').html(`<i class="bx bx-check-shield me-2"></i> Проверки сотрудника: ${pilotName}`);
-        $('#pcdChecksTableBody').html('<tr><td colspan="5" class="text-center py-3"><i class="bx bx-loader-alt bx-spin"></i> Загрузка данных проверок...</td></tr>');
+        $('#pcdPilotNameTitle').html(`<i class="bx bx-check-shield me-2"></i> Мероприятия сотрудника: ${pilotName}`);
+        $('#pcdChecksTableBody').html('<tr><td colspan="5" class="text-center py-3"><i class="bx bx-loader-alt bx-spin"></i> Загрузка данных мероприятий...</td></tr>');
         $('#pcdOverallStatusBanner').hide();
 
         $('#pilotCheckDetailsOverlay').show();
@@ -2071,11 +2071,11 @@ $(function () {
                     const cs = res.check_status;
                     let bannerHtml = '';
                     if (cs.has_expired || cs.has_missing) {
-                        bannerHtml = `<div class="alert alert-danger py-2 mb-3"><i class="bx bx-error-circle me-1"></i> <strong>Внимание:</strong> Имеются просроченные или непройденные проверки: ${cs.summary_text}</div>`;
+                        bannerHtml = `<div class="alert alert-danger py-2 mb-3"><i class="bx bx-error-circle me-1"></i> <strong>Внимание:</strong> Имеются просроченные или непройденные мероприятия: ${cs.summary_text}</div>`;
                     } else if (cs.has_warning) {
-                        bannerHtml = `<div class="alert alert-warning py-2 mb-3"><i class="bx bx-time-five me-1"></i> <strong>Предупреждение:</strong> Имеются проверки, истекающие в ближайшие 30 дней: ${cs.summary_text}</div>`;
+                        bannerHtml = `<div class="alert alert-warning py-2 mb-3"><i class="bx bx-time-five me-1"></i> <strong>Предупреждение:</strong> Имеются мероприятия, истекающие в ближайшие 30 дней: ${cs.summary_text}</div>`;
                     } else {
-                        bannerHtml = `<div class="alert alert-success py-2 mb-3"><i class="bx bx-check-circle me-1"></i> Все обязательные периодические проверки в норме и действительны.</div>`;
+                        bannerHtml = `<div class="alert alert-success py-2 mb-3"><i class="bx bx-check-circle me-1"></i> Все обязательные периодические мероприятия в норме и действительны.</div>`;
                     }
                     $('#pcdOverallStatusBanner').html(bannerHtml).show();
 
@@ -2087,16 +2087,16 @@ $(function () {
                             let statusBadge = '';
                             if (c.status === 'expired') {
                                 const overdueDays = (daysLeft !== null && daysLeft !== undefined) ? Math.abs(daysLeft) + ' дн. назад' : '';
-                                statusBadge = `<span class="badge bg-danger">Просрочена (${overdueDays})</span>`;
+                                statusBadge = `<span class="badge bg-danger">Просрочено (${overdueDays})</span>`;
                             } else if (c.status === 'warning') {
                                 statusBadge = `<span class="badge bg-warning text-dark">Истекает (${daysLeft} дн.)</span>`;
                             } else if (c.status === 'valid') {
                                 statusBadge = `<span class="badge bg-success">Действует (${daysLeft} дн.)</span>`;
                             } else {
-                                statusBadge = `<span class="badge bg-secondary">Не пройдена / Нет данных</span>`;
+                                statusBadge = `<span class="badge bg-secondary">Не пройдено / Нет данных</span>`;
                             }
 
-                            const checkTitle = c.check_name || c.check_type_name || 'Периодическая проверка';
+                            const checkTitle = c.check_name || c.check_type_name || 'Периодическое мероприятие';
                             const startDateStr = c.start_date || '—';
                             const endDateStr = c.end_date || '—';
                             const acStr = c.aircraft_type_name || '* (Все ВС)';
@@ -2113,14 +2113,14 @@ $(function () {
                             `;
                         });
                     } else {
-                        rowsHtml = '<tr><td colspan="5" class="text-center text-muted py-3">Нет зарегистрированных проверок</td></tr>';
+                        rowsHtml = '<tr><td colspan="5" class="text-center text-muted py-3">Нет зарегистрированных мероприятий</td></tr>';
                     }
                     $('#pcdChecksTableBody').html(rowsHtml);
                     $('#pcdOpenJournalLink').attr('href', `/flight/checks/?employee_id=${pilotId}`);
                 }
             },
             error: function () {
-                $('#pcdChecksTableBody').html('<tr><td colspan="5" class="text-center text-danger py-3">Не удалось загрузить данные о проверках</td></tr>');
+                $('#pcdChecksTableBody').html('<tr><td colspan="5" class="text-center text-danger py-3">Не удалось загрузить данные о мероприятиях</td></tr>');
             }
         });
     }

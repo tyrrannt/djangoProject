@@ -190,7 +190,7 @@
                 <div class="sig-line">
                     <span>Подпись:</span>
                     <span class="sig-underline"></span>
-                    <span>/ {{ document.author.title|default:document.author.username }} /</span>
+                    <span>/ {{ document.author.title|default:document.author.username|FIO_format }} /</span>
                 </div>
                 <div class="text-muted" style="font-size: 7.5pt; margin-top: 2px;">
                     «____» ________________ 2026 г.
@@ -203,7 +203,7 @@
                 <div class="sig-line" style="justify-content: flex-end;">
                     <span>Подпись:</span>
                     <span class="sig-underline" style="max-width: 120px;"></span>
-                    <span>/ {{ document.approved_by.title|default:"____________________" }} /</span>
+                    <span>/ {{ document.approved_by.title|default:"____________________"|FIO_format }} /</span>
                 </div>
                 <div style="font-size: 7.5pt; margin-top: 2px;">
                     {% if document.approved_at %}
@@ -253,7 +253,7 @@
                                             <div class="print-aircraft">{{ c.aircraft_reg }}</div>
                                             {% for m in c.members %}
                                                 <div class="print-member" title="{{ m.role_label }}: {{ m.pilot_name }}">
-                                                    <strong>{{ m.role_label|slice:":3" }}:</strong> {{ m.pilot_name|slice:":12" }}
+                                                    <strong>{{ m.role_label|slice:":3" }}:</strong> {{ m.pilot_name|FIO_format }}
                                                 </div>
                                             {% endfor %}
                                         </div>
@@ -305,10 +305,10 @@
         <!-- Подписи в подвале -->
         <div class="print-footer-signatures">
             <div>
-                Составил: ____________________ / {{ document.author.title|default:document.author.username }} /
+                Составил: ____________________ / {{ document.author.title|default:document.author.username|FIO_format }} /
             </div>
             <div>
-                Утвердил: ____________________ / {{ document.approved_by.title|default:"____________________" }} /
+                Утвердил: ____________________ / {{ document.approved_by.title|default:"____________________"|FIO_format }} /
             </div>
             <div style="font-size: 7.5pt; color: #666;">
                 Сформировано в АС «Авиакомпания «БАРКОЛ»: {{ generation_date }}

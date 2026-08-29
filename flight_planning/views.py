@@ -81,8 +81,10 @@ from .services import (
     get_user_personnel_scope,
     FLIGHT_CREW_JOB_NAMES,
     ENGINEERING_STAFF_JOB_NAMES,
-    ALL_STAFF_JOB_NAMES
+    ALL_STAFF_JOB_NAMES,
+    format_short_job
 )
+from contracts_app.templatetags.custom import FIO_format
 
 # Должности летного состава для планирования
 ALLOWED_JOBS = ['командир', 'пилот', 'бортмеханик', 'Командир', 'Бортмеханик', 'инструктор', 'Бортовой']
@@ -407,8 +409,9 @@ def planning_table(request):
 
             assignment_map[mpd_id][date_str].append({
                 'pilot_id': a.pilot_id,
-                'pilot_name': a.pilot.title or a.pilot.username,
-                'pilot_job': job_name or 'Должность не указана',
+                'pilot_name': FIO_format(a.pilot.title or a.pilot.username),
+                'pilot_job': format_short_job(job_name) if job_name else 'Должность не указана',
+                'pilot_job_full': job_name or 'Должность не указана',
                 'is_commander': is_commander,
                 'is_instructor': is_instructor,
                 'assignment_id': a.id,
@@ -454,8 +457,10 @@ def planning_table(request):
 
         pilots_js_list.append({
             'id': p.id,
-            'name': p.title or p.username,
-            'job': job_title,
+            'name': FIO_format(p.title or p.username),
+            'full_name': p.title or p.username,
+            'job': format_short_job(job_title),
+            'full_job': job_title,
             'is_commander': 'командир' in job_lower,
             'is_instructor': 'инструктор' in job_lower,
             'suggested_role': suggested_role,
@@ -903,8 +908,9 @@ def assign_pilot_api(request):
             'assignments': assignments_created,
             'mpd_id': mpd_id,
             'pilot_id': pilot_id,
-            'pilot_name': pilot.title or pilot.username,
-            'pilot_job': job_name or 'Должность не указана',
+            'pilot_name': FIO_format(pilot.title or pilot.username),
+            'pilot_job': format_short_job(job_name) if job_name else 'Должность не указана',
+            'pilot_job_full': job_name or 'Должность не указана',
             'is_commander': is_commander,
             'is_instructor': is_instructor
         })
@@ -1043,7 +1049,8 @@ def get_pilot_job_info(request):
                     is_instructor = 'пилот-инструктор' in job_lower
 
         return JsonResponse({
-            'job_name': job_name or 'Должность не указана',
+            'job_name': format_short_job(job_name) if job_name else 'Должность не указана',
+            'full_job_name': job_name or 'Должность не указана',
             'is_commander': is_commander,
             'is_instructor': is_instructor
         })
@@ -2279,25 +2286,25 @@ def batch_swap_aircraft_api(request):
 
 
 # ========================================================
-# ПЕРИОДИЧЕСКИЕ ПРОВЕРКИ (ЖУРНАЛ И СПРАВОЧНИКИ)
+# ПЕРИОДИЧЕСКИЕ МЕРОПРИЯТИЯ (ЖУРНАЛ И СПРАВОЧНИКИ)
 # ========================================================
 
 @login_required
 @flight_planning_view_required
 def periodic_check_list_view(request):
-    """Отображает журнал периодических проверок сотрудников, матрицу квалификации и справочник видов проверок.
+    """Отображает журнал периодических мероприятий сотрудников, матрицу квалификации и справочник видов мероприятий.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса с параметрами фильтрации:
             - tab: активная вкладка ('records', 'matrix', 'types');
             - employee_id: фильтр по сотруднику;
             - aircraft_type_id: фильтр по типу ВС;
-            - check_type_id: фильтр по виду проверки;
+            - check_type_id: фильтр по виду мероприятия;
             - status: фильтр по статусу ('valid', 'warning', 'expired');
             - q: поисковый запрос (по ФИО).
 
     Returns:
-        HttpResponse: Отрендеренная страница журнала периодических проверок.
+        HttpResponse: Отрендеренная страница журнала периодических мероприятий.
     """
     active_tab = request.GET.get('tab', 'records')
     employee_id = request.GET.get('employee_id')
@@ -2508,7 +2515,7 @@ def periodic_check_list_view(request):
     aircraft_types = TypeProperty.objects.all().order_by('type_property')
 
     context = {
-        'title': 'Журнал периодических проверок',
+        'title': 'Журнал периодических мероприятий',
         'active_tab': active_tab,
         'records': records_qs,
         'check_types': check_types,
@@ -2537,7 +2544,7 @@ def periodic_check_list_view(request):
 @login_required
 @flight_planner_required
 def periodic_check_create_view(request):
-    """Создание новой записи о прохождении периодической проверки сотрудником.
+    """Создание новой записи о прохождении периодического мероприятия сотрудником.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса (GET или POST с файлом).
@@ -2555,11 +2562,11 @@ def periodic_check_create_view(request):
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
                     'status': 'success',
-                    'message': f"Запись проверки «{record.check_type.name}» для {record.employee.title} успешно создана!",
+                    'message': f"Запись мероприятия «{record.check_type.name}» для {record.employee.title} успешно создана!",
                     'record_id': record.id
                 })
 
-            messages.success(request, f"Запись проверки «{record.check_type.name}» для {record.employee.title} успешно создана!")
+            messages.success(request, f"Запись мероприятия «{record.check_type.name}» для {record.employee.title} успешно создана!")
             return redirect('flight_planning:periodic_check_list')
         else:
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -2578,7 +2585,7 @@ def periodic_check_create_view(request):
 
     return render(request, 'flight_planning/periodic_checks/check_record_form.html', {
         'form': form,
-        'title': 'Добавление записи о периодической проверке',
+        'title': 'Добавление записи о периодическом мероприятии',
         'is_create': True
     })
 
@@ -2586,7 +2593,7 @@ def periodic_check_create_view(request):
 @login_required
 @flight_planner_required
 def periodic_check_update_view(request, pk: int):
-    """Редактирование записи о прохождении периодической проверки.
+    """Редактирование записи о прохождении периодического мероприятия.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
@@ -2601,7 +2608,7 @@ def periodic_check_update_view(request, pk: int):
         form = PeriodicCheckRecordForm(request.POST, request.FILES, instance=record, user=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, f"Запись проверки «{record.check_type.name}» для {record.employee.title} успешно обновлена!")
+            messages.success(request, f"Запись мероприятия «{record.check_type.name}» для {record.employee.title} успешно обновлена!")
             return redirect('flight_planning:periodic_check_list')
     else:
         form = PeriodicCheckRecordForm(instance=record, user=request.user)
@@ -2609,7 +2616,7 @@ def periodic_check_update_view(request, pk: int):
     return render(request, 'flight_planning/periodic_checks/check_record_form.html', {
         'form': form,
         'record': record,
-        'title': f"Редактирование записи проверки: {record.check_type.name}",
+        'title': f"Редактирование записи мероприятия: {record.check_type.name}",
         'is_create': False
     })
 
@@ -2617,7 +2624,7 @@ def periodic_check_update_view(request, pk: int):
 @login_required
 @flight_planner_required
 def periodic_check_delete_view(request, pk: int):
-    """Удаление записи о прохождении проверки.
+    """Удаление записи о прохождении мероприятия.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
@@ -2629,14 +2636,14 @@ def periodic_check_delete_view(request, pk: int):
     record = get_object_or_404(PeriodicCheckRecord, pk=pk)
     name = f"{record.check_type.name} ({record.employee.title})"
     record.delete()
-    messages.success(request, f"Запись проверки «{name}» успешно удалена.")
+    messages.success(request, f"Запись мероприятия «{name}» успешно удалена.")
     return redirect('flight_planning:periodic_check_list')
 
 
 @login_required
 @flight_planner_required
 def periodic_check_type_create_view(request):
-    """Создание нового вида периодической проверки.
+    """Создание нового вида периодического мероприятия.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
@@ -2648,14 +2655,14 @@ def periodic_check_type_create_view(request):
         form = PeriodicCheckTypeForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Новый вид периодической проверки успешно создан!")
+            messages.success(request, "Новый вид периодического мероприятия успешно создан!")
             return redirect(f"{reverse('flight_planning:periodic_check_list')}?tab=types")
     else:
         form = PeriodicCheckTypeForm()
 
     return render(request, 'flight_planning/periodic_checks/check_type_form.html', {
         'form': form,
-        'title': 'Создание вида периодической проверки',
+        'title': 'Создание вида периодического мероприятия',
         'is_create': True
     })
 
@@ -2663,11 +2670,11 @@ def periodic_check_type_create_view(request):
 @login_required
 @flight_planner_required
 def periodic_check_type_update_view(request, pk: int):
-    """Редактирование вида периодической проверки.
+    """Редактирование вида периодического мероприятия.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
-        pk (int): Идентификатор редактируемого вида проверки.
+        pk (int): Идентификатор редактируемого вида мероприятия.
 
     Returns:
         HttpResponse: Перенаправление на справочник или страница с формой.
@@ -2677,7 +2684,7 @@ def periodic_check_type_update_view(request, pk: int):
         form = PeriodicCheckTypeForm(request.POST, instance=check_type)
         if form.is_valid():
             form.save()
-            messages.success(request, f"Вид проверки «{check_type.name}» успешно обновлен!")
+            messages.success(request, f"Вид мероприятия «{check_type.name}» успешно обновлен!")
             return redirect(f"{reverse('flight_planning:periodic_check_list')}?tab=types")
     else:
         form = PeriodicCheckTypeForm(instance=check_type)
@@ -2685,7 +2692,7 @@ def periodic_check_type_update_view(request, pk: int):
     return render(request, 'flight_planning/periodic_checks/check_type_form.html', {
         'form': form,
         'check_type': check_type,
-        'title': f'Редактирование: {check_type.name}',
+        'title': f'Редактирование вида мероприятия: {check_type.name}',
         'is_create': False
     })
 
@@ -2693,11 +2700,11 @@ def periodic_check_type_update_view(request, pk: int):
 @login_required
 @flight_planner_required
 def periodic_check_type_delete_view(request, pk: int):
-    """Удаление вида периодической проверки (если нет связанных записей).
+    """Удаление вида периодического мероприятия (если нет связанных записей).
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
-        pk (int): Первичный ключ вида проверки.
+        pk (int): Первичный ключ вида мероприятия.
 
     Returns:
         HttpResponse: Перенаправление на справочник с сообщением.
@@ -2705,11 +2712,11 @@ def periodic_check_type_delete_view(request, pk: int):
     check_type = get_object_or_404(PeriodicCheckType, pk=pk)
     records_count = check_type.records.count()
     if records_count > 0:
-        messages.error(request, f"Невозможно удалить вид проверки «{check_type.name}», так как с ним связано {records_count} записей в журнале. Сначала удалите или переместите эти записи.")
+        messages.error(request, f"Невозможно удалить вид мероприятия «{check_type.name}», так как с ним связано {records_count} записей в журнале. Сначала удалите или переместите эти записи.")
     else:
         name = check_type.name
         check_type.delete()
-        messages.success(request, f"Вид проверки «{name}» успешно удален.")
+        messages.success(request, f"Вид мероприятия «{name}» успешно удален.")
     return redirect(f"{reverse('flight_planning:periodic_check_list')}?tab=types")
 
 
@@ -2789,15 +2796,15 @@ def calculate_check_date_api(request):
 @login_required
 @require_http_methods(["GET"])
 def get_check_history_api(request):
-    """API получения истории прохождения периодических проверок сотрудником.
+    """API получения истории прохождения периодических мероприятий сотрудником.
 
     Args:
         request (HttpRequest): HTTP-запрос с GET-параметрами:
             - employee_id (int, обязательный): ID сотрудника;
-            - check_type_id (int, опциональный): ID вида проверки для фильтрации.
+            - check_type_id (int, опциональный): ID вида мероприятия для фильтрации.
 
     Returns:
-        JsonResponse: Список исторических записей проверок, текущий статус и метаданные.
+        JsonResponse: Список исторических записей мероприятий, текущий статус и метаданные.
     """
     employee_id = request.GET.get('employee_id')
     check_type_id = request.GET.get('check_type_id')
@@ -2865,7 +2872,7 @@ def get_check_history_api(request):
         'employee_name': employee.title or f"{employee.last_name} {employee.first_name}".strip() or employee.username,
         'employee_job': employee.user_work_profile.job.name if hasattr(employee, 'user_work_profile') and employee.user_work_profile and employee.user_work_profile.job else "",
         'check_type_id': target_check_type.id if target_check_type else None,
-        'check_type_name': target_check_type.name if target_check_type else "Все проверки",
+        'check_type_name': target_check_type.name if target_check_type else "Все мероприятия",
         'history_count': len(history_items),
         'latest_record': latest_rec,
         'records': history_items
@@ -2875,14 +2882,14 @@ def get_check_history_api(request):
 @login_required
 @require_http_methods(["GET"])
 def get_employee_check_assignments_api(request, employee_id: int):
-    """API получения перечня закрепленных за сотрудником обязательных проверок.
+    """API получения перечня закрепленных за сотрудником обязательных мероприятий.
 
     Args:
         request (HttpRequest): HTTP-запрос.
         employee_id (int): Идентификатор сотрудника.
 
     Returns:
-        JsonResponse: JSON с текущими закреплениями и всеми доступными видами проверок.
+        JsonResponse: JSON с текущими закреплениями и всеми доступными видами мероприятий.
     """
     data = get_employee_check_assignments(employee_id)
     if data.get('status') == 'error':
@@ -2894,12 +2901,12 @@ def get_employee_check_assignments_api(request, employee_id: int):
 @flight_planner_required
 @require_http_methods(["POST"])
 def save_employee_check_assignments_api(request):
-    """API сохранения индивидуального закрепления обязательных проверок за сотрудником.
+    """API сохранения индивидуального закрепления обязательных мероприятий за сотрудником.
 
     Args:
         request (HttpRequest): HTTP-запрос (JSON или form-data) с параметрами:
             - employee_id (int): Идентификатор сотрудника;
-            - check_type_ids (List[int]): Массив ID закрепляемых проверок.
+            - check_type_ids (List[int]): Массив ID закрепляемых мероприятий.
 
     Returns:
         JsonResponse: Результат сохранения.
@@ -2922,7 +2929,7 @@ def save_employee_check_assignments_api(request):
         emp_id = int(employee_id)
         cid_list = [int(cid) for cid in check_type_ids]
     except (ValueError, TypeError):
-        return JsonResponse({'status': 'error', 'error': 'Некорректные идентификаторы проверок.'}, status=400)
+        return JsonResponse({'status': 'error', 'error': 'Некорректные идентификаторы мероприятий.'}, status=400)
 
     save_employee_check_assignments(
         employee_id=emp_id,
@@ -2932,7 +2939,7 @@ def save_employee_check_assignments_api(request):
 
     return JsonResponse({
         'status': 'success',
-        'message': 'Индивидуальный перечень обязательных проверок успешно сохранен!'
+        'message': 'Индивидуальный перечень обязательных мероприятий успешно сохранен!'
     })
 
 

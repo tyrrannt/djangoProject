@@ -243,7 +243,7 @@
                                 <div class="pilot-item"
                                      data-pilot-id="{{ pilot.id }}"
                                      data-pilot-name="{{ pilot.title|default:pilot.username|FIO_format }}"
-                                     data-pilot-job="{{ job_name }}"
+                                     data-pilot-job="{{ job_name|short_job }}"
                                      data-is-commander="{{ is_commander|yesno:"true,false" }}"
                                      data-is-instructor="{{ is_instructor|yesno:"true,false" }}"
                                      data-has-expired="{{ p_status.has_expired|yesno:'true,false' }}"
@@ -256,11 +256,11 @@
                                         {% elif p_status and p_status.has_warning %}
                                             <i class='bx bx-time-five text-warning fs-6 check-status-icon' data-pilot-id="{{ pilot.id }}" title="⏳ {{ p_status.summary_text }}" style="cursor: pointer;"></i>
                                         {% else %}
-                                            <i class='bx bx-check-circle text-success fs-6' title="Все проверки в норме"></i>
+                                            <i class='bx bx-check-circle text-success fs-6' title="Все мероприятия в норме"></i>
                                         {% endif %}
                                     </div>
-                                    <small style="color: #888; display: block;">
-                                        {{ job_name|default:"Должность не указана" }}
+                                    <small style="color: #888; display: block;" title="{{ job_name }}">
+                                        {{ job_name|short_job|default:"Должность не указана" }}
                                         {% if is_commander %}
                                             <span style="color: #dc3545;"> ★ КВС</span>
                                         {% endif %}
@@ -591,11 +591,11 @@
         </div>
     </div>
 
-    <!-- Модальное окно детального статуса периодических проверок сотрудника -->
+    <!-- Модальное окно детального статуса периодических мероприятий сотрудника -->
     <div class="modal-overlay" id="pilotCheckDetailsOverlay" style="display: none; z-index: 10070;"></div>
     <div class="modal-window large-modal" id="pilotCheckDetailsModal" style="display: none; z-index: 10080; width: 680px;">
         <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <span class="font-weight-bold" id="pcdPilotNameTitle"><i class='bx bx-check-shield me-2'></i> Периодические проверки сотрудника</span>
+            <span class="font-weight-bold" id="pcdPilotNameTitle"><i class='bx bx-check-shield me-2'></i> Периодические мероприятия сотрудника</span>
             <button type="button" class="btn-close btn-close-white" id="closePilotCheckDetailsCross" style="cursor: pointer;"></button>
         </div>
         <div class="modal-body p-3">
@@ -606,7 +606,7 @@
                 <table class="table table-sm table-bordered align-middle">
                     <thead class="table-light">
                     <tr>
-                        <th>Вид проверки</th>
+                        <th>Вид мероприятия</th>
                         <th>Тип ВС</th>
                         <th>Начало</th>
                         <th>Окончание</th>
@@ -614,13 +614,13 @@
                     </tr>
                     </thead>
                     <tbody id="pcdChecksTableBody">
-                        <!-- Динамические строки проверок -->
+                        <!-- Динамические строки мероприятий -->
                     </tbody>
                 </table>
             </div>
             <div class="text-end mt-2">
                 <a href="{% url 'flight_planning:periodic_check_list' %}" id="pcdOpenJournalLink" class="btn btn-sm btn-outline-primary" target="_blank">
-                    <i class='bx bx-folder-open me-1'></i> Открыть в журнале проверок
+                    <i class='bx bx-folder-open me-1'></i> Открыть в журнале мероприятий
                 </a>
             </div>
         </div>

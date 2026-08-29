@@ -136,3 +136,33 @@ def filter_is_flight_planner(user) -> bool:
         return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name="Планирование полетов").exists()))
 
 
+@register.filter(name="short_job")
+def filter_short_job(job_name, mode: str = 'standard') -> str:
+    """Шаблонный фильтр для компактного отображения должностей сотрудников.
+
+    Применяет отраслевые авиационные сокращения (напр. «КВС Ми-8», «2П Ми-8»,
+    «Б/М-инструктор Ми-8», «Авиатехник по экспл. ВС») для компактного вывода в таблицах и карточках.
+
+    Args:
+        job_name: Наименование должности или объект Job.
+        mode (str): Режим сокращения: 'standard' (по умолчанию) или 'ultra'.
+
+    Returns:
+        str: Краткое наименование должности.
+    """
+    try:
+        from flight_planning.services import format_short_job
+        return format_short_job(job_name, mode=mode)
+    except Exception:
+        return str(job_name or "")
+
+
+# Реэкспорт фильтра FIO_format для удобного использования во всех шаблонах планирования
+try:
+    from contracts_app.templatetags.custom import FIO_format
+    register.filter("FIO_format", FIO_format)
+except Exception:
+    pass
+
+
+

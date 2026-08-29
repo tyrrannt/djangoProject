@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load planning_extras %}
 
 {% block custom_css %}
     <style>
@@ -459,10 +460,10 @@
                                     <tr>
                                         <td class="text-center text-muted small">{{ forloop.counter }}</td>
                                         <td>
-                                            <strong class="text-dark">{{ pilot.full_name }}</strong>
+                                            <strong class="text-dark" title="{{ pilot.full_name }}">{{ pilot.full_name|FIO_format }}</strong>
                                         </td>
                                         <td>
-                                            <span class="text-muted">{{ pilot.job }}</span>
+                                            <span class="text-muted" title="{{ pilot.job }}">{{ pilot.job|short_job }}</span>
                                         </td>
                                         <td class="text-center font-weight-bold">
                                             {% if pilot.assigned_days > 0 %}

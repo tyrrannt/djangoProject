@@ -137,6 +137,9 @@ class PeriodicCheckRecordForm(forms.ModelForm):
         from .services import get_allowed_staff_queryset
         from customers_app.models import DataBaseUser
 
+        from contracts_app.templatetags.custom import FIO_format
+        from .services import get_allowed_staff_queryset, format_short_job
+
         # Сотрудники (фильтрация по разрешенным должностям и принадлежности пользователя)
         emp_qs = get_allowed_staff_queryset(user=user)
         if self.instance.pk and getattr(self.instance, 'employee_id', None):
@@ -146,14 +149,14 @@ class PeriodicCheckRecordForm(forms.ModelForm):
         self.fields['employee'].label = "Сотрудник"
         self.fields['employee'].empty_label = "Выберите сотрудника..."
         self.fields['employee'].label_from_instance = lambda u: (
-            f"{u.title or u.username}" +
-            (f" ({u.user_work_profile.job.name})" if hasattr(u, 'user_work_profile') and u.user_work_profile and u.user_work_profile.job else "")
+            f"{FIO_format(u.title or u.username)}" +
+            (f" ({format_short_job(u.user_work_profile.job.name)})" if hasattr(u, 'user_work_profile') and u.user_work_profile and u.user_work_profile.job else "")
         )
 
-        # Виды проверок
+        # Виды мероприятий
         self.fields['check_type'].queryset = PeriodicCheckType.objects.filter(is_active=True).select_related('aircraft_type').order_by('order', 'name')
-        self.fields['check_type'].label = "Вид проверки"
-        self.fields['check_type'].empty_label = "Выберите вид проверки..."
+        self.fields['check_type'].label = "Вид мероприятия"
+        self.fields['check_type'].empty_label = "Выберите вид мероприятия..."
         self.fields['check_type'].label_from_instance = lambda ct: (
             f"{ct.name} [{ct.aircraft_display}] (период: {ct.validity_months} мес.)"
         )
@@ -161,7 +164,7 @@ class PeriodicCheckRecordForm(forms.ModelForm):
         # Тип ВС
         self.fields['aircraft_type'].queryset = TypeProperty.objects.all().order_by('type_property')
         self.fields['aircraft_type'].label = "Тип ВС"
-        self.fields['aircraft_type'].empty_label = "Универсальная (* / Все типы ВС)"
+        self.fields['aircraft_type'].empty_label = "Универсальное (* / Все типы ВС)"
         self.fields['aircraft_type'].required = False
 
         if not self.instance.pk and not self.initial.get('start_date'):
@@ -181,7 +184,7 @@ class PeriodicCheckRecordForm(forms.ModelForm):
 
 
 class PeriodicCheckTypeForm(forms.ModelForm):
-    """Форма создания и редактирования вида периодической проверки.
+    """Форма создания и редактирования вида периодического мероприятия.
     """
     class Meta:
         from .models import PeriodicCheckType
@@ -195,7 +198,7 @@ class PeriodicCheckTypeForm(forms.ModelForm):
             'code': forms.TextInput(attrs={'class': 'form-control form-control-modern', 'placeholder': 'SIMULATOR, VLEK, CRM...'}),
             'validity_months': forms.NumberInput(attrs={'class': 'form-control form-control-modern', 'min': 1}),
             'validity_days': forms.NumberInput(attrs={'class': 'form-control form-control-modern', 'min': 0}),
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control form-control-modern', 'placeholder': 'Описание проверки, ссылка на нормативные документы...'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control form-control-modern', 'placeholder': 'Описание мероприятия, ссылка на нормативные документы...'}),
             'order': forms.NumberInput(attrs={'class': 'form-control form-control-modern'}),
         }
 
@@ -205,7 +208,7 @@ class PeriodicCheckTypeForm(forms.ModelForm):
 
         self.fields['aircraft_type'].queryset = TypeProperty.objects.all().order_by('type_property')
         self.fields['aircraft_type'].label = "Тип ВС"
-        self.fields['aircraft_type'].empty_label = "Универсальная (* / Для всех ВС)"
+        self.fields['aircraft_type'].empty_label = "Универсальное (* / Для всех ВС)"
         self.fields['aircraft_type'].required = False
 
         for field_name, field in self.fields.items():
@@ -267,9 +270,8 @@ class EmployeeStatusRecordForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        from customers_app.models import DataBaseUser
-        from .models import EmployeeStatusType
-        from .services import get_allowed_staff_queryset
+        from contracts_app.templatetags.custom import FIO_format
+        from .services import get_allowed_staff_queryset, format_short_job
 
         emp_qs = get_allowed_staff_queryset(user=user)
         if self.instance.pk and getattr(self.instance, 'employee_id', None):
@@ -277,8 +279,8 @@ class EmployeeStatusRecordForm(forms.ModelForm):
 
         self.fields['employee'].queryset = emp_qs
         self.fields['employee'].label_from_instance = lambda u: (
-            f"{u.title or (u.last_name + ' ' + u.first_name).strip() or u.username}"
-            + (f" ({u.user_work_profile.job.name})" if hasattr(u, 'user_work_profile') and u.user_work_profile and u.user_work_profile.job else "")
+            f"{FIO_format(u.title or (u.last_name + ' ' + u.first_name).strip() or u.username)}"
+            + (f" ({format_short_job(u.user_work_profile.job.name)})" if hasattr(u, 'user_work_profile') and u.user_work_profile and u.user_work_profile.job else "")
         )
         self.fields['employee'].empty_label = "Выберите сотрудника..."
 
