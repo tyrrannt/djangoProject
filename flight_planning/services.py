@@ -1,13 +1,14 @@
 # flight_planning/services.py
+import re
 from datetime import date, timedelta
 from typing import List, Dict, Any, Optional, Tuple, Set
 from .models import PilotAssignment, AircraftMovement
 
 
 def handle_aircraft_movement_crew_fallback(
-    aircraft_id: int,
-    new_mpd_id: int,
-    movement_date: date
+        aircraft_id: int,
+        new_mpd_id: int,
+        movement_date: date
 ) -> Tuple[int, List[str]]:
     """
     При перемещении борта ВС на новый МПД:
@@ -47,9 +48,9 @@ def handle_aircraft_movement_crew_fallback(
 
 
 def clean_empty_flight_crews(
-    mpd_id: Optional[int] = None,
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None
+        mpd_id: Optional[int] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None
 ) -> int:
     """
     Удаляет экипажи-призраки (в которых не осталось ни одного члена экипажа).
@@ -67,11 +68,11 @@ def clean_empty_flight_crews(
 
 
 def record_aircraft_movement(
-    aircraft_id: int,
-    mpd_id: int,
-    movement_date: date,
-    created_by=None,
-    comment: str = ""
+        aircraft_id: int,
+        mpd_id: int,
+        movement_date: date,
+        created_by=None,
+        comment: str = ""
 ) -> AircraftMovement:
     """
     Регистрирует перемещение/базирование воздушного судна на МПД
@@ -106,11 +107,12 @@ def format_short_name(full_name: str) -> str:
         return f"{parts[0]} {parts[1][0]}."
     return full_name
 
+
 def get_grouped_pilot_schedule(
-    assignments: List[Any],
-    year: int,
-    month: int,
-    crew_lookup: Optional[Dict[date, Dict[Any, Set[str]]]] = None
+        assignments: List[Any],
+        year: int,
+        month: int,
+        crew_lookup: Optional[Dict[date, Dict[Any, Set[str]]]] = None
 ) -> List[Dict[str, Any]]:
     """Группирует подневные назначения пилота в непрерывные интервалы дежурств на МПД и периоды отдыха.
 
@@ -169,7 +171,8 @@ def get_grouped_pilot_schedule(
         current_mpd_id = getattr(first_assignment, 'mpd_id', None)
         if current_mpd_id is None and hasattr(first_assignment, 'mpd') and hasattr(first_assignment.mpd, 'id'):
             current_mpd_id = first_assignment.mpd.id
-        current_mpd_name = first_assignment.mpd.name if hasattr(first_assignment, 'mpd') and hasattr(first_assignment.mpd, 'name') else "МПД"
+        current_mpd_name = first_assignment.mpd.name if hasattr(first_assignment, 'mpd') and hasattr(
+            first_assignment.mpd, 'name') else "МПД"
     else:
         current_mpd_id = None
         current_mpd_name = "Пропуск"
@@ -182,7 +185,8 @@ def get_grouped_pilot_schedule(
             next_mpd_id = getattr(next_assignment, 'mpd_id', None)
             if next_mpd_id is None and hasattr(next_assignment, 'mpd') and hasattr(next_assignment.mpd, 'id'):
                 next_mpd_id = next_assignment.mpd.id
-            next_mpd_name = next_assignment.mpd.name if hasattr(next_assignment, 'mpd') and hasattr(next_assignment.mpd, 'name') else "МПД"
+            next_mpd_name = next_assignment.mpd.name if hasattr(next_assignment, 'mpd') and hasattr(next_assignment.mpd,
+                                                                                                    'name') else "МПД"
         else:
             next_mpd_id = None
             next_mpd_name = "Пропуск"
@@ -217,10 +221,10 @@ def get_grouped_pilot_schedule(
 
 
 def get_pilot_schedule_from_snapshot(
-    snapshot_data: Dict[str, Any],
-    pilot_id: int,
-    year: int,
-    month: int
+        snapshot_data: Dict[str, Any],
+        pilot_id: int,
+        year: int,
+        month: int
 ) -> List[Dict[str, Any]]:
     """Извлекает назначения пилота из зафиксированного снимка документа и формирует сгруппированный график.
 
@@ -238,6 +242,7 @@ def get_pilot_schedule_from_snapshot(
 
     class MockMPD:
         """Вспомогательный объект-заглушка МПД для совместимости."""
+
         def __init__(self, mpd_id: Any, name: str):
             self.id = mpd_id
             self.name = name
@@ -247,6 +252,7 @@ def get_pilot_schedule_from_snapshot(
 
     class MockAssignment:
         """Вспомогательный объект-заглушка назначения для совместимости с сервисом группировки."""
+
         def __init__(self, d: date, mpd_id: Any, mpd_name: str):
             self.date = d
             self.mpd_id = mpd_id
@@ -329,7 +335,8 @@ def validate_crew_composition(flight_type: str, members: List[Dict[str, Any]]) -
         if flight_engineers_count < 1:
             errors.append("При проверке бортмеханика обязательно должен быть проверяемый Бортмеханик.")
         if fe_instructors_count < 1:
-            errors.append("При проверке бортмеханика обязательно должен присутствовать Бортмеханик-инструктор (проверяющий).")
+            errors.append(
+                "При проверке бортмеханика обязательно должен присутствовать Бортмеханик-инструктор (проверяющий).")
         if len(members) < 4:
             errors.append("Состав экипажа при проверке бортмеханика должен быть не менее 4 человек.")
 
@@ -337,7 +344,8 @@ def validate_crew_composition(flight_type: str, members: List[Dict[str, Any]]) -
         if commanders_count < 1:
             errors.append("В экипаже обязательно должен быть КВС.")
         if pilot_instructors_count < 1:
-            errors.append("При проверочном полете пилотов обязательно должен присутствовать Пилот-инструктор (проверяющий).")
+            errors.append(
+                "При проверочном полете пилотов обязательно должен присутствовать Пилот-инструктор (проверяющий).")
         if total_engineers < 1:
             errors.append("В экипаже обязательно должен быть Бортмеханик (или бортмеханик-инструктор).")
         if len(members) < 3:
@@ -359,11 +367,11 @@ def validate_crew_composition(flight_type: str, members: List[Dict[str, Any]]) -
 
 
 def check_crew_member_conflicts(
-    mpd_id: int,
-    start_date: date,
-    end_date: date,
-    members: List[Dict[str, Any]],
-    current_crew_id: Optional[int] = None
+        mpd_id: int,
+        start_date: date,
+        end_date: date,
+        members: List[Dict[str, Any]],
+        current_crew_id: Optional[int] = None
 ) -> List[Dict[str, Any]]:
     """Проверяет занятость участников экипажа на других МПД, в других экипажах, а также особые статусы персонала (Отпуск, Больничный, Резерв, КПК, ВЛЭК).
 
@@ -412,7 +420,8 @@ def check_crew_member_conflicts(
                 'old_mpd_id': a.mpd_id,
                 'old_mpd_name': a.mpd.name,
                 'old_crew_id': a.crew_id,
-                'old_crew_name': a.crew.aircraft.registration_number if (a.crew and a.crew.aircraft) else ('Резерв' if a.crew else ''),
+                'old_crew_name': a.crew.aircraft.registration_number if (a.crew and a.crew.aircraft) else (
+                    'Резерв' if a.crew else ''),
                 'description': f"{pilot_name}: {date_fmt} уже назначен на МПД «{a.mpd.name}»{crew_info}."
             })
         # 1.2. На том же МПД, но в ДРУГОМ экипаже (и это не редактируемый экипаж)
@@ -465,16 +474,16 @@ def check_crew_member_conflicts(
 
 
 def create_or_update_flight_crew_range(
-    mpd_id: int,
-    aircraft_id: Optional[int],
-    start_date: date,
-    end_date: date,
-    flight_type: str,
-    members: List[Dict[str, Any]],
-    created_by=None,
-    comment: str = "",
-    crew_name: str = "",
-    force_override: bool = False
+        mpd_id: int,
+        aircraft_id: Optional[int],
+        start_date: date,
+        end_date: date,
+        flight_type: str,
+        members: List[Dict[str, Any]],
+        created_by=None,
+        comment: str = "",
+        crew_name: str = "",
+        force_override: bool = False
 ) -> Dict[str, Any]:
     """
     Создает или обновляет летный экипаж на диапазон дат.
@@ -641,15 +650,15 @@ def create_or_update_flight_crew_range(
 
 
 def update_flight_crew(
-    crew_id: int,
-    mpd_id: int,
-    aircraft_id: Optional[int],
-    target_date: date,
-    flight_type: str,
-    members: List[Dict[str, Any]],
-    comment: str = "",
-    crew_name: str = "",
-    force_override: bool = False
+        crew_id: int,
+        mpd_id: int,
+        aircraft_id: Optional[int],
+        target_date: date,
+        flight_type: str,
+        members: List[Dict[str, Any]],
+        comment: str = "",
+        crew_name: str = "",
+        force_override: bool = False
 ) -> Dict[str, Any]:
     """
     Обновляет конкретный существующий экипаж, его участников и привязки назначений.
@@ -683,7 +692,8 @@ def update_flight_crew(
                 'status': 'conflict',
                 'conflict_type': 'aircraft',
                 'can_override': False,
-                'errors': [f"Борт {aircraft.registration_number} на дату {target_date.strftime('%d.%m.%Y')} уже закреплен за другим экипажем на {other_crew.mpd.name}."]
+                'errors': [
+                    f"Борт {aircraft.registration_number} на дату {target_date.strftime('%d.%m.%Y')} уже закреплен за другим экипажем на {other_crew.mpd.name}."]
             }
 
     # Проверка конфликтов членов экипажа на других МПД / экипажах
@@ -775,12 +785,12 @@ def update_flight_crew(
 
 
 def batch_swap_aircraft(
-    mpd_id: int,
-    start_date: date,
-    end_date: date,
-    old_aircraft_id: Optional[Any],
-    new_aircraft_id: Optional[Any],
-    created_by=None
+        mpd_id: int,
+        start_date: date,
+        end_date: date,
+        old_aircraft_id: Optional[Any],
+        new_aircraft_id: Optional[Any],
+        created_by=None
 ) -> Dict[str, Any]:
     """
     Выполняет пакетную замену борта ВС в экипажах на указанном МПД в заданном интервале дат.
@@ -913,7 +923,8 @@ def batch_swap_aircraft(
         clean_empty_flight_crews(mpd_id=mpd_id, start_date=start_date, end_date=end_date)
 
     new_ac_name = new_aircraft.registration_number if new_aircraft else "Резерв"
-    old_ac_name = old_aircraft.registration_number if old_aircraft else ("Резерв" if filter_mode == 'reserve' else "Все")
+    old_ac_name = old_aircraft.registration_number if old_aircraft else (
+        "Резерв" if filter_mode == 'reserve' else "Все")
     return {
         'status': 'success',
         'updated_count': updated_count,
@@ -1064,7 +1075,8 @@ def build_flight_planning_snapshot(year: int, month: int) -> Dict[str, Any]:
         # Собираем пометки
         notes_data = []
         for n in crew.notes.all():
-            author_title = n.author.title if (n.author and n.author.title) else (n.author.username if n.author else "Аноним")
+            author_title = n.author.title if (n.author and n.author.title) else (
+                n.author.username if n.author else "Аноним")
             notes_data.append({
                 'id': n.id,
                 'author_name': author_title,
@@ -1084,7 +1096,8 @@ def build_flight_planning_snapshot(year: int, month: int) -> Dict[str, Any]:
             'aircraft_id': crew.aircraft_id,
             'aircraft_number': crew.aircraft.registration_number if crew.aircraft else 'Резерв',
             'aircraft_reg': crew.aircraft.registration_number if crew.aircraft else 'Резерв',
-            'aircraft_type': crew.aircraft.type_property.type_property if (crew.aircraft and crew.aircraft.type_property) else '',
+            'aircraft_type': crew.aircraft.type_property.type_property if (
+                        crew.aircraft and crew.aircraft.type_property) else '',
             'members': members_data,
             'notes': notes_data
         }
@@ -1108,8 +1121,8 @@ def build_flight_planning_snapshot(year: int, month: int) -> Dict[str, Any]:
 
 
 def calculate_flight_planning_diff(
-    old_snapshot: Dict[str, Any],
-    new_snapshot: Dict[str, Any]
+        old_snapshot: Dict[str, Any],
+        new_snapshot: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     """Вычисляет детальную разницу (diff) между двумя снимками сетки планирования.
 
@@ -1297,10 +1310,10 @@ def get_next_document_number(year: int, month: int) -> Tuple[str, int]:
 
 
 def create_planning_document(
-    year: int,
-    month: int,
-    author,
-    reason: str = ""
+        year: int,
+        month: int,
+        author,
+        reason: str = ""
 ):
     """Создает новый документ расстановки экипажей на месяц в статусе 'На утверждении'.
 
@@ -1421,9 +1434,9 @@ def get_pending_document(year: int, month: int):
 
 
 def check_snapshot_matches_live(
-    year: int,
-    month: int,
-    document
+        year: int,
+        month: int,
+        document
 ) -> Tuple[bool, List[Dict[str, Any]]]:
     """Сравнивает зафиксированный в документе снимок с текущим живым состоянием базы данных.
 
@@ -1444,9 +1457,9 @@ def check_snapshot_matches_live(
 
 
 def calculate_check_end_date(
-    start_date: date,
-    validity_months: int,
-    validity_days: int = 0
+        start_date: date,
+        validity_months: int,
+        validity_days: int = 0
 ) -> date:
     """Вычисляет дату окончания действия периодической проверки.
 
@@ -1500,7 +1513,8 @@ def get_employee_check_assignments(employee_id: int) -> Dict[str, Any]:
         return {'status': 'error', 'error': 'Сотрудник не найден.'}
 
     # Все активные типы проверок
-    all_types = PeriodicCheckType.objects.filter(is_active=True).select_related('aircraft_type').order_by('order', 'name')
+    all_types = PeriodicCheckType.objects.filter(is_active=True).select_related('aircraft_type').order_by('order',
+                                                                                                          'name')
 
     # Текущие закрепления
     assigned_records = EmployeeRequiredCheck.objects.filter(employee_id=employee_id)
@@ -1548,7 +1562,8 @@ def get_employee_check_assignments(employee_id: int) -> Dict[str, Any]:
         'status': 'success',
         'employee_id': employee.id,
         'employee_name': employee.title or f"{employee.last_name} {employee.first_name}".strip() or employee.username,
-        'employee_job': employee.user_work_profile.job.name if hasattr(employee, 'user_work_profile') and employee.user_work_profile and employee.user_work_profile.job else "",
+        'employee_job': employee.user_work_profile.job.name if hasattr(employee,
+                                                                       'user_work_profile') and employee.user_work_profile and employee.user_work_profile.job else "",
         'has_custom_assignments': has_custom_assignments,
         'assigned_check_type_ids': list(assigned_ids),
         'all_check_types': types_data
@@ -1556,9 +1571,9 @@ def get_employee_check_assignments(employee_id: int) -> Dict[str, Any]:
 
 
 def save_employee_check_assignments(
-    employee_id: int,
-    check_type_ids: List[int],
-    assigned_by: Optional[Any] = None
+        employee_id: int,
+        check_type_ids: List[int],
+        assigned_by: Optional[Any] = None
 ) -> None:
     """Сохраняет индивидуальный перечень обязательных периодических проверок для сотрудника.
 
@@ -1615,9 +1630,9 @@ def get_batch_employee_check_assignments(employee_ids: List[int]) -> Dict[int, S
 
 
 def get_pilot_periodic_check_status(
-    pilot_id: int,
-    target_date: Optional[date] = None,
-    aircraft_type_id: Optional[int] = None
+        pilot_id: int,
+        target_date: Optional[date] = None,
+        aircraft_type_id: Optional[int] = None
 ) -> Dict[str, Any]:
     """Вычисляет полный статус периодических проверок сотрудника на указанную дату.
 
@@ -1690,7 +1705,8 @@ def get_pilot_periodic_check_status(
     is_fe = ('механик' in job_name or 'инженер' in job_name or 'бм' in job_name)
     is_tech = ('техник' in job_name)
 
-    check_types_qs = PeriodicCheckType.objects.filter(is_active=True).select_related('aircraft_type').order_by('order', 'name')
+    check_types_qs = PeriodicCheckType.objects.filter(is_active=True).select_related('aircraft_type').order_by('order',
+                                                                                                               'name')
 
     # Проверяем наличие индивидуальных закреплений проверок за сотрудником
     custom_assignments_exist = EmployeeRequiredCheck.objects.filter(employee_id=pilot_id).exists()
@@ -1848,9 +1864,9 @@ def get_pilot_periodic_check_status(
 
 
 def get_month_pilots_check_status_map(
-    pilot_ids: List[int],
-    year: int,
-    month: int
+        pilot_ids: List[int],
+        year: int,
+        month: int
 ) -> Dict[int, Dict[str, Any]]:
     """Оптимизированный пакетный расчет статуса проверок для списка пилотов на конкретный месяц.
 
@@ -1875,9 +1891,9 @@ def get_month_pilots_check_status_map(
 
 
 def get_month_employee_statuses_map(
-    pilot_ids: List[int],
-    year: int,
-    month: int
+        pilot_ids: List[int],
+        year: int,
+        month: int
 ) -> Dict[int, List[Dict[str, Any]]]:
     """Формирует карту активных состояний/статусов сотрудников на выбранный месяц.
 
@@ -1928,8 +1944,8 @@ def get_month_employee_statuses_map(
 
 
 def get_pilot_employee_statuses(
-    pilot_id: int,
-    target_date: Optional[date] = None
+        pilot_id: int,
+        target_date: Optional[date] = None
 ) -> Dict[str, Any]:
     """Возвращает информацию о текущих и запланированных состояниях сотрудника.
 
@@ -2063,20 +2079,20 @@ def get_allowed_staff_queryset(user=None):
     if scope == '1':
         target_names = FLIGHT_CREW_JOB_NAMES
         q_filter = (
-            Q(user_work_profile__job__name__in=target_names)
-            | Q(user_work_profile__job__type_of_job='1')
+                Q(user_work_profile__job__name__in=target_names)
+                | Q(user_work_profile__job__type_of_job='1')
         )
     elif scope == '2':
         target_names = ENGINEERING_STAFF_JOB_NAMES
         q_filter = (
-            Q(user_work_profile__job__name__in=target_names)
-            | Q(user_work_profile__job__type_of_job='2')
+                Q(user_work_profile__job__name__in=target_names)
+                | Q(user_work_profile__job__type_of_job='2')
         )
     else:
         target_names = ALL_STAFF_JOB_NAMES
         q_filter = (
-            Q(user_work_profile__job__name__in=target_names)
-            | Q(user_work_profile__job__type_of_job__in=['1', '2'])
+                Q(user_work_profile__job__name__in=target_names)
+                | Q(user_work_profile__job__type_of_job__in=['1', '2'])
         )
 
     return DataBaseUser.objects.filter(
@@ -2233,11 +2249,3 @@ def format_short_job(job_name: Any, mode: str = 'standard') -> str:
         result = re.sub(pattern, repl, result, flags=re.IGNORECASE)
 
     return result.strip()
-
-
-
-
-
-
-
-
