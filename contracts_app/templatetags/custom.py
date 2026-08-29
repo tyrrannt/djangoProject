@@ -153,8 +153,19 @@ def FIO_format(value: Any, reverse: bool = False) -> str:
     if not value:
         return ""
 
+    if isinstance(value, str):
+        raw_str = value
+    elif hasattr(value, 'title') and isinstance(value.title, str) and value.title:
+        raw_str = value.title
+    elif hasattr(value, 'get_full_name') and callable(value.get_full_name) and value.get_full_name():
+        raw_str = str(value.get_full_name())
+    elif hasattr(value, 'username') and isinstance(value.username, str) and value.username:
+        raw_str = value.username
+    else:
+        raw_str = str(value)
+
     # Приводим к строке и разбиваем по пробелам, удаляя пустые
-    parts = str(value).strip().split()
+    parts = raw_str.strip().split()
     parts = [part for part in parts if part]
 
     if not parts:

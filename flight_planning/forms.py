@@ -2,10 +2,22 @@
 from datetime import date
 from django import forms
 from django.utils import timezone
-from contracts_app.models import Estate
-from hrdepartment_app.models import PlaceProductionActivity
+
 from administration_app.utils import make_custom_field
-from .models import AircraftMovement
+from contracts_app.models import Estate, TypeProperty
+from contracts_app.templatetags.custom import FIO_format
+from customers_app.models import DataBaseUser
+from hrdepartment_app.models import PlaceProductionActivity
+
+from .models import (
+    AircraftMovement,
+    PeriodicCheckRecord,
+    PeriodicCheckType,
+    EmployeeStatusRecord,
+    EmployeeStatusType,
+)
+from .services import get_allowed_staff_queryset, format_short_job
+
 
 
 class AircraftMovementForm(forms.ModelForm):
@@ -106,7 +118,6 @@ class PeriodicCheckRecordForm(forms.ModelForm):
     )
 
     class Meta:
-        from .models import PeriodicCheckRecord
         model = PeriodicCheckRecord
         fields = [
             'employee', 'check_type', 'aircraft_type',
@@ -132,13 +143,6 @@ class PeriodicCheckRecordForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        from contracts_app.models import TypeProperty
-        from .models import PeriodicCheckType
-        from .services import get_allowed_staff_queryset
-        from customers_app.models import DataBaseUser
-
-        from contracts_app.templatetags.custom import FIO_format
-        from .services import get_allowed_staff_queryset, format_short_job
 
         # Сотрудники (фильтрация по разрешенным должностям и принадлежности пользователя)
         emp_qs = get_allowed_staff_queryset(user=user)
@@ -187,7 +191,6 @@ class PeriodicCheckTypeForm(forms.ModelForm):
     """Форма создания и редактирования вида периодического мероприятия.
     """
     class Meta:
-        from .models import PeriodicCheckType
         model = PeriodicCheckType
         fields = [
             'name', 'code', 'aircraft_type', 'validity_months',
@@ -204,8 +207,6 @@ class PeriodicCheckTypeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from contracts_app.models import TypeProperty
-
         self.fields['aircraft_type'].queryset = TypeProperty.objects.all().order_by('type_property')
         self.fields['aircraft_type'].label = "Тип ВС"
         self.fields['aircraft_type'].empty_label = "Универсальное (* / Для всех ВС)"
@@ -252,7 +253,6 @@ class EmployeeStatusRecordForm(forms.ModelForm):
     )
 
     class Meta:
-        from .models import EmployeeStatusRecord
         model = EmployeeStatusRecord
         fields = ['employee', 'status_type', 'start_date', 'end_date', 'document_number', 'notes']
         widgets = {
@@ -270,8 +270,6 @@ class EmployeeStatusRecordForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        from contracts_app.templatetags.custom import FIO_format
-        from .services import get_allowed_staff_queryset, format_short_job
 
         emp_qs = get_allowed_staff_queryset(user=user)
         if self.instance.pk and getattr(self.instance, 'employee_id', None):
@@ -309,7 +307,6 @@ class EmployeeStatusTypeForm(forms.ModelForm):
     """Форма создания и редактирования вида состояния сотрудника."""
 
     class Meta:
-        from .models import EmployeeStatusType
         model = EmployeeStatusType
         fields = ['name', 'code', 'color', 'is_blocking', 'order', 'description', 'is_active']
         widgets = {

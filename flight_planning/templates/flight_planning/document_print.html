@@ -190,7 +190,7 @@
                 <div class="sig-line">
                     <span>Подпись:</span>
                     <span class="sig-underline"></span>
-                    <span>/ {{ document.author.title|default:document.author.username|FIO_format }} /</span>
+                    <span>/ {% if document.author %}{{ document.author.title|default:document.author.username|FIO_format }}{% else %}____________________{% endif %} /</span>
                 </div>
                 <div class="text-muted" style="font-size: 7.5pt; margin-top: 2px;">
                     «____» ________________ 2026 г.
@@ -203,7 +203,7 @@
                 <div class="sig-line" style="justify-content: flex-end;">
                     <span>Подпись:</span>
                     <span class="sig-underline" style="max-width: 120px;"></span>
-                    <span>/ {{ document.approved_by.title|default:"____________________"|FIO_format }} /</span>
+                    <span>/ {% if document.approved_by %}{{ document.approved_by.title|default:document.approved_by.username|FIO_format }}{% else %}____________________{% endif %} /</span>
                 </div>
                 <div style="font-size: 7.5pt; margin-top: 2px;">
                     {% if document.approved_at %}
@@ -305,10 +305,10 @@
         <!-- Подписи в подвале -->
         <div class="print-footer-signatures">
             <div>
-                Составил: ____________________ / {{ document.author.title|default:document.author.username|FIO_format }} /
+                Составил: ____________________ / {% if document.author %}{{ document.author.title|default:document.author.username|FIO_format }}{% else %}____________________{% endif %} /
             </div>
             <div>
-                Утвердил: ____________________ / {{ document.approved_by.title|default:"____________________"|FIO_format }} /
+                Утвердил: ____________________ / {% if document.approved_by %}{{ document.approved_by.title|default:document.approved_by.username|FIO_format }}{% else %}____________________{% endif %} /
             </div>
             <div style="font-size: 7.5pt; color: #666;">
                 Сформировано в АС «Авиакомпания «БАРКОЛ»: {{ generation_date }}

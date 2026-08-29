@@ -265,7 +265,11 @@
                                     </td>
                                     <td class="d-none d-md-table-cell">
                                         <small class="text-muted">
-                                            <span title="{{ m.created_by.title|default:m.created_by.username }}">{{ m.created_by.title|default:m.created_by.username|FIO_format|default:"Система" }}</span><br>
+                                            {% if m.created_by %}
+                                                <span title="{{ m.created_by.title|default:m.created_by.username }}">{{ m.created_by.title|default:m.created_by.username|FIO_format }}</span>
+                                            {% else %}
+                                                <span>Система</span>
+                                            {% endif %}<br>
                                             <span style="font-size: 0.75rem;">{{ m.created_at|date:"d.m.Y H:i" }}</span>
                                         </small>
                                     </td>

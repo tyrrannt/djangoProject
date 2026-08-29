@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load planning_extras %}
 
 {% block custom_css %}
     <style>
@@ -226,7 +227,11 @@
                                         </div>
                                     </td>
                                     <td class="d-none d-xl-table-cell">
-                                        <small class="text-dark font-weight-semibold" title="{{ doc.author.title|default:doc.author.username }}">{{ doc.author.title|default:doc.author.username|FIO_format|default:"—" }}</small>
+                                        {% if doc.author %}
+                                            <small class="text-dark font-weight-semibold" title="{{ doc.author.title|default:doc.author.username }}">{{ doc.author.title|default:doc.author.username|FIO_format }}</small>
+                                        {% else %}
+                                            <small class="text-muted">—</small>
+                                        {% endif %}
                                     </td>
                                     <td class="d-none d-md-table-cell">
                                         {% if doc.approved_by %}
