@@ -31,7 +31,7 @@
 
 /* ... остальные темы без изменений ... */
 
-/* Модальные окна - восстановление стилей */
+/* Модальные окна - адаптивная архитектура со скроллом */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -39,8 +39,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 9999; /* Максимальный приоритет */
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 9999;
 }
 
 .modal-window {
@@ -49,12 +50,22 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
     z-index: 10000;
     width: 500px;
-    max-width: 95%;
+    max-width: 95vw;
+    max-height: 90vh;
+    max-height: 90dvh;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-window[style*="display: block"],
+.modal-window.active,
+.modal-window.show {
+    display: flex !important;
 }
 
 #modalOverlay {
@@ -370,9 +381,35 @@ body.theme-corporate .plan-cell.today-column-cell {
 
 /* Модальные окна */
 .modal-window .modal-header {
-    padding: 15px 20px;
-    border-radius: 8px 8px 0 0;
+    flex: 0 0 auto;
+    padding: 14px 18px;
+    border-radius: 10px 10px 0 0;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-window .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px;
+    overscroll-behavior: contain;
+}
+
+.modal-window .modal-footer {
+    flex: 0 0 auto;
+    padding: 12px 18px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 .modal-window .btn-primary {
@@ -846,13 +883,40 @@ body.theme-corporate .plan-cell.today-column-cell {
         box-shadow: 2px 0 5px rgba(0,0,0,0.06);
     }
     .modal-window {
-        width: 95% !important;
-        max-width: 95% !important;
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 92vh !important;
+        max-height: 92dvh !important;
         margin: 0 auto;
         border-radius: 8px;
     }
-    .large-modal {
-        width: 95% !important;
+    .large-modal,
+    .modal-window.large-modal,
+    .conflict-modal {
+        width: 95vw !important;
+        max-width: 95vw !important;
+    }
+    .modal-window .modal-header {
+        padding: 10px 14px;
+        font-size: 0.95rem;
+    }
+    .modal-window .modal-body {
+        padding: 12px 14px;
+    }
+    .modal-window .modal-footer {
+        padding: 10px 14px;
+        flex-direction: column-reverse;
+        gap: 6px;
+    }
+    .modal-window .modal-footer > button,
+    .modal-window .modal-footer > .btn,
+    .modal-window .modal-footer > a {
+        width: 100% !important;
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
     }
     .crew-builder-grid {
         grid-template-columns: 1fr !important;
@@ -860,14 +924,25 @@ body.theme-corporate .plan-cell.today-column-cell {
     }
     .crew-role-slot {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
+        align-items: stretch;
+        gap: 6px;
+        padding: 8px 10px;
     }
     .crew-role-slot label {
-        min-width: 100%;
+        min-width: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
     }
     .crew-role-slot select {
         width: 100%;
+        min-height: 38px;
+    }
+    .crew-role-slot .btn-remove-slot {
+        align-self: flex-end;
+        min-height: 32px;
+        padding: 2px 12px;
     }
 }
 
@@ -901,6 +976,22 @@ body.theme-corporate .plan-cell.today-column-cell {
     }
     .crew-member-badge {
         font-size: 0.7rem;
+    }
+    .modal-window {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        max-height: 95vh !important;
+        max-height: 95dvh !important;
+    }
+    .modal-window .modal-header {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+    .modal-window .modal-body {
+        padding: 10px 12px;
+    }
+    .modal-window .modal-footer {
+        padding: 8px 12px;
     }
 }
 
