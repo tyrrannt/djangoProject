@@ -3,9 +3,6 @@
 {% load custom %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
     <style>
         .mpd-card {
             border: 1px solid #e9ecef;
@@ -66,13 +63,33 @@
         .action-btns .btn {
             margin-right: 4px;
         }
+
+        /* ==========================================================
+           АДАПТИВНОСТЬ ПОД ПЛАНШЕТЫ И СМАРТФОНЫ (django-responsive)
+           ========================================================== */
+        @media (max-width: 992px) {
+            .filter-box {
+                padding: 14px;
+            }
+        }
+
         @media (max-width: 768px) {
             .filter-box {
                 padding: 12px;
             }
             .action-btns .btn {
-                padding: 4px 6px;
-                font-size: 0.8rem;
+                padding: 5px 8px;
+                font-size: 0.85rem;
+            }
+            .btn-touch {
+                min-height: 38px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .aircraft-badge {
+                padding: 3px 8px;
+                font-size: 0.78rem;
             }
         }
     </style>
@@ -86,14 +103,15 @@
     <div class="row mb-3">
         <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
-                <h2 class="font-weight-bold text-dark mb-1">Журнал перемещения воздушных судов по МПД</h2>
-                <p class="text-muted mb-0">Учет текущей дислокации и истории перемещений бортов</p>
+                <h2 class="font-weight-bold text-dark mb-1 h3">Журнал перемещения воздушных судов по МПД</h2>
+                <p class="text-muted mb-0 small">Учет текущей дислокации и истории перемещений бортов</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
                 {% if is_planner %}
                 <a href="{% url 'flight_planning:aircraft_movement_add' %}"
-                   class="btn btn-primary btn-px-4 py-2 d-flex align-items-center font-weight-semibold">
-                    <i class='bx bx-plus-circle text-4 me-2'></i> Зафиксировать перемещение
+                   class="btn btn-primary btn-touch py-2 px-3 d-flex align-items-center font-weight-semibold"
+                   aria-label="Зафиксировать перемещение" title="Зафиксировать перемещение">
+                    <i class='bx bx-plus-circle text-4 me-1'></i> <span class="d-none d-md-inline">Зафиксировать перемещение</span><span class="d-md-none">Перемещение</span>
                 </a>
                 {% endif %}
             </div>
@@ -104,7 +122,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card card-modern">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
                     <h5 class="card-title mb-0 font-weight-semibold text-4">
                         <i class='bx bx-map-pin text-primary me-2'></i> Текущее распределение воздушных судов по МПД
                     </h5>
@@ -150,8 +168,8 @@
     <div class="row mb-3">
         <div class="col-12">
             <div class="filter-box">
-                <form method="get" class="row g-3 align-items-end">
-                    <div class="col-12 col-md-3">
+                <form method="get" class="row g-2 g-md-3 align-items-end">
+                    <div class="col-12 col-sm-6 col-md-3">
                         <label class="form-label font-weight-semibold text-2">Воздушное судно</label>
                         <select name="aircraft" class="form-control form-control-modern select2-filter">
                             <option value="">Все воздушные суда</option>
@@ -163,7 +181,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-12 col-md-3">
+                    <div class="col-12 col-sm-6 col-md-3">
                         <label class="form-label font-weight-semibold text-2">МПД назначения</label>
                         <select name="mpd" class="form-control form-control-modern select2-filter">
                             <option value="">Все МПД</option>
@@ -174,21 +192,21 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-12 col-md-2">
+                    <div class="col-12 col-sm-6 col-md-2">
                         <label class="form-label font-weight-semibold text-2">Дата с</label>
                         <input type="date" name="date_from" value="{{ selected_date_from }}"
-                               class="form-control form-control-modern"/>
+                                class="form-control form-control-modern"/>
                     </div>
-                    <div class="col-12 col-md-2">
+                    <div class="col-12 col-sm-6 col-md-2">
                         <label class="form-label font-weight-semibold text-2">Дата по</label>
                         <input type="date" name="date_to" value="{{ selected_date_to }}"
-                               class="form-control form-control-modern"/>
+                                class="form-control form-control-modern"/>
                     </div>
                     <div class="col-12 col-md-2 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn btn-primary flex-grow-1 btn-touch" aria-label="Применить фильтр" title="Применить фильтр">
                             <i class='bx bx-filter-alt me-1'></i> Фильтр
                         </button>
-                        <a href="{% url 'flight_planning:aircraft_movement_list' %}" class="btn btn-outline-secondary" title="Сбросить фильтры">
+                        <a href="{% url 'flight_planning:aircraft_movement_list' %}" class="btn btn-outline-secondary btn-touch px-3" title="Сбросить фильтры" aria-label="Сбросить фильтры">
                             <i class='bx bx-reset'></i>
                         </a>
                     </div>
@@ -206,12 +224,12 @@
                         <table class="table table-bordered table-striped mb-0" id="movementsTable">
                             <thead>
                             <tr>
-                                <th style="width: 12%;">Дата</th>
-                                <th style="width: 20%;">Воздушное судно</th>
-                                <th style="width: 20%;">МПД базирования</th>
-                                <th style="width: 25%;">Основание / Примечание</th>
-                                <th style="width: 13%;">Кто зафиксировал</th>
-                                <th style="width: 10%; text-align: center;">Действия</th>
+                                <th>Дата</th>
+                                <th>Воздушное судно</th>
+                                <th>МПД базирования</th>
+                                <th class="d-none d-lg-table-cell">Основание / Примечание</th>
+                                <th class="d-none d-md-table-cell">Кто зафиксировал</th>
+                                <th class="text-center text-nowrap" style="width: 100px;">Действия</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -237,26 +255,26 @@
                                     <td>
                                         <span class="text-dark font-weight-semibold">{{ m.mpd.name }}</span>
                                     </td>
-                                    <td>
+                                    <td class="d-none d-lg-table-cell">
                                         {% if m.comment %}
                                             <span>{{ m.comment }}</span>
                                         {% else %}
                                             <span class="text-muted italic">—</span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td class="d-none d-md-table-cell">
                                         <small class="text-muted">
                                             {{ m.created_by.title|default:m.created_by.username|default:"Система" }}<br>
                                             <span style="font-size: 0.75rem;">{{ m.created_at|date:"d.m.Y H:i" }}</span>
                                         </small>
                                     </td>
-                                    <td class="text-center action-btns">
+                                    <td class="text-center action-btns text-nowrap">
                                         {% if is_planner %}
                                         <a href="{% url 'flight_planning:aircraft_movement_update' m.pk %}"
-                                           class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                           class="btn btn-sm btn-outline-primary btn-touch" title="Редактировать" aria-label="Редактировать">
                                             <i class='bx bx-edit'></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-movement"
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-movement btn-touch"
                                                 data-id="{{ m.pk }}"
                                                 data-aircraft="{{ m.aircraft.registration_number }}"
                                                 data-mpd="{{ m.mpd.name }}"

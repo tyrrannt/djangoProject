@@ -90,6 +90,7 @@
             .schedule-nav-header {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 8px;
             }
             .schedule-title {
                 font-size: 1.15rem;
@@ -98,6 +99,12 @@
             .schedule-table-custom th, .schedule-table-custom td {
                 padding: 10px 12px;
                 font-size: 0.85rem;
+            }
+            .btn-touch {
+                min-height: 38px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
         }
     </style>
@@ -111,24 +118,24 @@
     <div class="planning-container">
         <div class="my-schedule-card">
             <div class="schedule-nav-header">
-                <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn btn-touch" aria-label="Предыдущий месяц">
                     <i class='bx bx-chevron-left me-1'></i> Предыдущий месяц
                 </a>
                 <h2 class="schedule-title">
                     <i class='bx bx-calendar-event text-primary me-2'></i>Мой график: {{ month_name|default:month }} {{ year }}
                 </h2>
-                <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn">
+                <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn btn-touch" aria-label="Следующий месяц">
                     Следующий месяц <i class='bx bx-chevron-right ms-1'></i>
                 </a>
             </div>
 
             {% if latest_approved_doc %}
-                <div class="alert alert-success d-flex justify-content-between align-items-center mb-3 py-2 px-3 border border-success">
+                <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 py-2 px-3 border border-success">
                     <div>
                         <i class='bx bx-check-shield me-2 text-success fs-5 align-middle'></i>
                         Официальный утвержденный график: <strong>Документ № {{ latest_approved_doc.number }}</strong> (v.{{ latest_approved_doc.version }} от {{ latest_approved_doc.approved_at|date:"d.m.Y" }})
                     </div>
-                    <a href="{% url 'flight_planning:document_print' latest_approved_doc.id %}" target="_blank" class="btn btn-sm btn-outline-dark">
+                    <a href="{% url 'flight_planning:document_print' latest_approved_doc.id %}" target="_blank" class="btn btn-sm btn-outline-dark btn-touch px-3" aria-label="Печатная форма А4" title="Печатная форма А4">
                         <i class='bx bx-printer me-1'></i> Печатная форма А4
                     </a>
                 </div>

@@ -166,17 +166,17 @@
 <body>
 
     <!-- Панель действий в браузере (скрывается на печати) -->
-    <div class="no-print bg-light p-3 border-bottom mb-3 d-flex justify-content-between align-items-center">
+    <div class="no-print bg-light p-3 border-bottom mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
             <strong>Печатная форма документа № {{ document.number }}</strong>
-            <span class="text-muted ms-2">(Редакция v.{{ document.version }})</span>
+            <span class="text-muted ms-2 small">(Редакция v.{{ document.version }})</span>
         </div>
-        <div class="d-flex gap-2">
-            <button type="button" onclick="window.print()" class="btn btn-primary btn-sm font-weight-bold">
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" onclick="window.print()" class="btn btn-primary btn-sm font-weight-bold d-inline-flex align-items-center" aria-label="Печать / Экспорт в PDF">
                 <i class='bx bx-printer me-1'></i> Печать / Экспорт в PDF
             </button>
-            <a href="{% url 'flight_planning:document_detail' document.id %}" class="btn btn-outline-secondary btn-sm">
-                <i class='bx bx-arrow-back me-1'></i> Вернуться к карточке
+            <a href="{% url 'flight_planning:document_detail' document.id %}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center" aria-label="Вернуться к карточке">
+                <i class='bx bx-arrow-back me-1'></i> <span class="d-none d-sm-inline">Вернуться к карточке</span><span class="d-sm-none">Назад</span>
             </a>
         </div>
     </div>

@@ -54,6 +54,7 @@
             border-radius: 4px;
             font-weight: 700;
             text-transform: uppercase;
+            white-space: nowrap;
         }
         .change-tag-crew-added { background: #dcfce7; color: #166534; }
         .change-tag-crew-removed { background: #fee2e2; color: #991b1b; }
@@ -68,6 +69,56 @@
             border-radius: 8px;
             background: #ffffff;
             max-height: 65vh;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .snapshot-grid-container table.planning-table td.mpd-name,
+        .snapshot-grid-container table.planning-table th:first-child {
+            position: sticky;
+            left: 0;
+            background: #ffffff;
+            z-index: 5;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+        }
+        .snapshot-grid-container table.planning-table th:first-child {
+            background: #f1f5f9;
+            z-index: 6;
+        }
+
+        /* ==========================================================
+           АДАПТИВНОСТЬ ПОД ПЛАНШЕТЫ И СМАРТФОНЫ (django-responsive)
+           ========================================================== */
+        @media (max-width: 992px) {
+            .doc-detail-card {
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .doc-detail-card {
+                padding: 12px;
+            }
+            .status-badge-lg {
+                font-size: 0.8rem;
+                padding: 4px 8px;
+            }
+            .meta-label {
+                font-size: 0.72rem;
+            }
+            .meta-value {
+                font-size: 0.85rem;
+            }
+            .btn-touch {
+                min-height: 38px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .snapshot-grid-container table.planning-table td.mpd-name {
+                min-width: 140px;
+                max-width: 170px;
+                font-size: 0.75rem;
+            }
         }
     </style>
 {% endblock %}
@@ -81,7 +132,7 @@
     <div class="doc-detail-card">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 pb-3 border-bottom mb-3">
             <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                     <span class="badge bg-primary">Документ расстановки</span>
                     {% if document.status == 'approved' %}
                         <span class="badge bg-success status-badge-lg">
@@ -104,68 +155,72 @@
                 <h1 class="h3 font-weight-bold text-dark mb-1">
                     Документ расстановки экипажей № {{ document.number }}
                 </h1>
-                <p class="text-muted mb-0">
+                <p class="text-muted mb-0 small">
                     Период: <strong>{{ snapshot.month_name }} {{ document.year }} года</strong> • Редакция: <strong>v.{{ document.version }}</strong>
                 </p>
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'flight_planning:document_print' document.id %}" target="_blank"
-                   class="btn btn-dark d-flex align-items-center shadow-sm">
-                    <i class='bx bx-printer text-4 me-2'></i> Печатная форма А4
+                   class="btn btn-dark btn-touch d-flex align-items-center shadow-sm"
+                   aria-label="Печатная форма А4" title="Печатная форма А4">
+                    <i class='bx bx-printer text-4 me-1'></i> <span class="d-none d-md-inline">Печатная форма А4</span><span class="d-md-none">Печать</span>
                 </a>
-                {% if can_approve %}
-                    <button type="button" class="btn btn-success d-flex align-items-center shadow-sm"
-                            data-bs-toggle="modal" data-bs-target="#approveModal">
-                        <i class='bx bx-check-shield text-4 me-2'></i> Утвердить документ
+                {% if can_approve and document.is_pending %}
+                    <button type="button" class="btn btn-success btn-touch d-flex align-items-center shadow-sm"
+                            data-bs-toggle="modal" data-bs-target="#approveModal"
+                            aria-label="Утвердить документ" title="Утвердить документ">
+                        <i class='bx bx-check-shield text-4 me-1'></i> <span class="d-none d-md-inline">Утвердить документ</span><span class="d-md-none">Утвердить</span>
                     </button>
                 {% endif %}
                 <a href="{% url 'flight_planning:document_list' %}"
-                   class="btn btn-outline-secondary d-flex align-items-center">
-                    <i class='bx bx-arrow-back me-1'></i> К журналу
+                   class="btn btn-outline-secondary btn-touch d-flex align-items-center"
+                   aria-label="К журналу документов" title="К журналу документов">
+                    <i class='bx bx-arrow-back me-1'></i> <span class="d-none d-sm-inline">К журналу</span>
                 </a>
                 <a href="{% url 'flight_planning:planning_table' %}?year={{ document.year }}&month={{ document.month }}"
-                   class="btn btn-outline-primary d-flex align-items-center">
-                    <i class='bx bx-calendar me-1'></i> Сетка планирования
+                   class="btn btn-outline-primary btn-touch d-flex align-items-center"
+                   aria-label="Сетка планирования" title="Сетка планирования">
+                    <i class='bx bx-calendar me-1'></i> <span class="d-none d-md-inline">Сетка планирования</span><span class="d-md-none">Сетка</span>
                 </a>
             </div>
         </div>
 
-        <div class="row g-3">
-            <div class="col-12 col-sm-6 col-md-3">
+        <div class="row g-2 g-md-3">
+            <div class="col-6 col-md-3">
                 <div class="meta-label">Составил (Диспетчер)</div>
-                <div class="meta-value">
+                <div class="meta-value text-truncate">
                     <i class='bx bx-user text-primary me-1'></i>
                     {{ document.author.title|default:document.author.username|default:"—" }}
                 </div>
-                <small class="text-muted">{{ document.created_at|date:"d.m.Y в H:i" }}</small>
+                <small class="text-muted d-block">{{ document.created_at|date:"d.m.Y в H:i" }}</small>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
+            <div class="col-6 col-md-3">
                 <div class="meta-label">Утвердил (Руководитель)</div>
-                <div class="meta-value">
+                <div class="meta-value text-truncate">
                     {% if document.approved_by %}
                         <i class='bx bx-check-shield text-success me-1'></i>
                         {{ document.approved_by.title|default:document.approved_by.username }}
-                        <br><small class="text-muted">{{ document.approved_at|date:"d.m.Y в H:i" }}</small>
+                        <small class="text-muted d-block">{{ document.approved_at|date:"d.m.Y в H:i" }}</small>
                     {% else %}
-                        <span class="text-muted fst-italic">— Ожидает утверждения —</span>
+                        <span class="text-muted fst-italic">— Ожидает —</span>
                     {% endif %}
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
+            <div class="col-6 col-md-3">
                 <div class="meta-label">Предыдущая редакция</div>
-                <div class="meta-value">
+                <div class="meta-value text-truncate">
                     {% if document.previous_document %}
                         <a href="{% url 'flight_planning:document_detail' document.previous_document.id %}">
                             № {{ document.previous_document.number }} (v.{{ document.previous_document.version }})
                         </a>
                     {% else %}
-                        <span class="text-muted">Первичный план месяца</span>
+                        <span class="text-muted">Первичный план</span>
                     {% endif %}
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="meta-label">Основание / Причина изменений</div>
-                <div class="meta-value text-dark font-weight-normal">
+            <div class="col-6 col-md-3">
+                <div class="meta-label">Основание / Причина</div>
+                <div class="meta-value text-dark font-weight-normal text-truncate" title="{{ document.reason|default:'Плановая расстановка экипажей' }}">
                     {{ document.reason|default:"Плановая расстановка экипажей" }}
                 </div>
             </div>
@@ -175,7 +230,7 @@
     <!-- Реестр изменений (Diff) -->
     {% if diff_list %}
         <div class="card card-modern mb-4">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
                 <h5 class="card-title mb-0 font-weight-bold text-dark text-4">
                     <i class='bx bx-git-compare text-warning me-2'></i> Реестр зафиксированных изменений ({{ diff_list|length }} поз.)
                 </h5>
@@ -185,12 +240,12 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover mb-0 diff-table">
+                    <table class="table table-striped table-hover mb-0 diff-table align-middle">
                         <thead>
                         <tr>
                             <th style="width: 110px;">Дата</th>
                             <th style="width: 180px;">МПД</th>
-                            <th style="width: 140px;">Борт ВС</th>
+                            <th class="d-none d-md-table-cell" style="width: 140px;">Борт ВС</th>
                             <th style="width: 160px; text-align: center;">Тип события</th>
                             <th>Суть внесенного изменения</th>
                         </tr>
@@ -200,13 +255,16 @@
                             <tr>
                                 <td><strong>{{ item.date_formatted }}</strong></td>
                                 <td><i class='bx bxs-map-pin text-danger me-1'></i>{{ item.mpd_name }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ item.aircraft }}</span></td>
+                                <td class="d-none d-md-table-cell"><span class="badge bg-light text-dark border">{{ item.aircraft }}</span></td>
                                 <td style="text-align: center;">
                                     <span class="change-tag change-tag-{{ item.change_type|slugify }}">
                                         {{ item.change_type }}
                                     </span>
                                 </td>
-                                <td>{{ item.description }}</td>
+                                <td>
+                                    {{ item.description }}
+                                    <span class="d-md-none text-muted small d-block">Борт: {{ item.aircraft }}</span>
+                                </td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -218,7 +276,7 @@
 
     <!-- Сетка планирования (Зафиксированное состояние) -->
     <div class="card card-modern mb-4">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
             <h5 class="card-title mb-0 font-weight-bold text-dark text-4">
                 <i class='bx bx-table text-primary me-2'></i> Сетка расстановки экипажей (Снимок документа)
             </h5>
@@ -281,7 +339,7 @@
     <!-- Модальное окно утверждения -->
     {% if can_approve %}
         <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header bg-success text-white">
                         <h5 class="modal-title font-weight-bold">
@@ -295,11 +353,11 @@
                             <i class='bx bx-info-circle me-1'></i> После утверждения данный документ станет официальным действующим планом расстановки экипажей на <strong>{{ snapshot.month_name }} {{ document.year }} г.</strong> Все пилоты и сотрудники увидят данный вариант в графиках.
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <div class="modal-footer flex-wrap gap-2">
+                        <button type="button" class="btn btn-secondary btn-touch px-3" data-bs-dismiss="modal">Отмена</button>
                         <form method="post" action="{% url 'flight_planning:document_approve' document.id %}">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-success font-weight-bold">
+                            <button type="submit" class="btn btn-success font-weight-bold btn-touch px-3">
                                 <i class='bx bx-check me-1'></i> Да, утвердить документ
                             </button>
                         </form>

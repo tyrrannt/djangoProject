@@ -3,40 +3,70 @@
 {% load custom %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <style>
+        .form-card {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        @media (max-width: 768px) {
+            .form-card .card-body {
+                padding: 16px !important;
+            }
+            .form-card .card-header {
+                padding: 12px 16px !important;
+            }
+            .btn-touch {
+                min-height: 42px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="card-title m-0 fw-bold text-primary">{{ title }}</h5>
+        <div class="col-12 col-lg-8">
+            <div class="card form-card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="card-title m-0 fw-bold text-primary h5">
+                        <i class='bx bx-user-check text-primary me-2'></i>
+                        {{ title }}
+                    </h5>
                 </div>
                 <div class="card-body p-4">
                     <form method="post">
                         {% csrf_token %}
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <strong>Ошибка сохранения:</strong> Пожалуйста, исправьте ошибки в форме ниже.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
                         <div class="mb-3">
-                            <label class="form-label fw-bold">{{ form.employee.label }}</label>
+                            <label class="form-label fw-bold">{{ form.employee.label }} <span class="text-danger">*</span></label>
                             {{ form.employee }}
                             {% if form.employee.errors %}<div class="text-danger small">{{ form.employee.errors }}</div>{% endif %}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">{{ form.status_type.label }}</label>
+                            <label class="form-label fw-bold">{{ form.status_type.label }} <span class="text-danger">*</span></label>
                             {{ form.status_type }}
                             {% if form.status_type.errors %}<div class="text-danger small">{{ form.status_type.errors }}</div>{% endif %}
                         </div>
 
                         <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">{{ form.start_date.label }}</label>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold">{{ form.start_date.label }} <span class="text-danger">*</span></label>
                                 {{ form.start_date }}
                                 {% if form.start_date.errors %}<div class="text-danger small">{{ form.start_date.errors }}</div>{% endif %}
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">{{ form.end_date.label }}</label>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold">{{ form.end_date.label }} <span class="text-danger">*</span></label>
                                 {{ form.end_date }}
                                 {% if form.end_date.errors %}<div class="text-danger small">{{ form.end_date.errors }}</div>{% endif %}
                             </div>
@@ -54,11 +84,11 @@
                             {% if form.notes.errors %}<div class="text-danger small">{{ form.notes.errors }}</div>{% endif %}
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                            <a href="{% url 'flight_planning:employee_status_list' %}" class="btn btn-outline-secondary">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'flight_planning:employee_status_list' %}" class="btn btn-outline-secondary btn-touch px-3" aria-label="Назад к списку" title="Назад к списку">
                                 <i class='bx bx-arrow-back me-1'></i> Назад к списку
                             </a>
-                            <button type="submit" class="btn btn-primary px-4">
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch px-4" aria-label="Сохранить" title="Сохранить">
                                 <i class='bx bx-save me-1'></i> Сохранить
                             </button>
                         </div>
@@ -70,7 +100,6 @@
 {% endblock %}
 
 {% block custom_script %}
-<script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
 <script>
     $(document).ready(function() {
         if ($.fn.select2) {
