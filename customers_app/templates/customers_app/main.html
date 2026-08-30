@@ -442,20 +442,21 @@
                                             Поиск контрагента
                                         </a>
                                     </li>
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <i class='bx bxs-book-content' aria-hidden="true"></i>
-                                            <span>Отчеты</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link" href="{% url 'contracts_app:contract_report' %}">
-                                                    Общий список договоров
-                                                </a>
-                                            </li>
-
-                                        </ul>
-                                    </li>
+                                    {% if perms.contracts_app.view_contract or request.user.is_superuser %}
+                                        <li class="nav-parent">
+                                            <a class="nav-link" href="#">
+                                                <i class='bx bxs-book-content' aria-hidden="true"></i>
+                                                <span>Отчеты</span>
+                                            </a>
+                                            <ul class="nav nav-children">
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'contracts_app:contract_report' %}">
+                                                        Отчёт по договорам
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    {% endif %}
                                     <li>
                                         <a class="nav-link" href="{% url 'hrdepartment_app:student_agreement_list' %}">
                                             Ученические договора

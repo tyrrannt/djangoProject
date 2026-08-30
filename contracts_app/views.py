@@ -1250,12 +1250,25 @@ def contract_report_view(request):
     фильтрами по датам и быстрым переключением пресетов (текущий месяц, с начала года),
     а также иерархическим списком договоров и подчиненных соглашений.
 
+    Требует обязательной аутентификации и наличия права 'contracts_app.view_contract'
+    (или прав суперпользователя). Строки выборки дополнительно фильтруются с учетом
+    уровня доступа пользователя (user_access) и признака публикации (allowed_placed).
+
     Args:
         request (HttpRequest): Объект HTTP-запроса с GET-параметрами 'start' и 'end'.
 
     Returns:
-        HttpResponse: Отрендеренная HTML-страница отчета с контекстом данных.
+        HttpResponse: Отрендеренная HTML-страница отчета с контекстом данных либо 403 Forbidden.
     """
+    if not request.user.is_authenticated:
+        return redirect(reverse("customers_app:login"))
+
+    if not (request.user.has_perm("contracts_app.view_contract") or request.user.is_superuser):
+        logger.warning(
+            f"Пользователь {request.user} попытался получить несанкционированный доступ к отчёту по договорам."
+        )
+        return render(request, "library_app/403.html", {"title": "Доступ ограничен"}, status=403)
+
     raw_start = request.GET.get("start")
     raw_end = request.GET.get("end")
 
@@ -1277,18 +1290,20 @@ def contract_report_view(request):
     if start_date > end_date:
         start_date, end_date = end_date, start_date
 
-    # Учет прав доступа пользователя
-    access = getattr(request.user, "user_access_id", None) or getattr(request.user, "user_access", 5) or 5
-    if isinstance(access, int):
-        access_val = access
-    elif hasattr(access, "pk"):
-        access_val = access.pk
-    else:
-        access_val = 5
-
+    # Учет прав доступа пользователя и публикации
     query = Q(date_conclusion__range=(start_date, end_date))
-    if hasattr(request.user, "user_access") and not getattr(request.user, "is_superuser", False):
-        query &= Q(access_id__gte=access_val)
+    if not request.user.is_superuser:
+        access_val = getattr(request.user, "user_access_id", None)
+        if access_val is None and hasattr(request.user, "user_access") and request.user.user_access:
+            access_val = (
+                request.user.user_access.pk
+                if hasattr(request.user.user_access, "pk")
+                else request.user.user_access
+            )
+        if access_val is None:
+            access_val = 5
+
+        query &= Q(allowed_placed=True) & Q(access_id__gte=access_val)
 
     contracts = (
         Contract.objects.filter(query)
@@ -1358,15 +1373,25 @@ def contract_report_view(request):
 def export_contracts_excel(request):
     """Экспортирует отчёт по договорам за выбранный период в профессионально оформленный файл Excel (.xlsx).
 
-    Выполняет фильтрацию контрактов по правам доступа и указанному временному диапазону,
+    Выполняет строгую проверку прав доступа ('contracts_app.view_contract' или superuser),
+    фильтрацию записей по уровню доступа (user_access) и публикации (allowed_placed),
     вызывает генератор книги Excel с корпоративным стилем и возвращает файл для скачивания.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса с GET-параметрами 'start' и 'end'.
 
     Returns:
-        HttpResponse: Поток данных xlsx-файла с заголовком Content-Disposition.
+        HttpResponse: Поток данных xlsx-файла с заголовком Content-Disposition либо 403 Forbidden.
     """
+    if not request.user.is_authenticated:
+        return redirect(reverse("customers_app:login"))
+
+    if not (request.user.has_perm("contracts_app.view_contract") or request.user.is_superuser):
+        logger.warning(
+            f"Пользователь {request.user} попытался несанкционированно выгрузить Excel-отчёт по договорам."
+        )
+        return render(request, "library_app/403.html", {"title": "Доступ ограничен"}, status=403)
+
     raw_start = request.GET.get("start")
     raw_end = request.GET.get("end")
 
@@ -1377,17 +1402,19 @@ def export_contracts_excel(request):
     if start_date > end_date:
         start_date, end_date = end_date, start_date
 
-    access = getattr(request.user, "user_access_id", None) or getattr(request.user, "user_access", 5) or 5
-    if isinstance(access, int):
-        access_val = access
-    elif hasattr(access, "pk"):
-        access_val = access.pk
-    else:
-        access_val = 5
-
     query = Q(date_conclusion__range=(start_date, end_date))
-    if hasattr(request.user, "user_access") and not getattr(request.user, "is_superuser", False):
-        query &= Q(access_id__gte=access_val)
+    if not request.user.is_superuser:
+        access_val = getattr(request.user, "user_access_id", None)
+        if access_val is None and hasattr(request.user, "user_access") and request.user.user_access:
+            access_val = (
+                request.user.user_access.pk
+                if hasattr(request.user.user_access, "pk")
+                else request.user.user_access
+            )
+        if access_val is None:
+            access_val = 5
+
+        query &= Q(allowed_placed=True) & Q(access_id__gte=access_val)
 
     contracts = (
         Contract.objects.filter(query)
