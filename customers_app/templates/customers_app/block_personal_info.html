@@ -1,8 +1,7 @@
 {% load static %}
 <div class="card-body">
     <!-- ============================================
-         АВАТАР И ИНФОРМАЦИЯ ПОЛЬЗОВАТЕЛЯ
-         Адаптация: убраны фиксированные отступы, добавлены адаптивные классы
+         АВАТАР И ИНФОРМАЦИЯ ПОЛЬЗОВАТЕЛЯ (Porto Admin Thumb-Info)
     ============================================ -->
     <div class="thumb-info mb-3">
         {% if databaseuser.avatar %}
@@ -12,16 +11,14 @@
             <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid w-100"
                  alt="{{ databaseuser.username }}">
         {% endif %}
-        <!-- Исправлено: убраны фиксированные отступы mt-8, используется стандартная верстка Porto -->
         <div class="thumb-info-title">
-            <span class="thumb-info-inner d-block">{{ object.last_name }} {{ object.first_name }}: {{ birthday_difference }}</span>
-            <span class="thumb-info-type d-block">{{ object.user_work_profile.job }}</span>
+            <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}{% if birthday_difference %}: {{ birthday_difference }}{% endif %}</span>
+            <span class="thumb-info-type">{{ object.user_work_profile.job|default:"Сотрудник" }}</span>
         </div>
     </div>
 
     <!-- ============================================
          ПРОГРЕСС ЗАПОЛНЕНИЯ ПРОФИЛЯ
-         Исправлено: убраны d-none d-md-block для видимости на мобильных
     ============================================ -->
     <div class="widget-toggle-expand mb-3">
         <div class="widget-header d-flex justify-content-between align-items-center flex-wrap">
@@ -36,7 +33,6 @@
                 </div>
             </div>
         </div>
-        {#ToDo: Доработать блок#}
         <div class="widget-content-expanded">
             <ul class="simple-todo-list mt-3">
                 <li {% if databaseuser.avatar %} class="completed" {% endif %}>Изображение профиля</li>
@@ -48,7 +44,6 @@
 
     <!-- ============================================
          СТАТИСТИКА И ДЕЙСТВИЯ
-         Адаптация: кнопки теперь адаптивные, текст переносится
     ============================================ -->
     <div class="d-block">
         <hr class="dotted short">
@@ -56,15 +51,15 @@
         <div class="mb-3">
             <p class="text-2 mb-1">
                 <i class="fas fa-sign-in-alt text-muted me-2"></i>
-                Последний вход: <strong>{{ user.last_login }}</strong>
+                Последний вход: <strong>{{ user.last_login|date:"d.m.Y H:i"|default:"—" }}</strong>
             </p>
             <p class="text-2 mb-0">
                 <i class="fas fa-calendar-alt text-muted me-2"></i>
-                Дата регистрации: <strong>{{ user.date_joined }}</strong>
+                Дата регистрации: <strong>{{ user.date_joined|date:"d.m.Y"|default:"—" }}</strong>
             </p>
         </div>
 
-        <!-- Кнопки: адаптивная сетка для мобильных устройств -->
+        <!-- Кнопки действий -->
         <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
             <a href="{% url 'customers_app:staff' user.pk %}" class="btn btn-outline-primary flex-grow-1">
                 <i class="fas fa-user me-1"></i> Подробнее...
