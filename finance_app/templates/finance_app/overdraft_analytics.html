@@ -177,8 +177,13 @@
                                 </h5>
                             </header>
                             <div class="card-body p-4">
-                                <div class="chart-container">
+                                <div class="chart-container" id="chartWrapper">
                                     <canvas id="utilizationChart"></canvas>
+                                    <div id="noChartData" class="text-center py-5 text-muted" style="display: none;">
+                                        <i class="fas fa-chart-line fa-3x mb-3 text-secondary opacity-50 d-block"></i>
+                                        <h5>Нет данных для построения графика</h5>
+                                        <p class="small mb-0">Данные по выборке лимита отсутствуют за данный период.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -243,14 +248,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Chart.js init
-            var chartLabels = {{ chart_labels|safe }};
-            var chartDebt = {{ chart_debt|safe }};
-            var chartUnused = {{ chart_unused|safe }};
+            // Chart.js init using context['chart_data']
+            var chartLabels = {{ chart_data.labels|default:"[]"|safe }};
+            var chartDebt = {{ chart_data.used|default:"[]"|safe }};
+            var chartUnused = {{ chart_data.available|default:"[]"|safe }};
             
             var ctx = document.getElementById('utilizationChart');
+            var noDataEl = document.getElementById('noChartData');
+            var myChart = null;
+
             if (ctx && chartLabels && chartLabels.length > 0) {
-                var utilizationChart = new Chart(ctx.getContext('2d'), {
+                myChart = new Chart(ctx.getContext('2d'), {
                     type: 'line',
                     data: {
                         labels: chartLabels,
@@ -299,7 +307,7 @@
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        return (value / 1000000).toFixed(1) + 'M ₽';
+                                        return Number(value).toLocaleString('ru-RU') + ' ₽';
                                     }
                                 }
                             }
@@ -307,13 +315,19 @@
                     }
                 });
 
-                // Redraw on tab switch
+                // Trigger resize on tab switch to recalculate canvas dimensions
                 var chartTabEl = document.querySelector('button[data-bs-target="#charts"]');
                 if (chartTabEl) {
                     chartTabEl.addEventListener('shown.bs.tab', function () {
-                        utilizationChart.resize();
+                        if (myChart) {
+                            myChart.resize();
+                            myChart.update();
+                        }
                     });
                 }
+            } else if (noDataEl && ctx) {
+                ctx.style.display = 'none';
+                noDataEl.style.display = 'block';
             }
         });
     </script>
