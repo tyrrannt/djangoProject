@@ -4,8 +4,9 @@ import re
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import QueryDict, JsonResponse, HttpResponse
-from django.shortcuts import HttpResponseRedirect, redirect
+from django.shortcuts import HttpResponseRedirect, redirect, render
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 from dadata import Dadata
 from administration_app.models import PortalProperty
@@ -16,7 +17,8 @@ from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, Contract
     EstateAddForm, EstateUpdateForm
 from django.urls import reverse, reverse_lazy
 import openpyxl
-from openpyxl.styles import Font
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
 from customers_app.models import DataBaseUser, CounteragentDocuments
 
 from core import logger
@@ -895,95 +897,518 @@ def update_contract_dates_from_comment():
     logger.warning(f'Обновлено {updated_count} записей.')
 
 
-# contracts_app/views.py
+def parse_date_param(date_str: str | None) -> datetime.date | None:
+    """Парсит строковое представление даты в объект datetime.date.
 
-from django.shortcuts import render
-from django.db.models import Q
-from .models import Contract
-from datetime import datetime
+    Поддерживает распространенные форматы (%Y-%m-%d, %d.%m.%Y, %d-%m-%Y, %Y.%m.%d).
+
+    Args:
+        date_str (str | None): Входная строка с датой.
+
+    Returns:
+        datetime.date | None: Распознанный объект даты или None при невозможности парсинга.
+    """
+    if not date_str or not isinstance(date_str, str):
+        return None
+    date_str = date_str.strip()
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d-%m-%Y", "%Y.%m.%d"):
+        try:
+            return datetime.datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def generate_contracts_excel_report(contracts, start_date: datetime.date, end_date: datetime.date, user=None):
+    """Генерирует стилизованный и структурированный файл отчета по договорам в формате Microsoft Excel (.xlsx).
+
+    Формирует официальную книгу Excel со стилизованной шапкой компании ООО «Авиакомпания «БАРКОЛ»»,
+    информационным блоком ключевых показателей (KPI), таблицей с группировкой по родительским
+    договорам и подчиненным дополнительным соглашениям, выделением актуальности, форматированием
+    дат и денежных сумм, а также итоговой строкой и автоподбором ширины колонок.
+
+    Args:
+        contracts (Iterable[Contract]): Выборка экземпляров модели Contract за указанный период.
+        start_date (datetime.date): Начальная дата анализируемого периода.
+        end_date (datetime.date): Конечная дата анализируемого периода.
+        user (DataBaseUser | None): Пользователь, запросивший выгрузку отчета.
+
+    Returns:
+        openpyxl.Workbook: Сформированная и оформленная рабочая книга openpyxl.
+    """
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Отчёт по договорам"
+    ws.views.sheetView[0].showGridLines = True
+
+    # Цветовая палитра и типографика
+    company_font = Font(name="Calibri", size=11, bold=True, color="1E293B")
+    dept_font = Font(name="Calibri", size=10, italic=True, color="475569")
+    title_font = Font(name="Calibri", size=14, bold=True, color="1E3A8A")
+    meta_font = Font(name="Calibri", size=9, italic=True, color="64748B")
+
+    kpi_title_font = Font(name="Calibri", size=9, bold=True, color="475569")
+    kpi_val_font = Font(name="Calibri", size=12, bold=True, color="0F172A")
+    kpi_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+
+    tbl_hdr_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    tbl_hdr_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+
+    group_hdr_font = Font(name="Calibri", size=10, bold=True, color="0F172A")
+    group_hdr_fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+
+    data_font = Font(name="Calibri", size=9.5, color="1E293B")
+    data_font_child = Font(name="Calibri", size=9.5, color="334155")
+    total_font = Font(name="Calibri", size=10, bold=True, color="0F172A")
+    total_fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+
+    status_active_font = Font(name="Calibri", size=9.5, bold=True, color="166534")
+    status_expired_font = Font(name="Calibri", size=9.5, color="991B1B")
+
+    thin_border_side = Side(border_style="thin", color="CBD5E1")
+    cell_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=thin_border_side,
+        bottom=thin_border_side,
+    )
+    header_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=thin_border_side,
+        bottom=Side(border_style="medium", color="0F172A"),
+    )
+    total_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=Side(border_style="thin", color="475569"),
+        bottom=Side(border_style="double", color="0F172A"),
+    )
+
+    # 1. Шапка документа
+    company_name = "ООО «Авиакомпания «БАРКОЛ»"
+    ws.merge_cells("A1:K1")
+    ws["A1"] = company_name
+    ws["A1"].font = company_font
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
+
+    ws.merge_cells("A2:K2")
+    ws["A2"] = "Учет договоров и контрагентов // Корпоративный портал"
+    ws["A2"].font = dept_font
+    ws["A2"].alignment = Alignment(horizontal="left", vertical="center")
+
+    # Заголовок отчета
+    ws.merge_cells("A4:K4")
+    start_str = start_date.strftime("%d.%m.%Y") if start_date else ""
+    end_str = end_date.strftime("%d.%m.%Y") if end_date else ""
+    ws["A4"] = f"ОТЧЁТ ПО ДОГОВОРАМ ЗА ПЕРИОД С {start_str} ПО {end_str}"
+    ws["A4"].font = title_font
+    ws["A4"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[4].height = 26
+
+    # Мета-информация
+    now_str = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+    user_str = str(user) if user and user.is_authenticated else "Система"
+    ws.merge_cells("A5:K5")
+    ws["A5"] = f"Сформирован: {now_str} | Пользователь: {user_str}"
+    ws["A5"].font = meta_font
+    ws["A5"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[5].height = 18
+
+    # 2. Блок ключевых показателей (KPI)
+    total_docs = len(contracts)
+    main_docs = sum(1 for c in contracts if c.parent_category_id is None)
+    supp_docs = total_docs - main_docs
+    counteragents_count = len(
+        set(c.contract_counteragent_id for c in contracts if c.contract_counteragent_id)
+    )
+    total_cost = sum(c.cost or 0.0 for c in contracts)
+
+    kpi_items = [
+        ("Всего документов", str(total_docs)),
+        ("Основных договоров", str(main_docs)),
+        ("ДС и приложений", str(supp_docs)),
+        ("Контрагентов", str(counteragents_count)),
+        ("Общая сумма (руб.)", f"{total_cost:,.2f}".replace(",", " ")),
+    ]
+
+    ws.merge_cells("A7:B7")
+    ws.merge_cells("A8:B8")
+    ws["A7"] = kpi_items[0][0]
+    ws["A8"] = kpi_items[0][1]
+
+    ws.merge_cells("C7:D7")
+    ws.merge_cells("C8:D8")
+    ws["C7"] = kpi_items[1][0]
+    ws["C8"] = kpi_items[1][1]
+
+    ws.merge_cells("E7:F7")
+    ws.merge_cells("E8:F8")
+    ws["E7"] = kpi_items[2][0]
+    ws["E8"] = kpi_items[2][1]
+
+    ws.merge_cells("G7:H7")
+    ws.merge_cells("G8:H8")
+    ws["G7"] = kpi_items[3][0]
+    ws["G8"] = kpi_items[3][1]
+
+    ws.merge_cells("I7:K7")
+    ws.merge_cells("I8:K8")
+    ws["I7"] = kpi_items[4][0]
+    ws["I8"] = kpi_items[4][1]
+
+    for col in range(1, 12):
+        c7 = ws.cell(row=7, column=col)
+        c7.font = kpi_title_font
+        c7.fill = kpi_fill
+        c7.alignment = Alignment(horizontal="center", vertical="center")
+        c7.border = cell_border
+
+        c8 = ws.cell(row=8, column=col)
+        c8.font = kpi_val_font
+        c8.fill = kpi_fill
+        c8.alignment = Alignment(horizontal="center", vertical="center")
+        c8.border = cell_border
+
+    ws.row_dimensions[7].height = 18
+    ws.row_dimensions[8].height = 22
+
+    # 3. Заголовки таблицы
+    headers = [
+        "№ п/п",
+        "Контрагент",
+        "Номер документа",
+        "Тип документа",
+        "Тип договора",
+        "Дата заключения",
+        "Срок действия",
+        "Стоимость, руб.",
+        "Предмет договора",
+        "Статус",
+        "Примечание",
+    ]
+    tbl_start_row = 10
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=tbl_start_row, column=col_idx, value=h)
+        cell.font = tbl_hdr_font
+        cell.fill = tbl_hdr_fill
+        cell.border = header_border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    ws.row_dimensions[tbl_start_row].height = 28
+
+    # 4. Группировка и вывод данных
+    grouped = {}
+    for c in contracts:
+        parent = c.parent_category or c
+        grouped.setdefault(parent, []).append(c)
+
+    current_row = tbl_start_row + 1
+    row_num = 1
+
+    for parent, children in grouped.items():
+        is_grouped = len(children) > 1 or (len(children) == 1 and children[0].pk != parent.pk)
+
+        # Если родительский договор отсутствует в выборке детей, но является группирующим — выводим строку группы
+        if is_grouped and parent not in children:
+            ws.merge_cells(
+                start_row=current_row,
+                start_column=1,
+                end_row=current_row,
+                end_column=11,
+            )
+            group_cell = ws.cell(
+                row=current_row,
+                column=1,
+                value=f"📁 Основной договор: № {parent.contract_number or '(без номера)'} — {parent.contract_counteragent or 'Контрагент не указан'}",
+            )
+            group_cell.font = group_hdr_font
+            group_cell.fill = group_hdr_fill
+            group_cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+            for c_idx in range(1, 12):
+                ws.cell(row=current_row, column=c_idx).border = cell_border
+                ws.cell(row=current_row, column=c_idx).fill = group_hdr_fill
+            ws.row_dimensions[current_row].height = 22
+            current_row += 1
+
+        for child in children:
+            is_child = child.parent_category_id is not None
+            prefix = "  └─ " if is_child else ""
+            doc_num_text = f"{prefix}{child.contract_number or '(без номера)'}"
+
+            status_text = "Действующий" if getattr(child, "is_past_due", False) else "Срок истёк"
+            status_fnt = (
+                status_active_font
+                if getattr(child, "is_past_due", False)
+                else status_expired_font
+            )
+
+            date_concl = (
+                child.date_conclusion.strftime("%d.%m.%Y") if child.date_conclusion else ""
+            )
+            date_close = (
+                child.closing_date.strftime("%d.%m.%Y") if child.closing_date else "-"
+            )
+
+            counteragent_name = (
+                str(child.contract_counteragent) if child.contract_counteragent else "-"
+            )
+            type_doc = str(child.type_of_document) if child.type_of_document else "-"
+            type_contr = str(child.type_of_contract) if child.type_of_contract else "-"
+            subject = child.subject_contract or "-"
+            comment = child.comment or ""
+
+            cost_val = float(child.cost) if child.cost else 0.0
+
+            row_values = [
+                (row_num, Alignment(horizontal="center", vertical="center"), data_font, "@"),
+                (counteragent_name, Alignment(horizontal="left", vertical="center"), data_font, None),
+                (doc_num_text, Alignment(horizontal="left" if is_child else "center", vertical="center"), data_font_child if is_child else data_font, "@"),
+                (type_doc, Alignment(horizontal="center", vertical="center"), data_font, None),
+                (type_contr, Alignment(horizontal="left", vertical="center"), data_font, None),
+                (date_concl, Alignment(horizontal="center", vertical="center"), data_font, "DD.MM.YYYY"),
+                (date_close, Alignment(horizontal="center", vertical="center"), data_font, "DD.MM.YYYY"),
+                (cost_val if cost_val > 0 else "-", Alignment(horizontal="right", vertical="center"), data_font, "#,##0.00" if cost_val > 0 else None),
+                (subject, Alignment(horizontal="left", vertical="center", wrap_text=True), data_font, None),
+                (status_text, Alignment(horizontal="center", vertical="center"), status_fnt, None),
+                (comment, Alignment(horizontal="left", vertical="center", wrap_text=True), data_font, None),
+            ]
+
+            ws.row_dimensions[current_row].height = 22
+
+            # Зебра-заливка (четные строки с легким серым фоном)
+            row_fill = (
+                PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+                if row_num % 2 == 0
+                else PatternFill(fill_type=None)
+            )
+
+            for col_idx, (val, align, font, num_format) in enumerate(row_values, 1):
+                cell = ws.cell(row=current_row, column=col_idx, value=val)
+                cell.alignment = align
+                cell.font = font
+                cell.border = cell_border
+                if row_fill.fill_type:
+                    cell.fill = row_fill
+                if num_format and isinstance(val, (int, float)):
+                    cell.number_format = num_format
+
+            row_num += 1
+            current_row += 1
+
+    # 5. Итоговая строка
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=7)
+    ws.cell(row=current_row, column=1, value="ИТОГО:").alignment = Alignment(
+        horizontal="right", vertical="center"
+    )
+    ws.cell(
+        row=current_row, column=8, value=total_cost if total_cost > 0 else "-"
+    ).alignment = Alignment(horizontal="right", vertical="center")
+    if total_cost > 0:
+        ws.cell(row=current_row, column=8).number_format = "#,##0.00"
+    else:
+        ws.cell(row=current_row, column=8).number_format = "@"
+
+    ws.merge_cells(start_row=current_row, start_column=9, end_row=current_row, end_column=11)
+
+    for c_idx in range(1, 12):
+        c = ws.cell(row=current_row, column=c_idx)
+        c.font = total_font
+        c.fill = total_fill
+        c.border = total_border
+
+    ws.row_dimensions[current_row].height = 24
+
+    # 6. Настройка ширины колонок
+    col_widths = {
+        1: 8,    # № п/п
+        2: 32,   # Контрагент
+        3: 24,   # Номер документа
+        4: 20,   # Тип документа
+        5: 24,   # Тип договора
+        6: 16,   # Дата заключения
+        7: 16,   # Срок действия
+        8: 18,   # Сумма
+        9: 40,   # Предмет
+        10: 16,  # Статус
+        11: 30,  # Примечание
+    }
+    for col_idx, width in col_widths.items():
+        col_letter = get_column_letter(col_idx)
+        ws.column_dimensions[col_letter].width = width
+
+    # Закрепляем шапку таблицы (строки выше 11)
+    ws.freeze_panes = "A11"
+
+    return wb
 
 
 def contract_report_view(request):
+    """Формирует аналитический веб-отчёт по договорам за указанный период с группировкой по родительским договорам.
+
+    Отображает интерактивную страницу со сводными карточками показателей (KPI),
+    фильтрами по датам и быстрым переключением пресетов (текущий месяц, с начала года),
+    а также иерархическим списком договоров и подчиненных соглашений.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса с GET-параметрами 'start' и 'end'.
+
+    Returns:
+        HttpResponse: Отрендеренная HTML-страница отчета с контекстом данных.
     """
-    Отчёт по контрактам за период.
-    Группирует по родительскому договору.
-    """
-    start_date = request.GET.get('start')
-    end_date = request.GET.get('end')
+    raw_start = request.GET.get("start")
+    raw_end = request.GET.get("end")
 
-    if not start_date or not end_date:
-        return render(request, "contracts_app/contract_report.html", {"error": "Укажите даты!"})
+    today = datetime.date.today()
+    error_msg = None
 
-    try:
-        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-    except ValueError:
-        return render(request, "contracts_app/contract_report.html", {"error": "Неверный формат даты"})
+    if raw_start or raw_end:
+        start_date = parse_date_param(raw_start)
+        end_date = parse_date_param(raw_end)
+        if not start_date or not end_date:
+            error_msg = "Некорректный формат даты. Выберите период из календаря."
+            start_date = start_date or datetime.date(today.year, 1, 1)
+            end_date = end_date or today
+    else:
+        # Период по умолчанию: с начала текущего года по текущую дату
+        start_date = datetime.date(today.year, 1, 1)
+        end_date = today
 
-    # Выбираем контракты по дате заключения
-    contracts = Contract.objects.filter(
-        date_conclusion__range=(start_date, end_date)
-    ).select_related("parent_category")
-    print(contracts)
-    # Группировка по parent_category
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    # Учет прав доступа пользователя
+    access = getattr(request.user, "user_access_id", None) or getattr(request.user, "user_access", 5) or 5
+    if isinstance(access, int):
+        access_val = access
+    elif hasattr(access, "pk"):
+        access_val = access.pk
+    else:
+        access_val = 5
+
+    query = Q(date_conclusion__range=(start_date, end_date))
+    if hasattr(request.user, "user_access") and not getattr(request.user, "is_superuser", False):
+        query &= Q(access_id__gte=access_val)
+
+    contracts = (
+        Contract.objects.filter(query)
+        .select_related(
+            "parent_category",
+            "parent_category__contract_counteragent",
+            "parent_category__type_of_document",
+            "contract_counteragent",
+            "type_of_document",
+            "type_of_contract",
+            "executor",
+        )
+        .order_by("contract_counteragent__short_name", "date_conclusion", "pk")
+    )
+
     grouped_contracts = {}
+    total_docs = 0
+    main_docs = 0
+    supp_docs = 0
+    counteragents = set()
+    total_cost = 0.0
+
     for contract in contracts:
+        total_docs += 1
+        if contract.cost:
+            total_cost += float(contract.cost)
+        if contract.contract_counteragent_id:
+            counteragents.add(contract.contract_counteragent_id)
+
+        if contract.parent_category_id is None:
+            main_docs += 1
+        else:
+            supp_docs += 1
+
         parent = contract.parent_category or contract
         grouped_contracts.setdefault(parent, []).append(contract)
 
+    kpi = {
+        "total_docs": total_docs,
+        "main_docs": main_docs,
+        "supp_docs": supp_docs,
+        "counteragents_count": len(counteragents),
+        "total_cost": total_cost,
+    }
+
+    current_year_start = datetime.date(today.year, 1, 1)
+    current_month_start = datetime.date(today.year, today.month, 1)
+
     context = {
+        "title": "Отчёт по договорам",
+        "breadcrumbs": [
+            {"name": "База договоров", "url": reverse("contracts_app:index")},
+            {"name": "Отчёт по договорам", "url": ""},
+        ],
         "grouped_contracts": grouped_contracts,
         "start_date": start_date,
         "end_date": end_date,
+        "today": today,
+        "current_year_start": current_year_start,
+        "current_month_start": current_month_start,
+        "kpi": kpi,
+        "error": error_msg,
     }
     return render(request, "contracts_app/contract_report.html", context)
 
 
 def export_contracts_excel(request):
-    start_date = request.GET.get('start')
-    end_date = request.GET.get('end')
+    """Экспортирует отчёт по договорам за выбранный период в профессионально оформленный файл Excel (.xlsx).
 
-    if not start_date or not end_date:
-        return HttpResponse("Укажите даты.", status=400)
+    Выполняет фильтрацию контрактов по правам доступа и указанному временному диапазону,
+    вызывает генератор книги Excel с корпоративным стилем и возвращает файл для скачивания.
 
-    try:
-        start_date = datetime.strptime(start_date, "%d.%m.%Y").date()
-        end_date = datetime.strptime(end_date, "%d.%m.%Y").date()
-    except ValueError:
-        return HttpResponse("Неверный формат даты. Используйте дд.мм.гггг", status=400)
+    Args:
+        request (HttpRequest): Объект HTTP-запроса с GET-параметрами 'start' и 'end'.
 
-    contracts = Contract.objects.filter(
-        date_conclusion__range=(start_date, end_date)
-    ).select_related("parent_category", "contract_counteragent", "type_of_document")
+    Returns:
+        HttpResponse: Поток данных xlsx-файла с заголовком Content-Disposition.
+    """
+    raw_start = request.GET.get("start")
+    raw_end = request.GET.get("end")
 
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Контракты"
+    today = datetime.date.today()
+    start_date = parse_date_param(raw_start) or datetime.date(today.year, 1, 1)
+    end_date = parse_date_param(raw_end) or today
 
-    headers = [
-        "Родительский договор",
-        "Номер договора",
-        "Дата заключения",
-        "Тип документа",
-        "Контрагент",
-        "Комментарий"
-    ]
-    ws.append(headers)
-    for cell in ws[1]:
-        cell.font = Font(bold=True)
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
 
-    for contract in contracts:
-        parent = contract.parent_category or contract
-        ws.append([
-            f"{parent.contract_number or 'Без номера'}",
-            contract.contract_number or "Без номера",
-            contract.date_conclusion.strftime("%d.%m.%Y") if contract.date_conclusion else "",
-            str(contract.type_of_document),
-            str(contract.contract_counteragent),
-            contract.comment or "",
-        ])
+    access = getattr(request.user, "user_access_id", None) or getattr(request.user, "user_access", 5) or 5
+    if isinstance(access, int):
+        access_val = access
+    elif hasattr(access, "pk"):
+        access_val = access.pk
+    else:
+        access_val = 5
 
-    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response["Content-Disposition"] = "attachment; filename=contracts_report.xlsx"
+    query = Q(date_conclusion__range=(start_date, end_date))
+    if hasattr(request.user, "user_access") and not getattr(request.user, "is_superuser", False):
+        query &= Q(access_id__gte=access_val)
+
+    contracts = (
+        Contract.objects.filter(query)
+        .select_related(
+            "parent_category",
+            "parent_category__contract_counteragent",
+            "parent_category__type_of_document",
+            "contract_counteragent",
+            "type_of_document",
+            "type_of_contract",
+            "executor",
+        )
+        .order_by("contract_counteragent__short_name", "date_conclusion", "pk")
+    )
+
+    wb = generate_contracts_excel_report(contracts, start_date, end_date, user=request.user)
+
+    filename = f"contracts_report_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
