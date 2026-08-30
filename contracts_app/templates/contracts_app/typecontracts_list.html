@@ -85,6 +85,7 @@
                                 <tr>
                                     <th style="width: 100px;">Код в БД</th>
                                     <th>Тип договора</th>
+                                    <th>Авторизованные лица</th>
                                     <th style="width: 60px;" class="text-center">Действия</th>
                                 </tr>
                             </thead>
@@ -105,7 +106,7 @@
         $(document).ready(function () {
             $('#datatable-ecommerce-list thead th').each(function (index) {
                 var title = $(this).text().trim();
-                if (index < 2) {
+                if (index < 3) {
                     $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm" />');
                 }
             });
@@ -145,11 +146,25 @@
                         }
                     },
                     {
+                        "data": "authorized_person",
+                        "mRender": function (data) {
+                            if (!data || data.length === 0) {
+                                return '<span class="text-muted small">Не назначены</span>';
+                            }
+                            return data.map(function (person) {
+                                return '<span class="badge bg-primary me-1">' + person + '</span>';
+                            }).join(' ');
+                        }
+                    },
+                    {
                         "data": null,
                         "className": "text-center",
                         "orderable": false,
                         "mRender": function (data, type, row) {
-                            return '<a href="/contracts/typecontracts/' + row.pk + '/update/" class="btn btn-sm btn-outline-secondary" title="Редактировать"><i class="bx bxs-edit"></i></a>';
+                            return '<div class="btn-group">' +
+                                '<a href="/contracts/typecontracts/' + row.pk + '/" class="btn btn-xs btn-outline-primary" title="Просмотр"><i class="bx bx-show"></i></a>' +
+                                '<a href="/contracts/typecontracts/' + row.pk + '/update/" class="btn btn-xs btn-outline-secondary ms-1" title="Редактировать"><i class="bx bxs-edit"></i></a>' +
+                                '</div>';
                         }
                     }
                 ]

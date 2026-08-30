@@ -3,7 +3,7 @@
 {% load custom %}
 
 {% block title %}
-    Проверка контрагента // КОРПОРАТИВНЫЙ ПОРТАЛ
+    {{ title|default:"Проверка контрагента // КОРПОРАТИВНЫЙ ПОРТАЛ" }}
 {% endblock %}
 
 {% block custom_css %}
@@ -73,16 +73,32 @@
 {% block content %}
     <div class="row">
         <div class="col-12">
+            <!-- Сообщения системы (Messages) -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             <!-- Верхняя панель действий -->
             <div class="action-bar-responsive">
                 <div>
                     <h4 class="font-weight-bold mb-0 text-dark">
                         <i class="fas fa-search-dollar text-primary me-2"></i>Проверка контрагента через ФНС / DaData
                     </h4>
-                    <p class="text-muted small mb-0 d-none d-md-block">Оперативная проверка реквизитов, статуса и руководства организаций</p>
+                    <p class="text-muted small mb-0 d-none d-md-block">Оперативная проверка реквизитов и добавление новых организаций в базу данных</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{% url 'contracts_app:index' %}" class="btn btn-outline-dark btn-touch" aria-label="В реестр" title="В реестр">
+                    <a href="{% url 'customers_app:counteragent_list' %}" class="btn btn-outline-secondary btn-touch" aria-label="Справочник контрагентов" title="Справочник контрагентов">
+                        <i class="bx bx-buildings text-4"></i>
+                        <span class="d-none d-md-inline ms-1">Все контрагенты</span>
+                    </a>
+                    <a href="{% url 'contracts_app:index' %}" class="btn btn-outline-dark btn-touch" aria-label="В реестр договоров" title="К реестру">
                         <i class="bx bx-arrow-back text-4"></i>
                         <span class="d-none d-md-inline ms-1">К реестру договоров</span>
                     </a>
@@ -96,20 +112,23 @@
                     <div class="row g-3">
                         <div class="col-12 col-md-4">
                             <label for="id_counteragent" class="form-label font-weight-semibold">ИНН контрагента:</label>
-                            <input type="text" name="counteragent" class="form-control" id="id_counteragent" placeholder="Введите ИНН...">
+                            <input type="text" name="counteragent" class="form-control" id="id_counteragent"
+                                   value="{{ search_inn|default:'' }}" placeholder="Введите ИНН...">
                         </div>
                         <div class="col-12 col-md-4">
                             <label for="id_counteragent_kpp" class="form-label font-weight-semibold">КПП (необязательно):</label>
-                            <input type="text" name="counteragent_kpp" class="form-control" id="id_counteragent_kpp" placeholder="Введите КПП...">
+                            <input type="text" name="counteragent_kpp" class="form-control" id="id_counteragent_kpp"
+                                   value="{{ search_kpp|default:'' }}" placeholder="Введите КПП...">
                         </div>
                         <div class="col-12 col-md-4">
                             <label for="id_counteragent_name" class="form-label font-weight-semibold">Или наименование компании:</label>
-                            <input type="text" name="counteragent_name" class="form-control" id="id_counteragent_name" placeholder="Например, Баркол...">
+                            <input type="text" name="counteragent_name" class="form-control" id="id_counteragent_name"
+                                   value="{{ search_name|default:'' }}" placeholder="Например, Баркол...">
                         </div>
                     </div>
                     <div class="mt-3 pt-2 d-flex gap-2">
                         <button type="submit" class="btn btn-primary btn-touch">
-                            <i class="bx bx-search-alt text-4 me-1"></i> Проверить
+                            <i class="bx bx-search-alt text-4 me-1"></i> Найти и проверить
                         </button>
                         <a href="{% url 'contracts_app:counteragent_check' %}" class="btn btn-outline-secondary btn-touch">
                             <i class="bx bx-reset text-4 me-1"></i> Сбросить
@@ -134,11 +153,23 @@
                                     {{ item.data.opf.full|default:item.data.opf.short }}
                                 </span>
                             </div>
-                            <div>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <!-- Статус регистрации в локальной БД -->
+                                {% if item.existing_counteragent %}
+                                    <span class="badge bg-info p-2" title="Контрагент уже есть в реестре">
+                                        <i class="fas fa-database me-1"></i>В базе данных (#{{ item.existing_counteragent.pk }})
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary p-2" title="Контрагент отсутствует в локальной базе">
+                                        <i class="fas fa-plus-circle me-1"></i>Новая организация
+                                    </span>
+                                {% endif %}
+
+                                <!-- Статус ФНС -->
                                 {% if item.data.state.status == "ACTIVE" %}
-                                    <span class="badge bg-success p-2"><i class="fas fa-check me-1"></i>Действующая организация</span>
+                                    <span class="badge bg-success p-2"><i class="fas fa-check me-1"></i>Действующая</span>
                                 {% elif item.data.state.status == "LIQUIDATING" %}
-                                    <span class="badge bg-warning text-dark p-2"><i class="fas fa-exclamation-triangle me-1"></i>В процессе ликвидации</span>
+                                    <span class="badge bg-warning text-dark p-2"><i class="fas fa-exclamation-triangle me-1"></i>Ликвидируется</span>
                                 {% elif item.data.state.status == "LIQUIDATED" %}
                                     <span class="badge bg-danger p-2"><i class="fas fa-times me-1"></i>Ликвидирована</span>
                                 {% else %}
@@ -150,7 +181,7 @@
                             <div class="row g-3">
                                 <div class="col-6 col-md-3">
                                     <div class="field-label">ИНН</div>
-                                    <div class="field-value">{{ item.data.inn|default:"—" }}</div>
+                                    <div class="field-value fw-bold text-dark">{{ item.data.inn|default:"—" }}</div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <div class="field-label">КПП</div>
@@ -200,10 +231,51 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Нижняя панель действий карточки -->
+                        <div class="card-footer bg-light p-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-top">
+                            <div>
+                                {% if item.existing_counteragent %}
+                                    <span class="text-success small fw-semibold">
+                                        <i class="fas fa-check-circle me-1"></i>Контрагент уже сохранён в системе
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small">
+                                        <i class="fas fa-info-circle me-1"></i>Нажмите кнопку для автоматического добавления в базу
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if item.existing_counteragent %}
+                                    <a href="{% url 'customers_app:counteragent' item.existing_counteragent.pk %}" class="btn btn-outline-primary btn-touch">
+                                        <i class="fas fa-eye me-1"></i> Карточка контрагента
+                                    </a>
+                                    <a href="{% url 'contracts_app:search' %}?ca={{ item.existing_counteragent.pk }}" class="btn btn-outline-secondary btn-touch">
+                                        <i class="fas fa-file-contract me-1"></i> Договоры
+                                    </a>
+                                {% else %}
+                                    <form method="post" action="{% url 'contracts_app:counteragent_add_from_dadata' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="inn" value="{{ item.data.inn|default:'' }}">
+                                        <input type="hidden" name="kpp" value="{{ item.data.kpp|default:'' }}">
+                                        <input type="hidden" name="ogrn" value="{{ item.data.ogrn|default:'' }}">
+                                        <input type="hidden" name="short_name" value="{{ item.data.name.short_with_opf|default:item.value }}">
+                                        <input type="hidden" name="full_name" value="{{ item.data.name.full_with_opf|default:item.unrestricted_value|default:item.value }}">
+                                        <input type="hidden" name="address" value="{{ item.data.address.value|default:item.data.address.unrestricted_value|default:'' }}">
+                                        <input type="hidden" name="type_counteragent" value="{% if item.data.type == 'INDIVIDUAL' %}physical_person{% else %}juridical_person{% endif %}">
+                                        <input type="hidden" name="natural_person" value="{% if item.data.type == 'INDIVIDUAL' %}{{ item.data.name.full|default:item.value }}{% endif %}">
+                                        <button type="submit" class="btn btn-success btn-touch" aria-label="Добавить контрагента в базу" title="Добавить в базу">
+                                            <i class="fas fa-plus-circle me-1"></i>
+                                            <span>Добавить в базу</span>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 {% endfor %}
             {% elif request.method == "POST" %}
-                <div class="alert alert-warning">
+                <div class="alert alert-warning shadow-sm">
                     <i class="fas fa-exclamation-circle me-2"></i>По вашему запросу контрагенты не найдены. Проверьте правильность введённого ИНН или наименования.
                 </div>
             {% endif %}

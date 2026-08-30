@@ -44,11 +44,11 @@
         {% csrf_token %}
 
         <div class="row">
-            <div class="col-12 col-lg-8">
+            <div class="col-12 col-xl-10">
                 <div class="card card-modern shadow-sm border-0">
                     <div class="card-header bg-light py-3">
                         <h5 class="card-title text-dark mb-0">
-                            <i class="fas fa-warehouse text-primary me-2"></i>Параметры объекта имущества
+                            <i class="fas fa-warehouse text-primary me-2"></i>Параметры объекта имущества / воздушного судна
                         </h5>
                     </div>
                     <div class="card-body p-3 p-md-4">
@@ -69,13 +69,55 @@
                         {% endif %}
 
                         <div class="row g-3">
+                            <!-- 1. Основные идентификаторы -->
                             <div class="col-12 col-md-6">
                                 <label for="id_type_property" class="field-label">Тип имущества <span class="text-danger">*</span></label>
                                 {{ form.type_property }}
                             </div>
                             <div class="col-12 col-md-6">
-                                <label for="id_registration_number" class="field-label">Регистрационный номер / наименование <span class="text-danger">*</span></label>
+                                <label for="id_registration_number" class="field-label">Регистрационный номер / Бортовой номер <span class="text-danger">*</span></label>
                                 {{ form.registration_number }}
+                            </div>
+
+                            <!-- 2. Заводской номер и даты производства -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_factory_number" class="field-label">Заводской номер</label>
+                                {{ form.factory_number }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="id_release_date" class="field-label">Дата выпуска <span class="text-danger">*</span></label>
+                                {{ form.release_date }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="id_year_of_manufacture" class="field-label">Год выпуска (авто / техники)</label>
+                                {{ form.year_of_manufacture }}
+                            </div>
+
+                            <!-- 3. Эксплуатация и владение -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_ownership_right" class="field-label">Право владения</label>
+                                {{ form.ownership_right }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="id_exploits" class="field-label">Эксплуатант (Баркол эксплуатирует)</label>
+                                {{ form.exploits }}
+                            </div>
+
+                            <!-- 4. Документы (Паспорт, ГТД) -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_passport" class="field-label">Паспорт / Формуляр</label>
+                                {{ form.passport }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="id_gtd" class="field-label">ГТД (Таможенная декларация)</label>
+                                {{ form.gtd }}
+                            </div>
+
+                            <!-- 5. Вывод из эксплуатации -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_decommission_date" class="field-label">Дата вывода из эксплуатации</label>
+                                {{ form.decommission_date }}
+                                <small class="form-text text-muted">Если дата заполнена, имущество считается выведенным из эксплуатации.</small>
                             </div>
                         </div>
                     </div>

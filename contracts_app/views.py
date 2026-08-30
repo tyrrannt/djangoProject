@@ -1,7 +1,10 @@
 import datetime
 import re
+import uuid
 
 from decouple import config
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -19,9 +22,10 @@ from django.urls import reverse, reverse_lazy
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
-from customers_app.models import DataBaseUser, CounteragentDocuments
+from customers_app.models import DataBaseUser, CounteragentDocuments, Counteragent
 
 from core import logger
+
 
 
 class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
@@ -616,7 +620,7 @@ class TypeContractsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            type_contracts_list = TypeContract.objects.all()
+            type_contracts_list = TypeContract.objects.prefetch_related('authorized_person').all()
             data = [type_contracts_item.get_data() for type_contracts_item in type_contracts_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -779,7 +783,7 @@ class EstateList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            type_property_list = Estate.objects.all()
+            type_property_list = Estate.objects.select_related('type_property').all()
             data = [type_property_item.get_data() for type_property_item in type_property_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -846,28 +850,135 @@ class EstateUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
 
 def counteragent_check(request):
-    if request.method == 'POST':
-        data = request.POST
-        if data.get('counteragent') == '' and data.get('counteragent_name') == '':
-            return HttpResponseRedirect(reverse('contracts_app:counteragent_check'))
-        else:
-            token = config('FNS')
-            ddata = Dadata(token)
-            inn = str(data.get('counteragent'))
-            kpp = str(data.get('counteragent_kpp'))
-            name = str(data.get('counteragent_name')).strip()
-            if kpp:
-                res = ddata.find_by_id("party", inn, kpp=kpp)
-            else:
-                if inn:
+    """Представление для онлайн-проверки контрагента через сервис DaData / ФНС.
+
+    Выполняет поиск по ИНН, КПП или наименованию организации. Обогащает результаты
+    проверкой наличия контрагента в локальной базе данных портала.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса Django.
+
+    Returns:
+        HttpResponse: Отрендеренная страница с формой и списком найденных контрагентов.
+    """
+    query_results = []
+    inn = ""
+    kpp = ""
+    name = ""
+
+    if request.method == "POST":
+        inn = str(request.POST.get("counteragent", "")).strip()
+        kpp = str(request.POST.get("counteragent_kpp", "")).strip()
+        name = str(request.POST.get("counteragent_name", "")).strip()
+
+        if inn or name:
+            try:
+                token = config("FNS")
+                ddata = Dadata(token)
+                if kpp and inn:
+                    res = ddata.find_by_id("party", inn, kpp=kpp)
+                elif inn:
                     res = ddata.find_by_id("party", inn)
                 else:
                     res = ddata.suggest("party", name)
 
-            data = {'query': res}
-            return render(request, 'contracts_app/counteragent_check.html', context=data)
-    else:
-        return render(request, 'contracts_app/counteragent_check.html')
+                if res and isinstance(res, list):
+                    for item in res:
+                        data_dict = item.get("data") or {}
+                        item_inn = str(data_dict.get("inn") or "").strip()
+                        item_kpp = str(data_dict.get("kpp") or "").strip()
+                        existing = None
+                        if item_inn:
+                            qs = Counteragent.objects.filter(inn=item_inn)
+                            if item_kpp:
+                                existing = qs.filter(kpp=item_kpp).first() or qs.first()
+                            else:
+                                existing = qs.first()
+                        item["existing_counteragent"] = existing
+                    query_results = res
+            except Exception as e:
+                logger.error(f"Ошибка при запросе к DaData API: {e}")
+                messages.error(request, f"Ошибка при обращении к сервису проверки контрагентов: {e}")
+
+    context = {
+        "title": "Проверка контрагента // КОРПОРАТИВНЫЙ ПОРТАЛ",
+        "query": query_results,
+        "search_inn": inn,
+        "search_kpp": kpp,
+        "search_name": name,
+    }
+    return render(request, "contracts_app/counteragent_check.html", context=context)
+
+
+@login_required
+def counteragent_add_from_dadata(request):
+    """Создает запись контрагента в локальной базе данных на основе данных DaData / ФНС.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса Django с POST-параметрами контрагента.
+
+    Returns:
+        HttpResponseRedirect: Перенаправление на карточку созданного контрагента или страницу проверки.
+
+    Raises:
+        PermissionDenied: Если у пользователя нет прав на добавление контрагентов.
+    """
+    if not (request.user.has_perm("customers_app.add_counteragent") or request.user.is_superuser or request.user.is_staff):
+        raise PermissionDenied("У вас нет прав для добавления контрагентов.")
+
+    if request.method == "POST":
+        inn = str(request.POST.get("inn", "")).strip()
+        kpp = str(request.POST.get("kpp", "")).strip()
+        ogrn = str(request.POST.get("ogrn", "")).strip()
+        short_name = str(request.POST.get("short_name", "")).strip()
+        full_name = str(request.POST.get("full_name", "")).strip()
+        address = str(request.POST.get("address", "")).strip()
+        type_counteragent = str(request.POST.get("type_counteragent", "juridical_person")).strip()
+        phone = str(request.POST.get("phone", "")).strip()
+        email = str(request.POST.get("email", "")).strip()
+        natural_person = str(request.POST.get("natural_person", "")).strip()
+
+        if not short_name and not full_name:
+            messages.error(request, "Не указано наименование контрагента для добавления.")
+            return redirect(reverse("contracts_app:counteragent_check"))
+
+        # Проверяем, существует ли уже контрагент в базе
+        existing = None
+        if inn:
+            qs = Counteragent.objects.filter(inn=inn)
+            if kpp:
+                existing = qs.filter(kpp=kpp).first() or qs.first()
+            else:
+                existing = qs.first()
+
+        if existing:
+            messages.info(request, f'Контрагент «{existing.short_name}» (ИНН: {existing.inn}) уже зарегистрирован в базе данных.')
+            return redirect(reverse("customers_app:counteragent", kwargs={"pk": existing.pk}))
+
+        try:
+            counteragent = Counteragent.objects.create(
+                ref_key=str(uuid.uuid4()),
+                short_name=short_name or full_name,
+                full_name=full_name or short_name,
+                inn=inn,
+                kpp=kpp,
+                ogrn=ogrn,
+                type_counteragent=type_counteragent if type_counteragent in dict(Counteragent.type_of) else "juridical_person",
+                juridical_address=address,
+                physical_address=address,
+                phone=phone,
+                email=email,
+                natural_person=natural_person,
+            )
+            messages.success(request, f'Контрагент «{counteragent.short_name}» (ИНН: {counteragent.inn}) успешно добавлен в базу данных!')
+            return redirect(reverse("customers_app:counteragent", kwargs={"pk": counteragent.pk}))
+        except Exception as e:
+            logger.error(f"Ошибка при создании контрагента из DaData: {e}")
+            messages.error(request, f"Ошибка при сохранении контрагента в базу: {e}")
+            return redirect(reverse("contracts_app:counteragent_check"))
+
+    return redirect(reverse("contracts_app:counteragent_check"))
+
 
 
 def update_contract_dates_from_comment():

@@ -33,6 +33,7 @@ urlpatterns = [
     path('estate/<int:pk>/', views.EstateDetail.as_view(), name='estate'),
     path('estate/<int:pk>/update/', views.EstateUpdate.as_view(), name='estate_update'),
     path('check/', views.counteragent_check, name='counteragent_check'),
+    path('check/add-counteragent/', views.counteragent_add_from_dadata, name='counteragent_add_from_dadata'),
     path("report/", contract_report_view, name="contract_report"),
     path("report/export/", export_contracts_excel, name="export_contracts_excel"),
 

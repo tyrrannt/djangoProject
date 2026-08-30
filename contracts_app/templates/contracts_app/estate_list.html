@@ -67,7 +67,7 @@
                     <h4 class="font-weight-bold mb-0 text-dark">
                         <i class="fas fa-warehouse text-primary me-2"></i>Реестр объектов имущества
                     </h4>
-                    <p class="text-muted small mb-0 d-none d-md-block">Учёт недвижимого и движимого имущества компании</p>
+                    <p class="text-muted small mb-0 d-none d-md-block">Учёт воздушных судов, техники и имущества компании</p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{% url 'contracts_app:estate_add' %}" class="btn btn-primary btn-touch" aria-label="Добавить имущество" title="Добавить">
@@ -83,10 +83,14 @@
                         <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 100px;">Код в БД</th>
+                                    <th style="width: 80px;">Код</th>
                                     <th>Тип имущества</th>
-                                    <th>Регистрационный номер</th>
-                                    <th style="width: 60px;" class="text-center">Действия</th>
+                                    <th>Бортовой / Рег. номер</th>
+                                    <th class="d-none d-md-table-cell">Заводской номер</th>
+                                    <th class="d-none d-lg-table-cell">Дата выпуска</th>
+                                    <th class="d-none d-xl-table-cell">Эксплуатант / Владение</th>
+                                    <th style="width: 130px;" class="text-center">Статус</th>
+                                    <th style="width: 80px;" class="text-center">Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,7 +110,7 @@
         $(document).ready(function () {
             $('#datatable-ecommerce-list thead th').each(function (index) {
                 var title = $(this).text().trim();
-                if (index < 3) {
+                if (index < 6) {
                     $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm" />');
                 }
             });
@@ -136,19 +140,51 @@
                     {
                         "data": "pk",
                         "mRender": function (data) {
-                            return '<a href="/contracts/estate/' + data + '/update/" class="fw-bold text-primary">#' + data + '</a>';
+                            return '<a href="/contracts/estate/' + data + '/" class="fw-bold text-primary">#' + data + '</a>';
                         }
                     },
                     {
                         "data": "type_property",
                         "mRender": function (data, type, row) {
-                            return '<a href="/contracts/estate/' + row.pk + '/update/" class="text-dark fw-semibold">' + (data ? data : '—') + '</a>';
+                            return '<a href="/contracts/estate/' + row.pk + '/" class="text-dark fw-semibold">' + (data ? data : '—') + '</a>';
                         }
                     },
                     {
                         "data": "registration_number",
                         "mRender": function (data, type, row) {
-                            return '<a href="/contracts/estate/' + row.pk + '/update/" class="text-dark">' + (data ? data : '—') + '</a>';
+                            return '<a href="/contracts/estate/' + row.pk + '/" class="text-dark fw-bold">' + (data ? data : '—') + '</a>';
+                        }
+                    },
+                    {
+                        "data": "factory_number",
+                        "className": "d-none d-md-table-cell",
+                        "mRender": function (data) {
+                            return data ? data : '—';
+                        }
+                    },
+                    {
+                        "data": "release_date",
+                        "className": "d-none d-lg-table-cell",
+                        "mRender": function (data) {
+                            return data ? data : '—';
+                        }
+                    },
+                    {
+                        "data": "exploits",
+                        "className": "d-none d-xl-table-cell",
+                        "mRender": function (data, type, row) {
+                            var text = data || row.ownership_right || '—';
+                            return '<span class="small text-muted">' + text + '</span>';
+                        }
+                    },
+                    {
+                        "data": "is_decommissioned",
+                        "className": "text-center",
+                        "mRender": function (data, type, row) {
+                            if (data) {
+                                return '<span class="badge bg-danger" title="Выведено ' + (row.decommission_date || '') + '">Выведено</span>';
+                            }
+                            return '<span class="badge bg-success">В эксплуатации</span>';
                         }
                     },
                     {
@@ -156,7 +192,10 @@
                         "className": "text-center",
                         "orderable": false,
                         "mRender": function (data, type, row) {
-                            return '<a href="/contracts/estate/' + row.pk + '/update/" class="btn btn-sm btn-outline-secondary" title="Редактировать"><i class="bx bxs-edit"></i></a>';
+                            return '<div class="btn-group">' +
+                                '<a href="/contracts/estate/' + row.pk + '/" class="btn btn-xs btn-outline-primary" title="Просмотр"><i class="bx bx-show"></i></a>' +
+                                '<a href="/contracts/estate/' + row.pk + '/update/" class="btn btn-xs btn-outline-secondary ms-1" title="Редактировать"><i class="bx bxs-edit"></i></a>' +
+                                '</div>';
                         }
                     }
                 ]

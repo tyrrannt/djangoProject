@@ -73,6 +73,10 @@
                                 <label for="id_type_contract" class="field-label">Тип договора <span class="text-danger">*</span></label>
                                 {{ form.type_contract }}
                             </div>
+                            <div class="col-12">
+                                <label for="id_authorized_person" class="field-label">Авторизованные лица</label>
+                                {{ form.authorized_person }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -85,7 +89,7 @@
                 <i class="bx bx-save text-4 me-2"></i>
                 <span>Сохранить</span>
             </button>
-            <a href="{% url 'contracts_app:typecontracts' object.pk %}" class="btn btn-outline-dark btn-touch" aria-label="Отмена и возврат" title="Закрыть">
+            <a href="{% url 'contracts_app:typecontracts_list' %}" class="btn btn-outline-dark btn-touch" aria-label="Отмена и возврат" title="Закрыть">
                 <i class="bx bx-log-out-circle text-4 me-2"></i>
                 <span>Отмена</span>
             </a>

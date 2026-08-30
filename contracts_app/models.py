@@ -91,7 +91,9 @@ class TypeContract(models.Model):
         return {
             'pk': self.pk,
             'type_contract': self.type_contract,
+            'authorized_person': [str(u) for u in self.authorized_person.all()],
         }
+
 
 
 class TypeProperty(models.Model):
@@ -159,9 +161,17 @@ class Estate(models.Model):
             'pk': self.pk,
             'type_property': self.type_property.type_property if self.type_property else '',
             'registration_number': self.registration_number,
+            'factory_number': self.factory_number,
+            'release_date': self.release_date.strftime('%d.%m.%Y') if self.release_date else '',
+            'year_of_manufacture': self.year_of_manufacture,
+            'ownership_right': self.ownership_right,
+            'exploits': self.exploits,
+            'passport': self.passport,
+            'gtd': self.gtd,
             'decommission_date': self.decommission_date.strftime('%d.%m.%Y') if self.decommission_date else '',
             'is_decommissioned': self.is_decommissioned,
         }
+
 
 
 class ContractModel(models.Model):

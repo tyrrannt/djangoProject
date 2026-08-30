@@ -161,6 +161,10 @@ class EstateAddForm(forms.ModelForm):
     class Meta:
         model = Estate
         fields = '__all__'
+        widgets = {
+            'release_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'decommission_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -172,8 +176,13 @@ class EstateUpdateForm(forms.ModelForm):
     class Meta:
         model = Estate
         fields = '__all__'
+        widgets = {
+            'release_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'decommission_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             make_custom_field(field)
+

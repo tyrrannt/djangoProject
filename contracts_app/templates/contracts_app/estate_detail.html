@@ -1,0 +1,126 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }} // КОРПОРАТИВНЫЙ ПОРТАЛ
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 24px;
+            margin-bottom: 24px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+
+        .field-label {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 col-xl-10">
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-header bg-light py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h5 class="card-title text-dark mb-0">
+                        <i class="fas fa-warehouse text-primary me-2"></i>Объект имущества: {{ object.registration_number }}
+                    </h5>
+                    <div>
+                        {% if object.is_decommissioned %}
+                            <span class="badge bg-danger p-2"><i class="fas fa-ban me-1"></i>Выведено из эксплуатации (с {{ object.decommission_date|date:"d.m.Y" }})</span>
+                        {% else %}
+                            <span class="badge bg-success p-2"><i class="fas fa-check-circle me-1"></i>В эксплуатации</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body p-3 p-md-4">
+                    <div class="row g-3">
+                        <!-- 1. Основные идентификаторы -->
+                        <div class="col-12 col-md-6">
+                            <label class="field-label">Тип имущества:</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.type_property|default:'—' }}" readonly>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="field-label">Регистрационный номер / Бортовой номер:</label>
+                            <input type="text" class="form-control bg-light fw-bold" value="{{ object.registration_number|default:'—' }}" readonly>
+                        </div>
+
+                        <!-- 2. Заводской номер и даты производства -->
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">Заводской номер:</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.factory_number|default:'—' }}" readonly>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">Дата выпуска:</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.release_date|date:'d.m.Y'|default:'—' }}" readonly>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">Год выпуска (авто / техники):</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.year_of_manufacture|default:'—' }}" readonly>
+                        </div>
+
+                        <!-- 3. Эксплуатация и владение -->
+                        <div class="col-12 col-md-6">
+                            <label class="field-label">Право владения:</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.ownership_right|default:'—' }}" readonly>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="field-label">Эксплуатант (Баркол эксплуатирует):</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.exploits|default:'—' }}" readonly>
+                        </div>
+
+                        <!-- 4. Документы -->
+                        <div class="col-12 col-md-6">
+                            <label class="field-label">Паспорт / Формуляр:</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.passport|default:'—' }}" readonly>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="field-label">ГТД (Таможенная декларация):</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.gtd|default:'—' }}" readonly>
+                        </div>
+
+                        <!-- 5. Вывод из эксплуатации -->
+                        <div class="col-12 col-md-6">
+                            <label class="field-label">Дата вывода из эксплуатации:</label>
+                            <input type="text" class="form-control bg-light" value="{{ object.decommission_date|date:'d.m.Y'|default:'Не выведено' }}" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Нижняя панель действий -->
+    <div class="action-bar-responsive">
+        <a href="{% url 'contracts_app:estate_update' object.pk %}" class="btn btn-success btn-touch" aria-label="Изменить" title="Изменить">
+            <i class="bx bx-edit text-4 me-2"></i>
+            <span>Изменить</span>
+        </a>
+        <a href="{% url 'contracts_app:estate_list' %}" class="btn btn-outline-dark btn-touch" aria-label="К списку" title="Закрыть">
+            <i class="bx bx-log-out-circle text-4 me-2"></i>
+            <span>К списку</span>
+        </a>
+    </div>
+{% endblock %}
