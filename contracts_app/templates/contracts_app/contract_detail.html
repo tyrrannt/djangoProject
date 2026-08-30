@@ -33,20 +33,27 @@
             font-weight: 600;
         }
 
-        .pdf-viewer-container {
-            width: 100%;
-            height: 60vh;
-            min-height: 480px;
+        /* Гарантированная фиксация высоты и позиционирования для PDF.js viewer */
+        #outerContainer {
+            width: 100% !important;
+            height: 85vh !important;
+            min-height: 700px !important;
+            max-height: 1200px !important;
+            position: relative !important;
             border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
         }
 
-        @media (min-width: 992px) {
-            .pdf-viewer-container {
-                height: 85vh;
-                min-height: 750px;
+        @media (max-width: 768px) {
+            #outerContainer {
+                height: 65vh !important;
+                min-height: 500px !important;
             }
+        }
+
+        .toggle.active > .toggle-content {
+            display: block;
         }
 
         .table-responsive-custom {
@@ -87,9 +94,7 @@
                     <section class="toggle active">
                         <label><i class="fas fa-file-pdf text-danger me-2"></i>Электронный образ документа</label>
                         <div class="toggle-content">
-                            <div class="pdf-viewer-container outerContainer" id="outerContainer">
-                                {% include 'contracts_app/pdf-js.html' %}
-                            </div>
+                            {% include 'contracts_app/pdf-js.html' %}
                         </div>
                     </section>
                 {% endif %}
@@ -401,11 +406,63 @@
             }
         };
 
+        function refreshPdfViewer() {
+            if (window.PDFViewerApplication) {
+                if (window.PDFViewerApplication.pdfViewer) {
+                    const pdfViewer = window.PDFViewerApplication.pdfViewer;
+                    const currentScale = pdfViewer.currentScaleValue;
+                    if (currentScale === 'auto' || currentScale === 'page-fit' || currentScale === 'page-width') {
+                        pdfViewer.currentScaleValue = currentScale;
+                    }
+                    pdfViewer.update();
+                }
+                if (window.PDFViewerApplication.eventBus) {
+                    try {
+                        window.PDFViewerApplication.eventBus.dispatch('resize', { source: window });
+                    } catch (e) {
+                        console.debug('PDF eventBus resize exception ignored:', e);
+                    }
+                }
+            }
+            window.dispatchEvent(new Event('resize'));
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
             popoverTriggerList.map(function (popoverTriggerEl) {
                 return new bootstrap.Popover(popoverTriggerEl);
             });
+
+            // Автоматическое обновление при первичной загрузке страницы
+            setTimeout(refreshPdfViewer, 100);
+            setTimeout(refreshPdfViewer, 300);
+            setTimeout(refreshPdfViewer, 600);
+            setTimeout(refreshPdfViewer, 1000);
+
+            // Реакция на изменение размеров контейнера (сворачивание/разворачивание сайдбара и аккордеонов)
+            const outerEl = document.getElementById('outerContainer');
+            const viewerEl = document.getElementById('viewerContainer');
+            if (window.ResizeObserver && outerEl) {
+                const resizeObserver = new ResizeObserver(function () {
+                    refreshPdfViewer();
+                });
+                resizeObserver.observe(outerEl);
+                if (viewerEl) {
+                    resizeObserver.observe(viewerEl);
+                }
+            }
+
+            // Интеграция с событиями меню и шторки Porto Admin
+            if (window.jQuery) {
+                $(window).on('sidebar-left-toggle', function () {
+                    setTimeout(refreshPdfViewer, 50);
+                    setTimeout(refreshPdfViewer, 350);
+                });
+                $(document).on('click', '.sidebar-toggle, .sidebar-left-toggle, .toggle > label', function () {
+                    setTimeout(refreshPdfViewer, 50);
+                    setTimeout(refreshPdfViewer, 350);
+                });
+            }
         });
     </script>
 {% endblock %}

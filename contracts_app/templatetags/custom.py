@@ -396,24 +396,68 @@ def change_value(key, value):
     return result
 
 
+@register.filter(name="date_from_timestamp")
+def date_from_timestamp(value: Any) -> str:
+    """Преобразует числовой timestamp (в миллисекундах или секундах) в дату формата ДД.ММ.ГГГГ.
+
+    Args:
+        value (Any): Числовой timestamp в миллисекундах (формат DaData) или секундах, либо строка.
+
+    Returns:
+        str: Строка с датой в формате 'dd.mm.YYYY' либо исходное значение/пустая строка при ошибке.
+    """
+    if not value:
+        return ""
+    try:
+        ts = float(value)
+        # Если передан timestamp в миллисекундах (13 знаков)
+        if ts > 1e11:
+            ts = ts / 1000.0
+        return datetime.fromtimestamp(ts).strftime("%d.%m.%Y")
+    except (ValueError, TypeError, OSError):
+        return str(value) if value else ""
+
+
 @register.filter(name="format_bytes")
-def format_bytes(size):
-    # 2**10 = 1024
-    power = 2 ** 10
-    n = 0
-    power_labels = {0: '', 1: 'К', 2: 'M', 3: 'Г', 4: 'Т'}
-    while size > power:
-        size /= power
-        n += 1
-    return f"{size:.2f} {power_labels[n]}б"
+def format_bytes(size: int | float) -> str:
+    """Форматирует размер файла в байтах в человекочитаемый вид (Кб, Мб, Гб).
+
+    Args:
+        size (int | float): Размер в байтах.
+
+    Returns:
+        str: Форматированная строка с единицей измерения.
+    """
+    try:
+        power = 2 ** 10
+        n = 0
+        power_labels = {0: '', 1: 'К', 2: 'M', 3: 'Г', 4: 'Т'}
+        size_val = float(size)
+        while size_val > power and n < 4:
+            size_val /= power
+            n += 1
+        return f"{size_val:.2f} {power_labels[n]}б"
+    except (ValueError, TypeError):
+        return str(size) if size else "0 б"
 
 
 @register.filter(name="filename")
-def filename(value):
+def filename(value: Any) -> str:
+    """Извлекает базовое имя файла из поля FileField / FieldFile.
+
+    Args:
+        value (Any): Объект файла Django или путь.
+
+    Returns:
+        str: Имя файла или сообщение об отсутствии.
+    """
     try:
         return os.path.basename(value.file.name)
-    except FileNotFoundError:
+    except (FileNotFoundError, AttributeError, ValueError):
+        if hasattr(value, 'name') and value.name:
+            return os.path.basename(value.name)
         return 'Файл отсутствует'
+
 
 
 @register.filter
