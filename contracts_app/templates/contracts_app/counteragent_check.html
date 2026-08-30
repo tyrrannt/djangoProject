@@ -1,162 +1,212 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
 
 {% block title %}
-    {{ title }}
+    Проверка контрагента // КОРПОРАТИВНЫЙ ПОРТАЛ
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+
+        .search-card {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .counteragent-result-card {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        .counteragent-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 20px;
+        }
+
+        .field-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .field-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #0f172a;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-    <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-12">
-                                {% if query %}
-                                    {% for field in query %}
-                                        <h2>Результат поиска</h2>
-                                        <ul>
-                                            {% for key, value in field.items %}
-                                                {% if key == 'data' %}
-                                                    <li><strong>{{ key | change_key }}:</strong>
-                                                        <ol>
-                                                            {% for key2, value2 in value.items %}
-                                                                {% if key2 in 'state, opf, name, address, finance, management, fio' %}
-                                                                    <li><strong>{{ key2 | change_key }}:</strong>
-                                                                        <ul>
-                                                                            {% for key3, value3 in value2.items %}
-                                                                                {% if key3 == 'data' %}
-                                                                                    <li>
-                                                                                        <strong>{{ key3 | change_key }}:</strong>
-                                                                                        <ol>
-                                                                                            {% for key4, value4 in value3.items %}
-                                                                                                {% if key4 == 'metro' %}
-                                                                                                    <li>
-                                                                                                        <strong>{{ key4 | change_key }}:</strong>
-                                                                                                        <ul>
-                                                                                                            {% for key5, value5 in value4.items %}
-                                                                                                                {% if value5 %}
-                                                                                                                    <li>
-                                                                                                                        <strong>{{ key5 | change_key }}:</strong>
-                                                                                                                        - {{ key5 | change_value:value5 }}
-                                                                                                                    </li>
-                                                                                                                {% endif %}
-                                                                                                            {% endfor %}
-                                                                                                        </ul>
-                                                                                                    </li>
-                                                                                                {% else %}
-                                                                                                    {% if value4 %}
-                                                                                                        <li>
-                                                                                                            <strong>{{ key4 | change_key }}:</strong>
-                                                                                                            - {{ key4 | change_value:value4 }}
-                                                                                                        </li>
-                                                                                                    {% endif %}
-                                                                                                {% endif %}
-                                                                                            {% endfor %}
-                                                                                        </ol>
-                                                                                    </li>
-                                                                                {% else %}
-                                                                                    {% if value3 %}
-                                                                                        <li>
-                                                                                            <strong>{{ key3 | change_key }}:</strong>
-                                                                                            - {{ key3 | change_value:value3 }}
-                                                                                        </li>
-                                                                                    {% endif %}
-                                                                                {% endif %}
-                                                                            {% endfor %}
-                                                                        </ul>
-                                                                    </li>
-                                                                {% else %}
-                                                                    {% if value2 %}
-                                                                        <li>
-                                                                            <strong>{{ key2 | change_key }}:</strong>
-                                                                            - {{ key2 | change_value:value2 }}</li>
-                                                                    {% endif %}
-                                                                {% endif %}
-                                                            {% endfor %}
-                                                        </ol>
-                                                    </li>
-                                                {% else %}
-                                                    {% if value %}
-                                                        <li><strong>{{ key | change_key }}:</strong>
-                                                            - {{ key | change_value:value }}</li>
-                                                    {% endif %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </ul>
-                                    {% endfor %}
+    <div class="row">
+        <div class="col-12">
+            <!-- Верхняя панель действий -->
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-search-dollar text-primary me-2"></i>Проверка контрагента через ФНС / DaData
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Оперативная проверка реквизитов, статуса и руководства организаций</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'contracts_app:index' %}" class="btn btn-outline-dark btn-touch" aria-label="В реестр" title="В реестр">
+                        <i class="bx bx-arrow-back text-4"></i>
+                        <span class="d-none d-md-inline ms-1">К реестру договоров</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Форма поиска -->
+            <div class="search-card">
+                <form action="{% url 'contracts_app:counteragent_check' %}" method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label for="id_counteragent" class="form-label font-weight-semibold">ИНН контрагента:</label>
+                            <input type="text" name="counteragent" class="form-control" id="id_counteragent" placeholder="Введите ИНН...">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="id_counteragent_kpp" class="form-label font-weight-semibold">КПП (необязательно):</label>
+                            <input type="text" name="counteragent_kpp" class="form-control" id="id_counteragent_kpp" placeholder="Введите КПП...">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="id_counteragent_name" class="form-label font-weight-semibold">Или наименование компании:</label>
+                            <input type="text" name="counteragent_name" class="form-control" id="id_counteragent_name" placeholder="Например, Баркол...">
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-touch">
+                            <i class="bx bx-search-alt text-4 me-1"></i> Проверить
+                        </button>
+                        <a href="{% url 'contracts_app:counteragent_check' %}" class="btn btn-outline-secondary btn-touch">
+                            <i class="bx bx-reset text-4 me-1"></i> Сбросить
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Результаты проверки -->
+            {% if query %}
+                <h5 class="font-weight-bold text-dark mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>Найдено совпадений: {{ query|length }}
+                </h5>
+                {% for item in query %}
+                    <div class="counteragent-result-card">
+                        <div class="counteragent-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h5 class="font-weight-bold text-primary mb-1">
+                                    {{ item.value|default:item.data.name.full_with_opf }}
+                                </h5>
+                                <span class="text-muted small">
+                                    {{ item.data.opf.full|default:item.data.opf.short }}
+                                </span>
+                            </div>
+                            <div>
+                                {% if item.data.state.status == "ACTIVE" %}
+                                    <span class="badge bg-success p-2"><i class="fas fa-check me-1"></i>Действующая организация</span>
+                                {% elif item.data.state.status == "LIQUIDATING" %}
+                                    <span class="badge bg-warning text-dark p-2"><i class="fas fa-exclamation-triangle me-1"></i>В процессе ликвидации</span>
+                                {% elif item.data.state.status == "LIQUIDATED" %}
+                                    <span class="badge bg-danger p-2"><i class="fas fa-times me-1"></i>Ликвидирована</span>
+                                {% else %}
+                                    <span class="badge bg-secondary p-2">{{ item.data.state.status|default:"Статус неизвестен" }}</span>
                                 {% endif %}
                             </div>
-                            <div class="col-lg-2-5 col-xl-1-5">
-                                <i class="card-big-info-icon bx bxl-netlify"></i>
-                                <p class="card-big-info-desc">Форма поиска контрагента по ИНН/КПП</p>
-                            </div>
-                            <div class="col-lg-3-5 col-xl-4-5">
-                                <label for="id_counteragent">ИНН:</label>
-                                <input type="text" name="counteragent" class="form-control mb-4"
-                                       id="id_counteragent" placeholder="ИНН">
-                                <label for="id_counteragent_kpp">КПП:</label>
-                                <input type="text" name="counteragent_kpp" class="form-control mb-4"
-                                       id="id_counteragent_kpp" placeholder="КПП можно не указывать">
-                            </div>
-                            <hr>
-                            <div class="col-lg-2-5 col-xl-1-5">
-                                <i class="card-big-info-icon bx bxl-netlify"></i>
-                                <p class="card-big-info-desc">Форма поиска контрагента по наименованию</p>
-                            </div>
-                            <div class="col-lg-3-5 col-xl-4-5">
-                                <label for="id_counteragent_name">Наименование:</label>
-                                <input type="text" name="counteragent_name" class="form-control mb-4"
-                                       id="id_counteragent_name" placeholder="Регистр не имеет значение">
+                        </div>
+                        <div class="card-body p-3 p-md-4">
+                            <div class="row g-3">
+                                <div class="col-6 col-md-3">
+                                    <div class="field-label">ИНН</div>
+                                    <div class="field-value">{{ item.data.inn|default:"—" }}</div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="field-label">КПП</div>
+                                    <div class="field-value">{{ item.data.kpp|default:"—" }}</div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="field-label">ОГРН</div>
+                                    <div class="field-value">{{ item.data.ogrn|default:"—" }}</div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="field-label">Дата регистрации</div>
+                                    <div class="field-value">
+                                        {% if item.data.state.registration_date %}
+                                            {{ item.data.state.registration_date|date_from_timestamp }}
+                                        {% else %}
+                                            {{ item.data.ogrn_date|date_from_timestamp|default:"—" }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="field-label">Руководитель</div>
+                                    <div class="field-value">
+                                        {% if item.data.management %}
+                                            <strong>{{ item.data.management.name|default:"—" }}</strong>
+                                            <span class="text-muted small">({{ item.data.management.post|default:"Руководитель" }})</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="field-label">Основной ОКВЭД</div>
+                                    <div class="field-value">
+                                        {{ item.data.okved|default:"—" }}
+                                        {% if item.data.okved_name %}<span class="text-muted small">({{ item.data.okved_name }})</span>{% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="field-label">Юридический адрес</div>
+                                    <div class="field-value">
+                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                        {{ item.data.address.value|default:item.data.address.unrestricted_value|default:"—" }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons">
-
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class='bx bx-search-alt text-4 me-2'></i> Поиск
-                </button>
-            </div>
-
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
+                {% endfor %}
+            {% elif request.method == "POST" %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>По вашему запросу контрагенты не найдены. Проверьте правильность введённого ИНН или наименования.
                 </div>
             {% endif %}
         </div>
-    </form>
-    <!-- end: page -->
-    <!-- end: page -->
+    </div>
 {% endblock %}

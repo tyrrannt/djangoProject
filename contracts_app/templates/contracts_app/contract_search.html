@@ -1,179 +1,234 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
-
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
+{% load custom %}
 
 {% block title %}
     {{ title }}
 {% endblock %}
 
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+
+        .filter-card {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .table-responsive-custom {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .field-label {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
+    <div class="row">
+        <div class="col-12">
+            <!-- Верхняя панель действий -->
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="bx bx-search-alt text-primary me-2"></i>Поиск договоров
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Фильтрация и расширенный поиск по реквизитам</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'contracts_app:index' %}" class="btn btn-outline-dark btn-touch" aria-label="В реестр" title="В реестр">
+                        <i class="bx bx-arrow-back text-4"></i>
+                        <span class="d-none d-md-inline ms-1">К реестру</span>
+                    </a>
+                    <a href="{% url 'contracts_app:create' %}" class="btn btn-primary btn-touch" aria-label="Добавить договор" title="Добавить">
+                        <i class="bx bx-plus text-4"></i>
+                        <span class="d-none d-md-inline ms-1">Добавить договор</span>
+                    </a>
+                </div>
+            </div>
 
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <form action="{% url 'contracts_app:search' %}" method="get">
-                                {#                                {% csrf_token %}#}
-                                <div class="form-row toggle toggle-primary" data-plugin-toggle
-                                     data-plugin-options="{ 'isAccordion': true }">
-                                    <section class="toggle">
-                                        <label>Поиск по реквизитам и дополнительным полям</label>
-                                        <div class="toggle-content">
-                                            <div class="row mx-2">
-                                                <div class="row form-row">
-                                                    <div class="col-md-6">
-                                                        <label for="id_division">Подразделение</label>
-                                                        <select class="form-control form-control-modern" name="dv"
-                                                                id="id_division" data-plugin-selectTwo>
-                                                            <option value="0" selected>Выберите значение...</option>
-                                                            {% for item in division %}
-                                                                <option value="{{ item.pk }}">{{ item.name }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label for="id_contract_counteragent">Контрагент</label>
-                                                        <select class="form-control form-control-modern" name="ca"
-                                                                id="id_contract_counteragent" data-plugin-selectTwo>
-                                                            <option value="0" selected>Выберите значение...</option>
-                                                            {% for item in counteragent %}
-                                                                <option value="{{ item.pk }}">{{ item.short_name }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="row form-row">
-                                                    <div class="col-md-6">
-                                                        <label for="id_type_of_contract">Тип договора</label>
-                                                        <select class="form-control form-control-modern" name="tc"
-                                                                id="id_type_of_contract" data-plugin-selectTwo>
-                                                            <option value="0" selected>Выберите значение...</option>
-                                                            {% for item in type_contract %}
-                                                                <option value="{{ item.pk }}">{{ item.type_contract }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label for="id_type_property">Тип имущества</label>
-                                                        <select class="form-control form-control-modern" name="tp"
-                                                                id="id_type_property" data-plugin-selectTwo>
-                                                            <option value="0" selected>Выберите значение...</option>
-                                                            {% for item in type_property %}
-                                                                <option value="{{ item.pk }}">{{ item.type_property }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="row form-row">
-                                                    <div class="col-md-6">
-                                                        <label for="id_contract_number">Номер договора</label>
-                                                        <input type="text" class="form-control form-control-modern"
-                                                               name="cn"
-                                                               value="" placeholder="Введите значение..."
-                                                               id="id_contract_number"/>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label for="id_subject_contract">Предмет договора</label>
-                                                        <input type="text" class="form-control form-control-modern"
-                                                               name="sn"
-                                                               value="" placeholder="Введите значение..."
-                                                               id="id_subject_contract"/>
-                                                    </div>
-                                                </div>
-                                                <div class="form-row mt-2 center">
-                                                    <input type="submit"
-                                                           class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
-                                                           value="Поиск"/>
-                                                </div>
-                                            </div>
-                                        </div>
+            <!-- Форма поиска -->
+            <div class="filter-card">
+                <form action="{% url 'contracts_app:search' %}" method="get">
+                    <h5 class="font-weight-bold text-dark mb-3">
+                        <i class="fas fa-filter text-secondary me-2"></i>Параметры фильтрации
+                    </h5>
+                    <div class="row g-3">
+                        <!-- Подразделение -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label for="id_division" class="field-label">Подразделение:</label>
+                            <select class="form-control" name="dv" id="id_division">
+                                <option value="0" {% if not request.GET.dv or request.GET.dv == "0" %}selected{% endif %}>Все подразделения</option>
+                                {% for item in division %}
+                                    <option value="{{ item.pk }}" {% if request.GET.dv == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                                    </section>
-                                </div>
-                            </form>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
+                        <!-- Контрагент -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label for="id_contract_counteragent" class="field-label">Контрагент:</label>
+                            <select class="form-control" name="ca" id="id_contract_counteragent">
+                                <option value="0" {% if not request.GET.ca or request.GET.ca == "0" %}selected{% endif %}>Все контрагенты</option>
+                                {% for item in counteragent %}
+                                    <option value="{{ item.pk }}" {% if request.GET.ca == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.short_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                                <thead>
+                        <!-- Тип договора -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label for="id_type_of_contract" class="field-label">Тип договора:</label>
+                            <select class="form-control" name="tc" id="id_type_of_contract">
+                                <option value="0" {% if not request.GET.tc or request.GET.tc == "0" %}selected{% endif %}>Все типы</option>
+                                {% for item in type_contract %}
+                                    <option value="{{ item.pk }}" {% if request.GET.tc == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.type_contract }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Тип имущества -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label for="id_type_property" class="field-label">Тип имущества:</label>
+                            <select class="form-control" name="tp" id="id_type_property">
+                                <option value="0" {% if not request.GET.tp or request.GET.tp == "0" %}selected{% endif %}>Все типы имущества</option>
+                                {% for item in type_property %}
+                                    <option value="{{ item.pk }}" {% if request.GET.tp == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.type_property }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Номер договора -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label for="id_contract_number" class="field-label">Номер договора:</label>
+                            <input type="text" class="form-control" name="cn" id="id_contract_number"
+                                   value="{{ request.GET.cn|default:'' }}" placeholder="Поиск по номеру...">
+                        </div>
+
+                        <!-- Предмет договора -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label for="id_subject_contract" class="field-label">Предмет договора:</label>
+                            <input type="text" class="form-control" name="sn" id="id_subject_contract"
+                                   value="{{ request.GET.sn|default:'' }}" placeholder="Поиск по предмету...">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-3 pt-2">
+                        <button type="submit" class="btn btn-primary btn-touch">
+                            <i class="bx bx-search-alt text-4 me-1"></i> Найти
+                        </button>
+                        <a href="{% url 'contracts_app:search' %}" class="btn btn-outline-secondary btn-touch">
+                            <i class="bx bx-reset text-4 me-1"></i> Сбросить
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Результаты поиска -->
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0">
+                        <i class="fas fa-list-ul text-primary me-2"></i>Результаты поиска
+                        {% if object_list %}
+                            <span class="badge bg-primary ms-2">{{ page_obj.paginator.count|default:object_list|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-3 p-md-4">
+                    <div class="table-responsive-custom">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <th width="3%"><input type="checkbox" name="select-all"
-                                                          class="select-all checkbox-style-1 p-relative top-2"
-                                                          value=""/></th>
-                                    <th width="8%">Код</th>
-                                    <th width="25%">Контрагент</th>
-                                    <th width="18%">Номер договора</th>
-                                    <th width="12%">Дата договора</th>
-                                    <th width="12%">Тип договора</th>
-                                    <th width="12%">Подразделение</th>
-                                    <th width="12%">Статус</th>
+                                    <th style="width: 70px;">Код</th>
+                                    <th>Контрагент</th>
+                                    <th>Номер договора</th>
+                                    <th>Дата заключения</th>
+                                    <th>Тип договора</th>
+                                    <th>Подразделения</th>
+                                    <th style="width: 80px;" class="text-center">Статус</th>
                                 </tr>
-                                </thead>
-                                <tbody>
+                            </thead>
+                            <tbody>
                                 {% for item in object_list %}
                                     <tr>
-                                        <td width="30"><input type="checkbox" name="checkboxRow1"
-                                                              class="checkbox-style-1 p-relative top-2" value=""/></td>
                                         <td>
-                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'contracts_app:detail' item.pk %}" class="fw-bold text-primary">
+                                                #{{ item.pk }}
+                                            </a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
+                                            <a href="{% url 'contracts_app:detail' item.pk %}" class="text-dark fw-semibold">
+                                                {{ item.contract_counteragent|default:"—" }}
+                                            </a>
                                         </td>
-                                        <td>{{ item.contract_number }}</td>
-                                        <td>{{ item.date_conclusion }}</td>
-                                        <td>{{ item.type_of_contract }}</td>
+                                        <td>{{ item.contract_number|default:"(без номера)" }}</td>
+                                        <td>{{ item.date_conclusion|date:"d.m.Y"|default:"—" }}</td>
+                                        <td><span class="badge bg-light text-dark border">{{ item.type_of_contract|default:"—" }}</span></td>
                                         <td>
-                                            {% for unit in item.divisions.iterator %}
-
-                                                {% if forloop.last %}
-                                                    {{ unit.name }}
-                                                {% else %}
-                                                    {{ unit.name }},&nbsp;
-                                                {% endif %}
+                                            {% for unit in item.divisions.all %}
+                                                <span class="badge bg-light text-secondary border me-1 mb-1">{{ unit.name }}</span>
+                                            {% empty %}
+                                                <span class="text-muted small">—</span>
                                             {% endfor %}
                                         </td>
-                                        <td>
+                                        <td class="text-center">
                                             {% if item.is_past_due %}
-                                                <i class='bx bx-check bx-md' style='color:#087902'></i>{% else %}
-                                                <i class='bx bx-x bx-md' style='color:#f90202'></i>{% endif %}
+                                                <span class="badge bg-danger" title="Просрочен">Истёк</span>
+                                            {% else %}
+                                                <span class="badge bg-success" title="Действует">Действует</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <i class="fas fa-search fa-3x mb-3 text-secondary opacity-50 d-block"></i>
+                                            <h5>По вашему запросу ничего не найдено</h5>
+                                            <p class="small mb-0">Попробуйте изменить параметры поиска или сбросить фильтры.</p>
                                         </td>
                                     </tr>
                                 {% endfor %}
-                                </tbody>
-                            </table>
+                            </tbody>
+                        </table>
+                    </div>
 
-                            <hr class="solid mt-5 opacity-4">
+                    {% if is_paginated %}
+                        <div class="mt-4">
                             {% include 'library_app/paginator.html' %}
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-{% endblock %}
-
-{% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
-    <!-- Examples -->
-    <script src="{% static 'admin_templates/js/examples/examples.header.menu.js' %}"></script>
-    <script src="{% static 'admin_templates/js/examples/examples.ecommerce.datatables.list.js' %}"></script>
+    </div>
 {% endblock %}

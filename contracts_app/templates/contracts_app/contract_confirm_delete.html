@@ -1,48 +1,70 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}
-    {{ title }}
+    Удаление договора // {{ object }}
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
-{% endblock %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
 
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+
+        .delete-card-wrapper {
+            max-width: 600px;
+            margin: 40px auto;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-    <form method="post">
-        {% csrf_token %}
-            <header class="card-header">
-                <h2 class="card-title">Вы уверены?</h2>
-            </header>
-            <div class="card-body">
-                <div class="modal-wrapper">
-                    <div class="modal-icon">
-                        <i class="fas fa-question-circle"></i>
+    <div class="row">
+        <div class="col-12">
+            <div class="delete-card-wrapper">
+                <div class="card card-modern shadow-sm border-0">
+                    <div class="card-header bg-danger text-white py-3">
+                        <h5 class="card-title text-white mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Подтверждение удаления
+                        </h5>
                     </div>
-                    <div class="modal-text">
-                        <p>Вы уверены, что хотите удалить эту запись: {{ object }}?</p>
+                    <div class="card-body p-4 text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-trash-alt fa-3x text-danger opacity-75"></i>
+                        </div>
+                        <h4 class="font-weight-bold text-dark mb-2">Вы действительно хотите удалить этот договор?</h4>
+                        <p class="text-muted mb-4">
+                            <strong>{{ object }}</strong><br>
+                            {% if object.contract_counteragent %}Контрагент: {{ object.contract_counteragent }}<br>{% endif %}
+                            {% if object.date_conclusion %}Дата заключения: {{ object.date_conclusion|date:"d.m.Y" }}{% endif %}
+                        </p>
+                        <div class="alert alert-warning text-start small mb-0">
+                            <i class="fas fa-info-circle me-1"></i> Данное действие необратимо. Запись будет окончательно удалена из базы данных.
+                        </div>
                     </div>
-                </div>
-            </div>
-            <footer class="card-footer">
-                <div class="row">
-                    <div class="col-md-12 text-center">
-                        <form method="post" class="mt-4">
+                    <div class="card-footer bg-light p-3">
+                        <form method="post" class="d-flex justify-content-center gap-3">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">Да, удалить</button>
-                            <a href="{% url 'contracts_app:detail' object.pk %}" class="btn btn-secondary">Отмена</a>
+                            <button type="submit" class="btn btn-danger btn-touch">
+                                <i class="fas fa-trash-alt me-1"></i> Да, удалить
+                            </button>
+                            <a href="{% url 'contracts_app:detail' object.pk %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="fas fa-times me-1"></i> Отмена
+                            </a>
                         </form>
                     </div>
                 </div>
-            </footer>
-    </form>
+            </div>
+        </div>
+    </div>
 {% endblock %}

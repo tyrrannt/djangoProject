@@ -504,11 +504,21 @@ class ContractPostList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
 
 class ContractPostDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
-    """
-    Удаление записи
-    """
+    """Представление для удаления служебной заметки к договору."""
+
     model = Posts
     permission_required = 'hrdepartment_app.delete_posts'
+
+    def get_success_url(self) -> str:
+        """Возвращает URL перенаправления после успешного удаления заметки.
+
+        Returns:
+            str: URL страницы детального просмотра родительского договора либо реестра.
+        """
+        if self.object.contract_number:
+            return reverse('contracts_app:detail', kwargs={'pk': self.object.contract_number.pk})
+        return reverse('contracts_app:index')
+
 
 
 """

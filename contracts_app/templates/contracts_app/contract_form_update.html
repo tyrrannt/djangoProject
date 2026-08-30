@@ -1,283 +1,265 @@
 {% extends 'customers_app/main.html' %}
-{% load widget_tweaks %}
-
 {% load static %}
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
+{% load custom %}
+{% load widget_tweaks %}
 
 {% block title %}
     {{ title }}
 {% endblock %}
 
-
-{% block content %}
-        <!-- start: page -->
-        <form action="{% url 'contracts_app:update' object.pk %}" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            {% if form.errors %}
-                {% for field in form %}
-
-                    {% for error in field.errors %}
-                        {{ field.label }}: {{ error|escape }}
-                    {% endfor %}
-
-                {% endfor %}
-            {% endif %}
-            <div class="col-md-12">
-                <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
-                    <section class="toggle active">
-                        <label>Основное</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        <div class="col-md-6 col-sm-6 text-black-50">
-                                            <label for="id_parent_category">Основной документ</label>
-                                            {{ form.parent_category }}
-                                        </div>
-                                        <div class="col-md-6 col-sm-6 text-black-50">
-                                            <label for="id_contract_counteragent">Контрагент</label>
-                                            {{ form.contract_counteragent | attr:"onkeydown=contragent_change()" }}
-                                        </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="col-md-4 col-sm-6 text">
-                                            <label for="id_type_of_document">Тип документа</label>
-                                            {{ form.type_of_document }}
-                                        </div>
-                                        <div class="col-md-4 col-sm-6 text-black-50">
-                                            <label for="id_type_of_contract">Тип договора</label>
-                                            {{ form.type_of_contract }}
-                                        </div>
-                                        <div class="col-md-4 col-sm-6 text-black-50">
-                                            <label for="id_employee">Ответственные лица</label>
-                                            {{ form.employee }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-4 col-sm-6 text">
-                                            <label for="id_contract_number">Номер договора</label>
-                                            {{ form.contract_number }}
-                                        </div>
-                                        <div class="col-md-4 col-sm-6 date">
-                                            <label for="id_date_conclusion">Дата заключения</label>
-                                            {{ form.date_conclusion }}
-                                        </div>
-                                        <div class="col-md-4 col-sm-6 date">
-                                            <label for="id_closing_date">Дата закрытия договора</label>
-                                            {{ form.closing_date }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <code>{{ object.access }}</code>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-6 col-sm-6 text-black-50">
-                                            <label for="id_divisions">Подразделение</label>
-                                            {{ form.divisions }}
-
-                                        </div>
-                                        <div class="col-md-6 col-sm-6 text-black-50">
-                                            <label for="id_type_property">Тип имущества</label>
-                                            {{ form.type_property }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="id_subject_contract">Предмет договора</label>
-                                            {{ form.subject_contract }}
-                                        </div>
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="id_comment">Примечание:</label>
-                                            {{ form.comment }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-3 col-sm-4 text-black-50">
-                                            <label for="id_cost">Стоимость</label>
-                                            {{ form.cost }}
-                                        </div>
-                                        <div class="col-md-3 col-sm-4 text-black-50">
-                                            <label for="id_prolongation">Пролонгация</label>
-                                            {{ form.prolongation }}
-                                        </div>
-
-                                        <div class="col-md-3 col-sm-4 text-black-50">
-                                            <label for="id_access">Уровень доступа к документу:</label>
-                                            {{ form.access }}
-                                        </div>
-                                        <div class="col-md-1 col-sm-3 text-black-50">
-                                            <label for="id_allowed_placed" class="todo-label">Разрешение на
-                                                публикацию</label>
-                                            {{ form.allowed_placed }}
-                                        </div>
-                                        <div class="col-md-1 col-sm-3 text-black-50">
-                                            <label for="id_allowed_placed" class="todo-label">Актуальность</label>
-                                            {{ form.actuality }}
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        {% if request.user.is_superuser %}
-                                            <div class="col-sm-12 text-black-50">
-                                                <label for="id_official_information" class="todo-label">Ссылка на
-                                                    файл</label>
-                                                {{ form.official_information }}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-sm-12 text-black-50">
-                                            <label for="id_doc_file">Файл документа: </label>
-                                            {{ form.doc_file }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'contracts_app:index' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2' ></i> Закрыть </a>
-                </div>
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
-                </div>
-            </div>
-        </form>
-        <!-- end: page -->
-    <script type="text/javascript">
-        const input = document.querySelector('#id_official_information');
-        input.addEventListener('focus', (e) => {
-            navigator.clipboard.writeText(e.target.value);
-        });
-    </script>
-    <script type="text/javascript">
-        // copy content to clipboard
-        function copyToClipboard(element) {
-            var $temp = $("<input>");
-            $("body").append($temp);
-            $temp.val($(element).text()).select();
-            document.execCommand("copy");
-            $temp.remove();
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
         }
 
-        // copy coupone code to clipboard
-        $(".coupon-btn").on("click", function () {
-            copyToClipboard("#id_official_information");
-            $(".coupon-alert").fadeIn("slow");
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 24px;
+            margin-bottom: 24px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+
+        .form-section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-bottom: 16px;
+            margin-top: 10px;
+        }
+
+        .field-label {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <form action="{% url 'contracts_app:update' object.pk %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-modern">
+                    <div class="card-body p-3 p-md-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <h5 class="alert-heading font-weight-bold mb-2">Пожалуйста, исправьте ошибки в форме:</h5>
+                                <ul class="mb-0 ps-3">
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <div class="form-section-title">
+                            <i class="fas fa-file-contract text-primary me-2"></i>Сведения о договоре и контрагенте
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <!-- Основной документ (если это дополнительное соглашение) -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_parent_category" class="field-label">Основной документ</label>
+                                {{ form.parent_category }}
+                            </div>
+
+                            <!-- Контрагент -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_contract_counteragent" class="field-label">Контрагент <span class="text-danger">*</span></label>
+                                {{ form.contract_counteragent }}
+                            </div>
+
+                            <!-- Тип документа -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_type_of_document" class="field-label">Тип документа <span class="text-danger">*</span></label>
+                                {{ form.type_of_document }}
+                            </div>
+
+                            <!-- Тип договора -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_type_of_contract" class="field-label">Тип договора <span class="text-danger">*</span></label>
+                                {{ form.type_of_contract }}
+                            </div>
+
+                            <!-- Ответственные лица -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_employee" class="field-label">Ответственные лица</label>
+                                {{ form.employee }}
+                            </div>
+
+                            <!-- Номер договора -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_contract_number" class="field-label">Номер договора</label>
+                                {{ form.contract_number }}
+                            </div>
+
+                            <!-- Дата заключения -->
+                            <div class="col-6 col-md-4">
+                                <label for="id_date_conclusion" class="field-label">Дата заключения</label>
+                                {{ form.date_conclusion }}
+                            </div>
+
+                            <!-- Дата закрытия -->
+                            <div class="col-6 col-md-4">
+                                <label for="id_closing_date" class="field-label">Дата закрытия договора</label>
+                                {{ form.closing_date }}
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="fas fa-sitemap text-info me-2"></i>Классификация и подразделения
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <!-- Подразделение -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_divisions" class="field-label">Подразделение</label>
+                                {{ form.divisions }}
+                            </div>
+
+                            <!-- Тип имущества -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_type_property" class="field-label">Тип имущества</label>
+                                {{ form.type_property }}
+                            </div>
+
+                            <!-- Предмет договора -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_subject_contract" class="field-label">Предмет договора <span class="text-danger">*</span></label>
+                                {{ form.subject_contract }}
+                            </div>
+
+                            <!-- Примечание -->
+                            <div class="col-12 col-md-6">
+                                <label for="id_comment" class="field-label">Примечание</label>
+                                {{ form.comment }}
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="fas fa-file-upload text-success me-2"></i>Файл, статус и финансовые параметры
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Стоимость -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_cost" class="field-label">Стоимость</label>
+                                {{ form.cost }}
+                            </div>
+
+                            <!-- Пролонгация -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_prolongation" class="field-label">Пролонгация</label>
+                                {{ form.prolongation }}
+                            </div>
+
+                            <!-- Уровень доступа -->
+                            <div class="col-12 col-md-4">
+                                <label for="id_access" class="field-label">Уровень доступа к документу</label>
+                                {{ form.access }}
+                            </div>
+
+                            <!-- Разрешение на публикацию -->
+                            <div class="col-6 col-md-2">
+                                <label for="id_allowed_placed" class="field-label">Публикация</label>
+                                <div class="form-check form-switch mt-1">
+                                    {{ form.allowed_placed }}
+                                    <label class="form-check-label small" for="id_allowed_placed">Разрешено</label>
+                                </div>
+                            </div>
+
+                            <!-- Актуальность -->
+                            <div class="col-6 col-md-2">
+                                <label for="id_actuality" class="field-label">Актуальность</label>
+                                <div class="form-check form-switch mt-1">
+                                    {{ form.actuality }}
+                                    <label class="form-check-label small" for="id_actuality">Действует</label>
+                                </div>
+                            </div>
+
+                            <!-- Файл документа -->
+                            <div class="col-12 col-md-8">
+                                <label for="id_doc_file" class="field-label">Файл документа (PDF/скан)</label>
+                                {{ form.doc_file }}
+                                {% if object.doc_file %}
+                                    <div class="small mt-1 text-muted">
+                                        Текущий файл: <a href="{{ object.doc_file.url }}" target="_blank" rel="noopener noreferrer" class="text-primary">{{ object.doc_file|filename }}</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Служебная информация (для суперпользователя) -->
+                            {% if request.user.is_superuser %}
+                                <div class="col-12">
+                                    <label for="id_official_information" class="field-label">Служебная информация / ссылка на файл</label>
+                                    {{ form.official_information }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Нижняя панель действий -->
+        <div class="action-bar-responsive">
+            <button type="submit" class="btn btn-success btn-touch" aria-label="Сохранить изменения" title="Сохранить изменения">
+                <i class="bx bx-save text-4 me-2"></i>
+                <span>Сохранить</span>
+            </button>
+            <a href="{% url 'contracts_app:detail' object.pk %}" class="btn btn-outline-dark btn-touch" aria-label="Отмена и возврат" title="Закрыть">
+                <i class="bx bx-log-out-circle text-4 me-2"></i>
+                <span>Отмена</span>
+            </a>
+            {% if user.is_superuser %}
+                <a href="{% url 'contracts_app:delete' object.pk %}" class="btn btn-outline-danger btn-touch ms-auto" aria-label="Удалить договор" title="Удалить">
+                    <i class="bx bx-trash text-4 me-2"></i>
+                    <span class="d-none d-md-inline">Удалить</span>
+                </a>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+'use strict';
+
+document.addEventListener('DOMContentLoaded', function () {
+    const officialInfoInput = document.querySelector('#id_official_information');
+    if (officialInfoInput) {
+        officialInfoInput.addEventListener('focus', function (e) {
+            if (e.target.value && navigator.clipboard) {
+                navigator.clipboard.writeText(e.target.value).catch(function(err) {
+                    console.warn('Clipboard error:', err);
+                });
+            }
         });
-
-        function contragent_change() {
-            contragent = document.getElementById("id_contract_counteragent").value;
-
-            $.ajax({
-                type: "GET",
-                url: '{% url 'contracts_app:update' object.pk %}',
-                data: {
-                    "contragent": contragent,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    // var period_from = document.getElementById("id_period_from");
-                    // var period_for = document.getElementById("id_period_for");
-                    // period_from.removeAttribute("min")
-                    // period_from.setAttribute("min", data)
-                    // $("#id_period_from").trigger("create")
-                    // period_for.removeAttribute("min")
-                    // period_for.setAttribute("min", data)
-                    // $("#id_period_for").trigger("create")
-                    // var check_date = document.getElementById("id_check_date");
-                    // var employee_divisions = document.getElementById("employee_divisions");
-                    // $("label[for='employee_divisions']").text(data);
-                    // employee_divisions.refresh;
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
-                },
-                failure: function (data) {
-                    console.log("failure");
-                }
-            });
-        };
-
-        function memo_type_change() {
-            employee = document.getElementById("id_person").value;
-            memo_type = document.getElementById("id_official_memo_type").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'hrdepartment_app:memo_add' %}',
-                data: {
-                    "employee": employee,
-                    "memo_type": memo_type,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    var employee_divisions = document.getElementById("employee_divisions");
-                    $("label[for='employee_divisions']").text(data['employee']);
-                    employee_divisions.refresh;
-                    var document_extension = $("#id_document_extension");
-                    document_extension.empty();
-                    $.each(data['memo_type'], function (key, value) {
-                        document_extension.append($("<option selected></option>")
-                            .attr("value", value).text(key));
-                    });
-                    document_extension.removeAttr("disabled")
-                    $('#id_document_extension').refresh;
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
-                },
-                failure: function (data) {
-                    console.log("failure");
-                }
-            });
-        };
-    </script>
+    }
+});
+</script>
 {% endblock %}

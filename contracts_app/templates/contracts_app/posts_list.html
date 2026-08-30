@@ -1,26 +1,108 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
+
+{% block title %}
+    Заметки к договору // КОРПОРАТИВНЫЙ ПОРТАЛ
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+
+        .note-card {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #0284c7;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
-        <div class="row">
+    <div class="row">
+        <div class="col-12">
+            <!-- Верхняя панель действий -->
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-sticky-note text-warning me-2"></i>Заметки к договору
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Хронологический список служебных пометок и комментариев</p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if request.GET.cn %}
+                        <a href="{% url 'contracts_app:detail' request.GET.cn %}" class="btn btn-outline-dark btn-touch" aria-label="Вернуться к договору" title="К договору">
+                            <i class="bx bx-arrow-back text-4"></i>
+                            <span class="d-none d-md-inline ms-1">К договору</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'contracts_app:index' %}" class="btn btn-outline-dark btn-touch" aria-label="В реестр" title="В реестр">
+                            <i class="bx bx-arrow-back text-4"></i>
+                            <span class="d-none d-md-inline ms-1">К реестру договоров</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
             {% for item in object_list %}
-                <div class="col-md-12">
-                    <section class="card card-featured card-featured-primary mb-4">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                <a href="{% url 'contracts_app:post_del' item.contract_number.pk %}?pk={{ item.pk }}"
-                                   class="card-action card-action-dismiss"></a>
-                            </div>
-                            <h2 class="card-title">{{ item.creation_date }}</h2>
-                            <p class="card-subtitle">Автор: {{ item.responsible_person }}</p>
-                        </header>
-                        <div class="card-body">
-                            <p>{{ item.post_description }}</p>
-                            <code>ID: {{ item.pk }}</code>
+                <div class="note-card p-3 p-md-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <div>
+                            <span class="badge bg-light text-dark border me-2">
+                                <i class="fas fa-user me-1"></i>{{ item.responsible_person|default:"Не указан" }}
+                            </span>
+                            <span class="text-muted small">
+                                <i class="far fa-calendar-alt me-1"></i>{{ item.creation_date|date:"d.m.Y" }}
+                            </span>
                         </div>
-                    </section>
+                        <div>
+                            <a href="{% url 'contracts_app:post_del' item.pk %}"
+                               class="btn btn-sm btn-outline-danger" title="Удалить заметку" aria-label="Удалить заметку">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="note-content text-dark">
+                        {% autoescape off %}
+                            {{ item.post_description }}
+                        {% endautoescape %}
+                    </div>
+                    <div class="mt-2 text-muted small">
+                        Договор: <a href="{% url 'contracts_app:detail' item.contract_number.pk %}" class="text-primary font-weight-semibold">#{{ item.contract_number.contract_number|default:item.contract_number.pk }}</a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="card card-modern border-0 shadow-sm">
+                    <div class="card-body p-5 text-center text-muted">
+                        <i class="fas fa-sticky-note fa-3x mb-3 text-secondary opacity-50 d-block"></i>
+                        <h5>Заметок не найдено</h5>
+                        <p class="small mb-0">К выбранному договору пока нет добавленных заметок.</p>
+                    </div>
                 </div>
             {% endfor %}
         </div>
+    </div>
 {% endblock %}

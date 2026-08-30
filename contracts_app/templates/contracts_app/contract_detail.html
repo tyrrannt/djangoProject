@@ -2,441 +2,410 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
-    <link rel="resource" type="application/l10n"
-          href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>
-    <script src="{% static 'admin_templates/pdf/js/viewer.js' %}"></script>
-{% endblock %}
 
 {% block title %}
     {{ title }}
 {% endblock %}
 
-{% block content %}
-        <style>
-            {#.showmobile { display: none; }#}
-            {#@media only screen#}
-            {#and (min-device-width : 320px)#}
-            {#and (max-device-width : 920px){ .showmobile { display: inline; }}#}
-            {#.hidemobile { display: inline; }#}
-            {#@media only screen#}
-            {#and (min-device-width : 320px)#}
-            {#and (max-device-width : 920px){ .hidemobile { display: none; }}#}
-            @media only screen
-            and (min-device-width: 320px)
-            and (max-device-width: 920px) {
-                .outerContainer {
-                    height: 600px;
-                }
-            }
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
+    <link rel="resource" type="application/l10n" href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
 
-            @media only screen
-            and (min-device-width: 921px) {
-                .outerContainer {
-                    height: 1080px;
-                }
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+
+        .pdf-viewer-container {
+            width: 100%;
+            height: 60vh;
+            min-height: 480px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        @media (min-width: 992px) {
+            .pdf-viewer-container {
+                height: 85vh;
+                min-height: 750px;
             }
-        </style>
-        <!-- start: page -->
-        <div class="order-details action-buttons-fixed" method="post">
-            <div class="col-md-12">
-                <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
-                    {% if object.doc_file %}
-                        <input id="id_contract_number" value="{{ object.doc_file.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
-                    {% else %}
-                        <input id="id_contract_number" value="" hidden="true">
-                    {% endif %}
+        }
+
+        .table-responsive-custom {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .contract-info-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+
+        .ecommerce-timeline-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            border-left: 4px solid #0284c7;
+            margin-bottom: 12px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
+                {% if object.doc_file %}
+                    <input id="id_contract_number" value="{{ object.doc_file.url }}?v={{ object.updated_at.timestamp }}" type="hidden">
+                {% else %}
+                    <input id="id_contract_number" value="" type="hidden">
+                {% endif %}
+
+                <!-- Вкладка: PDF Файл документа -->
+                {% if object.doc_file %}
                     <section class="toggle active">
-                        <label>Файл</label>
+                        <label><i class="fas fa-file-pdf text-danger me-2"></i>Электронный образ документа</label>
                         <div class="toggle-content">
-                            <div class="form-row">
-                                {% if object.doc_file %}
-                                    <div class="form-row outerContainer" id="outerContainer" style="height: 1080px">
-                                        {% include 'contracts_app/pdf-js.html' %}
-                                    </div>
-                                {% endif %}
+                            <div class="pdf-viewer-container outerContainer" id="outerContainer">
+                                {% include 'contracts_app/pdf-js.html' %}
                             </div>
                         </div>
                     </section>
-                    {% if slaves %}
-                        <section class="toggle">
-                            <label>Дополнительные документы</label>
-                            <div class="toggle-content">
-                                <div class="table-responsive">
-                                    <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
-                                           style="min-width: 380px;">
-                                        <thead>
+                {% endif %}
+
+                <!-- Вкладка: Дополнительные документы / Дочерние соглашения -->
+                {% if slaves %}
+                    <section class="toggle">
+                        <label><i class="fas fa-layer-group text-primary me-2"></i>Дополнительные документы и приложения ({{ slaves|length }})</label>
+                        <div class="toggle-content">
+                            <div class="table-responsive-custom">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
                                         <tr>
-                                            <th width="15%">Тип документа</th>
-                                            <th width="27%" class="text-center">Комментарий</th>
-                                            <th width="22%" class="text-center">Документ</th>
-                                            <th width="10%" class="text-center">Дата документа</th>
-                                            <th width="16%" class="text-center">Исполнитель</th>
-                                            <th width="10%" class="text-center">Дата ввода в базу</th>
+                                            <th>Тип документа</th>
+                                            <th>Комментарий</th>
+                                            <th class="text-center">Документ</th>
+                                            <th class="text-center">Дата документа</th>
+                                            <th class="text-center d-none d-md-table-cell">Исполнитель</th>
+                                            <th class="text-center d-none d-lg-table-cell">Дата ввода в базу</th>
                                         </tr>
-                                        </thead>
-                                        <tbody>
+                                    </thead>
+                                    <tbody>
                                         {% for item in slaves %}
                                             <tr>
                                                 <td>
-                                                    <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.type_of_document }}</strong></a>
+                                                    <a href="{% url 'contracts_app:detail' item.pk %}" class="fw-semibold text-primary">
+                                                        {{ item.type_of_document }}
+                                                    </a>
                                                 </td>
-                                                <td class="text-left">{{ item.comment }}</td>
+                                                <td>{{ item.comment|default:"—" }}</td>
                                                 <td class="text-center">
                                                     {% if item.doc_file %}
-                                                        <a href="{{ item.doc_file.url }}"
-                                                           target="_blank"><strong>{{ item.doc_file | filename }}</strong></a>
+                                                        <a href="{{ item.doc_file.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-danger" title="Открыть PDF">
+                                                            <i class="fas fa-file-pdf me-1"></i>{{ item.doc_file|filename }}
+                                                        </a>
+                                                    {% else %}
+                                                        <span class="text-muted small">Нет файла</span>
                                                     {% endif %}
                                                 </td>
-                                                <td class="text-center">{{ item.date_conclusion }}</td>
-                                                <td class="text-center">{{ item.executor | FIO_format }}</td>
-                                                <td class="text-center">{{ item.date_entry }}</td>
+                                                <td class="text-center">{{ item.date_conclusion|date:"d.m.Y"|default:"—" }}</td>
+                                                <td class="text-center d-none d-md-table-cell">{{ item.executor|FIO_format }}</td>
+                                                <td class="text-center d-none d-lg-table-cell">{{ item.date_entry|date:"d.m.Y"|default:"—" }}</td>
                                             </tr>
                                         {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                    </tbody>
+                                </table>
                             </div>
-                        </section>
-                    {% endif %}
-                    {% if counteragent_docs %}
-                        <section class="toggle">
-                            <label>Файл контрагента</label>
-                            <div class="toggle-content">
-                                <div class="form-row">
-                                    <table class="table table-striped table-hover">
-                                        <thead>
+                        </div>
+                    </section>
+                {% endif %}
+
+                <!-- Вкладка: Документы контрагента -->
+                {% if counteragent_docs %}
+                    <section class="toggle">
+                        <label><i class="fas fa-building text-info me-2"></i>Документы контрагента</label>
+                        <div class="toggle-content">
+                            <div class="table-responsive-custom">
+                                <table class="table table-striped table-hover align-middle mb-0">
+                                    <thead class="table-light">
                                         <tr>
                                             <th>Дата добавления</th>
                                             <th>Описание</th>
                                             <th>Размер</th>
-                                            <th>Имя</th>
-                                        </thead>
-                                        <tbody>
-
+                                            <th>Файл</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                                         {% for item in counteragent_docs %}
                                             <tr>
-                                                <td>{{ item.date_of_creation }}</td>
-                                                <td>{{ item.description }}</td>
-                                                <td>{{ item.document.size | format_bytes }}</td>
-                                                <td><a href="{{ item.document.url }}"
-                                                       target="_blank">{{ item.document | filename }}</a></td>
+                                                <td>{{ item.date_of_creation|date:"d.m.Y" }}</td>
+                                                <td>{{ item.description|default:"—" }}</td>
+                                                <td>{{ item.document.size|format_bytes }}</td>
+                                                <td>
+                                                    <a href="{{ item.document.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-download me-1"></i>{{ item.document|filename }}
+                                                    </a>
+                                                </td>
                                             </tr>
                                         {% endfor %}
-
-                                        </tbody>
-                                    </table>
-                                </div>
+                                    </tbody>
+                                </table>
                             </div>
-                        </section>
-                    {% endif %}
-                    <section class="toggle">
-                        <label>Заметки к договору</label>
-                        <div class="toggle-content">
-                            {% for item in posts %}
-                                <div class="ecommerce-timeline mb-3">
-                                    <div class="ecommerce-timeline-items-wrapper">
-                                        <div class="ecommerce-timeline-item">
-                                            <small>Добавлено: {{ item.creation_date }}.
-                                                Автор: {{ item.responsible_person }}
-                                            </small>
-                                            <p>{% autoescape off %}
-                                                {{ item.post_description }}
-                                            {% endautoescape %}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                            <form action="{% url 'contracts_app:post_add' object.pk %}" method="post">
-                                {% csrf_token %}
-                                <input name="contract_number" value="{{ object.pk }}" hidden>
-                                <input name="responsible_person" value="{{ user.pk }}" hidden>
-                                <div class="form-row">
-                                    <div class="form-group col pb-1 mb-3">
-                                        <h4>Добавление заметки</h4>
-                                        <textarea class="form-control form-control-modern" name="post_description"
-                                                  rows="6"></textarea>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group col">
-                                        <input type="submit"
-                                               class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
-                                               value="Добавить"/>
-                                        {#                                        ToDo: Решить вопрос с удалением записи.#}
-                                        {#                                        <a class="btn btn-warning btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"#}
-                                        {#                                           href="{% url 'contracts_app:post_list' pk=object.pk %}?cn={{ object.pk }}">Удалить записи</a>#}
-                                    </div>
-                                </div>
-                            </form>
                         </div>
                     </section>
-                    <section class="toggle active">
-                        <label>Основное </label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-sm-12 text-black-50">
-                                            <label for="contract_counteragent">Контрагент</label>
-                                            <a href="#" data-bs-toggle="popover"
-                                               title="{{ object.contract_counteragent }}"
-                                               data-bs-content="ИНН: {{ object.contract_counteragent.inn }}<br>КПП: {{ object.contract_counteragent.kpp }}<br>ОГРН: {{ object.contract_counteragent.ogrn }}<br>{{ object.contract_counteragent.get_type_counteragent_display }}<hr>Адрес: {{ object.contract_counteragent.physical_address }}<br>"
-                                               data-bs-trigger="focus" data-bs-html="true">
-                                                <input type="text" class="form-control form-control-modern"
-                                                       name="contract_counteragent" disabled
-                                                       value="{{ object.contract_counteragent }}"
-                                                       id="contract_counteragent"/>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-lg-2 col-md-2 date">
-                                            <label for="date_conclusion">Дата заключения</label>
-                                            <input type="date" class="form-control form-control-modern"
-                                                   name="date_conclusion"
-                                                   value="{{ object.date_conclusion | date:"c" }}" disabled
-                                                   id="date_conclusion"/>
-                                        </div>
-                                        <div class="col-lg-2 col-md-2 text">
-                                            <label for="contract_number">Номер договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="contract_number" disabled
-                                                   value="{{ object.contract_number }}"
-                                                   id="contract_number"/>
-                                        </div>
-                                        <div class="col-md-2 text-black-50">
-                                            <label for="cost">Стоимость</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="cost" disabled
-                                                   value="{{ object.cost }}"
-                                                   id="cost"/>
-                                        </div>
-                                        <div class="col-md-2 text-black-50">
-                                            <label for="prolongation">Пролонгация</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="prolongation" disabled
-                                                   value="{{ object.get_prolongation_display }}"
-                                                   id="prolongation"/>
-                                        </div>
-                                        <div class="col-lg-2 col-md-2 date">
-                                            <label for="closing_date">Дата закрытия договора</label>
-                                            <input type="date" class="form-control form-control-modern"
-                                                   name="closing_date"
-                                                   value="{{ object.closing_date | date:"c" }}" disabled
-                                                   id="closing_date"/>
-                                        </div>
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="id_type_of_document">Тип документа:</label>
-                                            <input name="type_of_document" type="text"
-                                                   class="form-control form-control-modern" disabled
-                                                   value="{{ contract.type_of_document }}" id="id_type_of_document"/>
-                                        </div>
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="type_of_contract">Тип договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="type_of_contract" disabled
-                                                   value="{{ object.type_of_contract }}" id="type_of_contract"/>
-                                        </div>
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="type_property">Тип имущества</label>
-                                            <select class="form-control form-control-modern" id="type_property"
-                                                    name="type_property" disabled
-                                                    data-plugin-selectTwo multiple>
-                                                {% if object.type_property %}
-                                                    {% for item in object.type_property.values %}
-                                                        <option value="{{ item.pk }}"
-                                                                selected>{{ item.type_property }}</option>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <option value="1" selected>Отсутствуют</option>
-                                                {% endif %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 text-black-50">
-                                            <label for="date_entry">Дата ввода информации</label>
-                                            <input type="date" class="form-control form-control-modern"
-                                                   name="date_entry"
-                                                   value="{{ object.date_entry | date:"c" }}" id="date_entry" disabled/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-12 text-black-50">
-                                            <label for="subject_contract">Предмет договора</label>
-                                            <textarea class="form-control form-control-modern" name="subject_contract"
-                                                      rows="4" disabled
-                                                      id="subject_contract">{{ object.subject_contract }}</textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-12 text-black-50">
-                                            <label for="id_comment">Примечание:</label>
-                                            <textarea class="form-control form-control-modern" name="comment" rows="4"
-                                                      id="id_comment" disabled>{{ object.comment }}</textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <code>{{ object.access }}</code>
+                {% endif %}
 
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-sm-12 text-black-50">
-                                            <label for="divisions">Подразделение</label>
-                                            <select class="form-control form-control-modern" id="divisions"
-                                                    name="divisions" disabled
-                                                    data-plugin-selectTwo multiple>
-                                                {% if object.divisions %}
-                                                    {% for item in object.divisions.values %}
-                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <option value="1" selected>Отсутствуют</option>
-                                                {% endif %}
-                                            </select>
-                                        </div>
+                <!-- Вкладка: Заметки к договору -->
+                <section class="toggle">
+                    <label><i class="fas fa-sticky-note text-warning me-2"></i>Заметки к договору ({{ posts|length }})</label>
+                    <div class="toggle-content">
+                        {% for item in posts %}
+                            <div class="ecommerce-timeline mb-3">
+                                <div class="ecommerce-timeline-item">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge bg-light text-dark border">
+                                            <i class="fas fa-user me-1"></i>{{ item.responsible_person }}
+                                        </span>
+                                        <small class="text-muted">{{ item.creation_date|date:"d.m.Y" }}</small>
                                     </div>
+                                    <p class="mb-0 text-dark">
+                                        {% autoescape off %}
+                                            {{ item.post_description }}
+                                        {% endautoescape %}
+                                    </p>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted fst-italic">К данному договору пока нет заметок.</p>
+                        {% endfor %}
+
+                        <hr class="my-4">
+                        <form action="{% url 'contracts_app:post_add' object.pk %}" method="post" class="mt-3">
+                            {% csrf_token %}
+                            <input name="contract_number" value="{{ object.pk }}" type="hidden">
+                            <input name="responsible_person" value="{{ user.pk }}" type="hidden">
+                            <div class="mb-3">
+                                <label for="post_description" class="form-label font-weight-semibold">Новая заметка:</label>
+                                <textarea class="form-control" name="post_description" id="post_description" rows="3" placeholder="Введите текст заметки..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-touch" aria-label="Добавить заметку" title="Добавить заметку">
+                                <i class="fas fa-plus me-1"></i>
+                                <span>Добавить заметку</span>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Вкладка: Основные реквизиты -->
+                <section class="toggle active">
+                    <label><i class="fas fa-info-circle text-primary me-2"></i>Основные реквизиты</label>
+                    <div class="toggle-content">
+                        <div class="row g-3">
+                            <!-- Контрагент -->
+                            <div class="col-12">
+                                <label for="contract_counteragent" class="contract-info-label">Контрагент:</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-light" id="contract_counteragent" value="{{ object.contract_counteragent }}" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-html="true"
+                                            title="{{ object.contract_counteragent }}"
+                                            data-bs-content="<strong>ИНН:</strong> {{ object.contract_counteragent.inn|default:'—' }}<br><strong>КПП:</strong> {{ object.contract_counteragent.kpp|default:'—' }}<br><strong>ОГРН:</strong> {{ object.contract_counteragent.ogrn|default:'—' }}<hr class='my-1'><strong>Адрес:</strong> {{ object.contract_counteragent.physical_address|default:'—' }}">
+                                        <i class="fas fa-info-circle"></i> Реквизиты
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-sm-12 text-black-50">
-                                            <label>Ответственные лица</label>
-                                            <select class="form-control form-control-modern" name="employee" disabled
-                                                    data-plugin-selectTwo multiple>
-                                                {% for item in object.employee.iterator %}
-                                                    <option value="{{ item.pk }}" selected
-                                                            title="{{ item }}: {{ item.user_work_profile.job }}">{{ item | FIO_format }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
+                            <!-- Дата заключения, Номер, Стоимость, Пролонгация, Дата закрытия -->
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <label class="contract-info-label">Дата заключения:</label>
+                                <input type="text" class="form-control bg-light" value="{{ object.date_conclusion|date:'d.m.Y'|default:'—' }}" readonly>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <label class="contract-info-label">Номер договора:</label>
+                                <input type="text" class="form-control bg-light fw-bold" value="{{ object.contract_number|default:'(без номера)' }}" readonly>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <label class="contract-info-label">Стоимость:</label>
+                                <input type="text" class="form-control bg-light" value="{{ object.cost|default:'—' }}" readonly>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <label class="contract-info-label">Пролонгация:</label>
+                                <input type="text" class="form-control bg-light" value="{{ object.get_prolongation_display|default:'—' }}" readonly>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <label class="contract-info-label">Дата закрытия:</label>
+                                <input type="text" class="form-control bg-light" value="{{ object.closing_date|date:'d.m.Y'|default:'—' }}" readonly>
+                            </div>
+
+                            <!-- Тип документа, Тип договора, Типы имущества, Дата ввода -->
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label class="contract-info-label">Тип документа:</label>
+                                <input type="text" class="form-control bg-light" value="{{ object.type_of_document|default:'—' }}" readonly>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label class="contract-info-label">Тип договора:</label>
+                                <input type="text" class="form-control bg-light" value="{{ object.type_of_contract|default:'—' }}" readonly>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <label class="contract-info-label">Тип имущества:</label>
+                                <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                    {% for item in object.type_property.all %}
+                                        <span class="badge bg-secondary me-1">{{ item.type_property }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">Не указано</span>
+                                    {% endfor %}
                                 </div>
                             </div>
+                            <div class="col-12 col-md-6 col-lg-2">
+                                <label class="contract-info-label">Дата ввода в базу:</label>
+                                <input type="text" class="form-control bg-light" value="{{ object.date_entry|date:'d.m.Y'|default:'—' }}" readonly>
+                            </div>
+
+                            <!-- Предмет договора -->
+                            <div class="col-12">
+                                <label class="contract-info-label">Предмет договора:</label>
+                                <textarea class="form-control bg-light" rows="3" readonly>{{ object.subject_contract|default:'—' }}</textarea>
+                            </div>
+
+                            <!-- Примечание -->
+                            <div class="col-12">
+                                <label class="contract-info-label">Примечание:</label>
+                                <textarea class="form-control bg-light" rows="2" readonly>{{ object.comment|default:'—' }}</textarea>
+                            </div>
+
+                            <!-- Подразделения -->
+                            <div class="col-12 col-md-6">
+                                <label class="contract-info-label">Подразделения:</label>
+                                <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                    {% for item in object.divisions.all %}
+                                        <span class="badge bg-primary me-1 mb-1">{{ item.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">Не указано</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Ответственные лица -->
+                            <div class="col-12 col-md-6">
+                                <label class="contract-info-label">Ответственные лица:</label>
+                                <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                    {% for item in object.employee.all %}
+                                        <span class="badge bg-dark me-1 mb-1" title="{{ item.user_work_profile.job }}">
+                                            {{ item|FIO_format }}
+                                        </span>
+                                    {% empty %}
+                                        <span class="text-muted">Не назначены</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Служебная информация (для суперпользователя) -->
                             {% if request.user.is_superuser %}
-                                <div class="form-row">
-                                    <div class="form-group col mb-3">
-                                        <div class="row">
-                                            <div class="col-md-3 text-black-50">
-                                                <label for="official_information">Служебная информация</label>
-                                                <input type="text" class="form-control form-control-modern"
-                                                       name="official_information" disabled
-                                                       value="{{ object.official_information }}"
-                                                       id="official_information"/>
-                                            </div>
-                                            <div class="col-md-3 text-black-50">
-                                                <label for="id_executor">Исполнитель</label>
-                                                <input type="text" class="form-control form-control-modern"
-                                                       name="executor" disabled
-                                                       value="{{ object.executor }}"
-                                                       id="id_executor"/>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="contract-info-label">Служебная информация (файл):</label>
+                                    <input type="text" class="form-control bg-light" value="{{ object.official_information|default:'—' }}" readonly>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="contract-info-label">Исполнитель:</label>
+                                    <input type="text" class="form-control bg-light" value="{{ object.executor|default:'—' }}" readonly>
                                 </div>
                             {% endif %}
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                {% if not_parent %}
-                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                        <a href="{% url 'contracts_app:create' %}?parent={{ object.pk }}"
-                           class="btn btn-outline-info btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class='bx bx-file-blank text-4 me-2'></i> Добавить документ</a>
                     </div>
-                {% endif %}
-                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                    <a href="{% url 'contracts_app:update' object.pk %}"
-                       class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-edit text-4 me-2"></i> Изменить документ</a>
-                </div>
-                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                    <a href="#" onclick="printPDF()"
-                       class="btn btn-outline-secondary btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-printer text-4 me-2'></i> Распечатать</a>
-                    {% if object.doc_file %}
-                        <iframe id="pdfFrame" src="{{ object.doc_file.url }}"
-                                hidden="hidden"></iframe>
-                        <script>
-                            function printPDF() {
-                                var iframe = document.getElementById('pdfFrame');
-                                if (iframe.contentWindow) {
-                                    iframe.contentWindow.print();
-                                } else {
-                                    console.error("PDF is not loaded yet.");
-                                }
-                            }
-
-                            // Проверка загрузки PDF
-                            var iframe = document.getElementById('pdfFrame');
-                            iframe.onload = function () {
-                                console.log("PDF loaded successfully.");
-                            };
-                        </script>
-                    {% endif %}
-                </div>
-                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                    <a href="{% url 'contracts_app:index' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть документ</a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                        <a href="{% url 'contracts_app:index-admin' %}"
-                           class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть документ - admin</a>
-                    </div>
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'contracts_app:delete' object.pk %}"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить договор
-                        </a>
-                    </div>
-                {% endif %}
+                </section>
             </div>
         </div>
-        <!-- end: page -->
+    </div>
+
+    <!-- Нижняя панель действий -->
+    <div class="action-bar-responsive">
+        {% if not_parent %}
+            <a href="{% url 'contracts_app:create' %}?parent={{ object.pk }}" class="btn btn-outline-info btn-touch" aria-label="Добавить документ" title="Добавить документ">
+                <i class="bx bx-file-blank"></i>
+                <span class="d-none d-md-inline ms-1">Добавить документ</span>
+            </a>
+        {% endif %}
+
+        <a href="{% url 'contracts_app:update' object.pk %}" class="btn btn-outline-success btn-touch" aria-label="Изменить документ" title="Изменить документ">
+            <i class="bx bx-edit"></i>
+            <span class="d-none d-md-inline ms-1">Изменить</span>
+        </a>
+
+        {% if object.doc_file %}
+            <button type="button" onclick="printPDF()" class="btn btn-outline-secondary btn-touch" aria-label="Распечатать PDF" title="Распечатать">
+                <i class="bx bx-printer"></i>
+                <span class="d-none d-md-inline ms-1">Распечатать</span>
+            </button>
+            <iframe id="pdfFrame" src="{{ object.doc_file.url }}" style="display:none;" title="Печать PDF"></iframe>
+        {% endif %}
+
+        <a href="{% url 'contracts_app:index' %}" class="btn btn-outline-dark btn-touch" aria-label="Закрыть документ" title="Закрыть">
+            <i class="bx bx-log-out-circle"></i>
+            <span class="d-none d-md-inline ms-1">В реестр</span>
+        </a>
+
+        {% if user.is_superuser %}
+            <a href="{% url 'contracts_app:index-admin' %}" class="btn btn-outline-secondary btn-touch" aria-label="Реестр администратора" title="Реестр администратора">
+                <i class="bx bx-shield"></i>
+                <span class="d-none d-md-inline ms-1">Реестр админа</span>
+            </a>
+            <a href="{% url 'contracts_app:delete' object.pk %}" class="btn btn-outline-danger btn-touch ms-auto" aria-label="Удалить договор" title="Удалить">
+                <i class="bx bx-trash"></i>
+                <span class="d-none d-md-inline ms-1">Удалить</span>
+            </a>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/pdf/js/viewer.js' %}"></script>
     <script>
-        get_filename = function () {
+        'use strict';
+
+        window.get_filename = function () {
             {% if object.doc_file %}
                 return "{{ object.doc_file.url }}";
             {% else %}
                 return "";
             {% endif %}
-        }
+        };
+
+        window.printPDF = function () {
+            const iframe = document.getElementById('pdfFrame');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } else {
+                window.print();
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+        });
     </script>
 {% endblock %}
