@@ -3,82 +3,138 @@
 {% load custom %}
 {% load widget_tweaks %}
 
-{% block custom_css %}
-
-{% endblock %}
-
-{% block custom_script %}
-
-{% endblock %}
-
 {% block title %}
-    {{ title }}
+    {% if object %}Редактирование события: {{ object.title }}{% else %}Создание нового события компании{% endif %} // Библиотека
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.media }}
-        <div class="col-lg-12">
-            <div class="form-row">
-                <div class="form-group col mb-3">
-                    <h1>{% if object %}Редактирование события{% else %}Создание нового события{% endif %}</h1>
-                    <label for="id_title">Название события</label>
-                    {{ form.title }}
-                    <label for="id_event_date">Дата проведения</label>
-                    {{ form.event_date }}
-                    <div class="col-lg-12 ck-content">
-                        {% autoescape on %}
-                            <label for="id_decoding">Расшифровка события</label>
-                            {{ form.decoding | safe }}
-                        {% endautoescape %}
-                    </div>
-                    <div class="col-lg-12 ck-content">
-                        {% autoescape on %}
-                            <label for="id_results">Итоги</label>
-                            {{ form.results | safe }}
-                        {% endautoescape %}
-                    </div>
-                    <label for="id_event_report">Отчет</label>
-                    {{ form.event_report }}
-                    <label for="id_event_media">Аудио</label>
-                    {{ form.event_media }}
-                    <label for="id_event_video">Ссылка на видео</label>
-                    {{ form.event_video }}
-                    <label for="id_participants">Участники</label>
-                    {{ form.participants }}
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-calendar-edit text-primary me-2"></i>{% if object %}Редактирование события{% else %}Создание нового события{% endif %}
+                    </h3>
+                    <p class="text-muted small mb-0">Заполните протокол, прикрепите медиафайлы и выберите участников</p>
                 </div>
-            </div>
-        </div>
-        <div class="row action-buttons">
-
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> {% if object %}Сохранить{% else %}Создать{% endif %}
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'library_app:event_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser and object %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'library_app:event_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                <div>
+                    <a href="{% url 'library_app:event_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку событий
                     </a>
                 </div>
-            {% endif %}
-        </div>
-    </form>
-    <!-- end: page -->
-    <!-- end: page -->
+            </div>
 
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-info-circle text-primary me-2"></i>Параметры события
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" class="ecommerce-form">
+                        {% csrf_token %}
+                        {{ form.media }}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <strong>Ошибка сохранения:</strong> Пожалуйста, исправьте ошибки в форме.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label font-weight-bold text-dark" for="id_title">
+                                    Название события <span class="text-danger">*</span>
+                                </label>
+                                {{ form.title|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_event_date">
+                                    Дата проведения <span class="text-danger">*</span>
+                                </label>
+                                {{ form.event_date|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_decoding">
+                                    Расшифровка события (протокол)
+                                </label>
+                                <div class="ck-content">
+                                    {{ form.decoding }}
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_results">
+                                    Итоги и принятые решения
+                                </label>
+                                <div class="ck-content">
+                                    {{ form.results }}
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_event_report">
+                                    Файл отчета (PDF/DOCX)
+                                </label>
+                                {{ form.event_report }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_event_media">
+                                    Аудиозапись (MP3/WAV)
+                                </label>
+                                {{ form.event_media }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_event_video">
+                                    Ссылка на видеозапись
+                                </label>
+                                {{ form.event_video|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_participants">
+                                    Участники встречи
+                                </label>
+                                {{ form.participants|add_class:"form-control form-control-modern" }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'library_app:event_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <i class="bx bx-save me-1"></i> {% if object %}Сохранить изменения{% else %}Создать событие{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}

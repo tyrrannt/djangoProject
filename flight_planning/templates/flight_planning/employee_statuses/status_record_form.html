@@ -3,6 +3,10 @@
 {% load custom %}
 {% load planning_extras %}
 
+{% block title %}
+    {{ title|default:"Запись состояния сотрудника // Планирование полетов" }}
+{% endblock %}
+
 {% block custom_css %}
     <style>
         .form-card {

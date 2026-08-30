@@ -1,33 +1,65 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% load widget_tweaks %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Аудиоконференция" }} // Библиотека
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-    <div class="container py-4">
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-headphone text-primary me-2"></i>{{ title|default:"Аудиоконференция" }}
+                    </h5>
+                    <span class="badge bg-primary">Комната: {{ room_name|default:"Основная" }}</span>
+                </header>
+                <div class="card-body p-4 text-center">
+                    <div class="my-4">
+                        <i class="bx bx-microphone text-primary" style="font-size: 4.5rem;"></i>
+                    </div>
+                    
+                    <div class="btn-group mb-4" role="group" aria-label="Audio controls">
+                        <button type="button" id="muteButton" class="btn btn-warning btn-touch">
+                            <i class="bx bx-microphone-off me-1"></i> Отключить микрофон
+                        </button>
+                        <button type="button" id="unmuteButton" class="btn btn-success btn-touch">
+                            <i class="bx bx-microphone me-1"></i> Включить микрофон
+                        </button>
+                    </div>
 
-        <h2 class="mb-4">{{ title }}</h2>
-
-        <div class="btn-group mb-3" role="group" aria-label="Audio controls">
-            <button type="button" id="muteButton" class="btn btn-warning">🔇 Mute</button>
-            <button type="button" id="unmuteButton" class="btn btn-success">🔊 Unmute</button>
+                    <div id="status" class="alert alert-info d-none"></div>
+                </div>
+            </div>
         </div>
-
-        <div id="status" class="alert alert-info d-none"></div>
-
-        <!-- Передаём room и user_id в JS -->
-        <script>
-            const ROOM_ID = "{{ room_name|escapejs }}";
-            const USER_ID = "{{ user_uuid|default_if_none:'null'|escapejs }}";
-        </script>
-
-        <!-- Подключаем Mediasoup и кастомный скрипт -->
-        <script src="https://cdn.jsdelivr.net/npm/mediasoup-client@3.6.31/lib/index.min.js"></script>
-        <script src="{% static 'your_app_name/js/audio_conference.js' %}"></script>
-
     </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        const ROOM_ID = "{{ room_name|escapejs }}";
+        const USER_ID = "{{ user_uuid|default_if_none:'null'|escapejs }}";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mediasoup-client@3.6.31/lib/index.min.js"></script>
+    <script src="{% static 'admin_templates/vendor/simplewebrtc/audio_conference.js' %}"></script>
 {% endblock %}

@@ -1,34 +1,62 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% load widget_tweaks %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title|default:"Видеоконференция" }} // Библиотека
+{% endblock %}
 
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+    #videos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: center;
+    }
+    video {
+        width: 100%;
+        max-width: 420px;
+        height: auto;
+        border-radius: 10px;
+        border: 2px solid #e2e8f0;
+        background: #0f172a;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-    <style>
-        .text-big {
-            font-size: 16px;
-        }
-    </style>
-    <style>
-        #videos {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        video {
-            width: 300px;
-            height: 200px;
-            margin: 10px;
-        }
-    </style>
-
     <!-- start: page -->
-    <div id="videos"></div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-video text-primary me-2"></i>{{ title|default:"Видеоконференция" }}
+                    </h5>
+                    <span class="badge bg-primary">Комната: {{ room_name|default:"Основная" }}</span>
+                </header>
+                <div class="card-body p-4">
+                    <div id="videos"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_script %}
     <script>
         const ROOM_ID = "{{ room_name }}";
         const USER_ID = Math.random().toString(36).substring(2, 15);
@@ -36,7 +64,4 @@
     <script src="{% static 'admin_templates/vendor/simplewebrtc/socket.io.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/simplewebrtc/simplepeer.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/simplewebrtc/video_conference.js' %}"></script>
-    <!-- end: page -->
-    <!-- end: page -->
-
 {% endblock %}

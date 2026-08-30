@@ -3,25 +3,219 @@
 {% load custom %}
 {% load widget_tweaks %}
 
+{% block title %}
+    {{ object.title }} // События компании
+{% endblock %}
+
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="
-            {% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-calendar-event text-primary me-2"></i>{{ object.title }}
+                    </h3>
+                    <p class="text-muted small mb-0">Дата проведения: <strong class="text-dark">{{ object.event_date|date:"d.m.Y"|default:"Не указана" }}</strong></p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if user.is_superuser %}
+                        <a href="{% url 'library_app:event_update' object.pk %}" class="btn btn-primary btn-touch">
+                            <i class="bx bx-pencil me-1"></i> Редактировать
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'library_app:event_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку событий
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Info Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-info-circle text-primary me-2"></i>Материалы и итоги события
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    {% if user.is_superuser and object.decoding %}
+                        <div class="mb-4 pb-3 border-bottom">
+                            <h6 class="font-weight-bold text-dark mb-2"><i class="bx bx-text text-primary me-1"></i>Расшифровка события:</h6>
+                            <div class="p-3 bg-light rounded text-dark fs-6 ck-content">
+                                {{ object.decoding|safe }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if object.results %}
+                        <div class="mb-4 pb-3 border-bottom">
+                            <h6 class="font-weight-bold text-dark mb-2"><i class="bx bx-check-shield text-success me-1"></i>Итоги и решения:</h6>
+                            <div class="p-3 bg-light rounded text-dark fs-6 ck-content">
+                                {{ object.results|safe }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Медиа файлы -->
+                    {% if object.event_report or object.event_video or object.event_media %}
+                        <div class="mb-4 pb-3 border-bottom">
+                            <h6 class="font-weight-bold text-dark mb-3"><i class="bx bx-film text-primary me-1"></i>Медиаматериалы:</h6>
+                            <div class="row g-3">
+                                {% if object.event_report %}
+                                    <div class="col-12 col-md-4">
+                                        <div class="p-3 border rounded bg-light d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <strong class="d-block text-dark">Отчет по встрече</strong>
+                                                <small class="text-muted">Документ отчета</small>
+                                            </div>
+                                            <a href="{{ object.event_report.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-sm btn-primary btn-touch">
+                                                <i class="bx bx-download"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                {% if object.event_video %}
+                                    <div class="col-12 col-md-4">
+                                        <div class="p-3 border rounded bg-light d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <strong class="d-block text-dark">Видеозапись</strong>
+                                                <small class="text-muted">Просмотр онлайн</small>
+                                            </div>
+                                            <a href="{{ object.event_video }}" target="_blank" class="btn btn-sm btn-danger btn-touch">
+                                                <i class="bx bx-play"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                {% if object.event_media %}
+                                    <div class="col-12 col-md-4">
+                                        <div class="p-3 border rounded bg-light">
+                                            <strong class="d-block text-dark mb-2">Аудиозапись встречи:</strong>
+                                            <audio controls class="w-100" controlsList="nodownload">
+                                                <source src="{{ object.event_media.url }}?v={{ object.updated_at.timestamp }}" type="audio/mpeg">
+                                                Ваш браузер не поддерживает аудио.
+                                            </audio>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Участники -->
+                    {% if object.participants.all %}
+                        <div class="mb-4 pb-3 border-bottom">
+                            <h6 class="font-weight-bold text-dark mb-3"><i class="bx bx-group text-primary me-1"></i>Участники события ({{ object.participants.count }}):</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover table-bordered align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 50px;" class="text-center">№</th>
+                                            <th>ФИО участника</th>
+                                            <th>Должность</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in object.participants.all %}
+                                            <tr>
+                                                <td class="text-center">{{ forloop.counter }}</td>
+                                                <td><strong class="text-dark">{{ item.title }}</strong></td>
+                                                <td class="text-muted">{{ item.user_work_profile.job.get_title|default:"—" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Лист ознакомления -->
+                    <div>
+                        <h6 class="font-weight-bold text-dark mb-3"><i class="bx bx-check-double text-success me-1"></i>Лист ознакомления сотрудников:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;" class="text-center">№</th>
+                                        <th>ФИО сотрудника</th>
+                                        <th>Должность</th>
+                                        <th class="text-center">Дата ознакомления</th>
+                                        <th class="text-center">Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in list_agree %}
+                                        <tr>
+                                            <td class="text-center">{{ forloop.counter }}</td>
+                                            <td><strong class="text-dark">{{ item.user.title }}</strong></td>
+                                            <td class="text-muted">{{ item.user.user_work_profile.job.get_title|default:"—" }}</td>
+                                            <td class="text-center font-monospace">{{ item.acknowledgment_date|date:"d.m.Y H:i" }}</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success"><i class="bx bx-check me-1"></i>Ознакомлен</span>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-3">Пока нет записей об ознакомлении.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer / Action Bar -->
+                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <form id="acknowledgment-form" class="m-0 d-flex align-items-center gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="acknowledgment-checkbox" 
+                                   data-object-id="{{ object.id }}" {% if agree %}checked{% endif %}>
+                            <label class="form-check-label font-weight-bold text-dark ms-2" for="acknowledgment-checkbox">
+                                Я ознакомился(-ась) с материалами
+                            </label>
+                        </div>
+                    </form>
+
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'library_app:event_list' %}" class="btn btn-secondary btn-touch">
+                            <i class="bx bx-arrow-back me-1"></i> Назад
+                        </a>
+                        {% if user.is_superuser %}
+                            <a href="{% url 'library_app:event_delete' object.pk %}" class="btn btn-outline-danger btn-touch">
+                                <i class="bx bx-trash me-1"></i> Удалить
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}
-            "></script>
-
     <script>
         $(document).ready(function () {
             $('#acknowledgment-checkbox').change(function () {
@@ -43,198 +237,22 @@
                     data: data,
                     success: function (response) {
                         if (response.success) {
-                            showNotification(url);
+                            if (typeof PNotify !== 'undefined') {
+                                new PNotify({
+                                    title: url.includes('acknowledge') ? 'Успешно!' : 'Внимание!',
+                                    text: url.includes('acknowledge') ? 'Вы подтвердили ознакомление.' : 'Ознакомление отменено.',
+                                    type: url.includes('acknowledge') ? 'success' : 'notice'
+                                });
+                            }
                         } else {
-                            alert('Error: ' + response.error);
+                            alert('Ошибка: ' + response.error);
                         }
                     },
                     error: function () {
-                        alert('An error occurred while processing your request.');
+                        alert('Произошла ошибка при обработке запроса.');
                     }
                 });
             });
-
-            function showNotification(url) {
-                var stack_bar_top = {
-                    "dir1": "down",
-                    "dir2": "right",
-                    "push": "top",
-                    "spacing1": 0,
-                    "spacing2": 0
-                };
-
-                var notificationOptions = {
-                    addclass: 'stack-bar-top',
-                    stack: stack_bar_top,
-                    width: "100%"
-                };
-
-                if (url.includes('acknowledge')) {
-                    notificationOptions.title = 'Поздравляем!';
-                    notificationOptions.text = 'Вы успешно подтвердили документ.';
-                    notificationOptions.type = 'success';
-                }
-                if (url.includes('unacknowledge')) {
-                    notificationOptions.title = 'Внимание!';
-                    notificationOptions.text = 'Вы отменили подтверждение документа.';
-                    notificationOptions.type = 'alert';
-                }
-
-                new PNotify(notificationOptions);
-            }
         });
     </script>
-{% endblock %}
-
-{% block title %}
-    {{ title }}
-{% endblock %}
-
-{% block content %}
-    <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data"
-          id="acknowledgment-form">
-        {% csrf_token %}
-        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-        <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-            <div class="row">
-                <h3>{{ event.title }} от {{ event.event_date }}</h3>
-            </div>
-            {% if user.is_superuser %}
-                <section class="toggle">
-                    <label>Расшифровка</label>
-                    <div class="toggle-content">
-                        <div class="col-lg-12 ck-content text-4">
-                            {% autoescape off %}
-                                {{ event.decoding }}
-                            {% endautoescape %}
-                        </div>
-                    </div>
-                </section>
-            {% endif %}
-            <section class="toggle">
-                <label>Итоги</label>
-                <div class="toggle-content">
-                    <div class="col-lg-12 ck-content text-4">
-                        {% autoescape off %}
-                            {{ event.results }}
-                        {% endautoescape %}
-                    </div>
-                </div>
-            </section>
-            <section class="toggle">
-                <label>Отчёт. Видео. Аудио.</label>
-                <div class="toggle-content">
-                    {% if event.event_report %}
-                        <p>Отчёт по встрече: <a href="{{ event.event_report.url }}?v={{ object.updated_at.timestamp }}">Скачать</a>
-                        </p>
-                    {% endif %}
-                    {% if event.event_video %}
-                        <p>Видео-файл: <a href="{{ event.event_video }}" target="_blank">Посмотреть</a></p>
-                    {% endif %}
-                    {% if event.event_media %}
-                        <p>Аудио-файл:</p>
-                        <audio controls="controls" crossorigin="anonymous" style="width:100%;"
-                               controlsList="nodownload">
-                            <source src="{{ event.event_media.url }}?v={{ object.updated_at.timestamp }}"
-                                    type="audio/mpeg">
-                        </audio>
-                    {% endif %}
-                </div>
-            </section>
-            <section class="toggle">
-                <label>Участники</label>
-                <div class="toggle-content">
-                    <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
-                        <thead>
-                        <tr>
-                            <th>№</th>
-                            <th>ФИО</th>
-                            <th>Должность</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for item in event.participants.all %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>{{ item.title }}</td>
-                                <td>{{ item.user_work_profile.job.get_title }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-            <section class="toggle">
-                <label>Лист ознакомления</label>
-                <div class="toggle-content">
-                    <div class="form-row">
-                        <section class="card">
-                            <header class="card-header">
-                                <div class="card-actions">
-                                    <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                </div>
-                                <h2 class="card-title">Список сотрудников</h2>
-                            </header>
-                            <div class="card-body">
-                                <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
-                                    <thead>
-                                    <tr>
-                                        <th>№</th>
-                                        <th>ФИО</th>
-                                        <th>Должность</th>
-                                        <th class="text-end">Дата и время ознакомления</th>
-                                        <th class="text-end">Ознакомлен</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for item in list_agree %}
-                                        <tr>
-                                            <td>{{ forloop.counter }}</td>
-                                            <td>{{ item.user.title }}</td>
-                                            <td>{{ item.user.user_work_profile.job.get_title }}</td>
-                                            <td class="text-end">{{ item.acknowledgment_date }}</td>
-                                            <td class="text-end">Ознакомлен</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </section>
-                    </div>
-                </div>
-            </section>
-        </div>
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto">
-                <a href="{% url 'library_app:event_update' object.pk %}"
-                   class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'library_app:event_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
-            </div>
-            <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                <div class="switch switch-lg switch-success">
-                    <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
-                           data-plugin-ios-switch {% if agree %}checked{% endif %}>
-                </div>
-                <label for="acknowledgment-checkbox">Я ознакомился</label>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'library_app:event_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                </div>
-            {% endif %}
-        </div>
-    </form>
-    <!-- end: page -->
-    <!-- end: page -->
 {% endblock %}

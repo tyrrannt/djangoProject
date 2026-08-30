@@ -1,109 +1,142 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="
-            {% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}
-            "></script>
-{% endblock %}
 
 {% block title %}
-    {{ title }}
+    {{ object.title }} // Бланки документов
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+    .file-download-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 16px 20px;
+        transition: all 0.2s ease;
+    }
+    .file-download-box:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxs-buildings"></i>
-                                    <h4 class="card-big-info-desc">Наименование документа:</h4>
-                                    <p class="card-big-info-desc">{{ object.title }}</p>
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-row">
-                                        <div class="form-group col mb-3">
-                                            <div class="row text">
-                                                {% if object.draft_visible %}
-                                                    <div class="col-sm-12 text-black-50 mt-2 pb-4">
-                                                        <label for="id_draft">Файл бланка: </label>
-                                                        {% if object.draft %}
-                                                            <span id="id_draft"><a href="{{ object.draft.url }}?v={{ object.updated_at.timestamp }}"
-                                                                                   target="_blank"><img
-                                                                    src="{% static 'Extension/docx.png' %}"></a></span>
-                                                        {% endif %}
-                                                    </div>
-                                                {% endif %}
-                                                {% if object.scan %}
-                                                    <hr>
-                                                    <div class="col-sm-12 text-black-50 mt-2 pb-4">
-                                                        <label for="id_scan">Скан бланка: </label>
-                                                        <span id="id_scan"><a
-                                                                href="{{ object.scan.url }}?v={{ object.updated_at.timestamp }}" target="_blank"><img
-                                                                src="{% static 'Extension/pdf.png' %}"></a></span>
-                                                    </div>
-                                                {% endif %}
-                                                {% if object.sample %}
-                                                    <hr>
-                                                    <div class="col-sm-12 text-black-50 mt-2 pb-4">
-                                                        <label for="id_scan">Образец заполнения: </label>
-                                                        <span id="id_scan"><a
-                                                                href="{{ object.sample.url }}?v={{ object.updated_at.timestamp }}" target="_blank"><img
-                                                                src="{% static 'Extension/pdf.png' %}"></a></span>
-                                                    </div>
-                                                {% endif %}
-                                            </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-file-blank text-primary me-2"></i>{{ object.title }}
+                    </h3>
+                    <p class="text-muted small mb-0">Карточка бланка документа организации</p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if user.is_superuser or object.executor == user %}
+                        <a href="{% url 'library_app:blank_update' object.pk %}" class="btn btn-primary btn-touch">
+                            <i class="bx bx-pencil me-1"></i> Редактировать
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'library_app:blank_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку бланков
+                    </a>
+                </div>
+            </div>
+
+            <!-- Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-download text-primary me-2"></i>Файлы для скачивания
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        {% if object.draft_visible and object.draft %}
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="file-download-box d-flex align-items-center justify-content-between h-100">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <i class="bx bxs-file-doc text-primary" style="font-size: 2.5rem;"></i>
+                                        <div>
+                                            <strong class="d-block text-dark">Шаблон (DOCX)</strong>
+                                            <small class="text-muted">Файл для заполнения</small>
                                         </div>
                                     </div>
+                                    <a href="{{ object.draft.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-sm btn-primary btn-touch">
+                                        <i class="bx bx-download"></i>
+                                    </a>
                                 </div>
                             </div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
+                        {% endif %}
 
-                <div class="col-12 col-md-auto">
-                    <a href="{% url 'library_app:blank_update' object.pk %}"
-                       class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'library_app:blank_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                        {% if object.scan %}
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="file-download-box d-flex align-items-center justify-content-between h-100">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <i class="bx bxs-file-pdf text-danger" style="font-size: 2.5rem;"></i>
+                                        <div>
+                                            <strong class="d-block text-dark">Скан бланка (PDF)</strong>
+                                            <small class="text-muted">Утвержденная копия</small>
+                                        </div>
+                                    </div>
+                                    <a href="{{ object.scan.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-sm btn-danger btn-touch">
+                                        <i class="bx bx-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if object.sample %}
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="file-download-box d-flex align-items-center justify-content-between h-100">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <i class="bx bxs-file-pdf text-success" style="font-size: 2.5rem;"></i>
+                                        <div>
+                                            <strong class="d-block text-dark">Образец (PDF)</strong>
+                                            <small class="text-muted">Пример заполнения</small>
+                                        </div>
+                                    </div>
+                                    <a href="{{ object.sample.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-sm btn-success btn-touch">
+                                        <i class="bx bx-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if not object.draft and not object.scan and not object.sample %}
+                            <div class="col-12 text-center text-muted py-4">
+                                <i class="bx bx-folder-open fs-1 mb-2"></i>
+                                <p class="mb-0">Файлы к данному бланку еще не прикреплены.</p>
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
+                </div>
+                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <a href="{% url 'library_app:blank_list' %}" class="btn btn-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Назад к списку
+                    </a>
+                    {% if user.is_superuser or object.executor == user %}
+                        <a href="{% url 'library_app:blank_update' object.pk %}" class="btn btn-outline-primary btn-touch">
+                            <i class="bx bx-pencil me-1"></i> Редактировать бланк
+                        </a>
+                    {% endif %}
+                </div>
             </div>
-        </form>
-        <!-- end: page -->
+        </div>
+    </div>
     <!-- end: page -->
 {% endblock %}

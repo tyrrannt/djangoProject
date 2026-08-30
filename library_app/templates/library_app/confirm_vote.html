@@ -1,11 +1,62 @@
 {% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    Подтверждение повторного голосования // Конкурс
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-    <h1>Вы уже проголосовали</h1>
-    <p>Вы уверены, что хотите переголосовать?</p>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Подтвердить</button>
-    </form>
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 mt-4">
+                <header class="card-header bg-warning text-dark py-3">
+                    <h4 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-help-circle me-2"></i> Вы уже проголосовали
+                    </h4>
+                </header>
+                <div class="card-body p-4 text-center">
+                    <div class="my-3">
+                        <i class="bx bx-revision text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-dark font-weight-bold mb-3">Вы уверены, что хотите изменить свой голос?</h5>
+                    <p class="text-muted small">Ваш предыдущий голос будет заменен на новый выбранный вариант.</p>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        {% if form.errors %}
+                            <div class="alert alert-danger text-start">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                        {{ form.as_p }}
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <a href="{% url 'library_app:vote' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-warning font-weight-bold btn-touch">
+                                <i class="bx bx-check me-1"></i> Подтвердить переголосование
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}

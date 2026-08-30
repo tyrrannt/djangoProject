@@ -3,117 +3,100 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"404 Страница не найдена" }} // Ошибка
 {% endblock %}
 
-{% block content %}
+{% block custom_css %}
 <style>
     .error-container {
-        min-height: 80vh;
+        min-height: 70vh;
         display: flex;
         align-items: center;
         justify-content: center;
     }
-
     .error-card {
-        max-width: 800px;
+        max-width: 700px;
         width: 100%;
         padding: 40px;
         border-radius: 16px;
         background: #ffffff;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     }
-
     .error-code {
-        font-size: 80px;
-        font-weight: 700;
-        color: #343a40;
+        font-size: 72px;
+        font-weight: 800;
+        color: #1e293b;
     }
-
     .error-icon {
-        font-size: 60px;
-        color: #6c757d;
+        font-size: 54px;
+        color: #0088cc;
         margin-left: 10px;
     }
-
     .error-text {
-        font-size: 18px;
-        color: #6c757d;
+        font-size: 1.1rem;
+        color: #64748b;
         margin-top: 10px;
     }
-
     .nav-links a {
         display: block;
         padding: 12px 16px;
         margin-bottom: 10px;
         border-radius: 10px;
         text-decoration: none;
-        color: #343a40;
-        background: #f8f9fa;
+        color: #1e293b;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         transition: all 0.2s ease;
+        font-weight: 600;
     }
-
     .nav-links a:hover {
-        background: #e9ecef;
+        background: #f1f5f9;
         transform: translateX(4px);
+        color: #0088cc;
     }
-
     .nav-links i {
         margin-right: 8px;
     }
-
-    .home-btn {
-        margin-top: 20px;
-        display: inline-block;
-        padding: 10px 20px;
-        border-radius: 10px;
-        background: #343a40;
-        color: #fff;
-        text-decoration: none;
-        transition: 0.2s;
-    }
-
-    .home-btn:hover {
-        background: #23272b;
-    }
 </style>
+{% endblock %}
 
-<div class="error-container">
-    <div class="error-card text-center">
+{% block content %}
+    <div class="error-container">
+        <div class="error-card text-center">
+            <div>
+                <span class="error-code">404</span>
+                <i class="fas fa-search error-icon"></i>
+            </div>
 
-        <div>
-            <span class="error-code">404</span>
-            <i class="fas fa-file-alt error-icon"></i>
-        </div>
+            <p class="error-text">
+                Запрашиваемая страница не найдена или была перемещена.
+            </p>
 
-        <p class="error-text">
-            Извините, по вашему запросу информация отсутствует
-        </p>
+            <hr class="my-4">
 
-        <a href="/" class="home-btn">
-            <i class="fas fa-home"></i> На главную
-        </a>
+            <div class="text-start">
+                <h6 class="font-weight-bold text-dark mb-3">Рекомендуемые действия:</h6>
 
-        <hr class="my-4">
+                <div class="nav-links">
+                    <a href="javascript:history.back()">
+                        <i class="fas fa-arrow-left text-primary"></i> Вернуться назад
+                    </a>
+                    
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'customers_app:profile' user.pk %}">
+                            <i class="fas fa-stream text-primary"></i> Лента событий
+                        </a>
 
-        <div class="text-start">
-            <h5 class="mb-3">Куда перейти:</h5>
+                        <a href="{% url 'customers_app:staff' user.pk %}">
+                            <i class="fas fa-user text-primary"></i> Профиль пользователя
+                        </a>
+                    {% endif %}
 
-            <div class="nav-links">
-                <a href="{% url 'customers_app:profile' user.pk %}">
-                    <i class="fas fa-stream"></i> Лента событий
-                </a>
-
-                <a href="{% url 'customers_app:staff' user.pk %}">
-                    <i class="fas fa-user"></i> Профиль пользователя
-                </a>
-
-                <a href="#">
-                    <i class="fas fa-question-circle"></i> Вопросы и ответы
-                </a>
+                    <a href="{% url 'library_app:help_list' %}">
+                        <i class="fas fa-question-circle text-primary"></i> База знаний и справка
+                    </a>
+                </div>
             </div>
         </div>
-
     </div>
-</div>
 {% endblock %}

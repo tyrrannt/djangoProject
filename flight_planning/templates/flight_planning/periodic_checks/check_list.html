@@ -3,6 +3,10 @@
 {% load custom %}
 {% load planning_extras %}
 
+{% block title %}
+    {{ title|default:"Периодические мероприятия лётного состава // Планирование полетов" }}
+{% endblock %}
+
 {% block custom_css %}
     <style>
         .kpi-card {

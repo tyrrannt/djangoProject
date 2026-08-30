@@ -3,13 +3,15 @@
 {% load custom %}
 {% load planning_extras %}
 
+{% block title %}
+    Отчет по загрузке летного персонала // Планирование полетов
+{% endblock %}
+
 {% block custom_css %}
     <style>
         /* Общие стили отчета */
         .report-page-container {
-            padding: 20px 0 60px 0;
-            background-color: #f8fafc;
-            min-height: 100vh;
+            padding: 0 0 40px 0;
         }
         .report-header-card {
             background: #ffffff;

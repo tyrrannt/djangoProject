@@ -4,93 +4,118 @@
 {% load widget_tweaks %}
 
 {% block title %}
-    {{ title }}
+    {% if object %}Редактирование справки: {{ object.title }}{% else %}Добавление статьи в базу знаний{% endif %} // Библиотека
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        {{ form.media }}
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="form-group row align-items-center pb-3">
-                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                       for="id_title">Заголовок</label>
-                                <div class="col-lg-7 col-xl-6" id="period_from_id">
-                                    <input type="text" id="id_title"
-                                           class="form-control form-control-modern"
-                                           name="title" value="{{ object.title }}"/>
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-edit text-primary me-2"></i>{% if object %}Редактирование справки{% else %}Создание новой справки{% endif %}
+                    </h3>
+                    <p class="text-muted small mb-0">Заполните поля статьи базы знаний и нажмите «Сохранить»</p>
+                </div>
+                <div>
+                    <a href="{% url 'library_app:help_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку статей
+                    </a>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-info-circle text-primary me-2"></i>Параметры статьи базы знаний
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="post" class="ecommerce-form">
+                        {% csrf_token %}
+                        {{ form.media }}
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <strong>Ошибка сохранения:</strong> Пожалуйста, исправьте ошибки в форме.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_title">
+                                    Заголовок статьи <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="id_title" name="title" 
+                                       class="form-control form-control-modern" 
+                                       value="{{ object.title|default:'' }}" required>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_category">
+                                    Категория
+                                </label>
+                                {{ form.category|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_hash_tag">
+                                    Хэштеги (метки)
+                                </label>
+                                {{ form.hash_tag|attr:"multiple" }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_text">
+                                    Текст справки / Содержимое
+                                </label>
+                                <div class="ck-content">
+                                    {{ form.text }}
                                 </div>
                             </div>
-                            <div class="form-group row align-items-center pb-3">
-                                <div class="col-sm-6">
-                                    <label class="col"
-                                           for="id_category">Категория</label>
-                                    <div class="col">
-                                        {{ form.category | add_class:"form-control form-control-modern" }}
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <label class="col"
-                                           for="id_hash_tag">Хэштег</label>
-                                    <div class="col">
-                                        {{ form.hash_tag | attr:"multiple" }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="form-group row align-items-center pb-3">
-                                    <label for="id_text">Текст справки</label>
-                                    <div class="ck ck-content">
-                                        {{ form.text }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="form-group row align-items-center pb-3">
-                                    <label for="id_text">Стили</label>
-                                    <div class="ck ck-content">
-                                        {{ form.custom_css }}
-                                    </div>
+
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_custom_css">
+                                    Пользовательские стили (CSS)
+                                </label>
+                                <div class="ck-content">
+                                    {{ form.custom_css }}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'library_app:help_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <i class="bx bx-save me-1"></i> Сохранить справку
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-        <div class="row action-buttons">
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-            {% endif %}
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'library_app:help_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
-                </div>
-            {% endif %}
-        </div>
-    </form>
-    <!-- end: page -->
+    </div>
     <!-- end: page -->
 {% endblock %}

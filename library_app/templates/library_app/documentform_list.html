@@ -1,75 +1,73 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% load widget_tweaks %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Бланки документов" }} // Библиотека
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
     <div class="row">
-        <div class="col">
-            <div class="card card-modern">
-                <div class="card-body">
-                    <div class="datatables-header-footer-wrapper">
-                        <div class="datatable-header">
-                            <div class="row align-items-center mb-3">
-                                <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                    <a href="{% url 'library_app:blank_add' %}"
-                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                        <i class='bx bx-list-plus text-4 me-2'></i> Добавить бланк</a>
-                                </div>
-                            </div>
-                        </div>
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-file-blank text-primary me-2"></i>{{ title|default:"Реестр бланков документов" }}
+                    </h3>
+                    <p class="text-muted small mb-0">Шаблоны, образцы заполнения и бланки заявлений организации</p>
+                </div>
+                <div>
+                    <a href="{% url 'library_app:blank_add' %}" class="btn btn-primary btn-touch">
+                        <i class="bx bx-plus me-1"></i> Добавить бланк
+                    </a>
+                </div>
+            </div>
 
-                        <table class="table table-striped mb-0" id="datatable-ecommerce-list"
-                               style="min-width: 750px;">
-                            <thead>
-                            <tr>
-                                <th width="55%">Наименование</th>
-                                <th width="15%">Черновик</th>
-                                <th width="15%">Скан-копия</th>
-                                <th width="15%">Образец</th>
-                            </tr>
+            <!-- Table Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50%;">Наименование документа</th>
+                                    <th style="width: 15%;" class="text-center">Черновик (DOCX)</th>
+                                    <th style="width: 15%;" class="text-center">Скан-копия (PDF)</th>
+                                    <th style="width: 20%;" class="text-center">Образец заполнения</th>
+                                </tr>
                             </thead>
+                            <tbody></tbody>
                         </table>
-                        <hr class="solid mt-5 opacity-4">
-                        <div class="datatable-footer">
-                            <div class="row align-items-center justify-content-between mt-3">
-                                <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                    <div class="d-flex align-items-stretch">
-                                        {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                    </div>
-                                </div>
-                                <div class="col-lg-auto text-center order-3 order-lg-2">
-                                    <div class="results-info-wrapper"></div>
-                                </div>
-                                <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                    <div class="pagination-wrapper"></div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     <!-- end: page -->
-
-{% endblock %}
-
-{% block SpecificPageVendor %}
-
 {% endblock %}
 
 {% block custom_script %}
     <script>
         $(document).ready(function () {
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "scrollX": true,
+            $('#datatable-ecommerce-list').DataTable({
                 "sDom": 'BT<"clear">lfrtip',
                 "buttons": [
                     'copy', 'csv', 'excel', 'pdf', 'print'
@@ -88,13 +86,35 @@
                     });
                 },
                 "columns": [
-                    {"data": "title"},
-                    {"data": "draft"},
-                    {"data": "scan"},
-                    {"data": "sample"},
-                ],
+                    {
+                        "data": "title",
+                        "render": function(data, type, row) {
+                            return '<strong class="text-dark"><i class="bx bx-file me-2 text-primary"></i>' + data + '</strong>';
+                        }
+                    },
+                    {
+                        "data": "draft",
+                        "className": "text-center",
+                        "render": function(data, type, row) {
+                            return data ? '<span class="badge bg-light text-primary border"><i class="bx bx-download me-1"></i>DOCX</span>' : '—';
+                        }
+                    },
+                    {
+                        "data": "scan",
+                        "className": "text-center",
+                        "render": function(data, type, row) {
+                            return data ? '<span class="badge bg-light text-danger border"><i class="bx bxs-file-pdf me-1"></i>PDF</span>' : '—';
+                        }
+                    },
+                    {
+                        "data": "sample",
+                        "className": "text-center",
+                        "render": function(data, type, row) {
+                            return data ? '<span class="badge bg-light text-success border"><i class="bx bx-check-shield me-1"></i>Образец</span>' : '—';
+                        }
+                    }
+                ]
             });
         });
-
     </script>
 {% endblock %}
