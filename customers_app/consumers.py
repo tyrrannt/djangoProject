@@ -15,51 +15,65 @@ from contracts_app.templatetags.custom import FIO_format
 
 
 class OnlineUsersConsumer(AsyncWebsocketConsumer):
-    """Класс для обработки соединений с веб-сокетами и отправки списка онлайн пользователей."""
+    """Асинхронный потребитель WebSockets для отслеживания и трансляции списка пользователей онлайн.
 
-    online_users = set()  # Множество для хранения имен пользователей, которые в данный момент онлайн
+    Attributes:
+        online_users (set): Множество кортежей (форматированное ФИО, primary key) активных пользователей.
+    """
+
+    online_users = set()
 
     async def connect(self):
-        """Метод для установки соединения и добавления пользователя в список онлайн пользователей."""
-        if self.scope["user"] == AnonymousUser():
+        """Обрабатывает входящее WebSocket-подключение и регистрирует авторизованного пользователя.
+
+        Raises:
+            Exception: При ошибках взаимодействия с Channel Layer.
+        """
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
             await self.close()
-        else:
-            await self.accept()  # Принимаем соединение
-            user = self.scope['user']  # Получаем объект пользователя из scope
-            if user.is_authenticated:  # Проверяем, авторизован ли пользователь
-                self.online_users.add(
-                    (FIO_format(user.title), user.pk))  # Добавляем имя пользователя в множество online_users
-                await self.channel_layer.group_add('online_users',
-                                                   self.channel_name)  # Добавляем соединение в группу online_users
-                await self.send_online_users()  # Отправляем список онлайн пользователей
+            return
+
+        await self.accept()
+        username = FIO_format(getattr(user, 'title', '') or getattr(user, 'username', '') or str(user))
+        self.online_users.add((username, user.pk))
+        await self.channel_layer.group_add('online_users', self.channel_name)
+        await self.send_online_users()
 
     async def disconnect(self, close_code):
-        """Метод для обработки разрыва соединения и удаления пользователя из списка онлайн пользователей."""
-        user = self.scope['user']  # Получаем объект пользователя из scope
-        if user.is_authenticated:  # Проверяем, авторизован ли пользователь
-            self.online_users.discard(
-                (FIO_format(user.title), user.pk))  # Удаляем имя пользователя из множества online_users
-            await self.channel_layer.group_discard('online_users',
-                                                   self.channel_name)  # Удаляем соединение из группы online_users
-            await self.send_online_users()  # Отправляем список онлайн пользователей
+        """Обрабатывает отключение клиента и удаляет пользователя из группы онлайн.
+
+        Args:
+            close_code (int): Код закрытия соединения.
+        """
+        user = self.scope.get('user')
+        if user and user.is_authenticated:
+            username = FIO_format(getattr(user, 'title', '') or getattr(user, 'username', '') or str(user))
+            self.online_users.discard((username, user.pk))
+            await self.channel_layer.group_discard('online_users', self.channel_name)
+            await self.send_online_users()
 
     async def send_online_users(self):
-        """Метод для отправки списка онлайн пользователей."""
+        """Отправляет актуальный список пользователей всем участникам группы online_users."""
         await self.channel_layer.group_send(
             'online_users',
             {
-                'type': 'online_users_message',  # Тип сообщения
-                'users': list(self.online_users),  # Список онлайн пользователей
+                'type': 'online_users_message',
+                'users': list(self.online_users),
             }
         )
 
     async def online_users_message(self, event):
-        """Метод для обработки сообщения о списке онлайн пользователей."""
-        users = event['users']  # Получаем список онлайн пользователей из события
+        """Принимает групповое событие со списком пользователей и отправляет JSON клиенту.
+
+        Args:
+            event (dict): Словарь события с ключами 'type' и 'users'.
+        """
+        users = event['users']
         user = self.scope['user']
         await self.send(text_data=json.dumps({
-            'type': 'online_users',  # Тип сообщения
-            'users': users,  # Список онлайн пользователей
+            'type': 'online_users',
+            'users': users,
             'is_admin': user.is_superuser,
         }))
 
