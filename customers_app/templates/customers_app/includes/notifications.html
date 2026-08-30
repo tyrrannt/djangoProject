@@ -1,18 +1,13 @@
 {% load custom %}
 {% load static %}
 
-<style>
-    #wrapper {
-        overflow: auto;
-        height: 320px;
-    }
-</style>
-
+<!-- Меню уведомлений в шапке -->
 <ul class="notifications">
     {% for notification in notifications %}
         <li>
             {% if notification.count != 0 %}
-                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown" aria-expanded="false"
+                   aria-label="{{ notification.title }}">
                     <i class="{{ notification.icon_class }}" data-bs-toggle="tooltip" data-bs-placement="bottom"
                        title="{{ notification.title }}"></i>
                     <span class="badge">{{ notification.count }}</span>
@@ -23,25 +18,24 @@
                     <span class="float-end badge badge-default">{{ notification.count }}</span>
                     {{ notification.title }}
                 </div>
-                <div class="content" id="wrapper">
-                    <ul>
+                <div class="content notification-scroll-container">
+                    <ul class="list-unstyled mb-0">
                         {% for item, color in notification.items %}
-                                <li>
-                                    <a href="{{ item|get_url:notification.url_name  }}" class="clearfix">
-                                        <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
-                                             title=""
-                                             data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
-                                            <code style="font-size: small; color: {{ color }}">
-                                                {{ item }}
-                                            </code>
-                                        </div>
-                                    </a>
-                                </li>
+                            <li>
+                                <a href="{{ item|get_url:notification.url_name }}" class="clearfix d-block py-1">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                         title="Создано: {{ item.date_of_creation|date:'d-m-Y' }}">
+                                        <span class="notification-item-text" style="font-size: 12.5px; color: {{ color|default:'inherit' }}">
+                                            {{ item }}
+                                        </span>
+                                    </div>
+                                </a>
+                            </li>
                         {% endfor %}
                     </ul>
-                    <hr/>
+                    <hr class="my-2 opacity-25"/>
                     <div class="text-end">
-                        <a href="{% url notification.view_all_url %}" class="view-more">Просмотреть все</a>
+                        <a href="{% url notification.view_all_url %}" class="view-more small fw-semibold">Просмотреть все</a>
                     </div>
                 </div>
             </div>

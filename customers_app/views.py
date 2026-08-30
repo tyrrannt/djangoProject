@@ -903,7 +903,12 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
 
 
 def login(request):
+    """
+    Представление аутентификации пользователя в системе.
+    """
     content = {'title': 'Вход в систему'}
+    next_url = request.GET.get('next', '') or request.POST.get('next', '')
+    content['next'] = next_url
     if request.method == 'POST':
         login_form = DataBaseUserLoginForm(data=request.POST)
         content['login_form'] = login_form
@@ -931,7 +936,6 @@ def login(request):
                 request.session['current_month'] = int(datetime.datetime.today().month)
                 request.session['current_year'] = int(datetime.datetime.today().year)
 
-                next_url = request.POST.get('next')
                 if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
                     return HttpResponseRedirect(next_url)
 
@@ -941,7 +945,7 @@ def login(request):
                 logger.error(
                     f'Ошибка авторизации: Неверные учетные данные для пользователя {username}, IP: {get_client_ip(request)}')
         else:
-            content['errors'] = login_form.errors  # Или login_form.non_field_errors()
+            content['errors'] = login_form.errors
             try:
                 logger.error(f'Ошибка валидации формы при входе. Данные: {request.POST}, IP: {get_client_ip(request)}')
             except Exception as _ex:

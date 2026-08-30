@@ -1,0 +1,555 @@
+{% load static %}
+{% load custom %}
+
+<!-- Левое главное меню (Sidebar Left) -->
+<aside id="sidebar-left" class="sidebar-left">
+    <div class="sidebar-header">
+        <div class="sidebar-title">
+            Главное меню
+        </div>
+        <div class="sidebar-toggle d-none d-md-block" data-toggle-class="sidebar-left-collapsed"
+             data-target="html" data-fire-event="sidebar-left-toggle" title="Свернуть / развернуть меню" aria-label="Переключить боковое меню">
+            <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
+        </div>
+    </div>
+
+    <div class="nano">
+        <div class="nano-content">
+            <nav id="menu" class="nav-main" role="navigation">
+                <ul class="nav nav-main">
+
+                    <!-- Мобильное приложение -->
+                    <li>
+                        <a class="nav-link" href="/media/app/android/app-release.apk" target="_blank" rel="noopener noreferrer">
+                            <i class="bx bxl-android text-success" aria-hidden="true"></i>
+                            <span>Скачать приложение (Android)</span>
+                        </a>
+                    </li>
+
+                    <!-- СИЗ (Суперпользователь) -->
+                    {% if user.is_superuser %}
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class="bx bx-hard-hat" aria-hidden="true"></i>
+                                <span>СИЗ</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'ppequipment_app:index' %}">
+                                        <i class="bx bx-box me-1" aria-hidden="true"></i>
+                                        <span>Инвентарный учёт (СИЗ)</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    <!-- Календарь задач -->
+                    <li>
+                        <a class="nav-link" href="{% url 'tasks_app:task-list' %}">
+                            <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                            <span>Календарь задач</span>
+                        </a>
+                    </li>
+
+                    <!-- Отчеты -->
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bxs-report" aria-hidden="true"></i>
+                            <span>Отчеты</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <!-- Учет рабочего времени -->
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-time-five me-1" aria-hidden="true"></i>
+                                    <span>Учет рабочего времени</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">
+                                            <i class="bx bx-car me-1" aria-hidden="true"></i>
+                                            <span>Журнал разъездов</span>
+                                        </a>
+                                    </li>
+                                    {% if user|has_group:"Журнал разъездов" %}
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_listmanual' %}">
+                                                <i class="bx bx-list-ul me-1" aria-hidden="true"></i>
+                                                <span>Список разъездов</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    {% if user.is_superuser %}
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_listadmin' %}">
+                                                <i class="bx bx-list-check me-1" aria-hidden="true"></i>
+                                                <span>Список разъездов (admin)</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    {% if user|has_group:"Отчеты РВ" %}
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
+                                                <i class="bx bx-table me-1" aria-hidden="true"></i>
+                                                <span>Табель РВ</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail_year' %}">
+                                                <i class="bx bx-calendar me-1" aria-hidden="true"></i>
+                                                <span>Табель РВ (годовой)</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail_fact' %}">
+                                                <i class="bx bx-calendar-check me-1" aria-hidden="true"></i>
+                                                <span>Табель РВ (факт)</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail_ias' %}">
+                                            <i class="bx bx-grid-alt me-1" aria-hidden="true"></i>
+                                            <span>Табель РВ (ИАС)</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- Служебные поездки -->
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-trip me-1" aria-hidden="true"></i>
+                                    <span>Служебные поездки</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_month_report' %}">
+                                            <i class="bx bx-check-circle me-1" aria-hidden="true"></i>
+                                            <span>Служебные поездки (контроль)</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_report' %}">
+                                            <i class="bx bx-user-voice me-1" aria-hidden="true"></i>
+                                            <span>Отчет по сотрудникам</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:pso_memo_report' %}">
+                                            <i class="bx bx-note me-1" aria-hidden="true"></i>
+                                            <span>Служебная записка ПСО</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:management_dashboard' %}">
+                                            <i class="bx bx-line-chart me-1" aria-hidden="true"></i>
+                                            <span>Отчеты для руководства</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:expense_report' %}">
+                                            <i class="bx bx-briefcase me-1" aria-hidden="true"></i>
+                                            <span>Отчет по служебным поездкам</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- Персонал -->
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-group me-1" aria-hidden="true"></i>
+                                    <span>Персонал</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    {% if user.is_staff %}
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
+                                                <i class="bx bx-sun me-1" aria-hidden="true"></i>
+                                                <span>Сезонность отпусков</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">
+                                                <i class="bx bx-user-x me-1" aria-hidden="true"></i>
+                                                <span>Анализ пропусков работы</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">
+                                                <i class="bx bx-calendar-week me-1" aria-hidden="true"></i>
+                                                <span>Влияние дня недели на отгулы</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">
+                                                <i class="bx bx-pie-chart-alt-2 me-1" aria-hidden="true"></i>
+                                                <span>Распределение типов времени</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'customers_app:inactive_users_report' %}">
+                                                <i class="bx bx-user-minus me-1" aria-hidden="true"></i>
+                                                <span>Неактивные пользователи</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:training_debt_report' %}">
+                                                <i class="bx bx-money me-1" aria-hidden="true"></i>
+                                                <span>Расчет долга за обучение</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="nav-link" href="{% url 'customers_app:apartments_usage_report' %}">
+                                            <i class="bx bx-building-house me-1" aria-hidden="true"></i>
+                                            <span>Использование квартир</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'customers_app:apartment_occupancy_report' %}">
+                                            <i class="bx bx-hotel me-1" aria-hidden="true"></i>
+                                            <span>Занятость квартир на дату</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:event_list' %}">
+                                    <i class="bx bx-calendar-event me-1" aria-hidden="true"></i>
+                                    <span>Мероприятия</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Справочники -->
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-book-content" aria-hidden="true"></i>
+                            <span>Справочники</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li><a class="nav-link" href="{% url 'customers_app:staff_list' %}"><i class="bx bx-user me-1" aria-hidden="true"></i><span>Сотрудники</span></a></li>
+                            <li><a class="nav-link" href="{% url 'customers_app:jobs_list' %}"><i class="bx bx-id-card me-1" aria-hidden="true"></i><span>Должности</span></a></li>
+                            <li><a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}"><i class="bx bx-error-circle me-1" aria-hidden="true"></i><span>Вредные условия труда</span></a></li>
+                            <li><a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}"><i class="bx bx-file me-1" aria-hidden="true"></i><span>Типы документов</span></a></li>
+                            <li><a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}"><i class="bx bx-folder me-1" aria-hidden="true"></i><span>Типы договоров</span></a></li>
+                            <li><a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}"><i class="bx bx-box me-1" aria-hidden="true"></i><span>Типы имущества</span></a></li>
+                            <li><a class="nav-link" href="{% url 'contracts_app:estate_list' %}"><i class="bx bx-buildings me-1" aria-hidden="true"></i><span>Имущество</span></a></li>
+                            <li><a class="nav-link" href="{% url 'customers_app:divisions_list' %}"><i class="bx bx-sitemap me-1" aria-hidden="true"></i><span>Подразделения</span></a></li>
+                            <li><a class="nav-link" href="{% url 'customers_app:counteragent_list' %}"><i class="bx bx-store-alt me-1" aria-hidden="true"></i><span>Контрагенты</span></a></li>
+                            <li><a class="nav-link" href="{% url 'customers_app:documents_list' %}"><i class="bx bx-file-blank me-1" aria-hidden="true"></i><span>Документы контрагентов</span></a></li>
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:purpose_list' %}"><i class="bx bx-target-lock me-1" aria-hidden="true"></i><span>Цели служебной поездки</span></a></li>
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:medicalorg_list' %}"><i class="bx bx-plus-medical me-1" aria-hidden="true"></i><span>Медицинские организации</span></a></li>
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:place_list' %}"><i class="bx bx-map-pin me-1" aria-hidden="true"></i><span>Места назначения</span></a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Договора -->
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-receipt" aria-hidden="true"></i>
+                            <span>Договора</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li><a class="nav-link" href="{% url 'contracts_app:index' %}"><i class="bx bx-list-ul me-1" aria-hidden="true"></i><span>Общий список договоров</span></a></li>
+                            {% if request.user.is_superuser %}
+                                <li><a class="nav-link" href="{% url 'contracts_app:index-admin' %}"><i class="bx bx-list-check me-1" aria-hidden="true"></i><span>Общий список договоров - admin</span></a></li>
+                            {% endif %}
+                            <li><a class="nav-link" href="{% url 'contracts_app:counteragent_check' %}"><i class="bx bx-search-alt me-1" aria-hidden="true"></i><span>Поиск контрагента</span></a></li>
+                            {% if perms.contracts_app.view_contract or request.user.is_superuser %}
+                                <li class="nav-parent">
+                                    <a class="nav-link" href="#">
+                                        <i class="bx bx-bar-chart-alt-2 me-1" aria-hidden="true"></i>
+                                        <span>Отчеты</span>
+                                    </a>
+                                    <ul class="nav nav-children">
+                                        <li><a class="nav-link" href="{% url 'contracts_app:contract_report' %}"><i class="bx bx-bar-chart me-1" aria-hidden="true"></i><span>Отчёт по договорам</span></a></li>
+                                    </ul>
+                                </li>
+                            {% endif %}
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:student_agreement_list' %}"><i class="bx bx-book-reader me-1" aria-hidden="true"></i><span>Ученические договора</span></a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Финансы -->
+                    {% if user|has_group:"Финансы" %}
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class="bx bx-wallet" aria-hidden="true"></i>
+                                <span>Финансы</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li><a class="nav-link" href="{% url 'finance:dashboard' %}"><i class="bx bx-grid-alt me-1" aria-hidden="true"></i><span>Дашборд</span></a></li>
+                                <li><a class="nav-link" href="{% url 'finance:calendar' %}"><i class="bx bx-calendar me-1" aria-hidden="true"></i><span>Платежный календарь</span></a></li>
+                                <li><a class="nav-link" href="{% url 'finance:overdraft_list' %}"><i class="bx bx-credit-card me-1" aria-hidden="true"></i><span>Овердрафты</span></a></li>
+                                <li><a class="nav-link" href="{% url 'finance:key_rates' %}"><i class="bx bx-trending-up me-1" aria-hidden="true"></i><span>Ключевая ставка ЦБ</span></a></li>
+                                <li><a class="nav-link" href="{% url 'finance:reports_list' %}"><i class="bx bx-line-chart me-1" aria-hidden="true"></i><span>Отчеты</span></a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    <!-- ЭДО -->
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-task" aria-hidden="true"></i>
+                            <span>ЭДО</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-car me-1" aria-hidden="true"></i>
+                                    <span>Логистика</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li><a class="nav-link" href="{% url 'logistics_app:waybill_list' %}"><i class="bx bx-receipt me-1" aria-hidden="true"></i><span>Транспортная накладная</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'logistics_app:package_list' %}"><i class="bx bx-package me-1" aria-hidden="true"></i><span>Посылки</span></a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-notepad me-1" aria-hidden="true"></i>
+                                    <span>Служебные задания</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:memo_list' %}"><i class="bx bx-note me-1" aria-hidden="true"></i><span>Служебная записка на поездку</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_list' %}"><i class="bx bx-git-branch me-1" aria-hidden="true"></i><span>Бизнес-процесс по СЗ</span></a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-wrench me-1" aria-hidden="true"></i>
+                                    <span>ИАС</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:team_list' %}"><i class="bx bx-user-check me-1" aria-hidden="true"></i><span>Старшие бригад</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:timesheet_list' %}"><i class="bx bx-table me-1" aria-hidden="true"></i><span>Табель МПД</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:outfit_card_list' %}"><i class="bx bx-detail me-1" aria-hidden="true"></i><span>Журнал карт-нарядов</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'ppequipment_app:index' %}"><i class="bx bx-box me-1" aria-hidden="true"></i><span>Инвентарный учёт</span></a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Документация -->
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-briefcase-alt-2" aria-hidden="true"></i>
+                            <span>Документация</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:poa_list' %}"><i class="bx bx-badge-check me-1" aria-hidden="true"></i><span>Доверенности</span></a></li>
+                            <li><a class="nav-link" href="{% url 'library_app:blank_list' %}"><i class="bx bx-file me-1" aria-hidden="true"></i><span>Бланки документов</span></a></li>
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:medical_list' %}"><i class="bx bx-plus-medical me-1" aria-hidden="true"></i><span>Медицинские направления</span></a></li>
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:guidance_documents_list' %}"><i class="bx bx-book-bookmark me-1" aria-hidden="true"></i><span>Руководящие документы</span></a></li>
+                            <li><a class="nav-link" href="{% url 'hrdepartment_app:operational_list' %}"><i class="bx bx-shield me-1" aria-hidden="true"></i><span>Нормативные акты</span></a></li>
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-folder-open me-1" aria-hidden="true"></i>
+                                    <span>Локально-нормативные акты</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:jobdescription_list' %}"><i class="bx bx-user-pin me-1" aria-hidden="true"></i><span>Должностные инструкции</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:briefings_list' %}"><i class="bx bx-check-shield me-1" aria-hidden="true"></i><span>Инструктажи</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:lpi_list' %}"><i class="bx bx-wrench me-1" aria-hidden="true"></i><span>Инструкции по ТО ВС</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:provisions_list' %}"><i class="bx bx-certification me-1" aria-hidden="true"></i><span>Положения</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:order_list' %}"><i class="bx bx-news me-1" aria-hidden="true"></i><span>Приказы</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'hrdepartment_app:labor_protection_list' %}"><i class="bx bx-hard-hat me-1" aria-hidden="true"></i><span>Процедуры по охране труда</span></a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Планирование полетов -->
+                    {% if request.user|can_view_flight_planning %}
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class="fa-solid fa-plane-departure" aria-hidden="true"></i>
+                                <span>Планирование полетов</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
+                                        <i class="bx bx-calendar-event me-1" aria-hidden="true"></i>
+                                        <span>График экипажей</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'flight_planning:document_list' %}">
+                                        <i class="bx bx-file-blank me-1" aria-hidden="true"></i>
+                                        <span>Журнал документов</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'flight_planning:my_schedule' %}">
+                                        <i class="bx bx-user-check me-1" aria-hidden="true"></i>
+                                        <span>Мой график</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'flight_planning:aircraft_movement_list' %}">
+                                        <i class="bx bxs-plane-take-off me-1" aria-hidden="true"></i>
+                                        <span>Журнал перемещений ВС</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'flight_planning:periodic_check_list' %}">
+                                        <i class="bx bx-check-shield me-1" aria-hidden="true"></i>
+                                        <span>Периодические мероприятия</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'flight_planning:employee_status_list' %}">
+                                        <i class="bx bx-user-pin me-1" aria-hidden="true"></i>
+                                        <span>Состояния сотрудников</span>
+                                    </a>
+                                </li>
+                                {% if request.user|can_view_flight_reports %}
+                                    <li class="nav-parent">
+                                        <a class="nav-link" href="#">
+                                            <i class="bx bx-bar-chart-square me-1" aria-hidden="true"></i>
+                                            <span>Отчеты</span>
+                                        </a>
+                                        <ul class="nav nav-children">
+                                            <li><a class="nav-link" href="{% url 'flight_planning:aircraft_basing_report' %}"><i class="bx bx-map-pin me-1" aria-hidden="true"></i><span>Базирование ВС на дату</span></a></li>
+                                            <li><a class="nav-link" href="{% url 'flight_planning:flight_personnel_utilization_report' %}"><i class="bx bx-line-chart me-1" aria-hidden="true"></i><span>Загрузка летного состава</span></a></li>
+                                        </ul>
+                                    </li>
+                                {% endif %}
+                                {% if request.user|is_flight_planner %}
+                                    <li>
+                                        <a class="nav-link" href="{% url 'flight_planning:settings' %}">
+                                            <i class="bx bx-cog me-1" aria-hidden="true"></i>
+                                            <span>Настройки</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    <!-- Вспомогательные сервисы -->
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bxs-help-circle" aria-hidden="true"></i>
+                            <span>Вспомогательные сервисы</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li><a class="nav-link" href="{% url 'library_app:help_list' %}"><i class="bx bxs-help-circle me-1" aria-hidden="true"></i><span>Справка</span></a></li>
+                            <li><a class="nav-link" href="{% url 'map_viewer:index' %}"><i class="fa-solid fa-map-location-dot me-1" aria-hidden="true"></i><span>Карты</span></a></li>
+                            <li><a class="nav-link" href="{% url 'tickets_app:list' %}"><i class="bx bx-envelope me-1" aria-hidden="true"></i><span>Добровольные сообщения</span></a></li>
+                            <li><a class="nav-link" href="{% url 'password_manager:password_list' %}"><i class="bx bxs-key me-1" aria-hidden="true"></i><span>Хранилище паролей</span></a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Настройки системы (Суперпользователь) -->
+                    {% if user.is_superuser %}
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class="bx bx-shield-quarter" aria-hidden="true"></i>
+                                <span>Настройки</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li><a class="nav-link" href="{% url 'administration_app:property_list' %}"><i class="bx bx-slider-alt me-1" aria-hidden="true"></i><span>Настройки портала</span></a></li>
+                                <li><a class="nav-link" href="{% url 'hrdepartment_app:business_process_routes_list' %}"><i class="bx bx-git-repo-forked me-1" aria-hidden="true"></i><span>Настройки бизнес-процессов</span></a></li>
+                                <li><a class="nav-link" href="{% url 'customers_app:group_list' %}"><i class="bx bx-group me-1" aria-hidden="true"></i><span>Группы</span></a></li>
+                                <li><a class="nav-link" href="{% url 'administration_app:json' %}"><i class="bx bx-upload me-1" aria-hidden="true"></i><span>Загрузка данных из файла</span></a></li>
+                                <li><a class="nav-link" href="{% url 'administration_app:monitoring' %}"><i class="bx bx-pulse me-1" aria-hidden="true"></i><span>Мониторинг системы</span></a></li>
+                                <li><a class="nav-link" href="{% url 'administration_app:1c_odata_request' %}"><i class="bx bx-code-block me-1" aria-hidden="true"></i><span>Генератор OData-запросов</span></a></li>
+                                <li><a class="nav-link" href="{% url 'password_manager:key_setup' %}"><i class="bx bx-key me-1" aria-hidden="true"></i><span>Ключевая фраза</span></a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    <!-- Чат -->
+                    <li>
+                        <a class="nav-link" href="{% url 'chat_app:index' %}">
+                            <i class="fa-regular fa-comment-dots" aria-hidden="true"></i>
+                            <span>Чат</span>
+                        </a>
+                    </li>
+
+                    <!-- Конкурс (Суперпользователь) -->
+                    {% if user.is_superuser %}
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class="bx bx-trophy" aria-hidden="true"></i>
+                                <span>Конкурс</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li><a class="nav-link" href="{% url 'library_app:submit_poem' %}"><i class="bx bx-edit-alt me-1" aria-hidden="true"></i><span>Прием стихов</span></a></li>
+                                <li><a class="nav-link" href="{% url 'library_app:vote' %}"><i class="bx bx-like me-1" aria-hidden="true"></i><span>Голосование</span></a></li>
+                                <li><a class="nav-link" href="{% url 'library_app:results' %}"><i class="bx bx-medal me-1" aria-hidden="true"></i><span>Результаты</span></a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                </ul>
+            </nav>
+
+            <hr class="separator"/>
+
+            <!-- Виджет: Наши проекты -->
+            <div class="sidebar-widget widget-tasks">
+                <div class="widget-header">
+                    <h6>Наши проекты</h6>
+                    <div class="widget-toggle">+</div>
+                </div>
+                <div class="widget-content">
+                    <ul class="widget-projects-list">
+                        <li><a href="https://barkol.ru/" target="_blank" rel="noopener noreferrer">Главный сайт</a></li>
+                        <li><a href="http://lk.barkol.ru/pls/apex/f?p=506" target="_blank" rel="noopener noreferrer">Кабинет авиаспециалиста</a></li>
+                        <li><a href="https://ms.barkol.ru/" target="_blank" rel="noopener noreferrer">Почтовый сервер БАРКОЛ</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="separator"/>
+
+            <!-- Виджет: QR-код и Онлайн-пользователи -->
+            <div class="sidebar-widget widget-stats">
+                <div class="widget-header">
+                    <h6>Статистика компании</h6>
+                    <div class="widget-toggle">+</div>
+                </div>
+
+                <!-- QR-код -->
+                <div class="widget-content mb-3">
+                    <div class="sidebar-stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title"><i class="bx bx-qr me-1"></i> QR код страницы</span>
+                        </div>
+                        <div class="stat-card-body text-center">
+                            <img id="qr-code-image"
+                                 src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
+                                 alt="QR Code" style="max-width: 130px; width: 60%; height: auto;">
+                            <div class="mt-2 small stat-card-footer-text">
+                                <span id="qr-code-message">Действителен: <strong id="countdown">30 сек</strong></span>
+                                <div id="expired-message" class="text-danger fw-bold" style="display: none;">
+                                    QR-код устарел
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Сотрудники Online -->
+                <div class="widget-content">
+                    <div class="sidebar-stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title"><i class="bx bx-user-check me-1"></i> Сотрудники Online</span>
+                        </div>
+                        <div class="stat-card-body">
+                            <ul id="online-users" class="list-unstyled mb-0" style="max-height: 180px; overflow-y: auto;">
+                                <li class="text-muted small fst-italic">Подключение к сети...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>

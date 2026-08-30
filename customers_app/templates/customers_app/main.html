@@ -15,35 +15,33 @@
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'android/mipmap-hdpi/ic_launcher_round.png' %}">
-    <!-- Mobile Metas -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-    <!-- Web Fonts  -->
-    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800|Shadows+Into+Light"
-          rel="stylesheet" type="text/css">
+    <!-- Mobile Metas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <!-- Web Fonts (Barkol Typography: Montserrat for Headings, Inter for Body/UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Vendor CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/hover/hover.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.css' %}"/>
-    <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/animate/animate.compat.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/font-awesome/css/all.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/boxicons/css/boxicons.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/magnific-popup/magnific-popup.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
 
-    {% with my_list="tasks_app,customers_app"|split:"," %}
+    <!-- Conditional App Assets (Dropzone, Toastr, FullCalendar) -->
+    {% with my_list="tasks_app,customers_app,flight_planning"|split:"," %}
         {% if request.resolver_match.app_name in my_list %}
             <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
             <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -52,40 +50,13 @@
         {% endif %}
     {% endwith %}
 
-
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
-
-    <!-- Skin CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/css/skins/default.css' %}"/>
-
-    <!-- Theme Custom CSS -->
-    <link rel="stylesheet" href="{% static 'admin_templates/css/custom.css' %}"/>
+    <link rel="stylesheet" href="{% static_version 'admin_templates/css/custom.css' %}"/>
 
     {% block custom_css %}
-        <style>
-            .breadcrumbs-wrapper {
-                width: 100%;
-                display: flex;
-                justify-content: center;
-                margin: 20px 0;
-            }
-
-            .breadcrumbs-content {
-                padding: 10px 20px;
-                border-radius: 10px;
-                background: #f8f9fa;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            }
-
-            .breadcrumbs-title {
-                margin: 0;
-                font-size: 18px;
-                font-weight: 600;
-                color: #343a40;
-            }
-        </style>
     {% endblock %}
 
     {% block custom_top_script %}
@@ -93,1304 +64,151 @@
 
     <!-- Head Libs -->
     <script src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
-
 </head>
 <body class="loading-overlay-showing" data-loading-overlay>
-<div class="loading-overlay" id="LoadingOverlayApi">
-    <div class="bounce-loader">
-        <div class="bounce1"></div>
-        <div class="bounce2"></div>
-        <div class="bounce3"></div>
-    </div>
-</div>
-<section class="body">
-
-    <!-- start: header -->
-    <header class="header">
-        <div class="logo-container">
-            <a href="
-                    {% if user.is_superuser %}{% url 'admin:index' %}{% else %}/users/profile/{{ user.pk }}/{% endif %}"
-               class="logo">
-                <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Панель администрирования"/>
-            </a>
-
-            <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"
-                 data-fire-event="sidebar-left-opened">
-                <i class="fas fa-bars" aria-label="Toggle sidebar" aria-hidden="true"></i>
-            </div>
-
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="LoadingOverlayApi">
+        <div class="bounce-loader">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
         </div>
-
-        <!-- start: search & user box -->
-        {% block notifications %}
-            <div class="header-right">
-                <span class="separator"></span>
-                {% include 'customers_app/includes/notifications.html' %}
-                <span class="separator"></span>
-                {% include 'customers_app/includes/user-dropdown-menu.html' %}
-            </div>
-        {% endblock %}
-
-        <!-- end: search & user box -->
-    </header>
-    <!-- end: header -->
-
-    <div class="inner-wrapper">
-        <!-- start: sidebar -->
-
-        <!-- Левое меню -->
-        <aside id="sidebar-left" class="sidebar-left">
-            <!-- start: sidebar -->
-            <div class="sidebar-header">
-                <div class="sidebar-title">
-                    Главное меню
-                </div>
-                <div class="sidebar-toggle d-none d-md-block" data-toggle-class="sidebar-left-collapsed"
-                     data-target="html" data-fire-event="sidebar-left-toggle">
-                    <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
-                </div>
-            </div>
-
-            <div class="nano">
-                <div class="nano-content">
-                    <nav id="menu" class="nav-main" role="navigation">
-                        <ul class="nav nav-main">
-
-                            <li>
-                                <a class="nav-link" href="/media/app/android/app-release.apk" target="_blank">
-                                    <i class="bx bxl-android" aria-hidden="true"></i>
-                                    Скачать приложение (Android)
-                                </a>
-                            </li>
-
-                            {% if user.is_superuser %}
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <i class='bx bx-hard-hat' aria-hidden="true"></i>
-                                        <span>СИЗ</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        <li>
-                                            <a class="nav-link" href="{% url 'ppequipment_app:index' %}">
-                                                Shakirov
-                                            </a>
-                                        </li>
-
-                                    </ul>
-                                </li>
-                            {% endif %}
-                            <li>
-                                <a class="nav-link" href="{% url 'tasks_app:task-list' %}">
-                                    <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                                    Календарь задач
-                                </a>
-                            </li>
-
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <i class='bx bxs-report' aria-hidden="true"></i>
-                                    <span>Отчеты</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <span>Учет рабочего времени</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">
-                                                    Журнал разъездов
-                                                </a>
-                                            </li>
-                                            {% if user|has_group:"Журнал разъездов" %}
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:reportcard_listmanual' %}">
-                                                        Список разъездов
-                                                    </a>
-                                                </li>
-                                            {% endif %}
-                                            {% if user.is_superuser %}
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:reportcard_listadmin' %}">
-                                                        Список разъездов (admin)
-                                                    </a>
-                                                </li>
-                                            {% endif %}
-                                            {% if user|has_group:"Отчеты РВ" %}
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:reportcard_detail' %}">
-                                                        Табель РВ
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:reportcard_detail_year' %}">
-                                                        Табель РВ (годовой)
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:reportcard_detail_fact' %}">
-                                                        Табель РВ (факт)
-                                                    </a>
-                                                </li>
-                                            {% endif %}
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'hrdepartment_app:reportcard_detail_ias' %}">
-                                                    Табель РВ (ИАС)
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <span>Служебные поездки</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'hrdepartment_app:bpmemo_month_report' %}">
-                                                    Служебные поездки (контроль)
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_report' %}">
-                                                    Отчет по сотрудникам
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:pso_memo_report' %}">
-                                                    Служебная записка ПСО
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'hrdepartment_app:management_dashboard' %}">
-                                                    Отчеты для руководства
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:expense_report' %}">
-                                                    Отчет по <br>
-                                                    Служебным поездкам
-                                                </a>
-                                            </li>
-
-                                        </ul>
-                                    </li>
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <span>Персонал</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            {% if user.is_staff %}
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:seasonality-report' %}">
-                                                        Сезонность отпусков
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:absence_analysis' %}">
-                                                        Анализ пропусков работы
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:weekday-analysis' %}">
-                                                        Влияние дня недели на отгулы
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:time_distribution' %}">
-                                                        Распределение типов времени
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'customers_app:inactive_users_report' %}">
-                                                        Неактивные пользователи
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:training_debt_report' %}">
-                                                        Расчет долга за обучение
-                                                    </a>
-                                                </li>
-                                            {% endif %}
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'customers_app:apartments_usage_report' %}">
-                                                    Использования квартир
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'customers_app:apartment_occupancy_report' %}">
-                                                    Занятость квартир на дату
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'library_app:event_list' %}">
-                                            Мероприятия
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <i class="bx bx-book-content" aria-hidden="true"></i>
-                                    <span>Справочники</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
-                                            Сотрудники
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
-                                            Должности
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}">
-                                            Вредные условия труда
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
-                                            Типы документов
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
-                                            Типы договоров
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
-                                            Типы имущества
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'contracts_app:estate_list' %}">
-                                            Имущество
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'customers_app:divisions_list' %}">
-                                            Подразделения
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
-                                            Контрагенты
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'customers_app:documents_list' %}">
-                                            Документы контрагенты
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:purpose_list' %}">
-                                            Цели служебной поездки
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:medicalorg_list' %}">
-                                            Медицинские организации
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:place_list' %}">
-                                            Места назначения
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <i class='bx bxs-book-content' aria-hidden="true"></i>
-                                    <span>Договора</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'contracts_app:index' %}">
-                                            Общий список договоров
-                                        </a>
-                                    </li>
-                                    {% if request.user.is_superuser %}
-                                        <li>
-                                            <a class="nav-link" href="{% url 'contracts_app:index-admin' %}">
-                                                Общий список договоров - admin
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    <li>
-                                        <a class="nav-link" href="{% url 'contracts_app:counteragent_check' %}">
-                                            Поиск контрагента
-                                        </a>
-                                    </li>
-                                    {% if perms.contracts_app.view_contract or request.user.is_superuser %}
-                                        <li class="nav-parent">
-                                            <a class="nav-link" href="#">
-                                                <i class='bx bxs-book-content' aria-hidden="true"></i>
-                                                <span>Отчеты</span>
-                                            </a>
-                                            <ul class="nav nav-children">
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'contracts_app:contract_report' %}">
-                                                        Отчёт по договорам
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-                                    {% endif %}
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:student_agreement_list' %}">
-                                            Ученические договора
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            {% if user|has_group:"Финансы" %}
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <i class="bx bx-wallet" aria-hidden="true"></i>
-                                        <span>Финансы</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        <li>
-                                            <a class="nav-link" href="{% url 'finance:dashboard' %}">
-                                                Дашборд
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'finance:calendar' %}">
-                                                Платежный календарь
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'finance:overdraft_list' %}">
-                                                Овердрафты
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'finance:key_rates' %}">
-                                                Ключевая ставка ЦБ
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'finance:reports_list' %}">
-                                                Отчеты
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                            {% endif %}
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <i class='bx bx-task' aria-hidden="true"></i>
-                                    <span>ЭДО</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <span>Договора</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link" href="#">
-                                                    Бланк согласования <br>
-                                                    договора
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="#">
-                                                    Бизнес-процесс по <br>
-                                                    договорам
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                                <ul class="nav nav-children">
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <span>Логистика</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link" href="{% url 'logistics_app:waybill_list' %}">
-                                                    Транспортная накладная
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'logistics_app:package_list' %}">
-                                                    Посылки
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                                <ul class="nav nav-children">
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <span>Служебные задания</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:memo_list' %}">
-                                                    Служебная записка <br>
-                                                    на служебную поездку
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_list' %}">
-                                                    Бизнес-процесс по <br>
-                                                    Служебным запискам
-                                                </a>
-                                            </li>
-
-                                        </ul>
-                                    </li>
-                                </ul>
-                                <ul class="nav nav-children">
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            <span>ИАС</span>
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:team_list' %}">
-                                                    <span>Старшие бригад</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:timesheet_list' %}">
-                                                    <span>Табель МПД</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'hrdepartment_app:outfit_card_list' %}">
-                                                    Журнал регистрации <br>
-                                                    карт-нарядов
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'ppequipment_app:index' %}">
-                                                    Инвентарный учёт
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <i class="bx bx-briefcase-alt-2" aria-hidden="true"></i>
-                                    <span>Документация</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:poa_list' %}">
-                                            Доверенности
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'library_app:blank_list' %}">
-                                            Бланки документов
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:medical_list' %}">
-                                            Медицинские направления
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:guidance_documents_list' %}">
-                                            Руководящие документы
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:operational_list' %}">
-                                            Нормативные акты
-                                        </a>
-                                    </li>
-                                    <li class="nav-parent">
-                                        <a class="nav-link" href="#">
-                                            Локально-нормативные акты
-                                        </a>
-                                        <ul class="nav nav-children">
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'hrdepartment_app:jobdescription_list' %}">
-                                                    Должностные инструкции
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:briefings_list' %}">
-                                                    Инструктажи
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:lpi_list' %}">
-                                                    Инструкции по ТО ВС
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:provisions_list' %}">
-                                                    Положения
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link" href="{% url 'hrdepartment_app:order_list' %}">
-                                                    Приказы
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="nav-link"
-                                                   href="{% url 'hrdepartment_app:labor_protection_list' %}">
-                                                    Процедуры по <br>
-                                                    охране труда
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="#">
-                                            Входящие документы
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="#">
-                                            Исходящие документы
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-
-
-                            {% if request.user|can_view_flight_planning %}
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <i class="fa-solid fa-plane-departure" aria-hidden="true"></i>
-                                        <span>Планирование полетов</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        <li>
-                                            <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
-                                                <i class="bx bx-calendar-event" aria-hidden="true"></i>
-                                                <span>График экипажей</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'flight_planning:document_list' %}">
-                                                <i class="bx bx-file-blank" aria-hidden="true"></i>
-                                                <span>Журнал документов</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'flight_planning:my_schedule' %}">
-                                                <i class="bx bx-user-check" aria-hidden="true"></i>
-                                                <span>Мой график</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'flight_planning:aircraft_movement_list' %}">
-                                                <i class="bx bxs-plane-take-off" aria-hidden="true"></i>
-                                                <span>Журнал перемещений ВС</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'flight_planning:periodic_check_list' %}">
-                                                <i class="bx bx-check-shield" aria-hidden="true"></i>
-                                                <span>Периодические мероприятия</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'flight_planning:employee_status_list' %}">
-                                                <i class="bx bx-user-pin" aria-hidden="true"></i>
-                                                <span>Состояния сотрудников</span>
-                                            </a>
-                                        </li>
-                                        {% if request.user|can_view_flight_reports %}
-                                            <li class="nav-parent">
-                                                <a class="nav-link" href="#">
-                                                    <i class="bx bx-bar-chart-square" aria-hidden="true"></i>
-                                                    <span>Отчеты</span>
-                                                </a>
-                                                <ul class="nav nav-children">
-                                                    <li>
-                                                        <a class="nav-link" href="{% url 'flight_planning:aircraft_basing_report' %}">
-                                                             <span>Базирование ВС на дату</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a class="nav-link" href="{% url 'flight_planning:flight_personnel_utilization_report' %}">
-                                                            <span>Загрузка летного состава</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                            </li>
-                                        {% endif %}
-                                        {% if request.user|is_flight_planner %}
-                                            <li>
-                                                <a class="nav-link" href="{% url 'flight_planning:settings' %}">
-                                                    <i class="bx bx-cog" aria-hidden="true"></i>
-                                                    <span>Настройки</span>
-                                                </a>
-                                            </li>
-                                        {% endif %}
-                                    </ul>
-                                </li>
-                            {% endif %}
-
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                    <span>Вспомогательные сервисы</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'library_app:help_list' %}">
-                                            <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                            <span>Справка</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'map_viewer:index' %}">
-                                            <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
-                                            <span>Карты</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'tickets_app:list' %}">
-                                            <i class='bx bx-envelope' aria-hidden="true"></i>
-                                            <span>Добровольные сообщения</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'password_manager:password_list' %}">
-                                            <i class='bx bxs-key' aria-hidden="true"></i>
-                                            Хранилище паролей
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                                    {% if user.is_superuser %}
-                                        <li class="nav-parent">
-                                            <a class="nav-link" href="#">
-                                                <i class='bx bx-shield-quarter' aria-hidden="true"></i>
-                                                <span>Настройки</span>
-                                            </a>
-                                            <ul class="nav nav-children">
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'administration_app:property_list' %}">
-                                                        Настройки портала
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'hrdepartment_app:business_process_routes_list' %}">
-                                                        Настройки бизнес процессов
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
-                                                        (Устаревшее) Настройки бизнес процессов
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'customers_app:group_list' %}">
-                                                        Группы
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'administration_app:json' %}">
-                                                        Загрузка данных из файла
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'administration_app:monitoring' %}">
-                                                        Мониторинг системы
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'administration_app:1c_odata_request' %}">
-                                                        Генератор OData-запросов
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'password_manager:key_setup' %}">
-                                                        Ключевая фраза
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-                                    {% endif %}
-                                    <li>
-                                        <a class="nav-link" href="{% url 'chat_app:index' %}">
-                                            <i class="fa-regular fa-comment-dots" aria-hidden="true"></i>
-                                            <span>Чат</span>
-                                        </a>
-                                    </li>
-                                    {% if user.is_superuser %}
-                                        <li class="nav-parent">
-                                            <a class="nav-link" href="#">
-                                                <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                                <span>Конкурс</span>
-                                            </a>
-                                            <ul class="nav nav-children">
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
-                                                        Прием стихов
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'library_app:vote' %}">
-                                                        Голосование
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link" href="{% url 'library_app:results' %}">
-                                                        Результаты
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-                                    {% endif %}
-                                </ul>
-                            </li>
-
-                        </ul>
-                    </nav>
-                    <hr class="separator"/>
-                    <div class="sidebar-widget widget-tasks">
-                        <div class="widget-header">
-                            <h6>Наши проекты</h6>
-                            <div class="widget-toggle">+</div>
-                        </div>
-                        <div class="widget-content">
-                            <ul class="list-unstyled m-0">
-                                <li><a href="https://barkol.ru/" target="_blank">Главный сайт</a></li>
-                                <li><a href="http://lk.barkol.ru/pls/apex/f?p=506" target="_blank">Кабинет
-                                    авиаспециалиста</a>
-                                </li>
-                                <li><a href="https://ms.barkol.ru/" target="_blank">Почтовый сервер БАРКОЛ</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <hr class="separator"/>
-                    <div class="sidebar-widget widget-stats">
-                        <div class="widget-header">
-                            <h6>СТАТИСТИКА КОМПАНИИ</h6>
-                            <div class="widget-toggle">+</div>
-                        </div>
-
-                        <div class="widget-content">
-                            <section class="card">
-                                <header class="card-header">
-                                    <div class="card-actions">
-                                        <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                    </div>
-                                    <h2 class="card-title">QR код</h2>
-                                </header>
-                                <div class="card-body">
-                                    <div class="widget-summary">
-                                        <div class="widget-summary-col text-center">
-                                            <div class="summary">
-                                                <img id="qr-code-image"
-                                                     src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
-                                                     alt="QR Code" width="50%">
-                                                <br>
-                                                <span id="qr-code-message"
-                                                      class="text-3">QR код действителен еще:</span>
-                                                <div id="countdown" style="margin-top: 10px;"></div>
-                                                <div id="expired-message"
-                                                     style="display: none; margin-top: 10px; color: red;">
-                                                    QR код устарел
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-
-                        <div class="widget-content">
-                            <section class="card">
-                                <header class="card-header">
-                                    <div class="card-actions">
-                                        <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                    </div>
-                                    <h2 class="card-title">Сотрудники OnLine</h2>
-                                </header>
-                                <div class="card-body">
-                                    <div class="widget-summary">
-                                        <div class="widget-summary-col">
-                                            <div class="summary">
-                                                <ul id="online-users"></ul>
-
-                                                <script>
-                                                    function showMessageToast(from, text) {
-                                                        const toastId = "toast-" + Date.now();
-
-                                                        const toastHtml = `
-        <div id="${toastId}" class="toast toast-soft fade" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <strong class="me-auto">${from}</strong>
-                <small>сообщение</small>
-                <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Закрыть"></button>
-            </div>
-            <div class="toast-body">
-                ${text}
-            </div>
-        </div>
-    `;
-
-                                                        document.getElementById("toastAreaCenter").insertAdjacentHTML('beforeend', toastHtml);
-
-                                                        const toastElement = document.getElementById(toastId);
-
-                                                        // Обработка ссылок внутри toast если они есть
-                                                        const links = toastElement.querySelectorAll('a');
-                                                        links.forEach(link => {
-                                                            link.addEventListener('click', () => {
-                                                                const bsToast = bootstrap.Toast.getInstance(toastElement);
-                                                                if (bsToast) bsToast.hide();
-                                                            });
-                                                        });
-
-                                                        const bsToast = new bootstrap.Toast(toastElement, {
-                                                            autohide: false, // не закрывать автоматически
-                                                            animation: true
-                                                        });
-
-                                                        bsToast.show();
-                                                    }
-                                                </script>
-
-
-                                                <script>
-
-                                                    document.addEventListener("DOMContentLoaded", function () {
-                                                        const modalElement = document.getElementById('sendMessageModal');
-                                                        if (!modalElement) {
-                                                            console.error('Modal element #sendMessageModal not found in DOM');
-                                                            return;
-                                                        }
-                                                        const bsModal = new bootstrap.Modal(modalElement);
-
-                                                        let selectedUserId = null;
-
-                                                        window.openModal = function (username, userId) {
-                                                            selectedUserId = userId;
-                                                            document.getElementById("sendMessageLabel").textContent = "Сообщение для " + username;
-                                                            document.getElementById("modal-text").value = "";
-                                                            bsModal.show();
-                                                        };
-
-                                                        document.getElementById("modal-send").onclick = function () {
-                                                            const msg = document.getElementById("modal-text").value.trim();
-                                                            if (msg && selectedUserId) {
-                                                                window.private_socket.send(JSON.stringify({
-                                                                    type: "private_message",
-                                                                    to: selectedUserId,
-                                                                    message: msg
-                                                                }));
-                                                            }
-                                                            bsModal.hide();
-                                                        };
-
-                                                    });
-
-                                                    // --- Online users WebSocket ---
-                                                    const ws_protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-                                                    const online_users_url = ws_protocol + window.location.host + "/ws/online_users/";
-                                                    const socket_online_users = new WebSocket(online_users_url);
-
-                                                    // --- Private messages WebSocket ---
-                                                    window.private_socket = new WebSocket(ws_protocol + window.location.host + "/ws/private/");
-
-                                                    // --- Получение личных сообщений ---
-                                                    window.private_socket.onmessage = function (event) {
-                                                        const data = JSON.parse(event.data);
-
-                                                        if (data.type === "private_message") {
-                                                            showMessageToast(data.from_name, data.message);
-                                                        }
-                                                    };
-
-                                                    window.private_socket.onclose = function () {
-                                                        console.error("Private WebSocket закрыт");
-                                                    };
-
-                                                    // --- Получение списка онлайн пользователей ---
-                                                    socket_online_users.onmessage = function (event) {
-                                                        const data = JSON.parse(event.data);
-
-                                                        if (data.type === 'online_users') {
-                                                            const usersList = document.getElementById('online-users');
-                                                            usersList.innerHTML = '';
-
-                                                            data.users.forEach(user => {
-                                                                const username = user[0]; // отображаемое имя
-                                                                const userId = user[1];   // PK пользователя
-
-                                                                const li = document.createElement('li');
-                                                                const link = document.createElement('a');
-
-                                                                link.textContent = username;
-
-                                                                // --- Двойной клик для отправки сообщения ---
-                                                                link.addEventListener("dblclick", function (e) {
-                                                                    e.preventDefault();
-                                                                    openModal(username, userId);
-                                                                });
-
-                                                                li.appendChild(link);
-                                                                usersList.appendChild(li);
-                                                            });
-                                                        }
-                                                    };
-
-                                                    socket_online_users.onclose = function () {
-                                                        console.error('Online WebSocket закрыт');
-                                                    };
-                                                </script>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
-                </div>
-                <script>
-                    // Maintain Scroll Position
-                    if (typeof localStorage !== 'undefined') {
-                        if (localStorage.getItem('sidebar-left-position') !== null) {
-                            var initialPosition = localStorage.getItem('sidebar-left-position'),
-                                sidebarLeft = document.querySelector('#sidebar-left .nano-content');
-                            if (sidebarLeft) {
-                                sidebarLeft.scrollTop = initialPosition;
-                            }
-                        }
-                    }
-                </script>
-                <script>
-                    // Initialize NanoScroll for left menu
-                    (function () {
-                        function initNanoScroll() {
-                            var nanoContainer = document.querySelector('#sidebar-left .nano');
-                            if (!nanoContainer) {
-                                return;
-                            }
-
-                            // Set proper height for nano container
-                            var sidebarLeft = document.getElementById('sidebar-left');
-                            if (sidebarLeft) {
-                                var windowHeight = window.innerHeight;
-                                var headerHeight = document.querySelector('header.header') ? document.querySelector('header.header').offsetHeight : 60;
-                                var sidebarHeaderHeight = document.querySelector('.sidebar-header') ? document.querySelector('.sidebar-header').offsetHeight : 40;
-                                var nanoHeight = windowHeight - headerHeight - sidebarHeaderHeight;
-                                nanoContainer.style.height = nanoHeight + 'px';
-                            }
-
-                            if (typeof jQuery !== 'undefined' && jQuery.fn.nanoScroller) {
-                                var initialPosition = 0;
-                                if (typeof localStorage !== 'undefined' && localStorage.getItem('sidebar-left-position') !== null) {
-                                    initialPosition = parseInt(localStorage.getItem('sidebar-left-position')) || 0;
-                                }
-
-                                // Destroy existing nanoScroller if exists
-                                try {
-                                    jQuery(nanoContainer).nanoScroller({destroy: true});
-                                } catch (e) {
-                                    // ignore if not initialized
-                                }
-
-                                jQuery(nanoContainer).nanoScroller({
-                                    scrollTop: initialPosition,
-                                    alwaysVisible: true,
-                                    preventPageScrolling: true
-                                });
-                            }
-                        }
-
-                        // Initialize on DOM load
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', initNanoScroll);
-                        } else {
-                            initNanoScroll();
-                        }
-
-                        // Reinitialize on window resize
-                        var resizeTimer;
-                        window.addEventListener('resize', function () {
-                            clearTimeout(resizeTimer);
-                            resizeTimer = setTimeout(initNanoScroll, 250);
-                        });
-                    })();
-                </script>
-                <script>
-                    document.addEventListener("DOMContentLoaded", function () {
-                        const countdownElement = document.getElementById('countdown');
-                        const qrCodeImage = document.getElementById('qr-code-image');
-                        const expiredMessage = document.getElementById('expired-message');
-                        const qrCodeMessage = document.getElementById('qr-code-message');
-
-                        let timeLeft = 30;
-
-                        function updateCountdown() {
-                            countdownElement.textContent = `${timeLeft} секунд`;
-                            timeLeft--;
-
-                            if (timeLeft < 0) {
-                                clearInterval(countdownInterval);
-                                countdownElement.style.display = 'none';
-                                qrCodeImage.style.display = 'none';
-                                qrCodeMessage.style.display = 'none';
-                                expiredMessage.style.display = 'block';
-                            }
-                        }
-
-                        updateCountdown();
-                        const countdownInterval = setInterval(updateCountdown, 1000);
-                    });
-                </script>
-            </div>
-        </aside>
-        <!-- end: sidebar -->
-
-        <!-- БЛОК КОНТЕНТА -->
-        <section role="main" class="content-body">
-
-            <header class="page-header">
-                <h2>{{ title }}</h2>
-                <div class="right-wrapper text-end">
-                    <ol class="breadcrumbs">
-                        <li>
-                            <a href="{% url "customers_app:profile" user.pk %}">
-                                <i class="bx bx-home-alt"></i>
-                            </a>
-                        </li>
-
-                        {% for crumb in breadcrumbs %}
-                            <li>
-                                {% if crumb.url %}
-                                    <a href="{{ crumb.url }}"><span>{{ crumb.name }}</span></a>
-                                {% else %}
-                                    <span>{{ crumb.name }}</span>
-                                {% endif %}
-                            </li>
-                        {% endfor %}
-                    </ol>
-
-                    <a class="sidebar-right-toggle" data-open="sidebar-right">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                </div>
-            </header>
-
-            {% include 'customers_app/includes/_form_errors.html' with form=form %}
-
-            {% block content %}
-            {% endblock %}
-        </section>
     </div>
 
-    <!-- Правое меню -->
-    <aside id="sidebar-right" class="sidebar-right">
-        <div class="nano">
-            <div class="nano-content">
-                <a href="#" class="mobile-close d-md-none">
-                    Collapse <i class="fas fa-chevron-right"></i>
+    <section class="body">
+        <!-- Шапка портала (Header) -->
+        <header class="header">
+            <div class="logo-container">
+                <a href="{% if user.is_superuser %}{% url 'admin:index' %}{% else %}/users/profile/{{ user.pk }}/{% endif %}"
+                   class="logo" aria-label="На главную страницу">
+                    <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Авиакомпания БАРКОЛ"/>
                 </a>
-                <div class="sidebar-right-wrapper">
-                    <div class="sidebar-widget widget-calendar">
-                        <h6>Upcoming Tasks</h6>
-                        <div data-plugin-datepicker data-plugin-skin="dark"></div>
-                        <ul>
-                            <li>
-                                <time datetime="2021-04-19T00:00+00:00">04/19/2021</time>
-                                <span>Company Meeting</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="sidebar-widget widget-friends">
-                        <h6>Friends</h6>
-                        <ul>
-                            <li class="status-online">
-                                {#                                <figure class="profile-picture">#}
-                                {#                                    <img src="img/!sample-user.jpg" alt="Joseph Doe" class="rounded-circle">#}
-                                {#                                </figure>#}
-                                {#                                <div class="profile-info">#}
-                                {#                                    <span class="name">Joseph Doe Junior</span>#}
-                                {#                                    <span class="title">Hey, how are you?</span>#}
-                                {#                                </div>#}
-                            </li>
 
-                        </ul>
-                    </div>
+                <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"
+                     data-fire-event="sidebar-left-opened" aria-label="Открыть боковое меню" role="button">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </div>
+            </div>
+
+            <!-- Уведомления и выпадающее меню профиля -->
+            {% block notifications %}
+                <div class="header-right">
+                    <span class="separator"></span>
+                    {% include 'customers_app/includes/notifications.html' %}
+                    <span class="separator"></span>
+                    {% include 'customers_app/includes/user-dropdown-menu.html' %}
+                </div>
+            {% endblock %}
+        </header>
+
+        <div class="inner-wrapper">
+            <!-- Главное боковое меню -->
+            {% include 'customers_app/includes/left_menu.html' %}
+
+            <!-- Основная рабочая область (Content Body) -->
+            <section role="main" class="content-body">
+                <!-- Хлебные крошки и заголовок -->
+                {% include 'customers_app/includes/breadcrumb.html' %}
+
+                <!-- Глобальный вывод ошибок форм -->
+                {% include 'customers_app/includes/_form_errors.html' with form=form %}
+
+                <!-- Динамический контент страницы -->
+                {% block content %}
+                {% endblock %}
+            </section>
+
+            <!-- Правое вспомогательное меню -->
+            {% include 'customers_app/includes/right_menu.html' %}
+        </div>
+    </section>
+
+    <!-- Модальное окно отправки личного сообщения -->
+    <div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="sendMessageLabel">Сообщение пользователю</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="modal-text" class="form-control text-dark" rows="5" placeholder="Введите сообщение..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="modal-send" class="btn btn-success">Отправить</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 </div>
             </div>
         </div>
-    </aside>
-
-</section>
-
-<!-- Vendor -->
-<script src="{% static 'admin_templates/vendor/jquery/jquery.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/jquery-browser-mobile/jquery.browser.mobile.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/popper/umd/popper.min.js' %}"></script>
-
-<script src="{% static 'admin_templates/vendor/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/bootstrap-datepicker/locales/bootstrap-datepicker.ru.min.js' %}"
-        charset="UTF-8"></script>
-<script src="{% static 'admin_templates/vendor/common/common.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/magnific-popup/jquery.magnific-popup.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
-
-{% with my_list="tasks_app,customers_app,flight_planning"|split:"," %}
-    {% if request.resolver_match.app_name in my_list %}
-        <script src="{% static 'admin_templates/vendor/jquery-ui/jquery-ui.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/jqueryui-touch-punch/jquery.ui.touch-punch.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/moment/moment.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.min.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/fullcalendar/index.global.min.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.index.global.min.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/fullcalendar/locales-all.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/dropzone/dropzone.js' %}"></script>
-        <script src="{% static 'admin_templates/vendor/toastr/toastr.min.js' %}"></script>
-    {% endif %}
-{% endwith %}
-
-<!-- Specific Page Vendor -->
-<script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/dataTables.buttons.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.bootstrap4.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.html5.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.print.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/JSZip-2.5.0/jszip.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/pdfmake-0.1.32/pdfmake.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/pdfmake-0.1.32/vfs_fonts.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/ios7-switch/ios7-switch.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-
-<!-- Specific Page Vendor -->
-<script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
-{% block custom_script %}
-{% endblock %}
-<!-- Theme Base, Components and Settings -->
-<script src="{% static 'admin_templates/js/theme.js' %}"></script>
-
-<!-- Theme Custom -->
-<script src="{% static 'admin_templates/js/custom.js' %}"></script>
-
-<!-- Theme Initialization Files -->
-<script src="{% static 'admin_templates/js/theme.init.js' %}"></script>
-<!-- Examples -->
-<script id="myAdminSpinnerScript" src="{% static 'admin_templates/js/examples/examples.loading.overlay.js' %}"></script>
-{% block SpecificPageVendor %}
-{% endblock %}
-
-<!-- Вставьте этот скрипт в ваш шаблон, например, в base.html -->
-<script>
-    let inactivityTime = function () {
-        let time;
-        const timeout = 3600000; // 1 час
-
-        function lockScreen() {
-            // Простая переадресация на lock-screen,
-            // а там сервер уже проверит сессию
-            window.location.href = "{% url 'customers_app:lock_screen' %}";
-        }
-
-        function resetTimer() {
-            clearTimeout(time);
-            time = setTimeout(lockScreen, timeout);
-        }
-
-        // Слушаем больше событий для точности
-        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-        events.forEach(name => document.addEventListener(name, resetTimer, true));
-
-        resetTimer();
-    };
-
-    inactivityTime();
-</script>
-
-<!-- Bootstrap Modal -->
-<div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="sendMessageLabel">Сообщение пользователю</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Закрыть"></button>
-            </div>
-
-            <div class="modal-body">
-                <textarea id="modal-text" class="form-control" rows="5" placeholder="Введите сообщение..."
-                          style="color:black;"></textarea>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" id="modal-send" class="btn btn-success">Отправить</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-            </div>
-
-        </div>
     </div>
-</div>
-<style>
-    .toast-soft {
-        background: #f8f9fa !important; /* мягкий бело-серый фон */
-        border: 1px solid #38517e !important;
-        color: #333 !important;
-        border-radius: 10px !important;
-        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
-        min-width: 300px;
-    }
 
-    .toast-soft .toast-header {
-        background: #94c9fb !important;
-        border-bottom: 1px solid #38517e !important;
-    }
+    <!-- Контейнер для всплывающих сообщений (Toasts) -->
+    <div id="toastAreaCenter" class="position-fixed bottom-0 end-0 p-4" style="z-index: 999999;"></div>
 
-    .toast-soft .btn-close {
-        filter: brightness(0);
-    }
-</style>
+    <!-- Базовые вендорные библиотеки -->
+    <script src="{% static 'admin_templates/vendor/jquery/jquery.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/jquery-browser-mobile/jquery.browser.mobile.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/popper/umd/popper.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrap-datepicker/locales/bootstrap-datepicker.ru.min.js' %}" charset="UTF-8"></script>
+    <script src="{% static 'admin_templates/vendor/common/common.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/magnific-popup/jquery.magnific-popup.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
 
-<div id="toastAreaCenter"
-     class="position-fixed bottom-0 end-0 p-4"
-     style="z-index: 999999;">
-</div>
+    <!-- Условные вендорные скрипты -->
+    {% with my_list="tasks_app,customers_app,flight_planning"|split:"," %}
+        {% if request.resolver_match.app_name in my_list %}
+            <script src="{% static 'admin_templates/vendor/jquery-ui/jquery-ui.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/jqueryui-touch-punch/jquery.ui.touch-punch.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/moment/moment.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.min.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/fullcalendar/index.global.min.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.index.global.min.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/fullcalendar/locales-all.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/dropzone/dropzone.js' %}"></script>
+            <script src="{% static 'admin_templates/vendor/toastr/toastr.min.js' %}"></script>
+        {% endif %}
+    {% endwith %}
 
+    <!-- Специфичные библиотеки страниц (DataTables, Select2, Switches, MultiSelect) -->
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.bootstrap4.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.print.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/JSZip-2.5.0/jszip.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/pdfmake-0.1.32/pdfmake.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/pdfmake-0.1.32/vfs_fonts.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/ios7-switch/ios7-switch.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+
+    <!-- Пользовательские скрипты страницы -->
+    {% block custom_script %}
+    {% endblock %}
+
+    <!-- Инициализация темы Porto Admin -->
+    <script src="{% static 'admin_templates/js/theme.js' %}"></script>
+    <script src="{% static_version 'admin_templates/js/custom.js' %}"></script>
+    <script src="{% static 'admin_templates/js/theme.init.js' %}"></script>
+    <script id="myAdminSpinnerScript" src="{% static 'admin_templates/js/examples/examples.loading.overlay.js' %}"></script>
+
+    <!-- Ядро клиентских скриптов портала (WebSockets, NanoScroller, QR-код, защита от зависания) -->
+    <script src="{% static_version 'customers_app/js/portal_core.js' %}"></script>
+
+    {% block SpecificPageVendor %}
+    {% endblock %}
+
+    <!-- Автоматическая блокировка экрана при неактивности -->
+    <script>
+        if (window.initPortalInactivityTimer) {
+            window.initPortalInactivityTimer("{% url 'customers_app:lock_screen' %}");
+        }
+    </script>
 </body>
 </html>

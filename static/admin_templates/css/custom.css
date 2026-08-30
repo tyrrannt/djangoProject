@@ -1,46 +1,1245 @@
-/* Add here all your CSS customizations */
+/* ==========================================================================
+   КОРПОРАТИВНЫЙ ПОРТАЛ ООО АВИАКОМПАНИЯ «БАРКОЛ»
+   ДИЗАЙН-СИСТЕМА (BARKOL CORPORATE DESIGN SYSTEM) — СВЕТЛАЯ, СТРОГАЯ, ВОЗДУШНАЯ
+   
+   Цветовая палитра:
+   - Основной брендовый (Navy): #002b49
+   - Хедер (Чистый белый): #ffffff
+   - Фон страниц («Воздух»): #f8fafc
+   - Сайдбар (Темно-синий): #001e33
+   - Разделители и подложки: #e2e8f0, #f1f5f9
+   - Авиационный акцент (Sky Blue): #0284c7, #38bdf8
+   - Акцентные действия (Warm Amber/CTA): #f59e0b
+   
+   Шрифтовая пара:
+   - Заголовки: 'Montserrat', sans-serif (600, 700, 800)
+   - Основной текст и UI: 'Inter', system-ui, -apple-system, sans-serif (400, 500, 600)
+   ========================================================================== */
 
-/* Select2 accessibility and duplicate display prevention */
-select.select2-hidden-accessible,
-.select2-hidden-accessible {
-    border: 0 !important;
-    clip: rect(0 0 0 0) !important;
-    -webkit-clip-path: inset(50%) !important;
-    clip-path: inset(50%) !important;
-    height: 1px !important;
-    overflow: hidden !important;
-    padding: 0 !important;
+:root {
+    --barkol-navy: #002b49;
+    --barkol-navy-dark: #0c2847;
+    --barkol-navy-sidebar: #133b66;
+    --barkol-navy-light: #0b3d66;
+    
+    --barkol-bg-page: #f8fafc;
+    --barkol-bg-card: #ffffff;
+    --barkol-bg-muted: #f1f5f9;
+    --barkol-bg-hover: #f8fafc;
+    
+    --barkol-border: #e2e8f0;
+    --barkol-border-subtle: #f1f5f9;
+    --barkol-border-strong: #cbd5e1;
+    
+    --barkol-accent: #0284c7;
+    --barkol-accent-hover: #0369a1;
+    --barkol-accent-light: #e0f2fe;
+    --barkol-accent-glow: rgba(2, 132, 199, 0.15);
+    
+    --barkol-cta: #f59e0b;
+    --barkol-cta-hover: #d97706;
+    
+    --barkol-text-primary: #0f172a;
+    --barkol-text-secondary: #475569;
+    --barkol-text-muted: #94a3b8;
+    
+    --barkol-success: #10b981;
+    --barkol-success-bg: #ecfdf5;
+    --barkol-danger: #ef4444;
+    --barkol-danger-bg: #fef2f2;
+    --barkol-warning: #f59e0b;
+    --barkol-warning-bg: #fffbeb;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 10px;
+    --radius-xl: 12px;
+
+    --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+    --shadow-dropdown: 0 10px 25px -5px rgba(0, 43, 73, 0.1), 0 8px 10px -6px rgba(0, 43, 73, 0.05);
+
+    --transition-fast: all 0.15s ease-in-out;
+    --transition-base: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    --touch-target-size: 44px;
+}
+
+/* ==========================================================================
+   1. Глобальная типографика и фон
+   ========================================================================== */
+body {
+    background-color: var(--barkol-bg-page) !important;
+    color: var(--barkol-text-primary);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.card-title,
+.modal-title {
+    font-family: 'Montserrat', 'Inter', sans-serif !important;
+    font-weight: 600;
+    color: var(--barkol-navy);
+}
+
+a {
+    color: var(--barkol-accent);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+a:hover {
+    color: var(--barkol-accent-hover);
+}
+
+/* ==========================================================================
+   2. Шапка портала (Header) — СВЕТЛАЯ, ЧИСТАЯ, ВОЗДУШНАЯ (#ffffff)
+   ========================================================================== */
+.header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid var(--barkol-border) !important;
+    border-top: none !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+    height: 60px;
+    z-index: 1000;
+}
+
+.header .logo-container {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
+    border-top: none !important;
+    padding-left: 15px;
+}
+
+.header .logo img {
+    height: 36px;
+}
+
+.header .toggle-sidebar-left {
+    background-color: var(--barkol-bg-muted) !important;
+    color: var(--barkol-navy) !important;
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.header .toggle-sidebar-left:hover {
+    background-color: var(--barkol-accent-light) !important;
+    color: var(--barkol-accent) !important;
+}
+
+.header .separator {
+    background: var(--barkol-border) !important;
+    height: 28px;
+    margin: 0 18px;
+}
+
+/* Пользовательское меню в шапке */
+.header .userbox .profile-info .name {
+    color: var(--barkol-navy) !important;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.header .userbox .profile-info .role {
+    color: var(--barkol-text-secondary) !important;
+    font-size: 11px;
+}
+
+.header .userbox .custom-caret {
+    color: var(--barkol-text-muted) !important;
+}
+
+.header .userbox.show > a,
+.header .userbox:hover > a {
+    background-color: var(--barkol-bg-muted) !important;
+    border-radius: var(--radius-md);
+}
+
+.header .userbox .dropdown-menu {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-dropdown);
+    border: 1px solid var(--barkol-border);
+    padding: 6px 0;
+}
+
+.header .userbox .dropdown-menu a {
+    font-size: 13px;
+    padding: 8px 18px;
+    color: var(--barkol-text-primary);
+    transition: var(--transition-fast);
+}
+
+.header .userbox .dropdown-menu a:hover {
+    background-color: var(--barkol-bg-muted);
+    color: var(--barkol-accent);
+}
+
+.header .userbox .dropdown-menu a.text-danger:hover {
+    background-color: var(--barkol-danger-bg);
+    color: var(--barkol-danger);
+}
+
+/* Иконки уведомлений в шапке */
+.notifications > li > a.notification-icon {
+    background-color: var(--barkol-bg-muted) !important;
+    border-radius: var(--radius-md);
+    color: var(--barkol-navy) !important;
+    border: 1px solid var(--barkol-border);
+    transition: var(--transition-fast);
+}
+
+.notifications > li > a.notification-icon:hover {
+    background-color: var(--barkol-accent-light) !important;
+    color: var(--barkol-accent) !important;
+    border-color: rgba(2, 132, 199, 0.3);
+}
+
+.notifications > li > a.notification-icon .badge {
+    background-color: var(--barkol-cta) !important;
+    color: #ffffff !important;
+}
+
+.notification-menu {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-dropdown) !important;
+    border: 1px solid var(--barkol-border) !important;
+    overflow: hidden;
+}
+
+.notification-title {
+    background: var(--barkol-bg-muted) !important;
+    color: var(--barkol-navy) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 11.5px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid var(--barkol-border) !important;
+}
+
+.notification-scroll-container {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 8px 12px;
+}
+
+/* ==========================================================================
+   3. Подзаголовок страницы и хлебные крошки (.page-header)
+   ========================================================================== */
+.page-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--barkol-border) !important;
+    border-left: 1px solid var(--barkol-border) !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.page-header h2 {
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 1.15rem !important;
+    color: var(--barkol-navy) !important;
+    border-bottom: none !important;
+}
+
+.page-header .breadcrumbs li {
+    font-size: 12px;
+    color: var(--barkol-text-secondary);
+}
+
+.page-header .breadcrumbs li a {
+    color: var(--barkol-text-secondary);
+}
+
+.page-header .breadcrumbs li a:hover {
+    color: var(--barkol-accent);
+}
+
+.page-header .sidebar-right-toggle {
+    background: var(--barkol-bg-muted) !important;
+    color: var(--barkol-text-secondary) !important;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.page-header .sidebar-right-toggle:hover {
+    background: var(--barkol-accent-light) !important;
+    color: var(--barkol-accent) !important;
+}
+
+/* ==========================================================================
+   4. Главное боковое меню (Sidebar Left) & Навигация
+   ========================================================================== */
+.sidebar-left {
+    background-color: var(--barkol-navy-sidebar) !important;
+}
+
+.sidebar-left .sidebar-header {
+    background-color: var(--barkol-navy-dark) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-left .sidebar-header .sidebar-title {
+    color: #bfdbfe !important;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.sidebar-left .sidebar-header .sidebar-toggle {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    border-radius: var(--radius-sm);
+}
+
+.sidebar-left .sidebar-header .sidebar-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #38bdf8 !important;
+}
+
+/* --- УРОВЕНЬ 1: Основные пункты меню --- */
+ul.nav-main > li > a {
+    padding: 9px 14px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #f1f5f9 !important;
+    border-radius: var(--radius-md) !important;
+    margin: 2px 8px !important;
+    transition: var(--transition-fast) !important;
+    display: flex !important;
+    align-items: center !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.35 !important;
+}
+
+ul.nav-main > li.nav-parent > a {
+    padding-right: 32px !important;
+}
+
+ul.nav-main > li > a:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+ul.nav-main > li > a i {
+    color: #7dd3fc !important;
+    font-size: 16px !important;
+    width: 20px !important;
+    text-align: center !important;
+    margin-right: 10px !important;
+    flex-shrink: 0 !important;
+    transition: var(--transition-fast) !important;
+}
+
+ul.nav-main > li > a span {
+    flex: 1 1 auto;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+ul.nav-main > li > a:hover i {
+    color: #ffffff !important;
+}
+
+/* Активные пункты и раскрытые группы 1-го уровня */
+ul.nav-main > li.nav-active > a {
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.4) 0%, rgba(2, 132, 199, 0.1) 100%) !important;
+    color: #ffffff !important;
+    border-left: 3px solid #38bdf8 !important;
+    font-weight: 700 !important;
+}
+
+ul.nav-main > li.nav-active > a i {
+    color: #ffffff !important;
+}
+
+ul.nav-main > li.nav-expanded > a {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+}
+
+/* Шевроны раскрытия категорий */
+ul.nav-main li.nav-parent > a:after {
+    font-family: 'Font Awesome 5 Free' !important;
+    font-weight: 900 !important;
+    content: '\f107' !important;
+    color: #93c5fd !important;
     position: absolute !important;
-    width: 1px !important;
-    white-space: nowrap !important;
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-.select2-container {
-    box-sizing: border-box !important;
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-.select2-container--bootstrap {
-    display: block !important;
-    width: 100% !important;
-}
-
-.select2-container--bootstrap .select2-selection--single {
-    height: 38px !important;
-    line-height: 36px !important;
-    border: 1px solid #ced4da !important;
-    border-radius: 4px !important;
-    padding: 4px 12px !important;
-}
-
-.select2-container--bootstrap .select2-selection--single .select2-selection__rendered {
-    color: #495057 !important;
+    right: 14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 11px !important;
     padding: 0 !important;
-    line-height: 28px !important;
+    transition: var(--transition-fast) !important;
+}
+
+ul.nav-main li.nav-parent.nav-expanded > a:after {
+    content: '\f106' !important;
+    color: #38bdf8 !important;
+}
+
+/* --- ВЛОЖЕННЫЕ СПИСКИ МЕНЮ (ul.nav-children) --- */
+ul.nav-main ul.nav-children {
+    list-style: none !important;
+    box-shadow: none !important;
+}
+
+/* Общие правила для ссылок во вложенных списках */
+ul.nav-main ul.nav-children li a {
+    display: flex !important;
+    align-items: center !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.3 !important;
+}
+
+ul.nav-main ul.nav-children li a span {
+    flex: 1 1 auto;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+ul.nav-main ul.nav-children li a i {
+    color: #7dd3fc !important;
+    font-size: 13.5px !important;
+    width: 16px !important;
+    text-align: center !important;
+    margin-right: 8px !important;
+    flex-shrink: 0 !important;
+    transition: var(--transition-fast) !important;
+}
+
+ul.nav-main ul.nav-children li a:hover i {
+    color: #ffffff !important;
+}
+
+/* УРОВЕНЬ 2: Первая вложенность (Справочники, Отчеты, Договора...) */
+ul.nav-main > li > ul.nav-children {
+    background-color: rgba(6, 21, 38, 0.4) !important;
+    border-radius: var(--radius-md) !important;
+    margin: 2px 8px !important;
+    padding: 4px 0 !important;
+}
+
+ul.nav-main > li > ul.nav-children > li > a {
+    padding: 6px 12px 6px 18px !important;
+    font-size: 12.5px !important;
+    color: #cbd5e1 !important;
+    margin: 1px 4px !important;
+    border-radius: var(--radius-sm) !important;
+    transition: var(--transition-fast) !important;
+}
+
+ul.nav-main > li > ul.nav-children > li.nav-parent > a {
+    padding-right: 28px !important;
+}
+
+ul.nav-main > li > ul.nav-children > li > a:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+ul.nav-main > li > ul.nav-children > li.nav-active > a {
+    color: #38bdf8 !important;
+    font-weight: 600 !important;
+    background-color: rgba(2, 132, 199, 0.2) !important;
+}
+
+/* УРОВЕНЬ 3: Вторая вложенность (напр. Договора -> Отчеты -> Отчёт по договорам) */
+ul.nav-main > li > ul.nav-children > li > ul.nav-children {
+    background-color: rgba(4, 15, 28, 0.5) !important;
+    margin: 2px 4px 2px 14px !important;
+    padding: 3px 0 !important;
+    border-left: 2px solid #38bdf8 !important;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+}
+
+ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > a {
+    padding: 5px 10px 5px 14px !important;
+    font-size: 12px !important;
+    color: #cbd5e1 !important;
+    margin: 1px 2px !important;
+    border-radius: var(--radius-sm) !important;
+    transition: var(--transition-fast) !important;
+}
+
+ul.nav-main > li > ul.nav-children > li > ul.nav-children > li.nav-parent > a {
+    padding-right: 26px !important;
+}
+
+ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > a:hover {
+    color: #38bdf8 !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+ul.nav-main > li > ul.nav-children > li > ul.nav-children > li.nav-active > a {
+    color: #38bdf8 !important;
+    font-weight: 600 !important;
+    background-color: rgba(2, 132, 199, 0.22) !important;
+}
+
+/* УРОВЕНЬ 4: Третья вложенность (напр. Отчеты -> Персонал -> Вложенные пункты) */
+ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > ul.nav-children {
+    background-color: rgba(3, 11, 20, 0.6) !important;
+    margin: 2px 2px 2px 10px !important;
+    padding: 2px 0 !important;
+    border-left: 2px solid #38bdf8 !important;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+}
+
+ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > ul.nav-children > li > a {
+    padding: 4px 8px 4px 10px !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+}
+
+/* Скроллбар NanoScroller в сайдбаре */
+.sidebar-left .nano > .nano-pane {
+    background: rgba(0, 0, 0, 0.15) !important;
+    border-radius: 4px;
+}
+
+.sidebar-left .nano > .nano-pane > .nano-slider {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px;
+}
+
+/* --- ВИДЖЕТЫ В САЙДБАРЕ --- */
+.sidebar-left .separator {
+    background: rgba(255, 255, 255, 0.08) !important;
+    margin: 16px 12px;
+}
+
+.sidebar-left .sidebar-widget {
+    margin: 14px 10px;
+}
+
+.sidebar-left .sidebar-widget .widget-header h6 {
+    color: #94a3b8 !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+}
+
+.sidebar-left .sidebar-widget .widget-header .widget-toggle {
+    color: #94a3b8 !important;
+    font-size: 14px;
+}
+
+/* Виджет: Наши проекты */
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list {
+    list-style: none !important;
+    padding: 0 8px !important;
+    margin: 0 !important;
+}
+
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list li {
+    position: relative !important;
+    padding-left: 20px !important;
+    margin-bottom: 6px !important;
+}
+
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list li:before {
+    position: absolute !important;
+    left: 4px !important;
+    top: 8px !important;
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 50% !important;
+    content: '' !important;
+    display: inline-block !important;
+}
+
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list li:nth-child(1):before {
+    background-color: #ef4444 !important;
+    border: none !important;
+}
+
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list li:nth-child(2):before {
+    background-color: #0ea5e9 !important;
+    border: none !important;
+}
+
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list li:nth-child(3):before {
+    background-color: #10b981 !important;
+    border: none !important;
+}
+
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list li a {
+    color: #cbd5e1 !important;
+    font-size: 13px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: inline-block !important;
+    transition: var(--transition-fast) !important;
+}
+
+.sidebar-left .sidebar-widget.widget-tasks ul.widget-projects-list li a:hover {
+    color: #38bdf8 !important;
+    background: transparent !important;
+}
+
+/* --- СВЕТЛЫЕ СТИЛЬНЫЕ КАРТОЧКИ ВИДЖЕТОВ САЙДБАРА (Статистика, QR-код, Онлайн) --- */
+.sidebar-stat-card {
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+    overflow: hidden;
+}
+
+.sidebar-stat-card .stat-card-header {
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid var(--barkol-border) !important;
+    padding: 8px 12px !important;
+}
+
+.sidebar-stat-card .stat-card-title {
+    color: var(--barkol-navy) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+}
+
+.sidebar-stat-card .stat-card-body {
+    padding: 12px !important;
+    background-color: #ffffff !important;
+    color: var(--barkol-text-primary) !important;
+}
+
+.sidebar-stat-card #qr-code-image {
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    background: #ffffff;
+}
+
+.sidebar-stat-card .stat-card-footer-text {
+    color: var(--barkol-text-secondary) !important;
+}
+
+.sidebar-stat-card #countdown {
+    color: var(--barkol-accent) !important;
+}
+
+.sidebar-stat-card #online-users li {
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--barkol-border-subtle);
+}
+
+.sidebar-stat-card #online-users li:last-child {
+    border-bottom: none;
+}
+
+.sidebar-stat-card .online-user-link {
+    color: var(--barkol-text-primary) !important;
+    font-weight: 500 !important;
+    font-size: 12.5px !important;
+    transition: var(--transition-fast) !important;
+}
+
+.sidebar-stat-card .online-user-link:hover {
+    color: var(--barkol-accent) !important;
+}
+
+/* ==========================================================================
+   5. Карточки, панели и контейнеры контента (Content Cards & Panels)
+   ========================================================================== */
+.card {
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-card) !important;
+    transition: var(--transition-base);
+}
+
+.card-header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid var(--barkol-border-subtle) !important;
+    padding: 16px 22px !important;
+    border-top-left-radius: var(--radius-lg) !important;
+    border-top-right-radius: var(--radius-lg) !important;
+}
+
+.card-title {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--barkol-navy) !important;
+    margin: 0;
+}
+
+.card-body {
+    padding: 22px !important;
+}
+
+/* ==========================================================================
+   6. Кнопки (Buttons)
+   ========================================================================== */
+.btn {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    border-radius: var(--radius-md) !important;
+    padding: 7px 16px !important;
+    transition: var(--transition-fast) !important;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background-color: var(--barkol-navy) !important;
+    border-color: var(--barkol-navy) !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--barkol-navy-light) !important;
+    border-color: var(--barkol-navy-light) !important;
+    box-shadow: 0 4px 12px rgba(0, 43, 73, 0.2) !important;
+}
+
+.btn-info {
+    background-color: var(--barkol-accent) !important;
+    border-color: var(--barkol-accent) !important;
+    color: #ffffff !important;
+}
+
+.btn-info:hover {
+    background-color: var(--barkol-accent-hover) !important;
+    border-color: var(--barkol-accent-hover) !important;
+}
+
+.btn-secondary,
+.btn-default {
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border-strong) !important;
+    color: var(--barkol-text-secondary) !important;
+}
+
+.btn-secondary:hover,
+.btn-default:hover {
+    background-color: var(--barkol-bg-muted) !important;
+    color: var(--barkol-navy) !important;
+}
+
+/* ==========================================================================
+   7. Формы и поля ввода (Inputs & Controls)
+   ========================================================================== */
+.form-label {
+    font-weight: 600 !important;
+    color: var(--barkol-navy) !important;
+    font-size: 13px !important;
+    margin-bottom: 5px;
+}
+
+.form-control,
+.form-select {
+    border: 1px solid var(--barkol-border-strong) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 8px 12px !important;
+    font-size: 13.5px !important;
+    color: var(--barkol-text-primary) !important;
+    background-color: #ffffff !important;
+    transition: var(--transition-fast);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--barkol-accent) !important;
+    box-shadow: 0 0 0 3px var(--barkol-accent-glow) !important;
+    outline: none !important;
+}
+
+.input-group-text {
+    background-color: var(--barkol-bg-muted) !important;
+    border: 1px solid var(--barkol-border-strong) !important;
+    color: var(--barkol-text-secondary) !important;
+}
+
+/* ==========================================================================
+   8. Таблицы и компоненты DataTables (Tables, Export Buttons & Controls)
+   ========================================================================== */
+.table thead th {
+    background-color: var(--barkol-bg-muted) !important;
+    color: var(--barkol-navy) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 11.5px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    border-bottom: 1px solid var(--barkol-border) !important;
+    padding: 11px 14px !important;
+}
+
+.table tbody td {
+    padding: 11px 14px !important;
+    border-bottom: 1px solid var(--barkol-border-subtle) !important;
+    color: var(--barkol-text-primary);
+    font-size: 13.5px;
+    background-color: #ffffff;
+}
+
+.table tbody tr:hover td {
+    background-color: var(--barkol-bg-hover) !important;
+}
+
+/* Общие стили для оберток DataTable */
+.datatables-header-footer-wrapper,
+.dataTables_wrapper {
+    width: 100% !important;
+}
+
+/* Кнопки действий над таблицей в ListView */
+.datatable-header .btn,
+.datatables-header-footer-wrapper .datatable-header .btn {
+    border-radius: var(--radius-md) !important;
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    transition: var(--transition-fast) !important;
+}
+
+.btn-outline-primary {
+    color: var(--barkol-navy) !important;
+    border: 1.5px solid var(--barkol-navy) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--barkol-navy) !important;
+    border-color: var(--barkol-navy) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(0, 43, 73, 0.2) !important;
+}
+
+.btn-outline-info {
+    color: var(--barkol-accent) !important;
+    border: 1.5px solid var(--barkol-accent) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-info:hover {
+    background-color: var(--barkol-accent) !important;
+    border-color: var(--barkol-accent) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2) !important;
+}
+
+/* Экспортные кнопки DataTables (Копировать, CSV, Excel, PDF, Печать) */
+.dataTables_wrapper .dt-buttons,
+.dt-buttons {
+    display: inline-flex !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+    flex-wrap: wrap !important;
+}
+
+.dataTables_wrapper .dt-buttons .dt-button,
+.dataTables_wrapper .dt-buttons .btn,
+.dataTables_wrapper .DTTT_container .btn,
+.dt-buttons .dt-button,
+.dt-button {
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border-strong) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--barkol-navy) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    padding: 6px 14px !important;
+    margin: 0 !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: var(--transition-fast) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+}
+
+.dataTables_wrapper .dt-buttons .dt-button:hover,
+.dataTables_wrapper .dt-buttons .btn:hover,
+.dataTables_wrapper .DTTT_container .btn:hover,
+.dt-buttons .dt-button:hover,
+.dt-button:hover {
+    background-color: var(--barkol-bg-muted) !important;
+    border-color: var(--barkol-accent) !important;
+    color: var(--barkol-accent) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15) !important;
+}
+
+/* Селект количества записей (Показать N записей) */
+.dataTables_wrapper .dataTables_length {
+    margin-bottom: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.dataTables_wrapper .dataTables_length label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--barkol-text-secondary) !important;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    min-width: 95px !important;
+    width: auto !important;
+    height: 36px !important;
+    padding: 4px 26px 4px 10px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--barkol-navy) !important;
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border-strong) !important;
+    border-radius: var(--radius-md) !important;
+    cursor: pointer !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: var(--transition-fast) !important;
+    text-align: center !important;
+}
+
+.dataTables_wrapper .dataTables_length select:focus {
+    border-color: var(--barkol-accent) !important;
+    box-shadow: 0 0 0 3px var(--barkol-accent-glow) !important;
+    outline: none !important;
+}
+
+/* Поле поиска DataTable */
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 12px !important;
+}
+
+.dataTables_wrapper .dataTables_filter label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--barkol-text-secondary) !important;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    min-width: 220px !important;
+    height: 36px !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    color: var(--barkol-text-primary) !important;
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border-strong) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: var(--transition-fast) !important;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: var(--barkol-accent) !important;
+    box-shadow: 0 0 0 3px var(--barkol-accent-glow) !important;
+    outline: none !important;
+}
+
+/* Поля фильтрации колонок в шапке таблиц DataTable (Column Search Inputs) */
+#datatable-ecommerce-list thead input,
+.dataTables_wrapper thead input,
+.dataTables_wrapper thead th input,
+table.dataTable thead input,
+table.dataTable thead th input,
+.table thead input,
+thead input {
+    width: 100% !important;
+    min-width: 60px !important;
+    height: 32px !important;
+    padding: 4px 8px !important;
+    box-sizing: border-box !important;
+    border: 1px solid var(--barkol-border-strong) !important;
+    border-radius: var(--radius-md) !important;
+    background-color: #ffffff !important;
+    color: var(--barkol-text-primary) !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    transition: var(--transition-fast) !important;
+}
+
+#datatable-ecommerce-list thead input:focus,
+.dataTables_wrapper thead input:focus,
+.dataTables_wrapper thead th input:focus,
+table.dataTable thead input:focus,
+table.dataTable thead th input:focus,
+.table thead input:focus,
+thead input:focus {
+    border-color: var(--barkol-accent) !important;
+    box-shadow: 0 0 0 2px var(--barkol-accent-glow) !important;
+    outline: none !important;
+    background-color: #ffffff !important;
+}
+
+#datatable-ecommerce-list thead input::placeholder,
+.dataTables_wrapper thead input::placeholder,
+table.dataTable thead input::placeholder,
+thead input::placeholder {
+    color: var(--barkol-text-muted) !important;
+    font-weight: 400 !important;
+    font-size: 11.5px !important;
+}
+
+/* Таблицы DataTable */
+table.dataTable,
+table.table-ecommerce-simple {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+    margin-bottom: 16px !important;
+    border: 1px solid var(--barkol-border) !important;
+    border-radius: var(--radius-lg) !important;
+    overflow: hidden !important;
+}
+
+table.dataTable thead th,
+table.table-ecommerce-simple thead th {
+    background-color: var(--barkol-bg-muted) !important;
+    color: var(--barkol-navy) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 11.5px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    border-bottom: 1px solid var(--barkol-border) !important;
+    padding: 10px 12px !important;
+    vertical-align: middle !important;
+}
+
+table.dataTable tbody td,
+table.table-ecommerce-simple tbody td {
+    padding: 10px 12px !important;
+    border-bottom: 1px solid var(--barkol-border-subtle) !important;
+    color: var(--barkol-text-primary) !important;
+    font-size: 13px !important;
+    vertical-align: middle !important;
+    background-color: #ffffff;
+}
+
+table.dataTable tbody tr:hover td,
+table.table-ecommerce-simple tbody tr:hover td {
+    background-color: var(--barkol-bg-hover) !important;
+}
+
+/* Пагинация и Инфо DataTable */
+.dataTables_wrapper .dataTables_info,
+.datatable-footer .results-info-wrapper {
+    color: var(--barkol-text-secondary) !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    padding-top: 10px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate,
+.datatable-footer .pagination-wrapper {
+    padding-top: 8px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .pagination,
+.datatable-footer .pagination-wrapper .pagination,
+.pagination {
+    display: inline-flex !important;
+    gap: 5px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+}
+
+/* Обнуляем стили у оберток-элементов списка li, чтобы не было задвоения рамок */
+.dataTables_wrapper .dataTables_paginate ul.pagination li,
+.dataTables_wrapper .dataTables_paginate li.paginate_button,
+.dataTables_wrapper .dataTables_paginate li.page-item,
+.datatable-footer .pagination-wrapper ul.pagination li,
+.datatable-footer .pagination-wrapper li.page-item {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Стилизуем исключительно кликабельную кнопку/ссылку внутри li */
+.dataTables_wrapper .dataTables_paginate .page-link,
+.datatable-footer .pagination-wrapper .page-link,
+.dataTables_wrapper .dataTables_paginate a.paginate_button,
+.pagination .page-link {
+    border: 1px solid var(--barkol-border) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--barkol-navy) !important;
+    background-color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 5px 12px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: var(--transition-fast) !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    box-shadow: var(--shadow-sm) !important;
+    margin: 0 !important;
+}
+
+/* Активная страница */
+.dataTables_wrapper .dataTables_paginate .page-item.active .page-link,
+.dataTables_wrapper .dataTables_paginate li.active > a,
+.datatable-footer .pagination-wrapper .page-item.active .page-link,
+.dataTables_wrapper .dataTables_paginate a.paginate_button.current,
+.pagination .page-item.active .page-link {
+    background-color: var(--barkol-navy) !important;
+    border-color: var(--barkol-navy) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(0, 43, 73, 0.25) !important;
+    cursor: default !important;
+}
+
+/* Ховер на обычных кнопках */
+.dataTables_wrapper .dataTables_paginate .page-item:not(.active):not(.disabled) .page-link:hover,
+.datatable-footer .pagination-wrapper .page-item:not(.active):not(.disabled) .page-link:hover,
+.dataTables_wrapper .dataTables_paginate a.paginate_button:not(.current):not(.disabled):hover,
+.pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+    background-color: var(--barkol-bg-muted) !important;
+    border-color: var(--barkol-accent) !important;
+    color: var(--barkol-accent) !important;
+    transform: translateY(-1px);
+}
+
+/* Отключенные кнопки (disabled) и троеточие */
+.dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link,
+.datatable-footer .pagination-wrapper .page-item.disabled .page-link,
+.dataTables_wrapper .dataTables_paginate a.paginate_button.disabled,
+.pagination .page-item.disabled .page-link {
+    color: var(--barkol-text-muted) !important;
+    background-color: var(--barkol-bg-muted) !important;
+    border-color: var(--barkol-border-subtle) !important;
+    cursor: not-allowed !important;
+    opacity: 0.65 !important;
+    box-shadow: none !important;
+}
+
+/* ==========================================================================
+   9. Страница авторизации (Sign In / Auth Page) — СВЕТЛАЯ, ЦЕНТРИРОВАННАЯ
+   ========================================================================== */
+html.fixed body.auth-page,
+body.auth-page {
+    background-color: var(--barkol-bg-page) !important;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-page .body-sign {
+    background: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    max-width: 460px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.auth-page .center-sign {
+    width: 100%;
+    display: block;
+    padding: 0;
+}
+
+.auth-card {
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border) !important;
+    border-radius: var(--radius-xl) !important;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06) !important;
+}
+
+.auth-title {
+    font-family: 'Montserrat', sans-serif !important;
+    letter-spacing: -0.01em;
+}
+
+/* ==========================================================================
+   10. Всплывающие Toasts и хлебные крошки в карточках
+   ========================================================================== */
+.toast-soft {
+    background: #ffffff !important;
+    border: 1px solid var(--barkol-border) !important;
+    color: var(--barkol-text-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-dropdown) !important;
+    min-width: 300px;
+}
+
+.toast-soft .toast-header {
+    background: var(--barkol-bg-muted) !important;
+    border-bottom: 1px solid var(--barkol-border) !important;
+    color: var(--barkol-navy) !important;
+    font-weight: 600;
+}
+
+.breadcrumbs-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+.breadcrumbs-content {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    border: 1px solid var(--barkol-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.breadcrumbs-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--barkol-navy);
+}
+
+/* ==========================================================================
+   11. Мобильные правила (Mobile Breakpoints)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 16px !important;
+    }
+
+    .btn {
+        min-height: var(--touch-target-size);
+    }
 }

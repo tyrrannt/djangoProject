@@ -1,0 +1,25 @@
+<header class="page-header">
+    <h2>{{ title|default:"КОРПОРАТИВНЫЙ ПОРТАЛ" }}</h2>
+    <div class="right-wrapper text-end">
+        <ol class="breadcrumbs">
+            <li>
+                <a href="{% url 'customers_app:profile' user.pk %}" title="На главную">
+                    <i class="bx bx-home-alt"></i>
+                </a>
+            </li>
+            {% for crumb in breadcrumbs %}
+                <li>
+                    {% if crumb.url %}
+                        <a href="{{ crumb.url }}"><span>{{ crumb.name }}</span></a>
+                    {% else %}
+                        <span>{{ crumb.name }}</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+
+        <a class="sidebar-right-toggle" data-open="sidebar-right" title="Панель инструментов" aria-label="Открыть правую панель">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+    </div>
+</header>

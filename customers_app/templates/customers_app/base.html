@@ -1,90 +1,75 @@
 <!DOCTYPE html>
 {% load static %}
+{% load static_version %}
 <html class="fixed" lang="ru">
 <head>
-
     <!-- Basic -->
     <meta charset="UTF-8">
-    <title>Корпоративный портал // {% block title %}{% endblock %}</title>
-    <meta name="keywords" content="HTML5"/>
+    <title>КОРПОРАТИВНЫЙ ПОРТАЛ // {% block title %}{% endblock %}</title>
+    <meta name="keywords" content="BARKOL, Авиакомпания Баркол"/>
     <meta name="description" content="Корпоративный портал ООО Авиакомпания 'БАРКОЛ'">
-    <meta name="author" content="">
+    <meta name="author" content="BARKOL">
     <link rel="shortcut icon" href="{% static 'android/mipmap-hdpi/ic_launcher_round.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     <link rel="manifest" href="{% static 'manifest.json' %}">
+
     <!-- Mobile Metas -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
     {% block css %}
-        <!-- Web Fonts  -->
-        <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800|Shadows+Into+Light"
-              rel="stylesheet" type="text/css">
+        <!-- Web Fonts (Barkol Typography) -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 
         <!-- Vendor CSS -->
-        <link rel="stylesheet" href="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.css' %}"/>
         <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.css' %}"/>
-        <link rel="stylesheet" href="{% static 'admin_templates/vendor/animate/animate.compat.css' %}">
+        <link rel="stylesheet" href="{% static 'admin_templates/vendor/animate/animate.compat.css' %}"/>
         <link rel="stylesheet" href="{% static 'admin_templates/vendor/font-awesome/css/all.min.css' %}"/>
         <link rel="stylesheet" href="{% static 'admin_templates/vendor/boxicons/css/boxicons.min.css' %}"/>
-        <link rel="stylesheet" href="{% static 'admin_templates/vendor/magnific-popup/magnific-popup.css' %}"/>
-        <link rel="stylesheet"
-              href="{% static 'admin_templates/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}"/>
 
         <!-- Theme CSS -->
-
         <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
-
-        <!-- Skin CSS -->
         <link rel="stylesheet" href="{% static 'admin_templates/css/skins/default.css' %}"/>
-
-        <!-- Theme Custom CSS -->
-        <link rel="stylesheet" href="{% static 'admin_templates/css/custom.css' %}">
+        <link rel="stylesheet" href="{% static_version 'admin_templates/css/custom.css' %}">
     {% endblock %}
-    <!-- Head Libs -->
 
-    {% block custome %}
-    {% endblock %}
+    {% block custome %}{% endblock %}
+    {% block custom_css %}{% endblock %}
 
     {% block js_top %}
         <script src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
     {% endblock %}
-
 </head>
-<body>
-<!-- start: page -->
+<body class="auth-page">
+<!-- start: auth page wrapper -->
 <section class="body-sign">
     <div class="center-sign">
-        <a href="#" class="logo float-left">
-            <img src="{% static 'admin_templates/img/logo.png' %}" height="70" alt="ООО Авиакомпания 'БАРКОЛ'"/>
-        </a>
+        <div class="text-center mb-4">
+            <a href="/" class="d-inline-block" aria-label="ООО Авиакомпания БАРКОЛ">
+                <img src="{% static 'admin_templates/img/logo.png' %}" height="55" alt="ООО Авиакомпания 'БАРКОЛ'"/>
+            </a>
+        </div>
+
         {% block content %}
         {% endblock %}
 
-        <p class="text-center text-muted mt-3 mb-3">&copy; Авторское право {% now "Y" %}. Все права защищены.</p>
+        <p class="text-center text-muted mt-4 mb-2 small">&copy; {% now "Y" %} ООО Авиакомпания «БАРКОЛ». Все права защищены.</p>
     </div>
 </section>
-<!-- end: page -->
+<!-- end: auth page wrapper -->
 
 {% block js_bottom %}
-    <!-- Vendor -->
     <script src="{% static 'admin_templates/vendor/jquery/jquery.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/jquery-browser-mobile/jquery.browser.mobile.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/popper/umd/popper.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/common/common.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/magnific-popup/jquery.magnific-popup.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
-
-    <!-- Specific Page Vendor -->
-
-    <!-- Theme Base, Components and Settings -->
     <script src="{% static 'admin_templates/js/theme.js' %}"></script>
-
-    <!-- Theme Custom -->
-    <script src="{% static 'admin_templates/js/custom.js' %}"></script>
-
-    <!-- Theme Initialization Files -->
+    <script src="{% static_version 'admin_templates/js/custom.js' %}"></script>
     <script src="{% static 'admin_templates/js/theme.init.js' %}"></script>
 {% endblock %}
+
+{% block custom_script %}{% endblock %}
 </body>
 </html>
