@@ -131,9 +131,10 @@
                 "ordering": false,
                 "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
-                "buttons": [
+               "buttons": [
                     'copy', 'csv', 'excel', 'pdf', 'print'
                 ],
+                
                 "ajax": "{% url 'hrdepartment_app:reportcard_listmanual' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"

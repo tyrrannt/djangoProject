@@ -139,7 +139,10 @@
                 },
                 "order": [[2, 'desc'], [1, 'desc']],
                 "pageLength": 25,
-                "sDom": 'T<"clear">lrtip',
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ajax": "{% url 'contracts_app:index' %}",
                 "processing": true,
                 "serverSide": true,

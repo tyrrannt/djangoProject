@@ -91,7 +91,10 @@
                         });
                 },
                 "scrollX": true,
-                "sDom": 'T<"clear">lrtip',
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ajax": "{% url 'customers_app:divisions_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"

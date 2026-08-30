@@ -312,7 +312,10 @@
             "order": [[1, "asc"]], // Сортировка по ФИО по умолчанию
             "scrollX": true,
             "scrollCollapse": true,
-            "sDom": '<"top"l>rt<"bottom"ip>', // Упрощенный DOM для лучшей адаптации
+            "sDom": 'BT<"clear">lrtip',
+            "buttons": [
+                'copy', 'csv', 'excel', 'pdf', 'print'
+            ], // Упрощенный DOM для лучшей адаптации
             "ajax": {
                 "url": "{% url 'customers_app:staff_list' %}",
                 "dataSrc": function (json) {

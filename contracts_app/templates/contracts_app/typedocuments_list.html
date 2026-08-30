@@ -127,7 +127,10 @@
                 },
                 "order": [[0, 'asc']],
                 "pageLength": 25,
-                "sDom": 'T<"clear">lrtip',
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ajax": "{% url 'contracts_app:typedocuments_list' %}",
                 "processing": true,
                 "language": {

@@ -71,6 +71,9 @@
                 "pageLength": 25,
                 "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ajax": "{% url 'hrdepartment_app:users_events_list' %}",
                 "processing": true,
                 "serverSide": true,

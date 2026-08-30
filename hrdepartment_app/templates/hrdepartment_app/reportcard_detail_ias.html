@@ -144,7 +144,10 @@
     {#        $(document).ready(function () {#}
     {#            var table = $('#datatable-ecommerce-list').DataTable({#}
     {#                "scrollX": true,#}
-    {#                "sDom": 'T<"clear">lfrtip',#}
+    {#                "sDom": 'BT<"clear">lfrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],#}
     {#                "ajax": "{% url 'hrdepartment_app:reportcard_list' %}",#}
     {#                "language": {#}
     {#                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"#}

@@ -802,6 +802,17 @@ ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > ul.nav-children
 .datatables-header-footer-wrapper,
 .dataTables_wrapper {
     width: 100% !important;
+    position: relative !important;
+    clear: both !important;
+}
+
+/* Скрываем разделитель .clear, чтобы панель управления стояла в одну строку */
+.dataTables_wrapper .clear {
+    display: none !important;
+    clear: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Кнопки действий над таблицей в ListView */
@@ -842,55 +853,13 @@ ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > ul.nav-children
     box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2) !important;
 }
 
-/* Экспортные кнопки DataTables (Копировать, CSV, Excel, PDF, Печать) */
-.dataTables_wrapper .dt-buttons,
-.dt-buttons {
-    display: inline-flex !important;
-    gap: 6px !important;
-    margin-bottom: 12px !important;
-    flex-wrap: wrap !important;
-}
-
-.dataTables_wrapper .dt-buttons .dt-button,
-.dataTables_wrapper .dt-buttons .btn,
-.dataTables_wrapper .DTTT_container .btn,
-.dt-buttons .dt-button,
-.dt-button {
-    background-color: #ffffff !important;
-    border: 1px solid var(--barkol-border-strong) !important;
-    border-radius: var(--radius-md) !important;
-    color: var(--barkol-navy) !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 12.5px !important;
-    font-weight: 500 !important;
-    padding: 6px 14px !important;
-    margin: 0 !important;
-    box-shadow: var(--shadow-sm) !important;
-    transition: var(--transition-fast) !important;
-    cursor: pointer !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-decoration: none !important;
-}
-
-.dataTables_wrapper .dt-buttons .dt-button:hover,
-.dataTables_wrapper .dt-buttons .btn:hover,
-.dataTables_wrapper .DTTT_container .btn:hover,
-.dt-buttons .dt-button:hover,
-.dt-button:hover {
-    background-color: var(--barkol-bg-muted) !important;
-    border-color: var(--barkol-accent) !important;
-    color: var(--barkol-accent) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15) !important;
-}
-
-/* Селект количества записей (Показать N записей) */
+/* Слева в строке: Селект количества записей (Показать N записей) */
 .dataTables_wrapper .dataTables_length {
-    margin-bottom: 12px !important;
+    float: left !important;
     display: inline-flex !important;
     align-items: center !important;
+    margin-bottom: 14px !important;
+    min-height: 38px !important;
 }
 
 .dataTables_wrapper .dataTables_length label {
@@ -926,9 +895,63 @@ ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > ul.nav-children
     outline: none !important;
 }
 
-/* Поле поиска DataTable */
+/* Справа в строке: Экспортные кнопки DataTables (Копировать, CSV, Excel, PDF, Печать) */
+.dataTables_wrapper .dt-buttons,
+.dataTables_wrapper .DTTT_container,
+.dt-buttons {
+    float: right !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-bottom: 14px !important;
+    min-height: 38px !important;
+    flex-wrap: wrap !important;
+}
+
+.dataTables_wrapper .dt-buttons .dt-button,
+.dataTables_wrapper .dt-buttons .btn,
+.dataTables_wrapper .DTTT_container .btn,
+.dt-buttons .dt-button,
+.dt-button {
+    background-color: #ffffff !important;
+    border: 1px solid var(--barkol-border-strong) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--barkol-navy) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    padding: 6px 14px !important;
+    margin: 0 !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: var(--transition-fast) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    height: 36px !important;
+}
+
+.dataTables_wrapper .dt-buttons .dt-button:hover,
+.dataTables_wrapper .dt-buttons .btn:hover,
+.dataTables_wrapper .DTTT_container .btn:hover,
+.dt-buttons .dt-button:hover,
+.dt-button:hover {
+    background-color: var(--barkol-bg-muted) !important;
+    border-color: var(--barkol-accent) !important;
+    color: var(--barkol-accent) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15) !important;
+}
+
+/* Справа в строке: Поле поиска DataTable (если присутствует) */
 .dataTables_wrapper .dataTables_filter {
-    margin-bottom: 12px !important;
+    float: right !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-bottom: 14px !important;
+    margin-left: 12px !important;
+    min-height: 38px !important;
 }
 
 .dataTables_wrapper .dataTables_filter label {
@@ -938,6 +961,7 @@ ul.nav-main > li > ul.nav-children > li > ul.nav-children > li > ul.nav-children
     font-size: 13px !important;
     font-weight: 500 !important;
     color: var(--barkol-text-secondary) !important;
+    margin: 0 !important;
 }
 
 .dataTables_wrapper .dataTables_filter input {
@@ -1006,8 +1030,12 @@ thead input::placeholder {
 }
 
 /* Таблицы DataTable */
+.dataTables_wrapper > table,
+.dataTables_wrapper > .table-responsive,
+.dataTables_wrapper .dataTables_scroll,
 table.dataTable,
 table.table-ecommerce-simple {
+    clear: both !important;
     border-collapse: separate !important;
     border-spacing: 0 !important;
     width: 100% !important;

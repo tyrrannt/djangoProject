@@ -99,7 +99,10 @@
                             });
                         });
                 },
-                "sDom": 'T<"clear">lrtip',
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ordering": false,
                 "scrollX": true,
                 "ajax": "{% url 'hrdepartment_app:medical_list' %}",

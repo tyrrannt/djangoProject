@@ -470,7 +470,10 @@
     <script>
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
-                "sDom": 'T<"clear">lfrtip',
+                "sDom": 'BT<"clear">lfrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ajax": "{% url 'administration_app:property_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"

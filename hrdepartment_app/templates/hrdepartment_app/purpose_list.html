@@ -71,7 +71,10 @@
                         });
                 },
                 "scrollX": true,
-                "sDom": 'T<"clear">lrtip',
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ajax": "{% url 'hrdepartment_app:purpose_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"

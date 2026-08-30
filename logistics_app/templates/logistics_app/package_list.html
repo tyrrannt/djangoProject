@@ -93,9 +93,10 @@
                 "select": true,
                 "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
-                "buttons": [
+               "buttons": [
                     'copy', 'csv', 'excel', 'pdf', 'print'
                 ],
+                
                 "ajax": "{% url 'logistics_app:package_list' %}",
                 "processing": true,
                 "serverSide": true,

@@ -78,5 +78,17 @@
 {% endblock %}
 
 {% block custom_script %}
-    <script>$(document).ready(() => $('#groupsTable').DataTable({language: {url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/ru.json"}}));</script>
+    <script>
+        $(document).ready(function () {
+            $('#groupsTable').DataTable({
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                }
+            });
+        });
+    </script>
 {% endblock %}
