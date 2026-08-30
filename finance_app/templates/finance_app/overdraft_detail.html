@@ -1,388 +1,362 @@
 {% extends "customers_app/main.html" %}
 {% load static %}
+{% load custom %}
 
-{% block title %}Расчет овердрафта{% endblock %}
+{% block title %}Расчет овердрафта // Договор №{{ agreement.contract_number }}{% endblock %}
 
 {% block custom_css %}
 <style>
-    .finance-container {
-        padding: 24px;
-        background-color: #f8fafc;
-        min-height: 100vh;
-        font-family: 'Inter', sans-serif;
+    :root {
+        --touch-target-size: 44px;
     }
-    .finance-nav {
-        display: flex;
-        gap: 16px;
-        border-bottom: 2px solid #e2e8f0;
-        margin-bottom: 24px;
-        padding-bottom: 8px;
-    }
-    .finance-nav-item {
-        font-size: 16px;
-        font-weight: 600;
-        color: #64748b;
-        text-decoration: none;
+
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: 8px 16px;
-        border-radius: 8px;
-    }
-    .finance-nav-item.active {
-        color: #1f497d;
-        background-color: #e2e8f0;
-        border-bottom: 3px solid #1f497d;
-        border-radius: 8px 8px 0 0;
-    }
-    .info-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
-        margin-bottom: 24px;
-    }
-    .table-container {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e2e8f0;
-        margin-bottom: 24px;
-    }
-    .custom-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-    .custom-table th {
-        background-color: #f8fafc;
-        color: #475569;
         font-weight: 600;
-        font-size: 13px;
-        padding: 12px 16px;
-        border-bottom: 1px solid #e2e8f0;
-        text-transform: uppercase;
-        border-right: 1px solid #e2e8f0;
     }
-    .custom-table td {
-        padding: 10px 16px;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 13px;
-        color: #334155;
-        border-right: 1px solid #e2e8f0;
-    }
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    .custom-table th, .custom-table td {
-        white-space: nowrap;
-    }
-    .metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-    .metric {
-        background: #f1f5f9;
+
+    .stat-card-finance {
+        background: #ffffff;
+        border-radius: 12px;
         padding: 16px;
-        border-radius: 12px;
-        width: 100%;
-    }
-    .metric-title { font-size: 12px; color: #64748b; text-transform: uppercase; }
-    .metric-value { font-size: 24px; font-weight: bold; color: #0f172a; margin-top: 4px; }
-    .btn-primary { background-color: #1f497d; color: white; padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
-    .btn-primary:hover { opacity: 0.9; }
-    .badge-status { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
-    .badge-status.red { background-color: #fee2e2; color: #991b1b; }
-    .badge-status.yellow { background-color: #fef08a; color: #854d0e; }
-    .badge-status.green { background-color: #dcfce3; color: #166534; }
-    .forms-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 24px;
-    }
-    .form-card {
-        background: #f8fafc;
-        padding: 24px;
-        border-radius: 12px;
         border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        height: 100%;
     }
-    .form-card input, .form-card select {
-        width: 100%;
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 1px solid #cbd5e1;
-        box-sizing: border-box;
-        height: 38px;
+
+    .table-fixed-header th {
+        position: sticky;
+        top: 0;
+        background-color: #f8fafc;
+        z-index: 2;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="finance-container">
-    {% if messages %}
-    <div style="margin-bottom: 24px;">
-        {% for message in messages %}
-        <div style="padding: 16px; border-radius: 8px; font-weight: 500; margin-bottom: 8px; {% if message.tags == 'error' %}background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171;{% elif message.tags == 'success' %}background-color: #dcfce3; color: #166534; border: 1px solid #4ade80;{% else %}background-color: #e0f2fe; color: #075985; border: 1px solid #38bdf8;{% endif %}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            {% include "finance_app/includes/finance_nav.html" %}
 
-    <div class="finance-nav">
-        <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item">← Назад к списку</a>
-        <a href="javascript:void(0)" class="finance-nav-item active">Расчет: Договор №{{ agreement.contract_number }}</a>
-    </div>
-
-    <div class="info-card">
-        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Контрагент (Банк): {{ agreement.bank.short_name }}</h2>
-        <div class="metrics">
-            <div class="metric">
-                <div class="metric-title">Лимит овердрафта</div>
-                <div class="metric-value">{{ agreement.amount|floatformat:2 }} ₽</div>
-            </div>
-            <div class="metric">
-                <div class="metric-title">Ставка (маржа)</div>
-                <div class="metric-value">{{ agreement.interest_rate|floatformat:2 }}%</div>
-            </div>
-            <div class="metric" style="background-color: #fee2e2;">
-                <div class="metric-title">Текущий долг (ОД)</div>
-                <div class="metric-value" style="color: #991b1b;">{{ calc_result.total_principal|floatformat:2 }} ₽</div>
-            </div>
-            <div class="metric" style="background-color: #dcfce3;">
-                <div class="metric-title">Неиспользованный лимит</div>
-                <div class="metric-value" style="color: #166534;">{{ calc_result.current_unused_limit|floatformat:2 }} ₽</div>
-            </div>
-            <div class="metric" style="background-color: #ffedd5;">
-                <div class="metric-title">Всего начислено %</div>
-                <div class="metric-value" style="color: #9a3412;">{{ calc_result.total_interest|floatformat:2 }} ₽</div>
-            </div>
-            <div class="metric" style="background-color: #fee2e2;">
-                <div class="metric-title">Остаток к уплате %</div>
-                <div class="metric-value" style="color: #991b1b;">{{ calc_result.unpaid_interest|floatformat:2 }} ₽</div>
-                <div style="font-size: 11px; color: #475569; margin-top: 4px;">*До 7-го рабочего дня месяца</div>
-            </div>
-            {% if agreement.has_unused_limit_commission %}
-            <div class="metric" style="background-color: #f1f5f9;">
-                <div class="metric-title">Комиссия за неисп. лимит</div>
-                <div class="metric-value" style="color: #475569;">{{ calc_result.total_unused_commission|floatformat:2 }} ₽</div>
-                <div style="font-size: 11px; color: #475569; margin-top: 4px;">*{{ agreement.unused_limit_commission_rate|floatformat:2 }}% годовых</div>
-            </div>
+            <!-- Сообщения системы -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} alert-dismissible fade show shadow-sm border-0" role="alert">
+                            <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
-        </div>
-        
-        <div class="forms-grid">
-            <div class="form-card">
-                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <span style="background: #1f497d; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; font-size: 14px;">+</span>
-                    Добавить транш (Выдачу)
-                </h3>
-                <form method="post" autocomplete="off" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
-                    {% csrf_token %}
-                    <input type="hidden" name="add_tranche" value="1">
-                    <div>
-                        <label style="font-size: 12px; color: #475569; margin-bottom: 4px; display: block;">Дата транша</label>
-                        {{ tranche_form.date }}
-                    </div>
-                    <div>
-                        <label style="font-size: 12px; color: #475569; margin-bottom: 4px; display: block;">Сумма (₽)</label>
-                        {{ tranche_form.amount }}
-                    </div>
-                    <div>
-                        <button type="submit" class="btn-primary" style="width: 100%;">Сохранить</button>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="form-card" style="border-color: #a7f3d0; background-color: #ecfdf5;">
-                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #065f46; display: flex; align-items: center; gap: 8px;">
-                    <span style="background: #10b981; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; font-size: 14px;">+</span>
-                    Внести погашение
-                </h3>
-                <form method="post" autocomplete="off" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
-                    {% csrf_token %}
-                    <input type="hidden" name="add_payment" value="1">
-                    <div>
-                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">Дата платежа</label>
-                        {{ payment_form.payment_date }}
-                    </div>
-                    <div>
-                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">Сумма (₽)</label>
-                        {{ payment_form.amount }}
-                    </div>
-                    <div>
-                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">Тип</label>
-                        {{ payment_form.payment_type }}
-                    </div>
-                    <div>
-                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">№ Документа</label>
-                        {{ payment_form.payment_doc_number }}
-                    </div>
-                    <div>
-                        <button type="submit" class="btn-primary" style="width: 100%; background-color: #10b981;">Сохранить</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <div class="table-container">
-        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Сводная детализация по траншам</h2>
-        <div class="table-responsive">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th>Дата выдачи</th>
-                        <th>Сумма выдачи (ОД)</th>
-                        <th>Остаток (ОД)</th>
-                        <th>Накопленные проценты</th>
-                        <th>Дата погашения (до)</th>
-                        <th>Статус (дней)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in calc_result.active_tranches reversed %}
-                    <tr>
-                        <td><strong>{{ t.date|date:"d.m.Y" }}</strong></td>
-                        <td style="font-family: monospace;">{{ t.amount|default:t.principal|floatformat:2 }} ₽</td>
-                        <td style="font-family: monospace;">{{ t.principal|floatformat:2 }} ₽</td>
-                        <td style="font-family: monospace; color: #9a3412;">{{ t.accrued_interest|floatformat:2 }} ₽</td>
-                        <td>{{ t.maturity_date|date:"d.m.Y" }}</td>
-                        <td>
-                            {% if t.principal <= 0 %}
-                                <span class="badge-status green">Погашен</span>
-                            {% elif t.is_overdue %}
-                                <span class="badge-status red">Просрочка {{ t.days_left|default:"0"|stringformat:"+d"|slice:"1:" }} дн.</span>
-                            {% elif t.days_left < 4 %}
-                                <span class="badge-status red">Осталось {{ t.days_left }} дн.</span>
-                            {% elif t.days_left < 7 %}
-                                <span class="badge-status yellow">Осталось {{ t.days_left }} дн.</span>
-                            {% else %}
-                                <span class="badge-status green">Осталось {{ t.days_left }} дн.</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">Нет активных траншей</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <div class="table-container">
-        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">История погашений</h2>
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th>Дата платежа</th>
-                        <th>Сумма</th>
-                        <th>Тип</th>
-                        <th>№ Документа</th>
-                        <th style="width: 80px; text-align: center;">Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for payment in agreement.payment_facts.all|dictsortreversed:"payment_date" %}
-                    <tr>
-                        <td><strong>{{ payment.payment_date|date:"d.m.Y" }}</strong></td>
-                        <td style="font-family: monospace;">{{ payment.amount|floatformat:2 }} ₽</td>
-                        <td>
-                            {% if payment.payment_type == 'principal' %}
-                                <span class="badge-status green">ОД</span>
-                            {% else %}
-                                <span class="badge-status yellow">%</span>
-                            {% endif %}
-                            <span style="margin-left: 8px; color: #475569;">{{ payment.get_payment_type_display }}</span>
-                        </td>
-                        <td style="color: #475569;">{{ payment.payment_doc_number|default:"-" }}</td>
-                        <td style="text-align: center;">
-                            <a href="{% url 'finance:payment_update' payment.id %}" style="color: #3b82f6; text-decoration: none; margin-right: 12px; font-size: 16px;" title="Изменить"><i class="fas fa-pencil-alt"></i></a>
-                            <a href="{% url 'finance:payment_delete' payment.id %}" style="color: #ef4444; text-decoration: none; font-size: 16px;" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить этот платеж?');"><i class="fas fa-trash-alt"></i></a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted" style="padding: 16px;">Нет внесенных погашений</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+            <!-- Заголовок и быстрый переход -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h4 class="font-weight-bold text-dark mb-0">
+                        <i class="fas fa-calculator text-primary me-2"></i>Расчет: Договор №{{ agreement.contract_number }}
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Контрагент / Банк: <strong class="text-dark">{{ agreement.bank.short_name }}</strong> от {{ agreement.contract_date|date:"d.m.Y" }}</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'finance:overdraft_analytics' agreement.pk %}" class="btn btn-info btn-touch text-white">
+                        <i class="fas fa-chart-pie me-1"></i> Аналитика
+                    </a>
+                    <a href="{% url 'finance:overdraft_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку договоров
+                    </a>
+                </div>
+            </div>
 
-    <div class="table-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="font-size: 18px; font-weight: 700;">Детализация по дням</h2>
-            <form method="get" autocomplete="off" style="display: flex; gap: 8px; align-items: center;">
-                <label style="font-size: 14px;">Рассчитать на дату:</label>
-                <input type="date" name="end_date" autocomplete="off" class="form-control" value="{{ end_date|date:'Y-m-d' }}" style="width: 150px;">
-                <button type="submit" class="btn-primary" style="padding: 6px 12px;">Применить</button>
-            </form>
-        </div>
-        <div class="table-responsive">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th rowspan="2">Дата</th>
-                        <th rowspan="2">Общий долг (ОД)</th>
-                        <th rowspan="2">Процент за день (общ)</th>
-                        <th rowspan="2">Неисп. лимит</th>
-                        {% if agreement.has_unused_limit_commission %}
-                        <th rowspan="2">Комиссия ({{ agreement.unused_limit_commission_rate|floatformat:2 }}%)</th>
-                        {% endif %}
-                        {% for t in calc_result.active_tranches %}
-                            <th colspan="3" style="text-align: center; border-bottom: 1px solid #e2e8f0; {% if t.is_overdue %}background-color: #fee2e2; border-color: #fca5a5;{% endif %}">
-                                <div style="font-weight: 700;">Транш от {{ t.date|date:"d.m.Y" }}</div>
-                                <div style="font-size: 11px; font-weight: normal; color: {% if t.is_overdue %}#991b1b{% else %}#475569{% endif %}; margin-top: 4px;">
-                                    Погасить до: {{ t.maturity_date|date:"d.m.Y" }} 
-                                    ({% if t.principal <= 0 %}Погашен{% elif t.is_overdue %}Просрочка {{ t.days_left|default:"0"|stringformat:"+d"|slice:"1:" }} дн.{% else %}Осталось {{ t.days_left }} дн.{% endif %})
+            <!-- Сводные финансовые KPI -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="stat-card-finance border-start border-primary border-4">
+                        <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Лимит овердрафта</span>
+                        <h4 class="font-weight-bold text-dark mb-0 font-monospace">{{ agreement.amount|floatformat:2 }} ₽</h4>
+                        <small class="text-muted">Ставка: {{ agreement.interest_rate|floatformat:2 }}%</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="stat-card-finance border-start border-danger border-4">
+                        <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Текущий долг (ОД)</span>
+                        <h4 class="font-weight-bold text-danger mb-0 font-monospace">{{ calc_result.total_principal|floatformat:2 }} ₽</h4>
+                        <small class="text-muted">Основной долг</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="stat-card-finance border-start border-success border-4">
+                        <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Неиспользованный лимит</span>
+                        <h4 class="font-weight-bold text-success mb-0 font-monospace">{{ calc_result.current_unused_limit|floatformat:2 }} ₽</h4>
+                        <small class="text-muted">Доступно к выборке</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="stat-card-finance border-start border-warning border-4">
+                        <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Остаток к уплате %</span>
+                        <h4 class="font-weight-bold text-warning mb-0 font-monospace">{{ calc_result.unpaid_interest|floatformat:2 }} ₽</h4>
+                        <small class="text-muted">Начислено: {{ calc_result.total_interest|floatformat:2 }} ₽</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Формы быстрого добавления транша и погашения -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="card card-modern shadow-sm border-0 h-100">
+                        <header class="card-header bg-light py-3">
+                            <h6 class="card-title text-primary mb-0 font-weight-bold">
+                                <i class="fas fa-plus-circle me-2"></i>Добавить транш (Выдача)
+                            </h6>
+                        </header>
+                        <div class="card-body p-4">
+                            <form method="post" autocomplete="off">
+                                {% csrf_token %}
+                                <input type="hidden" name="add_tranche" value="1">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-12 col-sm-5">
+                                        <label class="form-label small font-weight-semibold">Дата транша</label>
+                                        {{ tranche_form.date }}
+                                    </div>
+                                    <div class="col-12 col-sm-4">
+                                        <label class="form-label small font-weight-semibold">Сумма (₽)</label>
+                                        {{ tranche_form.amount }}
+                                    </div>
+                                    <div class="col-12 col-sm-3">
+                                        <button type="submit" class="btn btn-primary btn-touch w-100">
+                                            <i class="bx bx-save me-1"></i> Выдать
+                                        </button>
+                                    </div>
                                 </div>
-                                <div style="margin-top: 6px;">
-                                    <a href="{% url 'finance:tranche_update' t.id %}" style="font-size: 10px; color: #3b82f6; text-decoration: none; padding: 2px 4px; background: #fff; border-radius: 4px;">Изменить</a>
-                                    <a href="{% url 'finance:tranche_delete' t.id %}" style="font-size: 10px; color: #ef4444; text-decoration: none; padding: 2px 4px; background: #fff; border-radius: 4px;" onclick="return confirm('Удалить транш?');">Удалить</a>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="card card-modern shadow-sm border-0 h-100">
+                        <header class="card-header bg-light py-3">
+                            <h6 class="card-title text-success mb-0 font-weight-bold">
+                                <i class="fas fa-check-circle me-2"></i>Внести погашение
+                            </h6>
+                        </header>
+                        <div class="card-body p-4">
+                            <form method="post" autocomplete="off">
+                                {% csrf_token %}
+                                <input type="hidden" name="add_payment" value="1">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12 col-sm-3">
+                                        <label class="form-label small font-weight-semibold">Дата</label>
+                                        {{ payment_form.payment_date }}
+                                    </div>
+                                    <div class="col-12 col-sm-3">
+                                        <label class="form-label small font-weight-semibold">Сумма (₽)</label>
+                                        {{ payment_form.amount }}
+                                    </div>
+                                    <div class="col-12 col-sm-3">
+                                        <label class="form-label small font-weight-semibold">Тип</label>
+                                        {{ payment_form.payment_type }}
+                                    </div>
+                                    <div class="col-12 col-sm-3">
+                                        <label class="form-label small font-weight-semibold">№ Документа</label>
+                                        {{ payment_form.payment_doc_number }}
+                                    </div>
+                                    <div class="col-12 mt-3 text-end">
+                                        <button type="submit" class="btn btn-success btn-touch">
+                                            <i class="bx bx-save me-1"></i> Внести платеж
+                                        </button>
+                                    </div>
                                 </div>
-                            </th>
-                        {% endfor %}
-                    </tr>
-                    <tr>
-                        {% for t in calc_result.active_tranches %}
-                            <th>Остаток (ОД)</th>
-                            <th>Процент за день</th>
-                            <th>Накоплено %</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for stat in calc_result.daily_stats reversed %}
-                    <tr>
-                        <td><strong>{{ stat.date|date:"d.m.Y" }}</strong></td>
-                        <td style="font-family: monospace;">{{ stat.total_principal|floatformat:2 }}</td>
-                        <td style="font-family: monospace;">{{ stat.total_daily_interest|floatformat:2 }}</td>
-                        <td style="font-family: monospace;">{{ stat.unused_limit|floatformat:2 }}</td>
-                        {% if agreement.has_unused_limit_commission %}
-                        <td style="font-family: monospace; color: #64748b;">{{ stat.daily_unused_commission|floatformat:4 }}</td>
-                        {% endif %}
-                        {% for t_stat in stat.tranches %}
-                            <td style="font-family: monospace;">{{ t_stat.principal|floatformat:2 }}</td>
-                            <td style="font-family: monospace; color: #64748b;">{{ t_stat.daily_interest|floatformat:4 }}</td>
-                            <td style="font-family: monospace; color: #9a3412;">{{ t_stat.accrued_interest|floatformat:2 }}</td>
-                        {% endfor %}
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="{% if agreement.has_unused_limit_commission %}12{% else %}11{% endif %}" class="text-center text-muted">Расчет невозможен (нет траншей)</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Сводная детализация по траншам -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="fas fa-layer-group text-primary me-2"></i>Сводная детализация по траншам
+                    </h5>
+                </header>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Дата выдачи</th>
+                                    <th class="text-end">Сумма выдачи (ОД)</th>
+                                    <th class="text-end">Остаток (ОД)</th>
+                                    <th class="text-end">Накопленные проценты</th>
+                                    <th>Погасить до</th>
+                                    <th class="text-center">Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in calc_result.active_tranches reversed %}
+                                    <tr>
+                                        <td><strong>{{ t.date|date:"d.m.Y" }}</strong></td>
+                                        <td class="text-end font-monospace">{{ t.amount|default:t.principal|floatformat:2 }} ₽</td>
+                                        <td class="text-end font-monospace fw-bold text-danger">{{ t.principal|floatformat:2 }} ₽</td>
+                                        <td class="text-end font-monospace text-warning fw-bold">{{ t.accrued_interest|floatformat:2 }} ₽</td>
+                                        <td>{{ t.maturity_date|date:"d.m.Y" }}</td>
+                                        <td class="text-center">
+                                            {% if t.principal <= 0 %}
+                                                <span class="badge bg-success">Погашен</span>
+                                            {% elif t.is_overdue %}
+                                                <span class="badge bg-danger">Просрочка {{ t.days_left|default:"0"|stringformat:"+d"|slice:"1:" }} дн.</span>
+                                            {% elif t.days_left < 4 %}
+                                                <span class="badge bg-danger">Осталось {{ t.days_left }} дн.</span>
+                                            {% elif t.days_left < 7 %}
+                                                <span class="badge bg-warning text-dark">Осталось {{ t.days_left }} дн.</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Осталось {{ t.days_left }} дн.</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">Нет активных траншей</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- История погашений -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="fas fa-history text-primary me-2"></i>История внесенных погашений
+                    </h5>
+                </header>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Дата платежа</th>
+                                    <th class="text-end">Сумма платежа</th>
+                                    <th>Тип погашения</th>
+                                    <th>№ Документа</th>
+                                    <th class="text-end" style="width: 100px;">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in agreement.payment_facts.all|dictsortreversed:"payment_date" %}
+                                    <tr>
+                                        <td><strong>{{ payment.payment_date|date:"d.m.Y" }}</strong></td>
+                                        <td class="text-end font-monospace fw-bold text-success">{{ payment.amount|floatformat:2 }} ₽</td>
+                                        <td>
+                                            {% if payment.payment_type == 'principal' %}
+                                                <span class="badge bg-success me-1">ОД</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark me-1">%</span>
+                                            {% endif %}
+                                            <span class="text-muted small">{{ payment.get_payment_type_display }}</span>
+                                        </td>
+                                        <td class="text-muted">{{ payment.payment_doc_number|default:"—" }}</td>
+                                        <td class="text-end">
+                                            <a href="{% url 'finance:payment_update' payment.id %}" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                                <i class="bx bx-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'finance:payment_delete' payment.id %}" class="btn btn-sm btn-outline-danger" title="Удалить" onclick="return confirm('Удалить данный платеж?');">
+                                                <i class="bx bx-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">Нет внесенных погашений</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Детализация по дням -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="fas fa-calendar-day text-primary me-2"></i>Детализация расчетов по дням
+                    </h5>
+                    <form method="get" autocomplete="off" class="d-flex align-items-center gap-2 mb-0">
+                        <label class="small text-muted mb-0 text-nowrap">Расчет на дату:</label>
+                        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date|date:'Y-m-d' }}">
+                        <button type="submit" class="btn btn-sm btn-primary text-nowrap">Применить</button>
+                    </form>
+                </header>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th rowspan="2" class="align-middle">Дата</th>
+                                    <th rowspan="2" class="align-middle text-end">Общий долг (ОД)</th>
+                                    <th rowspan="2" class="align-middle text-end">Процент за день</th>
+                                    <th rowspan="2" class="align-middle text-end">Неисп. лимит</th>
+                                    {% if agreement.has_unused_limit_commission %}
+                                        <th rowspan="2" class="align-middle text-end">Комиссия ({{ agreement.unused_limit_commission_rate|floatformat:2 }}%)</th>
+                                    {% endif %}
+                                    {% for t in calc_result.active_tranches %}
+                                        <th colspan="3" class="text-center {% if t.is_overdue %}bg-danger bg-opacity-10{% endif %}">
+                                            <div class="fw-bold">Транш от {{ t.date|date:"d.m.Y" }}</div>
+                                            <div class="small text-muted">
+                                                Погасить до: {{ t.maturity_date|date:"d.m.Y" }}
+                                            </div>
+                                            <div class="mt-1">
+                                                <a href="{% url 'finance:tranche_update' t.id %}" class="btn btn-xs btn-outline-primary py-0">Изменить</a>
+                                                <a href="{% url 'finance:tranche_delete' t.id %}" class="btn btn-xs btn-outline-danger py-0" onclick="return confirm('Удалить транш?');">Удалить</a>
+                                            </div>
+                                        </th>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    {% for t in calc_result.active_tranches %}
+                                        <th class="text-end">Остаток (ОД)</th>
+                                        <th class="text-end">Процент/день</th>
+                                        <th class="text-end">Накоплено %</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in calc_result.daily_stats reversed %}
+                                    <tr>
+                                        <td><strong>{{ stat.date|date:"d.m.Y" }}</strong></td>
+                                        <td class="text-end font-monospace">{{ stat.total_principal|floatformat:2 }}</td>
+                                        <td class="text-end font-monospace">{{ stat.total_daily_interest|floatformat:2 }}</td>
+                                        <td class="text-end font-monospace text-success">{{ stat.unused_limit|floatformat:2 }}</td>
+                                        {% if agreement.has_unused_limit_commission %}
+                                            <td class="text-end font-monospace text-muted">{{ stat.daily_unused_commission|floatformat:4 }}</td>
+                                        {% endif %}
+                                        {% for t_stat in stat.tranches %}
+                                            <td class="text-end font-monospace">{{ t_stat.principal|floatformat:2 }}</td>
+                                            <td class="text-end font-monospace text-muted">{{ t_stat.daily_interest|floatformat:4 }}</td>
+                                            <td class="text-end font-monospace text-warning">{{ t_stat.accrued_interest|floatformat:2 }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="15" class="text-center text-muted py-4">Расчет невозможен (транши отсутствуют)</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+    <!-- end: page -->
 {% endblock %}

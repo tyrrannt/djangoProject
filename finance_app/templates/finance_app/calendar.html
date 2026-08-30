@@ -1,161 +1,35 @@
 {% extends "customers_app/main.html" %}
 {% load static %}
+{% load custom %}
 
-{% block title %}Платежный календарь{% endblock %}
+{% block title %}Платежный календарь // ФИНАНСЫ{% endblock %}
 
 {% block custom_css %}
 <!-- FullCalendar CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
 <style>
-    .finance-container {
-        padding: 24px;
-        background-color: #f8fafc;
-        min-height: 100vh;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    :root {
+        --touch-target-size: 44px;
     }
 
-    /* Навигационные вкладки */
-    .finance-nav {
-        display: flex;
-        gap: 16px;
-        border-bottom: 2px solid #e2e8f0;
-        margin-bottom: 24px;
-        padding-bottom: 8px;
-    }
-
-    .finance-nav-item {
-        font-size: 16px;
-        font-weight: 600;
-        color: #64748b;
-        text-decoration: none;
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: 8px 16px;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-
-    .finance-nav-item:hover {
-        color: #1e293b;
-        background-color: #f1f5f9;
-        text-decoration: none;
-    }
-
-    .finance-nav-item.active {
-        color: #1f497d;
-        background-color: #e2e8f0;
-        border-bottom: 3px solid #1f497d;
-        border-radius: 8px 8px 0 0;
-    }
-
-    /* Форма фильтров */
-    .filter-panel {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e2e8f0;
-        margin-bottom: 24px;
-    }
-
-    .filter-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        align-items: end;
-    }
-
-    .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .filter-label {
-        font-size: 13px;
         font-weight: 600;
-        color: #475569;
-    }
-
-    .filter-select {
-        padding: 8px 12px;
-        border-radius: 8px;
-        border: 1px solid #cbd5e1;
-        background-color: #ffffff;
-        font-size: 14px;
-        color: #334155;
-        outline: none;
-        transition: border-color 0.2s;
-    }
-
-    .filter-select:focus {
-        border-color: #1f497d;
-    }
-
-    .btn-filter {
-        background-color: #1f497d;
-        color: #ffffff;
-        font-weight: 600;
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        text-align: center;
-        text-decoration: none;
-    }
-
-    .btn-filter:hover {
-        background-color: #15345b;
-        color: #ffffff;
-        text-decoration: none;
-    }
-
-    .btn-reset {
-        background-color: #e2e8f0;
-        color: #475569;
-        font-weight: 600;
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        text-align: center;
-        text-decoration: none;
-    }
-
-    .btn-reset:hover {
-        background-color: #cbd5e1;
-        color: #334155;
-        text-decoration: none;
-    }
-
-    /* Календарь */
-    .calendar-card {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e2e8f0;
-    }
-
-    /* Стилизация FullCalendar под премиальный дизайн */
-    .fc {
-        font-family: inherit;
     }
 
     .fc-theme-standard td, .fc-theme-standard th {
         border-color: #e2e8f0;
     }
 
-    .fc-header-toolbar {
-        margin-bottom: 20px !important;
-    }
-
     .fc-button-primary {
         background-color: #1f497d !important;
         border-color: #1f497d !important;
         font-weight: 600 !important;
-        text-transform: capitalize !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
     }
 
     .fc-button-primary:hover {
@@ -163,23 +37,9 @@
         border-color: #15345b !important;
     }
 
-    .fc-button-primary:disabled {
-        background-color: #94a3b8 !important;
-        border-color: #94a3b8 !important;
-    }
-
     .fc-daygrid-day-number {
         font-weight: 600;
         color: #475569;
-        padding: 8px !important;
-    }
-
-    .fc-col-header-cell-cushion {
-        font-weight: 700;
-        color: #1e293b;
-        padding: 8px 0 !important;
-        text-transform: uppercase;
-        font-size: 13px;
     }
 
     .fc-event {
@@ -189,181 +49,113 @@
         font-weight: 500;
         border-radius: 4px;
     }
-
-    /* Модальное окно деталей события */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(15, 23, 42, 0.6);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-box {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 24px;
-        max-width: 480px;
-        width: 90%;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        position: relative;
-        animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-        from { transform: translateY(20px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-
-    .modal-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 16px;
-        border-bottom: 1px solid #e2e8f0;
-        padding-bottom: 8px;
-    }
-
-    .modal-detail-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 14px;
-    }
-
-    .modal-detail-label {
-        font-weight: 600;
-        color: #64748b;
-    }
-
-    .modal-detail-value {
-        color: #1e293b;
-        font-weight: 500;
-    }
-
-    .btn-close-modal {
-        background-color: #f1f5f9;
-        color: #475569;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        margin-top: 16px;
-        width: 100%;
-        transition: background-color 0.2s;
-    }
-
-    .btn-close-modal:hover {
-        background-color: #e2e8f0;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="finance-container">
-    <!-- Навигационное меню -->
-    <div class="finance-nav">
-        <a href="{% url 'finance:dashboard' %}" class="finance-nav-item">Дашборд</a>
-        <a href="{% url 'finance:calendar' %}" class="finance-nav-item active">Платежный календарь</a>
-        <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item">Овердрафты</a>
-        <a href="{% url 'finance:key_rates' %}" class="finance-nav-item">Ключевая ставка ЦБ</a>
-        <a href="{% url 'finance:reports_list' %}" class="finance-nav-item">Отчеты</a>
-    </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            {% include "finance_app/includes/finance_nav.html" %}
 
-    <!-- Панель фильтрации -->
-    <div class="filter-panel">
-        <form method="GET" id="filter-form">
-            <div class="filter-grid">
-                <!-- Организация -->
-                <div class="filter-group">
-                    <label class="filter-label" for="org-select">Организация</label>
-                    <select name="org" id="org-select" class="filter-select">
-                        <option value="">-- Все --</option>
-                        {% for o in organizations %}
-                        <option value="{{ o.id }}" {% if o.id|slugify == filters.org %}selected{% endif %}>{{ o.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- Контрагент -->
-                <div class="filter-group">
-                    <label class="filter-label" for="agent-select">Контрагент</label>
-                    <select name="agent" id="agent-select" class="filter-select">
-                        <option value="">-- Все --</option>
-                        {% for a in counteragents %}
-                        <option value="{{ a.id }}" {% if a.id|slugify == filters.agent %}selected{% endif %}>{{ a.short_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- Договор -->
-                <div class="filter-group">
-                    <label class="filter-label" for="contract-select">Договор</label>
-                    <select name="contract" id="contract-select" class="filter-select">
-                        <option value="">-- Все --</option>
-                        {% for c in contracts %}
-                        <option value="{{ c.id }}" {% if c.id|slugify == filters.contract %}selected{% endif %}>№ {{ c.contract_number }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- Тип обязательства -->
-                <div class="filter-group">
-                    <label class="filter-label" for="type-select">Тип обязательства</label>
-                    <select name="ob_type" id="type-select" class="filter-select">
-                        <option value="">-- Все --</option>
-                        {% for ot in obligation_types %}
-                        <option value="{{ ot.id }}" {% if ot.id|slugify == filters.ob_type %}selected{% endif %}>{{ ot.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- Фильтр и сброс -->
-                <div class="filter-group" style="flex-direction: row; gap: 8px;">
-                    <button type="submit" class="btn-filter" style="flex: 1;">Применить</button>
-                    <a href="{% url 'finance:calendar' %}" class="btn-reset">Сбросить</a>
+            <!-- Заголовок и фильтры календаря -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-primary mb-0 font-weight-bold">
+                        <i class="fas fa-filter me-2"></i>Фильтры платежного календаря
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="form-label small font-weight-semibold">Тип операции</label>
+                            <select name="type" class="form-select form-select-sm">
+                                <option value="">Все операции</option>
+                                <option value="income" {% if request.GET.type == 'income' %}selected{% endif %}>Поступления (Доходы)</option>
+                                <option value="expense" {% if request.GET.type == 'expense' %}selected{% endif %}>Платежи (Расходы)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="form-label small font-weight-semibold">Статус</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">Все статусы</option>
+                                <option value="planned" {% if request.GET.status == 'planned' %}selected{% endif %}>Запланировано</option>
+                                <option value="fact" {% if request.GET.status == 'fact' %}selected{% endif %}>Оплачено (Факт)</option>
+                                <option value="overdue" {% if request.GET.status == 'overdue' %}selected{% endif %}>Просрочено</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="form-label small font-weight-semibold">Вид обязательства</label>
+                            <select name="obligation_type" class="form-select form-select-sm">
+                                <option value="">Все виды</option>
+                                <option value="contract" {% if request.GET.obligation_type == 'contract' %}selected{% endif %}>Договорные обязательства</option>
+                                <option value="credit" {% if request.GET.obligation_type == 'credit' %}selected{% endif %}>Кредиты и овердрафты</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                                <i class="fas fa-search me-1"></i> Применить
+                            </button>
+                            <a href="{% url 'finance:calendar' %}" class="btn btn-outline-secondary btn-sm" title="Сбросить фильтры">
+                                <i class="fas fa-undo"></i>
+                            </a>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </form>
-    </div>
 
-    <!-- Календарь -->
-    <div class="calendar-card">
-        <div id="calendar"></div>
+            <!-- Календарь -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-body p-3">
+                    <div id="calendar" style="min-height: 650px;"></div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+    <!-- end: page -->
 
-<!-- Модальное окно деталей события -->
-<div class="modal-overlay" id="event-modal">
-    <div class="modal-box">
-        <div class="modal-title" id="m-type-title">Детали платежа</div>
-        <div class="modal-detail-row">
-            <span class="modal-detail-label">Контрагент</span>
-            <span class="modal-detail-value" id="m-counteragent"></span>
+    <!-- Bootstrap 5 Модальное окно деталей события -->
+    <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title font-weight-bold text-dark" id="eventModalLabel">
+                        <i class="fas fa-info-circle text-primary me-2"></i>Детали платежа
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted font-weight-semibold">Тип операции:</span>
+                        <span class="font-weight-bold text-dark" id="m-type-title"></span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted font-weight-semibold">Контрагент / Банк:</span>
+                        <span class="text-dark" id="m-counteragent"></span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted font-weight-semibold">Договор:</span>
+                        <span class="text-dark" id="m-contract"></span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted font-weight-semibold">Сумма:</span>
+                        <span class="font-monospace fw-bold text-primary fs-5" id="m-amount"></span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted font-weight-semibold">Статус:</span>
+                        <span id="m-status"></span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted font-weight-semibold">Вид обязательства:</span>
+                        <span class="text-dark" id="m-obligation-type"></span>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
         </div>
-        <div class="modal-detail-row">
-            <span class="modal-detail-label">Договор</span>
-            <span class="modal-detail-value" id="m-contract"></span>
-        </div>
-        <div class="modal-detail-row">
-            <span class="modal-detail-label">Сумма</span>
-            <span class="modal-detail-value" id="m-amount" style="font-weight: 700; color: #1f497d;"></span>
-        </div>
-        <div class="modal-detail-row">
-            <span class="modal-detail-label">Статус</span>
-            <span class="modal-detail-value" id="m-status"></span>
-        </div>
-        <div class="modal-detail-row">
-            <span class="modal-detail-label">Вид обязательства</span>
-            <span class="modal-detail-value" id="m-obligation-type"></span>
-        </div>
-        <button class="btn-close-modal" onclick="closeModal()">Закрыть</button>
     </div>
-</div>
 {% endblock %}
 
 {% block custom_script %}
@@ -373,49 +165,43 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
+        var eventModalEl = document.getElementById('eventModal');
+        var bsModal = eventModalEl ? new bootstrap.Modal(eventModalEl) : null;
         
-        // Строим URL с текущими параметрами фильтрации
         var eventUrl = "{% url 'finance:calendar' %}";
         var params = new URLSearchParams(window.location.search);
         if (params.toString()) {
             eventUrl += "?" + params.toString();
         }
 
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'ru',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            firstDay: 1, // Понедельник
-            events: eventUrl,
-            eventClick: function(info) {
-                var props = info.event.extendedProps;
-                
-                document.getElementById('m-type-title').innerText = props.type;
-                document.getElementById('m-counteragent').innerText = props.counteragent;
-                document.getElementById('m-contract').innerText = props.contract;
-                document.getElementById('m-amount').innerText = props.amount;
-                document.getElementById('m-status').innerText = props.status;
-                document.getElementById('m-obligation-type').innerText = props.obligation_type;
-                
-                document.getElementById('event-modal').style.display = 'flex';
-            }
-        });
-        
-        calendar.render();
-    });
-
-    function closeModal() {
-        document.getElementById('event-modal').style.display = 'none';
-    }
-
-    // Закрытие при клике на оверлей
-    document.getElementById('event-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeModal();
+        if (calendarEl) {
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ru',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                firstDay: 1,
+                events: eventUrl,
+                eventClick: function(info) {
+                    var props = info.event.extendedProps;
+                    
+                    document.getElementById('m-type-title').innerText = props.type || '—';
+                    document.getElementById('m-counteragent').innerText = props.counteragent || '—';
+                    document.getElementById('m-contract').innerText = props.contract || '—';
+                    document.getElementById('m-amount').innerText = props.amount || '—';
+                    document.getElementById('m-status').innerText = props.status || '—';
+                    document.getElementById('m-obligation-type').innerText = props.obligation_type || '—';
+                    
+                    if (bsModal) {
+                        bsModal.show();
+                    }
+                }
+            });
+            
+            calendar.render();
         }
     });
 </script>

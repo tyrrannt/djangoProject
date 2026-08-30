@@ -1,34 +1,70 @@
 {% extends "customers_app/main.html" %}
 {% load static %}
+{% load custom %}
 
-{% block title %}Удаление транша{% endblock %}
+{% block title %}Удаление кредитного транша // ФИНАНСЫ{% endblock %}
 
 {% block custom_css %}
 <style>
-    .finance-container { padding: 24px; background-color: #f8fafc; min-height: 100vh; font-family: 'Inter', sans-serif; }
-    .table-container { background: #ffffff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; max-width: 600px; margin: 0 auto; text-align: center; }
-    .btn-danger { background-color: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; text-decoration: none; font-weight: 600; }
-    .btn-danger:hover { background-color: #dc2626; color: white; text-decoration: none; }
-    .btn-secondary { background-color: #e2e8f0; color: #475569; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; }
-    .btn-secondary:hover { background-color: #cbd5e1; color: #334155; text-decoration: none; }
+    :root {
+        --touch-target-size: 44px;
+    }
+
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+
+    .delete-card-wrapper {
+        max-width: 550px;
+        margin: 40px auto;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="finance-container">
-    <div class="table-container">
-        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #0f172a;">Подтверждение удаления</h2>
-        <p style="font-size: 14px; color: #475569; margin-bottom: 24px;">
-            Вы уверены, что хотите удалить транш на сумму <strong>{{ object.amount }} ₽</strong> от <strong>{{ object.date|date:'d.m.Y' }}</strong>?
-            Это действие нельзя отменить.
-        </p>
-        <form method="post">
-            {% csrf_token %}
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button type="submit" class="btn-danger">Да, удалить</button>
-                <a href="{% url 'finance:overdraft_detail' object.credit_agreement.pk %}" class="btn-secondary">Отмена</a>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="delete-card-wrapper">
+                <div class="card card-modern shadow-sm border-0">
+                    <div class="card-header bg-danger text-white py-3">
+                        <h5 class="card-title text-white mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Подтверждение удаления транша
+                        </h5>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-receipt fa-3x text-danger opacity-75"></i>
+                        </div>
+                        <h4 class="font-weight-bold text-dark mb-2">Удалить выбранный кредитный транш?</h4>
+                        <p class="text-muted mb-4">
+                            Сумма транша: <strong class="font-monospace text-danger fs-5">{{ object.amount|floatformat:2 }} ₽</strong><br>
+                            Дата транша: <strong>{{ object.date|date:'d.m.Y' }}</strong><br>
+                            Договор: <strong>{{ object.credit_agreement.contract_number }}</strong> ({{ object.credit_agreement.bank.short_name }})
+                        </p>
+                        <div class="alert alert-warning text-start small mb-0">
+                            <i class="fas fa-info-circle me-1"></i> Данное действие приведет к пересчету задолженности и начисленных процентов.
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light p-3">
+                        <form method="post" class="d-flex justify-content-center gap-3">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-touch">
+                                <i class="fas fa-trash-alt me-1"></i> Да, удалить
+                            </button>
+                            <a href="{% url 'finance:overdraft_detail' object.credit_agreement.pk %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="fas fa-times me-1"></i> Отмена
+                            </a>
+                        </form>
+                    </div>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
-</div>
+    <!-- end: page -->
 {% endblock %}

@@ -1,0 +1,25 @@
+<!-- Навигационная панель финансового модуля -->
+<div class="finance-nav-wrapper mb-4">
+    <nav class="nav nav-pills flex-nowrap overflow-auto py-1 gap-2 border-bottom pb-3">
+        <a href="{% url 'finance:dashboard' %}" 
+           class="nav-link btn-touch text-nowrap {% if request.resolver_match.url_name == 'dashboard' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}bg-light text-dark hover-primary{% endif %}">
+            <i class="fas fa-chart-line me-2"></i>Дашборд
+        </a>
+        <a href="{% url 'finance:calendar' %}" 
+           class="nav-link btn-touch text-nowrap {% if request.resolver_match.url_name == 'calendar' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}bg-light text-dark hover-primary{% endif %}">
+            <i class="fas fa-calendar-alt me-2"></i>Платежный календарь
+        </a>
+        <a href="{% url 'finance:overdraft_list' %}" 
+           class="nav-link btn-touch text-nowrap {% if 'overdraft' in request.resolver_match.url_name %}active bg-primary text-white font-weight-bold shadow-sm{% else %}bg-light text-dark hover-primary{% endif %}">
+            <i class="fas fa-hand-holding-usd me-2"></i>Овердрафты
+        </a>
+        <a href="{% url 'finance:key_rates' %}" 
+           class="nav-link btn-touch text-nowrap {% if 'key_rate' in request.resolver_match.url_name %}active bg-primary text-white font-weight-bold shadow-sm{% else %}bg-light text-dark hover-primary{% endif %}">
+            <i class="fas fa-percentage me-2"></i>Ключевая ставка ЦБ
+        </a>
+        <a href="{% url 'finance:reports_list' %}" 
+           class="nav-link btn-touch text-nowrap {% if 'report' in request.resolver_match.url_name %}active bg-primary text-white font-weight-bold shadow-sm{% else %}bg-light text-dark hover-primary{% endif %}">
+            <i class="fas fa-file-invoice-dollar me-2"></i>Отчеты
+        </a>
+    </nav>
+</div>

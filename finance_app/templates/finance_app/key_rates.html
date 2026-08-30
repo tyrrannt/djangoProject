@@ -1,140 +1,130 @@
 {% extends "customers_app/main.html" %}
 {% load static %}
+{% load custom %}
 
-{% block title %}Ключевая ставка ЦБ{% endblock %}
+{% block title %}Ключевая ставка ЦБ РФ // ФИНАНСЫ{% endblock %}
 
 {% block custom_css %}
 <style>
-    .finance-container {
-        padding: 24px;
-        background-color: #f8fafc;
-        min-height: 100vh;
-        font-family: 'Inter', sans-serif;
+    :root {
+        --touch-target-size: 44px;
     }
-    .finance-nav {
-        display: flex;
-        gap: 16px;
-        border-bottom: 2px solid #e2e8f0;
-        margin-bottom: 24px;
-        padding-bottom: 8px;
-    }
-    .finance-nav-item {
-        font-size: 16px;
-        font-weight: 600;
-        color: #64748b;
-        text-decoration: none;
+
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: 8px 16px;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-    .finance-nav-item:hover {
-        color: #1e293b;
-        background-color: #f1f5f9;
-        text-decoration: none;
-    }
-    .finance-nav-item.active {
-        color: #1f497d;
-        background-color: #e2e8f0;
-        border-bottom: 3px solid #1f497d;
-        border-radius: 8px 8px 0 0;
-    }
-    .table-container {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e2e8f0;
-    }
-    .custom-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-    .custom-table th {
-        background-color: #f8fafc;
-        color: #475569;
         font-weight: 600;
-        font-size: 13px;
-        padding: 12px 16px;
-        border-bottom: 1px solid #e2e8f0;
-        text-transform: uppercase;
-    }
-    .custom-table td {
-        padding: 16px;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 14px;
-        color: #334155;
-    }
-    .btn-primary { background-color: #1f497d; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; text-decoration: none; }
-    .btn-primary:hover { background-color: #15325b; color: white; text-decoration: none; }
-    
-    .grid-layout {
-        display: grid;
-        grid-template-columns: 3fr 1fr;
-        gap: 24px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="finance-container">
-    <div class="finance-nav">
-        <a href="{% url 'finance:dashboard' %}" class="finance-nav-item">Дашборд</a>
-        <a href="{% url 'finance:calendar' %}" class="finance-nav-item">Платежный календарь</a>
-        <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item">Овердрафты</a>
-        <a href="{% url 'finance:key_rates' %}" class="finance-nav-item active">Ключевая ставка ЦБ</a>
-        <a href="{% url 'finance:reports_list' %}" class="finance-nav-item">Отчеты</a>
-    </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            {% include "finance_app/includes/finance_nav.html" %}
 
-    <div class="grid-layout">
-        <!-- Таблица ставок -->
-        <div class="table-container">
-            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 20px;">История изменений ключевой ставки</h2>
-            <div style="overflow-x: auto;">
-                <table class="custom-table">
-                    <thead>
-                        <tr>
-                            <th>Действует с (Дата)</th>
-                            <th>Размер ставки (%)</th>
-                            <th>Действие</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rate in rates %}
-                        <tr>
-                            <td><strong>{{ rate.date_from|date:"d.m.Y" }}</strong></td>
-                            <td style="font-family: monospace; font-size: 16px; color: #0f172a;">{{ rate.rate|floatformat:2 }} %</td>
-                            <td>
-                                <a href="{% url 'finance:key_rate_update' rate.pk %}" class="btn-primary" style="background-color: #3b82f6; padding: 4px 8px; font-size: 12px; margin-right: 4px;">✎ Изменить</a>
-                                <a href="{% url 'finance:key_rate_delete' rate.pk %}" class="btn-primary" style="background-color: #ef4444; padding: 4px 8px; font-size: 12px;" onclick="return confirm('Вы уверены?');">🗑 Удалить</a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="2" class="text-center text-muted">История ставок пуста</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h4 class="font-weight-bold text-dark mb-0">
+                        <i class="fas fa-percentage text-primary me-2"></i>История ключевой ставки ЦБ РФ
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Параметры ключевой ставки используются для плавающего расчета процентных ставок овердрафтов</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Таблица истории ставок -->
+                <div class="col-12 col-lg-8">
+                    <div class="card card-modern shadow-sm border-0 mb-4">
+                        <header class="card-header bg-light py-3">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="fas fa-history text-primary me-2"></i>Действующие и архивные ставки
+                            </h5>
+                        </header>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Действует с (Дата)</th>
+                                            <th class="text-end">Размер ставки</th>
+                                            <th class="text-end" style="width: 120px;">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rate in rates %}
+                                            <tr>
+                                                <td class="fw-semibold text-dark">{{ rate.date_from|date:"d.m.Y" }}</td>
+                                                <td class="text-end">
+                                                    <span class="badge bg-primary text-white font-monospace fs-6 px-3 py-2">
+                                                        {{ rate.rate|floatformat:2 }} %
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="{% url 'finance:key_rate_update' rate.pk %}" class="btn btn-outline-secondary" title="Редактировать">
+                                                            <i class="bx bx-pencil"></i>
+                                                        </a>
+                                                        <a href="{% url 'finance:key_rate_delete' rate.pk %}" class="btn btn-outline-danger" title="Удалить" onclick="return confirm('Удалить данное значение ключевой ставки?');">
+                                                            <i class="bx bx-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted py-5">История ставок пуста</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Форма быстрого добавления новой ставки -->
+                <div class="col-12 col-lg-4">
+                    <div class="card card-modern shadow-sm border-0">
+                        <header class="card-header bg-light py-3">
+                            <h5 class="card-title text-primary mb-0 font-weight-bold">
+                                <i class="fas fa-plus-circle me-2"></i>Добавить ставку
+                            </h5>
+                        </header>
+                        <div class="card-body p-4">
+                            {% if form.errors %}
+                                <div class="alert alert-danger py-2 small mb-3">
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                            <div><strong>{{ field.label }}:</strong> {{ error }}</div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label font-weight-semibold small">Действует с (Дата)</label>
+                                    {{ form.date_from }}
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label font-weight-semibold small">Размер ставки (% годовых)</label>
+                                    {{ form.rate }}
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-touch w-100">
+                                    <i class="bx bx-save me-1"></i> Сохранить ставку
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <!-- Форма добавления -->
-        <div class="table-container" style="height: fit-content;">
-            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Добавить новую ставку</h3>
-            <form method="post">
-                {% csrf_token %}
-                <div style="margin-bottom: 16px;">
-                    <label style="font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">Действует с</label>
-                    {{ form.date_from }}
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size: 13px; color: #475569; display: block; margin-bottom: 4px;">Ставка (%)</label>
-                    {{ form.rate }}
-                </div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Сохранить ставку</button>
-            </form>
-        </div>
     </div>
-</div>
+    <!-- end: page -->
 {% endblock %}
