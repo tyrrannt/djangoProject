@@ -1,123 +1,95 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
+{% load widget_tweaks %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title|default:"Групповое обновление сверок" }} // ПТД{% endblock %}
 
-{% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-10 offset-md-1">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0">{{ title }}</h3>
-                    <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-light btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>Назад к списку
-                    </a>
-                </div>
-                <div class="card-body">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+{% block page_content %}
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-sync text-primary me-2"></i>{{ title|default:"Групповое обновление дат сверок" }}
+            </h3>
+            <p class="text-muted small mb-0">Массовое назначение дат сверок для отфильтрованного оборудования</p>
+        </div>
+        <div>
+            <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-secondary btn-touch">
+                <i class="bx bx-arrow-back me-1"></i> К списку сверок
+            </a>
+        </div>
+    </div>
+
+    <form method="post" class="ecommerce-form">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Left: Filters -->
+            <div class="col-12 col-lg-7">
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3">
+                        <h5 class="card-title text-dark mb-0 font-weight-bold">
+                            <i class="bx bx-filter-alt text-primary me-2"></i>Критерии фильтрации оборудования
+                        </h5>
+                    </header>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark">{{ form.location_ref.label }}:</label>
+                                {{ form.location_ref|add_class:"form-control form-control-modern" }}
+                                <div class="form-text small text-muted">Удерживайте Ctrl для выбора нескольких мест</div>
                             </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <form method="post">
-                        {% csrf_token %}
-
-                        <div class="row">
-                            <!-- Фильтры -->
-                            <div class="col-md-7">
-                                <div class="card mb-4 border-info">
-                                    <div class="card-header bg-info text-white">
-                                        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Фильтры для выбора записей</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group mb-3">
-                                                    <label class="form-label fw-bold">{{ form.location_ref.label }}:</label>
-                                                    {{ form.location_ref }}
-                                                    <div class="form-text">Выберите одно или несколько местоположений (удерживайте Ctrl)</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group mb-3">
-                                                    <label class="form-label fw-bold">{{ form.contractor_status.label }}:</label>
-                                                    {{ form.contractor_status }}
-                                                    <div class="form-text">Выберите один или несколько статусов (удерживайте Ctrl)</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="form-group mb-0">
-                                                    <label class="form-label fw-bold">{{ form.current_verification_date.label }}:</label>
-                                                    {{ form.current_verification_date }}
-                                                    <div class="form-text">Если выбрано, будут обновлены только записи с этой датой сверки</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark">{{ form.contractor_status.label }}:</label>
+                                {{ form.contractor_status|add_class:"form-control form-control-modern" }}
+                                <div class="form-text small text-muted">Удерживайте Ctrl для выбора нескольких статусов</div>
                             </div>
-
-                            <!-- Обновление -->
-                            <div class="col-md-5">
-                                <div class="card mb-4 border-success h-100">
-                                    <div class="card-header bg-success text-white">
-                                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Обновление данных</h5>
-                                    </div>
-                                    <div class="card-body d-flex flex-column">
-                                        <div class="form-group mb-4">
-                                            <label class="form-label fw-bold">{{ form.new_verification_date.label }}:</label>
-                                            {{ form.new_verification_date }}
-                                            {% if form.new_verification_date.errors %}
-                                                <div class="text-danger">{{ form.new_verification_date.errors }}</div>
-                                            {% endif %}
-                                            <div class="form-text mt-2">
-                                                Все отфильтрованные записи получат выбранную дату сверки.
-                                                Это обновит и связанную запись даты, и поле «Последняя сверка».
-                                            </div>
-                                        </div>
-
-                                        <div class="mt-auto">
-                                            <div class="alert alert-warning border-warning">
-                                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                                <strong>Внимание!</strong> Это действие необратимо и затронет все записи, соответствующие фильтрам.
-                                            </div>
-                                            <div class="d-grid gap-2">
-                                                <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Вы уверены, что хотите обновить все отфильтрованные записи?')">
-                                                    <i class="fas fa-sync-alt me-1"></i> Выполнить обновление
-                                                </button>
-                                                <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary">
-                                                    Отмена
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark">{{ form.current_verification_date.label }}:</label>
+                                {{ form.current_verification_date|add_class:"form-control form-control-modern" }}
+                                <div class="form-text small text-muted">Если выбрано, обновятся только записи с текущей датой</div>
                             </div>
                         </div>
-                    </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: New Date and Actions -->
+            <div class="col-12 col-lg-5">
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3">
+                        <h5 class="card-title text-dark mb-0 font-weight-bold">
+                            <i class="bx bx-calendar-check text-success me-2"></i>Назначение новой даты
+                        </h5>
+                    </header>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold text-dark">{{ form.new_verification_date.label }}: <span class="text-danger">*</span></label>
+                            {{ form.new_verification_date|add_class:"form-control form-control-modern" }}
+                            {% if form.new_verification_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.new_verification_date.errors }}</div>
+                            {% endif %}
+                            <div class="form-text small text-muted mt-2">
+                                Все соответствующие фильтрам записи получат эту дату в качестве даты последней сверки.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning border-0 shadow-sm small my-3">
+                            <i class="bx bx-error-circle me-1"></i>
+                            <strong>Внимание:</strong> Действие затронет все записи, подходящие под заданные критерии.
+                        </div>
+
+                        <div class="d-flex flex-column gap-2 mt-4">
+                            <button type="submit" class="btn btn-success font-weight-bold btn-touch w-100" 
+                                    onclick="return confirm('Вы уверены, что хотите обновить все отфильтрованные записи?')">
+                                <i class="bx bx-sync me-1"></i> Применить обновление
+                            </button>
+                            <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-secondary btn-touch w-100">
+                                <i class="bx bx-x me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<style>
-    select[multiple] {
-        min-height: 200px;
-    }
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        border-bottom: 0;
-    }
-</style>
+    </form>
 {% endblock %}

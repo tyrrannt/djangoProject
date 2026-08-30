@@ -3,65 +3,90 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Посылки и отправки" }} // Логистика
 {% endblock %}
 
-{% block SpecificPageVendor %}
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+    .logistics-nav-pills .nav-link {
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 600;
+        color: #64748b;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        margin-right: 8px;
+        display: inline-flex;
+        align-items: center;
+    }
+    .logistics-nav-pills .nav-link.active {
+        background-color: #0088cc;
+        color: #ffffff;
+        border-color: #0088cc;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
     <div class="row">
-        <div class="col">
-            <section class="card">
-                <header class="card-header">
-                    <div class="card-actions">
-                        <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
-                    </div>
-                    <h2 class="card-title">Основной</h2>
-                </header>
-                <div class="card-body">
-                    <div class="datatable-header">
-                        <div class="row align-items-center mb-3">
-                            {% if user|has_group:"Старшие бригад" or user.is_superuser %}
-                                <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                    <a href="{% url 'logistics_app:package_add' %}"
-                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                        <i class='bx bx-list-plus text-4 me-2'></i> Добавить отправку</a>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
-                        <div class="row">
-                        </div>
-                        <table class="table table-ecommerce-simple mb-0 table-hover" id="datatable-ecommerce-list"
-                               style="min-width: 750px;">
-                            <thead>
-                            <tr>
+        <div class="col-12">
+            <!-- Navigation & Action Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-package text-primary me-2"></i>{{ title|default:"Реестр посылок и отправок" }}
+                    </h3>
+                    <p class="text-muted small mb-0">Учет сборных грузов, отправленных посылок и трек-номеров</p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if user|has_group:"Старшие бригад" or user.is_superuser %}
+                        <a href="{% url 'logistics_app:package_add' %}" class="btn btn-primary btn-touch">
+                            <i class="bx bx-plus me-1"></i> Добавить отправку
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
 
-                                <th width="8%">Дата отправки</th>
-                                <th width="10%">Номер посылки</th>
-                                <th width="10%">Куда отправляется</th>
-                                <th width="10%">Исполнитель</th>
-                                <th width="10%">Тип отправки</th>
-                                <th width="4%"></th>
-                                <th width="4%"></th>
-                            </tr>
+            <!-- Sub Nav -->
+            <div class="logistics-nav-pills d-flex flex-wrap mb-4">
+                <a href="{% url 'logistics_app:waybill_list' %}" class="nav-link">
+                    <i class="bx bx-file me-2"></i> Транспортные накладные
+                </a>
+                <a href="{% url 'logistics_app:package_list' %}" class="nav-link active">
+                    <i class="bx bx-package me-2"></i> Посылки и отправки
+                </a>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 15%;">Дата отправки</th>
+                                    <th style="width: 20%;">Номер посылки / Трек</th>
+                                    <th style="width: 25%;">Куда отправляется</th>
+                                    <th style="width: 20%;">Исполнитель</th>
+                                    <th style="width: 20%;">Тип отправки</th>
+                                </tr>
                             </thead>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
-            </section>
-
-            <div class="card card-modern">
-                <div class="card-body">
-                    <div class="datatables-header-footer-wrapper">
-                        <hr class="solid mt-5 opacity-4">
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
@@ -71,69 +96,49 @@
 {% block custom_script %}
     <script>
         $(document).ready(function () {
-            $('#datatable-ecommerce-list thead th').each(function () {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
-            });
             var table = $('#datatable-ecommerce-list').DataTable({
-                "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
-                            $('input', this.header()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
-                        });
-                },
                 "ordering": false,
                 "select": true,
-                "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
-               "buttons": [
+                "buttons": [
                     'copy', 'csv', 'excel', 'pdf', 'print'
                 ],
-                
                 "ajax": "{% url 'logistics_app:package_list' %}",
                 "processing": true,
                 "serverSide": true,
-                "lengthMenu": [[10, 25, 50, 75, 100, 200, 300], [10, 25, 50, 75, 100, 200, 300]],
+                "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
                 "searching": true,
                 "stateSave": true,
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
-                {#https://www.datatables.net/forums/discussion/55671/datatables-editor-loading-select-options-from-database-in-a-django-app#}
                 "columns": [
-                    {"data": "date_of_dispatch"},
-                    {"data": "number_of_dispatch"},
-                    {"data": "place_of_dispatch"},
+                    {
+                        "data": "date_of_dispatch",
+                        "render": function(data) {
+                            return '<span class="font-monospace text-dark"><i class="bx bx-calendar me-1 text-primary"></i>' + (data || '—') + '</span>';
+                        }
+                    },
+                    {
+                        "data": "number_of_dispatch",
+                        "render": function(data) {
+                            return '<strong class="text-primary font-monospace">' + (data || '—') + '</strong>';
+                        }
+                    },
+                    {
+                        "data": "place_of_dispatch",
+                        "render": function(data) {
+                            return '<strong class="text-dark">' + (data || '—') + '</strong>';
+                        }
+                    },
                     {"data": "executor"},
-                    {"data": "type_of_dispatch"},
                     {
-                        "data": null,
-                        "mRender": function (data, type, full) {
-                            {
-                                ret = '<a class="underline" href="/logistics/package/' + data.pk + '/update/" target="_BLANK"><i class="bx bxs-edit-alt" ></i></a>';
-                                return ret;
-                            }
-                            return data.name;
+                        "data": "type_of_dispatch",
+                        "render": function(data) {
+                            return data ? '<span class="badge bg-light text-dark border">' + data + '</span>' : '—';
                         }
-                    },
-                    {
-                        "data": null,
-                        "mRender": function (data, type, full) {
-                            {
-                                ret = '<a class="underline" href="/logistics/package/' + data.pk + '/delete/" target="_BLANK"><i class="bx bx-trash"></i></a>';
-                                return ret;
-                            }
-                            return data.name;
-                        }
-                    },
-                ],
+                    }
+                ]
             });
         });
     </script>

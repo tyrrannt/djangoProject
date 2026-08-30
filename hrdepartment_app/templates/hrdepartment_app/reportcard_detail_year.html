@@ -3,66 +3,90 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    Годовой табель учета рабочего времени // Отдел кадров
 {% endblock %}
 
-{% block content %}
+{% block custom_css %}
     <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+        }
         .table-ecommerce-simple {
             overflow-x: auto;
             position: relative;
         }
-
         .table-ecommerce-simple th {
             position: -webkit-sticky;
             position: sticky;
             top: -3px;
-        / / при нуле в chrome остаётся странный зазор z-index: 2;
+            z-index: 2;
         }
     </style>
+{% endblock %}
 
+{% block content %}
     <!-- start: page -->
     <div class="row">
-        <div class="col">
-            <!-- Форма фильтрации -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Фильтры</h5>
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-calendar-event text-primary me-2"></i>Годовой табель учета рабочего времени
+                    </h3>
+                    <p class="text-muted small mb-0">Сводная матрица явок, отработанных часов и отклонений по месяцам года</p>
                 </div>
-                <div class="card-body">
-                    <form method="get" class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Год:</label>
-                            <select name="report_year" class="form-select" id="report-year-select">
-                                {% for year in years %}
-                                    <option value="{{ year }}"
-                                            {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
-                                        {{ year }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-funnel"></i> Применить фильтры
-                            </button>
-                            <a href="{% url 'hrdepartment_app:reportcard_detail_year' %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-clockwise"></i> Сбросить
-                            </a>
+                <div>
+                    <a id="export-excel-btn" class="btn btn-success btn-touch font-weight-bold" href="{% url 'hrdepartment_app:reportcard_detail_year_xls' year=years.0 %}">
+                        <i class="bx bx-spreadsheet me-1"></i> Экспорт в Excel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filter Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-filter-alt text-primary me-2"></i>Выбор отчетного года
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <form method="get" class="m-0">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark small" for="report-year-select">Год:</label>
+                                <select name="report_year" class="form-control form-control-modern" id="report-year-select">
+                                    {% for year in years %}
+                                        <option value="{{ year }}" {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
+                                            {{ year }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-8 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
+                                    <i class="bx bx-check me-1"></i> Применить фильтр
+                                </button>
+                                <a href="{% url 'hrdepartment_app:reportcard_detail_year' %}" class="btn btn-outline-secondary btn-touch">
+                                    <i class="bx bx-reset me-1"></i> Сбросить
+                                </a>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
-            <div class="card card-modern">
-                <div class="card-body">
-                    <div class="dt-buttons btn-group">
-                        <!-- Кнопка экспорта -->
-                        <a id="export-excel-btn"
-                           class="btn btn-secondary buttons-excel buttons-html5"
-                           href="{% url 'hrdepartment_app:reportcard_detail_year_xls' year=years.0 %}">
-                            <span>Excel</span>
-                        </a>
-                    </div>
+
+            <!-- Table Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-body p-3">
                     {{ table_error }}
                     <div id="id_tables" class="table-responsive">
                         {{ table | safe }}
@@ -82,7 +106,6 @@
             const baseHref = btn.href;
 
             select.addEventListener('change', function () {
-                // Заменяем год в URL
                 const newHref = baseHref.replace(/\/\d+\//, '/' + this.value + '/');
                 btn.href = newHref;
             });

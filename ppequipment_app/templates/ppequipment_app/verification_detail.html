@@ -1,79 +1,143 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
 
-{% block title %}{{ title|default:object.inventory_number }}{% endblock %}
+{% block title %}{{ title|default:object.inventory_number }} // ПТД{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+    .attr-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        height: calc(100% - 12px);
+    }
+    .attr-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+</style>
+{% endblock %}
 
 {% block page_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
-        <i class="fas fa-clipboard-check me-2 text-primary"></i>Сверка {{ object.inventory_number }}
-    </h2>
-    <div>
-        <a href="{% url 'ppequipment_app:verification_update' object.pk %}" class="btn btn-primary me-2">
-            <i class="fas fa-edit me-1"></i>Редактировать
-        </a>
-        <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left me-1"></i>Назад к списку
-        </a>
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-check-shield text-primary me-2"></i>Сверка инв. № {{ object.inventory_number }}
+            </h3>
+            <p class="text-muted small mb-0">Карточка сверки оборудования и контрольных отметок</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'ppequipment_app:verification_update' object.slug %}" class="btn btn-primary btn-touch">
+                <i class="bx bx-edit me-1"></i> Редактировать
+            </a>
+            <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-secondary btn-touch">
+                <i class="bx bx-arrow-back me-1"></i> К списку сверок
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Информация о сверке</h5>
-    </div>
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-4 text-muted">Оборудование</dt>
-            <dd class="col-sm-8 fw-bold">{{ object.equipment|default:"—" }}</dd>
-            
-            <dt class="col-sm-4 text-muted">Где</dt>
-            <dd class="col-sm-8">
-                <i class="fas fa-map-pin me-2 text-info"></i>{{ object.location_ref|default:"—" }}
-            </dd>
-            
-            <dt class="col-sm-4 text-muted">Контр-раб</dt>
-            <dd class="col-sm-8">{{ object.contractor_status|default:"—" }}</dd>
-            
-            <dt class="col-sm-4 text-muted">Последняя сверка</dt>
-            <dd class="col-sm-8">
-                {% if object.last_verification_date %}
-                    <span class="badge bg-success">{{ object.last_verification_date|date:"d.m.Y" }}</span>
-                {% else %}
-                    <span class="text-muted">—</span>
-                {% endif %}
-            </dd>
-            
-            <dt class="col-sm-4 text-muted">Примечание</dt>
-            <dd class="col-sm-8">{{ object.notes|default:"—" }}</dd>
-            
-            <dt class="col-sm-4 text-muted">№ ВС</dt>
-            <dd class="col-sm-8">
-                {% if object.vs_number %}
-                    <span class="badge bg-info">{{ object.vs_number }}</span>
-                {% else %}
-                    <span class="text-muted">—</span>
-                {% endif %}
-            </dd>
-            
-            <dt class="col-sm-4 text-muted">Дата оконч.</dt>
-            <dd class="col-sm-8">
-                {% if object.end_date %}
-                    {{ object.end_date|date:"d.m.Y" }}
-                {% else %}
-                    <span class="text-muted">—</span>
-                {% endif %}
-            </dd>
-            
-            <dt class="col-sm-4 text-muted">Уничтожен</dt>
-            <dd class="col-sm-8">
+    <!-- Main Detail Card -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                <i class="bx bx-info-circle text-primary me-2"></i>Сведения о сверке
+            </h5>
+            <div>
                 {% if object.is_destroyed %}
-                    <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Да</span>
+                    <span class="badge bg-danger px-3 py-2"><i class="bx bx-x me-1"></i> Уничтожен</span>
                 {% else %}
-                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Нет</span>
+                    <span class="badge bg-success px-3 py-2"><i class="bx bx-check me-1"></i> Активен</span>
                 {% endif %}
-            </dd>
-        </dl>
+            </div>
+        </header>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="attr-box">
+                        <div class="attr-label">Оборудование (ПТД)</div>
+                        <div class="fw-bold text-dark fs-6">{{ object.equipment|default:"—" }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="attr-box">
+                        <div class="attr-label">Местонахождение (Где)</div>
+                        <div>
+                            {% if object.location_ref %}
+                                <span class="badge bg-light text-primary border border-primary-subtle fs-6"><i class="bx bx-map-pin me-1"></i>{{ object.location_ref }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="attr-box">
+                        <div class="attr-label">Статус контр-раб</div>
+                        <div class="fw-bold text-dark"><span class="badge bg-light text-dark border">{{ object.contractor_status|default:"—" }}</span></div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="attr-box">
+                        <div class="attr-label">Дата последней сверки</div>
+                        <div class="fw-bold text-success font-monospace">{{ object.last_verification_date|date:"d.m.Y"|default:"—" }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="attr-box">
+                        <div class="attr-label">Номер воздушного судна (ВС)</div>
+                        <div class="fw-bold text-dark">{{ object.vs_number|default:"—" }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="attr-box">
+                        <div class="attr-label">Дата окончания</div>
+                        <div class="text-muted font-monospace">{{ object.end_date|date:"d.m.Y"|default:"—" }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-8">
+                    <div class="attr-box">
+                        <div class="attr-label">Примечание</div>
+                        <div class="text-dark">{{ object.notes|linebreaks|default:"—" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary btn-touch">
+                <i class="bx bx-arrow-back me-1"></i> Назад к списку сверок
+            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'ppequipment_app:verification_update' object.slug %}" class="btn btn-outline-primary btn-touch">
+                    <i class="bx bx-edit me-1"></i> Редактировать
+                </a>
+                <a href="{% url 'ppequipment_app:verification_delete' object.slug %}" class="btn btn-outline-danger btn-touch">
+                    <i class="bx bx-trash me-1"></i> Удалить
+                </a>
+            </div>
+        </div>
     </div>
-</div>
 {% endblock %}

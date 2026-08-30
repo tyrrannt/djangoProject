@@ -4,6 +4,20 @@
 {% load hrdepartment_tags %}
 {% load widget_tweaks %}
 {% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+    }
+</style>
+
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
@@ -29,8 +43,7 @@
     <!-- start: page -->
     <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
         {% csrf_token %}
-        <div class="col-lg-12">
-            <h4 class="font-weight-bold text-dark">Приказ № {{ object.number }}
+        <div class="col-12 mb-4"><div class="card card-modern shadow-sm border-0"><div class="card-body p-4"><h4 class="font-weight-bold text-dark">Приказ № {{ object.number }}
                 от {{ object.date_create }} г.</h4>
             <label>Основные реквизиты</label>
             <div class="toggle-content">
@@ -189,11 +202,12 @@
                 </section>
             </div>
         </div>
-        <div class="row action-buttons">
+        </div></div></div>
+<div class="row action-buttons">
             {% if is_executor %}
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
                     <a href="{% url 'hrdepartment_app:team_update' object.pk %}"
-                       class="btn btn-outline-success btn-px-4 py-3 d-flex
+                       class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
                 </div>

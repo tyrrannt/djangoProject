@@ -3,102 +3,100 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Транспортные накладные" }} // Логистика
 {% endblock %}
 
-{% block SpecificPageVendor %}
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+    .logistics-nav-pills .nav-link {
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 600;
+        color: #64748b;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        margin-right: 8px;
+        display: inline-flex;
+        align-items: center;
+    }
+    .logistics-nav-pills .nav-link.active {
+        background-color: #0088cc;
+        color: #ffffff;
+        border-color: #0088cc;
+    }
+    .table-search-input {
+        width: 100%;
+        padding: 4px 8px;
+        font-size: 0.82rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
     <div class="row">
-        <div class="col">
-            <section class="card">
-                <header class="card-header">
-                    <div class="card-actions">
-                        <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
-                    </div>
-                    <h2 class="card-title">Основной</h2>
-                </header>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-9">
-                            <div class="row">
-                                <!-- Button trigger modal -->
-                                <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                    <a href="#"
-                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                        <i class='bx bx-list-plus text-4 me-2'></i> Добавить запись</a>
-                                </div>
+        <div class="col-12">
+            <!-- Navigation & Action Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-transfer-alt text-primary me-2"></i>{{ title|default:"Реестр транспортных накладных" }}
+                    </h3>
+                    <p class="text-muted small mb-0">Управление отправкой, перемещением и статусами грузов компании</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'logistics_app:waybill_add' %}" class="btn btn-primary btn-touch">
+                        <i class="bx bx-plus me-1"></i> Создать накладную
+                    </a>
+                </div>
+            </div>
 
-                                <!-- Modal -->
-                                <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
-                                     data-bs-keyboard="false" tabindex="-1"
-                                     aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form action="{% url 'logistics_app:waybill_add' %}" method="post">
-                                                {% csrf_token %}
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="staticBackdropLabel">Modal
-                                                        title</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                            aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    {{ form.as_p }}
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary"
-                                                            data-bs-dismiss="modal">Close
-                                                    </button>
-                                                    <button type="button" class="btn btn-primary">Understood
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
-                        <div class="row">
-                        </div>
-                        <table class="table table-ecommerce-simple mb-0 table-hover" id="datatable-ecommerce-list"
-                               style="min-width: 750px;">
-                            <thead>
-                            <tr>
+            <!-- Sub Nav -->
+            <div class="logistics-nav-pills d-flex flex-wrap mb-4">
+                <a href="{% url 'logistics_app:waybill_list' %}" class="nav-link active">
+                    <i class="bx bx-file me-2"></i> Транспортные накладные
+                </a>
+                <a href="{% url 'logistics_app:package_list' %}" class="nav-link">
+                    <i class="bx bx-package me-2"></i> Посылки и отправки
+                </a>
+            </div>
 
-                                <th width="8%">Дата документа</th>
-                                <th width="10%">Куда</th>
-                                <th width="10%">Содержание</th>
-                                <th width="10%">Комментарий</th>
-                                <th width="10%">Подразделение</th>
-                                <th width="10%">Отправитель</th>
-                                <th width="10%">Состояние</th>
-                                <th width="10%">Получение</th>
-                                <th width="10%">Исполнитель</th>
-                                <th width="10%">Срочность</th>
-                                <th width="4%"></th>
-                                <th width="4%"></th>
-                            </tr>
+            <!-- Table Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 9%;">Дата</th>
+                                    <th style="width: 11%;">Куда</th>
+                                    <th style="width: 14%;">Содержание</th>
+                                    <th style="width: 12%;">Комментарий</th>
+                                    <th style="width: 10%;">Подразделение</th>
+                                    <th style="width: 11%;">Отправитель</th>
+                                    <th style="width: 9%;" class="text-center">Состояние</th>
+                                    <th style="width: 10%;">Получатель</th>
+                                    <th style="width: 8%;" class="text-center">Срочность</th>
+                                    <th style="width: 6%;" class="text-center">Действия</th>
+                                </tr>
                             </thead>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
-            </section>
-
-            <div class="card card-modern">
-                <div class="card-body">
-                    <div class="datatables-header-footer-wrapper">
-
-                        <hr class="solid mt-5 opacity-4">
-
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
@@ -108,75 +106,97 @@
 {% block custom_script %}
     <script>
         $(document).ready(function () {
-            $('#datatable-ecommerce-list thead th').each(function () {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
-            });
             var table = $('#datatable-ecommerce-list').DataTable({
-                "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
-                            $('input', this.header()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
-                        });
-                },
                 "ordering": false,
                 "select": true,
-                "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
-               "buttons": [
+                "buttons": [
                     'copy', 'csv', 'excel', 'pdf', 'print'
                 ],
-                
                 "ajax": "{% url 'logistics_app:waybill_list' %}",
                 "processing": true,
                 "serverSide": true,
-                "lengthMenu": [[10, 25, 50, 75, 100, 200, 300], [10, 25, 50, 75, 100, 200, 300]],
+                "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
                 "searching": true,
                 "stateSave": true,
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
-                {#https://www.datatables.net/forums/discussion/55671/datatables-editor-loading-select-options-from-database-in-a-django-app#}
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", id + '/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).find('td:not(:last-child)').click(function () {
+                        window.location = $(nRow).attr('href');
+                        return false;
+                    });
+                },
                 "columns": [
-                    {"data": "document_date"},
-                    {"data": "place_of_departure"},
-                    {"data": "content"},
-                    {"data": "comment"},
-                    {"data": "place_division"},
+                    {
+                        "data": "document_date",
+                        "render": function(data) {
+                            return '<span class="font-monospace text-dark">' + (data || '—') + '</span>';
+                        }
+                    },
+                    {
+                        "data": "place_of_departure",
+                        "render": function(data) {
+                            return '<strong class="text-dark">' + (data || '—') + '</strong>';
+                        }
+                    },
+                    {
+                        "data": "content",
+                        "render": function(data) {
+                            return data ? '<span class="text-truncate d-inline-block" style="max-width: 180px;" title="' + data + '">' + data + '</span>' : '—';
+                        }
+                    },
+                    {
+                        "data": "comment",
+                        "render": function(data) {
+                            return data ? '<small class="text-muted text-truncate d-inline-block" style="max-width: 140px;" title="' + data + '">' + data + '</small>' : '—';
+                        }
+                    },
+                    {
+                        "data": "place_division",
+                        "render": function(data) {
+                            return data ? '<span class="badge bg-light text-dark border">' + data + '</span>' : '—';
+                        }
+                    },
                     {"data": "sender"},
-                    {"data": "state"},
+                    {
+                        "data": "state",
+                        "className": "text-center",
+                        "render": function(data) {
+                            if (!data) return '—';
+                            var cls = 'bg-secondary';
+                            if (data.includes('Принята')) cls = 'bg-success';
+                            else if (data.includes('Отправлена')) cls = 'bg-info text-white';
+                            else if (data.includes('Обработана')) cls = 'bg-primary';
+                            else if (data.includes('Отклонена')) cls = 'bg-danger';
+                            return '<span class="badge ' + cls + '">' + data + '</span>';
+                        }
+                    },
                     {"data": "responsible"},
-                    {"data": "executor"},
-                    {"data": "urgency"},
                     {
-                        "data": null,
-                        "mRender": function (data, type, full) {
-                            {
-                                ret = '<a class="underline" href="/logistics/waybill/' + data.pk + '/update/" target="_BLANK"><i class="bx bxs-edit-alt" ></i></a>';
-                                return ret;
-                            }
-                            return data.name;
+                        "data": "urgency",
+                        "className": "text-center",
+                        "render": function(data) {
+                            if (!data) return '—';
+                            var cls = 'bg-light text-dark border';
+                            if (data.includes('Очень срочно')) cls = 'bg-danger text-white';
+                            else if (data.includes('Срочно')) cls = 'bg-warning text-dark';
+                            return '<span class="badge ' + cls + '">' + data + '</span>';
                         }
                     },
                     {
                         "data": null,
-                        "mRender": function (data, type, full) {
-                            {
-                                ret = '<a class="underline" href="/logistics/waybill/' + data.pk + '/delete/" target="_BLANK"><i class="bx bx-trash"></i></a>';
-                                return ret;
-                            }
-                            return data.name;
+                        "className": "text-center text-nowrap",
+                        "render": function (data) {
+                            return '<a class="btn btn-sm btn-outline-primary me-1" title="Редактировать" href="/logistics/waybill/' + data.pk + '/update/"><i class="bx bx-edit-alt"></i></a>' +
+                                   '<a class="btn btn-sm btn-outline-danger" title="Удалить" href="/logistics/waybill/' + data.pk + '/delete/"><i class="bx bx-trash"></i></a>';
                         }
-                    },
-
-                ],
+                    }
+                ]
             });
         });
     </script>

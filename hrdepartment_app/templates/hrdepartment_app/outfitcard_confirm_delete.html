@@ -2,46 +2,59 @@
 {% load static %}
 
 {% block title %}
-    {{ title }}
+    Удаление карты наряда // Отдел кадров
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-    <form method="post">
-        {% csrf_token %}
-            <header class="card-header">
-                <h2 class="card-title">Вы уверены?</h2>
-            </header>
-            <div class="card-body">
-                <div class="modal-wrapper">
-                    <div class="modal-icon">
-                        <i class="fas fa-question-circle"></i>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 mt-4">
+                <header class="card-header bg-danger text-white py-3">
+                    <h5 class="card-title text-white mb-0 font-weight-bold">
+                        <i class="bx bx-trash me-2"></i> Удаление карты наряда
+                    </h5>
+                </header>
+                <div class="card-body p-4 text-center">
+                    <div class="my-3">
+                        <i class="bx bx-error-circle text-danger" style="font-size: 4rem;"></i>
                     </div>
-                    <div class="modal-text">
-                        <h3><i class='bx bxs-trash text-4 me-2' ></i> Вы уверены, что хотите удалить карту-наряд "{{ object.outfit_card_number }}"?</h3>
+                    <h5 class="text-dark font-weight-bold mb-3">Подтвердите удаление</h5>
+                    <div class="p-3 bg-light rounded text-start mb-3 border">
+                        <div class="small text-muted mb-1">Объект:</div>
+                        <div class="fw-bold text-dark fs-6">Вы действительно хотите удалить карту наряда «{{ object }}»?</div>
                     </div>
+                    <p class="text-muted small">Это действие необратимо. Запись будет удалена из базы данных.</p>
+                </div>
+                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'hrdepartment_app:outfitcard_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Отмена
+                    </a>
+                    <form method="post" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-touch font-weight-bold">
+                            <i class="bx bx-trash me-1"></i> Да, удалить
+                        </button>
+                    </form>
                 </div>
             </div>
-            <footer class="card-footer">
-                <div class="row">
-                    <div class="col-md-12 text-center">
-                        <form method="post" class="mt-4">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">Да, удалить</button>
-                            <a href="{% url 'hrdepartment_app:outfit_card' object.pk %}" class="btn btn-secondary">Отмена</a>
-                        </form>
-                    </div>
-                </div>
-            </footer>
-    </form>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}

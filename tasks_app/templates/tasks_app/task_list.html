@@ -4,199 +4,217 @@
 {% load widget_tweaks %}
 
 {% block title %}
-    Календарь задач
+    Календарь задач // Задачи и события
 {% endblock %}
 
 {% block custom_css %}
     <style>
-        /* Минимальные стили только для календаря и drag-drop */
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
         .external-event {
             cursor: grab;
             transition: all 0.2s ease;
+            font-size: 0.88rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 12px;
         }
-
         .external-event:active {
             cursor: grabbing;
         }
-
         .external-event:hover {
-            transform: translateY(-1px);
-            filter: brightness(0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            filter: brightness(0.97);
         }
-
-        /* Цвета для событий календаря (Porto цветовая схема) */
+        /* Цвета событий */
         .fc-event-primary {
-            background-color: #0d6efd !important;
-            border-color: #0d6efd !important;
+            background-color: #0088cc !important;
+            border-color: #0088cc !important;
         }
-
         .fc-event-warning {
             background-color: #ffc107 !important;
             border-color: #ffc107 !important;
             color: #000 !important;
         }
-
         .fc-event-info {
             background-color: #0dcaf0 !important;
             border-color: #0dcaf0 !important;
             color: #000 !important;
         }
-
         .fc-event-danger {
             background-color: #dc3545 !important;
             border-color: #dc3545 !important;
         }
-
         .fc-event-dark {
             background-color: #212529 !important;
             border-color: #212529 !important;
         }
-
         .fc-event-title {
             white-space: normal;
-            word-wrap: break-word;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-break: break-word;
             padding: 2px 4px;
+            font-size: 0.85rem;
         }
-
         .fc-daygrid-day-frame {
-            min-height: 80px;
+            min-height: 85px;
         }
-
         .calendar-container {
-            min-height: 600px;
-        }
-
-        /* Адаптив для боковой панели */
-        @media (max-width: 992px) {
-            .calendar-sidebar {
-                margin-top: 1.5rem;
-            }
+            min-height: 650px;
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid py-3">
-
-
-        <!-- Фильтры (Porto стиль) -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title mb-3">
-                    <i class="fas fa-filter text-primary me-2"></i>Фильтры задач
-                </h5>
-                <form method="get">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label for="category" class="form-label fw-semibold">Категория</label>
-                            <select name="category" id="category" class="form-select">
-                                <option value="">Все категории</option>
-                                {% for category in categories %}
-                                    <option value="{{ category.name }}"
-                                            {% if category.name == request.GET.category %}selected{% endif %}>
-                                        {{ category.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="priority" class="form-label fw-semibold">Приоритет</label>
-                            <select name="priority" id="priority" class="form-select">
-                                <option value="">Все приоритеты</option>
-                                {% for code, name in priorities %}
-                                    <option value="{{ code }}" {% if code == request.GET.priority %}selected{% endif %}>
-                                        {{ name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="shared" class="form-label fw-semibold">Доступ</label>
-                            <select name="shared" id="shared" class="form-select">
-                                <option value="">Все задачи</option>
-                                <option value="my" {% if request.GET.shared == 'my' %}selected{% endif %}>
-                                    Только мои задачи
-                                </option>
-                                <option value="shared" {% if request.GET.shared == 'shared' %}selected{% endif %}>
-                                    С общим доступом
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-filter me-2"></i>Применить
-                            </button>
-                        </div>
-                    </div>
-                </form>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-calendar-event text-primary me-2"></i>Календарь задач и поручений
+                    </h3>
+                    <p class="text-muted small mb-0">Планирование, контроль исполнения и распределение задач</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'tasks_app:task-create' %}" class="btn btn-primary btn-touch font-weight-bold">
+                        <i class="bx bx-plus me-1"></i> Создать задачу
+                    </a>
+                </div>
             </div>
-        </div>
 
-        <!-- Календарь и боковая панель -->
-        <div class="card">
-            <div class="card-body">
-                <div class="row">
-                    <!-- Календарь -->
-                    <div class="col-lg-8 col-xl-9">
-                        <div id="calendar" class="calendar-container"></div>
+            <!-- Filters Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-filter-alt text-primary me-2"></i>Фильтры отображения
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <form method="get" class="m-0">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-3">
+                                <label for="category" class="form-label font-weight-bold text-dark small">Категория</label>
+                                <select name="category" id="category" class="form-control form-control-modern">
+                                    <option value="">Все категории</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.name }}" {% if category.name == request.GET.category %}selected{% endif %}>
+                                            {{ category.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label for="priority" class="form-label font-weight-bold text-dark small">Приоритет</label>
+                                <select name="priority" id="priority" class="form-control form-control-modern">
+                                    <option value="">Все приоритеты</option>
+                                    {% for code, name in priorities %}
+                                        <option value="{{ code }}" {% if code == request.GET.priority %}selected{% endif %}>
+                                            {{ name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label for="shared" class="form-label font-weight-bold text-dark small">Доступ</label>
+                                <select name="shared" id="shared" class="form-control form-control-modern">
+                                    <option value="">Все задачи</option>
+                                    <option value="my" {% if request.GET.shared == 'my' %}selected{% endif %}>
+                                        Только мои задачи
+                                    </option>
+                                    <option value="shared" {% if request.GET.shared == 'shared' %}selected{% endif %}>
+                                        С общим доступом
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary btn-touch w-100 font-weight-bold">
+                                    <i class="bx bx-check me-1"></i> Применить фильтр
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Calendar & Sidebar Grid -->
+            <div class="row g-4">
+                <!-- Main Calendar -->
+                <div class="col-12 col-xl-9">
+                    <div class="card card-modern shadow-sm border-0 mb-4">
+                        <div class="card-body p-4">
+                            <div id="calendar" class="calendar-container"></div>
+                        </div>
                     </div>
+                </div>
 
-                    <!-- Боковая панель с быстрым созданием -->
-                    <div class="col-lg-4 col-xl-3 calendar-sidebar">
-                        <!-- Кнопка создания задачи -->
-                        <div class="d-grid gap-2 mb-4">
-                            <a href="{% url 'tasks_app:task-create' %}" class="btn btn-success">
-                                <i class="fas fa-plus-circle me-2"></i>Создать задачу
-                            </a>
-                        </div>
+                <!-- Sidebar Palette -->
+                <div class="col-12 col-xl-3">
+                    <div class="card card-modern shadow-sm border-0 mb-4">
+                        <header class="card-header bg-light py-3">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="bx bx-move text-primary me-2"></i>Быстрые события
+                            </h5>
+                        </header>
+                        <div class="card-body p-3">
+                            <p class="text-muted small mb-3">Перетащите событие на нужный день календаря для мгновенного создания задачи:</p>
+                            
+                            <div id="external-events" class="mb-4">
+                                <div class="external-event badge bg-primary text-white w-100 mb-2"
+                                     data-event='{"title": "Основная задача", "priority": "primary"}'>
+                                    <i class="bx bx-star me-2 fs-6"></i>Основная задача
+                                </div>
+                                <div class="external-event badge bg-warning text-dark w-100 mb-2"
+                                     data-event='{"title": "Контрольный срок", "priority": "warning"}'>
+                                    <i class="bx bx-error-circle me-2 fs-6"></i>Контрольный срок
+                                </div>
+                                <div class="external-event badge bg-info text-dark w-100 mb-2"
+                                     data-event='{"title": "Информационное событие", "priority": "info"}'>
+                                    <i class="bx bx-info-circle me-2 fs-6"></i>Информация
+                                </div>
+                                <div class="external-event badge bg-danger text-white w-100 mb-2"
+                                     data-event='{"title": "Срочное поручение", "priority": "danger"}'>
+                                    <i class="bx bx-alarm-exclamation me-2 fs-6"></i>Срочно
+                                </div>
+                                <div class="external-event badge bg-dark text-white w-100 mb-2"
+                                     data-event='{"title": "Совещание / Встреча", "priority": "dark"}'>
+                                    <i class="bx bx-briefcase me-2 fs-6"></i>Совещание
+                                </div>
+                            </div>
 
-                        <!-- Перетаскиваемые события -->
-                        <h5 class="mb-3 fw-semibold">
-                            <i class="fas fa-calendar-plus text-primary me-2"></i>Быстрые события
-                        </h5>
-                        <div id="external-events" class="mb-4">
-                            <div class="external-event badge bg-primary w-100 mb-2 py-2"
-                                 data-event='{"title": "Основное событие", "priority": "primary"}'>
-                                <i class="fas fa-star me-2"></i>Основное событие
-                            </div>
-                            <div class="external-event badge bg-warning w-100 mb-2 py-2 text-dark"
-                                 data-event='{"title": "Предупреждающее событие", "priority": "warning"}'>
-                                <i class="fas fa-exclamation-triangle me-2"></i>Предупреждение
-                            </div>
-                            <div class="external-event badge bg-info w-100 mb-2 py-2 text-dark"
-                                 data-event='{"title": "Информационное событие", "priority": "info"}'>
-                                <i class="fas fa-info-circle me-2"></i>Информация
-                            </div>
-                            <div class="external-event badge bg-danger w-100 mb-2 py-2"
-                                 data-event='{"title": "Опасное событие", "priority": "danger"}'>
-                                <i class="fas fa-exclamation-circle me-2"></i>Опасное событие
-                            </div>
-                            <div class="external-event badge bg-dark w-100 mb-2 py-2"
-                                 data-event='{"title": "Темное событие", "priority": "dark"}'>
-                                <i class="fas fa-moon me-2"></i>Темное событие
-                            </div>
-                        </div>
+                            <hr class="my-3">
 
-                        <!-- Общий доступ -->
-                        <div class="mb-4">
-                            <label for="shared_with" class="form-label fw-semibold">
-                                <i class="fas fa-users text-primary me-2"></i>Доступ для
-                            </label>
-                            <select name="shared_with" id="shared_with" class="form-control" multiple="multiple" data-plugin-multiselect data-plugin-options='{ "maxHeight": 200, "enableCaseInsensitiveFiltering": true }'>
-                                {% for user in users %}
-                                    <option value="{{ user.id }}">{{ user.title|FIO_format }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                            <!-- Shared Access Target -->
+                            <div class="mb-3">
+                                <label for="shared_with" class="form-label font-weight-bold text-dark small">
+                                    <i class="bx bx-group text-primary me-1"></i>Назначить доступ для
+                                </label>
+                                <select name="shared_with" id="shared_with" class="form-control" multiple="multiple" data-plugin-multiselect data-plugin-options='{ "maxHeight": 200, "enableCaseInsensitiveFiltering": true }'>
+                                    {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.title|FIO_format }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
 
-                        <!-- Настройка удаления -->
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="RemoveAfterDrop">
-                            <label class="form-check-label" for="RemoveAfterDrop">
-                                <i class="fas fa-trash-alt me-1 text-muted"></i>Удалить после переноса
-                            </label>
+                            <div class="form-check mt-3">
+                                <input type="checkbox" class="form-check-input" id="RemoveAfterDrop">
+                                <label class="form-check-label small text-muted" for="RemoveAfterDrop">
+                                    Удалять плашку после переноса
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -208,54 +226,47 @@
     <div class="modal fade" id="eventTitleModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-plus-circle me-2"></i>Создание быстрого события
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title font-weight-bold text-dark">
+                        <i class="bx bx-calendar-plus text-primary me-2"></i>Параметры нового события
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Закрыть"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="eventTitle" class="form-label required fw-semibold">Название события <span
-                                class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="eventTitle" placeholder="Введите название события"
-                               maxlength="200">
-                        <div class="invalid-feedback">Пожалуйста, введите название события</div>
+                        <label for="eventTitle" class="form-label font-weight-bold text-dark">Название задачи <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-modern" id="eventTitle" placeholder="Введите наименование..." maxlength="200">
+                        <div class="invalid-feedback">Пожалуйста, введите название задачи</div>
                     </div>
                     <div class="mb-3">
-                        <label for="eventPriority" class="form-label fw-semibold">Приоритет</label>
-                        <select class="form-select" id="eventPriority">
+                        <label for="eventPriority" class="form-label font-weight-bold text-dark">Приоритет</label>
+                        <select class="form-control form-control-modern" id="eventPriority">
                             <option value="primary">Основной</option>
                             <option value="warning">Предупреждающий</option>
                             <option value="info">Информационный</option>
-                            <option value="danger">Опасный</option>
-                            <option value="dark">Темный</option>
+                            <option value="danger">Срочный / Опасный</option>
+                            <option value="dark">Внутренний / Темный</option>
                         </select>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="eventDate" class="form-label fw-semibold">Дата</label>
-                            <input type="date" class="form-control" id="eventDate">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label for="eventDate" class="form-label font-weight-bold text-dark">Дата</label>
+                            <input type="date" class="form-control form-control-modern" id="eventDate">
                         </div>
-                        <div class="col-md-6">
-                            <label for="eventTime" class="form-label fw-semibold">Время</label>
-                            <input type="time" class="form-control" id="eventTime" step="60">
-                            <div class="form-text">Часы:Минуты</div>
+                        <div class="col-6">
+                            <label for="eventTime" class="form-label font-weight-bold text-dark">Время начала</label>
+                            <input type="time" class="form-control form-control-modern" id="eventTime" step="60">
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="eventDuration" class="form-label fw-semibold">Длительность (часы)</label>
-                        <input type="number" class="form-control" id="eventDuration" value="1" min="0.5" step="0.5">
-                        <div class="form-text">Продолжительность события в часах</div>
+                    <div class="mb-2">
+                        <label for="eventDuration" class="form-label font-weight-bold text-dark">Длительность (в часах)</label>
+                        <input type="number" class="form-control form-control-modern" id="eventDuration" value="1" min="0.5" step="0.5">
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Отмена
-                    </button>
-                    <button type="button" class="btn btn-primary" id="saveEventBtn">
-                        <i class="fas fa-save me-1"></i>Создать
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-touch" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary btn-touch font-weight-bold" id="saveEventBtn">
+                        <i class="bx bx-save me-1"></i> Сохранить задачу
                     </button>
                 </div>
             </div>
@@ -267,19 +278,20 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header" id="notificationHeader">
-                    <h5 class="modal-title">
-                        <i class="fas fa-info-circle me-2" id="notificationIcon"></i>
+                    <h5 class="modal-title font-weight-bold">
+                        <i class="bx bx-info-circle me-2" id="notificationIcon"></i>
                         <span id="notificationTitle">Уведомление</span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="notificationMessage"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Хорошо</button>
+                <div class="modal-body p-4" id="notificationMessage"></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-primary btn-touch" data-bs-dismiss="modal">Понятно</button>
                 </div>
             </div>
         </div>
     </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
@@ -306,7 +318,6 @@
 
             function showNotification(message, type) {
                 type = type || 'info';
-                // Используем toastr если доступен
                 if (typeof toastr !== 'undefined') {
                     if (type === 'success') toastr.success(message);
                     else if (type === 'error') toastr.error(message);
@@ -314,29 +325,28 @@
                     else toastr.info(message);
                     return;
                 }
-                // Fallback на модальное окно
                 var modal = new bootstrap.Modal(document.getElementById('notificationModal'));
                 var header = document.getElementById('notificationHeader');
                 var icon = document.getElementById('notificationIcon');
                 var title = document.getElementById('notificationTitle');
                 var messageEl = document.getElementById('notificationMessage');
 
-                header.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+                header.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'text-white');
                 if (type === 'success') {
                     header.classList.add('bg-success', 'text-white');
-                    icon.className = 'fas fa-check-circle me-2';
+                    icon.className = 'bx bx-check-circle me-2';
                     title.textContent = 'Успешно';
                 } else if (type === 'error') {
                     header.classList.add('bg-danger', 'text-white');
-                    icon.className = 'fas fa-exclamation-circle me-2';
+                    icon.className = 'bx bx-error-circle me-2';
                     title.textContent = 'Ошибка';
                 } else if (type === 'warning') {
                     header.classList.add('bg-warning');
-                    icon.className = 'fas fa-exclamation-triangle me-2';
-                    title.textContent = 'Предупреждение';
+                    icon.className = 'bx bx-alarm-exclamation me-2';
+                    title.textContent = 'Внимание';
                 } else {
                     header.classList.add('bg-info', 'text-white');
-                    icon.className = 'fas fa-info-circle me-2';
+                    icon.className = 'bx bx-info-circle me-2';
                     title.textContent = 'Информация';
                 }
                 messageEl.textContent = message;
@@ -440,10 +450,7 @@
 
             function initCalendar() {
                 var calendarEl = document.getElementById('calendar');
-                if (!calendarEl) {
-                    console.error('Calendar element not found');
-                    return;
-                }
+                if (!calendarEl) return;
 
                 var calendarEvents = [];
                 {% for task in repeat_tasks %}

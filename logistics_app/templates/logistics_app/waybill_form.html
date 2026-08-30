@@ -2,8 +2,26 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
+{% block title %}
+    {% if object %}Редактирование накладной № {{ object.document_number }}{% else %}Создание транспортной накладной{% endif %} // Логистика
+{% endblock %}
+
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/autocomplete/src/jquery-ui.css' %}"/>
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
@@ -11,96 +29,144 @@
     <script src="{% static 'admin_templates/vendor/autocomplete/src/custom.autocomplete.js' %}"></script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="col-lg-12">
-            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                <section class="toggle active">
-                    <label>Основные реквизиты</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    {{ form.as_p }}
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-        </div>
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'logistics_app:waybill_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-transfer-alt text-primary me-2"></i>{% if object %}Редактирование накладной{% else %}Новая транспортная накладная{% endif %}
+                    </h3>
+                    <p class="text-muted small mb-0">Заполните реквизиты перемещения груза и назначьте ответственных</p>
+                </div>
+                <div>
+                    <a href="{% url 'logistics_app:waybill_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку накладных
                     </a>
                 </div>
-            {% endif %}
-        </div>
-    </form>
-    <!-- end: page -->
-    <!-- end: page -->
-    <script type="text/javascript">
-        function memo_type_change() {
-            document_type = document.getElementById("id_document_type").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'logistics_app:waybill_add' %}',
-                data: {
-                    "document_type": document_type,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    var replaceable_document = $("#id_replaceable_document");
-                    replaceable_document.empty();
-                    $.each(data['replaceable_document'], function (key, value) {
-                        replaceable_document.append($("<option selected></option>")
-                            .attr("value", value).text(key));
-                    });
-                    replaceable_document.removeAttr("disabled")
-                    $('#id_replaceable_document').refresh;
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
-                },
-                failure: function (data) {
-                    console.log("failure");
-                }
-            });
-        };
-    </script>
+            </div>
 
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-edit text-primary me-2"></i>Реквизиты транспортной накладной
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" class="ecommerce-form">
+                        {% csrf_token %}
+                        {{ form.media }}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <strong>Ошибка валидации:</strong> Пожалуйста, проверьте правильность заполнения формы.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_document_date">
+                                    Дата документа <span class="text-danger">*</span>
+                                </label>
+                                {{ form.document_date|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_place_of_departure">
+                                    Место назначения (Куда) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.place_of_departure|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_place_division">
+                                    Подразделение
+                                </label>
+                                {{ form.place_division|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_content">
+                                    Содержание груза (Наименования, кол-во) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.content|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label font-weight-bold text-dark" for="id_comment">
+                                    Комментарий / Примечания
+                                </label>
+                                {{ form.comment|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_sender">
+                                    Отправитель
+                                </label>
+                                {{ form.sender|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_responsible">
+                                    Получатель / Ответственный
+                                </label>
+                                {{ form.responsible|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_executor">
+                                    Исполнитель
+                                </label>
+                                {{ form.executor|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_state">
+                                    Состояние (Статус)
+                                </label>
+                                {{ form.state|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_urgency">
+                                    Срочность
+                                </label>
+                                {{ form.urgency|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            {% if form.package_number %}
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label font-weight-bold text-dark" for="id_package_number">
+                                        Привязать к посылке
+                                    </label>
+                                    {{ form.package_number|add_class:"form-control form-control-modern" }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'logistics_app:waybill_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <div class="d-flex gap-2">
+                                {% if object and user.is_superuser %}
+                                    <a href="{% url 'logistics_app:waybill_delete' object.pk %}" class="btn btn-outline-danger btn-touch">
+                                        <i class="bx bx-trash me-1"></i> Удалить
+                                    </a>
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                    <i class="bx bx-save me-1"></i> {% if object %}Сохранить изменения{% else %}Создать накладную{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}

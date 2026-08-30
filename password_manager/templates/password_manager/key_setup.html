@@ -1,54 +1,104 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load widget_tweaks %}
 
-{% block title %}Настройка ключевой фразы{% endblock %}
+{% block title %}
+    Настройка ключевой фразы // Менеджер паролей
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 24px;
+        font-weight: 600;
+    }
+    .security-hero-banner {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 12px;
+        padding: 24px;
+        color: #ffffff;
+        margin-bottom: 24px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6 col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="card-title mb-0"><i class="fas fa-key me-2"></i>Первоначальная настройка</h4>
-            </div>
-            <div class="card-body">
-                <!-- Вывод сообщений Django -->
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-                <p class="text-muted mb-4">Для безопасного хранения паролей необходимо задать мастер-фразу. 
-                Она будет использоваться для шифрования ваших данных. Убедитесь, что вы запомните её!</p>
-                
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="id_passphrase" class="form-label fw-bold">Ключевая фраза</label>
-                        {{ form.passphrase }}
-                        <div class="form-text">{{ form.passphrase.help_text }}</div>
-                        {% if form.passphrase.errors %}
-                            <div class="text-danger small mt-1">{{ form.passphrase.errors.0 }}</div>
-                        {% endif %}
+            <div class="security-hero-banner text-center">
+                <i class="bx bx-shield-quarter text-primary mb-2" style="font-size: 3.5rem;"></i>
+                <h3 class="text-white font-weight-bold mb-2">Настройка мастер-фразы</h3>
+                <p class="text-light small opacity-75 mb-0">Мастер-фраза используется для сквозного шифрования (AES-256) ваших паролей. Она не хранится в открытом виде на сервере.</p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-key text-primary me-2"></i>Задайте вашу ключевую фразу
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning border-0 shadow-sm small mb-4">
+                        <i class="bx bx-error-circle me-1 fs-6"></i> <strong>Важно:</strong> Если вы забудете ключевую фразу, расшифровать сохраненные пароли будет невозможно.
                     </div>
-                    <div class="mb-4">
-                        <label for="id_confirm_passphrase" class="form-label fw-bold">Подтверждение</label>
-                        {{ form.confirm_passphrase }}
-                        {% if form.confirm_passphrase.errors %}
-                            <div class="text-danger small mt-1">{{ form.confirm_passphrase.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-shield-alt me-2"></i>Сохранить и продолжить
-                        </button>
-                    </div>
-                </form>
+
+                    <form method="post" novalidate class="ecommerce-form">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="id_passphrase" class="form-label font-weight-bold text-dark">
+                                Ключевая фраза <span class="text-danger">*</span>
+                            </label>
+                            {{ form.passphrase|add_class:"form-control form-control-modern" }}
+                            {% if form.passphrase.help_text %}
+                                <div class="form-text small text-muted">{{ form.passphrase.help_text }}</div>
+                            {% endif %}
+                            {% if form.passphrase.errors %}
+                                <div class="text-danger small mt-1">{{ form.passphrase.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_confirm_passphrase" class="form-label font-weight-bold text-dark">
+                                Подтверждение ключевой фразы <span class="text-danger">*</span>
+                            </label>
+                            {{ form.confirm_passphrase|add_class:"form-control form-control-modern" }}
+                            {% if form.confirm_passphrase.errors %}
+                                <div class="text-danger small mt-1">{{ form.confirm_passphrase.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'password_manager:password_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <i class="bx bx-shield-alt me-1"></i> Сохранить и защитить
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+    <!-- end: page -->
 {% endblock %}

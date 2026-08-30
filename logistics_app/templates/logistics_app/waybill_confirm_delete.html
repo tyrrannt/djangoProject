@@ -2,51 +2,59 @@
 {% load static %}
 
 {% block title %}
-    {{ title }}
+    Удаление накладной № {{ object.document_number }} // Логистика
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-    <form method="post">
-        {% csrf_token %}
-            <header class="card-header">
-                <h2 class="card-title">Вы уверены?</h2>
-            </header>
-            <div class="card-body">
-                <div class="modal-wrapper mb-4">
-                    <div class="modal-icon">
-                        <i class="fas fa-question-circle"></i>
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 mt-4">
+                <header class="card-header bg-danger text-white py-3">
+                    <h4 class="card-title text-white mb-0 font-weight-bold">
+                        <i class="bx bx-trash me-2"></i> Подтверждение удаления
+                    </h4>
+                </header>
+                <div class="card-body p-4 text-center">
+                    <div class="my-3">
+                        <i class="bx bx-error-circle text-danger" style="font-size: 4rem;"></i>
                     </div>
-                    <div class="modal-text">
-                        <h4>Вы уверены, что хотите удалить эту запись?</h4>
+                    <h5 class="text-dark font-weight-bold mb-3">Вы действительно хотите удалить транспортную накладную?</h5>
+                    <div class="p-3 bg-light rounded text-start mb-3 border">
+                        <div class="small text-muted mb-1">Номер и дата:</div>
+                        <div class="fw-bold text-dark fs-6">№ {{ object.document_number }} от {{ object.document_date|date:"d.m.Y" }}</div>
+                        <div class="small text-muted mt-2">Куда / Подразделение: {{ object.place_of_departure|default:"—" }} ({{ object.place_division|default:"—" }})</div>
+                        <div class="small text-muted mt-1">Содержание: {{ object.content|truncatechars:100 }}</div>
                     </div>
+                    <p class="text-muted small">Это действие необратимо. Накладная будет безвозвратно удалена.</p>
+                </div>
+                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'logistics_app:waybill_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Отмена
+                    </a>
+                    <form method="post" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-touch font-weight-bold">
+                            <i class="bx bx-trash me-1"></i> Да, удалить
+                        </button>
+                    </form>
                 </div>
             </div>
-            <footer class="card-footer">
-                <div class="row action-buttons">
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <button type="submit"
-                                class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
-                                data-loading-text="Loading...">
-                            <i class="bx bx-save text-4 me-2"></i> Да
-                        </button>
-                    </div>
-                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                        <a href="{% url 'logistics_app:waybill_list' %}"
-                           class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Нет</a>
-                    </div>
-                </div>
-            </footer>
-    </form>
+        </div>
+    </div>
 {% endblock %}

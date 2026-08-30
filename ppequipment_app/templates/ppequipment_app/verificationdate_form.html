@@ -1,41 +1,73 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
+{% load widget_tweaks %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title|default:"Дата сверки" }} // ПТД{% endblock %}
 
 {% block page_content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">
-            <i class="fas fa-{% if 'создание' in title|lower or 'добавление' in title|lower %}plus-circle{% else %}edit{% endif %} me-2 text-primary"></i>{{ title }}
-        </h2>
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-calendar-event text-primary me-2"></i>{{ title|default:"Дата сверки" }}
+            </h3>
+            <p class="text-muted small mb-0">Планирование контрольной даты сверки документации</p>
+        </div>
+        <div>
+            <a href="{% url 'ppequipment_app:verification_date_list' %}" class="btn btn-outline-secondary btn-touch">
+                <i class="bx bx-arrow-back me-1"></i> К списку дат
+            </a>
+        </div>
     </div>
 
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Форма даты сверки</h5>
-        </div>
-        <div class="card-body">
-            <form method="post" novalidate>
-                {% csrf_token %}
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-calendar text-primary me-2"></i>Параметры даты
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="post" novalidate class="ecommerce-form">
+                        {% csrf_token %}
 
-                <div class="row">
-                    {% for field in form %}
-                        <div class="col-md-12 mb-3">
-                            {{ field.label_tag }}
-                            {{ field }}
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <strong>Ошибка валидации:</strong> Пожалуйста, исправьте ошибки в форме.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3 mb-4">
+                            {% for field in form %}
+                                <div class="col-12">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ field.id_for_label }}">
+                                        {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+                                    </label>
+                                    {{ field|add_class:"form-control form-control-modern" }}
+                                    {% if field.help_text %}
+                                        <div class="form-text small text-muted">{{ field.help_text }}</div>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-                </div>
 
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-success me-2">
-                        <i class="fas fa-save me-1"></i>Сохранить
-                    </button>
-                    <a href="{% url 'ppequipment_app:verification_date_list' %}" class="btn btn-secondary">
-                        <i class="fas fa-times me-1"></i>Отмена
-                    </a>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'ppequipment_app:verification_date_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <i class="bx bx-save me-1"></i> Сохранить дату
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 {% endblock %}

@@ -1,180 +1,175 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 
 {% block title %}
-    {% if form.instance.pk %}Редактирование заявки #{{ form.instance.pk }}{% else %}Новая заявка{% endif %}
+    {% if form.instance.pk %}Редактирование сообщения #{{ form.instance.pk }}{% else %}Подать добровольное сообщение{% endif %} // Безопасность полетов
 {% endblock %}
 
 {% block custom_css %}
     <style>
-        /* Увеличиваем мелкие подсказки */
-        .card-body small {
-            font-size: 0.95rem !important; /* По умолчанию ~0.8rem */
-            display: block;
-            margin-top: 5px;
+        :root {
+            --touch-target-size: 44px;
         }
-
-        /* Делаем ошибки более крупными */
-        .text-danger {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        /* Если нужно увеличить и сами подписи (Label) */
-        .form-label {
-            font-size: 1.1rem;
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
             font-weight: 600;
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <!-- Хлебные крошки -->
-                <nav aria-label="breadcrumb" class="mb-4">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{% url 'tickets_app:list' %}">Добровольные сообщения</a>
-                        </li>
-                        <li class="breadcrumb-item active">
-                            {% if form.instance.pk %}
-                                Редактирование заявки №{{ form.instance.pk }}
-                            {% else %}
-                                Новая заявка
-                            {% endif %}
-                        </li>
-                    </ol>
-                </nav>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="mb-0">
-                            {% if form.instance.pk %}
-                                Редактирование заявки #{{ form.instance.pk }}
-                            {% else %}
-                                Создание новой заявки
-                            {% endif %}
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <form method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
-
-                            {% if form.non_field_errors %}
-                                <div class="alert alert-danger">
-                                    {{ form.non_field_errors }}
-                                </div>
-                            {% endif %}
-
-                            <!-- Поле заголовка -->
-                            <div class="mb-3">
-                                <label for="{{ form.title.id_for_label }}" class="form-label">
-                                    Заголовок <span class="text-danger">*</span>
-                                </label>
-                                {{ form.title }}
-                                {% if form.title.errors %}
-                                    <div class="text-danger">{{ form.title.errors }}</div>
-                                {% endif %}
-                                <small class="text-muted">Кратко опишите суть проблемы или предложения</small>
-                            </div>
-
-                            <!-- Поле описания -->
-                            <div class="mb-3">
-                                <label for="{{ form.description.id_for_label }}" class="form-label">
-                                    Описание <span class="text-danger">*</span>
-                                </label>
-                                {{ form.description }}
-                                {% if form.description.errors %}
-                                    <div class="text-danger">{{ form.description.errors }}</div>
-                                {% endif %}
-                                <small class="text-muted">Подробно опишите ситуацию</small>
-                            </div>
-
-                            <!-- Поле родительской заявки (обжалование) -->
-                            {% if form.parent_ticket %}
-                                <div class="mb-3">
-                                    <label for="{{ form.parent_ticket.id_for_label }}" class="form-label">
-                                        Обжалование заявки
-                                    </label>
-                                    {{ form.parent_ticket }}
-                                    {% if form.parent_ticket.errors %}
-                                        <div class="text-danger">{{ form.parent_ticket.errors }}</div>
-                                    {% endif %}
-                                    <small class="text-muted">
-                                        Выберите закрытую заявку для обжалования (необязательно)
-                                    </small>
-                                </div>
-                            {% endif %}
-
-                            <!-- Поле вложений (только при создании) -->
-                            {% if not form.instance.pk and form.attachments %}
-                                <div class="mb-3">
-                                    <label for="{{ form.attachments.id_for_label }}" class="form-label">
-                                        Вложения
-                                    </label>
-                                    {{ form.attachments }}
-                                    {% if form.attachments.errors %}
-                                        <div class="text-danger">{{ form.attachments.errors }}</div>
-                                    {% endif %}
-                                    <small class="text-muted">
-                                        {{ form.attachments.help_text }}
-                                    </small>
-                                </div>
-                            {% endif %}
-
-                            <!-- Поля для назначения ответственного (только для редактирования) -->
-                            {% if form.responsible and request.user|has_group:'Руководство' or request.user.is_superuser %}
-                                <div class="mb-3">
-                                    <label for="{{ form.responsible.id_for_label }}" class="form-label">
-                                        Ответственный
-                                    </label>
-                                    {{ form.responsible }}
-                                    {% if form.responsible.errors %}
-                                        <div class="text-danger">{{ form.responsible.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-
-                            {% if form.status and request.user|has_group:'Руководство' or request.user.is_superuser %}
-                                <div class="mb-3">
-                                    <label for="{{ form.status.id_for_label }}" class="form-label">
-                                        Статус
-                                    </label>
-                                    {{ form.status }}
-                                    {% if form.status.errors %}
-                                        <div class="text-danger">{{ form.status.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-circle"></i>
-                                    {% if form.instance.pk %}Сохранить{% else %}Создать{% endif %}
-                                </button>
-                                <a href="{% url 'tickets_app:list' %}" class="btn btn-outline-secondary">
-                                    <i class="bi bi-x-circle"></i> Отмена
-                                </a>
-                            </div>
-                        </form>
-                    </div>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-9">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-message-square-add text-primary me-2"></i>
+                        {% if form.instance.pk %}
+                            Редактирование сообщения #{{ form.instance.pk }}
+                        {% else %}
+                            Подача добровольного сообщения
+                        {% endif %}
+                    </h3>
+                    <p class="text-muted small mb-0">Сообщение по безопасности полетов, технической эксплуатации или условиям труда</p>
                 </div>
-
-                {% if not form.instance.pk %}
-                    <div class="alert alert-info mt-4">
-                        <h5><i class="bi bi-info-circle"></i> Как подать заявку?</h5>
-                        <ol class="mb-0">
-                            <li>Укажите краткий заголовок проблемы</li>
-                            <li>Подробно опишите ситуацию в поле «Описание»</li>
-                            <li>При необходимости прикрепите файлы (PDF, JPG, PNG)</li>
-                            <li>Руководство рассмотрит заявку и назначит ответственного</li>
-                            <li>Вы получите уведомление о решении</li>
-                        </ol>
-                    </div>
-                {% endif %}
+                <div>
+                    <a href="{% url 'tickets_app:list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку сообщений
+                    </a>
+                </div>
             </div>
+
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-edit text-primary me-2"></i>Параметры сообщения
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" novalidate class="ecommerce-form">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-4">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                Заголовок / Тема <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title|add_class:"form-control form-control-modern" }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small text-muted">Кратко сформулируйте суть вопроса или события</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                Подробное описание ситуации <span class="text-danger">*</span>
+                            </label>
+                            {{ form.description|add_class:"form-control form-control-modern" }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small text-muted">Детально опишите обстоятельства, место, время и ваши предложения</div>
+                        </div>
+
+                        <!-- Parent Ticket (Appeal) -->
+                        {% if form.parent_ticket %}
+                            <div class="mb-3">
+                                <label for="{{ form.parent_ticket.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                    Обжалование предыдущего сообщения
+                                </label>
+                                {{ form.parent_ticket|add_class:"form-control form-control-modern" }}
+                                {% if form.parent_ticket.errors %}
+                                    <div class="text-danger small mt-1">{{ form.parent_ticket.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small text-muted">Укажите связанное закрытое сообщение, если вы подаете повторную апелляцию</div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Attachments (only on creation) -->
+                        {% if not form.instance.pk and form.attachments %}
+                            <div class="mb-4">
+                                <label for="{{ form.attachments.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                    Прикрепить файлы / Фотоматериалы
+                                </label>
+                                {{ form.attachments|add_class:"form-control form-control-modern" }}
+                                {% if form.attachments.errors %}
+                                    <div class="text-danger small mt-1">{{ form.attachments.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.attachments.help_text %}
+                                    <div class="form-text small text-muted">{{ form.attachments.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Management Fields -->
+                        {% if form.responsible and request.user|has_group:'Руководство' or request.user.is_superuser %}
+                            <div class="mb-3 p-3 bg-light rounded border">
+                                <label for="{{ form.responsible.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                    Назначить ответственного сотрудника
+                                </label>
+                                {{ form.responsible|add_class:"form-control form-control-modern" }}
+                                {% if form.responsible.errors %}
+                                    <div class="text-danger small mt-1">{{ form.responsible.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        {% if form.status and request.user|has_group:'Руководство' or request.user.is_superuser %}
+                            <div class="mb-3 p-3 bg-light rounded border">
+                                <label for="{{ form.status.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                    Статус сообщения
+                                </label>
+                                {{ form.status|add_class:"form-control form-control-modern" }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'tickets_app:list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <i class="bx bx-send me-1"></i> {% if form.instance.pk %}Сохранить изменения{% else %}Отправить сообщение{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if not form.instance.pk %}
+                <div class="alert alert-info border-0 shadow-sm p-4">
+                    <h6 class="font-weight-bold text-dark mb-2">
+                        <i class="bx bx-info-circle text-primary me-2"></i>Памятка по подаче сообщения
+                    </h6>
+                    <ol class="mb-0 small text-muted ps-3">
+                        <li class="mb-1">Укажите лаконичный и понятный заголовок;</li>
+                        <li class="mb-1">Подробно опишите события, факторы риска или предложения в поле «Описание»;</li>
+                        <li class="mb-1">При необходимости прикрепите подтверждающие документы или фотографии (PDF, JPG, PNG);</li>
+                        <li class="mb-1">Руководство зарегистрирует заявку и назначит ответственное лицо для проведения анализа;</li>
+                        <li>О ходе рассмотрения и принятых мерах вы будете уведомлены через систему.</li>
+                    </ol>
+                </div>
+            {% endif %}
         </div>
     </div>
+    <!-- end: page -->
 {% endblock %}

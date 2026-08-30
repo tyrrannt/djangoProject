@@ -3,201 +3,269 @@
 {% load custom %}
 {% load widget_tweaks %}
 
+{% block title %}
+    {% if object %}Редактирование задачи: {{ object.title }}{% else %}Новая задача{% endif %} // Задачи и события
+{% endblock %}
+
 {% block custom_css %}
     <style>
-        /* Минимальные кастомные стили только для специфических элементов Porto */
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
         .dropzone-area {
             transition: all 0.2s ease;
             cursor: pointer;
+            border: 2px dashed #cbd5e1 !important;
+            border-radius: 8px;
+            background-color: #f8fafc;
         }
         .dropzone-area:hover {
-            background-color: #f8f9fa;
-            border-color: #0d6efd !important;
+            background-color: #f1f5f9;
+            border-color: #0088cc !important;
         }
         .dropzone-area.drag-over {
-            background-color: #e7f1ff;
-            border-color: #0d6efd !important;
+            background-color: #e0f2fe;
+            border-color: #0284c7 !important;
         }
         .file-item {
             transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+            margin-bottom: 8px;
         }
         .file-item:hover {
-            background-color: #f8f9fa;
+            background-color: #f8fafc;
             border-color: #cbd5e1;
         }
-        .form-section {
-            margin-bottom: 1.5rem;
-        }
-        /* Адаптив для мобильных */
-        @media (max-width: 768px) {
-            .btn-custom {
-                width: 100%;
-                margin-top: 0.5rem;
-            }
-            .d-flex.justify-content-end {
-                flex-direction: column;
-            }
+        .form-section-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1e293b;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
         }
     </style>
 {% endblock %}
 
-{% block title %}
-    {{ object.title|default:"Новая задача" }} - {% if object %}Редактирование{% else %}Создание{% endif %}
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid py-3">
+    <!-- start: page -->
     <div class="row">
-        <div class="col-12">
-            <!-- Форма -->
-            <div class="card card-body-modern">
-                <div class="card-body">
-                    <form method="POST" enctype="multipart/form-data" id="task-form" novalidate>
+        <div class="col-12 col-xl-10 mx-auto">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-task text-primary me-2"></i>{% if object %}Редактирование задачи{% else %}Новая задача{% endif %}
+                    </h3>
+                    <p class="text-muted small mb-0">Заполните реквизиты, сроки исполнения и назначьте участников</p>
+                </div>
+                <div>
+                    <a href="{% if object %}{% url 'tasks_app:task-detail' object.pk %}{% else %}{% url 'tasks_app:task-list' %}{% endif %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Назад
+                    </a>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-edit text-primary me-2"></i>Параметры задачи
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data" id="task-form" novalidate class="ecommerce-form">
                         {% csrf_token %}
 
-                        <!-- Основная информация -->
-                        <div class="form-section">
-                            <h5 class="mb-3 pb-2 border-bottom">
-                                <i class="fas fa-info-circle text-primary me-2"></i>Основная информация
-                            </h5>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <strong>Ошибка валидации:</strong> Пожалуйста, исправьте ошибки в форме.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Section 1: Main Info -->
+                        <div class="mb-4">
+                            <div class="form-section-title">
+                                <i class="bx bx-info-circle text-primary me-2"></i>1. Основная информация
+                            </div>
                             <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label class="form-label fw-semibold">{{ form.title.label }}</label>
-                                    {{ form.title }}
+                                <div class="col-12 col-md-8">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.title.id_for_label }}">
+                                        {{ form.title.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.title|add_class:"form-control form-control-modern" }}
                                     {% if form.title.help_text %}
-                                        <div class="form-text">{{ form.title.help_text }}</div>
+                                        <div class="form-text small text-muted">{{ form.title.help_text }}</div>
                                     {% endif %}
-                                    {{ form.title.errors }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">{{ form.priority.label }}</label>
-                                    {{ form.priority }}
-                                    {{ form.priority.errors }}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.priority.id_for_label }}">
+                                        {{ form.priority.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.priority|add_class:"form-control form-control-modern" }}
+                                    {% if form.priority.errors %}
+                                        <div class="text-danger small mt-1">{{ form.priority.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label fw-semibold">{{ form.description.label }}</label>
-                                    {{ form.description }}
-                                    {{ form.description.errors }}
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.description.id_for_label }}">
+                                        {{ form.description.label }}
+                                    </label>
+                                    {{ form.description|add_class:"form-control form-control-modern" }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Сроки и категория -->
-                        <div class="form-section">
-                            <h5 class="mb-3 pb-2 border-bottom">
-                                <i class="fas fa-calendar-alt text-primary me-2"></i>Сроки и категория
-                            </h5>
+                        <!-- Section 2: Dates & Category -->
+                        <div class="mb-4">
+                            <div class="form-section-title">
+                                <i class="bx bx-calendar text-primary me-2"></i>2. Сроки и категория
+                            </div>
                             <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">{{ form.start_date.label }}</label>
-                                    {{ form.start_date }}
-                                    {{ form.start_date.errors }}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.start_date.id_for_label }}">
+                                        {{ form.start_date.label }}
+                                    </label>
+                                    {{ form.start_date|add_class:"form-control form-control-modern" }}
+                                    {% if form.start_date.errors %}
+                                        <div class="text-danger small mt-1">{{ form.start_date.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">{{ form.end_date.label }}</label>
-                                    {{ form.end_date }}
-                                    {{ form.end_date.errors }}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.end_date.id_for_label }}">
+                                        {{ form.end_date.label }}
+                                    </label>
+                                    {{ form.end_date|add_class:"form-control form-control-modern" }}
+                                    {% if form.end_date.errors %}
+                                        <div class="text-danger small mt-1">{{ form.end_date.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">{{ form.category.label }}</label>
-                                    {{ form.category }}
-                                    {{ form.category.errors }}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.category.id_for_label }}">
+                                        {{ form.category.label }}
+                                    </label>
+                                    {{ form.category|add_class:"form-control form-control-modern" }}
+                                    {% if form.category.errors %}
+                                        <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Настройки повторения -->
-                        <div class="form-section">
-                            <h5 class="mb-3 pb-2 border-bottom">
-                                <i class="fas fa-sync-alt text-primary me-2"></i>Настройки повторения
-                            </h5>
+                        <!-- Section 3: Recurrence -->
+                        <div class="mb-4">
+                            <div class="form-section-title">
+                                <i class="bx bx-sync text-primary me-2"></i>3. Настройка повторения
+                            </div>
                             <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-semibold">{{ form.repeat.label }}</label>
-                                    {{ form.repeat }}
-                                    {{ form.repeat.errors }}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.repeat.id_for_label }}">
+                                        {{ form.repeat.label }}
+                                    </label>
+                                    {{ form.repeat|add_class:"form-control form-control-modern" }}
                                 </div>
-                                <div class="col-md-2">
-                                    <label class="form-label fw-semibold">{{ form.repeat_interval.label }}</label>
-                                    {{ form.repeat_interval }}
-                                    {{ form.repeat_interval.errors }}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_interval.id_for_label }}">
+                                        {{ form.repeat_interval.label }}
+                                    </label>
+                                    {{ form.repeat_interval|add_class:"form-control form-control-modern" }}
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-semibold">{{ form.repeat_end_date.label }}</label>
-                                    {{ form.repeat_end_date }}
-                                    {{ form.repeat_end_date.errors }}
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">{{ form.repeat_days.label }}</label>
-                                    {{ form.repeat_days }}
-                                    {{ form.repeat_days.errors }}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_end_date.id_for_label }}">
+                                        {{ form.repeat_end_date.label }}
+                                    </label>
+                                    {{ form.repeat_end_date|add_class:"form-control form-control-modern" }}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Доступ и вложения -->
-                        <div class="form-section">
-                            <h5 class="mb-3 pb-2 border-bottom">
-                                <i class="fas fa-users text-primary me-2"></i>Доступ и вложения
-                            </h5>
+                        <!-- Section 4: Shared Access -->
+                        <div class="mb-4">
+                            <div class="form-section-title">
+                                <i class="bx bx-group text-primary me-2"></i>4. Совместный доступ
+                            </div>
                             <div class="row g-3">
                                 <div class="col-12">
-                                    <label class="form-label fw-semibold">{{ form.shared_with.label }}</label>
-                                    {{ form.shared_with }}
-                                    <div class="form-text">
-                                        <i class="fas fa-shield-alt me-1"></i>
-                                        {{ form.shared_with.help_text }}
-                                    </div>
-                                    {{ form.shared_with.errors }}
+                                    <label class="form-label font-weight-bold text-dark" for="{{ form.shared_with.id_for_label }}">
+                                        {{ form.shared_with.label }}
+                                    </label>
+                                    {{ form.shared_with|add_class:"form-control" }}
+                                    {% if form.shared_with.help_text %}
+                                        <div class="form-text small text-muted">{{ form.shared_with.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.shared_with.errors %}
+                                        <div class="text-danger small mt-1">{{ form.shared_with.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
+                            </div>
+                        </div>
 
-                                <!-- Блок загрузки файлов -->
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold">Вложения</label>
-                                    <div class="dropzone-area border border-2 border-dashed rounded p-4 text-center" id="dropzone">
-                                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                        <p class="mb-1 fw-bold">Перетащите файлы сюда или нажмите для выбора</p>
-                                        <small class="text-muted">Поддерживаются любые типы файлов • Макс. 10MB на файл</small>
-                                        <input type="file" name="files" multiple class="d-none" id="id_files">
-                                    </div>
+                        <!-- Section 5: Files & Dropzone -->
+                        <div class="mb-4">
+                            <div class="form-section-title">
+                                <i class="bx bx-paperclip text-primary me-2"></i>5. Прикрепленные файлы
+                            </div>
+                            
+                            <!-- Dropzone Area -->
+                            <div class="dropzone-area p-4 text-center mb-3" id="dropzone">
+                                <i class="bx bx-cloud-upload text-primary" style="font-size: 3rem;"></i>
+                                <h6 class="font-weight-bold text-dark mt-2 mb-1">Перетащите файлы сюда или нажмите для выбора</h6>
+                                <p class="text-muted small mb-0">Поддерживаются документы PDF, Word, Excel, изображения, архивы</p>
+                                <input type="file" name="files" id="id_files" multiple class="d-none">
+                            </div>
 
-                                    <!-- Список уже загруженных файлов -->
-                                    <div id="file-list" class="mt-3">
-                                        {% if form.instance.id and form.instance.files.exists %}
-                                            {% for document in form.instance.files.all %}
-                                                <div class="file-item d-flex align-items-center justify-content-between p-3 bg-light border rounded mb-2" data-file-id="{{ document.id }}">
-                                                    <div class="d-flex align-items-center gap-3">
-                                                        <i class="fas fa-file-alt text-primary fa-lg"></i>
-                                                        <div>
-                                                            <div class="fw-semibold">{{ document.original_filename|default:document.file.name|basename }}</div>
-                                                            <div class="small text-muted">
-                                                                {% if document.file.size %}{{ document.file.size|filesizeformat }}{% endif %}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="d-flex gap-2">
-                                                        <a href="{{ document.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Скачать">
-                                                            <i class="fas fa-download"></i>
-                                                        </a>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger delete-file-btn" data-file-id="{{ document.id }}" title="Удалить файл">
-                                                            <i class="fas fa-trash-alt"></i>
-                                                        </button>
-                                                    </div>
+                            <!-- Files Container -->
+                            <div id="file-list">
+                                {% if object and object.files.all %}
+                                    {% for file in object.files.all %}
+                                        <div class="file-item d-flex align-items-center justify-content-between p-3" data-file-id="{{ file.id }}">
+                                            <div class="d-flex align-items-center gap-3 text-truncate">
+                                                <i class="bx bx-file text-primary fs-3"></i>
+                                                <div class="text-truncate">
+                                                    <span class="fw-bold text-dark text-truncate d-block">{{ file.original_filename|default:file.file.name }}</span>
+                                                    <small class="text-muted font-monospace">{{ file.uploaded_at|date:"d.m.Y H:i" }} &bull; {{ file.file.size|filesizeformat }}</small>
                                                 </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <a href="{{ file.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Скачать">
+                                                    <i class="bx bx-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-file-btn" data-file-id="{{ file.id }}" title="Удалить">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                             </div>
                         </div>
 
-                        <!-- Кнопки формы -->
-                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                            <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary btn-custom">
-                                <i class="fas fa-times me-2"></i>Отмена
+                        <!-- Action Bar -->
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% if object %}{% url 'tasks_app:task-detail' object.pk %}{% else %}{% url 'tasks_app:task-list' %}{% endif %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
                             </a>
-                            <button type="submit" class="btn btn-primary btn-custom px-4">
-                                <i class="fas fa-save me-2"></i>Сохранить
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <i class="bx bx-save me-1"></i> {% if object %}Сохранить изменения{% else %}Создать задачу{% endif %}
                             </button>
                         </div>
                     </form>
@@ -205,146 +273,58 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Модальное окно подтверждения удаления файла -->
-<div class="modal fade" id="deleteFileModal" tabindex="-1" aria-labelledby="deleteFileModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteFileModalLabel">
-                    <i class="fas fa-trash-alt me-2"></i>Подтверждение удаления
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <p>Вы действительно хотите удалить файл <strong id="deleteFileName"></strong>?</p>
-                <p class="text-danger mb-0"><i class="fas fa-exclamation-triangle me-1"></i> Это действие невозможно отменить.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i>Отмена
-                </button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="fas fa-trash-alt me-1"></i>Удалить
-                </button>
+    <!-- Модальное окно подтверждения удаления файла -->
+    <div class="modal fade" id="deleteFileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title font-weight-bold text-white">
+                        <i class="bx bx-trash me-2"></i>Удаление файла
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-0">Вы действительно хотите удалить файл <strong id="deleteFileName" class="text-dark"></strong>?</p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-touch" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-danger btn-touch font-weight-bold" id="confirmDeleteBtn">Удалить</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Модальное окно уведомлений (Porto стиль) -->
-<div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" id="notificationHeader">
-                <h5 class="modal-title" id="notificationModalLabel">
-                    <i class="fas fa-info-circle me-2" id="notificationIcon"></i>
-                    <span id="notificationTitle">Уведомление</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body" id="notificationMessage">Сообщение</div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Хорошо</button>
-            </div>
-        </div>
-    </div>
-</div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Инициализация Select2 для мультиселекта (Porto стиль)
         const sharedWithField = document.getElementById('id_shared_with');
         if (sharedWithField && typeof $.fn.select2 !== 'undefined') {
             $(sharedWithField).select2({
-                placeholder: 'Выберите пользователей',
+                placeholder: 'Выберите пользователей...',
                 width: '100%',
                 allowClear: true,
-                language: 'ru',
-                theme: 'bootstrap-5'
+                language: 'ru'
             });
-        } else if (sharedWithField && typeof $.fn.multiselect !== 'undefined') {
-            $(sharedWithField).multiselect({
-                includeSelectAllOption: true,
-                enableCaseInsensitiveFiltering: true,
-                buttonWidth: '100%',
-                maxHeight: 300,
-                nonSelectedText: 'Выберите пользователей',
-                allSelectedText: 'Все выбраны',
-                nSelectedText: 'выбрано',
-                selectAllText: 'Выбрать всех',
-                filterPlaceholder: 'Поиск...'
-            });
-        } else if (sharedWithField) {
-            sharedWithField.setAttribute('size', '5');
-            sharedWithField.classList.add('form-select');
         }
 
-        // 2. Удаление файлов
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
         let currentFileId = null;
         let currentFileItem = null;
-        let currentFileName = '';
-
-        function showNotification(message, type = 'success') {
-            // Используем toastr если доступен, иначе модалку
-            if (typeof toastr !== 'undefined') {
-                if (type === 'success') toastr.success(message);
-                else if (type === 'error') toastr.error(message);
-                else if (type === 'warning') toastr.warning(message);
-                else toastr.info(message);
-                return;
-            }
-            // Fallback на модальное окно
-            const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
-            const header = document.getElementById('notificationHeader');
-            const icon = document.getElementById('notificationIcon');
-            const title = document.getElementById('notificationTitle');
-            const messageEl = document.getElementById('notificationMessage');
-
-            header.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
-            if (type === 'success') {
-                header.classList.add('bg-success', 'text-white');
-                icon.className = 'fas fa-check-circle me-2';
-                title.textContent = 'Успешно';
-            } else if (type === 'error') {
-                header.classList.add('bg-danger', 'text-white');
-                icon.className = 'fas fa-exclamation-circle me-2';
-                title.textContent = 'Ошибка';
-            } else if (type === 'warning') {
-                header.classList.add('bg-warning');
-                icon.className = 'fas fa-exclamation-triangle me-2';
-                title.textContent = 'Предупреждение';
-            } else {
-                header.classList.add('bg-info', 'text-white');
-                icon.className = 'fas fa-info-circle me-2';
-                title.textContent = 'Информация';
-            }
-            messageEl.textContent = message;
-            modal.show();
-            if (type === 'success') {
-                setTimeout(() => modal.hide(), 3000);
-            }
-        }
 
         function bindDeleteButtons() {
             document.querySelectorAll('.delete-file-btn').forEach(btn => {
-                btn.removeEventListener('click', btn._listener);
-                const listener = function(e) {
+                btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     currentFileId = this.dataset.fileId;
                     currentFileItem = this.closest('.file-item');
-                    const fileNameSpan = currentFileItem.querySelector('.fw-semibold');
-                    currentFileName = fileNameSpan ? fileNameSpan.textContent : 'файл';
-                    document.getElementById('deleteFileName').innerHTML = `<strong>${currentFileName}</strong>`;
-                    const deleteModal = new bootstrap.Modal(document.getElementById('deleteFileModal'));
-                    deleteModal.show();
-                };
-                btn.addEventListener('click', listener);
-                btn._listener = listener;
+                    const fileNameSpan = currentFileItem.querySelector('.fw-bold');
+                    const currentFileName = fileNameSpan ? fileNameSpan.textContent : 'файл';
+                    document.getElementById('deleteFileName').textContent = currentFileName;
+                    new bootstrap.Modal(document.getElementById('deleteFileModal')).show();
+                });
             });
         }
 
@@ -353,9 +333,7 @@
             const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteFileModal'));
             deleteModal.hide();
             const confirmBtn = this;
-            const originalText = confirmBtn.innerHTML;
             confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Удаление...';
 
             try {
                 const response = await fetch("{% url 'tasks_app:delete-file-ajax' %}", {
@@ -369,27 +347,19 @@
                 const data = await response.json();
                 if (data.status === 'ok') {
                     if (currentFileItem) {
-                        currentFileItem.style.transition = 'all 0.3s ease';
-                        currentFileItem.style.opacity = '0';
-                        currentFileItem.style.transform = 'translateX(20px)';
-                        setTimeout(() => currentFileItem.remove(), 300);
+                        currentFileItem.remove();
                     }
-                    showNotification(`Файл "${currentFileName}" удален`, 'success');
-                } else {
-                    showNotification(data.error || 'Ошибка удаления файла', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                showNotification('Ошибка соединения с сервером', 'error');
             } finally {
                 confirmBtn.disabled = false;
-                confirmBtn.innerHTML = originalText;
                 currentFileId = null;
                 currentFileItem = null;
             }
         });
 
-        // 3. Drag & Drop загрузка файлов
+        // Dropzone
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('id_files');
         const fileList = document.getElementById('file-list');
@@ -409,33 +379,19 @@
                 })
             );
 
-            function escapeHtml(str) {
-                return str.replace(/[&<>]/g, function(m) {
-                    if (m === '&') return '&amp;';
-                    if (m === '<') return '&lt;';
-                    if (m === '>') return '&gt;';
-                    return m;
-                });
-            }
-
             function addNewFileToList(file) {
-                const isAlreadyAdded = Array.from(fileList.querySelectorAll('.fw-semibold')).some(
-                    span => span.textContent === file.name
-                );
-                if (isAlreadyAdded) return;
-
                 const div = document.createElement('div');
-                div.className = 'file-item d-flex align-items-center justify-content-between p-3 bg-light border rounded mb-2 new-file';
+                div.className = 'file-item d-flex align-items-center justify-content-between p-3 mb-2';
                 div.innerHTML = `
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="fas fa-file-alt text-primary fa-lg"></i>
-                        <div>
-                            <div class="fw-semibold">${escapeHtml(file.name)}</div>
-                            <div class="small text-muted">${(file.size / 1024).toFixed(1)} KB • <span class="badge bg-warning">новый</span></div>
+                    <div class="d-flex align-items-center gap-3 text-truncate">
+                        <i class="bx bx-file text-primary fs-3"></i>
+                        <div class="text-truncate">
+                            <span class="fw-bold text-dark text-truncate d-block">${file.name}</span>
+                            <small class="text-muted font-monospace">${(file.size / 1024).toFixed(1)} KB &bull; <span class="badge bg-warning text-dark">новый</span></small>
                         </div>
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-danger remove-new-file" title="Удалить">
-                        <i class="fas fa-times"></i>
+                        <i class="bx bx-x"></i>
                     </button>
                 `;
                 const removeBtn = div.querySelector('.remove-new-file');

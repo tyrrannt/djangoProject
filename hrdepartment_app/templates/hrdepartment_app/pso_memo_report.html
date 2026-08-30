@@ -1,24 +1,53 @@
 {% extends 'customers_app/main.html' %}
+{% load static %}
 
-{% block title %}Служебная записка ПСО{% endblock %}
+{% block title %}
+    Формирование Служебной записки ПСО // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
-<section role="main" class="content-body">
-    <header class="page-header">
-        <h2>Формирование Служебной записки ПСО</h2>
-    </header>
-    <div class="row">
-        <div class="col-md-12">
-            <section class="card">
-                <header class="card-header">
-                    <h2 class="card-title">Выберите период для выгрузки отчета</h2>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-file-blank text-primary me-2"></i>Служебная записка ПСО
+                    </h3>
+                    <p class="text-muted small mb-0">Формирование и выгрузка сводного отчета за выбранный период</p>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-calendar text-primary me-2"></i>Период выгрузки
+                    </h5>
                 </header>
-                <div class="card-body">
-                    <form action="{% url 'hrdepartment_app:pso_memo_report' %}" method="get">
-                        <div class="form-group row">
-                            <label class="col-lg-3 control-label text-lg-right pt-2" for="id_month">Месяц</label>
-                            <div class="col-lg-3">
-                                <select name="month" id="id_month" class="form-control" required>
+                <div class="card-body p-4">
+                    <form action="{% url 'hrdepartment_app:pso_memo_report' %}" method="get" class="m-0">
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_month">Месяц <span class="text-danger">*</span></label>
+                                <select name="month" id="id_month" class="form-control form-control-modern" required>
                                     <option value="1">Январь</option>
                                     <option value="2">Февраль</option>
                                     <option value="3">Март</option>
@@ -33,21 +62,21 @@
                                     <option value="12">Декабрь</option>
                                 </select>
                             </div>
-                            <label class="col-lg-1 control-label text-lg-right pt-2" for="id_year">Год</label>
-                            <div class="col-lg-3">
-                                <input type="number" name="year" id="id_year" class="form-control" value="2026" required>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_year">Год <span class="text-danger">*</span></label>
+                                <input type="number" name="year" id="id_year" class="form-control form-control-modern" value="2026" required>
                             </div>
                         </div>
-                        <div class="form-group row mt-3">
-                            <div class="col-lg-3"></div>
-                            <div class="col-lg-6">
-                                <button type="submit" class="btn btn-primary">Сформировать и скачать</button>
-                            </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary btn-touch font-weight-bold w-100">
+                                <i class="bx bx-download me-1"></i> Сформировать и скачать
+                            </button>
                         </div>
                     </form>
                 </div>
-            </section>
+            </div>
         </div>
     </div>
-</section>
+    <!-- end: page -->
 {% endblock %}

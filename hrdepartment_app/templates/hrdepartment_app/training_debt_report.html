@@ -1,138 +1,145 @@
-<!-- templates/hrdepartment_app/training_debt_report.html -->
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
+{% load widget_tweaks %}
 
-{% block content %}
+{% block title %}
+    Расчет задолженности по обучению при увольнении // Отдел кадров
+{% endblock %}
 
-    <!-- start: page -->
-    <div class="container-fluid">
-        <h1>{{ title }}</h1>
-
-        <!-- Форма выбора -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <form method="post" class="row g-3">
-                    {% csrf_token %}
-
-                    <div class="col-md-4">
-                        <label for="{{ form.employee.id_for_label }}" class="form-label">
-                            {{ form.employee.label }}
-                        </label>
-                        {{ form.employee }}
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="{{ form.dismissal_date.id_for_label }}" class="form-label">
-                            {{ form.dismissal_date.label }}
-                        </label>
-                        {{ form.dismissal_date }}
-                    </div>
-
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-calculator"></i> Получить расчет
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Таблица отчета -->
-        {% if report_data %}
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        ФИО: {{ employee_name }} |
-                        Дата увольнения: {{ report_data.dismissal_date|date:"d.m.Y" }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped">
-                            <thead class="table-dark">
-                            <tr>
-                                <th>ДАТА НАЧАЛА ОБУЧЕНИЯ</th>
-                                <th>ДАТА ОКОНЧАНИЯ ОБУЧЕНИЯ</th>
-                                <th>СРОК ОТРАБОТКИ<br>(день,месяц,год)</th>
-                                <th>СРОК ОТРАБОТКИ,<br>МЕСЯЦ</th>
-                                <th>ОБЩАЯ СТОИМОСТЬ<br>ОБУЧЕНИЯ</th>
-                                <th>1 МЕСЯЦ</th>
-                                <th>ДАТА УВОЛЬНЕНИЯ</th>
-                                <th>ОСТАЛОСЬ КОЛИЧЕСТВО<br>МЕСЯЦЕВ ДО ОТРАБОТКИ</th>
-                                <th>ДОЛГ ПЕРЕД АВИАКОМПАНИЕЙ<br>ПО КАЖДОМУ ОБУЧЕНИЮ</th>
-                            </tr>
-                            </thead>
-                            <!-- В таблице замените tbody на этот вариант -->
-                            <tbody>
-                            {% for row in report_data.rows %}
-                                <tr>
-                                    <td>{{ row.training_start_date|date:"d-M-Y" }}</td>
-                                    <td>{{ row.training_end_date|date:"d-M-Y" }}</td>
-                                    <td>{{ row.work_off_end_date|date:"d-M-Y" }}</td>
-                                    <td>{{ row.total_work_off_months }}</td>
-                                    <td>{{ row.training_cost|floatformat:2 }} ₽</td>
-                                    <td>{{ row.monthly_cost|floatformat:2 }} ₽</td>
-                                    <td>{{ row.dismissal_date|date:"d-M-Y" }}</td>
-                                    <td>
-                                        {{ row.remaining_months }}
-                                        <small class="text-muted d-block">({{ row.remaining_days }} дн.)</small>
-                                    </td>
-                                    <td><strong>{{ row.debt|floatformat:2 }} ₽</strong></td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="9" class="text-center">
-                                        <i class="fas fa-check-circle text-success"></i>
-                                        <strong>Нет действующих договоров с незавершённой отработкой</strong>
-                                        <br>
-                                        <small class="text-muted">Все обязательства по обучению выполнены</small>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                            <tfoot class="table-dark">
-                            <tr>
-                                <td colspan="8" class="text-end">
-                                    <strong>ОБЩАЯ СУММА К ВОЗВРАТУ НА ДАТУ УВОЛЬНЕНИЯ</strong>
-                                </td>
-                                <td>
-                                    <strong style="font-size: 1.2em;">
-                                        {{ report_data.total_debt|floatformat:2 }} ₽
-                                    </strong>
-                                </td>
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <!-- Кнопки действий -->
-                    <div class="mt-3">
-                        {% if report_data %}
-                            <a href="{% url 'hrdepartment_app:export_training_debt_excel' %}?employee={{ form.employee.value }}&date={{ report_data.dismissal_date|date:'Y-m-d' }}"
-                               class="btn btn-success" target="_blank">
-                                <i class="fas fa-file-excel"></i> Экспорт в Excel
-                            </a>
-                        {% else %}
-                            <button class="btn btn-success" disabled title="Сначала получите расчет">
-                                <i class="fas fa-file-excel"></i> Экспорт в Excel
-                            </button>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-    </div>
-
+{% block custom_css %}
     <style>
-        .table th {
-            white-space: nowrap;
-            font-size: 0.85em;
+        :root {
+            --touch-target-size: 44px;
         }
-
-        .table td {
-            vertical-align: middle;
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
         }
     </style>
-    <!-- end: page -->
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-calculator text-primary me-2"></i>Расчет задолженности по обучению при увольнении
+                    </h3>
+                    <p class="text-muted small mb-0">Калькуляция остатка неотработанного срока по ученическим договорам</p>
+                </div>
+            </div>
+
+            <!-- Filter / Selection Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-user-check text-primary me-2"></i>Выбор сотрудника и даты
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="post" class="m-0">
+                        {% csrf_token %}
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-5">
+                                <label for="{{ form.employee.id_for_label }}" class="form-label font-weight-bold text-dark small">
+                                    {{ form.employee.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.employee|add_class:"form-control form-control-modern" }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="{{ form.dismissal_date.id_for_label }}" class="form-label font-weight-bold text-dark small">
+                                    {{ form.dismissal_date.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.dismissal_date|add_class:"form-control form-control-modern" }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold w-100">
+                                    <i class="bx bx-calculator me-1"></i> Получить расчет
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Report Table Card -->
+            {% if report_data %}
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="card-title text-dark mb-0 font-weight-bold">
+                            <i class="bx bx-receipt text-primary me-2"></i>
+                            Сотрудник: {{ employee_name }} &bull; Дата увольнения: {{ report_data.dismissal_date|date:"d.m.Y" }}
+                        </h5>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:export_training_debt_excel' %}?employee={{ form.employee.value }}&date={{ report_data.dismissal_date|date:'Y-m-d' }}"
+                               class="btn btn-success btn-touch font-weight-bold" target="_blank">
+                                <i class="bx bx-spreadsheet me-1"></i> Экспорт в Excel
+                            </a>
+                        </div>
+                    </header>
+                    <div class="card-body p-3">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Начало обучения</th>
+                                        <th>Окончание обучения</th>
+                                        <th>Отработка</th>
+                                        <th>Месяцев</th>
+                                        <th>Стоимость</th>
+                                        <th>1 месяц</th>
+                                        <th>Дата увольнения</th>
+                                        <th>Остаток</th>
+                                        <th class="text-end">Долг к возврату</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in report_data.rows %}
+                                        <tr>
+                                            <td class="font-monospace">{{ row.training_start_date|date:"d.m.Y" }}</td>
+                                            <td class="font-monospace">{{ row.training_end_date|date:"d.m.Y" }}</td>
+                                            <td class="font-monospace">{{ row.work_off_end_date|date:"d.m.Y" }}</td>
+                                            <td>{{ row.total_work_off_months }} мес.</td>
+                                            <td class="font-monospace">{{ row.training_cost|floatformat:2 }} ₽</td>
+                                            <td class="font-monospace">{{ row.monthly_cost|floatformat:2 }} ₽</td>
+                                            <td class="font-monospace">{{ row.dismissal_date|date:"d.m.Y" }}</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">{{ row.remaining_months }} мес. ({{ row.remaining_days }} дн.)</span>
+                                            </td>
+                                            <td class="text-end fw-bold font-monospace text-danger fs-6">{{ row.debt|floatformat:2 }} ₽</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="9" class="text-center py-5 text-success">
+                                                <i class="bx bx-check-circle fs-1 d-block mb-2"></i>
+                                                <strong>Нет действующих договоров с незавершённой отработкой</strong>
+                                                <div class="small text-muted mt-1">Все обязательства по обучению выполнены</div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                {% if report_data.rows %}
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <td colspan="8" class="text-end fw-bold text-dark fs-6">ИТОГО К ВОЗВРАТУ НА ДАТУ УВОЛЬНЕНИЯ:</td>
+                                            <td class="text-end fw-bold font-monospace text-danger fs-5">{{ report_data.total_debt|floatformat:2 }} ₽</td>
+                                        </tr>
+                                    </tfoot>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
     <!-- end: page -->
 {% endblock %}

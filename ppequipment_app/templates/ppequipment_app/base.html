@@ -1,79 +1,140 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 
-{% block title %}{{ title|default:"Учёт оборудования" }}{% endblock %}
+{% block title %}{{ title|default:"Учёт оборудования и ПТД" }} // ПТД{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+    .ppe-nav-pills .nav-link {
+        border-radius: 8px;
+        padding: 9px 16px;
+        font-weight: 600;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        margin-right: 6px;
+        margin-bottom: 6px;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .ppe-nav-pills .nav-link:hover {
+        background-color: #f1f5f9;
+        color: #0088cc;
+        border-color: #cbd5e1;
+    }
+    .ppe-nav-pills .nav-link.active {
+        background-color: #0088cc;
+        color: #ffffff;
+        border-color: #0088cc;
+    }
+    .ppe-nav-pills .dropdown-menu {
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+    }
+    .ppe-nav-pills .dropdown-item {
+        padding: 8px 16px;
+        font-weight: 500;
+    }
+    .ppe-nav-pills .dropdown-item:hover {
+        background-color: #f0f9ff;
+        color: #0284c7;
+    }
+</style>
+{% block extra_css %}{% endblock %}
+{% endblock %}
 
 {% block content %}
-    <!-- Навигационная панель -->
-    <div class="card mb-4 no-print">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-compass me-2"></i>Навигация</h5>
-        </div>
-        <div class="card-body p-2">
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-                {% if user.is_superuser %}
-                    <a href="{% url 'ppequipment_app:index' %}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-home me-1"></i>Главная
-                    </a>
-                {% endif %}
-                <a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-box me-1"></i>ПТД
-                </a>
-                <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-clipboard-check me-1"></i>Сверки
-                </a>
-                <a href="{% url 'ppequipment_app:location_list' %}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-map-marker-alt me-1"></i>Местоположения
-                </a>
-                <a href="{% url 'ppequipment_app:verification_date_list' %}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-calendar-alt me-1"></i>Даты сверок
-                </a>
-                <a href="{% url 'ppequipment_app:verification_labels' %}" class="btn btn-outline-info btn-sm">
-                    <i class="fas fa-tags me-1"></i>Сверочные этикетки
-                </a>
-                <div class="btn-group">
-                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                        <i class="fas fa-book me-1"></i>Справочники
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:dest_lit_list' %}">
-                            <i class="fas fa-tag me-2"></i>Назн-лит
-                        </a></li>
-                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:location_ref_list' %}">
-                            <i class="fas fa-map-pin me-2"></i>Местоположения
-                        </a></li>
-                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:aircraft_type_list' %}">
-                            <i class="fas fa-plane me-2"></i>Типы ВС
-                        </a></li>
-                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:contractor_status_list' %}">
-                            <i class="fas fa-tasks me-2"></i>Статусы контр-раб
-                        </a></li>
-                    </ul>
+    <!-- Навигационная панель ПТД -->
+    <div class="row no-print mb-3">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-3">
+                <div class="card-body p-3">
+                    <div class="ppe-nav-pills d-flex flex-wrap align-items-center mb-0">
+                        <a href="{% url 'ppequipment_app:equipment_list' %}" class="nav-link {% if request.resolver_match.url_name == 'equipment_list' or request.resolver_match.url_name == 'index' %}active{% endif %}">
+                            <i class="bx bx-package me-1 fs-5"></i> ПТД (Оборудование)
+                        </a>
+                        <a href="{% url 'ppequipment_app:verification_list' %}" class="nav-link {% if 'verification' in request.resolver_match.url_name and 'date' not in request.resolver_match.url_name and 'label' not in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bx bx-check-shield me-1 fs-5"></i> Сверки
+                        </a>
+                        <a href="{% url 'ppequipment_app:location_list' %}" class="nav-link {% if 'location' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bx bx-map-pin me-1 fs-5"></i> Местоположения
+                        </a>
+                        <a href="{% url 'ppequipment_app:verification_date_list' %}" class="nav-link {% if 'verification_date' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bx bx-calendar me-1 fs-5"></i> Даты сверок
+                        </a>
+                        <a href="{% url 'ppequipment_app:verification_labels' %}" class="nav-link {% if 'labels' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bx bx-barcode me-1 fs-5"></i> Этикетки
+                        </a>
+
+                        <!-- Dropdown Справочники -->
+                        <div class="dropdown d-inline-block">
+                            <button class="nav-link dropdown-toggle border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bx bx-book-content me-1 fs-5"></i> Справочники
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'ppequipment_app:dest_lit_list' %}">
+                                        <i class="bx bx-tag-alt me-2 text-primary"></i> Назн-лит (Назначения)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'ppequipment_app:location_ref_list' %}">
+                                        <i class="bx bx-building me-2 text-primary"></i> Места хранения
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'ppequipment_app:aircraft_type_list' %}">
+                                        <i class="bx bx-paper-plane me-2 text-primary"></i> Типы ВС
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'ppequipment_app:contractor_status_list' %}">
+                                        <i class="bx bx-task me-2 text-primary"></i> Статусы контр-раб
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {% if user.is_superuser %}
+                            <a href="{% url 'ppequipment_app:import_mdb' %}" class="nav-link text-success ms-lg-auto {% if request.resolver_match.url_name == 'import_mdb' %}active{% endif %}">
+                                <i class="bx bx-cloud-upload me-1 fs-5"></i> Импорт из MDB
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
-                {% if user.is_superuser %}
-                    <a href="{% url 'ppequipment_app:import_mdb' %}" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-file-import me-1"></i>Импорт из MDB
-                    </a>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Сообщения -->
+    <!-- Сообщения системы -->
     {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
+                        <i class="bx bx-info-circle me-2 fs-5"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
             </div>
-        {% endfor %}
+        </div>
     {% endif %}
 
-    <!-- Основной контент -->
-    <div class="card">
-        <div class="card-body">
-            {% block page_content %}{% endblock %}
-        </div>
-    </div>
+    <!-- Основной контент страницы -->
+    {% block page_content %}{% endblock %}
 {% endblock %}

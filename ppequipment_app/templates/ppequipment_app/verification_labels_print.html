@@ -2,17 +2,21 @@
 {% load static %}
 {% load custom %}
 
-{% block title %}Печать сверочных этикеток{% endblock %}
-
-{% block breadcrumb_title %}Печать этикеток{% endblock %}
-
-{% block breadcrumb_items %}
-    <li class="breadcrumb-item"><a href="{% url 'ppequipment_app:verification_labels' %}">Сверочные этикетки</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Печать</li>
-{% endblock %}
+{% block title %}Печать сверочных этикеток // ПТД{% endblock %}
 
 {% block custom_css %}
     <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
         /* Стили для контейнера этикеток */
         #labels-container {
             display: flex;
@@ -25,8 +29,8 @@
             display: flex;
             gap: 15px;
             border: 1px dotted #a3a3a3;
-            border-radius: 5px;
-            padding: 5px;
+            border-radius: 6px;
+            padding: 8px;
             background: #fff;
             break-inside: avoid;
             page-break-inside: avoid;
@@ -52,33 +56,16 @@
         /* Правая часть - этикетка */
         .label-card {
             flex: 1;
-            font-size: 10px;
-            /* Дополнительно — минимальный межстрочный интервал для всей этикетки */
-
-            .label-card {
-                line-height: 1.4; /* или line-height: 1; если совсем плотно */
-            }
-
-            /* И для строк тоже можно перестраховаться */
-
-            .label-row {
-                line-height: 1.4;
-            }
-        }
-
-        .label-header {
-            background: #f0f0f0;
-            padding: 4px 8px;
-            margin: -10px -10px 8px -10px;
-            border-bottom: 2px solid #333;
-            font-weight: bold;
-            text-align: center;
-            font-size: 12px;
+            font-size: 11px;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .label-row {
             display: flex;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
             align-items: baseline;
         }
 
@@ -91,23 +78,6 @@
 
         .label-value {
             flex: 1;
-        }
-
-        .label-inv {
-            font-size: 12px;
-            font-weight: bold;
-            text-align: center;
-            padding: 2px;
-            background: #f8f9fa;
-            border: 1px dotted #acacac;
-            margin: 2px 0;
-        }
-
-        /* Двухколоночная сетка внутри этикетки */
-        .label-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3px 10px;
         }
 
         /* Стили для печати */
@@ -125,7 +95,6 @@
                 overflow: visible !important;
             }
 
-            /* Скрываем шапку, боковые меню и блок навигации */
             body .header,
             body .logo-container,
             body #sidebar-left,
@@ -177,29 +146,30 @@
 
 {% block page_content %}
     <!-- Кнопки управления (не печатаются) -->
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h2 class="mb-0">
-            <i class="fas fa-print me-2 text-primary"></i>Сверочные этикетки
-        </h2>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2 no-print">
         <div>
-            <button onclick="window.print()" class="btn btn-success btn-lg me-2">
-                <i class="fas fa-print me-1"></i>Печать
+            <h3 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-printer text-primary me-2"></i>Печать сверочных этикеток
+            </h3>
+            <p class="text-muted small mb-0">Сформировано этикеток: <strong class="text-dark">{{ count }} шт.</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-primary btn-touch font-weight-bold">
+                <i class="bx bx-printer me-1"></i> Отправить на печать
             </button>
-            <a href="{% url 'ppequipment_app:verification_labels' %}" class="btn btn-secondary btn-lg">
-                <i class="fas fa-arrow-left me-1"></i>Изменить условия
+            <a href="{% url 'ppequipment_app:verification_labels' %}" class="btn btn-outline-secondary btn-touch">
+                <i class="bx bx-arrow-back me-1"></i> Изменить условия
             </a>
         </div>
     </div>
 
-    <div class="alert alert-info no-print">
-        <i class="fas fa-info-circle me-2"></i>
-        <strong>Сформировано этикеток:</strong> {{ count }}
+    <div class="alert alert-info border-0 shadow-sm mb-4 no-print">
+        <i class="bx bx-info-circle me-1 fs-5"></i>
+        <strong>Параметры печати:</strong> Сформировано <strong>{{ count }}</strong> этикеток.
         {% if verification_date_label %}
-            <br>
-            <strong>Дата сверки:</strong> {{ verification_date_label|date:"d.m.Y" }}
+            &bull; Дата сверки: <strong class="font-monospace">{{ verification_date_label|date:"d.m.Y" }}</strong>
         {% endif %}
-        <br>
-        <small>Нажмите кнопку "Печать" для вывода на принтер. Формат: A4 книжная, QR + этикетка.</small>
+        <div class="small mt-1 text-muted">Формат: А4 книжная ориентация. Перед печатью проверьте масштаб 100% в настройках принтера.</div>
     </div>
 
     <!-- Контейнер с этикетками -->
@@ -208,45 +178,39 @@
             <div class="label-card-wrapper">
                 <!-- QR-код слева -->
                 <div class="label-qr">
-                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}"
-                         alt="QR-код">
-{#                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}?v={{ object.updated_at|date:"U"|default:"0" }}"#}
-{#                         alt="QR-код">#}
+                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}" alt="QR-код">
                 </div>
 
                 <!-- Этикетка справа -->
                 <div class="label-card">
-
                     <!-- Оборудование на всю ширину -->
                     <div class="label-row">
-                        <span class="label-value">{{ label.equipment.name|default:"—" }}</span>
+                        <span class="label-value fw-bold fs-6">{{ label.equipment.name|default:"—" }}</span>
                     </div>
                     <div class="label-row">
-                        <span class="label-value">{{ label.contractor_status|default:"—" }} экземпляр. Инв. №: {{ label.inventory_number }}, принадлежащий ООО Авиакомпании "БАРКОЛ", сверен с контрольным экземпляром Авиакомпании.</span>
+                        <span class="label-value">{{ label.contractor_status|default:"—" }} экземпляр. Инв. №: <strong>{{ label.inventory_number }}</strong>, принадлежащий ООО Авиакомпании "БАРКОЛ", сверен с контрольным экземпляром Авиакомпании.</span>
                     </div>
                     <div class="label-row">
-                        <span class="label-value">Изменения и дополнения, введённые в действие ФАВТ МТ РФ, внесены.</span>
+                        <span class="label-value text-muted small">Изменения и дополнения, введённые в действие ФАВТ МТ РФ, внесены.</span>
                     </div>
-                    <div class="label-row">
-                        <div class="col-sm-4"style="text-align: left;">
+                    <div class="label-row justify-content-between pt-1 border-top">
+                        <div>
                             <span class="label-value">{{ label.verification_date.verification_responsible.user_work_profile.job.name }}</span>
                         </div>
-                        <div class="col-sm-8" style="text-align: center;">
-                            <span class="label-label"
-                                  style="align-content: end">{{ label.verification_date.verification_responsible | FIO_format }}</span>
+                        <div>
+                            <span class="label-label fw-bold">{{ label.verification_date.verification_responsible|FIO_format }}</span>
                         </div>
                     </div>
-                    <div class="label-row">
-                        <span class="label-value">{{ label.verification_date.verification_date|date:"d.m.Y" }}</span>
-                        <span class="label-value">{{ label.location_ref|default:"—" }}</span>
+                    <div class="label-row justify-content-between">
+                        <span class="label-value font-monospace">Дата: {{ label.verification_date.verification_date|date:"d.m.Y" }}</span>
+                        <span class="label-value text-end">Место: {{ label.location_ref|default:"—" }}</span>
                     </div>
-
                 </div>
             </div>
         {% empty %}
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Нет данных для отображения этикеток
+            <div class="alert alert-warning border-0 shadow-sm text-center py-5">
+                <i class="bx bx-error-circle fs-1 d-block mb-2 text-warning"></i>
+                По указанным критериям не найдено данных для формирования этикеток
             </div>
         {% endfor %}
     </div>

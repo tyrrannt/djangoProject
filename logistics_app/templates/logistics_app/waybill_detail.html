@@ -1,10 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
 
-</body>
-</html>
+{% block title %}
+    Транспортная накладная №{{ object.document_number }} // ЛОГИСТИКА
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h4 class="font-weight-bold text-dark mb-0">
+                        <i class="fas fa-truck text-primary me-2"></i>Транспортная накладная №{{ object.document_number }}
+                    </h4>
+                    <p class="text-muted small mb-0">Дата документа: {{ object.document_date|date:"d.m.Y" }} | Создано: {{ object.date_of_creation|date:"d.m.Y" }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'logistics_app:waybill_update' object.pk %}" class="btn btn-primary btn-touch">
+                        <i class="bx bx-pencil me-1"></i> Редактировать
+                    </a>
+                    <a href="{% url 'logistics_app:waybill_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку накладных
+                    </a>
+                </div>
+            </div>
+
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="fas fa-info-circle text-primary me-2"></i>Сведения о транспортной накладной
+                    </h5>
+                    <div>
+                        <span class="badge {% if object.state == '3' %}bg-success{% elif object.state == '4' %}bg-danger{% elif object.state == '2' %}bg-primary{% else %}bg-warning text-dark{% endif %} fs-6 px-3 py-2">
+                            {{ object.get_state_display }}
+                        </span>
+                        {% if object.urgency == '1' %}
+                            <span class="badge bg-warning text-dark ms-1">Срочно</span>
+                        {% elif object.urgency == '2' %}
+                            <span class="badge bg-danger ms-1">Очень срочно</span>
+                        {% endif %}
+                    </div>
+                </header>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-12 col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Инициатор (Отправитель)</span>
+                                <div class="fw-bold text-dark fs-6">{{ object.sender.get_full_name|default:object.sender.username }}</div>
+                                <small class="text-muted">{{ object.place_division.name|default:"Подразделение не указано" }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Получатель (Ответственный)</span>
+                                <div class="fw-bold text-dark fs-6">{{ object.responsible.get_full_name|default:object.responsible.username }}</div>
+                                <small class="text-muted">Пункт назначения: {{ object.place_of_departure.name|default:"Не указан" }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="border rounded p-3">
+                                <h6 class="font-weight-bold text-dark mb-2">Содержание отправления:</h6>
+                                <p class="mb-0 text-dark">{{ object.content|linebreaks|default:"—" }}</p>
+                            </div>
+                        </div>
+
+                        {% if object.comment %}
+                            <div class="col-12">
+                                <div class="border rounded p-3 bg-light">
+                                    <h6 class="font-weight-bold text-dark mb-1">Комментарий / Примечание:</h6>
+                                    <p class="mb-0 text-muted small">{{ object.comment }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if object.package_number %}
+                            <div class="col-12 col-md-6">
+                                <div class="p-3 border rounded">
+                                    <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Привязка к посылке</span>
+                                    <div class="fw-bold text-primary">{{ object.package_number }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if object.executor %}
+                            <div class="col-12 col-md-6">
+                                <div class="p-3 border rounded">
+                                    <span class="text-muted text-uppercase small font-weight-bold d-block mb-1">Исполнитель</span>
+                                    <div class="fw-bold text-dark">{{ object.executor.get_full_name|default:object.executor.username }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'logistics_app:waybill_delete' object.pk %}" class="btn btn-outline-danger btn-touch" onclick="return confirm('Удалить эту транспортную накладную?');">
+                        <i class="bx bx-trash me-1"></i> Удалить накладную
+                    </a>
+                    <a href="{% url 'logistics_app:waybill_list' %}" class="btn btn-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Вернуться к списку
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}

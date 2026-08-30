@@ -2,212 +2,222 @@
 {% load static %}
 {% load custom %}
 
+{% block title %}
+    Добровольные сообщения // Безопасность полетов
+{% endblock %}
+
 {% block custom_css %}
     <style>
-        /* 1. Увеличиваем общий размер текста в таблице */
-        .table {
-            font-size: 1.05rem; /* Стандарт обычно 1rem */
-            vertical-align: middle;
+        :root {
+            --touch-target-size: 44px;
         }
-
-        /* 2. Делаем заголовки таблицы крупнее и выразительнее */
-        .table thead th {
-            font-size: 1.1rem;
-            font-weight: 700;
-            padding: 15px 10px;
-            background-color: #f8f9fa;
-        }
-
-        /* 3. Увеличиваем текст в ячейках */
-        .table tbody td {
-            padding: 12px 10px;
-        }
-
-        /* 4. Стили для текста в карточках статистики (цифры и заголовки) */
-        .card-title {
-            font-size: 1.2rem !important;
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
             font-weight: 600;
         }
-
-        .display-4 {
-            font-size: 3rem; /* Чуть уменьшим, если слишком огромный, или увеличим по вкусу */
+        .kpi-card {
+            border-radius: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        .kpi-card .display-5 {
+            font-size: 2.2rem;
             font-weight: 700;
-        }
-
-        /* 5. Увеличиваем текст в бейджах (статусах) */
-        .badge {
-            font-size: 0.9rem;
-            padding: 0.5em 0.8em;
-        }
-
-        /* 6. Стили для пагинации (чтобы кнопки были крупнее) */
-        .page-link {
-            font-size: 1.1rem;
-            padding: 0.75rem 1rem;
-        }
-
-        /* 7. Текст "Сообщений не найдено" */
-        .text-muted {
-            font-size: 1.1rem !important;
-        }
-
-        /* Дополнительно: чтобы ссылки на ID были заметнее */
-        td a {
-            font-weight: 600;
-            text-decoration: none;
+            line-height: 1.1;
         }
     </style>
 {% endblock %}
 
-{% block title %}Добровольные сообщения{% endblock %}
-
 {% block content %}
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Добровольные сообщения</h1>
-            <a href="{% url 'tickets_app:create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Создать сообщение
-            </a>
-        </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
+                        <i class="bx bx-info-circle me-2 fs-5"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-        <!-- Уведомления -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-message-square-error text-primary me-2"></i>Добровольные сообщения
+                    </h3>
+                    <p class="text-muted small mb-0">Система добровольных сообщений по безопасности полетов и охране труда</p>
                 </div>
-            {% endfor %}
-        {% endif %}
-
-        <!-- Статистика для руководства -->
-        {% if request.user|has_group:'Руководство' or user.is_superuser %}
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="card text-white bg-primary">
-                        <div class="card-body">
-                            <h5 class="card-title">Всего сообщений</h5>
-                            <p class="display-4">{{ tickets.count }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-white bg-warning">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <a href="?unassigned=1" class="text-decoration-none">
-                                    Новые без ответственного
-                                </a>
-                            </h5>
-                            <p class="display-4">{{ unassigned_count }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-white bg-success">
-                        <div class="card-body">
-                            <h5 class="card-title">В работе</h5>
-                            <p class="display-4">{{ done_count }}</p>
-                        </div>
-                    </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'tickets_app:create' %}" class="btn btn-primary btn-touch font-weight-bold">
+                        <i class="bx bx-plus me-1"></i> Подать сообщение
+                    </a>
                 </div>
             </div>
-        {% endif %}
 
-        <!-- Список заявок -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
+            <!-- KPI Cards for Leadership -->
+            {% if request.user|has_group:'Руководство' or user.is_superuser %}
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <div class="card card-modern shadow-sm border-0 kpi-card">
+                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small text-uppercase font-weight-bold mb-1">Всего сообщений</div>
+                                    <div class="display-5 text-primary">{{ tickets.count }}</div>
+                                </div>
+                                <div class="p-3 bg-primary bg-opacity-10 rounded-circle text-primary">
+                                    <i class="bx bx-envelope fs-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card card-modern shadow-sm border-0 kpi-card">
+                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small text-uppercase font-weight-bold mb-1">Без ответственного</div>
+                                    <div class="display-5 text-warning">{{ unassigned_count|default:"0" }}</div>
+                                </div>
+                                <div class="p-3 bg-warning bg-opacity-10 rounded-circle text-warning">
+                                    <i class="bx bx-user-x fs-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card card-modern shadow-sm border-0 kpi-card">
+                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small text-uppercase font-weight-bold mb-1">В работе / Решено</div>
+                                    <div class="display-5 text-success">{{ done_count|default:"0" }}</div>
+                                </div>
+                                <div class="p-3 bg-success bg-opacity-10 rounded-circle text-success">
+                                    <i class="bx bx-check-double fs-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Table Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-list-ul text-primary me-2"></i>
+                        {% if request.GET.unassigned == '1' %}
+                            Новые сообщения без ответственного
+                        {% else %}
+                            Реестр сообщений
+                        {% endif %}
+                    </h5>
                     {% if request.GET.unassigned == '1' %}
-                        Новые сообщения без ответственного
-                    {% else %}
-                        Мои сообщения
+                        <a href="{% url 'tickets_app:list' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bx bx-x me-1"></i>Сбросить фильтр
+                        </a>
                     {% endif %}
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Заголовок</th>
-                            <th>Автор</th>
-                            <th>Ответственный</th>
-                            <th>Статус</th>
-                            <th>Дата создания</th>
-                            <th>Обжалования</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for ticket in tickets %}
-                            <tr class="{% if ticket.parent_ticket %}table-warning{% endif %}">
-                                <td><a href="{% url 'tickets_app:detail' ticket.pk %}">#{{ ticket.pk }}</a></td>
-                                <td>{{ ticket.title }}</td>
-                                <td>{{ ticket.author|FIO_format|default:ticket.author.username }}</td>
-                                <td>
-                                    {% if ticket.responsible %}
-                                        {{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
-                                    {% else %}
-                                        <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if ticket.status == 'new' %}
-                                        <span class="badge bg-success">Новое</span>
-                                    {% elif ticket.status == 'in_progress' %}
-                                        <span class="badge bg-primary">В работе</span>
-                                    {% elif ticket.status == 'redirected' %}
-                                        <span class="badge bg-warning text-dark">Переадресовано</span>
-                                    {% elif ticket.status == 'resolved' %}
-                                        <span class="badge bg-info">Решено</span>
-                                    {% elif ticket.status == 'closed' %}
-                                        <span class="badge bg-secondary">Закрыто</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
-                                <td>
-                                    {% if ticket.appeals.count > 0 %}
-                                        <span class="badge bg-danger">{{ ticket.appeals.count }}</span>
-                                    {% else %}
-                                        <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    Сообщений не найдено
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                </header>
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table id="ticketsTable" class="table table-hover align-middle mb-0" style="width: 100%;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 8%;">ID</th>
+                                    <th style="width: 32%;">Тема сообщения</th>
+                                    <th style="width: 18%;">Автор</th>
+                                    <th style="width: 18%;">Ответственный</th>
+                                    <th style="width: 12%;" class="text-center">Статус</th>
+                                    <th style="width: 12%;">Дата создания</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticket in tickets %}
+                                    <tr class="{% if ticket.parent_ticket %}table-warning{% endif %}">
+                                        <td>
+                                            <a href="{% url 'tickets_app:detail' ticket.pk %}" class="fw-bold font-monospace text-primary text-decoration-none">
+                                                #{{ ticket.pk }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'tickets_app:detail' ticket.pk %}" class="fw-bold text-dark text-decoration-none d-block">
+                                                {{ ticket.title }}
+                                            </a>
+                                            {% if ticket.appeals.count > 0 %}
+                                                <span class="badge bg-danger small mt-1">
+                                                    <i class="bx bx-error-circle me-1"></i>Обжалований: {{ ticket.appeals.count }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="text-dark">{{ ticket.author|FIO_format|default:ticket.author.username }}</span>
+                                        </td>
+                                        <td>
+                                            {% if ticket.responsible %}
+                                                <span class="badge bg-light text-primary border border-primary-subtle">
+                                                    <i class="bx bx-user me-1"></i>{{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-light text-warning border border-warning-subtle">
+                                                    Не назначен
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if ticket.status == 'new' %}
+                                                <span class="badge bg-success">Новое</span>
+                                            {% elif ticket.status == 'in_progress' %}
+                                                <span class="badge bg-primary">В работе</span>
+                                            {% elif ticket.status == 'redirected' %}
+                                                <span class="badge bg-warning text-dark">Переадресовано</span>
+                                            {% elif ticket.status == 'resolved' %}
+                                                <span class="badge bg-info">Решено</span>
+                                            {% elif ticket.status == 'closed' %}
+                                                <span class="badge bg-secondary">Закрыто</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="font-monospace small text-muted">{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-5">
+                                            <i class="bx bx-envelope-open fs-1 d-block mb-2 text-muted opacity-50"></i>
+                                            Сообщений пока не зарегистрировано
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Пагинация -->
-        {% if is_paginated %}
-            <nav aria-label="Пагинация" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
-                        </li>
-                    {% endif %}
-
-                    <li class="page-item active">
-                        <span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
-                    </li>
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% endif %}
     </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        $(document).ready(function () {
+            if ($('#ticketsTable tbody tr').length > 1 || ($('#ticketsTable tbody tr').length === 1 && $('#ticketsTable tbody tr td').attr('colspan') !== '6')) {
+                $('#ticketsTable').DataTable({
+                    order: [[0, 'desc']],
+                    dom: 'BT<"clear">lrtip',
+                    buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+                    language: {
+                        url: "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}

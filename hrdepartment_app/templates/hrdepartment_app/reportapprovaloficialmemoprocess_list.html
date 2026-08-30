@@ -1,4 +1,20 @@
 {% extends 'customers_app/main.html' %}
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
 {% load static %}
 {% load custom %}
 
@@ -60,12 +76,13 @@
                                     </select>
                                 </div>
                                 <div class="col-sm-12 col-lg-3 mb-2 mt-2">
-                                    <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">
-                                        Сформировать
+                                    <button class="btn btn-primary btn-touch font-weight-bold w-100" onclick="filter_date()">
+                                        <i class="bx bx-refresh me-1"></i> Сформировать
                                     </button>
                                 </div>
                                 <div class="col-sm-12 col-lg-3 mb-2 mt-2">
-                                    <button class="btn btn-primary" style="width: 100%" id="print">Печать таблицы
+                                    <button class="btn btn-outline-secondary btn-touch font-weight-bold w-100" id="print">
+                                        <i class="bx bx-printer me-1"></i> Печать таблицы
                                     </button>
                                 </div>
                             </div>

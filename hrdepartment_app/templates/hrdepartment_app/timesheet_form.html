@@ -4,14 +4,43 @@
 {% load custom %}
 {% load widget_tweaks %}
 
+{% block title %}
+    {% if object %}Редактирование табеля{% else %}Создание табеля{% endif %} // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+        }
+        .mobile-only {
+            display: none;
+        }
+        @media (max-width: 767px) {
+            .mobile-only {
+                display: inline-block;
+                font-weight: bold;
+                margin-right: 6px;
+            }
+            .desktop-only {
+                display: none;
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
 {% endblock %}
 
 {% block SpecificPageVendor %}
-
     <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
     <script>
         $(function () {
@@ -21,23 +50,19 @@
                 var formNum = totalForms.val();
                 totalForms.val(parseInt(formNum) + 1);
 
-                // Клонируем последнюю строку таблицы
                 var newForm = $('#id_reportcard_set tbody tr:last').clone();
 
-                // Очищаем значения в новых полях
                 newForm.find('input, select').each(function () {
                     var name = $(this).attr('name').replace(getItem.toString(), formNum);
                     var id = 'id_' + name;
                     $(this).attr({'name': name, 'id': id, 'data-select2-id': id}).val('').removeAttr('checked');
                 });
 
-                // Обновляем атрибуты label
                 newForm.find('label').each(function () {
                     var newFor = $(this).attr('for').replace(getItem.toString(), formNum);
                     $(this).attr('for', newFor);
                 });
 
-                // Добавляем новую строку в таблицу
                 newForm.appendTo('#id_reportcard_set tbody');
             });
         });
@@ -55,7 +80,6 @@
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function (data) {
-                        // Обновляем все списки outfit_card, которые соответствуют шаблону
                         $('select[id^="id_report_cards-"][id$="-outfit_card"]').each(function () {
                             var outfit_card_select = $(this);
                             outfit_card_select.empty();
@@ -75,15 +99,13 @@
     <script>
         $(document).ready(function () {
             $('#fill-from-events').click(function () {
-
                 function convertDateFormat(dateStr) {
-                    // Ожидаем DD.MM.YYYY
                     let parts = dateStr.split('.');
                     if (parts.length === 3) {
-                        return `${parts[2]}-${parts[1]}-${parts[0]}`;  // YYYY-MM-DD
+                        return `${parts[2]}-${parts[1]}-${parts[0]}`;
                     }
-                    return dateStr;  // если уже в нужном формате
-                };
+                    return dateStr;
+                }
 
                 let date = $('#id_date').val();
                 let place_id = $('#id_time_sheets_place').val();
@@ -96,7 +118,7 @@
                 let formattedDate = convertDateFormat(date);
 
                 $.ajax({
-                    url: "{% url 'hrdepartment_app:get_user_events' %}",  // этот url нужно создать
+                    url: "{% url 'hrdepartment_app:get_user_events' %}",
                     type: "POST",
                     data: {
                         'date': formattedDate,
@@ -104,239 +126,203 @@
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function (data) {
-                        $('#id_reportcard_set tbody').empty();
-                        let employeeSelectHTML = $('#all-employees').html();  // все <option>
+                        let totalForms = $('#id_report_cards-TOTAL_FORMS');
+                        let currentFormCount = parseInt(totalForms.val(), 10);
 
-                        data.forEach(function (event, index) {
-                            // Создаем временный <select>, чтобы удобно работать с DOM
-                            let $tempSelect = $('<select>' + employeeSelectHTML + '</select>');
+                        data.forEach((event, index) => {
+                            let rowIndex = currentFormCount + index;
+                            let newRow = $('#id_reportcard_set tbody tr:first').clone();
 
-                            // Выбираем нужного сотрудника
-                            $tempSelect.find(`option[value="${event.person_id}"]`).attr('selected', 'selected');
+                            newRow.find('input, select').each(function () {
+                                let name = $(this).attr('name');
+                                if (name) {
+                                    let newName = name.replace(/-\d+-/, `-${rowIndex}-`);
+                                    let newId = 'id_' + newName;
+                                    $(this).attr({'name': newName, 'id': newId}).val('').removeAttr('checked');
+                                }
+                            });
 
-                            // Получаем html с установленным selected
-                            let updatedEmployeeSelect = $tempSelect.html();
+                            let employeeSelect = newRow.find(`select[name="report_cards-${rowIndex}-employee"]`);
+                            employeeSelect.empty();
+                            $('#all-employees option').each(function () {
+                                employeeSelect.append($(this).clone());
+                            });
 
-                            let newRow = `
-        <tr>
-            <td><select name="report_cards-${index}-employee" id="id_report_cards-${index}-employee" class="form-control">${updatedEmployeeSelect}</select></td>
-            <td><input type="time" name="report_cards-${index}-start_time" id="id_report_cards-${index}-start_time" class="form-control" /></td>
-            <td><input type="time" name="report_cards-${index}-end_time" id="id_report_cards-${index}-end_time" class="form-control" /></td>
-            <td><input type="number" name="report_cards-${index}-lunch_time" id="id_report_cards-${index}-lunch_time" class="form-control" /></td>
-            <td><input type="number" name="report_cards-${index}-flight_hours" id="id_report_cards-${index}-flight_hours" class="form-control" /></td>
-            <td><select name="report_cards-${index}-outfit_card" id="id_report_cards-${index}-outfit_card" class="form-control"></select></td>
-            <td><input type="text" name="report_cards-${index}-additional_work" id="id_report_cards-${index}-additional_work" class="form-control" /></td>
-            <td><input type="hidden" name="report_cards-${index}-id" id="id_report_cards-${index}-id" /></td>
-        </tr>`;
+                            employeeSelect.val(event.user_id);
+                            newRow.find(`input[name="report_cards-${rowIndex}-start_time"]`).val(event.start_time);
+                            newRow.find(`input[name="report_cards-${rowIndex}-end_time"]`).val(event.end_time);
+                            newRow.find(`input[name="report_cards-${rowIndex}-lunch_time"]`).val(event.lunch_time);
+                            newRow.find(`input[name="report_cards-${rowIndex}-flight_hours"]`).val(event.flight_hours);
+                            newRow.find(`select[name="report_cards-${rowIndex}-outfit_card"]`).val(event.outfit_card);
+                            newRow.find(`input[name="report_cards-${rowIndex}-additional_work"]`).val(event.additional_work);
 
                             $('#id_reportcard_set tbody').append(newRow);
                         });
 
-                        $('#id_reportcard_set-TOTAL_FORMS').val(data.length);
+                        totalForms.val(currentFormCount + data.length);
+                    },
+                    error: function () {
+                        alert("Ошибка при получении данных.");
                     }
                 });
             });
         });
     </script>
-
-
-{% endblock %}
-
-{% block title %}
-    {{ title }}
 {% endblock %}
 
 {% block content %}
-
-    {{ reportcard_formset }}
-    <div>
-        {% if reportcard_formset %}
-            {% for field in form %}
-                {% for error in field.errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endfor %}
-            {% for error in form.non_field_errors %}
-                <div class="alert alert-danger">
-                    <strong>{{ field.label }}</strong>: {{ error|escape }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    </div>
-    <style>
-        /* Скрыть элемент по умолчанию */
-        .mobile-only {
-            display: none;
-        }
-
-        /* Показать элемент только на мобильных устройствах */
-        @media (max-width: 767px) {
-            .mobile-only {
-                display: inline;
-            }
-
-            .desktop-only {
-                display: none;
-            }
-        }
-
-        th:nth-child(1), td:nth-child(1) {
-            width: 20%;
-        }
-
-        th:nth-child(2), td:nth-child(2) {
-            width: 5%;
-        }
-
-        th:nth-child(3), td:nth-child(3) {
-            width: 5%;
-        }
-
-        th:nth-child(4), td:nth-child(4) {
-            width: 5%;
-        }
-
-        th:nth-child(5), td:nth-child(5) {
-            width: 5%;
-        }
-
-        th:nth-child(6), td:nth-child(6) {
-            width: 20%;
-        }
-
-        th:nth-child(7), td:nth-child(7) {
-            width: 40%;
-        }
-
-        @media (max-width: 576px) {
-            .table-responsive-sm {
-                display: block;
-                width: 100%;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .table-responsive-sm table {
-                width: 100%;
-            }
-
-            .table-responsive-sm th,
-            .table-responsive-sm td {
-                display: block;
-                width: 100%;
-                text-align: left;
-            }
-
-            .table-responsive-sm th {
-                font-weight: bold;
-            }
-
-            .table-responsive-sm td::before {
-                content: attr(data-label);
-                float: left;
-                font-weight: bold;
-                text-transform: uppercase;
-                margin-right: 10px;
-            }
-        }
-    </style>
-
     <!-- start: page -->
-    <h2>{% if object %}Изменить{% else %}Создать{% endif %} табель</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="row text">
-            <div class="col-sm-12 col-md-4 text-black-50">
-                <label for="id_date">Дата:</label>
-                {{ form.date }}
-            </div>
-            <div class="col-sm-12 col-md-4 text-black-50">
-                <label for="id_employee">Старший бригады:</label>
-                {{ form.employee }}
-            </div>
-            <div class="col-sm-12 col-md-4 text-black-50">
-                <label for="id_time_sheets_place">МПД:</label>
-                {{ form.time_sheets_place }}
-            </div>
-        </div>
-        <div class="row text">
-            <div class="col-sm-12 text-black-50">
-                <label for="id_notes">Примечание:</label>
-                {{ form.notes }}
-            </div>
-        </div>
-        <button type="button" class="btn btn-info mt-3" id="fill-from-events">Заполнить из отметок</button>
-
-        <h3>Табель учета рабочего времени</h3>
-        {{ reportcard_formset.management_form }}
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if object and user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-calendar-check text-primary me-2"></i>{% if object %}Редактирование табеля учета рабочего времени{% else %}Создание табеля учета рабочего времени{% endif %}
+                    </h3>
+                    <p class="text-muted small mb-0">Учет рабочего времени, явок, выходов на смену и летных часов</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'hrdepartment_app:timesheet_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку табелей
                     </a>
                 </div>
-            {% endif %}
-            <select id="all-employees" style="display: none">
-                {% for item in all_employee.iterator %}
-                    <option value="{{ item.pk }}">{{ item }}</option>
-                {% endfor %}
-            </select>
+            </div>
+
+            <form method="post" novalidate class="ecommerce-form">
+                {% csrf_token %}
+
+                {% if form.errors or reportcard_formset.errors %}
+                    <div class="alert alert-danger shadow-sm border-0 mb-4">
+                        <i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте ошибки в форме.
+                    </div>
+                {% endif %}
+
+                <!-- Main Card -->
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3">
+                        <h5 class="card-title text-dark mb-0 font-weight-bold">
+                            <i class="bx bx-info-circle text-primary me-2"></i>Параметры смены
+                        </h5>
+                    </header>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label for="id_date" class="form-label font-weight-bold text-dark">Дата смены <span class="text-danger">*</span></label>
+                                {{ form.date|add_class:"form-control form-control-modern" }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="id_employee" class="form-label font-weight-bold text-dark">Старший бригады <span class="text-danger">*</span></label>
+                                {{ form.employee|add_class:"form-control form-control-modern" }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="id_time_sheets_place" class="form-label font-weight-bold text-dark">Место производства деятельности (МПД) <span class="text-danger">*</span></label>
+                                {{ form.time_sheets_place|add_class:"form-control form-control-modern" }}
+                            </div>
+                            <div class="col-12">
+                                <label for="id_notes" class="form-label font-weight-bold text-dark">Примечание</label>
+                                {{ form.notes|add_class:"form-control form-control-modern" }}
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-outline-primary btn-touch" id="fill-from-events">
+                                <i class="bx bx-import me-1"></i> Заполнить из отметок СКУД
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reportcards Formset Card -->
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title text-dark mb-0 font-weight-bold">
+                            <i class="bx bx-list-check text-primary me-2"></i>Строки учета рабочего времени
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-primary btn-touch font-weight-bold" id="add-reportcard">
+                            <i class="bx bx-plus me-1"></i> Добавить строку
+                        </button>
+                    </header>
+                    <div class="card-body p-4">
+                        {{ reportcard_formset.management_form }}
+
+                        <select id="all-employees" style="display: none">
+                            {% for item in all_employee.iterator %}
+                                <option value="{{ item.pk }}">{{ item }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-3" id="id_reportcard_set">
+                                <thead class="table-light">
+                                    <tr class="desktop-only">
+                                        <th style="width: 25%;">ФИО сотрудника</th>
+                                        <th style="width: 10%;">Приход</th>
+                                        <th style="width: 10%;">Уход</th>
+                                        <th style="width: 10%;">Обед (мин.)</th>
+                                        <th style="width: 10%;">Летные часы</th>
+                                        <th style="width: 15%;">Карта-наряд</th>
+                                        <th style="width: 20%;">Дополнительные работы</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for form in reportcard_formset %}
+                                        <tr>
+                                            <td>
+                                                <label for="{{ form.employee.id_for_label }}" class="mobile-only">Сотрудник:</label>
+                                                {{ form.employee|add_class:"form-control form-control-modern" }}
+                                            </td>
+                                            <td>
+                                                <label for="{{ form.start_time.id_for_label }}" class="mobile-only">Приход:</label>
+                                                {{ form.start_time|add_class:"form-control form-control-modern" }}
+                                            </td>
+                                            <td>
+                                                <label for="{{ form.end_time.id_for_label }}" class="mobile-only">Уход:</label>
+                                                {{ form.end_time|add_class:"form-control form-control-modern" }}
+                                            </td>
+                                            <td>
+                                                <label for="{{ form.lunch_time.id_for_label }}" class="mobile-only">Обед:</label>
+                                                {{ form.lunch_time|add_class:"form-control form-control-modern" }}
+                                            </td>
+                                            <td>
+                                                <label for="{{ form.flight_hours.id_for_label }}" class="mobile-only">Летные часы:</label>
+                                                {{ form.flight_hours|add_class:"form-control form-control-modern" }}
+                                            </td>
+                                            <td>
+                                                <label for="{{ form.outfit_card.id_for_label }}" class="mobile-only">Карта-наряд:</label>
+                                                {{ form.outfit_card|add_class:"form-control form-control-modern" }}
+                                            </td>
+                                            <td>
+                                                <label for="{{ form.additional_work.id_for_label }}" class="mobile-only">Доп. работы:</label>
+                                                {{ form.additional_work|add_class:"form-control form-control-modern" }}
+                                                {{ form.id }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                    <a href="{% url 'hrdepartment_app:timesheet_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Отмена
+                    </a>
+                    <div class="d-flex gap-2">
+                        {% if object and user.is_superuser %}
+                            <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}" class="btn btn-outline-danger btn-touch">
+                                <i class="bx bx-trash me-1"></i> Удалить
+                            </a>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
+                            <i class="bx bx-save me-1"></i> Сохранить табель
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
-        <div class="table-responsive">
-            <table class="table table-responsive-sm" id="id_reportcard_set">
-                <thead>
-                <tr class="desktop-only">
-                    <th>ФИО</th>
-                    <th>Время прихода</th>
-                    <th>Время ухода</th>
-                    <th>Обед (мин.)</th>
-                    <th>Летные часы</th>
-                    <th>Карты-наряда</th>
-                    <th>Дополнительные работы</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for form in reportcard_formset %}
-                    <tr>
-                        <td><label for="id_employee" class="mobile-only">ФИО:</label>{{ form.employee }}</td>
-                        <td><label for="id_start_time" class="mobile-only">Время
-                            прихода:</label>{{ form.start_time }}</td>
-                        <td><label for="id_end_time" class="mobile-only">Время ухода:</label>{{ form.end_time }}
-                        </td>
-                        <td><label for="id_lunch_time" class="mobile-only">Обед (мин.):</label>{{ form.lunch_time }}
-                        </td>
-                        <td><label for="id_flight_hours" class="mobile-only">Летные
-                            часы:</label>{{ form.flight_hours }}</td>
-                        <td><label for="id_outfit_card"
-                                   class="mobile-only">Карты-наряда:</label>{{ form.outfit_card }}</td>
-                        <td><label for="id_additional_work" class="mobile-only">Дополнительные
-                            работы:</label>{{ form.additional_work }}</td>
-                        <td><label for="id_id" class="mobile-only"></label>{{ form.id }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <button type="button" class="btn btn-primary" id="add-reportcard">Добавить</button>
-    </form>
-    <!-- end: page -->
+    </div>
     <!-- end: page -->
 {% endblock %}

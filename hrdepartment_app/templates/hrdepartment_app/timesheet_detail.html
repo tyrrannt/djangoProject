@@ -3,6 +3,20 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+    }
+</style>
+
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
@@ -86,20 +100,20 @@
                                 <div class="row action-buttons">
                                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0">
                                         <a href="{% url 'hrdepartment_app:timesheet_update' object.pk %}"
-                                           class="btn btn-outline-success btn-px-4 py-3 d-flex
+                                           class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                                             <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
                                     </div>
                                     <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                                         <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                                           class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                                           class="btn btn-outline-dark btn-touch py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
                                             <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                                     </div>
                                     {% if user.is_superuser %}
                                         <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                                             <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                                               class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                                               class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                                                 <i class="bx bx-trash text-4 me-2"></i> Удалить
                                             </a>
@@ -115,14 +129,14 @@
         <div class="row action-buttons">
             <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                 <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                   class="btn btn-outline-dark btn-touch py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
                     <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
             </div>
             {% if user.is_superuser %}
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-trash text-4 me-2"></i> Удалить
                     </a>

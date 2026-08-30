@@ -1,112 +1,153 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}
-    Доверенность №{{ poa.number }}
+    Доверенность № {{ poa.number }} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+        }
+        .attr-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .attr-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid py-4">
-
-        <!-- Верхняя панель с заголовком, статусом и кнопкой "Назад" -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center">
-                <h4 class="mb-0 text-dark fw-bold">Доверенность №{{ poa.number }}</h4>
-
-                <!-- Визуальный индикатор статуса -->
-                {% if poa.cancellation_date %}
-                    <span class="badge bg-danger ms-3 fs-6 fw-normal px-3 py-2">Отменена</span>
-                {% elif poa.is_received %}
-                    <span class="badge bg-success ms-3 fs-6 fw-normal px-3 py-2">Получена</span>
-                {% else %}
-                    <span class="badge bg-warning text-dark ms-3 fs-6 fw-normal px-3 py-2">Ожидает получения</span>
-                {% endif %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12 col-xl-10 mx-auto">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-certification text-primary me-2"></i>Доверенность № {{ poa.number }}
+                    </h3>
+                    <p class="text-muted small mb-0">
+                        Выдана: <strong class="font-monospace text-dark">{{ poa.issue_date|date:"d.m.Y" }}</strong> &bull;
+                        Действует до: <strong class="font-monospace text-dark">{{ poa.expiry_date|date:"d.m.Y" }}</strong>
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    {% if poa.cancellation_date %}
+                        <span class="badge bg-danger fs-6 px-3 py-2">Отменена</span>
+                    {% elif poa.is_received %}
+                        <span class="badge bg-success fs-6 px-3 py-2">Получена</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">Ожидает получения</span>
+                    {% endif %}
+                    <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку
+                    </a>
+                </div>
             </div>
-            <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bx bx-arrow-back"></i> К списку
-            </a>
-        </div>
 
-        <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-9">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-4">
-
-                        <!-- Блок 1: Основные реквизиты -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3">Основные реквизиты</h6>
-                        <div class="row g-4 mb-4">
-                            <div class="col-md-3">
-                                <div class="text-muted mb-1">Номер</div>
-                                <div class="fw-bold text-dark fs-5 fs-4">{{ poa.number }}</div>
+            <!-- Main Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-info-circle text-primary me-2"></i>Параметры и стороны доверенности
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-3">
+                            <div class="attr-box">
+                                <div class="attr-label">Номер доверенности</div>
+                                <div class="fw-bold font-monospace text-primary fs-5">{{ poa.number }}</div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="text-muted mb-1">Дата выдачи</div>
-                                <div class="fw-bold text-dark fs-5">{{ poa.issue_date|date:"d.m.Y" }}</div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата выдачи</div>
+                                <div class="fw-bold font-monospace text-dark">{{ poa.issue_date|date:"d.m.Y" }}</div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="text-muted mb-1">Дата окончания</div>
-                                <div class="fw-bold text-dark fs-5">{{ poa.expiry_date|date:"d.m.Y" }}</div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата окончания</div>
+                                <div class="fw-bold font-monospace text-dark">{{ poa.expiry_date|date:"d.m.Y" }}</div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="text-muted mb-1">Дата отмены</div>
-                                <div class="fw-bold {% if poa.cancellation_date %}text-danger{% else %}text-muted{% endif %}">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата отмены / отзыва</div>
+                                <div class="fw-bold font-monospace {% if poa.cancellation_date %}text-danger{% else %}text-muted{% endif %}">
                                     {{ poa.cancellation_date|date:"d.m.Y"|default:"—" }}
                                 </div>
                             </div>
                         </div>
 
-                        <hr class="text-secondary opacity-25 my-4">
-
-                        <!-- Блок 2: Стороны -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3">Стороны доверенности</h6>
-                        <div class="row g-4 mb-4">
-                            <div class="col-md-6">
-                                <div class="text-muted mb-1">Инициатор</div>
-                                <div class="fw-bold text-dark fs-5">{{ poa.initiator_name_user }}</div>
-                                <div class="text-secondary">{{ poa.initiator_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-muted mb-1">Поверенный</div>
-                                <div class="fw-bold text-dark fs-5">{{ poa.grantee_name_user }}</div>
-                                <div class="text-secondary">{{ poa.grantee_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
-                            </div>
-                            <div class="col-12">
-                                <div class="text-muted mb-1">Организация / Цель</div>
-                                <div class="fw-bold text-dark fs-5">{{ poa.organization|default:"Не указана" }}</div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Инициатор</div>
+                                <div class="fw-bold text-dark fs-6">{{ poa.initiator_name_user }}</div>
+                                <div class="small text-muted">{{ poa.initiator_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
                             </div>
                         </div>
 
-                        <hr class="text-secondary opacity-25 my-4">
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Поверенное лицо</div>
+                                <div class="fw-bold text-dark fs-6">{{ poa.grantee_name_user }}</div>
+                                <div class="small text-muted">{{ poa.grantee_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
+                            </div>
+                        </div>
 
-                        <!-- Блок 3: Статус и Документы -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3">Статус исполнения и документы</h6>
-                        <div class="row g-4">
-                            <!-- Статус получения -->
-                            <div class="col-md-6">
-                                <div class="d-flex align-items-start p-3 rounded {% if poa.is_received %}bg-white bg-opacity-10{% else %}bg-warning bg-opacity-10{% endif %}">
-                                    <div class="me-3 mt-1">
-                                        {% if poa.is_received %}
-                                            <i class="bx bx-check-circle text-success" style="font-size: 2rem;"></i>
-                                        {% else %}
-                                            <i class="bx bx-time text-warning" style="font-size: 2rem;"></i>
-                                        {% endif %}
-                                    </div>
+                        <div class="col-12">
+                            <div class="attr-box">
+                                <div class="attr-label">Организация / Орган / Цель полномочий</div>
+                                <div class="fw-bold text-dark fs-6">{{ poa.organization|default:"Не указана" }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status and Scanned File Section -->
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="p-3 rounded border {% if poa.is_received %}bg-success bg-opacity-10 border-success-subtle{% else %}bg-warning bg-opacity-10 border-warning-subtle{% endif %}">
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if poa.is_received %}
+                                        <i class="bx bx-check-circle text-success fs-1"></i>
+                                    {% else %}
+                                        <i class="bx bx-time text-warning fs-1"></i>
+                                    {% endif %}
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold mb-1">
-                                            {% if poa.is_received %}Доверенность получена уполномоченным лицом{% else %}Ожидает получения
-                                                {% endif %}
+                                        <div class="fw-bold text-dark mb-1">
+                                            {% if poa.is_received %}Доверенность получена уполномоченным лицом{% else %}Ожидает получения сотрудником{% endif %}
                                         </div>
                                         {% if poa.is_received %}
-                                            <div class="text-muted mb-1">
-                                                Дата: {{ poa.received_at|date:"d.m.Y H:i" }}</div>
-                                            <div class="text-muted">Подтвердил получение: {{ poa.received_by_user }}</div>
+                                            <div class="small text-muted">Дата получения: {{ poa.received_at|date:"d.m.Y H:i" }}</div>
+                                            <div class="small text-muted">Подтвердил: {{ poa.received_by_user }}</div>
                                         {% else %}
                                             {% if user == poa.grantee_name_user or user.is_superuser %}
-                                                <form action="{% url 'hrdepartment_app:poa_mark_received' poa.pk %}"
-                                                      method="post" class="mt-2">
+                                                <form action="{% url 'hrdepartment_app:poa_mark_received' poa.pk %}" method="post" class="mt-2 m-0">
                                                     {% csrf_token %}
-                                                    <button type="submit" class="btn btn-success btn-sm">
-                                                        <i class="bx bx-check"></i> Отметить как полученную
+                                                    <button type="submit" class="btn btn-success btn-sm btn-touch">
+                                                        <i class="bx bx-check me-1"></i> Подтвердить получение
                                                     </button>
                                                 </form>
                                             {% endif %}
@@ -114,46 +155,46 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Документ -->
-                            <div class="col-md-6">
-                                <div class="d-flex align-items-start p-3 rounded bg-light">
-                                    <div class="me-3 mt-1">
-                                        <i class="bx bx-file text-primary" style="font-size: 2rem;"></i>
-                                    </div>
+                        <div class="col-12 col-md-6">
+                            <div class="p-3 rounded border bg-light">
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="bx bx-file text-primary fs-1"></i>
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold mb-1">Скан документа</div>
-                                        <!-- ВНИМАНИЕ: Проверьте имя поля в модели. В форме было scan_file, здесь document -->
+                                        <div class="fw-bold text-dark mb-1">Скан-копия документа</div>
                                         {% if poa.scan_file %}
-                                            <a href="{{ poa.scan_file.url }}" target="_blank"
-                                               class="btn btn-outline-primary btn-sm">
-                                                <i class="bx bx-show"></i> Просмотреть / Скачать
+                                            <a href="{{ poa.scan_file.url }}" target="_blank" class="btn btn-outline-primary btn-sm btn-touch">
+                                                <i class="bx bx-download me-1"></i> Скачать документ
                                             </a>
                                         {% else %}
-                                            <span class="text-muted fst-italic">Файл не загружен</span>
+                                            <span class="text-muted small">Файл не прикреплен</span>
                                         {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                    </div> <!-- End card-body -->
-
-                    <!-- Футер с действиями -->
-                    <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
+                <!-- Footer Action Bar -->
+                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку
+                    </a>
+                    {% if user == poa.executor or user.is_superuser %}
                         <div class="d-flex gap-2">
-                            {% if user == poa.executor or user.is_superuser %}
-                            <a href="{% url 'hrdepartment_app:poa_update' poa.pk %}" class="btn btn-primary">
-                                <i class="bx bx-edit"></i> Редактировать
+                            <a href="{% url 'hrdepartment_app:poa_update' poa.pk %}" class="btn btn-primary btn-touch font-weight-bold">
+                                <i class="bx bx-edit me-1"></i> Редактировать
                             </a>
-                            {% endif %}
-                            <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary">
-                                Назад к списку
+                            <a href="{% url 'hrdepartment_app:poa_delete' poa.pk %}" class="btn btn-outline-danger btn-touch">
+                                <i class="bx bx-trash me-1"></i> Удалить
                             </a>
                         </div>
-                    </div>
-                </div> <!-- End card -->
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
+    <!-- end: page -->
 {% endblock %}

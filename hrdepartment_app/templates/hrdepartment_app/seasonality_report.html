@@ -3,140 +3,191 @@
 {% load static %}
 
 {% block title %}
-    {{ title }}
+    Анализ сезонности отпусков // Отдел кадров
 {% endblock %}
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
-
 {% endblock %}
 
 {% block content %}
-
-    <h1>Анализ сезонности отпусков</h1>
-
-    <!-- Форма выбора года -->
-    <form method="GET" action="{% url 'hrdepartment_app:seasonality-report' %}">
-        <div class="row">
-            <div class="col-md-2">
-                <label for="year">Выберите год:</label>
-            </div>
-            <div class="col-md-8 col-sm-12">
-                <select name="year" id="year" class="form-control">
-                    {% for year in years %}
-                        <option value="{{ year }}"
-                                {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit">Применить</button>
-            </div>
-        </div>
-
-
-    </form>
-
-    <!-- График распределения отпусков -->
+    <!-- start: page -->
     <div class="row">
-        <div class="col-md-2"></div>
-        <div class="col-md-8 col-sm-12">
-            <canvas id="vacationChart" width="400" height="200"></canvas>
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-calendar-star text-primary me-2"></i>Анализ сезонности отпусков
+                    </h3>
+                    <p class="text-muted small mb-0">Соотношение плановых и фактических отпусков, выявление периодов перегрузки</p>
+                </div>
+            </div>
+
+            <!-- Filter Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-filter-alt text-primary me-2"></i>Выбор периода
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <form method="GET" action="{% url 'hrdepartment_app:seasonality-report' %}" class="m-0">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label for="year" class="form-label font-weight-bold text-dark small">Год</label>
+                                <select name="year" id="year" class="form-control form-control-modern">
+                                    {% for year in years %}
+                                        <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
+                                    <i class="bx bx-check me-1"></i> Применить
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Chart Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-line-chart text-primary me-2"></i>График распределения отпусков
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 350px;">
+                        <canvas id="vacationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overload Analysis Table -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-table text-primary me-2"></i>Анализ загрузки по месяцам
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Месяц</th>
+                                    <th>План</th>
+                                    <th>Основной</th>
+                                    <th>Прочий</th>
+                                    <th>Итого / План</th>
+                                    <th>Статус</th>
+                                    <th>Анализ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in overload_analysis %}
+                                    <tr class="{% if 'перегруз' in item.status %}table-warning{% elif 'Нет плана' in item.status %}table-danger{% endif %}">
+                                        <td class="fw-semibold text-dark">{{ item.month }}</td>
+                                        <td>{{ item.planned }}</td>
+                                        <td>{{ item.main }}</td>
+                                        <td>{{ item.other }}</td>
+                                        <td class="font-monospace">
+                                            {% if item.planned > 0 %}
+                                                {{ item.main|add:item.other }} / {{ item.planned }} ({{ item.main|add:item.other|div:item.planned|floatformat:1 }}x)
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if 'перегруз' in item.status %}
+                                                <span class="badge bg-warning text-dark">{{ item.status }}</span>
+                                            {% elif 'Нет плана' in item.status %}
+                                                <span class="badge bg-danger">{{ item.status }}</span>
+                                            {% else %}
+                                                <span class="badge bg-success">{{ item.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="small text-muted">{{ item.reason }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats alert -->
+            <div class="alert alert-info border-0 shadow-sm p-3">
+                <i class="bx bx-info-circle me-1"></i> Всего проблемных месяцев с перегрузкой: <strong>{{ total_overloads }}</strong> &bull;
+                Среднее за год: Основные: <strong>{{ avg_main }}</strong>, Прочие: <strong>{{ avg_other }}</strong>
+            </div>
         </div>
-        <div class="col-md-2"></div>
     </div>
+    <!-- end: page -->
 
-    <table class="table table-hover">
-        <thead class="table-dark">
-        <tr>
-            <th>Месяц</th>
-            <th>План</th>
-            <th>Основной</th>
-            <th>Прочий</th>
-            <th>Соотношение общего к плану</th>
-            <th>Статус</th>
-            <th>Анализ</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for item in overload_analysis %}
-            <tr class="{% if 'перегруз' in item.status %}table-warning{% elif 'Нет плана' in item.status %}table-danger{% endif %}">
-                <td>{{ item.month }}</td>
-                <td>{{ item.planned }}</td>
-                <td>{{ item.main }}</td>
-                <td>{{ item.other }}</td>
-                <td>
-                    {% if item.planned > 0 %}
-                        {{ item.main|add:item.other }} / {{ item.planned }}
-                        ({{ item.main|add:item.other|div:item.planned|floatformat:1 }}x)
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td>{{ item.status }}</td>
-                <td>{{ item.reason }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="alert alert-info">
-        Всего проблемных месяцев: <strong>{{ total_overloads }}</strong>
-    </div>
-
-    <!-- Статистика -->
-    <div class="stats">
-        <p>Среднее за год:</p>
-        <ul>
-            <li>Основные отпуска: {{ avg_main }} (типы 2, 3)</li>
-            <li>Прочие отпуска: {{ avg_other }} (типы 4-19)</li>
-            <li>Запланировано: {{ avg_planned }} (тип 18)</li>
-        </ul>
-    </div>
-
-    <!-- Экспорт данных -->
-    <a href="{% url 'hrdepartment_app:export-seasonality-data' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт
-        данных</a>
     <script>
         const ctx = document.getElementById('vacationChart').getContext('2d');
-        new Chart(ctx, {
+        const vacationChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: {{ months|safe }},
+                labels: {{ months_labels|safe }},
                 datasets: [
                     {
-                        label: 'Запланировано',
+                        label: 'План отпусков',
                         data: {{ planned_counts|safe }},
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        backgroundColor: 'rgba(0, 136, 204, 0.4)',
+                        borderColor: '#0088cc',
+                        borderWidth: 1
                     },
                     {
-                        label: 'Основные отпуска',
+                        label: 'Основные отпуска (факт)',
                         data: {{ main_counts|safe }},
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        backgroundColor: 'rgba(71, 164, 71, 0.6)',
+                        borderColor: '#47a447',
+                        borderWidth: 1
                     },
                     {
-                        label: 'Прочие отпуска',
+                        label: 'Прочие отпуска (факт)',
                         data: {{ other_counts|safe }},
-                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                        backgroundColor: 'rgba(237, 156, 40, 0.6)',
+                        borderColor: '#ed9c28',
+                        borderWidth: 1
                     }
                 ]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
-                    x: {stacked: true},
-                    y: {stacked: false}
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
         });
     </script>
-
 {% endblock %}

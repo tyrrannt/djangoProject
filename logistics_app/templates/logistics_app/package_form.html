@@ -3,98 +3,150 @@
 {% load custom %}
 {% load widget_tweaks %}
 
+{% block title %}
+    {% if object %}Редактирование посылки № {{ object.number_of_dispatch }}{% else %}Создание новой отправки посылки{% endif %} // Логистика
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 20px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="col-lg-12">
-
-            {{ form.as_p }}
-            {% with named_formsets.variants as formset %}
-                {{ formset.management_form }}
-                <script type="text/html" id="variants-template">  // id="inlineformsetname-template"
-                // id='inlineformsetname-__prefix__'
-                <tr id="variants-__prefix__" class=hide_all>
-                    {% for fields in formset.empty_form.hidden_fields %}
-                        {{ fields }}
-                    {% endfor %}
-
-                    {% for fields in formset.empty_form.visible_fields %}
-                        <td>{{ fields }}</td>
-                    {% endfor %}
-                </tr>
-                </script>
-                <div class="table-responsive card mt-4">
-                    <div class="card-header card-header-secondary">
-                        <h4 class="card-title">Отправка</h4>
-                    </div>
-                    <table class="table card-header" id="id_way_bills">
-                        <thead class="text-secondary">
-                        <th>Дата документа <span style="color: red;" class="required">*</span></th>
-                        <th>Куда <span style="color: red;" class="required">*</span></th>
-                        <th>Комментарий <span style="color: red;" class="required">*</span></th>
-                        <th>Подразделение <span style="color: red;" class="required">*</span></th>
-                        <th>Отправитель <span style="color: red;" class="required">*</span></th>
-                        <th>Состояние <span style="color: red;" class="required">*</span></th>
-                        <th>Получение <span style="color: red;" class="required">*</span></th>
-                        <th>Исполнитель <span style="color: red;" class="required">*</span></th>
-                        <th>Срочность <span style="color: red;" class="required">*</span></th>
-                        </thead>
-                        <tbody id="item-variants">
-                        {% for item in way_bills %}
-                            <tr>
-                                <td>{{ item.document_date | date:"d.m.Y" }}<span style="color: red;"
-                                                                                 class="required">*</span></td>
-                                <td>{{ item.place_of_departure }} <span style="color: red;"
-                                                                        class="required">*</span></td>
-                                <td>{{ item.comment }} <span style="color: red;" class="required">*</span></td>
-                                <td>{{ item.place_division }} <span style="color: red;" class="required">*</span>
-                                </td>
-                                <td>{{ item.sender | FIO_format }} <span style="color: red;"
-                                                                         class="required">*</span></td>
-                                <td>{{ item.get_state_display }} <span style="color: red;" class="required">*</span>
-                                </td>
-                                <td>{{ item.responsible | FIO_format }} <span style="color: red;"
-                                                                              class="required">*</span></td>
-                                <td>{{ item.executor | FIO_format }} <span style="color: red;"
-                                                                           class="required">*</span></td>
-                                <td>{{ item.get_urgency_display }} <span style="color: red;"
-                                                                         class="required">*</span></td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                    <!-- id="add-inlineformsetname-button" -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-package text-primary me-2"></i>{% if object %}Редактирование отправки{% else %}Оформление отправки посылки{% endif %}
+                    </h3>
+                    <p class="text-muted small mb-0">Заполните данные об отправке и проверьте список вложенных накладных</p>
                 </div>
-
-            {% endwith %}
-        </div>
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'logistics_app:waybill_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                <div>
+                    <a href="{% url 'logistics_app:package_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К списку отправок
                     </a>
                 </div>
-            {% endif %}
+            </div>
+
+            <!-- Form Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-edit text-primary me-2"></i>Параметры отправки
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" class="ecommerce-form">
+                        {% csrf_token %}
+                        {{ form.media }}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <strong>Ошибка сохранения:</strong> Пожалуйста, исправьте ошибки в форме.
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_date_of_dispatch">
+                                    Дата отправки <span class="text-danger">*</span>
+                                </label>
+                                {{ form.date_of_dispatch|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_number_of_dispatch">
+                                    Номер посылки / Трек-номер <span class="text-danger">*</span>
+                                </label>
+                                {{ form.number_of_dispatch|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-bold text-dark" for="id_place_of_dispatch">
+                                    Место назначения (Куда) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.place_of_dispatch|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_executor">
+                                    Исполнитель
+                                </label>
+                                {{ form.executor|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-bold text-dark" for="id_type_of_dispatch">
+                                    Тип отправки
+                                </label>
+                                {{ form.type_of_dispatch|add_class:"form-control form-control-modern" }}
+                            </div>
+                        </div>
+
+                        <!-- Waybills in this package -->
+                        {% if way_bills %}
+                            <div class="border rounded p-3 bg-light mb-4">
+                                <h6 class="font-weight-bold text-dark mb-3">
+                                    <i class="bx bx-list-ul text-primary me-1"></i>Вложенные накладные
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered align-middle mb-0 bg-white" id="id_way_bills">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Дата</th>
+                                                <th>Куда</th>
+                                                <th>Содержание</th>
+                                                <th>Подразделение</th>
+                                                <th>Отправитель</th>
+                                                <th>Состояние</th>
+                                                <th>Срочность</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in way_bills %}
+                                                <tr>
+                                                    <td class="font-monospace text-dark">{{ item.document_date|date:"d.m.Y" }}</td>
+                                                    <td><strong>{{ item.place_of_departure }}</strong></td>
+                                                    <td>{{ item.content|truncatechars:40 }}</td>
+                                                    <td>{{ item.place_division|default:"—" }}</td>
+                                                    <td>{{ item.sender|FIO_format }}</td>
+                                                    <td><span class="badge bg-light text-dark border">{{ item.get_state_display }}</span></td>
+                                                    <td><span class="badge bg-light text-dark border">{{ item.get_urgency_display }}</span></td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                            <a href="{% url 'logistics_app:package_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <i class="bx bx-save me-1"></i> {% if object %}Сохранить изменения{% else %}Зарегистрировать отправку{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-    </form>
-    <!-- end: page -->
+    </div>
     <!-- end: page -->
 {% endblock %}

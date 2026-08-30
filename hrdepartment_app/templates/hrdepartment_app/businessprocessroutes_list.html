@@ -1,4 +1,20 @@
 {% extends 'customers_app/main.html' %}
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
@@ -17,7 +33,7 @@
                                 <div class="row align-items-center mb-3">
                                     <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                         <a href="{% url 'hrdepartment_app:business_process_routes_add' %}"
-                                           class="btn btn-outline-primary btn-px-4 py-3 d-flex
+                                           class="btn btn-outline-primary btn-touch font-weight-bold py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
                                             <i class='bx bx-list-plus text-4 me-2'></i> Добавить новое направление </a>
                                     </div>

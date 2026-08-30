@@ -3,6 +3,20 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+    }
+</style>
+
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
@@ -27,7 +41,9 @@
 
     <script>
         $(document).ready(function () {
-            $('#acknowledgment-checkbox').change(function () {
+            $('.acknowledgment-toggle, #acknowledgment-checkbox').change(function () {
+                var isChecked = $(this).is(':checked');
+                $('.acknowledgment-toggle, #acknowledgment-checkbox').prop('checked', isChecked);
                 var contentTypeId = $('#content-type-id').val();
                 var objectId = $(this).data('object-id');
                 var csrfToken = $('#acknowledgment-form input[name="csrfmiddlewaretoken"]').val();
@@ -125,8 +141,34 @@
                hidden="hidden">
     {% endif %}
     <div class="order-details action-buttons-fixed" method="post">
-        <div class="col-lg-12">
-            <h4 class="font-weight-bold text-dark">{{ object.document_name }} № {{ object.document_number }}
+        <div class="col-12 mb-4"><div class="card card-modern shadow-sm border-0"><div class="card-body p-4">
+            <!-- Панель статуса и быстрого ознакомления в видимой части страницы -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center bg-light p-3 rounded border mb-4 gap-3">
+                <div>
+                    <h4 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-file text-primary me-2"></i>{{ object.document_name }} {% if object.document_number %}№ {{ object.document_number }}{% endif %}
+                        {% if object.document_date %}от {{ object.document_date }}{% endif %}
+                    </h4>
+                    <p class="text-muted small mb-0">Кадровый нормативный документ &bull; Лист ознакомления сотрудников</p>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center bg-white py-2 px-3 rounded border shadow-sm">
+                        <div class="form-check form-switch fs-5 d-flex align-items-center gap-2 m-0">
+                            <input class="form-check-input acknowledgment-toggle" type="checkbox" role="switch"
+                                   id="acknowledgment-checkbox-top" data-object-id="{{ object.id }}"
+                                   {% if agree %}checked{% endif %}>
+                            <label class="form-check-label fw-bold text-dark fs-6 user-select-none" for="acknowledgment-checkbox-top">
+                                Я ознакомился с документом
+                            </label>
+                        </div>
+                    </div>
+                    <form id="acknowledgment-form" method="post" style="display: none;">
+                        {% csrf_token %}
+                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                    </form>
+                </div>
+            </div>
+<h4 class="font-weight-bold text-dark">{{ object.document_name }} № {{ object.document_number }}
                 от {{ object.document_date }}</h4>
             {% if outdated %}
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -231,11 +273,12 @@
 
             </div>
         </div>
-        <div class="row action-buttons">
+        </div></div></div>
+<div class="row action-buttons d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mt-4 bg-light rounded border">
             {% if perms.hrdepartment_app.change_laborprotectioninstructions or user.is_superuser %}
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
                     <a href="{% url 'hrdepartment_app:lpi_update' object.pk %}"
-                       class="btn btn-outline-success btn-px-4 py-3 d-flex
+                       class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
                 </div>

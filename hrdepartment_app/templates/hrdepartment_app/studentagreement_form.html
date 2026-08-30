@@ -5,6 +5,20 @@
 {% load widget_tweaks %}
 
 {% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+    }
+</style>
+
     <!-- Стили для формы -->
     <style>
         /* Стили для кнопки добавления программы */
@@ -620,20 +634,20 @@
         <div class="row action-buttons">
             <div class="col-12 col-md-auto">
                 <button type="submit"
-                        class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex align-items-center font-weight-semibold line-height-1">
                     <i class="bx bx-save text-4 me-2"></i> Сохранить
                 </button>
             </div>
             <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                 <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                   class="btn btn-outline-dark btn-touch py-3 d-flex align-items-center font-weight-semibold line-height-1">
                     <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
                 </a>
             </div>
             {% if object and user.is_superuser %}
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-trash text-4 me-2"></i> Удалить
                     </a>
                 </div>
@@ -668,7 +682,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary" id="btnSaveProgram">Создать и выбрать</button>
+                    <button type="button" class="btn btn-primary btn-touch font-weight-bold" id="btnSaveProgram">Создать и выбрать</button>
                 </div>
             </div>
         </div>
@@ -715,7 +729,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary" id="btnSaveUnit">Создать и выбрать</button>
+                    <button type="button" class="btn btn-primary btn-touch font-weight-bold" id="btnSaveUnit">Создать и выбрать</button>
                 </div>
             </div>
         </div>

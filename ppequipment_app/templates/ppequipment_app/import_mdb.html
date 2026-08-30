@@ -1,120 +1,124 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
 
-{% block title %}Импорт из MDB{% endblock %}
-
-{% block breadcrumb_title %}Импорт из MDB{% endblock %}
-
-{% block breadcrumb_items %}
-    <li class="breadcrumb-item active" aria-current="page">Импорт из MDB</li>
-{% endblock %}
+{% block title %}Импорт из базы данных MDB // ПТД{% endblock %}
 
 {% block page_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
-        <i class="fas fa-file-import me-2 text-primary"></i>Импорт данных из MDB
-    </h2>
-    <a href="{% url 'ppequipment_app:index' %}" class="btn btn-secondary">
-        <i class="fas fa-home me-1"></i>На главную
-    </a>
-</div>
-
-<div class="card mb-4 bg-info bg-opacity-10 border-info">
-    <div class="card-body">
-        <div class="d-flex">
-            <i class="fas fa-info-circle fa-2x text-info me-3 mt-1"></i>
-            <div>
-                <h5 class="text-info">Информация</h5>
-                <p class="mb-0">Данные будут извлечены из файла <code class="bg-light px-2 py-1 rounded">inventory.mdb</code> и нормализованы: текстовые поля заменены на справочники с FK-связями.</p>
-            </div>
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-cloud-upload text-primary me-2"></i>Импорт данных из MS Access MDB
+            </h3>
+            <p class="text-muted small mb-0">Синхронизация и загрузка исходных данных инвентаризации ПТД</p>
+        </div>
+        <div>
+            <a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-outline-secondary btn-touch">
+                <i class="bx bx-arrow-back me-1"></i> К списку ПТД
+            </a>
         </div>
     </div>
-</div>
 
-{% if imported %}
-<div class="card mb-4 border-success">
-    <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Результат импорта</h5>
+    <!-- Info Banner -->
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 p-3">
+        <i class="bx bx-info-circle fs-2 text-info me-3"></i>
+        <div class="small">
+            Данные извлекаются из локального файла <code class="bg-light px-2 py-1 rounded text-primary fw-bold">inventory.mdb</code>, парсятся и нормализуются с автоматической генерацией внешних ключей классификаторов и таблиц связей.
+        </div>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6 class="text-success"><i class="fas fa-book me-2"></i>Справочники:</h6>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-tag me-2 text-primary"></i>Назн-лит</span>
-                        <span class="badge bg-primary rounded-pill">{{ imported.dest_lit }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-plane me-2 text-primary"></i>Типы ВС</span>
-                        <span class="badge bg-primary rounded-pill">{{ imported.aircraft_types }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-map-pin me-2 text-primary"></i>Местоположения</span>
-                        <span class="badge bg-primary rounded-pill">{{ imported.locations }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-tasks me-2 text-primary"></i>Статусы контр-раб</span>
-                        <span class="badge bg-primary rounded-pill">{{ imported.contractor_statuses }}</span>
-                    </li>
-                </ul>
+
+    {% if imported %}
+        <div class="card card-modern shadow-sm border-0 mb-4">
+            <header class="card-header bg-success text-white py-3">
+                <h5 class="card-title text-white mb-0 font-weight-bold">
+                    <i class="bx bx-check-circle me-2"></i>Результаты выполнения импорта
+                </h5>
+            </header>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-12 col-md-6">
+                        <h6 class="font-weight-bold text-dark mb-3"><i class="bx bx-book-content text-primary me-2"></i>Справочники:</h6>
+                        <ul class="list-group list-group-flush border rounded">
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-tag-alt me-2 text-primary"></i>Назн-лит (Назначения)</span>
+                                <span class="badge bg-primary rounded-pill">{{ imported.dest_lit }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-paper-plane me-2 text-primary"></i>Типы ВС</span>
+                                <span class="badge bg-primary rounded-pill">{{ imported.aircraft_types }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-building me-2 text-primary"></i>Места хранения</span>
+                                <span class="badge bg-primary rounded-pill">{{ imported.locations }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-task me-2 text-primary"></i>Статусы контр-раб</span>
+                                <span class="badge bg-primary rounded-pill">{{ imported.contractor_statuses }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <h6 class="font-weight-bold text-dark mb-3"><i class="bx bx-data text-success me-2"></i>Записи данных:</h6>
+                        <ul class="list-group list-group-flush border rounded">
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-package me-2 text-success"></i>Оборудование и ПТД</span>
+                                <span class="badge bg-success rounded-pill">{{ imported.equipment }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-map-pin me-2 text-success"></i>Записи местоположений</span>
+                                <span class="badge bg-success rounded-pill">{{ imported.location_entries }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-check-shield me-2 text-success"></i>Журнал сверок</span>
+                                <span class="badge bg-success rounded-pill">{{ imported.verifications }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <span><i class="bx bx-calendar me-2 text-success"></i>Даты сверок</span>
+                                <span class="badge bg-success rounded-pill">{{ imported.dates }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6">
-                <h6 class="text-success"><i class="fas fa-database me-2"></i>Данные:</h6>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-box me-2 text-success"></i>Оборудование</span>
-                        <span class="badge bg-success rounded-pill">{{ imported.equipment }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-map-marker-alt me-2 text-success"></i>Записи местоположений</span>
-                        <span class="badge bg-success rounded-pill">{{ imported.location_entries }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-clipboard-check me-2 text-success"></i>Сверки</span>
-                        <span class="badge bg-success rounded-pill">{{ imported.verifications }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-calendar me-2 text-success"></i>Даты сверок</span>
-                        <span class="badge bg-success rounded-pill">{{ imported.dates }}</span>
-                    </li>
+        </div>
+    {% endif %}
+
+    {% if errors %}
+        <div class="card card-modern shadow-sm border-0 mb-4 border-danger">
+            <header class="card-header bg-danger text-white py-3">
+                <h5 class="card-title text-white mb-0 font-weight-bold">
+                    <i class="bx bx-error-circle me-2"></i>Ошибки при импорте
+                </h5>
+            </header>
+            <div class="card-body p-4">
+                <ul class="text-danger mb-0">
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
                 </ul>
             </div>
         </div>
-    </div>
-</div>
-{% endif %}
+    {% endif %}
 
-{% if errors %}
-<div class="card mb-4 border-danger">
-    <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Ошибки импорта</h5>
+    <!-- Action Card -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <header class="card-header bg-light py-3">
+            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                <i class="bx bx-play-circle text-primary me-2"></i>Запуск процесса синхронизации
+            </h5>
+        </header>
+        <div class="card-body p-5 text-center">
+            <div class="my-2">
+                <i class="bx bx-data text-primary" style="font-size: 4rem;"></i>
+            </div>
+            <h5 class="font-weight-bold text-dark mb-2">Готовность к импорту</h5>
+            <p class="text-muted small mb-4">При выполнении импорта записи будут актуализированы. Процесс может занять несколько секунд.</p>
+            <form method="post" class="d-inline-block">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-touch font-weight-bold px-4">
+                    <i class="bx bx-cloud-download me-2 fs-5"></i> Начать импорт из MDB
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        <ul class="text-danger mb-0">
-            {% for error in errors %}
-                <li><i class="fas fa-times-circle me-2"></i>{{ error }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-</div>
-{% endif %}
-
-<div class="card">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="fas fa-play-circle me-2"></i>Запуск импорта</h5>
-    </div>
-    <div class="card-body text-center">
-        <p class="text-muted mb-4">
-            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-            Внимание! При импорте существующие данные могут быть изменены.
-        </p>
-        <form method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary btn-lg">
-                <i class="fas fa-file-import me-2"></i>Импортировать данные
-            </button>
-        </form>
-    </div>
-</div>
 {% endblock %}

@@ -3,71 +3,136 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    Распределение типов рабочего времени // Отдел кадров
 {% endblock %}
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
-
 {% endblock %}
 
 {% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-time-five text-primary me-2"></i>Распределение типов рабочего времени
+                    </h3>
+                    <p class="text-muted small mb-0">Структура явок, часов работы, переработок и отпусков за выбранный год</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'hrdepartment_app:export-time-distribution' %}?year={{ selected_year }}" class="btn btn-success btn-touch font-weight-bold">
+                        <i class="bx bx-download me-1"></i> Экспорт в Excel
+                    </a>
+                </div>
+            </div>
 
-    <h1>Распределение типов времени</h1>
+            <!-- Filter Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-filter-alt text-primary me-2"></i>Период
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <form method="GET" action="{% url 'hrdepartment_app:time_distribution' %}" class="m-0">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label for="year" class="form-label font-weight-bold text-dark small">Год</label>
+                                <select name="year" id="year" class="form-control form-control-modern">
+                                    {% for year in years %}
+                                        <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
+                                    <i class="bx bx-check me-1"></i> Применить
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-    <!-- Форма выбора года -->
-    <form method="GET" action="{% url 'hrdepartment_app:time_distribution' %}">
-        <label for="year">Выберите год:</label>
-        <select name="year" id="year">
-            {% for year in years %}
-                <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Применить</button>
-    </form>
+            <!-- Chart Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-bar-chart-alt-2 text-primary me-2"></i>Диаграмма распределения типов времени
+                    </h5>
+                </header>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 350px;">
+                        <canvas id="timeDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
 
-    <!-- График распределения типов времени -->
-    <canvas id="timeDistributionChart" width="600" height="400"></canvas>
-
-    <!-- Детализация по сотрудникам -->
-    <h2>Детализация по сотрудникам</h2>
-    <table border="1">
-        <thead>
-        <tr>
-            <th>Сотрудник</th>
-            {% for time_type in time_types %}
-                <th>{{ time_type }}</th>
-            {% endfor %}
-        </tr>
-        </thead>
-        <tbody>
-        {% for employee, data in employee_data.items %}
-            <tr>
-                <td>{{ employee }}</td>
-                {% for time_type in time_types %}
-                    <td>{{ data|get_key:time_type }}</td> <!-- Используем default для отсутствующих значений -->
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Экспорт данных -->
-    <a href="{% url 'hrdepartment_app:export-time-distribution' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт
-        данных</a>
+            <!-- Details Table Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-table text-primary me-2"></i>Детализация по сотрудникам
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Сотрудник</th>
+                                    {% for time_type in time_types %}
+                                        <th>{{ time_type }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee, data in employee_data.items %}
+                                    <tr>
+                                        <td class="fw-semibold text-dark">{{ employee }}</td>
+                                        {% for time_type in time_types %}
+                                            <td>{{ data|get_key:time_type }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="10" class="text-center text-muted py-4">Данных не найдено</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 
     <script>
-        // Отображение графика
         const ctx = document.getElementById('timeDistributionChart').getContext('2d');
         const timeDistributionChart = new Chart(ctx, {
             type: 'bar',
@@ -76,12 +141,14 @@
                 datasets: [{
                     label: 'Количество событий',
                     data: {{ time_counts|safe }},
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(0, 136, 204, 0.5)',
+                    borderColor: '#0088cc',
                     borderWidth: 1
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true

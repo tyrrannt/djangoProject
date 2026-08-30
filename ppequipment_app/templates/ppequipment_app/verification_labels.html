@@ -1,178 +1,150 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
+{% load widget_tweaks %}
 
-{% block title %}{{ title|default:"Сверочные этикетки" }}{% endblock %}
+{% block title %}{{ title|default:"Сверочные этикетки" }} // ПТД{% endblock %}
 
 {% block page_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
-        <i class="fas fa-tags me-2 text-primary"></i>Сверочные этикетки
-    </h2>
-</div>
-
-<div class="card mb-4 bg-info bg-opacity-10 border-info">
-    <div class="card-body">
-        <div class="d-flex">
-            <i class="fas fa-info-circle fa-2x text-info me-3 mt-1"></i>
-            <div>
-                <h5 class="text-info">Информация</h5>
-                <p class="mb-0">Выберите условия для формирования сврочных этикеток. Этикетки будут сформированы на основе данных инвентаризации и готовы к печати.</p>
-            </div>
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-barcode text-primary me-2"></i>Генератор сверочных этикеток
+            </h3>
+            <p class="text-muted small mb-0">Формирование печатных этикеток с QR-кодами на основе условий отбора</p>
+        </div>
+        <div>
+            <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-secondary btn-touch">
+                <i class="bx bx-arrow-back me-1"></i> К журналу сверок
+            </a>
         </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Условия отбора</h5>
+    <!-- Info Banner -->
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 p-3">
+        <i class="bx bx-info-circle fs-3 text-info me-3"></i>
+        <div class="small">
+            <strong>Формат печати:</strong> Выберите критерии отбора оборудования. Сформированные этикетки будут подготовлены для печати на формате А4 (книжная ориентация, парный блок: QR-код + текст акта сверки).
+        </div>
     </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger alert-dismissible fade show mb-4">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <strong>Ошибки в форме:</strong>
-                    <ul class="mb-0 mt-2">
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endif %}
-            
-            <div class="row">
-                <!-- Дата сверки -->
-                <div class="col-md-12 mb-4">
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-calendar-day me-2 text-danger"></i>{{ form.verification_date.label }}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            {{ form.verification_date }}
+
+    <!-- Filter Form Card -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <header class="card-header bg-light py-3">
+            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                <i class="bx bx-filter-alt text-primary me-2"></i>Критерии отбора для генерации
+            </h5>
+        </header>
+        <div class="card-body p-4">
+            <form method="post" class="ecommerce-form">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4">
+                        <strong>Ошибки в форме:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <div class="row g-4">
+                    <!-- Verification Date -->
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded border">
+                            <label class="form-label font-weight-bold text-dark fs-6" for="{{ form.verification_date.id_for_label }}">
+                                <i class="bx bx-calendar-check text-primary me-1"></i>{{ form.verification_date.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.verification_date|add_class:"form-control form-control-modern" }}
                             {% if form.verification_date.errors %}
                                 <div class="text-danger small mt-1">{{ form.verification_date.errors }}</div>
                             {% endif %}
                             {% if form.verification_date.help_text %}
-                                <div class="form-text">{{ form.verification_date.help_text }}</div>
+                                <div class="form-text small text-muted">{{ form.verification_date.help_text }}</div>
                             {% endif %}
                         </div>
                     </div>
-                </div>
-                
-                <!-- Местоположение -->
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-map-marker-alt me-2 text-info"></i>{{ form.location_ref.label }}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <small class="text-muted d-block mb-2">
-                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
-                            </small>
-                            {{ form.location_ref }}
+
+                    <!-- Location Ref -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <label class="form-label font-weight-bold text-dark">
+                                <i class="bx bx-map-pin text-primary me-1"></i>{{ form.location_ref.label }}
+                            </label>
+                            {{ form.location_ref|add_class:"form-control form-control-modern" }}
+                            <div class="form-text small text-muted mt-2">Удерживайте Ctrl для выбора нескольких значений</div>
                             {% if form.location_ref.errors %}
                                 <div class="text-danger small mt-1">{{ form.location_ref.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
-                </div>
-                
-                <!-- Статус контр-раб -->
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-tasks me-2 text-warning"></i>{{ form.contractor_status.label }}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <small class="text-muted d-block mb-2">
-                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
-                            </small>
-                            {{ form.contractor_status }}
+
+                    <!-- Contractor Status -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <label class="form-label font-weight-bold text-dark">
+                                <i class="bx bx-task text-primary me-1"></i>{{ form.contractor_status.label }}
+                            </label>
+                            {{ form.contractor_status|add_class:"form-control form-control-modern" }}
+                            <div class="form-text small text-muted mt-2">Удерживайте Ctrl для выбора нескольких значений</div>
                             {% if form.contractor_status.errors %}
                                 <div class="text-danger small mt-1">{{ form.contractor_status.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
-                </div>
-                
-                <!-- Назн-лит -->
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-tag me-2 text-primary"></i>{{ form.dest_lit.label }}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <small class="text-muted d-block mb-2">
-                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
-                            </small>
-                            {{ form.dest_lit }}
+
+                    <!-- Dest Lit -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <label class="form-label font-weight-bold text-dark">
+                                <i class="bx bx-tag text-primary me-1"></i>{{ form.dest_lit.label }}
+                            </label>
+                            {{ form.dest_lit|add_class:"form-control form-control-modern" }}
+                            <div class="form-text small text-muted mt-2">Удерживайте Ctrl для выбора нескольких значений</div>
                             {% if form.dest_lit.errors %}
                                 <div class="text-danger small mt-1">{{ form.dest_lit.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
-                </div>
-                
-                <!-- Тип ВС -->
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-plane me-2 text-success"></i>{{ form.aircraft_type.label }}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <small class="text-muted d-block mb-2">
-                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
-                            </small>
-                            {{ form.aircraft_type }}
+
+                    <!-- Aircraft Type -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <label class="form-label font-weight-bold text-dark">
+                                <i class="bx bx-paper-plane text-primary me-1"></i>{{ form.aircraft_type.label }}
+                            </label>
+                            {{ form.aircraft_type|add_class:"form-control form-control-modern" }}
+                            <div class="form-text small text-muted mt-2">Удерживайте Ctrl для выбора нескольких значений</div>
                             {% if form.aircraft_type.errors %}
                                 <div class="text-danger small mt-1">{{ form.aircraft_type.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
-                </div>
-                
-                <!-- Уничтожен -->
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-trash me-2 text-danger"></i>{{ form.is_destroyed.label }}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            {{ form.is_destroyed }}
+
+                    <!-- Destroyed -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <label class="form-label font-weight-bold text-dark">
+                                <i class="bx bx-trash text-danger me-1"></i>{{ form.is_destroyed.label }}
+                            </label>
+                            {{ form.is_destroyed|add_class:"form-control form-control-modern" }}
                             {% if form.is_destroyed.errors %}
                                 <div class="text-danger small mt-1">{{ form.is_destroyed.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
-                </div>
-                
-                <!-- Инвентарные номера -->
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-barcode me-2 text-secondary"></i>{{ form.inventory_numbers.label }}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            {{ form.inventory_numbers }}
+
+                    <!-- Inventory Numbers List -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <label class="form-label font-weight-bold text-dark" for="{{ form.inventory_numbers.id_for_label }}">
+                                <i class="bx bx-barcode text-primary me-1"></i>{{ form.inventory_numbers.label }}
+                            </label>
+                            {{ form.inventory_numbers|add_class:"form-control form-control-modern" }}
                             {% if form.inventory_numbers.help_text %}
-                                <div class="form-text">{{ form.inventory_numbers.help_text }}</div>
+                                <div class="form-text small text-muted mt-2">{{ form.inventory_numbers.help_text }}</div>
                             {% endif %}
                             {% if form.inventory_numbers.errors %}
                                 <div class="text-danger small mt-1">{{ form.inventory_numbers.errors }}</div>
@@ -180,17 +152,16 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="mt-4">
-                <button type="submit" class="btn btn-success btn-lg me-2">
-                    <i class="fas fa-print me-1"></i>Сформировать этикетки
-                </button>
-                <a href="{% url 'ppequipment_app:index' %}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-home me-1"></i>На главную
-                </a>
-            </div>
-        </form>
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-4 mt-3 border-top">
+                    <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Отмена
+                    </a>
+                    <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                        <i class="bx bx-printer me-1"></i> Сформировать этикетки
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 {% endblock %}

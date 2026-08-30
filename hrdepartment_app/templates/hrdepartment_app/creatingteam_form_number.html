@@ -1,9 +1,24 @@
-<{% extends 'customers_app/main.html' %}
+{% extends 'customers_app/main.html' %}
+<
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
 
 {% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+    }
+</style>
+
 {% endblock %}
 
 {% block custom_script %}
@@ -55,11 +70,11 @@
                     </section>
                 </div>
             </div>
-            <div class="row action-buttons">
+            <div class="row action-buttons d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mt-4 bg-light rounded border">
 
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
+                            class="btn btn-outline-primary btn-touch font-weight-bold py-3 d-flex
                        align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
@@ -67,14 +82,14 @@
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'hrdepartment_app:team_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                       class="btn btn-outline-dark btn-touch py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
                         <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
                     </div>

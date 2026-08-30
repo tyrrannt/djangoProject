@@ -3,15 +3,40 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    Аналитический дашборд руководителя // Отдел кадров
 {% endblock %}
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+        }
+        .metric-card {
+            border-radius: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            min-height: 280px;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
@@ -20,105 +45,176 @@
 {% endblock %}
 
 {% block content %}
-    <!-- Форма фильтрации -->
-    <div class="filter-section mb-4">
-        <form method="get" class="form-inline">
-            <div class="form-group mr-3">
-                <label for="year" class="mr-2">Год:</label>
-                <select name="year" id="year" class="form-control">
-                    {% for year in available_years %}
-                        <option value="{{ year }}"
-                                {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
-                    {% endfor %}
-                </select>
-                <label for="month" class="mr-2">Месяц:</label>
-                <select name="month" id="month" class="form-control">
-                    <option value="">Все месяцы</option>
-                    {% for month_num, month_name in months %}
-                        <option value="{{ month_num }}"
-                                {% if selected_month and month_num == selected_month|add:0 %}selected{% endif %}>
-                            {{ month_name }}
-                        </option>
-                    {% endfor %}
-                </select>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-pie-chart-alt-2 text-primary me-2"></i>Аналитика служебных поездок {% if selected_month %}{{ selected_month_name }} {% endif %}{{ selected_year }} года
+                    </h3>
+                    <p class="text-muted small mb-0">Данные за {% if selected_month %}{{ selected_month_name }} {{ selected_year }}{% else %}{{ selected_year }} год{% endif %}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'hrdepartment_app:export_trips' %}?year={{ selected_year }}{% if selected_month %}&month={{ selected_month }}{% endif %}" class="btn btn-primary btn-touch font-weight-bold">
+                        <i class="bx bx-export me-1"></i> Экспорт данных (CSV)
+                    </a>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary mr-2">Применить</button>
-            <a href="{% url 'hrdepartment_app:management_dashboard' %}" class="btn btn-secondary">Сбросить</a>
-        </form>
+
+            <!-- Filter Card -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-filter-alt text-primary me-2"></i>Параметры фильтрации
+                    </h5>
+                </header>
+                <div class="card-body p-3">
+                    <form method="get" class="m-0">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-3">
+                                <label for="year" class="form-label font-weight-bold text-dark small">Год</label>
+                                <select name="year" id="year" class="form-control form-control-modern">
+                                    {% for year in available_years %}
+                                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="month" class="form-label font-weight-bold text-dark small">Месяц</label>
+                                <select name="month" id="month" class="form-control form-control-modern">
+                                    <option value="">Все месяцы</option>
+                                    {% for month_num, month_name in months %}
+                                        <option value="{{ month_num }}" {% if selected_month and month_num == selected_month|add:0 %}selected{% endif %}>
+                                            {{ month_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-5 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold flex-grow-1">
+                                    <i class="bx bx-check me-1"></i> Применить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:management_dashboard' %}" class="btn btn-outline-secondary btn-touch">
+                                    <i class="bx bx-reset me-1"></i> Сбросить
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- KPI Metric Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="card card-modern shadow-sm border-0 metric-card">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small text-uppercase font-weight-bold mb-1">Всего поездок</div>
+                                <div class="fs-2 fw-bold text-primary">{{ total_trips }}</div>
+                            </div>
+                            <div class="p-3 bg-primary bg-opacity-10 rounded-circle text-primary">
+                                <i class="bx bx-briefcase fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card card-modern shadow-sm border-0 metric-card">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small text-uppercase font-weight-bold mb-1">Активные поездки</div>
+                                <div class="fs-2 fw-bold text-warning">{{ active_trips }}</div>
+                            </div>
+                            <div class="p-3 bg-warning bg-opacity-10 rounded-circle text-warning">
+                                <i class="bx bx-run fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card card-modern shadow-sm border-0 metric-card">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small text-uppercase font-weight-bold mb-1">Общие расходы</div>
+                                <div class="fs-2 fw-bold text-success">{{ total_expenses|floatformat:2 }} ₽</div>
+                            </div>
+                            <div class="p-3 bg-success bg-opacity-10 rounded-circle text-success">
+                                <i class="bx bx-ruble fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="card card-modern shadow-sm border-0 h-100">
+                        <header class="card-header bg-light py-3">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="bx bx-pie-chart text-primary me-2"></i>Распределение по типам поездок
+                            </h5>
+                        </header>
+                        <div class="card-body p-4">
+                            <div class="chart-wrapper">
+                                <canvas id="tripTypesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="card card-modern shadow-sm border-0 h-100">
+                        <header class="card-header bg-light py-3">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="bx bx-doughnut-chart text-primary me-2"></i>Статусы документов
+                            </h5>
+                        </header>
+                        <div class="card-body p-4">
+                            <div class="chart-wrapper">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card card-modern shadow-sm border-0">
+                        <header class="card-header bg-light py-3">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="bx bx-map-pin text-primary me-2"></i>Распределение сотрудников по МПД
+                            </h5>
+                        </header>
+                        <div class="card-body p-4">
+                            <div class="chart-wrapper" style="min-height: 320px;">
+                                <canvas id="mpdChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card card-modern shadow-sm border-0">
+                        <header class="card-header bg-light py-3">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="bx bx-line-chart text-primary me-2"></i>Динамика поездок и расходов по месяцам {{ selected_year }} года
+                            </h5>
+                        </header>
+                        <div class="card-body p-4">
+                            <div class="chart-wrapper" style="min-height: 340px;">
+                                <canvas id="monthlyTrendsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Экспорт данных -->
-    <a href="{% url 'hrdepartment_app:export_trips' %}?year=
-                {{ selected_year }}{% if selected_month %}&month={{ selected_month }}{% endif %}"
-       class="btn btn-primary mb-4">
-        Экспорт данных
-    </a>
-
-    <div class="dashboard-container">
-        <h1>Аналитика служебных поездок
-            {% if selected_month %}{{ selected_month_name }} {% endif %}{{ selected_year }} года</h1>
-        <p class="description">Данные отображаются за
-            {% if selected_month %}{{ selected_month_name }} {{ selected_year }}{% else %}{{ selected_year }}
-                год{% endif %}</p>
-
-        <!-- Основные метрики -->
-        <div class="metrics-row">
-            <div class="metric-card">
-                <h3>Всего поездок</h3>
-                <p>{{ total_trips }}</p>
-            </div>
-            <div class="metric-card">
-                <h3>Активные поездки</h3>
-                <p>{{ active_trips }}</p>
-            </div>
-            <div class="metric-card">
-                <h3>Общие расходы</h3>
-                <p>{{ total_expenses|floatformat:2 }} ₽</p>
-            </div>
-        </div>
-
-        <!-- Графики -->
-        <div class="charts-row">
-            <div class="chart-card">
-                <h3>Распределение по типам поездок</h3>
-                <div class="chart-wrapper">
-                    <canvas id="tripTypesChart"></canvas>
-                </div>
-            </div>
-            <div class="chart-card">
-                <h3>Статусы документов</h3>
-                <div class="chart-wrapper">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="charts-row">
-            <div class="chart-card">
-                <h3>Распределение по МПД</h3>
-                <div class="chart-wrapper">
-                    <canvas id="mpdChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="chart-card full-width">
-            <h3>Динамика поездок по месяцам {{ selected_year }} года</h3>
-            <div class="chart-wrapper">
-                <canvas id="monthlyTrendsChart"></canvas>
-            </div>
-        </div>
-
-    </div>
+    <!-- end: page -->
 
     <script>
-        // Общая конфигурация для всех графиков
         Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
         Chart.defaults.font.size = 12;
-        Chart.defaults.aspectRatio = 1.5;
 
-        // Функция для создания адаптивных графиков
         function createChart(elementId, config) {
             const ctx = document.getElementById(elementId).getContext('2d');
             return new Chart(ctx, {
@@ -137,7 +233,7 @@
                                     const label = context.label || '';
                                     const value = context.raw || 0;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((value / total) * 100);
+                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                     return `${label}: ${value} (${percentage}%)`;
                                 }
                             }
@@ -147,7 +243,6 @@
             });
         }
 
-        // График типов поездок
         createChart('tripTypesChart', {
             type: 'pie',
             data: {
@@ -158,28 +253,26 @@
                 ],
                 datasets: [{
                     data: [{% for type in trip_types %}{{ type.count }}, {% endfor %}],
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    backgroundColor: ['#0088cc', '#2baab1', '#e36159', '#734ba9', '#e2a03f']
                 }]
             }
         });
 
-        // График статусов
         createChart('statusChart', {
             type: 'doughnut',
             data: {
                 labels: ['На согласовании', 'Утверждено', 'Отклонено'],
                 datasets: [{
                     data: [
-                        {{ status_stats.awaiting_approval }},
-                        {{ status_stats.approved }},
-                        {{ status_stats.rejected }}
+                        {{ status_stats.awaiting_approval|default:0 }},
+                        {{ status_stats.approved|default:0 }},
+                        {{ status_stats.rejected|default:0 }}
                     ],
-                    backgroundColor: ['#FF9F40', '#4BC0C0', '#FF6384']
+                    backgroundColor: ['#e2a03f', '#2baab1', '#e36159']
                 }]
             }
         });
 
-        // График МПД
         createChart('mpdChart', {
             type: 'bar',
             data: {
@@ -195,8 +288,8 @@
                             {{ count }},
                         {% endfor %}
                     ],
-                    backgroundColor: '#4BC0C0',
-                    borderColor: '#36A2EB',
+                    backgroundColor: '#0088cc',
+                    borderColor: '#006699',
                     borderWidth: 1
                 }]
             },
@@ -235,7 +328,6 @@
             }
         });
 
-        // График трендов
         createChart('monthlyTrendsChart', {
             type: 'bar',
             data: {
@@ -251,8 +343,8 @@
                                 {{ month.count }},
                             {% endfor %}
                         ],
-                        borderColor: '#36A2EB',
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: '#0088cc',
+                        backgroundColor: 'rgba(0, 136, 204, 0.6)',
                         yAxisID: 'y'
                     },
                     {
@@ -262,8 +354,8 @@
                                 {{ month.expenses|default:0 }},
                             {% endfor %}
                         ],
-                        borderColor: '#FFCE56',
-                        backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                        borderColor: '#e2a03f',
+                        backgroundColor: 'rgba(226, 160, 63, 0.6)',
                         yAxisID: 'y1'
                     }
                 ]
@@ -290,150 +382,5 @@
                 }
             }
         });
-
-        // Автоматическая отправка формы при изменении выбора
-        document.getElementById('year').addEventListener('change', function () {
-            this.form.submit();
-        });
-        document.getElementById('month').addEventListener('change', function () {
-            this.form.submit();
-        });
-
-
     </script>
-
-    <style>
-        :root {
-            --card-bg: #ffffff;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            --primary-color: #4a6fa5;
-            --secondary-color: #666;
-            --padding: 16px;
-            --gap: 20px;
-        }
-
-        .dashboard-container {
-            padding: var(--padding);
-            max-width: 1200px;
-            margin: 0 auto;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .dashboard-container h1 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            font-size: 24px;
-        }
-
-        .description {
-            color: var(--secondary-color);
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-
-        .metrics-row {
-            display: flex;
-            gap: var(--gap);
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .metric-card {
-            flex: 1;
-            min-width: 150px;
-            padding: var(--padding);
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            text-align: center;
-        }
-
-        .metric-card h3 {
-            margin-top: 0;
-            color: var(--secondary-color);
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .metric-card p {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0 0;
-            color: var(--primary-color);
-        }
-
-        .charts-row {
-            display: flex;
-            gap: var(--gap);
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .chart-card {
-            flex: 1;
-            min-width: 300px;
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            padding: var(--padding);
-        }
-
-        .chart-card.full-width {
-            flex: 100%;
-        }
-
-        .chart-card h3 {
-            margin-top: 0;
-            margin-bottom: 16px;
-            color: var(--primary-color);
-            font-size: 16px;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            width: 100%;
-            min-height: 300px;
-        }
-
-        .filter-section {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .form-inline {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .form-group {
-            margin-right: 15px;
-            margin-bottom: 10px;
-        }
-
-        .mr-2 {
-            margin-right: 8px;
-        }
-
-        .mr-3 {
-            margin-right: 16px;
-        }
-
-        .mb-4 {
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .metrics-row, .charts-row {
-                flex-direction: column;
-            }
-
-            .metric-card, .chart-card {
-                min-width: 100%;
-            }
-        }
-    </style>
 {% endblock %}
