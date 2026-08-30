@@ -1,4 +1,4 @@
-я{% extends 'customers_app/main.html' %}
+{% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
 
@@ -7,20 +7,113 @@
 {% endblock %}
 
 {% block custom_css %}
-    <title>Мониторинг сервера</title>
-    {#  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">#}
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/jquery.easy-pie-chart/2.1.6/jquery.easy-pie-chart.min.css">
     <style>
-        .card {
-            margin-bottom: 20px;
+        .chart-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            height: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .chart-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 43, 73, 0.08);
+        }
+
+        .chart-box h5 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #002b49;
+            margin-top: 15px;
+            margin-bottom: 0;
         }
 
         .chart {
+            display: inline-block;
+            position: relative;
             text-align: center;
-            margin-top: 20px;
+            margin: 10px auto;
+        }
+
+        .chart span {
+            display: block;
+            line-height: 160px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #002b49;
         }
     </style>
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <section class="card card-modern">
+                <header class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="card-title text-primary"><i class="fas fa-server me-2"></i>Мониторинг параметров сервера</h2>
+                        <p class="card-subtitle text-muted">Анализ производительности аппаратных ресурсов и сетевого трафика в реальном времени</p>
+                    </div>
+                </header>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="chart-box">
+                                <div class="chart" id="cpu-chart" data-percent="0"><span>0</span>%</div>
+                                <h5><i class="fas fa-microchip text-primary me-2"></i>Загрузка CPU</h5>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="chart-box">
+                                <div class="chart" id="memory-chart" data-percent="0"><span>0</span>%</div>
+                                <h5><i class="fas fa-memory text-info me-2"></i>Оперативная память (RAM)</h5>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="chart-box">
+                                <div class="chart" id="disk-chart" data-percent="0"><span>0</span>%</div>
+                                <h5><i class="fas fa-hdd text-warning me-2"></i>Использование диска</h5>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="chart-box">
+                                <div class="chart" id="processes-chart" data-percent="0"><span>0</span></div>
+                                <h5><i class="fas fa-tasks text-success me-2"></i>Активные процессы</h5>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="chart-box">
+                                <div class="chart" id="connections-chart" data-percent="0"><span>0</span></div>
+                                <h5><i class="fas fa-network-wired text-secondary me-2"></i>Сетевые соединения</h5>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="chart-box">
+                                <div class="chart" id="cpu-temp-chart" data-percent="0"><span>0</span>°C</div>
+                                <h5><i class="fas fa-temperature-high text-danger me-2"></i>Температура CPU</h5>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="chart-box text-start p-4">
+                                <h5 class="mb-3 text-start"><i class="fas fa-chart-line text-primary me-2"></i>Сетевой трафик в реальном времени (Sent / Received)</h5>
+                                <div style="position: relative; height: 280px; width: 100%;">
+                                    <canvas id="network-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
@@ -30,8 +123,8 @@
         $(function () {
             // Инициализация easyPieChart для элементов с классом chart
             $('.chart').easyPieChart({
-                barColor: '#2ecc71',
-                trackColor: '#e6e6e6',
+                barColor: '#002b49',
+                trackColor: '#e2e8f0',
                 scaleColor: false,
                 lineWidth: 10,
                 lineCap: 'round',
@@ -46,18 +139,24 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Sent (MB)',
+                        label: 'Отправлено (MB)',
                         data: [],
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        fill: false
+                        borderColor: '#e11d48',
+                        backgroundColor: 'rgba(225, 29, 72, 0.1)',
+                        fill: true,
+                        tension: 0.3
                     }, {
-                        label: 'Received (MB)',
+                        label: 'Получено (MB)',
                         data: [],
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        fill: false
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        fill: true,
+                        tension: 0.3
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         x: {
                             type: 'linear',
@@ -67,89 +166,65 @@
                 }
             });
 
-            const ws = new WebSocket('wss://' + window.location.host + '/ws/monitor/');
+            function connectMonitorWS() {
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                const ws = new WebSocket(wsProtocol + window.location.host + '/ws/monitor/');
 
-            ws.onmessage = function (event) {
-                const data = JSON.parse(event.data);
-                $('#cpu-chart').data('easyPieChart').update(data.cpu_percent);
-                $('#cpu-chart span').text(data.cpu_percent);
-                $('#memory-chart').data('easyPieChart').update(data.memory_percent);
-                $('#memory-chart span').text(data.memory_percent);
-                $('#disk-chart').data('easyPieChart').update(data.disk_percent);
-                $('#disk-chart span').text(data.disk_percent);
-                $('#processes-chart').data('easyPieChart').update(data.processes);
-                $('#processes-chart span').text(data.processes);
-                $('#connections-chart').data('easyPieChart').update(data.connections);
-                $('#connections-chart span').text(data.connections);
+                ws.onmessage = function (event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.cpu_percent !== undefined) {
+                            $('#cpu-chart').data('easyPieChart').update(data.cpu_percent);
+                            $('#cpu-chart span').text(data.cpu_percent);
+                        }
+                        if (data.memory_percent !== undefined) {
+                            $('#memory-chart').data('easyPieChart').update(data.memory_percent);
+                            $('#memory-chart span').text(data.memory_percent);
+                        }
+                        if (data.disk_percent !== undefined) {
+                            $('#disk-chart').data('easyPieChart').update(data.disk_percent);
+                            $('#disk-chart span').text(data.disk_percent);
+                        }
+                        if (data.processes !== undefined) {
+                            $('#processes-chart').data('easyPieChart').update(data.processes);
+                            $('#processes-chart span').text(data.processes);
+                        }
+                        if (data.connections !== undefined) {
+                            $('#connections-chart').data('easyPieChart').update(data.connections);
+                            $('#connections-chart span').text(data.connections);
+                        }
+                        if (data.cpu_temp !== null && data.cpu_temp !== undefined) {
+                            $('#cpu-temp-chart').data('easyPieChart').update(data.cpu_temp);
+                            $('#cpu-temp-chart span').text(data.cpu_temp + '°C');
+                        }
 
-                if (data.cpu_temp !== null) {
-                    $('#cpu-temp-chart').data('easyPieChart').update(data.cpu_temp);
-                    $('#cpu-temp-chart span').text(data.cpu_temp + '°C');
-                }
+                        // Обновление данных для сетевого трафика
+                        if (data.net_sent !== undefined && data.net_recv !== undefined) {
+                            networkChart.data.labels.push(networkChart.data.labels.length + 1);
+                            networkChart.data.datasets[0].data.push(data.net_sent);
+                            networkChart.data.datasets[1].data.push(data.net_recv);
+                            if (networkChart.data.labels.length > 20) {
+                                networkChart.data.labels.shift();
+                                networkChart.data.datasets[0].data.shift();
+                                networkChart.data.datasets[1].data.shift();
+                            }
+                            networkChart.update();
+                        }
+                    } catch (e) {
+                        console.debug('Monitor WS parse error:', e);
+                    }
+                };
 
-                // Обновление данных для сетевого трафика
-                networkChart.data.labels.push(networkChart.data.labels.length + 1);
-                networkChart.data.datasets[0].data.push(data.net_sent);
-                networkChart.data.datasets[1].data.push(data.net_recv);
-                networkChart.update();
-            };
+                ws.onerror = function (err) {
+                    console.warn('Monitor WS error:', err);
+                };
+
+                ws.onclose = function () {
+                    setTimeout(connectMonitorWS, 5000);
+                };
+            }
+
+            connectMonitorWS();
         });
     </script>
-{% endblock %}
-
-{% block content %}
-    <!-- start: page -->
-    <div class="container">
-        <h1 class="mt-4">Мониторинг сервера</h1>
-        <section class="card">
-            <header class="card-header">
-                <div class="card-actions">
-                    <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                    <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>
-                </div>
-                <h2 class="card-title">Server Usage</h2>
-                <p class="card-subtitle">It's easy to create custom graphs on Porto Admin Template, there are several
-                    graph types that you can use.</p>
-            </header>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="chart" id="cpu-chart" data-percent="0"><span>0</span>%</div>
-                        <h4 class="text-center">CPU Usage</h4>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="chart" id="memory-chart" data-percent="0"><span>0</span>%</div>
-                        <h4 class="text-center">Memory Usage</h4>
-                    </div>
-                </div>
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="chart" id="disk-chart" data-percent="0"><span>0</span>%</div>
-                        <h4 class="text-center">Disk Usage</h4>
-                    </div>
-                    <div class="col-md-6">
-                        <canvas id="network-chart" width="400" height="400"></canvas>
-                        <h4 class="text-center">Network Traffic</h4>
-                    </div>
-                </div>
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="chart" id="processes-chart" data-percent="0"><span>0</span></div>
-                        <h4 class="text-center">Processes</h4>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="chart" id="connections-chart" data-percent="0"><span>0</span></div>
-                        <h4 class="text-center">Connections</h4>
-                    </div>
-                </div>
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="chart" id="cpu-temp-chart" data-percent="0"><span>0</span>°C</div>
-                        <h4 class="text-center">CPU Temperature</h4>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-    <!-- end: page -->
 {% endblock %}

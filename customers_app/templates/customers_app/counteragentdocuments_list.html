@@ -3,64 +3,72 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Документы контрагентов" }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:documents_add' %}"
-                                               class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить документ </a>
-                                        </div>
-                                </div>
-                            </div>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
-                                    <th width="10%">Файл</th>
-                                    <th width="45%">Описание</th>
-                                    <th width="45%">Контрагент</th>
-                                </tr>
-                                </thead>
-                            </table>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-folder-open text-primary me-2"></i>Документы контрагентов
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Архив уставных и регистрационных документов контрагентов</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'customers_app:documents_add' %}" class="btn btn-primary btn-touch">
+                        <i class="bx bx-plus me-1"></i> Добавить документ
+                    </a>
+                    <a href="{% url 'customers_app:counteragent_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> К контрагентам
+                    </a>
+                </div>
+            </div>
 
-                            <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                        </div>
-                    </div>
-
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-body p-4">
+                    <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="15%">Файл</th>
+                                <th width="45%">Описание документа</th>
+                                <th width="40%">Контрагент</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
@@ -68,11 +76,10 @@
         $(document).ready(function () {
             $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+                $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm" />');
             });
             var table = $('#datatable-ecommerce-list').DataTable({
                 "initComplete": function () {
-                    // Apply the search
                     this.api()
                         .columns()
                         .every(function () {
@@ -109,6 +116,5 @@
                 ],
             });
         });
-
     </script>
 {% endblock %}

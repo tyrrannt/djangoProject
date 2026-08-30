@@ -1,42 +1,52 @@
 {% load static %}
-<div class="d-none d-md-block">
-    <h4 class="mb-3 mt-0 font-weight-semibold text-dark">Статистика портала</h4>
-    <ul class="simple-card-list mb-3">
-        <li class="primary">
-            <h4>{{ sp }} - Активных, {{ spf }} - Отменено</h4>
-            <p class="text-light"><a href="{% url 'hrdepartment_app:memo_list' %}" title="Список служебных записок"
-                                     style="color: #FFFFFF; text-decoration: none"><b>Служебных записок</b></a></p>
-        </li>
-        <li class="primary">
-            <h4>{{ bp }} - Активных, {{ bpf }} - Отменено</h4>
-            <p class="text-light"><a href="{% url 'hrdepartment_app:bpmemo_list' %}" title="Список служебных записок"
-                                     style="color: #FFFFFF; text-decoration: none"><b>Запущено бизнес-процессов</b></a>
-            </p>
-        </li>
-        <li class="primary">
-            <h4>{{ contract }}</h4>
-            <p class="text-light"><a href="{% url 'contracts_app:index' %}" title="Список служебных записок"
-                                     style="color: #FFFFFF; text-decoration: none"><b>Договоров в базе</b></a></p>
-        </li>
-    </ul>
-</div>
-<div class="d-none d-md-block">
-    <h4 class="mb-3 mt-4 pt-2 font-weight-semibold text-dark">Проекты в работе</h4>
-    <ul class="simple-bullet-list mb-3">
-        <li class="red">
-            <span class="title">Раздел договоров</span>
-            <span class="description truncate">Ведётся подгрузка файлов.</span>
-            <span class="description truncate">Введён блок "Ученические договора"</span>
-        </li>
-        <li class="green">
-            <span class="title">Раздел документации</span>
-            <span class="description truncate">Должностные инструкции. Дорабатывается процесс заведения документов.</span>
-            <span class="description truncate">Руководящие документы. Дорабатывается процесс заведения документов.</span>
-        </li>
-        <li class="blue">
-            <span class="title">Раздел ЭДО</span>
-            <span class="description truncate">Приступил к разработке блока квартир (Ведение учета занятости квартир).</span>
-            <span class="description truncate">Приступил к разработке блока логистики (отправка/прием посылок на/с МПД).</span>
-        </li>
-    </ul>
+<div class="card card-modern shadow-sm border-0 mb-4">
+    <div class="card-body p-3">
+        <h5 class="mb-3 font-weight-bold text-dark">
+            <i class="fas fa-chart-pie text-primary me-2"></i>Статистика портала
+        </h5>
+        <div class="d-flex flex-column gap-2 mb-3">
+            <a href="{% url 'hrdepartment_app:memo_list' %}" class="p-2 rounded bg-light text-decoration-none border d-block">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold text-dark small">Служебные записки</span>
+                    <span class="badge bg-primary">{{ sp|default:"0" }} активных</span>
+                </div>
+                <small class="text-muted d-block mt-1">Отменено: {{ spf|default:"0" }}</small>
+            </a>
+
+            <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="p-2 rounded bg-light text-decoration-none border d-block">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold text-dark small">Бизнес-процессы</span>
+                    <span class="badge bg-info text-dark">{{ bp|default:"0" }} активных</span>
+                </div>
+                <small class="text-muted d-block mt-1">Отменено: {{ bpf|default:"0" }}</small>
+            </a>
+
+            <a href="{% url 'contracts_app:index' %}" class="p-2 rounded bg-light text-decoration-none border d-block">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold text-dark small">Договоры в базе</span>
+                    <span class="badge bg-success">{{ contract|default:"0" }}</span>
+                </div>
+            </a>
+        </div>
+
+        <hr class="my-3">
+
+        <h5 class="mb-3 font-weight-bold text-dark">
+            <i class="fas fa-tasks text-primary me-2"></i>Проекты в работе
+        </h5>
+        <div class="small">
+            <div class="mb-2 pb-2 border-bottom">
+                <div class="fw-bold text-dark"><i class="fas fa-circle text-danger me-1 small"></i> Раздел договоров</div>
+                <div class="text-muted ps-3">Ведётся подгрузка файлов. Введён блок «Ученические договора».</div>
+            </div>
+            <div class="mb-2 pb-2 border-bottom">
+                <div class="fw-bold text-dark"><i class="fas fa-circle text-success me-1 small"></i> Раздел документации</div>
+                <div class="text-muted ps-3">Должностные инструкции и руководящие документы.</div>
+            </div>
+            <div>
+                <div class="fw-bold text-dark"><i class="fas fa-circle text-primary me-1 small"></i> Раздел ЭДО</div>
+                <div class="text-muted ps-3">Учет занятости квартир и логистика (отправка/прием посылок).</div>
+            </div>
+        </div>
+    </div>
 </div>

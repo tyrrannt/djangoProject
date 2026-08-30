@@ -7,41 +7,60 @@
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <h2 class="card-title mb-4">Импорт JSON</h2>
-                                <form method="post" enctype="multipart/form-data">
-                                    {% csrf_token %}
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="contragent"
-                                               id="id_contragent">
-                                        <label class="form-check-label" for="id_contragent">
-                                            Контрагенты
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="contract"
-                                               id="id_contract">
-                                        <label class="form-check-label" for="id_contract">
-                                            Договора
-                                        </label>
-                                    </div>
-                                    <input class="form-control mb-4" type="file" name="json_file" id="id_json_file">
-                                    <button type="submit"
-                                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
-                                            data-loading-text="Loading...">ИМПОРТ
-                                    </button>
-                                </form>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <section class="card card-modern">
+                <header class="card-header">
+                    <h2 class="card-title text-primary"><i class="fas fa-file-import me-2"></i>Импорт данных из JSON</h2>
+                    <p class="card-subtitle text-muted">Загрузка структуры контрагентов или договоров из внешнего JSON-файла</p>
+                </header>
+                <div class="card-body p-4">
+                    {% if error %}
+                        <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                            <i class="fas fa-exclamation-circle fs-5 me-2"></i>
+                            <div>{{ error }}</div>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">Категория импорта:</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="contragent" id="id_contragent" checked>
+                                    <label class="form-check-label" for="id_contragent">
+                                        <i class="fas fa-users text-primary me-1"></i> Контрагенты
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="contract" id="id_contract">
+                                    <label class="form-check-label" for="id_contract">
+                                        <i class="fas fa-file-contract text-info me-1"></i> Договора
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
-            </div>
+
+                        <div class="mb-4">
+                            <label for="id_json_file" class="form-label font-weight-semibold">Выберите файл JSON:</label>
+                            <input class="form-control" type="file" name="json_file" id="id_json_file" accept=".json" required>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold">
+                                <i class="fas fa-upload me-2"></i>Загрузить данные
+                            </button>
+                            <a href="{% url 'administration_app:property_list' %}" class="btn btn-outline-secondary px-3 py-2">
+                                <i class="fas fa-arrow-left me-1"></i>Назад
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </section>
         </div>
-        <!-- end: page -->
+    </div>
+    <!-- end: page -->
 {% endblock %}
+

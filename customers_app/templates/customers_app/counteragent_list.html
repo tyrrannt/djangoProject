@@ -1,89 +1,80 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}
     {{ title }}
 {% endblock %}
 
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_staff %}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:counteragent_add' %}"
-                                               class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить контрагента </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:counteragent_list' %}?update=0"
-                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-sync text-4 me-2' ></i> Синхронизация с 1С </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:duplicates_report' %}"
-                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-sync text-4 me-2' ></i> Проверка дубликатов </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
-                                    <th width="37%">Контрагент</th>
-                                    <th width="12%">ИНН</th>
-                                    <th width="12%">КПП</th>
-                                    <th width="30%">Юр. адрес</th>
-                                </tr>
-                                </thead>
-                            </table>
-
-                            <hr class="solid mt-5 opacity-4">
-
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">
-                                                <select class="form-control select-style-1 bulk-action"
-                                                        name="bulk-action" style="min-width: 170px;">
-                                                    <option value="" selected>Редактировать</option>
-                                                    <option value="delete">Удалить</option>
-                                                </select>
-                                                <a href="#"
-                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                        </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-building text-primary me-2"></i>Справочник: Контрагенты
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Реестр юридических и физических лиц, партнеров и заказчиков</p>
+                </div>
+                {% if user.is_staff %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'customers_app:counteragent_add' %}" class="btn btn-primary btn-touch">
+                            <i class="bx bx-plus me-1"></i> Добавить контрагента
+                        </a>
+                        <a href="{% url 'customers_app:counteragent_list' %}?update=0" class="btn btn-outline-primary btn-touch">
+                            <i class="bx bx-sync me-1"></i> Синхронизация с 1С
+                        </a>
+                        <a href="{% url 'customers_app:duplicates_report' %}" class="btn btn-outline-info btn-touch">
+                            <i class="fas fa-clone me-1"></i> Проверка дубликатов
+                        </a>
                     </div>
+                {% endif %}
+            </div>
 
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-body p-4">
+                    <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="35%">Контрагент</th>
+                                <th width="15%">ИНН</th>
+                                <th width="15%">КПП</th>
+                                <th width="35%">Юр. адрес</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}

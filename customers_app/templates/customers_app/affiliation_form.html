@@ -3,114 +3,73 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Принадлежность" }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_staff %}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:divisions_add' %}"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить подразделение </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:divisions_list' %}?update=0"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить список </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <form method="post">
-                                {% csrf_token %}
-                                {{ form.as_p }}
-                                <button type="submit"
-                                        class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                                        data-loading-text="Loading...">
-                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                                </button>
-                            </form>
-                            <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card card-modern shadow-sm border-0">
+                <header class="card-header bg-light">
+                    <h2 class="card-title text-primary mb-0">
+                        <i class="fas fa-sitemap me-2"></i>{{ title|default:"Принадлежность" }}
+                    </h2>
+                    <p class="card-subtitle text-muted mb-0">Управление справочником принадлежности</p>
+                </header>
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                        <div class="alert alert-danger mb-4">
+                            <h6 class="alert-heading font-weight-bold mb-2">Пожалуйста, исправьте ошибки:</h6>
+                            <ul class="mb-0 ps-3 small">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
                         </div>
-                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label font-weight-semibold">Наименование принадлежности <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="id_name" class="form-control" value="{{ form.name.value|default:'' }}" required placeholder="Введите название...">
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn btn-primary btn-touch">
+                                <i class="bx bx-save me-1"></i> Сохранить
+                            </button>
+                            <a href="{% url 'customers_app:affiliation-list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-
-{% endblock %}
-
-{% block custom_script %}
-    <script>
-        $(document).ready(function () {
-            $('#datatable-ecommerce-list thead th').each(function () {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
-            });
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
-                            $('input', this.header()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
-                        });
-                },
-                "scrollX": true,
-                "sDom": 'BT<"clear">lrtip',
-                "buttons": [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
-                ],
-                "ajax": "{% url 'customers_app:divisions_list' %}",
-                "language": {
-                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
-                },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
-                    $(nRow).attr("href", id + '/update/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
-                    });
-                },
-                "columns": [
-                    {"data": "code"},
-                    {"data": "name"},
-                    {"data": "parent_category"},
-                ],
-            });
-        });
-
-    </script>
+    </div>
+    <!-- end: page -->
 {% endblock %}

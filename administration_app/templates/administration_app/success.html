@@ -7,27 +7,49 @@
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <h2>Данные успешно обработаны</h2>    
-            </div>
-            {% if updated %}
-                <div class="alert alert-success" role="alert">
-                    <p>Обновлено записей: {{ updated }}</p>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <section class="card card-modern">
+                <header class="card-header">
+                    <h2 class="card-title text-success"><i class="fas fa-check-circle me-2"></i>Результат обработки данных</h2>
+                    <p class="card-subtitle text-muted">Отчет о выполнении операции импорта / синхронизации</p>
+                </header>
+                <div class="card-body p-4">
+                    {% if updated %}
+                        <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                            <i class="fas fa-sync-alt fs-5 me-2"></i>
+                            <div>Обновлено записей: <strong>{{ updated }}</strong></div>
+                        </div>
+                    {% endif %}
+                    {% if create %}
+                        <div class="alert alert-primary d-flex align-items-center mb-3" role="alert">
+                            <i class="fas fa-plus-circle fs-5 me-2"></i>
+                            <div>Загружено новых записей: <strong>{{ create }}</strong></div>
+                        </div>
+                    {% endif %}
+                    {% if error %}
+                        <div class="alert alert-warning mb-3" role="alert">
+                            <h5 class="alert-heading font-weight-semibold mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Сообщение системы / предупреждения:</h5>
+                            <div>{{ error }}</div>
+                        </div>
+                    {% endif %}
+
+                    {% if not updated and not create and not error %}
+                        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                            <i class="fas fa-info-circle fs-5 me-2"></i>
+                            <div>Операция успешно передана на выполнение в фоновую очередь задач.</div>
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <a href="{% url 'administration_app:property_list' %}" class="btn btn-primary px-4 py-2 font-weight-semibold">
+                            <i class="fas fa-arrow-left me-2"></i>Вернуться в панель управления
+                        </a>
+                    </div>
                 </div>
-            {% endif %}
-            {% if create %}
-                <div class="alert alert-primary" role="alert">
-                    <p>Загружено новых записей: {{ create }}</p>
-                </div>
-            {% endif %}
-            {% if error %}
-                <div class="alert alert-danger" role="alert">
-                    <h3>Но имеются ошибки:</h3>
-                    {{ error }}
-                </div>
-            {% endif %}
+            </section>
         </div>
-        <!-- end: page -->
+    </div>
+    <!-- end: page -->
 {% endblock %}

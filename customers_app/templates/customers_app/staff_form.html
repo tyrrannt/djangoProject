@@ -52,36 +52,46 @@
             return result.sort(() => Math.random() - 0.5).join('');
         }
 
-        document.getElementById('generate_email_btn_int').addEventListener('click', function () {
-            const firstName = document.getElementById('id_first_name').value.trim();
-            const lastName = document.getElementById('id_last_name').value.trim();
+        document.addEventListener('DOMContentLoaded', function () {
+            const btnInt = document.getElementById('generate_email_btn_int');
+            if (btnInt) {
+                btnInt.addEventListener('click', function () {
+                    const firstNameElem = document.getElementById('id_first_name');
+                    const lastNameElem = document.getElementById('id_last_name');
+                    const firstName = firstNameElem ? firstNameElem.value.trim() : '';
+                    const lastName = lastNameElem ? lastNameElem.value.trim() : '';
 
-            if (!firstName || !lastName) {
-                alert("Сначала заполните Имя и Фамилию");
-                return;
+                    if (!firstName || !lastName) {
+                        alert("Сначала заполните Имя и Фамилию");
+                        return;
+                    }
+
+                    const firstInitial = transliterate(firstName)[0];
+                    const lastNameTrans = transliterate(lastName);
+                    const email = `${firstInitial}.${lastNameTrans}@barkol.ru`;
+
+                    const internal_password = generatePassword(8);
+                    const emailElem = document.getElementById('id_email');
+                    if (emailElem) emailElem.value = email;
+                    const pwdFieldInt = document.getElementById('id_work_email_password');
+                    if (pwdFieldInt) {
+                        pwdFieldInt.value = internal_password;
+                    }
+                });
             }
 
-            const firstInitial = transliterate(firstName)[0];
-            const lastNameTrans = transliterate(lastName);
-            const email = `${firstInitial}.${lastNameTrans}@barkol.ru`;
-
-            const internal_password = generatePassword(8);
-            document.getElementById('id_email').value = email;
-            const pwdFieldInt = document.getElementById('id_work_email_password');
-            if (pwdFieldInt) {
-                pwdFieldInt.value = internal_password;
-            }
-        });
-        document.getElementById('generate_email_btn_ext').addEventListener('click', function () {
-            const external_password = generatePassword(16);
-            const pwdFieldExt = document.getElementById('id_work_application_password');
-            if (pwdFieldExt) {
-                pwdFieldExt.value = external_password;
+            const btnExt = document.getElementById('generate_email_btn_ext');
+            if (btnExt) {
+                btnExt.addEventListener('click', function () {
+                    const external_password = generatePassword(16);
+                    const pwdFieldExt = document.getElementById('id_work_application_password');
+                    if (pwdFieldExt) {
+                        pwdFieldExt.value = external_password;
+                    }
+                });
             }
         });
     </script>
-
-
 {% endblock %}
 
 {% block title %}

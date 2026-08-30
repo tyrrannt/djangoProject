@@ -1,177 +1,115 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
 
 {% block title %}
-    {{ title }}
+    {{ object.name }} // Должность
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc"><strong>{{ object.name }}</strong></p>
-                                    <p class="text-muted mb-0">{{ object.get_type_of_job_display }}</p>
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_ref_key">Уникальный номер</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_ref_key" class="form-control form-control-modern"
-                                                   name="ref_key" value="{{ object.ref_key }}" disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_code">Код должности</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_code" class="form-control form-control-modern"
-                                                   name="code" value="{{ object.code }}" disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_type">Принадлежность</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_type" class="form-control form-control-modern"
-                                                   value="{{ object.get_type_of_job_display }}" disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_division">Подразделение</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_division" class="form-control form-control-modern"
-                                                   value="{% if object.division_affiliation %}{{ object.division_affiliation.name }}{% endif %}"
-                                                   disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_date_entry">Дата ввода</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_date_entry"
-                                                   class="form-control form-control-modern"
-                                                   value="{{ object.date_entry|date:'d.m.Y' }}" disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_date_excl">Дата исключения</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_date_excl"
-                                                   class="form-control form-control-modern"
-                                                   value="{{ object.date_exclusions|date:'d.m.Y' }}" disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_excluded">Исключена из штатного расписания</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_excluded" class="form-control form-control-modern"
-                                                   value="{% if object.excluded_standard_spelling %}Да{% else %}Нет{% endif %}"
-                                                   disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_function">Трудовая функция</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_function" class="form-control form-control-modern"
-                                                   value="{{ object.employment_function }}" disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_harmful">Вредные условия</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_harmful" class="form-control form-control-modern"
-                                                   value="{% for h in object.harmful.all %}{{ h.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
-                                                   disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_approval">Право на согласование</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_approval" class="form-control form-control-modern"
-                                                   value="{% if object.right_to_approval %}Да{% else %}Нет{% endif %}"
-                                                   disabled/>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
-                                               for="id_groups">Группы должности</label>
-                                        <div class="col-lg-9 col-xl-4">
-                                            <input type="text" id="id_groups" class="form-control form-control-modern"
-                                                   value="{% for g in object.group.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
-                                                   disabled/>
-                                        </div>
-                                    </div>
-                                </div>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light">
+                    <h2 class="card-title text-primary mb-0">
+                        <i class="fas fa-briefcase me-2"></i>{{ object.name }}
+                    </h2>
+                    <p class="card-subtitle text-muted mb-0">Сведения о должности компании</p>
+                </header>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Код должности</label>
+                            <div class="p-2 bg-light rounded fw-semibold text-dark">{{ object.code|default:"—" }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Уникальный номер (GUID)</label>
+                            <div class="p-2 bg-light rounded text-dark small font-monospace">{{ object.ref_key|default:"—" }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Наименование должности</label>
+                            <div class="p-2 bg-light rounded fw-bold text-dark">{{ object.name }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Принадлежность</label>
+                            <div class="p-2 bg-light rounded text-dark">{{ object.get_type_of_job_display|default:"—" }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Подразделение</label>
+                            <div class="p-2 bg-light rounded text-dark">
+                                {% if object.division_affiliation %}
+                                    {{ object.division_affiliation.name }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                {% if perms.customers_app.change_jobs or user.is_superuser %}
-                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                        <a href="{% url 'customers_app:jobs_update' object.pk %}"
-                           class="submit-button btn btn-primary btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-save text-4 me-2"></i> Изменить</a>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Дата ввода</label>
+                            <div class="p-2 bg-light rounded text-dark">{{ object.date_entry|date:'d.m.Y'|default:"—" }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Исключена из штатного расписания</label>
+                            <div class="p-2 bg-light rounded">
+                                {% if object.excluded %}
+                                    <span class="badge bg-danger">Да (с {{ object.date_exclusions|date:'d.m.Y'|default:"—" }})</span>
+                                {% else %}
+                                    <span class="badge bg-success">Действует</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Вредные условия труда</label>
+                            <div class="p-2 bg-light rounded text-dark">
+                                {% if object.harmful %}
+                                    <span class="badge bg-warning text-dark">{{ object.harmful.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Отсутствуют</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:jobs_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                    </div>
-                {% endif %}
-            </div>
-        </form>
-        <!-- end: page -->
-    <!-- end: page -->
 
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            {% if user.access_level.guide_access_edit %}
+                                <a href="{% url 'customers_app:jobs_update' object.pk %}" class="btn btn-primary btn-touch">
+                                    <i class="bx bx-pencil me-1"></i> Изменить
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'customers_app:jobs_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> К списку
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <a href="#" class="btn btn-outline-danger btn-touch">
+                                <i class="bx bx-trash me-1"></i> Удалить
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}

@@ -3,71 +3,72 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Подразделения" }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_staff %}
-{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
-{#                                            <a href="{% url 'customers_app:divisions_add' %}"#}
-{#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
-{#                                                Добавить подразделение </a>#}
-{#                                        </div>#}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:divisions_list' %}?update=0"
-                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-sync text-4 me-2' ></i> Синхронизация с 1С </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
-                                    <th width="10%">Код</th>
-                                    <th width="45%">Подразделение</th>
-                                    <th width="45%">Головное подразделение</th>
-                                </tr>
-                                </thead>
-                            </table>
-
-                            <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                        </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-sitemap text-primary me-2"></i>Справочник: Подразделения
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Иерархическая структура отделов и филиалов компании</p>
+                </div>
+                {% if user.is_staff %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'customers_app:divisions_list' %}?update=0"
+                           class="btn btn-outline-primary btn-touch">
+                            <i class='bx bx-sync me-1'></i> Синхронизация с 1С
+                        </a>
                     </div>
+                {% endif %}
+            </div>
 
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-body p-4">
+                    <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="15%">Код</th>
+                                <th width="45%">Подразделение</th>
+                                <th width="40%">Головное подразделение</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
@@ -75,11 +76,10 @@
         $(document).ready(function () {
             $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+                $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm" />');
             });
             var table = $('#datatable-ecommerce-list').DataTable({
                 "initComplete": function () {
-                    // Apply the search
                     this.api()
                         .columns()
                         .every(function () {
@@ -116,6 +116,5 @@
                 ],
             });
         });
-
     </script>
 {% endblock %}

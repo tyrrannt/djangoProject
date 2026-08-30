@@ -2,69 +2,77 @@
 {% load static %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Регистрация" }}
 {% endblock %}
 
 {% block content %}
-    <div class="panel card-sign">
-        <div class="card-title-sign mt-3 text-end">
-            <h2 class="title text-uppercase font-weight-bold m-0"><i
-                    class="bx bx-user-circle me-1 text-6 position-relative top-5"></i> Регистрация</h2>
+<div class="card auth-card shadow-sm border-0">
+    <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-4">
+            <div class="auth-icon-wrapper mb-2">
+                <i class="bx bx-user-plus text-primary" style="font-size: 42px;"></i>
+            </div>
+            <h2 class="auth-title fw-bold m-0" style="color: var(--barkol-navy); font-size: 1.35rem;">
+                Регистрация
+            </h2>
+            <p class="text-muted small mt-1 mb-0">Создание учетной записи сотрудника</p>
         </div>
-        <div class="card-body">
-            <form action="{% url 'customers_app:register' %}" method="post">
-                {% csrf_token %}
-                <div class="form-group mb-3">
-                    <label>Логин</label>
-                    <input name="username" type="text" class="form-control form-control-lg"/>
-                </div>
 
-                <div class="form-group mb-3">
-                    <label>Адрес электронной почты</label>
-                    <input name="email" type="email" class="form-control form-control-lg"/>
-                </div>
-                <div class="form-group mb-3">
-                    <label>Фамилия</label>
-                    <input name="last_name" type="text" class="form-control form-control-lg"/>
-                </div>
+        <form action="{% url 'customers_app:register' %}" method="post">
+            {% csrf_token %}
 
-                <div class="form-group mb-3">
-                    <label>Имя</label>
-                    <input name="first_name" type="text" class="form-control form-control-lg"/>
+            <div class="form-group mb-3">
+                <label for="id_username" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Логин <span class="text-danger">*</span></label>
+                <input name="username" id="id_username" type="text" class="form-control" placeholder="Придумайте логин" required/>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="id_email" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Адрес электронной почты <span class="text-danger">*</span></label>
+                <input name="email" id="id_email" type="email" class="form-control" placeholder="name@barkol.ru" required/>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-6">
+                    <label for="id_last_name" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Фамилия <span class="text-danger">*</span></label>
+                    <input name="last_name" id="id_last_name" type="text" class="form-control" placeholder="Иванов" required/>
                 </div>
-                <div class="form-group mb-0">
-                    <div class="row">
-                        <div class="col-sm-6 mb-3">
-                            <label>Пароль</label>
-                            <input name="password1" type="password" class="form-control form-control-lg"/>
-                        </div>
-                        <div class="col-sm-6 mb-3">
-                            <label>Подтверждение пароля</label>
-                            <input name="password2" type="password" class="form-control form-control-lg"/>
-                        </div>
-                    </div>
+                <div class="col-12 col-md-6">
+                    <label for="id_first_name" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Имя <span class="text-danger">*</span></label>
+                    <input name="first_name" id="id_first_name" type="text" class="form-control" placeholder="Иван" required/>
                 </div>
+            </div>
 
-                <div class="row">
-                    <div class="col-sm-8">
-                        <div class="checkbox-custom checkbox-default">
-                            <input id="AgreeTerms" name="agreeterms" type="checkbox"/>
-                            <label for="AgreeTerms">Я согласен с <a href="#">условиями использования</a></label>
-                        </div>
-                    </div>
-                    <div class="col-sm-4 text-right">
-                        {#                        <button type="submit" class="btn btn-primary mt-2 form-control">Отправить</button>#}
-                        <input class="btn btn-primary mt-2 form-control" type="submit" value="Отправить">
-                    </div>
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-6">
+                    <label for="id_password1" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Пароль <span class="text-danger">*</span></label>
+                    <input name="password1" id="id_password1" type="password" class="form-control" placeholder="Минимум 8 знаков" required/>
                 </div>
+                <div class="col-12 col-md-6">
+                    <label for="id_password2" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Подтверждение <span class="text-danger">*</span></label>
+                    <input name="password2" id="id_password2" type="password" class="form-control" placeholder="Повторите пароль" required/>
+                </div>
+            </div>
 
-                <span class="mt-3 mb-3 line-thru text-center text-uppercase"><span>{% now "Y" %}</span></span><br>
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="AgreeTerms" name="agreeterms" required/>
+                <label class="form-check-label small text-muted" for="AgreeTerms">
+                    Я подтверждаю согласие на обработку персональных данных
+                </label>
+            </div>
 
-                <p class="text-center">У вас уже есть учетная запись? <a
-                        href="{% url 'customers_app:login' %}">Войти</a>
-                </p>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center py-2">
+                    <i class="fas fa-user-plus me-2"></i> Зарегистрироваться
+                </button>
+            </div>
 
-            </form>
-        </div>
+            <hr class="my-4 opacity-25">
+
+            <div class="text-center">
+                <span class="text-muted small">У вас уже есть учетная запись?</span>
+                <a href="{% url 'customers_app:login' %}" class="fw-semibold text-primary ms-1 small">Войти</a>
+            </div>
+        </form>
     </div>
+</div>
 {% endblock %}

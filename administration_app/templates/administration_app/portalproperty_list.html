@@ -7,268 +7,184 @@
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_superuser %}
-                                        <div class="col-auto mb-2">
-                                            <label>
-                                                <input type="date" class="form-control" id="control_date"
-                                                       name="control_date">
-                                            </label>
-                                        </div>
-
-                                        <div class="col-auto mb-2">
-                                            <select id="userSelect" class="form-select mb-2">
-                                                <option value="">Выберите пользователя</option>
-                                                {% for user in users %}
-                                                    <option value="{{ user.pk }}">{{ user.title }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-
-                                        <div class="container-fluid">
-                                            <div class="row">
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <!-- Содержимое элемента -->
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <!-- Содержимое элемента -->
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <!-- Содержимое элемента -->
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <!-- Содержимое элемента -->
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="container-fluid">
-                                            <div class="row">
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=0"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-cog text-4 me-2'></i> Выдать общие права</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=1"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-reset text-4 me-2'></i> Обновить права</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=2"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-cog text-4 me-2'></i> Установить права всем
-                                                        пользователям - Общие</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="#" id="update-timecontrol"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные с
-                                                        TimeControl</a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="container-fluid">
-                                            <div class="row">
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=4"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-reset text-4 me-2'></i> Обновить пароли</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=5"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1" id="submit_sick_leave">
-                                                        <i class='bx bx-capsule text-4 me-2'></i> Больничные</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=6"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-cog text-4 me-2'></i> День рождения</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=7"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1" id="submit_sick_leave_med">
-                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные по
-                                                        медосмотрам</a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="container-fluid">
-                                            <div class="row">
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=8"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1"
-                                                       id="submit_time_off">
-                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные по
-                                                        отгулам</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=9"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-check-double text-4 me-2'></i> Проверка
-                                                        договоров на
-                                                        ошибки</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=10"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1"
-                                                       id="submit_vacation">
-                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные по
-                                                        отпускам</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=11"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bxs-report text-4 me-2'></i> Годовой отчет</a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="container-fluid">
-                                            <div class="row">
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=12"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-group text-4 me-2'></i> Группы</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=13"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-cloud-download text-4 me-2'></i> Выгрузить
-                                                        модель в файл</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=14"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-group text-4 me-2'></i> Рассылка графика
-                                                        отпусков</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=15"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-group text-4 me-2'></i> Заполнение графика
-                                                        отпусков</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="container-fluid">
-                                            <div class="row">
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=16"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-group text-4 me-2'></i> Выгрузка данных для
-                                                        Kerio Connect</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=17"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1"
-                                                       id="submit_vacation_schedule">
-                                                        <i class='bx bx-group text-4 me-2'></i> Перенос графика
-                                                        отпусков в табель учета</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=18"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1"
-                                                       id="submit_vacation_schedule">
-                                                        <i class='bx bx-group text-4 me-2'></i> Проверка доп документов
-                                                        договоров</a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <!-- Кнопка с обновленным URL через JavaScript -->
-                                                    <a href="{% url 'administration_app:property_list' %}?update=19"
-       class="btn btn-outline-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
-       id="submit_vacation_schedule_admin">
-        <i class='bx bx-group text-4 me-2'></i> Рассылка графика отпусков (admin)
-    </a>
-                                                </div>
-                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
-                                                    <a href="{% url 'administration_app:property_list' %}?update=20"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-bell text-4 me-2'></i> Рассылка по траншам
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <select name="grops" id="id_groups"
-                                                    class="form-control form-control-modern">
-                                                {% for item in Group %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    {% endif %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern">
+                <header class="card-header">
+                    <h2 class="card-title text-primary"><i class="fas fa-sliders-h me-2"></i>Свойства и параметры портала</h2>
+                    <p class="card-subtitle text-muted">Управление конфигурацией системы, глобальными правами и сервисными операциями</p>
+                </header>
+                <div class="card-body p-4">
+                    {% if user.is_superuser %}
+                        <!-- Панель фильтров и параметров -->
+                        <div class="p-3 mb-4 rounded bg-light border">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-md-4 col-lg-3">
+                                    <label for="control_date" class="form-label font-weight-semibold text-dark mb-1">
+                                        <i class="far fa-calendar-alt text-primary me-1"></i> Контрольная дата:
+                                    </label>
+                                    <input type="date" class="form-control" id="control_date" name="control_date">
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-4">
+                                    <label for="userSelect" class="form-label font-weight-semibold text-dark mb-1">
+                                        <i class="far fa-user text-primary me-1"></i> Пользователь:
+                                    </label>
+                                    <select id="userSelect" class="form-select">
+                                        <option value="">Выберите пользователя...</option>
+                                        {% for u in users %}
+                                            <option value="{{ u.pk }}">{{ u.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4 col-lg-4">
+                                    <label for="id_groups" class="form-label font-weight-semibold text-dark mb-1">
+                                        <i class="fas fa-users-cog text-primary me-1"></i> Группы прав:
+                                    </label>
+                                    <select name="grops" id="id_groups" class="form-select">
+                                        {% for item in Group %}
+                                            <option value="{{ item.pk }}">{{ item }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
-
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-
-                                <thead>
-                                <tr>
-                                    <th width="40%">Название портала</th>
-                                    <th width="30%">Пагинация по умолчанию</th>
-                                    <th width="30%">Длительность сессии</th>
-                                </tr>
-                                </thead>
-                            </table>
-
-
-                            <hr class="solid mt-5 opacity-4">
-
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-
                         </div>
-                    </div>
 
+                        <!-- Сетка сервисных действий администратора -->
+                        <div class="mb-4">
+                            <h5 class="font-weight-semibold text-primary mb-3">
+                                <i class="fas fa-tools me-2"></i>Сервисные функции и синхронизация
+                            </h5>
+                            <div class="row g-2">
+                                <!-- Права и доступы -->
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=0" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-user-shield me-2 text-primary"></i> <span>Выдать общие права</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=1" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-sync me-2 text-primary"></i> <span>Обновить права</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=2" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-users me-2 text-primary"></i> <span>Права всем (Общие)</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=4" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-key me-2 text-primary"></i> <span>Обновить пароли</span>
+                                    </a>
+                                </div>
+
+                                <!-- Синхронизация 1C и TimeControl -->
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="#" id="update-timecontrol" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-business-time me-2 text-info"></i> <span>Синхронизация TimeControl</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=5" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_sick_leave">
+                                        <i class="fas fa-file-medical me-2 text-danger"></i> <span>Больничные листы</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=7" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_sick_leave_med">
+                                        <i class="fas fa-heartbeat me-2 text-danger"></i> <span>Данные по медосмотрам</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=8" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_time_off">
+                                        <i class="fas fa-calendar-minus me-2 text-warning"></i> <span>Данные по отгулам</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=10" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_vacation">
+                                        <i class="fas fa-plane-departure me-2 text-success"></i> <span>Данные по отпускам</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=6" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-birthday-cake me-2 text-warning"></i> <span>Дни рождения</span>
+                                    </a>
+                                </div>
+
+                                <!-- Документы и графики -->
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=17" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_vacation_schedule">
+                                        <i class="fas fa-calendar-check me-2 text-primary"></i> <span>Перенос отпусков в табель</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=14" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-paper-plane me-2 text-primary"></i> <span>Рассылка графика отпусков</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=15" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-calendar-plus me-2 text-primary"></i> <span>Заполнение графика отпусков</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=19" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_vacation_schedule_admin">
+                                        <i class="fas fa-user-clock me-2 text-info"></i> <span>Рассылка графика (admin)</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=9" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-check-double me-2 text-success"></i> <span>Проверка договоров</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=18" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_check_contracts_docs">
+                                        <i class="fas fa-file-invoice me-2 text-secondary"></i> <span>Проверка доп. документов</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=20" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-bell me-2 text-warning"></i> <span>Рассылка по траншам</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=11" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-chart-pie me-2 text-primary"></i> <span>Годовой отчет</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=12" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-layer-group me-2 text-secondary"></i> <span>Группы доступа</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=13" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-cloud-download-alt me-2 text-secondary"></i> <span>Выгрузить модель в файл</span>
+                                    </a>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                    <a href="{% url 'administration_app:property_list' %}?update=16" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                        <i class="fas fa-mail-bulk me-2 text-info"></i> <span>Выгрузка Kerio Connect</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <hr class="my-4">
+                    {% endif %}
+
+                    <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                        <thead>
+                        <tr>
+                            <th width="40%">Название портала</th>
+                            <th width="30%">Пагинация по умолчанию</th>
+                            <th width="30%">Длительность сессии</th>
+                        </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}

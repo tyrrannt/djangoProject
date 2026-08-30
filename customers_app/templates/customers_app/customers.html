@@ -1,13 +1,150 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}
-    {{ title }}
+    Главная панель // КОРПОРАТИВНЫЙ ПОРТАЛ
 {% endblock %}
 
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
 
+        .stat-card-dashboard {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+        }
+
+        .stat-card-dashboard:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Приветственный баннер -->
+            <div class="card card-modern shadow-sm border-0 mb-4 bg-light">
+                <div class="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h3 class="font-weight-bold text-dark mb-1">
+                            Добро пожаловать на Корпоративный портал, {{ request.user.get_short_name|default:request.user.username }}!
+                        </h3>
+                        <p class="text-muted mb-0">ООО «Авиакомпания БАРКОЛ» // Единая информационная система</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'customers_app:profile' request.user.pk %}" class="btn btn-primary btn-touch">
+                            <i class="bx bx-user me-1"></i> Личный кабинет
+                        </a>
+                        <a href="{% url 'contracts_app:index' %}" class="btn btn-outline-primary btn-touch">
+                            <i class="bx bx-file me-1"></i> Реестр договоров
+                        </a>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Раздел: Договорная документация по типам -->
+            <h4 class="font-weight-bold text-dark mb-3">
+                <i class="fas fa-folder-open text-primary me-2"></i>Структура договоров в системе
+            </h4>
 
+            {% if types_count %}
+                <div class="row g-3 mb-4">
+                    {% for doc_type, count in types_count.items %}
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                            <div class="stat-card-dashboard d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-muted small d-block mb-1">{{ doc_type }}</span>
+                                    <h3 class="font-weight-bold text-dark mb-0">{{ count }}</h3>
+                                </div>
+                                <div class="stat-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                                    <i class="fas fa-file-contract"></i>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <div class="card-body p-5 text-center text-muted">
+                        <i class="fas fa-file-contract fa-3x mb-3 text-secondary opacity-50 d-block"></i>
+                        <h5>Данные о категориях договоров загружаются</h5>
+                        <p class="small mb-0">Информация о распределении договоров появится после синхронизации.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Быстрые действия -->
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card card-modern shadow-sm border-0 h-100">
+                        <div class="card-body p-4">
+                            <h5 class="font-weight-bold text-dark mb-3">
+                                <i class="fas fa-users text-primary me-2"></i>Сотрудники и отделы
+                            </h5>
+                            <p class="text-muted small mb-3">Просмотр контактной информации, штатного расписания и структуры компании.</p>
+                            <a href="{% url 'customers_app:staff_list' %}" class="btn btn-outline-primary btn-sm btn-touch w-100">
+                                Открыть список сотрудников
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card card-modern shadow-sm border-0 h-100">
+                        <div class="card-body p-4">
+                            <h5 class="font-weight-bold text-dark mb-3">
+                                <i class="fas fa-building text-primary me-2"></i>Контрагенты
+                            </h5>
+                            <p class="text-muted small mb-3">База партнеров, реквизиты, прикрепленные документы и проверка благонадежности.</p>
+                            <a href="{% url 'customers_app:counteragent_list' %}" class="btn btn-outline-primary btn-sm btn-touch w-100">
+                                Открыть реестр контрагентов
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card card-modern shadow-sm border-0 h-100">
+                        <div class="card-body p-4">
+                            <h5 class="font-weight-bold text-dark mb-3">
+                                <i class="fas fa-gamepad text-primary me-2"></i>Интерактив
+                            </h5>
+                            <p class="text-muted small mb-3">Мини-игра «Тетрис» для отдыха в перерыве с сохранением личных рекордов.</p>
+                            <a href="{% url 'customers_app:tetris' %}" class="btn btn-outline-secondary btn-sm btn-touch w-100">
+                                Играть в Тетрис
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}

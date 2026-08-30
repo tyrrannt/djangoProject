@@ -1,56 +1,109 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Лента новостей и объявлений" }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                {#                                 Заголовок таблицы#}
-                            </div>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-bullhorn text-primary me-2"></i>Лента новостей и объявлений
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Информационные сообщения и публикации на корпоративном портале</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'customers_app:post_add' %}" class="btn btn-primary btn-touch">
+                        <i class='bx bx-plus me-1'></i> Добавить публикацию
+                    </a>
+                </div>
+            </div>
 
-                                    <th width="11%">Код</th>
-                                    <th width="20%">Дата создания</th>
-                                    <th width="59%">Текст поста</th>
-                                    <th width="12%">Публикация</th>
-                                </tr>
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-body p-4">
+                    {% if object_list %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 80px;">Код</th>
+                                        <th style="width: 140px;">Дата</th>
+                                        <th>Текст поста</th>
+                                        <th style="width: 120px;" class="text-center">Статус</th>
+                                        <th style="width: 100px;" class="text-end">Действия</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                {% for item in object_list %}
-                                    <tr>
-
-                                        <td>
-                                            <a href="{% url 'customers_app:post' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'customers_app:post' item.pk %}"><strong>{{ item.creation_date }}</strong></a>
-                                        </td>
-                                        <td>{{ item.post_description }}</td>
-                                        <td>{{ item.allowed_placed }}</td>
-                                    </tr>
-                                {% endfor %}
+                                    {% for item in object_list %}
+                                        <tr>
+                                            <td class="text-muted">#{{ item.pk }}</td>
+                                            <td class="fw-semibold text-dark">{{ item.creation_date|date:"d.m.Y" }}</td>
+                                            <td>
+                                                <a href="{% url 'customers_app:post' item.pk %}" class="text-dark text-decoration-none">
+                                                    {{ item.post_description|striptags|truncatewords:20 }}
+                                                </a>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if item.allowed_placed %}
+                                                    <span class="badge bg-success">Опубликовано</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Черновик</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{% url 'customers_app:post' item.pk %}" class="btn btn-sm btn-outline-primary" title="Просмотр">
+                                                    <i class="bx bx-show"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
-                            <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                {#                                Подвал таблицы#}
-                            </div>
                         </div>
-                    </div>
+                        <div class="mt-4">
+                            {% include 'library_app/paginator.html' %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-bullhorn fa-3x mb-3 text-secondary opacity-50 d-block"></i>
+                            <h5>Публикаций пока нет</h5>
+                            <p class="small mb-0">Вы можете добавить первую публикацию или информационное сообщение.</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        <!-- end: page -->
+    </div>
+    <!-- end: page -->
 {% endblock %}

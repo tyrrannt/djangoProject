@@ -3,59 +3,96 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Вредные условия труда" }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_staff %}
-{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
-{#                                            <a href="{% url 'customers_app:jobs_add' %}"#}
-{#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
-{#                                                Добавить должность </a>#}
-{#                                        </div>#}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:harmfuls_list' %}?update=0"
-                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-sync text-4 me-2' ></i> Синхронизация с 1С </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
-                                    <th width="10%">Код</th>
-                                    <th width="50%">Наименование</th>
-                                    <th width="20%">Периодичность осмотров</th>
-                                    <th width="20%">Кратность осмотров</th>
-                                </tr>
-                                </thead>
-                            </table>
-                            <hr class="solid mt-5 opacity-4">
-
-                        </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-biohazard text-primary me-2"></i>Справочник: Вредные условия труда
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Факторы производственной среды, периодичность и кратность медосмотров</p>
+                </div>
+                {% if user.is_staff %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'customers_app:harmfuls_list' %}?update=0"
+                           class="btn btn-outline-primary btn-touch">
+                            <i class='bx bx-sync me-1'></i> Синхронизация с 1С
+                        </a>
                     </div>
+                {% endif %}
+            </div>
+
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-body p-4">
+                    <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="15%">Код</th>
+                                <th width="45%">Наименование фактора</th>
+                                <th width="20%">Периодичность</th>
+                                <th width="20%">Кратность осмотров</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
     <script>
         $(document).ready(function () {
+            $('#datatable-ecommerce-list thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm" />');
+            });
             var table = $('#datatable-ecommerce-list').DataTable({
-                "sDom": 'BT<"clear">lfrtip',
+                "initComplete": function () {
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "sDom": 'BT<"clear">lrtip',
                 "buttons": [
                     'copy', 'csv', 'excel', 'pdf', 'print'
                 ],

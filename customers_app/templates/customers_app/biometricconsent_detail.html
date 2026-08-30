@@ -446,7 +446,9 @@
             </div>
         </div>
     </div>
+{% endblock %}
 
+{% block custom_script %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const attachmentModal = document.getElementById('attachmentModal');
@@ -455,7 +457,7 @@
             const modalImagePreview = document.getElementById('modalImagePreview');
             const modalPdfContainer = document.getElementById('modalPdfContainer');
             const modalPdfPreview = document.getElementById('modalPdfPreview');
-            const modalPdfFallback = modalPdfContainer.querySelector('.pdf-fallback');
+            const modalPdfFallback = modalPdfContainer ? modalPdfContainer.querySelector('.pdf-fallback') : null;
             const modalFileContainer = document.getElementById('modalFileContainer');
             const modalFileName = document.getElementById('modalFileName');
             const modalFileDownload = document.getElementById('modalFileDownload');
@@ -468,43 +470,48 @@
 
             attachmentModal.addEventListener('show.bs.modal', function (event) {
                 const trigger = event.relatedTarget;
+                if (!trigger) return;
                 const fileUrl = trigger.getAttribute('data-file-url');
                 const fileName = trigger.getAttribute('data-file-name');
+                if (!fileUrl || !fileName) return;
 
                 const extension = '.' + fileName.split('.').pop().toLowerCase();
 
-                modalImagePreview.style.display = 'none';
-                modalPdfContainer.style.display = 'none';
-                modalPdfPreview.style.display = 'none';
-                modalPdfFallback.style.display = 'none';
-                modalFileContainer.style.display = 'none';
+                if (modalImagePreview) modalImagePreview.style.display = 'none';
+                if (modalPdfContainer) modalPdfContainer.style.display = 'none';
+                if (modalPdfPreview) modalPdfPreview.style.display = 'none';
+                if (modalPdfFallback) modalPdfFallback.style.display = 'none';
+                if (modalFileContainer) modalFileContainer.style.display = 'none';
 
-                modalTitle.textContent = fileName;
-                modalDownloadLink.href = fileUrl;
+                if (modalTitle) modalTitle.textContent = fileName;
+                if (modalDownloadLink) modalDownloadLink.href = fileUrl;
 
                 if (imageExtensions.includes(extension)) {
-                    modalImagePreview.src = fileUrl;
-                    modalImagePreview.style.display = 'block';
+                    if (modalImagePreview) {
+                        modalImagePreview.src = fileUrl;
+                        modalImagePreview.style.display = 'block';
+                    }
                 } else if (extension === pdfExtension) {
-                    modalPdfContainer.style.display = 'block';
-                    modalPdfPreview.src = fileUrl;
-                    modalPdfPreview.style.display = 'block';
-                    modalPdfDownload.href = fileUrl;
-
-                    modalPdfPreview.onerror = function () {
-                        modalPdfPreview.style.display = 'none';
-                        modalPdfFallback.style.display = 'block';
-                    };
+                    if (modalPdfContainer) modalPdfContainer.style.display = 'block';
+                    if (modalPdfPreview) {
+                        modalPdfPreview.src = fileUrl;
+                        modalPdfPreview.style.display = 'block';
+                        modalPdfPreview.onerror = function () {
+                            modalPdfPreview.style.display = 'none';
+                            if (modalPdfFallback) modalPdfFallback.style.display = 'block';
+                        };
+                    }
+                    if (modalPdfDownload) modalPdfDownload.href = fileUrl;
                 } else {
-                    modalFileContainer.style.display = 'block';
-                    modalFileName.textContent = fileName;
-                    modalFileDownload.href = fileUrl;
+                    if (modalFileContainer) modalFileContainer.style.display = 'block';
+                    if (modalFileName) modalFileName.textContent = fileName;
+                    if (modalFileDownload) modalFileDownload.href = fileUrl;
                 }
             });
 
             attachmentModal.addEventListener('hidden.bs.modal', function () {
-                modalImagePreview.src = '';
-                modalPdfPreview.src = '';
+                if (modalImagePreview) modalImagePreview.src = '';
+                if (modalPdfPreview) modalPdfPreview.src = '';
             });
         });
     </script>

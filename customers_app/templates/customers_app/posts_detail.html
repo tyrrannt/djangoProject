@@ -1,85 +1,79 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% load widget_tweaks %}
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
 
 {% block title %}
-    {{ title }}
+    {{ object.post_title|default:"Публикация" }} // Новости
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+
+        .post-content-body {
+            line-height: 1.7;
+            font-size: 1.05rem;
+            color: #334155;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-sm-126">
-                                    <section class="card mb-4">
-                                        <header class="card-header">
-                                            <div class="card-actions">
-                                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                                <a href="#" class="card-action card-action-dismiss"
-                                                   data-card-dismiss></a>
-                                            </div>
-
-                                            <h2 class="card-title">{{ object.post_title }}</h2>
-                                            <p class="card-subtitle">Запись № {{ object.pk }}
-                                                от {{ object.creation_date }}</p>
-                                        </header>
-                                        <div class="card-body">
-                                            <div class="ck-content">
-                                                {% autoescape on %}
-                                                    {{ object.post_description | safe }}
-                                                {% endautoescape %}
-                                            </div>
-                                        </div>
-                                    </section>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                    <a href="{% url 'customers_app:post_update' object.pk %}"
-                       class="submit-button btn btn-primary btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-save text-4 me-2"></i> Изменить</a>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:profile' request.user.pk %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="card-title text-primary mb-0">
+                            <i class="fas fa-bullhorn me-2"></i>{{ object.post_title|default:"Новость портала" }}
+                        </h2>
+                        <p class="card-subtitle text-muted mb-0">Запись №{{ object.pk }} от {{ object.creation_date|date:"d.m.Y H:i" }}</p>
                     </div>
-                {% endif %}
+                    {% if object.allowed_placed %}
+                        <span class="badge bg-success">Опубликовано</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Черновик</span>
+                    {% endif %}
+                </header>
+                <div class="card-body p-4">
+                    <div class="post-content-body mb-4">
+                        {% autoescape on %}
+                            {{ object.post_description|safe }}
+                        {% endautoescape %}
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'customers_app:post_update' object.pk %}" class="btn btn-primary btn-touch">
+                                <i class="bx bx-pencil me-1"></i> Изменить
+                            </a>
+                            <a href="{% url 'customers_app:profile' request.user.pk %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> К профилю
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <a href="#" class="btn btn-outline-danger btn-touch">
+                                <i class="bx bx-trash me-1"></i> Удалить
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-        </form>
-        <!-- end: page -->
+        </div>
+    </div>
     <!-- end: page -->
 {% endblock %}

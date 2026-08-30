@@ -3,7 +3,46 @@
 {% load custom %}
 
 {% block title %}
-    Согласия на биометрию - {{ employee.get_title }}
+    Согласия на биометрию // {{ employee.get_title }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+
+        .consent-card .card-header {
+            font-size: 1rem;
+        }
+        .consent-card .card-footer {
+            background-color: #f8f9fa;
+        }
+        .consent-card .btn {
+            margin: 0 3px;
+        }
+        .alert-info a {
+            text-decoration: none;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -241,23 +280,6 @@
         </div>
     </div>
     <!-- end: page -->
-{% endblock %}
-
-{% block custom_css %}
-    <style>
-        .consent-card .card-header {
-            font-size: 1rem;
-        }
-        .consent-card .card-footer {
-            background-color: #f8f9fa;
-        }
-        .consent-card .btn {
-            margin: 0 3px;
-        }
-        .alert-info a {
-            text-decoration: none;
-        }
-    </style>
 {% endblock %}
 
 {% block custom_script %}

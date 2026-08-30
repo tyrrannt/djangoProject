@@ -225,31 +225,23 @@
                     </section>
                 </div>
             </div>
-            <div class="row action-buttons">
+            <div class="row action-buttons mt-4">
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                            class="btn btn-primary btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
+                            data-loading-text="Сохранение...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'customers_app:counteragent_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                       class="btn btn-outline-secondary btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2' ></i> Закрыть </a>
-                </div>
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        <i class='bx bx-arrow-back text-4 me-2'></i> К списку
                     </a>
                 </div>
             </div>
         </form>
         <!-- end: page -->
-    <!-- end: page -->
-
 {% endblock %}

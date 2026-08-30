@@ -16,8 +16,26 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.toggle-password').forEach(button => {
+                button.addEventListener('click', function () {
+                    const targetId = this.dataset.target;
+                    const input = document.getElementById(targetId);
+                    if (input) {
+                        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                        input.setAttribute('type', type);
+                        const icon = this.querySelector('i');
+                        if (icon) {
+                            icon.classList.toggle('fa-eye');
+                            icon.classList.toggle('fa-eye-slash');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block title %}
@@ -26,7 +44,7 @@
 
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+    <div class="ecommerce-form action-buttons-fixed">
         {% if pass_change %}
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <strong>{{ pass_change }}</strong>.
@@ -407,35 +425,14 @@
                 </a>
             </div>
 
-            <div class="col-12 col-md-auto">
-                <a href="{% url 'customers_app:staff_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
-                </a>
+                <div class="col-12 col-md-auto">
+                    <a href="{% url 'customers_app:staff_list' %}"
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
+                    </a>
+                </div>
             </div>
         </div>
-    </form>
+    </div>
     <!-- end: page -->
-    <!-- end: page -->
-    <!-- ============================================
-         СКРИПТ ДЛЯ ПОКАЗА/СКРЫТИЯ ПАРОЛЕЙ
-         Безопасное отображение паролей с возможностью просмотра
-    ============================================ -->
-    <script>
-        document.querySelectorAll('.toggle-password').forEach(button => {
-            button.addEventListener('click', function () {
-                const targetId = this.dataset.target;
-                const input = document.getElementById(targetId);
-                if (input) {
-                    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-                    input.setAttribute('type', type);
-                    const icon = this.querySelector('i');
-                    if (icon) {
-                        icon.classList.toggle('fa-eye');
-                        icon.classList.toggle('fa-eye-slash');
-                    }
-                }
-            });
-        });
-    </script>
 {% endblock %}

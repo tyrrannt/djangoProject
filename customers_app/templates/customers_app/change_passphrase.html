@@ -1,81 +1,83 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Смена кодового слова" }} // КОРПОРАТИВНЫЙ ПОРТАЛ
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:passphrase_update' object.pk %}"
-              method="post" prefix="main" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <div class="form-group row align-items-center pb-3">
-                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Кодовое слово</label>
-                        <div class="col-lg-7 col-xl-6">
-                            <input type="text" class="form-control form-control-modern"
-                                   name="passphrase" id="id_passphrase"
-                                   value=""/>
-                        </div>
-                    </div>
-                    <div class="form-group row align-items-center pb-3">
-                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Кодовое слово (повторно)</label>
-                        <div class="col-lg-7 col-xl-6">
-                            <input type="text" class="form-control form-control-modern"
-                                   name="passphrase2" id="id_passphrase2"
-                                   value=""/>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit" prefix="main"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3">
+                    <h5 class="card-title text-primary mb-0 font-weight-bold">
+                        <i class="fas fa-key me-2"></i>{{ title|default:"Установка кодового слова" }}
+                    </h5>
+                    <p class="card-subtitle text-muted mb-0 small">Кодовое слово используется для подтверждения операций и восстановления доступа</p>
+                </header>
+                <div class="card-body p-4">
+                    <form action="{% url 'customers_app:passphrase_update' object.pk %}" method="post" prefix="main" enctype="multipart/form-data">
+                        {% csrf_token %}
 
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <h6 class="alert-heading font-weight-bold mb-2">Ошибка сохранения:</h6>
+                                <ul class="mb-0 ps-3 small">
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold" for="id_passphrase">Кодовое слово <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" name="passphrase" id="id_passphrase" placeholder="Введите новое кодовое слово" required/>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label font-weight-semibold" for="id_passphrase2">Кодовое слово (повторно) <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" name="passphrase2" id="id_passphrase2" placeholder="Повторите кодовое слово" required/>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn btn-primary btn-touch">
+                                <i class="bx bx-save me-1"></i> Сохранить
+                            </button>
+                            <a href="{% url 'customers_app:staff_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:staff_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_staff or user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
             </div>
-        </form>
-        <!-- end: page -->
+        </div>
+    </div>
     <!-- end: page -->
-
 {% endblock %}

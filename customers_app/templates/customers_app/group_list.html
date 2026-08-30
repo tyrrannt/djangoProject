@@ -3,47 +3,71 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Группы доступа" }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .action-bar-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_superuser %}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:group_add' %}"
-                                               class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить группу </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-
-                                <thead>
-                                <tr>
-                                    <th width="20%">Наименование</th>
-                                    <th width="80%">Права</th>
-                                </tr>
-                                </thead>
-                            </table>
-
-                            <hr class="solid mt-5 opacity-4">
-                        </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="action-bar-responsive">
+                <div>
+                    <h4 class="font-weight-bold mb-0 text-dark">
+                        <i class="fas fa-users-cog text-primary me-2"></i>Группы доступа пользователей
+                    </h4>
+                    <p class="text-muted small mb-0 d-none d-md-block">Управление ролями и назначенными правами доступа в системе</p>
+                </div>
+                {% if user.is_superuser %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'customers_app:group_add' %}"
+                           class="btn btn-primary btn-touch">
+                            <i class='bx bx-plus me-1'></i> Добавить группу
+                        </a>
                     </div>
+                {% endif %}
+            </div>
 
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-body p-4">
+                    <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="25%">Наименование группы</th>
+                                <th width="75%">Права доступа</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
@@ -51,11 +75,10 @@
         $(document).ready(function () {
             $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+                $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm" />');
             });
             var table = $('#datatable-ecommerce-list').DataTable({
                 "initComplete": function () {
-                    // Apply the search
                     this.api()
                         .columns()
                         .every(function () {
@@ -91,6 +114,5 @@
                 ],
             });
         });
-
     </script>
 {% endblock %}

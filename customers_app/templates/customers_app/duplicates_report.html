@@ -1,9 +1,22 @@
-<!-- templates/counteragents/duplicates_report.html -->
 {% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Отчет о дубликатах контрагентов // КОРПОРАТИВНЫЙ ПОРТАЛ
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Отчет о дубликатах контрагентов</h1>
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="font-weight-bold text-dark mb-0">
+                <i class="fas fa-clone text-primary me-2"></i>Отчет о дубликатах контрагентов
+            </h2>
+            <a href="{% url 'customers_app:counteragent_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>К списку контрагентов
+            </a>
+        </div>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -89,9 +102,10 @@
                     {% endfor %}
                 </ul>
             {% else %}
-                <p class="text-muted">Дубликатов по ИНН не найдено</p>
+                <p class="text-muted mb-0">Дубликатов по ИНН не найдено</p>
             {% endif %}
         </div>
     </div>
+</div>
 </div>
 {% endblock %}

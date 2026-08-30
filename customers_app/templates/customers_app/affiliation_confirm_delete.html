@@ -3,109 +3,68 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    Удаление принадлежности // {{ affiliation.name }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+
+        .delete-card-wrapper {
+            max-width: 550px;
+            margin: 40px auto;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_staff %}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:divisions_add' %}"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить подразделение </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:divisions_list' %}?update=0"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить список </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <h1>Удалить принадлежность "{{ affiliation.name }}"?</h1>
-                            <p>Вы уверены, что хотите удалить эту принадлежность?</p>
-                            <form method="post">
-                                {% csrf_token %}
-                                <button type="submit">Да, удалить</button>
-                            </form>
-                            <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12">
+            <div class="delete-card-wrapper">
+                <div class="card card-modern shadow-sm border-0">
+                    <div class="card-header bg-danger text-white py-3">
+                        <h5 class="card-title text-white mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Подтверждение удаления
+                        </h5>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-trash-alt fa-3x text-danger opacity-75"></i>
                         </div>
+                        <h4 class="font-weight-bold text-dark mb-2">Удалить принадлежность?</h4>
+                        <p class="text-muted mb-4">
+                            <strong>«{{ affiliation.name }}»</strong> (ID: #{{ affiliation.pk }})
+                        </p>
+                        <div class="alert alert-warning text-start small mb-0">
+                            <i class="fas fa-info-circle me-1"></i> Данное действие необратимо. Принадлежность будет удалена из классификатора.
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light p-3">
+                        <form method="post" class="d-flex justify-content-center gap-3">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-touch">
+                                <i class="fas fa-trash-alt me-1"></i> Да, удалить
+                            </button>
+                            <a href="{% url 'customers_app:affiliation-list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="fas fa-times me-1"></i> Отмена
+                            </a>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-{% endblock %}
-
-{% block custom_script %}
-    <script>
-        $(document).ready(function () {
-            $('#datatable-ecommerce-list thead th').each(function () {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
-            });
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
-                            $('input', this.header()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
-                        });
-                },
-                "scrollX": true,
-                "sDom": 'BT<"clear">lrtip',
-                "buttons": [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
-                ],
-                "ajax": "{% url 'customers_app:divisions_list' %}",
-                "language": {
-                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
-                },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
-                    $(nRow).attr("href", id + '/update/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
-                    });
-                },
-                "columns": [
-                    {"data": "code"},
-                    {"data": "name"},
-                    {"data": "parent_category"},
-                ],
-            });
-        });
-
-    </script>
+    </div>
+    <!-- end: page -->
 {% endblock %}

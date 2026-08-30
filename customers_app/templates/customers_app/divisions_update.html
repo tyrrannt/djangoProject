@@ -1,145 +1,111 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Редактирование подразделения" }}
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:divisions_update' object.pk %}"
-              method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxs-buildings"></i>
-                                    <p class="card-big-info-desc"><strong>{{ object.name }}</strong></p>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light">
+                    <h2 class="card-title text-primary mb-0">
+                        <i class="bx bxs-buildings me-2"></i>{{ object.name }}
+                    </h2>
+                    <p class="card-subtitle text-muted mb-0">Редактирование параметров подразделения</p>
+                </header>
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                        <div class="alert alert-danger mb-4">
+                            <h6 class="alert-heading font-weight-bold mb-2">Пожалуйста, исправьте ошибки:</h6>
+                            <ul class="mb-0 ps-3 small">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <form action="{% url 'customers_app:divisions_update' object.pk %}" method="post">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-semibold" for="id_parent_category">Головное подразделение</label>
+                                {{ form.parent_category }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-semibold" for="id_name">Наименование <span class="text-danger">*</span></label>
+                                <input type="text" id="id_name" class="form-control" name="name" value="{{ object.name }}" required/>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-semibold" for="id_description">Описание</label>
+                                <input type="text" class="form-control" name="description" id="id_description" value="{{ object.description|default:'' }}"/>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-semibold" for="id_address">Адрес</label>
+                                <input type="text" class="form-control" name="address" id="id_address" value="{{ object.address|default:'' }}"/>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-semibold" for="id_type_of_role">Роль подразделения</label>
+                                {{ form.type_of_role }}
+                            </div>
+                            <div class="col-12 col-md-6 d-flex align-items-center gap-4 pt-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="active" id="id_active" {% if object.active %} checked {% endif %}/>
+                                    <label class="form-check-label font-weight-semibold" for="id_active">Действующее</label>
                                 </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_parent_category">Головное подразделение</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.parent_category }}
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_name">Наименование</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_name" class="form-control form-control-modern"
-                                                   name="name" value="{{ object.name }}"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="">Описание</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="description" id="id_description"
-                                                   value="{{ object.description }}"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="">Адрес</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="address" id="id_address"
-                                                   value="{{ object.address }}"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_history">Дата создания</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="history" id="id_history"
-                                                   value="{{ object.history }}" disabled/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_type_of_role">Роль подразделения</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.type_of_role }}
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_active">Действующее</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="checkbox"
-                                                   name="active" id="id_active"
-                                                    {% if object.active %} checked {% endif %}/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_destination_point">Используется как место назначения</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="checkbox"
-                                                   name="destination_point" id="id_destination_point"
-                                                    {% if object.destination_point %} checked {% endif %}/>
-                                        </div>
-                                    </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="destination_point" id="id_destination_point" {% if object.destination_point %} checked {% endif %}/>
+                                    <label class="form-check-label font-weight-semibold" for="id_destination_point">Место назначения</label>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:divisions_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </form>
-        <!-- end: page -->
-    <!-- end: page -->
 
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn btn-primary btn-touch">
+                                <i class="bx bx-save me-1"></i> Сохранить
+                            </button>
+                            <a href="{% url 'customers_app:divisions_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}

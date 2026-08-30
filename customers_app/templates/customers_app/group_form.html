@@ -3,68 +3,81 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Группа доступа" }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 44px;
+        }
+
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc">Форма создания группы прав.</p>
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        {{ form.name.label }}
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.name }}
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        {{ form.permissions.label }}
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.permissions }}
-                                        </div>
-                                    </div>
-                                </div>
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light">
+                    <h2 class="card-title text-primary mb-0">
+                        <i class="fas fa-users-cog me-2"></i>{{ title|default:"Группа доступа" }}
+                    </h2>
+                    <p class="card-subtitle text-muted mb-0">Настройка прав доступа для группы пользователей</p>
+                </header>
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                        <div class="alert alert-danger mb-4">
+                            <h6 class="alert-heading font-weight-bold mb-2">Пожалуйста, исправьте ошибки:</h6>
+                            <ul class="mb-0 ps-3 small">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <form action="#" method="post">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label font-weight-semibold" for="{{ form.name.id_for_label }}">Наименование группы <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label font-weight-semibold" for="{{ form.permissions.id_for_label }}">Права доступа</label>
+                                <div>{{ form.permissions }}</div>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:group_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </form>
-        <!-- end: page -->
-    <!-- end: page -->
 
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn btn-primary btn-touch">
+                                <i class="bx bx-save me-1"></i> Сохранить
+                            </button>
+                            <a href="{% url 'customers_app:group_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}
