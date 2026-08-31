@@ -5540,6 +5540,17 @@ def weekday_analysis(request):
 
 @login_required
 def time_distribution(request):
+    """Формирует отчет и диаграмму распределения типов рабочего времени.
+
+    Анализирует все события табеля за выбранный год, подсчитывает частоту
+    каждого типа события (явки, командировки, отпуска, отгулы) и агрегирует данные по сотрудникам.
+
+    Args:
+        request: HttpRequest объект с опциональным GET-параметром 'year'.
+
+    Returns:
+        HttpResponse: Отрендеренная страница с диаграммой и таблицей распределения времени.
+    """
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
     current_year = datetime.now().year
@@ -5557,12 +5568,12 @@ def time_distribution(request):
 
     # Подсчет количества событий по типам времени
     time_counts = defaultdict(int)
-    employee_data = defaultdict(lambda: defaultdict(list))  # Изменено: значения как списки
+    employee_data = defaultdict(lambda: defaultdict(list))
 
     for card in report_cards:
         time_type = card.get_record_type_display()  # Человекочитаемое название типа времени
         time_counts[time_type] += 1
-        employee_data[card.employee][time_type].append(1)  # Добавляем 1 в список
+        employee_data[card.employee][time_type].append(1)
 
     # Преобразование данных в списки для передачи в шаблон
     time_types = list(time_counts.keys())
@@ -5576,16 +5587,24 @@ def time_distribution(request):
     context = {
         "time_types": time_types,
         "time_counts": counts,
+        "counts": counts,
         "years": years,
         "selected_year": selected_year,
         "employee_data": formatted_employee_data,
     }
-    print(context)
     return render(request, 'hrdepartment_app/time_distribution.html', context)
 
 
 @login_required
 def export_time_distribution(request):
+    """Экспортирует агрегированное распределение типов рабочего времени в CSV-файл.
+
+    Args:
+        request: HttpRequest объект с опциональным GET-параметром 'year'.
+
+    Returns:
+        HttpResponse: CSV-файл со структурой типов рабочего времени.
+    """
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
     if not selected_year or not selected_year.isdigit():

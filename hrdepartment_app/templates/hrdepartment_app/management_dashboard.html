@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --touch-target-size: 42px;
@@ -49,6 +48,174 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (typeof Chart === 'undefined') return;
+
+            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            Chart.defaults.font.size = 12;
+
+            function createChart(elementId, config) {
+                var el = document.getElementById(elementId);
+                if (!el) return null;
+                var ctx = el.getContext('2d');
+                return new Chart(ctx, {
+                    ...config,
+                    options: {
+                        ...config.options,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        var label = context.label || '';
+                                        var value = context.raw || 0;
+                                        var total = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                                        var percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return label + ': ' + value + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createChart('tripTypesChart', {
+                type: 'pie',
+                data: {
+                    labels: [
+                        {% for type in trip_types %}
+                            '{{ type.type_trip|default:"1"|get_trip_type_display }}',
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        data: [{% for type in trip_types %}{{ type.count }}, {% endfor %}],
+                        backgroundColor: ['#0088cc', '#2baab1', '#e36159', '#734ba9', '#e2a03f']
+                    }]
+                }
+            });
+
+            createChart('statusChart', {
+                type: 'doughnut',
+                data: {
+                    labels: ['На согласовании', 'Утверждено', 'Отклонено'],
+                    datasets: [{
+                        data: [
+                            {{ status_stats.awaiting_approval|default:0 }},
+                            {{ status_stats.approved|default:0 }},
+                            {{ status_stats.rejected|default:0 }}
+                        ],
+                        backgroundColor: ['#e2a03f', '#2baab1', '#e36159']
+                    }]
+                }
+            });
+
+            createChart('mpdChart', {
+                type: 'bar',
+                data: {
+                    labels: [
+                        {% for mpd_name, count in mpd_stats.items %}
+                            '{{ mpd_name }}',
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        label: 'Количество сотрудников',
+                        data: [
+                            {% for mpd_name, count in mpd_stats.items %}
+                                {{ count }},
+                            {% endfor %}
+                        ],
+                        backgroundColor: '#0088cc',
+                        borderColor: '#006699',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.label + ': ' + context.raw + ' сотрудников';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            createChart('monthlyTrendsChart', {
+                type: 'bar',
+                data: {
+                    labels: [
+                        'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+                    ],
+                    datasets: [
+                        {
+                            label: 'Количество поездок',
+                            data: [
+                                {% for month in complete_monthly_trends %}
+                                    {{ month.count }},
+                                {% endfor %}
+                            ],
+                            borderColor: '#0088cc',
+                            backgroundColor: 'rgba(0, 136, 204, 0.6)',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Расходы (руб)',
+                            data: [
+                                {% for month in complete_monthly_trends %}
+                                    {{ month.expenses|default:0 }},
+                                {% endfor %}
+                            ],
+                            borderColor: '#e2a03f',
+                            backgroundColor: 'rgba(226, 160, 63, 0.6)',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: {drawOnChartArea: false}
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {drawOnChartArea: false}
+                        },
+                        x: {
+                            grid: {display: false}
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -217,177 +384,4 @@
         </div>
     </div>
     <!-- end: page -->
-
-    <script>
-        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-        Chart.defaults.font.size = 12;
-
-        function createChart(elementId, config) {
-            const ctx = document.getElementById(elementId).getContext('2d');
-            return new Chart(ctx, {
-                ...config,
-                options: {
-                    ...config.options,
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                    return `${label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        createChart('tripTypesChart', {
-            type: 'pie',
-            data: {
-                labels: [
-                    {% for type in trip_types %}
-                        '{{ type.type_trip|default:"1"|get_trip_type_display }}',
-                    {% endfor %}
-                ],
-                datasets: [{
-                    data: [{% for type in trip_types %}{{ type.count }}, {% endfor %}],
-                    backgroundColor: ['#0088cc', '#2baab1', '#e36159', '#734ba9', '#e2a03f']
-                }]
-            }
-        });
-
-        createChart('statusChart', {
-            type: 'doughnut',
-            data: {
-                labels: ['На согласовании', 'Утверждено', 'Отклонено'],
-                datasets: [{
-                    data: [
-                        {{ status_stats.awaiting_approval|default:0 }},
-                        {{ status_stats.approved|default:0 }},
-                        {{ status_stats.rejected|default:0 }}
-                    ],
-                    backgroundColor: ['#e2a03f', '#2baab1', '#e36159']
-                }]
-            }
-        });
-
-        createChart('mpdChart', {
-            type: 'bar',
-            data: {
-                labels: [
-                    {% for mpd_name, count in mpd_stats.items %}
-                        '{{ mpd_name }}',
-                    {% endfor %}
-                ],
-                datasets: [{
-                    label: 'Количество сотрудников',
-                    data: [
-                        {% for mpd_name, count in mpd_stats.items %}
-                            {{ count }},
-                        {% endfor %}
-                    ],
-                    backgroundColor: '#0088cc',
-                    borderColor: '#006699',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1,
-                            precision: 0
-                        },
-                        title: {
-                            display: true,
-                            text: 'Количество сотрудников'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Место производственной деятельности'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                return `${context.label}: ${context.raw} сотрудников`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        createChart('monthlyTrendsChart', {
-            type: 'bar',
-            data: {
-                labels: [
-                    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-                    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-                ],
-                datasets: [
-                    {
-                        label: 'Количество поездок',
-                        data: [
-                            {% for month in complete_monthly_trends %}
-                                {{ month.count }},
-                            {% endfor %}
-                        ],
-                        borderColor: '#0088cc',
-                        backgroundColor: 'rgba(0, 136, 204, 0.6)',
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Расходы (руб)',
-                        data: [
-                            {% for month in complete_monthly_trends %}
-                                {{ month.expenses|default:0 }},
-                            {% endfor %}
-                        ],
-                        borderColor: '#e2a03f',
-                        backgroundColor: 'rgba(226, 160, 63, 0.6)',
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        beginAtZero: true,
-                        grid: {drawOnChartArea: false}
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        beginAtZero: true,
-                        grid: {drawOnChartArea: false}
-                    },
-                    x: {
-                        grid: {display: false}
-                    }
-                }
-            }
-        });
-    </script>
 {% endblock %}

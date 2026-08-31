@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --touch-target-size: 42px;
@@ -35,6 +34,37 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var canvas = document.getElementById('weekdayChart');
+            if (canvas) {
+                var ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ weekdays|safe }},
+                        datasets: [{
+                            label: 'Количество отгулов',
+                            data: {{ leave_counts|safe }},
+                            backgroundColor: 'rgba(0, 136, 204, 0.5)',
+                            borderColor: '#0088cc',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -59,7 +89,7 @@
                     </h5>
                 </header>
                 <div class="card-body p-4">
-                    <form method="GET" action="{% url 'hrdepartment_app:weekday-analysis' %}" class="m-0">
+                    <form method="GET" action="{% url 'hrdepartment_app:weekday_analysis' %}" class="m-0">
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-4">
                                 <label for="year" class="form-label font-weight-semibold text-dark small">Год</label>
@@ -73,7 +103,7 @@
                                 <button type="submit" class="btn btn-primary btn-touch font-weight-semibold">
                                     <i class="bx bx-check me-2"></i> Применить
                                 </button>
-                                <a href="{% url 'hrdepartment_app:weekday-analysis' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                <a href="{% url 'hrdepartment_app:weekday_analysis' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
                                     <i class="bx bx-reset me-2"></i> Сбросить
                                 </a>
                             </div>
@@ -118,30 +148,4 @@
         </div>
     </div>
     <!-- end: page -->
-
-    <script>
-        const ctx = document.getElementById('weekdayChart').getContext('2d');
-        const weekdayChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ weekdays|safe }},
-                datasets: [{
-                    label: 'Количество отгулов',
-                    data: {{ leave_counts|safe }},
-                    backgroundColor: 'rgba(0, 136, 204, 0.5)',
-                    borderColor: '#0088cc',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    </script>
 {% endblock %}

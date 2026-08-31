@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --touch-target-size: 42px;
@@ -35,6 +34,37 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var canvas = document.getElementById('timeDistributionChart');
+            if (canvas) {
+                var ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ time_types|safe }},
+                        datasets: [{
+                            label: 'Количество записей',
+                            data: {{ time_counts|safe }},
+                            backgroundColor: 'rgba(0, 136, 204, 0.5)',
+                            borderColor: '#0088cc',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -50,8 +80,8 @@
                     <p class="text-muted small mb-0">Структура явок, часов работы, переработок и отпусков за выбранный год</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{% url 'hrdepartment_app:export-time-distribution' %}?year={{ selected_year }}" class="btn btn-success btn-touch font-weight-semibold">
-                        <i class="bx bx-download me-2"></i> Экспорт в Excel
+                    <a href="{% url 'hrdepartment_app:export_time_distribution' %}?year={{ selected_year }}" class="btn btn-success btn-touch font-weight-semibold">
+                        <i class="bx bx-download me-2"></i> Экспорт в CSV
                     </a>
                 </div>
             </div>
@@ -140,30 +170,4 @@
         </div>
     </div>
     <!-- end: page -->
-
-    <script>
-        const ctx = document.getElementById('timeDistributionChart').getContext('2d');
-        const timeDistributionChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ time_types|safe }},
-                datasets: [{
-                    label: 'Количество записей',
-                    data: {{ counts|safe }},
-                    backgroundColor: 'rgba(0, 136, 204, 0.5)',
-                    borderColor: '#0088cc',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    </script>
 {% endblock %}
