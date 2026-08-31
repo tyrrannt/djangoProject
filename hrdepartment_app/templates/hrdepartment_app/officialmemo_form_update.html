@@ -72,7 +72,7 @@
                             <p class="card-subtitle text-muted mb-0">Сотрудник: <strong>{{ object.person }}</strong></p>
                         </div>
                         <div>
-                            <a href="{% url 'hrdepartment_app:memo_detail' object.pk %}" class="btn btn-outline-secondary btn-touch">
+                            <a href="{% url 'hrdepartment_app:memo' object.pk %}" class="btn btn-outline-secondary btn-touch">
                                 <i class="bx bx-arrow-back me-1"></i> К карточке
                             </a>
                         </div>
@@ -196,7 +196,7 @@
                                         data-loading-text="Сохранение...">
                                     <i class="bx bx-save text-4 me-2"></i> Сохранить
                                 </button>
-                                <a href="{% url 'hrdepartment_app:memo_detail' object.pk %}"
+                                <a href="{% url 'hrdepartment_app:memo' object.pk %}"
                                    class="btn btn-outline-secondary btn-touch font-weight-semibold">
                                     <i class="bx bx-x text-4 me-2"></i> Отмена
                                 </a>

@@ -44,6 +44,7 @@ urlpatterns = [
     path('memo/', OfficialMemoList.as_view(), name='memo_list'),
     path('memo/add/', OfficialMemoAdd.as_view(), name='memo_add'),
     path('memo/<int:pk>/', OfficialMemoDetail.as_view(), name='memo'),
+    path('memo/<int:pk>/detail/', OfficialMemoDetail.as_view(), name='memo_detail'),
     path('memo/<int:pk>/update/', OfficialMemoUpdate.as_view(), name='memo_update'),
     path('memo/<int:pk>/cancel/', OfficialMemoCancel.as_view(), name='memo_cancel'),
     path("memo/get_extension_data/", views.get_extension_data, name="get_extension_data"),
