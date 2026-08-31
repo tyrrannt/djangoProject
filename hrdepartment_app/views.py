@@ -3498,8 +3498,44 @@ class ReportCardDetailIAS(LoginRequiredMixin, ListView):
         all_dict = dict()
         norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
         # Итерируемся по списку сотрудников
+        for user_obj in users_obj_set:
+            (
+                data_dict,
+                total_score,
+                all_days_count,
+                all_vacation_days,
+                all_vacation_time,
+                holiday_delta,
+            ) = get_working_hours(user_obj, current_day, state=1)
+            absences = all_days_count - (
+                    norm_time.number_working_days - all_vacation_days
+            )
+            absences_delta = (
+                    norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
+            )
+            if absences_delta < 0:
+                hour1, minute1 = divmod(total_score / 60, 60)
+                time_count_hour = "{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм".format(
+                    hour1, minute1
+                )
+            else:
+                hour1, minute1 = divmod(total_score / 60, 60)
+                hour2, minute2 = divmod(absences_delta * 60, 60)
+                time_count_hour = "{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм".format(
+                    hour1, minute1, hour2, minute2
+                )
+            all_dict[users_obj_set[user_obj]] = {
+                "dict_count": data_dict,
+                "days_count": all_days_count,
+                "time_count_day": timedelta(seconds=total_score).days,
+                "time_count_hour": time_count_hour,
+                "absences": abs(absences) if absences < 0 else 0,
+                "vacation_time": (all_vacation_time + total_score) / 3600,
+                "holidays": norm_time.number_days_off_and_holidays - holiday_delta,
+            }
 
         month_dict, year_dict = get_year_interval(2020)
+        context["all_dict"] = all_dict
         context["range"] = [item for item in range(1, 17)]
         context["range2"] = [item for item in range(16, 32)]
         context["year_dict"] = year_dict
@@ -3513,7 +3549,7 @@ class ReportCardDetailIAS(LoginRequiredMixin, ListView):
         context["current_year"] = datetime.today().year
         context["current_month"] = str(datetime.today().month)
         context["tabel_month"] = first_day
-        context["title"] = f"Табель учета рабочего времени (факт)"
+        context["title"] = "Табель учета рабочего времени (ИАС)"
         return context
 
 

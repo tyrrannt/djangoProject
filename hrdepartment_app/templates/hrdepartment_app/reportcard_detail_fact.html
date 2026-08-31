@@ -25,14 +25,26 @@
         .btn-touch:hover {
             transform: translateY(-1px);
         }
-        .table-ecommerce-simple {
-            overflow-x: auto;
-            position: relative;
+        .badge-soft-primary {
+            background-color: #e6f3fa !important;
+            color: #0077b5 !important;
+            border: 1px solid #b3dcf1 !important;
+            font-weight: 600;
         }
-        .table-ecommerce-simple th {
-            position: sticky;
-            top: 0;
-            z-index: 2;
+        .cell-summary {
+            background-color: #f8f9fa !important;
+            color: #212529 !important;
+        }
+        .table-reportcard-fact thead th {
+            background-color: #f1f3f5 !important;
+            color: #212529 !important;
+            font-weight: 600;
+            vertical-align: middle;
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+        .table-reportcard-fact td {
+            vertical-align: middle;
+            color: #212529;
         }
     </style>
 {% endblock %}
@@ -101,15 +113,15 @@
                         <h5 class="card-title text-dark mb-0 font-weight-bold">
                             <i class="bx bx-table text-primary me-2"></i>Фактический табель за {{ tabel_month|date:"F Y" }} г.
                         </h5>
-                        <span class="badge bg-primary bg-opacity-10 text-primary fs-6 p-2">
+                        <span class="badge badge-soft-primary fs-6 p-2">
                             Норма дней: <strong>{{ norm_day }}</strong> &bull; Норма часов: <strong>{{ norm_time }}</strong>
                         </span>
                     </div>
                 </header>
                 <div class="card-body p-4">
                     <div id="id_tables" class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle text-center mb-0" id="id_datatable_head" style="min-width: 1100px;">
-                            <thead class="table-light">
+                        <table class="table table-bordered table-hover table-reportcard-fact align-middle text-center mb-0" id="id_datatable_head" style="min-width: 1100px;">
+                            <thead>
                                 <tr>
                                     <th rowspan="2" style="width: 200px; vertical-align: middle;">ФИО</th>
                                     <th rowspan="2" style="width: 90px; vertical-align: middle;">Событие</th>
@@ -145,7 +157,7 @@
                                             {% endif %}
                                         {% endfor %}
                                         <td class="small font-monospace" style="vertical-align: middle;">X</td>
-                                        <td rowspan="2" class="bg-light fw-bold font-monospace" style="vertical-align: middle;">
+                                        <td rowspan="2" class="cell-summary fw-bold font-monospace" style="vertical-align: middle;">
                                             {{ value.days_count }} дн.<br>{{ value.time_count_hour|safe }}<br>{{ value.absences }} неявок
                                         </td>
                                     </tr>

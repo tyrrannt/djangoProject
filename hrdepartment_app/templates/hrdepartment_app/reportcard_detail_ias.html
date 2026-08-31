@@ -25,14 +25,41 @@
         .btn-touch:hover {
             transform: translateY(-1px);
         }
-        .table-ecommerce-simple {
-            overflow-x: auto;
-            position: relative;
+        .badge-soft-primary {
+            background-color: #e6f3fa !important;
+            color: #0077b5 !important;
+            border: 1px solid #b3dcf1 !important;
+            font-weight: 600;
         }
-        .table-ecommerce-simple th {
-            position: sticky;
-            top: 0;
-            z-index: 2;
+        .cell-absence {
+            background-color: #fce8e6 !important;
+            color: #c92a2a !important;
+            font-weight: 700 !important;
+        }
+        .cell-weekend {
+            background-color: #f1f3f5 !important;
+            color: #495057 !important;
+            font-weight: 600;
+        }
+        .cell-underhours {
+            background-color: #fce8e6 !important;
+            color: #c92a2a !important;
+            font-weight: 700 !important;
+        }
+        .cell-summary {
+            background-color: #f8f9fa !important;
+            color: #212529 !important;
+        }
+        .table-reportcard thead th {
+            background-color: #f1f3f5 !important;
+            color: #212529 !important;
+            font-weight: 600;
+            vertical-align: middle;
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+        .table-reportcard td {
+            vertical-align: middle;
+            color: #212529;
         }
     </style>
 {% endblock %}
@@ -101,7 +128,7 @@
                         <h5 class="card-title text-dark mb-0 font-weight-bold">
                             <i class="bx bx-table text-primary me-2"></i>Табель ИАС за {{ tabel_month|date:"F Y" }} г.
                         </h5>
-                        <span class="badge bg-primary bg-opacity-10 text-primary fs-6 p-2">
+                        <span class="badge badge-soft-primary fs-6 p-2">
                             Норма дней: <strong>{{ norm_day }}</strong> &bull; Норма часов: <strong>{{ norm_time }}</strong>
                         </span>
                     </div>
@@ -114,8 +141,8 @@
                     </div>
 
                     <div id="id_tables" class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle text-center mb-0" id="id_datatable" style="min-width: 1100px;">
-                            <thead class="table-light">
+                        <table class="table table-bordered table-hover table-reportcard align-middle text-center mb-0" id="id_datatable" style="min-width: 1100px;">
+                            <thead>
                                 <tr>
                                     <th style="width: 220px; text-align: left;">ФИО сотрудника</th>
                                     {% for key, value in month_obj %}
@@ -132,23 +159,25 @@
                                     <tr>
                                         <td class="text-start fw-semibold text-dark" rowspan="2">{{ key }}</td>
                                         {% for item1, item2, item3 in value.dict_count %}
-                                            <td class="{% if item2 == 'В' %}bg-light text-muted{% elif item2 == 'Н' %}bg-danger bg-opacity-10 text-danger fw-bold{% endif %}" style="padding: 4px 2px;">
+                                            <td class="{% if item2 == 'В' or item2 == 'П' %}cell-weekend{% elif item2 == 'Н' %}cell-absence{% endif %}" style="padding: 4px 2px;">
                                                 {{ item2 }}
                                             </td>
                                         {% endfor %}
 
-                                        <td class="bg-light fw-bold" rowspan="2">{{ value.days_count }}</td>
-                                        <td class="{% if value.vacation_time < norm_time %}bg-danger bg-opacity-10 text-danger{% else %}bg-light text-dark{% endif %} fw-bold font-monospace" rowspan="2">
+                                        <td class="cell-summary fw-bold" rowspan="2">{{ value.days_count }}</td>
+                                        <td class="{% if value.vacation_time < norm_time %}cell-underhours{% else %}cell-summary text-dark{% endif %} fw-bold font-monospace" rowspan="2">
                                             {{ value.time_count_hour|safe }}
                                         </td>
-                                        <td class="bg-light">{{ value.absences }} дн.</td>
-                                        <td class="bg-light" rowspan="2">{{ value.holidays }}</td>
+                                        <td class="cell-summary">{{ value.absences }} дн.</td>
+                                        <td class="cell-summary" rowspan="2">{{ value.holidays }}</td>
                                     </tr>
                                     <tr>
                                         {% for item1, item2, item3 in value.dict_count %}
-                                            <td class="small text-muted font-monospace" style="padding: 2px;">{{ item3 }}</td>
+                                            <td class="{% if item2 == 'В' or item2 == 'П' %}cell-weekend{% elif item2 == 'Н' %}cell-absence{% endif %} small font-monospace" style="padding: 2px;">
+                                                {{ item3 }}
+                                            </td>
                                         {% endfor %}
-                                        <td class="small text-muted font-monospace">{{ value.absences|multiply:8 }} ч.</td>
+                                        <td class="cell-summary small font-monospace">{{ value.absences|multiply:8 }} ч.</td>
                                     </tr>
                                 {% empty %}
                                     <tr>

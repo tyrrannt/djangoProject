@@ -140,7 +140,7 @@
                     <!-- Status and Scanned File Section -->
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
-                            <div class="p-3 rounded border {% if poa.is_received %}bg-success bg-opacity-10 border-success-subtle{% else %}bg-warning bg-opacity-10 border-warning-subtle{% endif %}">
+                            <div class="p-3 rounded border" style="{% if poa.is_received %}background-color: #f0faf0; border-color: #c3e6cb !important;{% else %}background-color: #fffdf5; border-color: #ffeeba !important;{% endif %}">
                                 <div class="d-flex align-items-center gap-3">
                                     {% if poa.is_received %}
                                         <i class="bx bx-check-circle text-success fs-1"></i>
