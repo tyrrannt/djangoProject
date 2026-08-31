@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --touch-target-size: 42px;
@@ -35,6 +34,53 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var canvas = document.getElementById('vacationChart');
+            if (canvas) {
+                var ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ months|safe }},
+                        datasets: [
+                            {
+                                label: 'План отпусков',
+                                data: {{ planned_counts|safe }},
+                                backgroundColor: 'rgba(0, 136, 204, 0.4)',
+                                borderColor: '#0088cc',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Основные отпуска (факт)',
+                                data: {{ main_counts|safe }},
+                                backgroundColor: 'rgba(71, 164, 71, 0.6)',
+                                borderColor: '#47a447',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Прочие отпуска (факт)',
+                                data: {{ other_counts|safe }},
+                                backgroundColor: 'rgba(237, 156, 40, 0.6)',
+                                borderColor: '#ed9c28',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -157,46 +203,4 @@
         </div>
     </div>
     <!-- end: page -->
-
-    <script>
-        const ctx = document.getElementById('vacationChart').getContext('2d');
-        const vacationChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ months_labels|safe }},
-                datasets: [
-                    {
-                        label: 'План отпусков',
-                        data: {{ planned_counts|safe }},
-                        backgroundColor: 'rgba(0, 136, 204, 0.4)',
-                        borderColor: '#0088cc',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Основные отпуска (факт)',
-                        data: {{ main_counts|safe }},
-                        backgroundColor: 'rgba(71, 164, 71, 0.6)',
-                        borderColor: '#47a447',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Прочие отпуска (факт)',
-                        data: {{ other_counts|safe }},
-                        backgroundColor: 'rgba(237, 156, 40, 0.6)',
-                        borderColor: '#ed9c28',
-                        borderWidth: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    </script>
 {% endblock %}
