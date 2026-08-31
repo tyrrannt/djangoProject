@@ -23,7 +23,11 @@ from customers_app.models import DataBaseUser
 from mailbox_app.forms import MailAccountSettingsForm, MailComposeForm
 from mailbox_app.models import MailAccount
 from mailbox_app.services.account_service import get_user_mail_account
-from mailbox_app.services.imap_service import ImapMailService, decode_imap_utf7
+from mailbox_app.services.imap_service import (
+    ImapMailService,
+    decode_imap_utf7,
+    invalidate_mailbox_cache,
+)
 from mailbox_app.services.smtp_service import SmtpMailService
 
 logger = logging.getLogger(__name__)
@@ -390,6 +394,7 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
             except Exception as ex:
                 logger.debug(f"[Mailbox] Ошибка автосохранения контакта: {ex}")
 
+            invalidate_mailbox_cache(account.email)
             messages.success(self.request, f"Письмо «{subject}» успешно отправлено!")
             return redirect("mailbox_app:folder", folder="INBOX")
         except Exception as e:
@@ -636,6 +641,8 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
             HttpResponse: Редирект с уведомлением.
         """
         form.save()
+        invalidate_mailbox_cache(self.get_account().email)
         messages.success(self.request, "Настройки почтового ящика успешно сохранены!")
         return redirect("mailbox_app:settings")
+
 

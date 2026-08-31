@@ -9,7 +9,20 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple, Any
 
+from django.core.cache import cache
+
 logger = logging.getLogger(__name__)
+
+
+def invalidate_mailbox_cache(email_addr: str) -> None:
+    """Сбрасывает кэш папок для указанного почтового ящика.
+
+    Args:
+        email_addr (str): Email адрес ящика.
+    """
+    if email_addr:
+        cache.delete(f"mailbox_folders_{email_addr.strip().lower()}")
+
 
 
 def decode_imap_utf7(encoded_name: str) -> str:
@@ -183,12 +196,21 @@ class ImapMailService:
         """Контекстный менеджер выхода."""
         self.close()
 
-    def get_folders(self) -> List[Dict[str, Any]]:
-        """Возвращает список всех папок почтового ящика со статистикой сообщений.
+    def get_folders(self, force_refresh: bool = False) -> List[Dict[str, Any]]:
+        """Возвращает список всех папок почтового ящика со статистикой сообщений (с быстрым кэшированием).
+
+        Args:
+            force_refresh (bool): Принудительно запросить данные с IMAP сервера в обход кэша.
 
         Returns:
-            list[dict]: Список словарей папок с полями raw_name, display_name, unseen, total, icon.
+            list[dict]: Список словарей папок с полями raw_name, display_name, unseen, total, icon, type.
         """
+        cache_key = f"mailbox_folders_{self.email_addr.strip().lower()}" if self.email_addr else None
+        if cache_key and not force_refresh:
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                return cached_data
+
         if not self.client:
             return []
 
@@ -215,22 +237,6 @@ class ImapMailService:
                 continue
             if lower_name in ["contacts", "calendar", "tasks", "notes", "контакты", "календарь", "задачи", "заметки"]:
                 continue
-
-            # Получаем количество непрочитанных и всего писем
-            unseen_count = 0
-            total_count = 0
-            try:
-                status_res, status_data = self.client.status(f'"{raw_name}"', "(UNSEEN MESSAGES)")
-                if status_res == "OK" and status_data:
-                    stat_line = status_data[0].decode("latin-1")
-                    unseen_m = re.search(r"UNSEEN\s+(\d+)", stat_line)
-                    total_m = re.search(r"MESSAGES\s+(\d+)", stat_line)
-                    if unseen_m:
-                        unseen_count = int(unseen_m.group(1))
-                    if total_m:
-                        total_count = int(total_m.group(1))
-            except Exception:
-                pass
 
             # Определяем иконку и системный тип папки (с учетом Kerio Connect 9.4)
             icon = "bx bx-folder"
@@ -260,6 +266,22 @@ class ImapMailService:
                 icon = "bx bx-star"
                 folder_type = "important"
 
+            # Получаем количество непрочитанных и всего писем
+            unseen_count = 0
+            total_count = 0
+            try:
+                status_res, status_data = self.client.status(f'"{raw_name}"', "(UNSEEN MESSAGES)")
+                if status_res == "OK" and status_data:
+                    stat_line = status_data[0].decode("latin-1")
+                    unseen_m = re.search(r"UNSEEN\s+(\d+)", stat_line)
+                    total_m = re.search(r"MESSAGES\s+(\d+)", stat_line)
+                    if unseen_m:
+                        unseen_count = int(unseen_m.group(1))
+                    if total_m:
+                        total_count = int(total_m.group(1))
+            except Exception:
+                pass
+
             folders.append({
                 "raw_name": raw_name,
                 "display_name": display_name,
@@ -272,6 +294,10 @@ class ImapMailService:
         # Сортируем: Входящие первыми, далее Отправленные, Черновики, Корзина, Спам, остальные
         order_priority = {"inbox": 1, "sent": 2, "drafts": 3, "trash": 4, "spam": 5, "important": 6, "custom": 10}
         folders.sort(key=lambda f: (order_priority.get(f["type"], 99), f["display_name"]))
+
+        if cache_key:
+            cache.set(cache_key, folders, timeout=60)
+
         return folders
 
     def get_messages(
@@ -368,32 +394,41 @@ class ImapMailService:
             if sort_dir == "desc":
                 uids_list.reverse()
         else:
-            # 2. Выборка UIDs с использованием серверной сортировки IMAP RFC 5256 SORT
-            imap_sort_fields = {
-                "date": "DATE",
-                "arrival": "ARRIVAL",
-                "from": "FROM",
-                "subject": "SUBJECT",
-                "size": "SIZE",
-            }
-            sort_success = False
-            sort_field = imap_sort_fields.get(sort_by, "DATE")
-            try:
-                direction = "REVERSE " if sort_dir == "desc" else ""
-                sort_crit = f"({direction}{sort_field})"
-                status, sort_data = self.client.uid("sort", sort_crit, "UTF-8", base_criteria)
-                if status == "OK" and sort_data and sort_data[0]:
-                    uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
-                    sort_success = True
-            except Exception as e:
-                logger.debug(f"[IMAP] Серверный SORT {sort_by} не удался ({e}), используем fallback")
-
-            if not sort_success:
+            # 2. Выборка UIDs:
+            # Для стандартного просмотра (сортировка по дате) используем мгновенный серверный UID SEARCH (3-5 мс)
+            if sort_by == "date":
                 status, search_data = self.client.uid("search", None, base_criteria)
                 if status == "OK" and search_data and search_data[0]:
                     uids_list = [u for u in search_data[0].split() if u and u != b"0"]
                     if sort_dir == "desc":
                         uids_list.reverse()
+            else:
+                # Для кастомных сортировок (отправитель, тема, размер) используем серверный RFC 5256 SORT
+                imap_sort_fields = {
+                    "date": "DATE",
+                    "arrival": "ARRIVAL",
+                    "from": "FROM",
+                    "subject": "SUBJECT",
+                    "size": "SIZE",
+                }
+                sort_success = False
+                sort_field = imap_sort_fields.get(sort_by, "DATE")
+                try:
+                    direction = "REVERSE " if sort_dir == "desc" else ""
+                    sort_crit = f"({direction}{sort_field})"
+                    status, sort_data = self.client.uid("sort", sort_crit, "UTF-8", base_criteria)
+                    if status == "OK" and sort_data and sort_data[0]:
+                        uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
+                        sort_success = True
+                except Exception as e:
+                    logger.debug(f"[IMAP] Серверный SORT {sort_by} не удался ({e}), используем fallback")
+
+                if not sort_success:
+                    status, search_data = self.client.uid("search", None, base_criteria)
+                    if status == "OK" and search_data and search_data[0]:
+                        uids_list = [u for u in search_data[0].split() if u and u != b"0"]
+                        if sort_dir == "desc":
+                            uids_list.reverse()
 
         total_messages = len(uids_list)
         if total_messages == 0:
@@ -813,6 +848,7 @@ class ImapMailService:
         meta_line = data[0].decode("latin-1") if isinstance(data[0], bytes) else str(data[0])
         action = "-FLAGS" if flag_name in meta_line else "+FLAGS"
         self.client.uid("store", str(uid), action, f"({flag_name})")
+        invalidate_mailbox_cache(self.email_addr)
         return True
 
     def mark_seen(self, folder_name: str, uid: int, is_seen: bool = True) -> bool:
@@ -831,6 +867,7 @@ class ImapMailService:
         self.client.select(f'"{folder_name}"', readonly=False)
         action = "+FLAGS" if is_seen else "-FLAGS"
         self.client.uid("store", str(uid), action, "(\\Seen)")
+        invalidate_mailbox_cache(self.email_addr)
         return True
 
     def delete_message(self, folder_name: str, uid: int) -> bool:
@@ -851,6 +888,7 @@ class ImapMailService:
         if "trash" in folder_name.lower() or "корзин" in folder_name.lower() or "deleted" in folder_name.lower():
             self.client.uid("store", str(uid), "+FLAGS", "(\\Deleted)")
             self.client.expunge()
+            invalidate_mailbox_cache(self.email_addr)
             return True
 
         # Иначе пробуем переместить в корзину
@@ -865,6 +903,7 @@ class ImapMailService:
             self.client.uid("store", str(uid), "+FLAGS", "(\\Deleted)")
             self.client.expunge()
 
+        invalidate_mailbox_cache(self.email_addr)
         return True
 
     def unmark_spam(self, folder_name: str, uid: int) -> Tuple[bool, Optional[Tuple[str, str]]]:
@@ -919,6 +958,7 @@ class ImapMailService:
             if copy_st == "OK":
                 self.client.uid("store", str(uid), "+FLAGS", "(\\Deleted)")
                 self.client.expunge()
+                invalidate_mailbox_cache(self.email_addr)
                 return True, sender_info
         except Exception as e:
             logger.error(f"[IMAP] Ошибка переноса письма UID {uid} из спама в {inbox_folder}: {e}")
