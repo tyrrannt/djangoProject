@@ -1,141 +1,187 @@
-{% extends 'customers_app/main.html' %}
+{% extends 'customers_app/base.html' %}
 {% load static %}
 {% load custom %}
-{% load widget_tweaks %}
 
-
+{% block title %}
+    Блокировка экрана // Корпоративный портал
+{% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-
     <style>
-        body.show-lock-screen {
-            overflow: hidden;
+        :root {
+            --touch-target-size: 42px;
         }
-
-        .mfp-lock-screen {
-            background: rgba(0, 0, 0, 0.8);
-        }
-
-        .body-sign, .body-locked, .body-locked-inline {
-            display: flex;
-            justify-content: center;
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
             align-items: center;
-            min-height: 80vh;
-            background: transparent;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
         }
-
-        .center-sign {
-            background: white;
-            padding: 30px;
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .lock-card {
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            text-align: center;
-            max-width: 420px;
-            width: 100%;
+            background: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
         }
-
-        .user-image {
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            display: block;
-            margin: 0 auto 16px auto;
-            border-radius: 50%;
-            border: 3px solid #e2e8f0;
-        }
-
-        body.overlay-active::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            z-index: 999;
-        }
-
-        #LockScreenInline {
+        .user-avatar-wrapper {
             position: relative;
-            z-index: 1000;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        .user-avatar-img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+        .lock-status-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background-color: #ffc107;
+            color: #212529;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+        .job-badge {
+            white-space: normal !important;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.45;
+            display: inline-block;
+            max-width: 100%;
+            text-align: center;
         }
     </style>
 {% endblock %}
 
-{% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            document.body.classList.add('overlay-active');
-        });
-    </script>
-{% endblock %}
-
-{% block title %}
-    {{ title|default:"Блокировка экрана" }}
-{% endblock %}
-
-{% block left_menu %}
-    <aside id="sidebar-left" class="sidebar-left">
-        <!-- Левое меню -->
-    </aside>
-{% endblock %}
-
-{% block notifications %}
-    <div class="header-right">
-
-    </div>
-{% endblock %}
-
 {% block content %}
-        <!-- start: page -->
-        <section id="LockScreenInline" class="body-sign body-locked body-locked-inline">
-            <div class="center-sign">
-                <div class="panel card-sign">
-                    <div class="card-body">
-                        <form action="#" method="post">
-                            {% csrf_token %}
-                            <div class="current-user text-center">
-                                {% if user.avatar %}
-                                    <img id="LockUserPicture" src="/media/{{ request.user.avatar }}?v={{ object.updated_at.timestamp }}"
-                                         class="rounded-circle user-image"/>
-                                {% else %}
-                                    <img id="LockUserPicture" src="{% static 'admin_templates/img/!logged-user.jpg' %}"
-                                         class="rounded-circle user-image"/>
-                                {% endif %}
-                                <h2 id="LockUserName" class="user-name text-dark m-0">{{ request.user.title }}</h2>
-                                <p id="LockUserEmail" class="user-email m-0">{{ request.user.email }}</p>
-                            </div>
-                            <div class="form-group mb-lg">
-                                <div class="input-group">
-                                    <div class="col-10">
-                                        <input id="pwd" name="pwd" type="password" class="form-control form-control-lg"
-                                               placeholder="Password"/>
-                                    </div>
-                                    <div class="col-2">
-                                        <span class="form-control form-control-lg"><i class="fas fa-lock"></i></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-primary pull-right">Разблокировать</button>
-                                </div>
-                            </div>
-                        </form>
+    <!-- start: lock screen card -->
+    <div class="card lock-card border-0">
+        <div class="card-body p-4 p-md-5 text-center">
+            <form action="{% url 'customers_app:lock_screen' %}" method="post" id="lockScreenForm">
+                {% csrf_token %}
+
+                <!-- User Picture and Status -->
+                <div class="user-avatar-wrapper">
+                    {% if request.user.avatar %}
+                        <img id="LockUserPicture"
+                             src="{{ request.user.avatar.url }}?v={{ request.user.updated_at.timestamp }}"
+                             class="user-avatar-img"
+                             alt="{{ request.user.title|default:request.user.username }}"/>
+                    {% else %}
+                        <img id="LockUserPicture"
+                             src="{% static 'admin_templates/img/!logged-user.jpg' %}"
+                             class="user-avatar-img"
+                             alt="{{ request.user.title|default:request.user.username }}"/>
+                    {% endif %}
+                    <span class="lock-status-badge" title="Сессия заблокирована">
+                        <i class="bx bx-lock-alt fs-6"></i>
+                    </span>
+                </div>
+
+                <!-- User Info -->
+                <h4 id="LockUserName" class="fw-bold text-dark mb-2 text-break">
+                    {{ request.user.title|default:request.user.username }}
+                </h4>
+                {% if request.user.user_work_profile.job.name %}
+                    <div class="mb-2 px-1">
+                        <span class="badge bg-light text-dark border px-3 py-2 fs-7 font-weight-semibold job-badge">
+                            <i class="bx bx-briefcase text-primary me-1"></i>{{ request.user.user_work_profile.job.name }}
+                        </span>
+                    </div>
+                {% endif %}
+                <div id="LockUserEmail" class="text-muted small mb-4 text-break">
+                    <i class="bx bx-envelope me-1"></i>{{ request.user.email }}
+                </div>
+
+                <!-- Error Alert -->
+                {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show p-3 mb-4 text-start small d-flex align-items-center gap-2" role="alert">
+                        <i class="bx bx-error-circle fs-5 text-danger flex-shrink-0"></i>
+                        <div>{{ error }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                    </div>
+                {% endif %}
+
+                <!-- Password Input -->
+                <div class="form-group mb-4 text-start">
+                    <label for="pwd" class="form-label font-weight-semibold text-dark small">Пароль для разблокировки:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bx bx-key text-muted"></i>
+                        </span>
+                        <input id="pwd" name="pwd" type="password"
+                               class="form-control form-control-modern border-start-0 border-end-0 px-0 {% if error %}is-invalid{% endif %}"
+                               placeholder="Введите пароль"
+                               autocomplete="current-password"
+                               autofocus
+                               required/>
+                        <button type="button" class="btn btn-outline-secondary input-group-text bg-light border-start-0" id="togglePasswordBtn"
+                                title="Показать / скрыть пароль" aria-label="Показать или скрыть пароль">
+                            <i class="far fa-eye text-muted" id="togglePasswordIcon"></i>
+                        </button>
                     </div>
                 </div>
-            </div>
-        </section>
-        <!-- end: page -->
-    <!-- end: page -->
 
+                <!-- Unlock Button -->
+                <div class="d-grid mb-4">
+                    <button type="submit" class="btn btn-primary btn-touch font-weight-semibold">
+                        <i class="bx bx-lock-open-alt me-2"></i> Разблокировать экран
+                    </button>
+                </div>
+
+                <!-- Footer Action Links -->
+                <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                    <a href="{% url 'customers_app:logout' %}" class="text-muted small text-decoration-none">
+                        <i class="bx bx-log-out me-1"></i> Сменить пользователя
+                    </a>
+                    <a href="{% url 'customers_app:login' %}" class="text-primary small text-decoration-none font-weight-semibold">
+                        Вход в систему <i class="bx bx-chevron-right ms-1"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- end: lock screen card -->
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Управление видимостью пароля
+            const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+            const passwordInput = document.getElementById('pwd');
+            const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+            if (togglePasswordBtn && passwordInput && togglePasswordIcon) {
+                togglePasswordBtn.addEventListener('click', function () {
+                    const isPassword = passwordInput.getAttribute('type') === 'password';
+                    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                    togglePasswordIcon.classList.toggle('fa-eye', !isPassword);
+                    togglePasswordIcon.classList.toggle('fa-eye-slash', isPassword);
+                });
+            }
+
+            // Автофокус на поле ввода пароля
+            if (passwordInput) {
+                passwordInput.focus();
+            }
+        });
+    </script>
 {% endblock %}
