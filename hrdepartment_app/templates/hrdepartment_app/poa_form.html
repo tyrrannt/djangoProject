@@ -10,15 +10,21 @@
 {% block custom_css %}
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 8px 20px;
+            padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
         }
         .form-section-title {
             font-size: 1.05rem;
@@ -47,7 +53,7 @@
                     <p class="text-muted small mb-0">Заполните реквизиты доверенности, выберите стороны и прикрепите скан документа</p>
                 </div>
                 <div>
-                    <a href="{% if object %}{% url 'hrdepartment_app:poa_detail' object.pk %}{% else %}{% url 'hrdepartment_app:poa_list' %}{% endif %}" class="btn btn-outline-secondary btn-touch">
+                    <a href="{% if object %}{% url 'hrdepartment_app:poa_detail' object.pk %}{% else %}{% url 'hrdepartment_app:poa_list' %}{% endif %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
                         <i class="bx bx-arrow-back me-1"></i> Отмена
                     </a>
                 </div>
@@ -55,7 +61,7 @@
 
             <!-- Form Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4 rounded-top">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-edit text-primary me-2"></i>Параметры доверенности
                     </h5>
@@ -160,7 +166,7 @@
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label class="form-label font-weight-bold text-dark" for="{{ form.scan_file.id_for_label }}">
-                                        Скан-копия документа
+                                        Скан-копия документа (.pdf)
                                     </label>
                                     {{ form.scan_file|add_class:"form-control form-control-modern" }}
                                     {% if form.scan_file.errors %}
@@ -172,16 +178,16 @@
 
                         <!-- Action Bar -->
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
-                            <a href="{% if object %}{% url 'hrdepartment_app:poa_detail' object.pk %}{% else %}{% url 'hrdepartment_app:poa_list' %}{% endif %}" class="btn btn-outline-secondary btn-touch">
+                            <a href="{% if object %}{% url 'hrdepartment_app:poa_detail' object.pk %}{% else %}{% url 'hrdepartment_app:poa_list' %}{% endif %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
                                 <i class="bx bx-arrow-back me-1"></i> Отмена
                             </a>
                             <div class="d-flex gap-2">
                                 {% if object and user.is_superuser or request.user == object.executor %}
-                                    <a href="{% url 'hrdepartment_app:poa_delete' object.pk %}" class="btn btn-outline-danger btn-touch">
+                                    <a href="{% url 'hrdepartment_app:poa_delete' object.pk %}" class="btn btn-outline-danger btn-touch font-weight-semibold">
                                         <i class="bx bx-trash me-1"></i> Удалить
                                     </a>
                                 {% endif %}
-                                <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
+                                <button type="submit" class="btn btn-success font-weight-semibold btn-touch">
                                     <i class="bx bx-save me-1"></i> {% if object %}Сохранить изменения{% else %}Создать доверенность{% endif %}
                                 </button>
                             </div>

@@ -3,96 +3,89 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
     <div class="row">
-        <div class="col">
-            <section class="card">
-                <header class="card-header">
-                    <div class="card-actions">
-                        <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
+        <div class="col-12">
+            <section class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-file-blank text-primary me-2"></i>{{ title }}
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Отчет по служебным запискам на служебные поездки</p>
                     </div>
-                    <h2 class="card-title">Основной</h2>
                 </header>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-9">
-                            <form action="{% url 'hrdepartment_app:bpmemo_month_report' %}" method="get">
-                                <div class="row">
-                                    <div class="col-sm-12 col-lg-3 mb-1">
-                                        <select class="form-control select-style-1 filter-by" name="report_month"
-                                                id="id_report_month">
-                                            {% for key, value in month_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_month == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-lg-3 mb-1">
-                                        <select class="form-control select-style-1 filter-by" name="report_year"
-                                                id="id_report_year">
-                                            {% for key, value in year_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_year == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-lg-3 mb-1">
-                                        <button type="submit" class="btn btn-primary" style="width: 100%"
-                                                onclick="report_date()">OK
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
+                <div class="card-body p-4">
+                    <form action="{% url 'hrdepartment_app:bpmemo_month_report' %}" method="get" class="mb-4">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-4 col-lg-3">
+                                <select class="form-control form-control-modern filter-by" name="report_month" id="id_report_month">
+                                    {% for key, value in month_dict.items %}
+                                        <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
+                                            {{ value }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 col-lg-3">
+                                <select class="form-control form-control-modern filter-by" name="report_year" id="id_report_year">
+                                    {% for key, value in year_dict.items %}
+                                        <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
+                                            {{ value }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 col-lg-2">
+                                <button type="submit" class="btn btn-primary btn-touch w-100 font-weight-semibold" onclick="report_date()">
+                                    <i class="bx bx-filter-alt me-1"></i> Применить
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </form>
+
                     <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
-                        <div class="row">
-                        </div>
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped mb-0 dataTable no-footer"
+                            <table class="table table-bordered table-striped mb-0 dataTable no-footer table-hover"
                                    id="datatable-editable" role="grid">
                                 <thead>
-                                <tr role="row">
-                                    <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
-                                        rowspan="1" colspan="1" aria-sort="ascending"
-                                        aria-label="Rendering engine: activate to sort column descending"
-                                        style="width: 185.391px;">Документ
-                                    </th>
-                                    <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
-                                        rowspan="1" colspan="1" aria-sort="ascending"
-                                        aria-label="Rendering engine: activate to sort column descending"
-                                        style="width: 185.391px;">Приказ
-                                    </th>
-                                    <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
-                                        rowspan="1" colspan="1" aria-sort="ascending"
-                                        aria-label="Rendering engine: activate to sort column descending"
-                                        style="width: 185.391px;">Примечание
-                                    </th>
-
-                                </tr>
+                                    <tr role="row">
+                                        <th style="width: 30%;">Документ</th>
+                                        <th style="width: 30%;">Приказ</th>
+                                        <th style="width: 40%;">Примечание</th>
+                                    </tr>
                                 </thead>
                             </table>
                         </div>
                     </div>
                 </div>
             </section>
-
-            <div class="card card-modern">
-                <div class="card-body">
-                    <div class="datatables-header-footer-wrapper">
-
-                        <hr class="solid mt-5 opacity-4">
-
-                    </div>
-                </div>
-
-            </div>
         </div>
     </div>
     <!-- end: page -->
@@ -103,21 +96,18 @@
         $(document).ready(function () {
             $('#datatable-editable thead th').each(function () {
                 var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+                $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm form-control-modern" />');
             });
             var table = $('#datatable-editable').DataTable({
                 "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
-                            $('input', this.header()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
+                    this.api().columns().every(function () {
+                        var that = this;
+                        $('input', this.header()).on('keyup change clear', function () {
+                            if (that.search() !== this.value) {
+                                that.search(this.value).draw();
+                            }
                         });
+                    });
                 },
                 "ordering": false,
                 "scrollX": true,

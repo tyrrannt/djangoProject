@@ -1,26 +1,49 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+
+{% block title %}
+    Редактирование МПД: {{ object.name }} // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -29,64 +52,92 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
-
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-2-5 col-xl-1-5">
-                                <i class="card-big-info-icon bx bxl-netlify"></i>
-                                <p class="card-big-info-desc">Форма редактирования места назначения</p>
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" action="#" method="post">
+                {% csrf_token %}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-edit text-primary me-2"></i>Редактирование: {{ object.name }}
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Место производственной деятельности (МПД)</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:place_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> К списку
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
-                            <div class="col-lg-3-5 col-xl-4-5">
-                                {{ form.as_p }}
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.name.id_for_label }}">Полное наименование <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-12 col-md-8">
+                                <label class="form-label" for="{{ form.address.id_for_label }}">Адрес</label>
+                                {{ form.address }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.short_name.id_for_label }}">Краткое наименование</label>
+                                {{ form.short_name }}
                             </div>
                         </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons">
 
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:place_list' %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
+                    <!-- Панель кнопок строго в футере карточки -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:place_list' %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'hrdepartment_app:place_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                                </a>
+                            </div>
+                            {% if user.is_superuser %}
+                                <div>
+                                    <a href="#" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
+            </form>
         </div>
-    </form>
+    </div>
     <!-- end: page -->
-    <!-- end: page -->
-
 {% endblock %}

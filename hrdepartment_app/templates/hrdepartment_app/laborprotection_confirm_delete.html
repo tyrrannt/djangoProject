@@ -6,19 +6,25 @@
 {% endblock %}
 
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 20px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -26,7 +32,7 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
             <div class="card card-modern shadow-sm border-0 mt-4">
-                <header class="card-header bg-danger text-white py-3">
+                <header class="card-header bg-danger text-white py-3 px-4 rounded-top">
                     <h5 class="card-title text-white mb-0 font-weight-bold">
                         <i class="bx bx-trash me-2"></i> Удаление документа охраны труда
                     </h5>
@@ -40,15 +46,15 @@
                         <div class="small text-muted mb-1">Объект:</div>
                         <div class="fw-bold text-dark fs-6">Вы действительно хотите удалить документ «{{ object.document_name }} № {{ object.document_number }}»?</div>
                     </div>
-                    <p class="text-muted small">Это действие необратимо. Запись будет удалена из базы данных.</p>
+                    <p class="text-muted small mb-0">Это действие необратимо. Запись будет удалена из базы данных.</p>
                 </div>
-                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center">
-                    <a href="{% url 'hrdepartment_app:laborprotection_list' %}" class="btn btn-outline-secondary btn-touch">
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom d-flex justify-content-between align-items-center">
+                    <a href="{% url 'hrdepartment_app:labor_protection_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
                         <i class="bx bx-arrow-back me-1"></i> Отмена
                     </a>
                     <form method="post" class="m-0">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-touch font-weight-bold">
+                        <button type="submit" class="btn btn-danger btn-touch font-weight-semibold">
                             <i class="bx bx-trash me-1"></i> Да, удалить
                         </button>
                     </form>

@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
@@ -22,6 +22,12 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
         }
     </style>
 {% endblock %}
@@ -47,26 +53,29 @@
 
             <!-- Filter Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-filter-alt text-primary me-2"></i>Период
                     </h5>
                 </header>
-                <div class="card-body p-3">
+                <div class="card-body p-4">
                     <form method="GET" action="{% url 'hrdepartment_app:weekday-analysis' %}" class="m-0">
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-4">
-                                <label for="year" class="form-label font-weight-bold text-dark small">Год</label>
+                                <label for="year" class="form-label font-weight-semibold text-dark small">Год</label>
                                 <select name="year" id="year" class="form-control form-control-modern">
                                     {% for year in years %}
                                         <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
-                                    <i class="bx bx-check me-1"></i> Применить
+                            <div class="col-12 col-md-4 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-semibold">
+                                    <i class="bx bx-check me-2"></i> Применить
                                 </button>
+                                <a href="{% url 'hrdepartment_app:weekday-analysis' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-reset me-2"></i> Сбросить
+                                </a>
                             </div>
                         </div>
                     </form>
@@ -75,7 +84,7 @@
 
             <!-- Chart Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-bar-chart text-primary me-2"></i>Распределение по дням недели
                     </h5>

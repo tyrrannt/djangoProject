@@ -4,24 +4,44 @@
 {% load custom %}
 {% load widget_tweaks %}
 
-{% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
-
+{% block title %}
+    {% if object %}Редактирование карты-наряда № {{ object.outfit_card_number }}{% else %}Создание карты-наряда{% endif %} // Отдел кадров
 {% endblock %}
 
-{% block custom_script %}
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
 {% endblock %}
 
 {% block SpecificPageVendor %}
@@ -35,206 +55,132 @@
                 formTemplate: $('#formset-table tbody tr.formset_row:first').clone()
             });
         });
-
     </script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
-
-    <style>
-        /* Скрыть элемент по умолчанию */
-        .mobile-only {
-            display: none;
-        }
-
-        /* Показать элемент только на мобильных устройствах */
-        @media (max-width: 767px) {
-            .mobile-only {
-                display: inline;
-            }
-        }
-
-        th:nth-child(1), td:nth-child(1) {
-            width: 20%;
-        }
-
-        th:nth-child(2), td:nth-child(2) {
-            width: 5%;
-        }
-
-        th:nth-child(3), td:nth-child(3) {
-            width: 5%;
-        }
-
-        th:nth-child(4), td:nth-child(4) {
-            width: 5%;
-        }
-
-        th:nth-child(5), td:nth-child(5) {
-            width: 5%;
-        }
-
-        th:nth-child(6), td:nth-child(6) {
-            width: 20%;
-        }
-
-        th:nth-child(7), td:nth-child(7) {
-            width: 40%;
-        }
-
-        @media (max-width: 576px) {
-            .table-responsive-sm {
-                display: block;
-                width: 100%;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .table-responsive-sm table {
-                width: 100%;
-            }
-
-            .table-responsive-sm th,
-            .table-responsive-sm td {
-                display: block;
-                width: 100%;
-                text-align: left;
-            }
-
-            .table-responsive-sm th {
-                font-weight: bold;
-            }
-
-            .table-responsive-sm td::before {
-                content: attr(data-label);
-                float: left;
-                font-weight: bold;
-                text-transform: uppercase;
-                margin-right: 10px;
-            }
-        }
-    </style>
-
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-4 col-lg-2">
-                                        <div class="form-group">
-                                            {{ form.outfit_card_date.label_tag }}
-                                            {{ form.outfit_card_date }}
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4 col-lg-2">
-                                        <div class="form-group">
-                                            {{ form.outfit_card_number.label_tag }}
-                                            {{ form.outfit_card_number }}
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4 col-lg-2">
-                                        <div class="form-group">
-                                            {{ form.air_board.label_tag }}
-                                            {{ form.air_board }}
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <div class="form-group">
-                                            {{ form.employee.label_tag }}
-                                            {{ form.employee }}
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <div class="form-group">
-                                            {{ form.outfit_card_place.label_tag }}
-                                            {{ form.outfit_card_place }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-4">
-                                        <div class="form-group">
-                                            {{ form.operational_work.label_tag }}
-                                            {{ form.operational_work }}
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4">
-                                        <div class="form-group">
-                                            {{ form.periodic_work.label_tag }}
-                                            {{ form.periodic_work }}
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4">
-                                        <div class="form-group">
-                                            {{ form.other_work.label_tag }}
-                                            {{ form.other_work }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-12">
-                                        <div class="form-group">
-                                            {{ form.notes.label_tag }}
-                                            {{ form.notes }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-9">
-                                        <div class="form-group">
-                                            {{ form.scan_document.label_tag }}
-                                            {{ form.scan_document }}
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3">
-                                        <div class="form-group">
-                                            {{ form.outfit_card_date_end.label_tag }}
-                                            {{ form.outfit_card_date_end }}
-                                        </div>
-                                    </div>
-                                </div>
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" action="#" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                {% if object %}
+                                    <i class="bx bx-edit text-primary me-2"></i>Редактирование карты-наряда № {{ object.outfit_card_number }}
+                                {% else %}
+                                    <i class="bx bx-plus-circle text-primary me-2"></i>Создание карты-наряда
+                                {% endif %}
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Заполните параметры наряда, виды работ и прикрепите документ</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:outfit_card_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4 col-lg-3">
+                                <label class="form-label" for="{{ form.outfit_card_date.id_for_label }}">Дата карты-наряда</label>
+                                {{ form.outfit_card_date }}
+                            </div>
+                            <div class="col-12 col-md-4 col-lg-3">
+                                <label class="form-label" for="{{ form.outfit_card_number.id_for_label }}">Номер карты-наряда</label>
+                                {{ form.outfit_card_number }}
+                            </div>
+                            <div class="col-12 col-md-4 col-lg-3">
+                                <label class="form-label" for="{{ form.air_board.id_for_label }}">Воздушный борт</label>
+                                {{ form.air_board }}
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label class="form-label" for="{{ form.outfit_card_place.id_for_label }}">МПД</label>
+                                {{ form.outfit_card_place }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.employee.id_for_label }}">Старший бригады</label>
+                                {{ form.employee }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.outfit_card_date_end.id_for_label }}">Дата окончания работ</label>
+                                {{ form.outfit_card_date_end }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.operational_work.id_for_label }}">Оперативные работы</label>
+                                {{ form.operational_work }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.periodic_work.id_for_label }}">Периодические работы</label>
+                                {{ form.periodic_work }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.other_work.id_for_label }}">Другие работы</label>
+                                {{ form.other_work }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.notes.id_for_label }}">Примечания</label>
+                                {{ form.notes }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.scan_document.id_for_label }}">Скан документа (.pdf):</label>
+                                {{ form.scan_document }}
                             </div>
                         </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if object and user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
-                </div>
-            {% endif %}
-        </div>
-    </form>
-    <!-- end: page -->
 
+                    <!-- Панель кнопок строго в футере карточки -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                                </a>
+                            </div>
+                            {% if object and user.is_superuser %}
+                                <div>
+                                    <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
+                                       class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     <!-- end: page -->
 {% endblock %}

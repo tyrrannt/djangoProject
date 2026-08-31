@@ -8,7 +8,7 @@
 {% block custom_css %}
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
@@ -17,6 +17,12 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
         }
     </style>
 {% endblock %}
@@ -34,15 +40,15 @@
                     <p class="text-muted small mb-0">История зарегистрированных отсутствий и причин неявок</p>
                 </div>
                 <div>
-                    <a href="{% url 'hrdepartment_app:absence-analysis' %}" class="btn btn-outline-secondary btn-touch">
-                        <i class="bx bx-arrow-back me-1"></i> Назад к анализу
+                    <a href="{% url 'hrdepartment_app:absence-analysis' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                        <i class="bx bx-arrow-back me-2"></i> Назад к анализу
                     </a>
                 </div>
             </div>
 
             <!-- Table Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-list-check text-primary me-2"></i>Список неявок
                     </h5>
@@ -59,9 +65,9 @@
                             <tbody>
                                 {% for absence in absences %}
                                     <tr>
-                                        <td class="font-monospace fw-semibold">{{ absence.report_card_day }}</td>
+                                        <td class="font-monospace fw-semibold">{{ absence.report_card_day|date:"d.m.Y"|default:absence.report_card_day }}</td>
                                         <td>
-                                            <span class="badge bg-light text-dark border">{{ absence.get_record_type_display }}</span>
+                                            <span class="badge bg-light text-dark border p-2">{{ absence.get_record_type_display }}</span>
                                         </td>
                                     </tr>
                                 {% empty %}

@@ -2,26 +2,63 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .attr-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .attr-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .attr-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -31,183 +68,149 @@
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-
-{% endblock %}
-
-{% block title %}
-    {{ title }}
 {% endblock %}
 
 {% block content %}
-
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-briefcase-alt-2 text-primary me-2"></i>Направление в служебную поездку
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Служебная записка &bull; Сотрудник: <strong>{{ object.person }}</strong></p>
+                    </div>
+                    <div>
+                        {% if object.cancellation %}
+                            <span class="badge bg-danger p-2 fs-6">Отменена</span>
+                        {% else %}
+                            <span class="badge bg-success p-2 fs-6">Действует</span>
+                        {% endif %}
+                    </div>
+                </header>
 
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-
-                            <div class="col-sm-12">
-                                <div class="form-group row align-items-center pb-3">
-                                    <h4 style="text-align: center">Направление в служебную поездку</h4>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_official_memo_type">Тип служебной поездки:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <input type="text" id="id_official_memo_type"
-                                               class="form-control form-control-modern"
-                                               name="official_memo_type"
-                                               value="{{ object.get_official_memo_type_display }}"/>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_type_trip">Вид служебной поездки:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <input type="text" id="id_type_trip"
-                                               class="form-control form-control-modern"
-                                               name="type_trip" value="{{ object.get_type_trip_display }}"/>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_person">Сотрудник:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <input type="text" id="id_person"
-                                               class="form-control form-control-modern"
-                                               name="person" value="{{ object.person }}"/>
-                                    </div>
-                                </div>
-                                <div class="form-group row pb-3">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">Дата начала:</label>
-                                    <div class="col-lg-6">
-                                        <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-calendar-alt"></i>
-                                                </span>
-                                            <input type="date" id="id_period_from"
-                                                   class="form-control form-control-modern"
-                                                   name="period_from" value="{{ object.period_from | date:'c' }}"/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row pb-3">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">Дата окончания:</label>
-                                    <div class="col-lg-6">
-                                        <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-calendar-alt"></i>
-                                                </span>
-                                            <input type="date" id="id_period_for"
-                                                   class="form-control form-control-modern"
-                                                   name="period_for" value="{{ object.period_for | date:'c' }}"/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_place_departure">Место отправления:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <input type="text" id="id_place_departure"
-                                               class="form-control form-control-modern"
-                                               name="place_departure" value="{{ object.place_departure }}"/>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_place_production_activity">Место назначения:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                            <textarea type="text" id="id_place_production_activity"
-                                                      class="form-control form-control-modern"
-                                                      name="place_production_activity"
-                                                      value="">{% for item in object.place_production_activity.all %}
-                                                {{ item }}&nbsp;{% endfor %}</textarea>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_purpose_trip">Цель:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <input type="text" id="id_purpose_trip"
-                                               class="form-control form-control-modern"
-                                               name="purpose_trip" value="{{ object.purpose_trip }}"/>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_accommodation">Ответственный:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <span>{{ object.responsible }}, создан: {{ object.date_of_creation }}</span>
-                                    </div>
-                                </div>
-                                <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
-                                    <section class="toggle">
-                                        <label>История изменений</label>
-                                        <div class="toggle-content">
-                                            <div class="form-row">
-                                                {% for date_add, key, value in change_history %}
-
-                                                    <div class="ecommerce-timeline mb-3">
-                                                        <div class="ecommerce-timeline-items-wrapper">
-                                                            <div class="ecommerce-timeline-item">
-                                                                <small>Добавлено: {{ date_add }}.
-                                                                    Автор: {{ key }}
-                                                                </small>
-                                                                <p>{% autoescape off %}
-                                                                    {{ value }}
-                                                                {% endautoescape %}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    </section>
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Тип служебной поездки</div>
+                                <div class="attr-value">{{ object.get_official_memo_type_display }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Вид служебной поездки</div>
+                                <div class="attr-value">{{ object.get_type_trip_display }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Сотрудник</div>
+                                <div class="attr-value text-primary font-weight-bold">{{ object.person }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата начала</div>
+                                <div class="attr-value">{{ object.period_from|date:"d.m.Y" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата окончания</div>
+                                <div class="attr-value">{{ object.period_for|date:"d.m.Y" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Место отправления</div>
+                                <div class="attr-value">{{ object.place_departure|default:"—" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Место назначения (МПД)</div>
+                                <div class="attr-value">
+                                    {% for item in object.place_production_activity.all %}
+                                        <span class="badge bg-light text-dark border me-1">{{ item }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">Не указано</span>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12">
+                            <div class="attr-box">
+                                <div class="attr-label">Цель поездки</div>
+                                <div class="attr-value">{{ object.purpose_trip|default:"—" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Ответственный</div>
+                                <div class="attr-value">{{ object.responsible }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата создания</div>
+                                <div class="attr-value">{{ object.date_of_creation|date:"d.m.Y H:i"|default:"—" }}</div>
+                            </div>
+                        </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mt-4 bg-light rounded border">
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'hrdepartment_app:memo_update' object.pk %}"
-                   class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
-            </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'hrdepartment_app:memo_cancel' object.pk %}"
-                   class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">{% if object.cancellation %}
-                    Восстановить{% else %}Отменить{% endif %}</a>
-            </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'hrdepartment_app:memo_list' %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
+
+                    <div class="toggle toggle-primary toggle-lg mt-3" data-plugin-toggle>
+                        <section class="toggle">
+                            <label><i class="bx bx-history me-1"></i> История изменений</label>
+                            <div class="toggle-content">
+                                {% for date_add, key, value in change_history %}
+                                    <div class="ecommerce-timeline mb-3">
+                                        <div class="ecommerce-timeline-items-wrapper">
+                                            <div class="ecommerce-timeline-item">
+                                                <small class="text-muted">Добавлено: {{ date_add }}. Автор: <strong>{{ key }}</strong></small>
+                                                <p class="mb-0 mt-1">{% autoescape off %}{{ value }}{% endautoescape %}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div class="text-muted">История изменений отсутствует.</div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                    </div>
                 </div>
-            {% endif %}
+
+                <!-- Панель действий строго в футере карточки -->
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <a href="{% url 'hrdepartment_app:memo_update' object.pk %}"
+                               class="btn btn-primary btn-touch font-weight-semibold">
+                                <i class="bx bx-edit text-4 me-2"></i> Изменить
+                            </a>
+                            <a href="{% url 'hrdepartment_app:memo_cancel' object.pk %}"
+                               class="btn {% if object.cancellation %}btn-warning text-dark{% else %}btn-outline-warning{% endif %} btn-touch font-weight-semibold">
+                                <i class="bx {% if object.cancellation %}bx-refresh{% else %}bx-x-circle{% endif %} text-4 me-2"></i>
+                                {% if object.cancellation %}Восстановить{% else %}Отменить{% endif %}
+                            </a>
+                            <a href="{% url 'hrdepartment_app:memo_list' %}"
+                               class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <div>
+                                <a href="#" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                    <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
-
-    </form>
-    <!-- end: page -->
-
+    </div>
     <!-- end: page -->
 {% endblock %}

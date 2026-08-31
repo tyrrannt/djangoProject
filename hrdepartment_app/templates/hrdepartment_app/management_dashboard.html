@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
@@ -22,7 +22,14 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
         }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+
         .metric-card {
             border-radius: 10px;
             transition: transform 0.2s ease, box-shadow 0.2s ease;

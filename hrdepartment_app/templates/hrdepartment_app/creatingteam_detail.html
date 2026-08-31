@@ -3,26 +3,63 @@
 {% load custom %}
 {% load hrdepartment_tags %}
 {% load widget_tweaks %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .attr-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .attr-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .attr-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -31,228 +68,238 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
-
-{% block title %}
-    {{ title }}
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="col-12 mb-4"><div class="card card-modern shadow-sm border-0"><div class="card-body p-4"><h4 class="font-weight-bold text-dark">Приказ № {{ object.number }}
-                от {{ object.date_create }} г.</h4>
-            <label>Основные реквизиты</label>
-            <div class="toggle-content">
-                <div class="form-row">
-                    <div class="form-group col mb-3">
-                        <div class="row text">
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_date_create">Дата документа</label>
-                                <input type="text" class="form-control form-control-modern"
-                                       name="date_create" value="{{ object.date_create }}"
-                                       id="id_date_create"
-                                       disabled data-plugin-datepicker
-                                       data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
-                            </div>
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_number">Номер документа</label>
-                                <input type="text" class="form-control form-control-modern" disabled
-                                       name="number" value="{{ object.number }}"
-                                       id="id_number"/>
-                            </div>
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_company_property">Борт:</label>
-                                {#                                            <input type="text" class="form-control form-control-modern" disabled#}
-                                {#                                                   name="company_property" value="{{ object.company_property }}" id="id_company_property"/>#}
-                                <input type="text" class="form-control form-control-modern" disabled
-                                       name="company_property" value="
-
-
-
-                                        {% for item in object.company_property.iterator %}{% if forloop.last %}{{ item }}{% else %}{{ item }}, {% endif %}{% endfor %}"
-                                       id="id_company_property"/>
-
-                            </div>
-                        </div>
-                        <div class="row text">
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_senior_brigade">Старший бригады:</label>
-                                <input type="text" class="form-control form-control-modern" disabled
-                                       name="senior_brigade" value="{{ object.senior_brigade | FIO_format }}"
-                                       id="id_senior_brigade"/>
-                            </div>
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_team_brigade">Состав бригады:</label>
-                                <input type="text" class="form-control form-control-modern" disabled
-                                       name="team_brigade" value="
-
-
-
-                                        {% for item in object.team_brigade.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }}, {% endif %}{% endfor %}"
-                                       id="id_team_brigade"/>
-                            </div>
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_place">Подразделение:</label>
-                                <input type="text" class="form-control form-control-modern" disabled
-                                       name="place" value="{{ object.place }}" id="id_place"/>
-                            </div>
-                        </div>
-                        <div class="row text">
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_date_star">Действителен с:</label>
-                                <input type="text" class="form-control form-control-modern"
-                                       name="date_start" id="id_date_start"
-                                       disabled data-plugin-datepicker
-                                       value="{{ object.date_start }}"
-                                       data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
-
-                            </div>
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_date_end">Действителен по:</label>
-                                <input type="text" class="form-control form-control-modern"
-                                       name="date_end" id="id_date_end"
-                                       disabled data-plugin-datepicker
-                                       value="{{ object.date_end }}"
-                                       data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
-
-                            </div>
-                            <div class="col-md-4 text-black-50 mt-3">
-                                {% if object.agreed %}<label for="id_agreed">Согласован.</label>{% else %}
-                                    <label for="id_agreed">Не согласован.</label>{% endif %}
-                            </div>
-                        </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-group text-primary me-2"></i>Приказ № {{ object.number|default:"б/н" }} от {{ object.date_create|date:"d.m.Y" }} г.
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Формирование бригады &bull; Карточка приказа</p>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col mb-3">
-                        <div class="row text">
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_executor_person">Исполнитель:</label>
-                                <input type="text" class="form-control form-control-modern" disabled
-                                       name="executor_person" value="{{ object.executor_person | FIO_format }}"
-                                       id="id_executor_person"/>
-                            </div>
-                            <div class="col-md-4 text-black-50">
-                                <label for="id_approving_person">Согласующее лицо:</label>
-                                <input type="text" class="form-control form-control-modern" disabled
-                                       name="approving_person"
-                                       value="{{ object.approving_person | FIO_format }}"
-                                       id="id_approving_person"/>
-                            </div>
-                            <div class="col-md-4 text-black-50 mt-3">
-                                {% if object.cancellation %}
-                                    <label for="id_cancellation">Приказ отменен.</label>{% else %}{% endif %}
-                            </div>
-                        </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if object.cancellation %}
+                            <span class="badge bg-danger p-2 fs-6">Приказ отменен</span>
+                        {% elif object.agreed %}
+                            <span class="badge bg-success p-2 fs-6">Согласован</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark p-2 fs-6">Не согласован</span>
+                        {% endif %}
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col mb-3">
-                        <div class="row text">
-                            <div class="col-lg-6 text-black-50 mt-2">
-                                <label for="id_doc_file">Файл приказа</label>
-                                {% if object.doc_file %}
-                                    <span id="id_doc_file"><a
-                                            href="{{ object.doc_file.url }}?v={{ object.updated_at.timestamp }}"
-                                            target="_blank"><img
-                                            src="{% static 'Extension/docx.png' %}"></a></span>
-                                {% endif %}
-                            </div>
-                            <div class="col-lg-6 text-black-50 mt-2">
-                                <label for="id_scan_file">Скан приказа</label>
-                                {% if object.scan_file %}
-                                    <span id="id_scan_file"><a
-                                            href="{{ object.scan_file.url }}?v={{ object.updated_at.timestamp }}"><img
-                                            src="{% static 'Extension/pdf.png' %}"></a></span>
-                                {% endif %}
-                            </div>
-                        </div>
+                </header>
 
-                    </div>
-
-                </div>
-
-            </div>
-            <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
-                <section class="toggle">
-                    <label>История изменений</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            {% for date_add, key, value in change_history %}
-                                <div class="ecommerce-timeline mb-3">
-                                    <div class="ecommerce-timeline-items-wrapper">
-                                        <div class="ecommerce-timeline-item">
-                                            <small>Добавлено: {{ date_add }}.
-                                                Автор: {{ key }}
-                                            </small>
-                                            <p>{% autoescape off %}
-                                                {{ value }}
-                                            {% endautoescape %}
-                                            </p>
+                <div class="card-body p-4">
+                    <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                        <!-- Секция: Основные реквизиты -->
+                        <section class="toggle active">
+                            <label><i class="bx bx-file me-1"></i> 1. Основные реквизиты приказа</label>
+                            <div class="toggle-content">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-4">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Дата документа</div>
+                                            <div class="attr-value">{{ object.date_create|date:"d.m.Y" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Номер документа</div>
+                                            <div class="attr-value font-weight-bold">{{ object.number|default:"Не присвоен" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Подразделение</div>
+                                            <div class="attr-value">{{ object.place|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Действителен с</div>
+                                            <div class="attr-value">{{ object.date_start|date:"d.m.Y"|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Действителен по</div>
+                                            <div class="attr-value">{{ object.date_end|date:"d.m.Y"|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Борт (Воздушные суда в задании на полет)</div>
+                                            <div class="attr-value">
+                                                {% for item in object.company_property.iterator %}
+                                                    <span class="badge bg-light text-dark border me-1">{{ item }}</span>
+                                                {% empty %}
+                                                    <span class="text-muted">Не указан</span>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
-            </div>
-        </div>
-        </div></div></div>
-<div class="row action-buttons">
-            {% if is_executor %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                    <a href="{% url 'hrdepartment_app:team_update' object.pk %}"
-                       class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
-                </div>
-            {% endif %}
-            {% if is_agreement %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                    <a href="{% url 'hrdepartment_app:team_agreed' object.pk %}"
-                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bxs-analyse text-4 me-2'></i> Согласовать</a>
-                </div>
-            {% endif %}
-            {% if is_hr %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                    <a href="{% url 'hrdepartment_app:team_number' object.pk %}"
-                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-comment-edit text-4 me-2'></i> Присвоить номер</a>
-                </div>
-            {% endif %}
-            {% if email_send %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                    <a href="{% url 'hrdepartment_app:team' object.pk %}?sm=1"
-                       class="btn btn-outline-warning btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-mail-send text-4 me-2'></i> Отправить письмо</a>
-                </div>
-            {% endif %}
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                <a href="{% url 'hrdepartment_app:team_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                </div>
-            {% endif %}
-        </div>
-    </form>
-    <!-- end: page -->
-    <!-- end: page -->
+                            </div>
+                        </section>
 
+                        <!-- Секция: Состав бригады -->
+                        <section class="toggle">
+                            <label><i class="bx bx-user-check me-1"></i> 2. Состав бригады и ответственные</label>
+                            <div class="toggle-content">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Старший бригады</div>
+                                            <div class="attr-value text-primary font-weight-bold">{{ object.senior_brigade|FIO_format }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Исполнитель</div>
+                                            <div class="attr-value">{{ object.executor_person|FIO_format|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Состав бригады</div>
+                                            <div class="attr-value">
+                                                <ul class="mb-0 ps-3">
+                                                    {% for item in object.team_brigade.iterator %}
+                                                        <li>{{ item|FIO_format }}</li>
+                                                    {% empty %}
+                                                        <li class="text-muted">Состав не указан</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Согласующее лицо</div>
+                                            <div class="attr-value">{{ object.approving_person|FIO_format|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Секция: Файлы -->
+                        <section class="toggle">
+                            <label><i class="bx bx-paperclip me-1"></i> 3. Файлы приказа</label>
+                            <div class="toggle-content">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="attr-label">Файл приказа Word</div>
+                                                <div class="attr-value">
+                                                    {% if object.doc_file %}
+                                                        <i class="bx bx-file text-primary me-1"></i> Файл .docx
+                                                    {% else %}
+                                                        <span class="text-muted">Не прикреплен</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% if object.doc_file %}
+                                                <a href="{{ object.doc_file.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-sm btn-outline-primary btn-touch">
+                                                    <i class="bx bx-download me-1"></i> Скачать
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="attr-label">Скан приказа PDF</div>
+                                                <div class="attr-value">
+                                                    {% if object.scan_file %}
+                                                        <i class="bx bxs-file-pdf text-danger me-1"></i> Скан .pdf
+                                                    {% else %}
+                                                        <span class="text-muted">Не прикреплен</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% if object.scan_file %}
+                                                <a href="{{ object.scan_file.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-sm btn-outline-danger btn-touch">
+                                                    <i class="bx bx-file me-1"></i> Просмотреть
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Секция: История изменений -->
+                        <section class="toggle">
+                            <label><i class="bx bx-history me-1"></i> 4. История изменений</label>
+                            <div class="toggle-content">
+                                {% for date_add, key, value in change_history %}
+                                    <div class="ecommerce-timeline mb-3">
+                                        <div class="ecommerce-timeline-items-wrapper">
+                                            <div class="ecommerce-timeline-item">
+                                                <small class="text-muted">Добавлено: {{ date_add }}. Автор: <strong>{{ key }}</strong></small>
+                                                <p class="mb-0 mt-1">{% autoescape off %}{{ value }}{% endautoescape %}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div class="text-muted">История изменений отсутствует.</div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- Панель действий строго в футере карточки -->
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            {% if is_executor %}
+                                <a href="{% url 'hrdepartment_app:team_update' object.pk %}"
+                                   class="btn btn-primary btn-touch font-weight-semibold">
+                                    <i class="bx bx-edit text-4 me-2"></i> Изменить
+                                </a>
+                            {% endif %}
+                            {% if is_agreement %}
+                                <a href="{% url 'hrdepartment_app:team_agreed' object.pk %}"
+                                   class="btn btn-success btn-touch font-weight-semibold">
+                                    <i class="bx bxs-analyse text-4 me-2"></i> Согласовать
+                                </a>
+                            {% endif %}
+                            {% if is_hr %}
+                                <a href="{% url 'hrdepartment_app:team_number' object.pk %}"
+                                   class="btn btn-info text-white btn-touch font-weight-semibold">
+                                    <i class="bx bx-comment-edit text-4 me-2"></i> Присвоить номер
+                                </a>
+                            {% endif %}
+                            {% if email_send %}
+                                <a href="{% url 'hrdepartment_app:team' object.pk %}?sm=1"
+                                   class="btn btn-outline-warning btn-touch font-weight-semibold">
+                                    <i class="bx bx-mail-send text-4 me-2"></i> Отправить письмо
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'hrdepartment_app:team_list' %}"
+                               class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <div>
+                                <a href="#" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                    <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
 {% endblock %}

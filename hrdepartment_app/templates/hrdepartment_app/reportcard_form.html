@@ -1,26 +1,49 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+
+{% block title %}
+    Ручная регистрация события табеля // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -29,172 +52,150 @@
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
-
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-2-5 col-xl-1-5">
-                                <i class="card-big-info-icon bx bxl-netlify"></i>
-                                <p class="card-big-info-desc">Ручная регистрация события</p>
-                            </div>
-                            <div class="col-lg-3-5 col-xl-4-5">
-                                <div class="form-group row pb-3">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">Дата:</label>
-                                    <div class="col-lg-6">
-                                        <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-calendar-alt"></i>
-                                                </span>
-                                            <input type="date" id="id_report_card_day" onchange="set_interval()"
-                                                   class="form-control form-control-modern"
-                                                   name="report_card_day"
-                                                   value="{{ object.report_card_day | date:"c" }}"/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row pb-2">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">C:</label>
-                                    <div class="col-lg-6">
-                                        <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="far fa-clock"></i>
-                                                </span>
-                                            <input type="time" id="id_start_time"
-                                                   class="form-control form-control-modern" disabled="disabled"
-                                                   name="start_time"
-                                                   value="{{ object.start_time | date:"%H:%b" }}"/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row pb-2">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">По:</label>
-                                    <div class="col-lg-6">
-                                        <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="far fa-clock"></i>
-                                                </span>
-                                            <input type="time" id="id_end_time"
-                                                   class="form-control form-control-modern" disabled="disabled"
-                                                   name="end_time" value="{{ object.end_time | date:"%H:%b" }}"/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-sm-12 control-label text-center mb-0"
-                                    >Внимание! Если у вас на данный день имеется СЛУЖЕБНАЯ ПОЕЗДКА или КОМАНДИРОВКА,
-                                        то вносить ручную запись не нужно!</label>
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" action="#" method="post">
+                {% csrf_token %}
 
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_reason_adjustment">Причина:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                            <textarea class="form-control form-control-modern" name="reason_adjustment"
-                                                      rows="6" id="id_reason_adjustment"></textarea>
-                                    </div>
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-time-five text-primary me-2"></i>Ручная регистрация события табеля
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Внесение корректировок времени прихода и ухода</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'customers_app:profile' user.pk %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> В профиль
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="alert alert-info d-flex align-items-center mb-4 py-2 px-3">
+                            <i class="bx bx-info-circle fs-4 me-2 text-info"></i>
+                            <div><strong>Внимание!</strong> Если на данный день оформлена <strong>служебная поездка</strong> или <strong>командировка</strong>, вносить ручную запись не требуется.</div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_report_card_day">Дата события <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                    <input type="date" id="id_report_card_day" onchange="set_interval()"
+                                           class="form-control form-control-modern"
+                                           name="report_card_day"
+                                           value="{{ object.report_card_day|date:'c'|default:'' }}" required/>
                                 </div>
                             </div>
-
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_start_time">Время прихода (С:)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="far fa-clock"></i></span>
+                                    <input type="time" id="id_start_time"
+                                           class="form-control form-control-modern" disabled
+                                           name="start_time"
+                                           value="{{ object.start_time|time:'H:i'|default:'' }}"/>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_end_time">Время ухода (По:)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="far fa-clock"></i></span>
+                                    <input type="time" id="id_end_time"
+                                           class="form-control form-control-modern" disabled
+                                           name="end_time"
+                                           value="{{ object.end_time|time:'H:i'|default:'' }}"/>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="id_reason_adjustment">Причина корректировки <span class="text-danger">*</span></label>
+                                <textarea class="form-control form-control-modern" name="reason_adjustment"
+                                          rows="4" id="id_reason_adjustment" placeholder="Укажите подробную причину ручной записи..." required></textarea>
+                            </div>
                         </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0" style="background-color: #b0ffd5">
-                <a href="{% url 'customers_app:profile' user.pk %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
+
+                    <!-- Панель кнопок строго в футере карточки -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'customers_app:profile' user.pk %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'customers_app:profile' user.pk %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> В профиль
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
+            </form>
         </div>
-    </form>
+    </div>
     <!-- end: page -->
-    <!-- end: page -->
+
     <script type="text/javascript">
-        function printNumbers(from, to) {
-            let current = from;
-
-            let timerId = setInterval(function () {
-                alert(current);
-                if (current == to) {
-                    clearInterval(timerId);
-                }
-                current++;
-            }, 10000);
-        };
-
         function set_interval() {
-            current_date = document.getElementById("id_report_card_day").value;
+            var current_date = document.getElementById("id_report_card_day").value;
             var start_time = document.getElementById("id_start_time");
             var end_time = document.getElementById("id_end_time");
-            start_time.removeAttribute("disabled")
-            end_time.removeAttribute("disabled")
-            $("#id_start_time").trigger("create")
-            $("#id_end_time").trigger("create")
+            if (!current_date) return;
+
+            start_time.removeAttribute("disabled");
+            end_time.removeAttribute("disabled");
+
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:reportcard_add' %}',
+                url: '{% url "hrdepartment_app:reportcard_add" %}',
                 data: {
                     "interval": current_date,
                 },
                 dataType: "json",
                 success: function (data) {
-                    // any process in data
-                    start_time.removeAttribute("min")
-                    start_time.setAttribute("min", data[0])
-                    start_time.removeAttribute("max")
-                    start_time.setAttribute("max", data[1])
-                    {#start_time.removeAttribute("value")#}
-                    {#start_time.setAttribute("value", data[0])#}
-                    $("#id_start_time").trigger("create")
-                    end_time.removeAttribute("min")
-                    end_time.setAttribute("min", data[0])
-                    end_time.removeAttribute("max")
-                    end_time.setAttribute("max", data[1])
-                    {#end_time.removeAttribute("value")#}
-                    {#end_time.setAttribute("value", data[1])#}
-                    $("#id_end_time").trigger("create")
-                    if (data === 'ok') {
-                        console.log("success");
+                    if (data && data.length >= 2) {
+                        start_time.removeAttribute("min");
+                        start_time.setAttribute("min", data[0]);
+                        start_time.removeAttribute("max");
+                        start_time.setAttribute("max", data[1]);
+
+                        end_time.removeAttribute("min");
+                        end_time.setAttribute("min", data[0]);
+                        end_time.removeAttribute("max");
+                        end_time.setAttribute("max", data[1]);
                     }
                 },
                 failure: function (data) {
-                    console.log("failure");
+                    console.error("Ошибка получения интервала времени");
                 }
             });
-        };
+        }
     </script>
-
 {% endblock %}

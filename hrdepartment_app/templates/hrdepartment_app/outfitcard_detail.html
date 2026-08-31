@@ -2,117 +2,328 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .attr-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .attr-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .attr-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+        @media only screen and (max-width: 920px) {
+            .outerContainer {
+                height: 600px;
+            }
+        }
+        @media only screen and (min-width: 921px) {
+            .outerContainer {
+                height: 800px;
+            }
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
-    <!-- This snippet is used in production (included from viewer.html) -->
-    <link rel="resource" type="application/l10n"
-          href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
+    <link rel="resource" type="application/l10n" href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
 {% endblock %}
 
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
     <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>
     <script src="{% static 'admin_templates/pdf/js/viewer.js' %}"></script>
-{% endblock %}
 
-{% block title %}
-    {{ title }}
+    <script>
+        function printPdfDocument(pdfUrl, btnEl) {
+            if (!pdfUrl) {
+                alert('Скан документа для печати не прикреплен.');
+                return;
+            }
+            var button = typeof btnEl === 'string' ? document.querySelector(btnEl) : btnEl;
+            var originalHtml = '';
+            if (button) {
+                originalHtml = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="bx bx-loader-alt bx-spin me-2"></i> Подготовка к печати...';
+            }
+            function restoreButton() {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            }
+            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                restoreButton();
+                var win = window.open(pdfUrl, '_blank');
+                if (!win) window.location.href = pdfUrl;
+                return;
+            }
+            fetch(pdfUrl, { cache: 'no-cache' })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('Ошибка загрузки PDF');
+                    return res.blob();
+                })
+                .then(function (blob) {
+                    var blobUrl = URL.createObjectURL(blob);
+                    var old = document.getElementById('pdfPrintIframe');
+                    if (old) old.remove();
+                    var iframe = document.createElement('iframe');
+                    iframe.id = 'pdfPrintIframe';
+                    iframe.style.position = 'fixed';
+                    iframe.style.right = '0';
+                    iframe.style.bottom = '0';
+                    iframe.style.width = '1px';
+                    iframe.style.height = '1px';
+                    iframe.style.border = 'none';
+                    iframe.style.opacity = '0.01';
+                    iframe.style.pointerEvents = 'none';
+                    iframe.style.zIndex = '-9999';
+                    iframe.src = blobUrl;
+                    iframe.onload = function () {
+                        restoreButton();
+                        setTimeout(function () {
+                            try {
+                                iframe.contentWindow.focus();
+                                iframe.contentWindow.print();
+                                setTimeout(function () {
+                                    URL.revokeObjectURL(blobUrl);
+                                }, 120000);
+                            } catch (e) {
+                                fallbackPrint(pdfUrl);
+                            }
+                        }, 300);
+                    };
+                    iframe.onerror = function () {
+                        restoreButton();
+                        fallbackPrint(pdfUrl);
+                    };
+                    document.body.appendChild(iframe);
+                })
+                .catch(function () {
+                    restoreButton();
+                    fallbackPrint(pdfUrl);
+                });
+            function fallbackPrint(url) {
+                try {
+                    var w = window.open(url, '_blank');
+                    if (w) {
+                        w.focus();
+                        w.onload = function () {
+                            try {
+                                w.print();
+                            } catch (e) {}
+                        };
+                    } else {
+                        window.location.href = url;
+                    }
+                } catch (e) {
+                    window.location.href = url;
+                }
+            }
+        }
+    </script>
 {% endblock %}
 
 {% block content %}
-
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
-                <div class="card text-left">
-                    <div class="card-header">
-                        <h2>Карта-наряд № {{ object.outfit_card_number }} от {{ object.outfit_card_date }}</h2>
+    {% if object.scan_document %}
+        <input id="id_contract_number" value="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" hidden="hidden">
+    {% endif %}
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card card-modern shadow-sm border-0">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-task text-primary me-2"></i>Карта-наряд № {{ object.outfit_card_number }} от {{ object.outfit_card_date|date:"d.m.Y" }} г.
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Карточка учета наряда на выполнение работ</p>
                     </div>
-                    <div class="card-body">
-                        <h5 class="card-title mb-3">МПД:&nbsp;&nbsp;&nbsp;{{ object.outfit_card_place }}</h5>
-                        <h5 class="card-title mb-3">Воздушный
-                            борт:&nbsp;&nbsp;&nbsp;{{ object.air_board.type_property }} {{ object.air_board }}</h5>
-                        {% if object.operational_work.count > 0 %}
-                            <h4 class="card-text">Оперативные
-                                работы:&nbsp;&nbsp;&nbsp;{{ object.operational_work.all|join:", " }}</h4>
-                        {% endif %}
-                        {% if object.periodic_work.count > 0 %}
-                            <h4 class="card-text">Периодические
-                                работы:&nbsp;&nbsp;&nbsp;{{ object.periodic_work.all|join:", " }}</h4>
-                        {% endif %}
-                        {% if object.other_work %}
-                            <h4 class="card-text">Другие работы:&nbsp;&nbsp;&nbsp;{{ object.other_work }}</h4>
-                        {% endif %}
-                        {% if object.notes %}
-                            <h4 class="card-text">Примечания:&nbsp;&nbsp;&nbsp;{{ object.notes }}</h4>
-                        {% endif %}
-                    </div>
-                    <div class="card-footer text-muted">
-                        <h3>Старший бригады:&nbsp;&nbsp;&nbsp;{{ object.employee | FIO_format }}</h3>
-                    </div>
-                </div>
-                {% if object.scan_document %}
-                    <div class="card text-left">
-                        <input id="id_contract_number"
-                               value="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
-                        <div class="form-row outerContainer" id="outerContainer" style="height: 1080px">
-                            {% include 'contracts_app/pdf-js.html' %}
+                </header>
+
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Место производственной деятельности (МПД)</div>
+                                <div class="attr-value">{{ object.outfit_card_place|default:"-" }}</div>
+                            </div>
                         </div>
-                        <a href="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" target="_blank">Открыть
-                            документ</a>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Воздушный борт</div>
+                                <div class="attr-value text-primary">{{ object.air_board.type_property }} {{ object.air_board }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Старший бригады</div>
+                                <div class="attr-value">{{ object.employee|FIO_format }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата карты-наряда</div>
+                                <div class="attr-value">{{ object.outfit_card_date|date:"d.m.Y" }}</div>
+                            </div>
+                        </div>
+
+                        {% if object.operational_work.count > 0 %}
+                            <div class="col-12">
+                                <div class="attr-box">
+                                    <div class="attr-label">Оперативные работы</div>
+                                    <div class="attr-value">
+                                        {% for item in object.operational_work.all %}
+                                            <span class="badge bg-light text-dark border me-1">{{ item }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if object.periodic_work.count > 0 %}
+                            <div class="col-12">
+                                <div class="attr-box">
+                                    <div class="attr-label">Периодические работы</div>
+                                    <div class="attr-value">
+                                        {% for item in object.periodic_work.all %}
+                                            <span class="badge bg-light text-dark border me-1">{{ item }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if object.other_work %}
+                            <div class="col-12">
+                                <div class="attr-box">
+                                    <div class="attr-label">Другие работы</div>
+                                    <div class="attr-value">{{ object.other_work }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if object.notes %}
+                            <div class="col-12">
+                                <div class="attr-box">
+                                    <div class="attr-label">Примечания</div>
+                                    <div class="attr-value">{{ object.notes }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
-            </div>
 
-        </div>
-        </div></div></div>
-<div class="row action-buttons">
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'hrdepartment_app:outfit_card_update' object.pk %}"
-                   class="btn btn-outline-secondary btn-touch btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
-            </div>
-
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
-                   class="cancel-button btn btn-outline-secondary btn-touch py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
-                       class="delete-button btn btn-danger btn-touch font-weight-bold py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    {% if object.scan_document %}
+                        <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                            <section class="toggle active">
+                                <label><i class="bx bx-file me-1"></i> Просмотр скан-копии документа</label>
+                                <div class="toggle-content">
+                                    <div class="form-row outerContainer" id="outerContainer">
+                                        {% include 'contracts_app/pdf-js.html' %}
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    {% endif %}
                 </div>
-            {% endif %}
-        </div>
 
-    </form>
+                <!-- Панель действий строго в футере карточки -->
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            {% if perms.hrdepartment_app.change_outfitcard or user.is_superuser %}
+                                <a href="{% url 'hrdepartment_app:outfit_card_update' object.pk %}"
+                                   class="btn btn-primary btn-touch font-weight-semibold">
+                                    <i class="bx bx-edit text-4 me-2"></i> Изменить
+                                </a>
+                            {% endif %}
+                            {% if object.scan_document %}
+                                <button type="button" class="btn btn-outline-warning btn-touch font-weight-semibold"
+                                        onclick="printPdfDocument('{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}', this)">
+                                    <i class="bx bx-printer text-4 me-2"></i> Распечатать
+                                </button>
+                                <a href="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" target="_blank"
+                                   class="btn btn-outline-info btn-touch font-weight-semibold">
+                                    <i class="bx bx-download text-4 me-2"></i> Скачать PDF
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
+                               class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <div>
+                                <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
+                                   class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                    <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- end: page -->
-    <!-- end: page -->
+
+    {% if object.scan_document %}
+        <script>
+            window.get_filename = function () {
+                return "{{ object.scan_document.url }}";
+            };
+        </script>
+    {% endif %}
 {% endblock %}

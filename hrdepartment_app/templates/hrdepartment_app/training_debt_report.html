@@ -10,7 +10,7 @@
 {% block custom_css %}
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
@@ -19,6 +19,12 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
         }
     </style>
 {% endblock %}
@@ -39,7 +45,7 @@
 
             <!-- Filter / Selection Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-user-check text-primary me-2"></i>Выбор сотрудника и даты
                     </h5>
@@ -49,20 +55,20 @@
                         {% csrf_token %}
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-5">
-                                <label for="{{ form.employee.id_for_label }}" class="form-label font-weight-bold text-dark small">
+                                <label for="{{ form.employee.id_for_label }}" class="form-label font-weight-semibold text-dark small">
                                     {{ form.employee.label }} <span class="text-danger">*</span>
                                 </label>
                                 {{ form.employee|add_class:"form-control form-control-modern" }}
                             </div>
                             <div class="col-12 col-md-4">
-                                <label for="{{ form.dismissal_date.id_for_label }}" class="form-label font-weight-bold text-dark small">
+                                <label for="{{ form.dismissal_date.id_for_label }}" class="form-label font-weight-semibold text-dark small">
                                     {{ form.dismissal_date.label }} <span class="text-danger">*</span>
                                 </label>
                                 {{ form.dismissal_date|add_class:"form-control form-control-modern" }}
                             </div>
                             <div class="col-12 col-md-3">
-                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold w-100">
-                                    <i class="bx bx-calculator me-1"></i> Получить расчет
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-semibold w-100">
+                                    <i class="bx bx-calculator me-2"></i> Получить расчет
                                 </button>
                             </div>
                         </div>
@@ -73,15 +79,15 @@
             <!-- Report Table Card -->
             {% if report_data %}
                 <div class="card card-modern shadow-sm border-0 mb-4">
-                    <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <header class="card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="card-title text-dark mb-0 font-weight-bold">
                             <i class="bx bx-receipt text-primary me-2"></i>
                             Сотрудник: {{ employee_name }} &bull; Дата увольнения: {{ report_data.dismissal_date|date:"d.m.Y" }}
                         </h5>
                         <div>
                             <a href="{% url 'hrdepartment_app:export_training_debt_excel' %}?employee={{ form.employee.value }}&date={{ report_data.dismissal_date|date:'Y-m-d' }}"
-                               class="btn btn-success btn-touch font-weight-bold" target="_blank">
-                                <i class="bx bx-spreadsheet me-1"></i> Экспорт в Excel
+                               class="btn btn-success btn-touch font-weight-semibold" target="_blank">
+                                <i class="bx bx-spreadsheet me-2"></i> Экспорт в Excel
                             </a>
                         </div>
                     </header>

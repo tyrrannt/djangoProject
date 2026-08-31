@@ -2,26 +2,63 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .attr-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .attr-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .attr-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -33,117 +70,119 @@
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
-
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <div class="row">
-                                    <div class="col">
-                                        <div class="card text-left">
-                                            <div class="card-header">
-                                                <h2>Табель учета рабочего времени от {{ object.date }}</h2>
-                                                <h3>Старший
-                                                    бригады:&nbsp;&nbsp;&nbsp;{{ object.employee | FIO_format }},
-                                                    МПД:&nbsp;&nbsp;&nbsp;{{ object.time_sheets_place }}</h3>
-                                            </div>
-                                            <div class="card-body">
-                                                {% if object.notes %}
-                                                    <h5 class="card-title mb-3">
-                                                        Примечания:&nbsp;&nbsp;&nbsp;{{ object.notes }}</h5>
-                                                {% endif %}
-                                            </div>
-                                            <div class="card-footer text-muted">
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-time text-primary me-2"></i>Табель учета рабочего времени от {{ object.date|date:"d.m.Y" }}
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Старший бригады: <strong>{{ object.employee|FIO_format }}</strong> &bull; МПД: <strong>{{ object.time_sheets_place }}</strong></p>
+                    </div>
+                    <div>
+                        <a href="{% url 'hrdepartment_app:timesheet_list' %}" class="btn btn-outline-secondary btn-touch">
+                            <i class="bx bx-arrow-back me-1"></i> К списку
+                        </a>
+                    </div>
+                </header>
 
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <div class="col-sm-12">
-                                        <h2>Записи в табеле</h2>
-                                        <table class="table table-responsive table-responsive-sm">
-                                            <thead>
-                                            <tr>
-                                                <th>Дата:</th>
-                                                <th>Сотрудник:</th>
-                                                <th>Время прихода:</th>
-                                                <th>Время ухода:</th>
-                                                <th>Карты-наряда:</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for report_card in object.report_cards.all %}
-                                                <tr>
-                                                    <td>{{ report_card.report_card_day }}</td>
-                                                    <td>{{ report_card.employee }}</td>
-                                                    <td>{{ report_card.start_time }}</td>
-                                                    <td>{{ report_card.end_time }}</td>
-                                                    <td>{{ report_card.outfit_card.all }}</td>
-                                                </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-
-                                    </div>
-                                </div>
-                                <div class="row action-buttons">
-                                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0">
-                                        <a href="{% url 'hrdepartment_app:timesheet_update' object.pk %}"
-                                           class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                                            <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
-                                    </div>
-                                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                                        <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                                           class="btn btn-outline-dark btn-touch py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                                            <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
-                                    </div>
-                                    {% if user.is_superuser %}
-                                        <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                                            <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                                               class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                                                <i class="bx bx-trash text-4 me-2"></i> Удалить
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Дата табеля</div>
+                                <div class="attr-value">{{ object.date|date:"d.m.Y" }}</div>
                             </div>
                         </div>
+                        <div class="col-12 col-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Старший бригады</div>
+                                <div class="attr-value text-primary">{{ object.employee|FIO_format }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Место деятельности (МПД)</div>
+                                <div class="attr-value">{{ object.time_sheets_place }}</div>
+                            </div>
+                        </div>
+                        {% if object.notes %}
+                            <div class="col-12">
+                                <div class="attr-box">
+                                    <div class="attr-label">Примечания</div>
+                                    <div class="attr-value">{{ object.notes }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
+
+                    <h5 class="font-weight-bold text-dark mb-3">
+                        <i class="bx bx-list-ul text-primary me-2"></i>Записи в табеле
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 140px;">Дата</th>
+                                    <th>Сотрудник</th>
+                                    <th style="width: 140px;">Время прихода</th>
+                                    <th style="width: 140px;">Время ухода</th>
+                                    <th>Карты-наряда</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report_card in object.report_cards.all %}
+                                    <tr>
+                                        <td>{{ report_card.report_card_day|date:"d.m.Y"|default:report_card.report_card_day }}</td>
+                                        <td class="font-weight-semibold">{{ report_card.employee }}</td>
+                                        <td>{{ report_card.start_time|default:"—" }}</td>
+                                        <td>{{ report_card.end_time|default:"—" }}</td>
+                                        <td>
+                                            {% for oc in report_card.outfit_card.all %}
+                                                <span class="badge bg-light text-dark border me-1">{{ oc }}</span>
+                                            {% empty %}
+                                                <span class="text-muted">—</span>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">Записи отсутствуют</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            {% endif %}
+
+                <!-- Панель действий строго в футере карточки -->
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <a href="{% url 'hrdepartment_app:timesheet_update' object.pk %}"
+                               class="btn btn-primary btn-touch font-weight-semibold">
+                                <i class="bx bx-edit text-4 me-2"></i> Изменить
+                            </a>
+                            <a href="{% url 'hrdepartment_app:timesheet_list' %}"
+                               class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <div>
+                                <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
+                                   class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                    <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
-    </form>
-    <!-- end: page -->
+    </div>
     <!-- end: page -->
 {% endblock %}

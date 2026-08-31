@@ -8,15 +8,21 @@
 {% block custom_css %}
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 8px 20px;
+            padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
         }
     </style>
 {% endblock %}
@@ -37,7 +43,7 @@
 
             <!-- Form Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-calendar text-primary me-2"></i>Период выгрузки
                     </h5>
@@ -46,7 +52,7 @@
                     <form action="{% url 'hrdepartment_app:pso_memo_report' %}" method="get" class="m-0">
                         <div class="row g-3 mb-4">
                             <div class="col-12 col-md-6">
-                                <label class="form-label font-weight-bold text-dark" for="id_month">Месяц <span class="text-danger">*</span></label>
+                                <label class="form-label font-weight-semibold text-dark small" for="id_month">Месяц <span class="text-danger">*</span></label>
                                 <select name="month" id="id_month" class="form-control form-control-modern" required>
                                     <option value="1">Январь</option>
                                     <option value="2">Февраль</option>
@@ -63,14 +69,14 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label font-weight-bold text-dark" for="id_year">Год <span class="text-danger">*</span></label>
+                                <label class="form-label font-weight-semibold text-dark small" for="id_year">Год <span class="text-danger">*</span></label>
                                 <input type="number" name="year" id="id_year" class="form-control form-control-modern" value="2026" required>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <button type="submit" class="btn btn-primary btn-touch font-weight-bold w-100">
-                                <i class="bx bx-download me-1"></i> Сформировать и скачать
+                            <button type="submit" class="btn btn-primary btn-touch font-weight-semibold w-100">
+                                <i class="bx bx-download me-2"></i> Сформировать и скачать
                             </button>
                         </div>
                     </form>

@@ -2,26 +2,49 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
+{% block title %}
+    Создание служебной записки // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -45,24 +68,17 @@
                     },
                     dataType: "json",
                     success: function (data) {
-                        // Установка новой даты начала
                         $('#id_period_from').val(data.period_from);
-                        minimumPeriodFor();  // Пересчитать ограничения
+                        minimumPeriodFor();
 
-                        // Установка места назначения
                         $('#id_place_production_activity option').each(function () {
                             $(this).prop('selected', data.place_production_activity.includes(parseInt($(this).val())));
                         });
 
-                        // Установка места отправления
                         $('#id_place_departure').val(data.place_departure).trigger('change');
-
                         $('#id_place_production_activity').trigger('change');
-
-                        // Установка цели
                         $('#id_purpose_trip').val(data.purpose_trip).trigger('change');
 
-                        // Можно сразу пересчитать аванс
                         expenses();
                     },
                     error: function () {
@@ -74,229 +90,192 @@
     </script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
-
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-2-5 col-xl-1-5">
-                                <i class="card-big-info-icon bx bxl-netlify"></i>
-                                <p class="card-big-info-desc" id="testof">Служебная записка на служебную поездку</p>
-                                <h5 id="test_off" style="color: #0c63e4"></h5>
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" action="#" method="post">
+                {% csrf_token %}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-plus-circle text-primary me-2"></i>Создание служебной записки на служебную поездку
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Заполните параметры поездки, даты и выберите ответственных лиц</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:memo_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
-                            <div class="col-lg-3-5 col-xl-4-5">
-                                <div class="form-group row align-items-center pb-3" id="employee_divisions">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_person">Сотрудник:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <label for="employee_divisions"></label>
-                                        <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_official_memo_type">Тип служебной поездки:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()" }}
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_document_extension">Документ основания:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        {{ form.document_extension | add_class:"form-control form-control-modern" | attr:"disabled" }}
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_type_trip">Вид служебной поездки:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        {{ form.type_trip | add_class:"form-control form-control-modern" }}
-                                    </div>
-                                </div>
-                                <div class="form-group row pb-3">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">Дата начала:</label>
-                                    <div class="col-lg-6">
-                                        <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-calendar-alt"></i>
-                                                </span>
-                                            <input type="date" id="id_period_from"
-                                                   class="form-control form-control-modern"
-                                                   onchange=minimumPeriodFor() onblur=expenses()
-                                                   name="period_from" value="{{ object.period_from | date:'c' }}"/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row pb-3">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">Дата окончания:</label>
-                                    <div class="col-lg-6">
-                                        <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-calendar-alt"></i>
-                                                </span>
-                                            <input type="date" id="id_period_for"
-                                                   class="form-control form-control-modern "
-                                                   onblur=expenses()
-                                                   name="period_for" value="{{ object.period_for | date:'c' }}"/>
-                                            <label id="id_check_date" for="check_date"
-                                                   style="color: #ff000e; font-weight: bold; bo"></label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row pb-3">
-                                    <label class="col-lg-3 control-label text-lg-end pt-2">Подтверждаю, что документ
-                                        введен задним числом</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        {{ form.creation_retroactively }}
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_place_departure">Место отправления:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <span>{{ form.place_departure }}</span>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_place_production_activity">Место назначения:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <div class="input-group">
-                                            <div class="col-11">
-                                                {{ form.place_production_activity | attr:"multiple" | add_class:"input-group-text" }}
-                                            </div>
-                                            <div class="col-1" style="align-content: center">
-                                                <a class="btn btn-primary btn-touch font-weight-bold form-control form-control-modern"
-                                                   href="{% url 'hrdepartment_app:place_add' %}">+</a>
-                                            </div>
+                        {% endif %}
 
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_purpose_trip">Цель:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <span>{{ form.purpose_trip }}</span>
-                                    </div>
-                                </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_expenses_summ">Сумма аванса:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <span>{{ form.expenses_summ }}</span>
+                        <div class="alert alert-info d-flex align-items-center mb-4 py-2 px-3">
+                            <i class="bx bx-info-circle fs-4 me-2 text-info"></i>
+                            <div id="test_off" class="fw-bold">Ориентировочная сумма аванса рассчитывается автоматически на основе дат поездки.</div>
+                        </div>
 
-                                    </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6" id="employee_divisions">
+                                <label class="form-label" for="{{ form.person.id_for_label }}">Сотрудник <span class="text-danger">*</span></label>
+                                <div>
+                                    {{ form.person|attr:"onchange=employee_change()" }}
                                 </div>
-                                <div class="form-group row align-items-center pb-3">
-                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                           for="id_accommodation">Ответственный:</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <select class="form-control form-control-modern" name="responsible"
-                                                id="id_responsible" data-plugin-selectTwo>
-                                            <option value="{{ user.pk }}" selected>{{ user }}</option>
-                                        </select>
-                                    </div>
+                                <div class="small text-muted mt-1">
+                                    <label for="employee_divisions" class="m-0"></label>
                                 </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.official_memo_type.id_for_label }}">Тип служебной поездки <span class="text-danger">*</span></label>
+                                {{ form.official_memo_type|add_class:"form-control form-control-modern"|attr:"onchange=memo_type_change()" }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.document_extension.id_for_label }}">Документ основания</label>
+                                {{ form.document_extension|add_class:"form-control form-control-modern"|attr:"disabled" }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.type_trip.id_for_label }}">Вид служебной поездки <span class="text-danger">*</span></label>
+                                {{ form.type_trip|add_class:"form-control form-control-modern" }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="id_period_from">Дата начала <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                    <input type="date" id="id_period_from" class="form-control form-control-modern"
+                                           onchange="minimumPeriodFor()" onblur="expenses()"
+                                           name="period_from" value="{{ object.period_from|date:'c'|default:'' }}" required/>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="id_period_for">Дата окончания <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                    <input type="date" id="id_period_for" class="form-control form-control-modern"
+                                           onchange="expenses()" onblur="expenses()"
+                                           name="period_for" value="{{ object.period_for|date:'c'|default:'' }}" required/>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.place_departure.id_for_label }}">Место отправления</label>
+                                {{ form.place_departure }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.place_production_activity.id_for_label }}">Место назначения (МПД)</label>
+                                {{ form.place_production_activity }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.purpose_trip.id_for_label }}">Цель поездки</label>
+                                {{ form.purpose_trip }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.expenses_summ.id_for_label }}">Сумма аванса (руб.)</label>
+                                {{ form.expenses_summ }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="id_responsible">Ответственный</label>
+                                <select class="form-control form-control-modern" name="responsible" id="id_responsible" data-plugin-selectTwo>
+                                    <option value="{{ user.pk }}" selected>{{ user }}</option>
+                                </select>
                             </div>
                         </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mt-4 bg-light rounded border">
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:memo_list' %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
-                </div>
-            {% endif %}
-        </div>
 
-    </form>
+                    <!-- Панель кнопок строго в футере карточки -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:memo_list' %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'hrdepartment_app:memo_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     <!-- end: page -->
+
     <script type="text/javascript">
         function expenses() {
-            period_from = new Date(document.getElementById("id_period_from").value);
-            period_for = new Date(document.getElementById("id_period_for").value);
-            diff = new Date(period_for - period_from);
-            summ = diff.getUTCDate();
-            if (summ > 0) {
-                if (summ < 16) {
-                    document.getElementById("test_off").innerHTML = "Ориентировочная сумма аванса: " + summ * 700;
-                } else {
-                    document.getElementById("test_off").innerHTML = "Ориентировочная сумма аванса: " + 15 * 700;
-                }
-
+            var period_from_el = document.getElementById("id_period_from");
+            var period_for_el = document.getElementById("id_period_for");
+            if (!period_from_el || !period_for_el || !period_from_el.value || !period_for_el.value) return;
+            var period_from = new Date(period_from_el.value);
+            var period_for = new Date(period_for_el.value);
+            var diffTime = period_for - period_from;
+            var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            if (diffDays > 0) {
+                var days = diffDays > 15 ? 15 : diffDays;
+                document.getElementById("test_off").innerHTML = "Ориентировочная сумма аванса: " + (days * 700) + " руб. (" + diffDays + " дн.)";
             }
         }
 
         function minimumPeriodFor() {
-            period_from = document.getElementById("id_period_from").value;
+            var period_from = document.getElementById("id_period_from").value;
             var period_for = document.getElementById("id_period_for");
-            period_for.removeAttribute("min")
-            period_for.setAttribute("min", period_from)
-            $("#period_for_id").trigger("create")
+            if (!period_for) return;
+            period_for.removeAttribute("min");
+            period_for.setAttribute("min", period_from);
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:memo_add' %}',
+                url: '{% url "hrdepartment_app:memo_add" %}',
                 data: {
                     "interval": period_from,
                 },
                 dataType: "json",
                 success: function (data) {
-                    // any process in data
-                    period_for.removeAttribute("min")
-                    period_for.setAttribute("min", data[0])
-                    $("#period_for_id").trigger("create")
-                    period_for.removeAttribute("max")
-                    period_for.setAttribute("max", data[1])
-                    $("#period_for_id").trigger("create")
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
+                    period_for.removeAttribute("min");
+                    period_for.setAttribute("min", data[0]);
+                    period_for.removeAttribute("max");
+                    period_for.setAttribute("max", data[1]);
                 },
                 failure: function (data) {
                     console.log("failure");
                 }
             });
-        };
+        }
 
         function employee_change() {
-            employee = document.getElementById("id_person").value;
-            period_from = document.getElementById("id_period_from").value;
-            memo_type = document.getElementById("id_official_memo_type").value;
+            var employee = document.getElementById("id_person").value;
+            var period_from = document.getElementById("id_period_from").value;
+            var memo_type = document.getElementById("id_official_memo_type").value;
 
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:memo_add' %}',
+                url: '{% url "hrdepartment_app:memo_add" %}',
                 data: {
                     "employee": employee,
                     "period_from": period_from,
@@ -304,56 +283,41 @@
                 },
                 dataType: "json",
                 success: function (data) {
-                    var check_date = document.getElementById("id_check_date");
-                    var employee_divisions = document.getElementById("employee_divisions");
                     $("label[for='employee_divisions']").text(data);
-                    employee_divisions.refresh;
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
                     memo_type_change();
                 },
                 failure: function (data) {
                     console.log("failure");
                 }
             });
-        };
+        }
 
         function memo_type_change() {
-            employee = document.getElementById("id_person").value;
-            memo_type = document.getElementById("id_official_memo_type").value;
+            var employee = document.getElementById("id_person").value;
+            var memo_type = document.getElementById("id_official_memo_type").value;
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:memo_add' %}',
+                url: '{% url "hrdepartment_app:memo_add" %}',
                 data: {
                     "employee": employee,
                     "memo_type": memo_type,
                 },
                 dataType: "json",
                 success: function (data) {
-                    // any process in data
-                    var employee_divisions = document.getElementById("employee_divisions");
                     $("label[for='employee_divisions']").text(data['employee']);
-                    employee_divisions.refresh;
                     var document_extension = $("#id_document_extension");
                     document_extension.empty();
                     $.each(data['memo_type'], function (key, value) {
                         document_extension.append($("<option selected></option>")
                             .attr("value", value).text(key));
                     });
-                    document_extension.removeAttr("disabled")
-                    $('#id_document_extension').refresh;
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
+                    document_extension.removeAttr("disabled");
                     $('#id_document_extension').trigger('change');
                 },
                 failure: function (data) {
                     console.log("failure");
                 }
             });
-        };
+        }
     </script>
-
-    <!-- end: page -->
 {% endblock %}

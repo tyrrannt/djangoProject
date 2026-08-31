@@ -445,12 +445,13 @@
         }
     </style>
 
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
+    <form class="ecommerce-form" action="#" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="row">
             <div class="col">
-                <section class="card card-modern card-big-info">
+                <section class="card card-modern shadow-sm border-0 mb-4">
                     <div class="card-body">
+
                         <div class="row">
                             <div class="col-sm-12">
                                 <!-- Реквизиты -->
@@ -626,32 +627,36 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Панель кнопок строго в футере карточки -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                                </a>
+                            </div>
+                            {% if object and user.is_superuser %}
+                                <div>
+                                    <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}"
+                                       class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </section>
             </div>
-        </div>
-
-        <!-- Кнопки действий -->
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
-                </a>
-            </div>
-            {% if object and user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
-                </div>
-            {% endif %}
         </div>
     </form>
     <!-- Модальное окно для добавления программы -->

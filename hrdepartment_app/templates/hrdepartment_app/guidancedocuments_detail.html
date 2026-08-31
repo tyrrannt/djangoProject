@@ -2,26 +2,62 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
 {% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .attr-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .attr-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .attr-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+    </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
@@ -94,176 +130,315 @@
                 new PNotify(notificationOptions);
             }
         });
-    </script>
-{% endblock %}
 
-{% block title %}
-    {{ title }}
+        function printPdfDocument(pdfUrl, btnEl) {
+            if (!pdfUrl) {
+                alert('Скан документа для печати не прикреплен.');
+                return;
+            }
+            var button = typeof btnEl === 'string' ? document.querySelector(btnEl) : btnEl;
+            var originalHtml = '';
+            if (button) {
+                originalHtml = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="bx bx-loader-alt bx-spin me-2"></i> Подготовка к печати...';
+            }
+            function restoreButton() {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            }
+            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                restoreButton();
+                var win = window.open(pdfUrl, '_blank');
+                if (!win) window.location.href = pdfUrl;
+                return;
+            }
+            fetch(pdfUrl, { cache: 'no-cache' })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('Ошибка загрузки PDF');
+                    return res.blob();
+                })
+                .then(function (blob) {
+                    var blobUrl = URL.createObjectURL(blob);
+                    var old = document.getElementById('pdfPrintIframe');
+                    if (old) old.remove();
+                    var iframe = document.createElement('iframe');
+                    iframe.id = 'pdfPrintIframe';
+                    iframe.style.position = 'fixed';
+                    iframe.style.right = '0';
+                    iframe.style.bottom = '0';
+                    iframe.style.width = '1px';
+                    iframe.style.height = '1px';
+                    iframe.style.border = 'none';
+                    iframe.style.opacity = '0.01';
+                    iframe.style.pointerEvents = 'none';
+                    iframe.style.zIndex = '-9999';
+                    iframe.src = blobUrl;
+                    iframe.onload = function () {
+                        restoreButton();
+                        setTimeout(function () {
+                            try {
+                                iframe.contentWindow.focus();
+                                iframe.contentWindow.print();
+                                setTimeout(function () {
+                                    URL.revokeObjectURL(blobUrl);
+                                }, 120000);
+                            } catch (e) {
+                                fallbackPrint(pdfUrl);
+                            }
+                        }, 300);
+                    };
+                    iframe.onerror = function () {
+                        restoreButton();
+                        fallbackPrint(pdfUrl);
+                    };
+                    document.body.appendChild(iframe);
+                })
+                .catch(function () {
+                    restoreButton();
+                    fallbackPrint(pdfUrl);
+                });
+            function fallbackPrint(url) {
+                try {
+                    var w = window.open(url, '_blank');
+                    if (w) {
+                        w.focus();
+                        w.onload = function () {
+                            try {
+                                w.print();
+                            } catch (e) {}
+                        };
+                    } else {
+                        window.location.href = url;
+                    }
+                } catch (e) {
+                    window.location.href = url;
+                }
+            }
+        }
+
+        function printPDF() {
+            {% if object.scan_file %}
+                printPdfDocument('{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}', document.getElementById('btn-print-doc'));
+            {% endif %}
+        }
+    </script>
 {% endblock %}
 
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" id="acknowledgment-form">
-        {% csrf_token %}
-        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-        <div class="col-12 mb-4"><div class="card card-modern shadow-sm border-0"><div class="card-body p-4">
-            <!-- Панель статуса и быстрого ознакомления в видимой части страницы -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center bg-light p-3 rounded border mb-4 gap-3">
-                <div>
-                    <h4 class="font-weight-bold text-dark mb-1">
-                        <i class="bx bx-file text-primary me-2"></i>{{ object.type_of_document }} {% if object.document_number %}№ {{ object.document_number }}{% endif %}
-                        {% if object.document_date %}от {{ object.document_date }}{% endif %}
-                    </h4>
-                    <p class="text-muted small mb-0">Кадровый нормативный документ &bull; Лист ознакомления сотрудников</p>
-                </div>
-                <div class="d-flex align-items-center gap-3">
-                    <div class="d-flex align-items-center bg-white py-2 px-3 rounded border shadow-sm">
-                        <div class="form-check form-switch fs-5 d-flex align-items-center gap-2 m-0">
-                            <input class="form-check-input acknowledgment-toggle" type="checkbox" role="switch"
-                                   id="acknowledgment-checkbox-top" data-object-id="{{ object.id }}"
-                                   {% if agree %}checked{% endif %}>
-                            <label class="form-check-label fw-bold text-dark fs-6 user-select-none" for="acknowledgment-checkbox-top">
-                                Я ознакомился с документом
-                            </label>
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-body p-4">
+                    <!-- Панель статуса и быстрого ознакомления в видимой части страницы -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center bg-light p-3 rounded border mb-4 gap-3">
+                        <div>
+                            <h4 class="font-weight-bold text-dark mb-1">
+                                <i class="bx bx-file text-primary me-2"></i>{{ object.type_of_document }} {% if object.document_number %}№ {{ object.document_number }}{% endif %}
+                                {% if object.document_date %}от {{ object.document_date }}{% endif %}
+                            </h4>
+                            <p class="text-muted small mb-0">Руководящий нормативный документ &bull; Лист ознакомления сотрудников</p>
                         </div>
-                    </div>
-                    <form id="acknowledgment-form" method="post" style="display: none;">
-                        {% csrf_token %}
-                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-                    </form>
-                </div>
-            </div>
-<h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
-                от {{ object.document_date }} г.</h4>
-            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                <section class="toggle active">
-                    <label>Основные реквизиты</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <h4>{{ object.document_name }}, №: {{ object.document_number }}
-                                        от: {{ object.document_date | date:"c" }} г.</h4>
-                                    <h4>Действителен с: {{ object.validity_period_start }}
-                                        {% if object.validity_period_end %} по:
-                                            {{ object.validity_period_end }}{% endif %}</h4>
-                                    <h4>Место хранения оригинала: {{ object.storage_location_division }}.</h4>
-                                    <h4>Исполнитель: {{ object.executor | FIO_format }}</h4>
-                                    <h4>Ответственные лица:
-                                        {% for item in object.employee.iterator %}{% if forloop.last %}
-                                            {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
-                                        {% endif %}{% endfor %}</h4>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center bg-white py-2 px-3 rounded border shadow-sm">
+                                <div class="form-check form-switch fs-5 d-flex align-items-center gap-2 m-0">
+                                    <input class="form-check-input acknowledgment-toggle" type="checkbox" role="switch"
+                                           id="acknowledgment-checkbox-top" data-object-id="{{ object.id }}"
+                                           {% if agree %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold text-dark fs-6 user-select-none" for="acknowledgment-checkbox-top">
+                                        Я ознакомился с документом
+                                    </label>
                                 </div>
                             </div>
+                            <form id="acknowledgment-form" method="post" style="display: none;">
+                                {% csrf_token %}
+                                <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                            </form>
                         </div>
                     </div>
-                </section>
-                <section class="toggle">
-                    <label>Файл</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
+
+                    <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                        <!-- Секция: Основные реквизиты -->
+                        <section class="toggle active">
+                            <label><i class="bx bx-list-check me-1"></i> 1. Основные реквизиты</label>
+                            <div class="toggle-content">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Наименование документа</div>
+                                            <div class="attr-value">{{ object.document_name }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Номер документа</div>
+                                            <div class="attr-value">{{ object.document_number|default:"б/н" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Дата документа</div>
+                                            <div class="attr-value">{{ object.document_date|date:"d.m.Y"|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Срок действия</div>
+                                            <div class="attr-value">
+                                                С: {{ object.validity_period_start|date:"d.m.Y"|default:"-" }} 
+                                                {% if object.validity_period_end %}по {{ object.validity_period_end|date:"d.m.Y" }}{% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Место хранения оригинала</div>
+                                            <div class="attr-value">{{ object.storage_location_division|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Исполнитель</div>
+                                            <div class="attr-value">{{ object.executor|FIO_format }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="attr-box">
+                                            <div class="attr-label">Ответственные лица</div>
+                                            <div class="attr-value">
+                                                {% for item in object.employee.iterator %}
+                                                    <span class="badge bg-light text-dark border me-1">{{ item|FIO_format }}</span>
+                                                {% empty %}
+                                                    <span class="text-muted">Не указаны</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Секция: Файлы документа -->
+                        <section class="toggle">
+                            <label><i class="bx bx-paperclip me-1"></i> 2. Файлы документа</label>
+                            <div class="toggle-content">
+                                <div class="row g-3">
                                     {% if object.scan_file %}
-                                        <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
-                                           target="_blank">Открыть документ</a>
-                                        <object data="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
-                                                type="application/pdf"
-                                                width="750px"
-                                                height="750px">
-                                            <embed src="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
-                                                   type="application/pdf">
-                                            <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
-                                                PDF-файл, чтобы
-                                                просмотреть его: <a
-                                                        href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}">Скачать
-                                                    PDF.</a>.</p>
-                                            </embed>
-                                        </object>
+                                        <div class="col-12 mb-3">
+                                            <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded border">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <img src="{% static 'Extension/pdf.png' %}" width="28" height="28" alt="PDF">
+                                                    <div>
+                                                        <div class="font-weight-semibold text-dark">Скан руководящего документа (.pdf)</div>
+                                                        <div class="small text-muted">Электронная копия документа</div>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
+                                                       target="_blank" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                                        <i class="bx bx-file me-1"></i> Открыть PDF
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-warning btn-touch font-weight-semibold" id="btn-print-doc"
+                                                            onclick="printPdfDocument('{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}', this)">
+                                                        <i class="bx bx-printer me-1"></i> Распечатать
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <object data="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
+                                                    type="application/pdf" width="100%" height="800px" class="border rounded">
+                                                <embed src="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" type="application/pdf"/>
+                                                <div class="p-3 text-center">
+                                                    <p>Браузер не поддерживает встроенный просмотр PDF.</p>
+                                                    <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" class="btn btn-primary btn-touch">Скачать PDF</a>
+                                                </div>
+                                            </object>
+                                        </div>
+                                    {% else %}
+                                        <div class="col-12">
+                                            <div class="alert alert-info mb-0">
+                                                <i class="bx bx-info-circle me-1"></i> Скан документа не прикреплен.
+                                            </div>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </section>
-                <section class="toggle">
-                    <label>Лист ознакомления</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <section class="card">
-                                <header class="card-header">
-                                    <div class="card-actions">
-                                        <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                        {#                                            <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
-                                    </div>
-                                    <h2 class="card-title">Список сотрудников</h2>
-                                </header>
-                                <div class="card-body">
-                                    <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
-                                        <thead>
-                                        <tr>
-                                            <th>№</th>
-                                            <th>ФИО</th>
-                                            <th>Должность</th>
-                                            <th class="text-end">Дата и время ознакомления</th>
-                                            <th class="text-end">Ознакомлен</th>
-                                        </tr>
+                        </section>
+
+                        <!-- Секция: Лист ознакомления -->
+                        <section class="toggle">
+                            <label><i class="bx bx-check-double me-1"></i> 3. Лист ознакомления сотрудников</label>
+                            <div class="toggle-content">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 50px;">#</th>
+                                                <th>Сотрудник</th>
+                                                <th>Должность</th>
+                                                <th class="text-end" style="width: 180px;">Дата ознакомления</th>
+                                                <th class="text-end" style="width: 140px;">Статус</th>
+                                            </tr>
                                         </thead>
                                         <tbody>
-                                        {% for item in list_agree %}
-                                            <tr>
-                                                <td>{{ forloop.counter }}</td>
-                                                <td>{{ item.user.title }}</td>
-                                                <td>{{ item.user.user_work_profile.job.get_title }}</td>
-                                                <td class="text-end">{{ item.acknowledgment_date }}</td>
-                                                <td class="text-end">Ознакомлен</td>
-                                            </tr>
-                                        {% endfor %}
+                                            {% for item in list_agree %}
+                                                <tr>
+                                                    <td>{{ forloop.counter }}</td>
+                                                    <td class="font-weight-semibold">{{ item.user.title }}</td>
+                                                    <td>{{ item.user.user_work_profile.job.get_title|default:"-" }}</td>
+                                                    <td class="text-end">{{ item.acknowledgment_date|date:"d.m.Y H:i" }}</td>
+                                                    <td class="text-end"><span class="badge bg-success">Ознакомлен</span></td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted py-3">Нет записей об ознакомлении</td>
+                                                </tr>
+                                            {% endfor %}
                                         </tbody>
                                     </table>
                                 </div>
-                            </section>
-                        </div>
+                            </div>
+                        </section>
                     </div>
-                </section>
+                </div>
+
+                <!-- Панель действий строго в футере карточки -->
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            {% if user|has_group:"Положения" or user.is_superuser %}
+                                <a href="{% url 'hrdepartment_app:guidance_documents_update' object.pk %}"
+                                   class="btn btn-primary btn-touch font-weight-semibold">
+                                    <i class="bx bx-edit text-4 me-2"></i> Изменить
+                                </a>
+                            {% endif %}
+                            {% if object.scan_file %}
+                                <button type="button" class="btn btn-outline-warning btn-touch font-weight-semibold"
+                                        onclick="printPdfDocument('{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}', this)">
+                                    <i class="bx bx-printer text-4 me-2"></i> Распечатать
+                                </button>
+                            {% endif %}
+                            <a href="{% url 'hrdepartment_app:guidance_documents_list' %}"
+                               class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <div>
+                                <a href="#" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                    <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
-        </div></div></div>
-<div class="row action-buttons d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mt-4 bg-light rounded border">
-            {% if user|has_group:"Положения" or user.is_superuser %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                    <a href="{% url 'hrdepartment_app:guidance_documents_update' object.pk %}"
-                       class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
-                </div>
-            {% endif %}
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:guidance_documents_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
-            </div>
-            <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-
-                <div class="switch switch-lg switch-success">
-                    <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
-                           data-plugin-ios-switch {% if agree %}checked{% endif %}>
-                </div>
-                <label for="acknowledgment-checkbox">Я ознакомился</label>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
-                </div>
-            {% endif %}
-        </div>
-    </form>
+    </div>
     <!-- end: page -->
-    <!-- end: page -->
-
 {% endblock %}

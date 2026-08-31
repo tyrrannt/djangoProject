@@ -3,142 +3,177 @@
 {% load custom %}
 {% load widget_tweaks %}
 
-{% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
 
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="col-12 mb-4"><div class="card card-modern shadow-sm border-0"><div class="card-body p-4"><h4 class="font-weight-bold text-dark">Приказ № {{ object.number }}
-                от {{ object.date_create }} г.</h4>
-            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                <section class="toggle active">
-                    <label>Основные реквизиты</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_type">Вид документа:</label>
-                                        {{ form.document_type | attr:"onchange=memo_type_change()" }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_replaceable_document">Отменяемый документ:</label>
-                                        {{ form.replaceable_document | attr:"disabled" }}
-                                    </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_executor_person">Исполнитель:</label>
-                                        {{ form.executor_person }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_approving_person">Согласующее лицо:</label>
-                                        {{ form.approving_person }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_place">Подразделение:</label>
-                                        {{ form.place }}
-                                    </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_date_create">Дата документа:</label>
-                                        {{ form.date_create }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_date_star">Действителен с:</label>
-                                        {{ form.date_start }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_date_end">Действителен по:</label>
-                                        {{ form.date_end }}
-                                    </div>
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" action="#" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
 
-                                </div>
-                                <div class="row text">
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-plus-circle text-primary me-2"></i>Создание приказа о формировании бригады
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Заполните реквизиты приказа, состав бригады и воздушные суда</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:team_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </header>
 
-
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_senior_brigade">Старший бригады:</label>
-                                        {{ form.senior_brigade }}
-                                    </div>
-                                    <div class="col-sm-4 text-black-50">
-                                        <label class="col-sm-12 control-label mb-0"
-                                               for="id_team_brigade">Состав бригады:</label>
-                                        {{ form.team_brigade }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_company_property">Борт:</label>
-                                        {{ form.company_property }}
-                                    </div>
-                                </div>
-
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
+                        {% endif %}
+
+                        <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                            <section class="toggle active">
+                                <label><i class="bx bx-file me-1"></i> Основные реквизиты приказа</label>
+                                <div class="toggle-content">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label" for="id_document_type">Вид документа:</label>
+                                            {{ form.document_type|attr:"onchange=memo_type_change()" }}
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label" for="id_replaceable_document">Отменяемый документ:</label>
+                                            {{ form.replaceable_document|attr:"disabled" }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_executor_person">Исполнитель:</label>
+                                            {{ form.executor_person }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_approving_person">Согласующее лицо:</label>
+                                            {{ form.approving_person }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_place">Подразделение:</label>
+                                            {{ form.place }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_date_create">Дата документа:</label>
+                                            {{ form.date_create }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_date_start">Действителен с:</label>
+                                            {{ form.date_start }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_date_end">Действителен по:</label>
+                                            {{ form.date_end }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_senior_brigade">Старший бригады:</label>
+                                            {{ form.senior_brigade }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_team_brigade">Состав бригады:</label>
+                                            {{ form.team_brigade }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_company_property">Борт:</label>
+                                            {{ form.company_property }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     </div>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
 
+                    <!-- Панель кнопок строго в футере карточки -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:team_list' %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Закрыть
+                                </a>
+                                <a href="{% url 'hrdepartment_app:team_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                                </a>
                             </div>
+                            {% if user.is_superuser %}
+                                <div>
+                                    <a href="#" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
-                </section>
-            </div>
-
-        </div>
-        </div></div></div>
-<div class="row action-buttons">
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                <button type="submit"
-                        class="submit-button btn btn-primary btn-touch font-weight-bold py-3 d-flex align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:team_list' %}"
-                   class="cancel-button btn btn-outline-secondary btn-touch py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="delete-button btn btn-danger btn-touch font-weight-bold py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
                 </div>
-            {% endif %}
+            </form>
         </div>
-    </form>
+    </div>
     <!-- end: page -->
-    <!-- end: page -->
+
     <script type="text/javascript">
         function memo_type_change() {
-            document_type = document.getElementById("id_document_type").value;
+            var document_type = document.getElementById("id_document_type").value;
             if (document_type == 1) {
                 $.ajax({
                     type: "GET",
@@ -148,17 +183,15 @@
                     },
                     dataType: "json",
                     success: function (data) {
-                        // any process in data
                         var replaceable_document = $("#id_replaceable_document");
                         replaceable_document.empty();
                         $.each(data['replaceable_document'], function (key, value) {
                             replaceable_document.append($("<option selected></option>")
                                 .attr("value", value).text(key));
                         });
-                        replaceable_document.removeAttr("disabled")
-                        $('#id_replaceable_document').refresh;
-                        if (data === 'ok') {
-                            console.log("success");
+                        replaceable_document.removeAttr("disabled");
+                        if ($('#id_replaceable_document').data('select2')) {
+                            $('#id_replaceable_document').trigger('change');
                         }
                     },
                     failure: function (data) {
@@ -170,9 +203,10 @@
                 var replaceable_document = $("#id_replaceable_document");
                 replaceable_document.empty();
                 replaceable_document.prop('disabled', true);
-                $('#id_replaceable_document').refresh();
+                if ($('#id_replaceable_document').data('select2')) {
+                    $('#id_replaceable_document').trigger('change');
+                }
             }
-        };
+        }
     </script>
-
 {% endblock %}

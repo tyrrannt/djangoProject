@@ -9,7 +9,7 @@
 {% block custom_css %}
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
@@ -18,6 +18,12 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
         }
         .attr-box {
             background: #f8fafc;
@@ -27,11 +33,17 @@
             margin-bottom: 12px;
         }
         .attr-label {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
             color: #64748b;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 4px;
+        }
+        .attr-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
         }
     </style>
 {% endblock %}
@@ -67,7 +79,7 @@
 
             <!-- Main Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4 rounded-top">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-info-circle text-primary me-2"></i>Параметры и стороны доверенности
                     </h5>
@@ -77,25 +89,25 @@
                         <div class="col-12 col-md-3">
                             <div class="attr-box">
                                 <div class="attr-label">Номер доверенности</div>
-                                <div class="fw-bold font-monospace text-primary fs-5">{{ poa.number }}</div>
+                                <div class="attr-value text-primary font-weight-bold fs-5">{{ poa.number }}</div>
                             </div>
                         </div>
                         <div class="col-12 col-md-3">
                             <div class="attr-box">
                                 <div class="attr-label">Дата выдачи</div>
-                                <div class="fw-bold font-monospace text-dark">{{ poa.issue_date|date:"d.m.Y" }}</div>
+                                <div class="attr-value">{{ poa.issue_date|date:"d.m.Y" }}</div>
                             </div>
                         </div>
                         <div class="col-12 col-md-3">
                             <div class="attr-box">
                                 <div class="attr-label">Дата окончания</div>
-                                <div class="fw-bold font-monospace text-dark">{{ poa.expiry_date|date:"d.m.Y" }}</div>
+                                <div class="attr-value">{{ poa.expiry_date|date:"d.m.Y" }}</div>
                             </div>
                         </div>
                         <div class="col-12 col-md-3">
                             <div class="attr-box">
                                 <div class="attr-label">Дата отмены / отзыва</div>
-                                <div class="fw-bold font-monospace {% if poa.cancellation_date %}text-danger{% else %}text-muted{% endif %}">
+                                <div class="attr-value {% if poa.cancellation_date %}text-danger{% else %}text-muted{% endif %}">
                                     {{ poa.cancellation_date|date:"d.m.Y"|default:"—" }}
                                 </div>
                             </div>
@@ -104,7 +116,7 @@
                         <div class="col-12 col-md-6">
                             <div class="attr-box">
                                 <div class="attr-label">Инициатор</div>
-                                <div class="fw-bold text-dark fs-6">{{ poa.initiator_name_user }}</div>
+                                <div class="attr-value">{{ poa.initiator_name_user }}</div>
                                 <div class="small text-muted">{{ poa.initiator_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
                             </div>
                         </div>
@@ -112,7 +124,7 @@
                         <div class="col-12 col-md-6">
                             <div class="attr-box">
                                 <div class="attr-label">Поверенное лицо</div>
-                                <div class="fw-bold text-dark fs-6">{{ poa.grantee_name_user }}</div>
+                                <div class="attr-value">{{ poa.grantee_name_user }}</div>
                                 <div class="small text-muted">{{ poa.grantee_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
                             </div>
                         </div>
@@ -120,7 +132,7 @@
                         <div class="col-12">
                             <div class="attr-box">
                                 <div class="attr-label">Организация / Орган / Цель полномочий</div>
-                                <div class="fw-bold text-dark fs-6">{{ poa.organization|default:"Не указана" }}</div>
+                                <div class="attr-value">{{ poa.organization|default:"Не указана" }}</div>
                             </div>
                         </div>
                     </div>
@@ -146,7 +158,7 @@
                                             {% if user == poa.grantee_name_user or user.is_superuser %}
                                                 <form action="{% url 'hrdepartment_app:poa_mark_received' poa.pk %}" method="post" class="mt-2 m-0">
                                                     {% csrf_token %}
-                                                    <button type="submit" class="btn btn-success btn-sm btn-touch">
+                                                    <button type="submit" class="btn btn-success btn-touch">
                                                         <i class="bx bx-check me-1"></i> Подтвердить получение
                                                     </button>
                                                 </form>
@@ -164,8 +176,8 @@
                                     <div class="flex-grow-1">
                                         <div class="fw-bold text-dark mb-1">Скан-копия документа</div>
                                         {% if poa.scan_file %}
-                                            <a href="{{ poa.scan_file.url }}" target="_blank" class="btn btn-outline-primary btn-sm btn-touch">
-                                                <i class="bx bx-download me-1"></i> Скачать документ
+                                            <a href="{{ poa.scan_file.url }}" target="_blank" class="btn btn-outline-primary btn-touch">
+                                                <i class="bx bx-download me-1"></i> Скачать документ (.pdf)
                                             </a>
                                         {% else %}
                                             <span class="text-muted small">Файл не прикреплен</span>
@@ -178,16 +190,16 @@
                 </div>
 
                 <!-- Footer Action Bar -->
-                <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary btn-touch">
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
                         <i class="bx bx-arrow-back me-1"></i> К списку
                     </a>
                     {% if user == poa.executor or user.is_superuser %}
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'hrdepartment_app:poa_update' poa.pk %}" class="btn btn-primary btn-touch font-weight-bold">
+                        <div class="d-flex gap-2 align-items-center">
+                            <a href="{% url 'hrdepartment_app:poa_update' poa.pk %}" class="btn btn-primary btn-touch font-weight-semibold">
                                 <i class="bx bx-edit me-1"></i> Редактировать
                             </a>
-                            <a href="{% url 'hrdepartment_app:poa_delete' poa.pk %}" class="btn btn-outline-danger btn-touch">
+                            <a href="{% url 'hrdepartment_app:poa_delete' poa.pk %}" class="btn btn-outline-danger btn-touch font-weight-semibold">
                                 <i class="bx bx-trash me-1"></i> Удалить
                             </a>
                         </div>

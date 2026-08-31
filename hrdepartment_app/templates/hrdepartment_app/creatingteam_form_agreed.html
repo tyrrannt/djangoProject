@@ -3,107 +3,173 @@
 {% load custom %}
 {% load widget_tweaks %}
 
-{% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
+{% block title %}
+    Согласование приказа // Отдел кадров
+{% endblock %}
 
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .attr-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .attr-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .attr-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col">
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" action="#" method="post">
+                {% csrf_token %}
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-check-shield text-success me-2"></i>Согласование приказа о формировании бригады
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Приказ № {{ object.number|default:"б/н" }} от {{ object.date_create|date:"d.m.Y" }}</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:team' object.pk %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> К карточке
+                            </a>
+                        </div>
+                    </header>
 
-                <section class="card card-modern card-big-info">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-2-5 col-xl-1-5">
-                                <i class="card-big-info-icon bx bxl-netlify"></i>
-                                <p class="card-big-info-desc" id="testof">Согласование приказа</p>
+                    <div class="card-body p-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <div class="attr-box">
+                                    <div class="attr-label">Старший бригады</div>
+                                    <div class="attr-value text-primary font-weight-bold">{{ object.senior_brigade }}</div>
+                                </div>
                             </div>
-                            <div class="col-lg-3-5 col-xl-4-5">
-                                <div class="row text">
-                                    <div class="col-md-12 text-black-50">
-                                        <label for="id_place"><h4>Старший
-                                            бригады:&nbsp&nbsp&nbsp<u>{{ object.senior_brigade }}</u></h4></label>
-                                    </div>
-                                    <div class="col-md-12 text-black-50">
-                                        <label for="id_place"><h4>Бригада:&nbsp&nbsp&nbsp<u>
-                                            {% for item in object.team_brigade.iterator %}{{ item }}, {% endfor %}</u>
-                                        </h4></label>
-                                    </div>
-                                    <div class="col-md-12 text-black-50">
-                                        <label for="id_place"><h4>На:&nbsp&nbsp&nbsp<u>{{ object.place }}</u></h4>
-                                        </label>
-                                    </div>
-                                    <div class="col-md-12 text-black-50">
-                                        <label for="id_place"><h4>С:&nbsp&nbsp&nbsp<u>{{ object.date_start }}</u></h4>
-                                        </label>
-                                    </div>
-                                    <div class="col-md-12 text-black-50">
-                                        <label for="id_place"><h4>По:&nbsp&nbsp&nbsp<u>{{ object.date_end }}</u></h4>
-                                        </label>
-                                    </div>
-                                    <div class="col-md-12 text-black-50">
-                                        <label for="id_place"><h4>В задание на полет:&nbsp&nbsp&nbsp<u>
-                                            {% for item in object.company_property.iterator %}{{ item }}
-                                                , {% endfor %}</u></h4></label>
+                            <div class="col-12 col-md-6">
+                                <div class="attr-box">
+                                    <div class="attr-label">Подразделение</div>
+                                    <div class="attr-value">{{ object.place|default:"-" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="attr-box">
+                                    <div class="attr-label">Состав бригады</div>
+                                    <div class="attr-value">
+                                        {% for item in object.team_brigade.iterator %}
+                                            <span class="badge bg-light text-dark border me-1">{{ item }}</span>
+                                        {% empty %}
+                                            <span class="text-muted">Не указан</span>
+                                        {% endfor %}
                                     </div>
                                 </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="attr-box">
+                                    <div class="attr-label">Срок действия с</div>
+                                    <div class="attr-value">{{ object.date_start|date:"d.m.Y" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="attr-box">
+                                    <div class="attr-label">Срок действия по</div>
+                                    <div class="attr-value">{{ object.date_end|date:"d.m.Y" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="attr-box">
+                                    <div class="attr-label">В задание на полет (Борт)</div>
+                                    <div class="attr-value">
+                                        {% for item in object.company_property.iterator %}
+                                            <span class="badge bg-light text-dark border me-1">{{ item }}</span>
+                                        {% empty %}
+                                            <span class="text-muted">Не указан</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-top pt-3">
+                            <div class="form-group">
                                 {{ form.as_p }}
                             </div>
                         </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mt-4 bg-light rounded border">
 
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-primary btn-touch font-weight-bold py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:team_list' %}"
-                   class="btn btn-outline-dark btn-touch py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-touch font-weight-bold py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    <!-- Панель кнопок строго в футере карточки -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:team_list' %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Закрыть
+                                </a>
+                                <a href="{% url 'hrdepartment_app:team_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                                </a>
+                            </div>
+                            {% if user.is_superuser %}
+                                <div>
+                                    <a href="#" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
+            </form>
         </div>
-
-    </form>
-    <!-- end: page -->
+    </div>
     <!-- end: page -->
 {% endblock %}

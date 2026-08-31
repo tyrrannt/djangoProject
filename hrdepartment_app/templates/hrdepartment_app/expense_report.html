@@ -9,7 +9,7 @@
 {% block custom_css %}
     <style>
         :root {
-            --touch-target-size: 44px;
+            --touch-target-size: 42px;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
@@ -18,6 +18,12 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
         }
         .kpi-card {
             border-radius: 10px;
@@ -42,15 +48,15 @@
                     <p class="text-muted small mb-0">Сводная ведомость командировочных расходов и выплат сотрудникам</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button onclick="exportToExcel()" class="btn btn-success btn-touch font-weight-bold">
-                        <i class="bx bx-spreadsheet me-1"></i> Экспорт в Excel
+                    <button onclick="exportToExcel()" class="btn btn-success btn-touch font-weight-semibold">
+                        <i class="bx bx-spreadsheet me-2"></i> Экспорт в Excel
                     </button>
                 </div>
             </div>
 
             <!-- Filter Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+                <header class="card-header bg-light py-3 px-4">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-filter-alt text-primary me-2"></i>Фильтры отчета
                     </h5>
@@ -59,7 +65,7 @@
                     <form method="get" class="m-0">
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-3">
-                                <label class="form-label font-weight-bold text-dark small">Год</label>
+                                <label class="form-label font-weight-semibold text-dark small">Год</label>
                                 <select name="year" class="form-control form-control-modern" id="report-year-select">
                                     {% for year in years %}
                                         <option value="{{ year }}" {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
@@ -69,7 +75,7 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-3">
-                                <label class="form-label font-weight-bold text-dark small">Месяц</label>
+                                <label class="form-label font-weight-semibold text-dark small">Месяц</label>
                                 <select name="month" class="form-control form-control-modern">
                                     <option value="">Все месяцы</option>
                                     {% for month_num, month_name in months %}
@@ -80,7 +86,7 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-3">
-                                <label class="form-label font-weight-bold text-dark small">Тип поездки</label>
+                                <label class="form-label font-weight-semibold text-dark small">Тип поездки</label>
                                 <select name="job_type" class="form-control form-control-modern">
                                     <option value="">Все типы</option>
                                     {% for type_value, type_name in job_types %}
@@ -91,7 +97,7 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-3">
-                                <label class="form-label font-weight-bold text-dark small">Сотрудник</label>
+                                <label class="form-label font-weight-semibold text-dark small">Сотрудник</label>
                                 <select name="employee_id" class="form-control form-control-modern">
                                     <option value="">Все сотрудники</option>
                                     {% for emp in employees %}
@@ -102,11 +108,11 @@
                                 </select>
                             </div>
                             <div class="col-12 d-flex gap-2">
-                                <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
-                                    <i class="bx bx-check me-1"></i> Применить фильтры
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-semibold">
+                                    <i class="bx bx-check me-2"></i> Применить фильтры
                                 </button>
-                                <a href="{% url 'hrdepartment_app:expense_report' %}" class="btn btn-outline-secondary btn-touch">
-                                    <i class="bx bx-reset me-1"></i> Сбросить
+                                <a href="{% url 'hrdepartment_app:expense_report' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-reset me-2"></i> Сбросить
                                 </a>
                             </div>
                         </div>
@@ -168,7 +174,7 @@
 
                 <!-- Table Card -->
                 <div class="card card-modern shadow-sm border-0 mb-4">
-                    <header class="card-header bg-light py-3">
+                    <header class="card-header bg-light py-3 px-4">
                         <h5 class="card-title text-dark mb-0 font-weight-bold">
                             <i class="bx bx-table text-primary me-2"></i>Детализированная ведомость
                         </h5>
