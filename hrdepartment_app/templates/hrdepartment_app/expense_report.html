@@ -32,6 +32,28 @@
         .kpi-card:hover {
             transform: translateY(-2px);
         }
+        .table-expense thead th {
+            background-color: #f1f3f5 !important;
+            color: #212529 !important;
+            font-weight: 600;
+            vertical-align: middle;
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+        .table-expense td {
+            vertical-align: middle;
+            color: #212529;
+        }
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: #495057;
+            border-radius: 6px 6px 0 0;
+            padding: 10px 18px;
+        }
+        .nav-tabs .nav-link.active {
+            color: #0088cc;
+            background-color: #fff;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
     </style>
 {% endblock %}
 
@@ -86,7 +108,7 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-3">
-                                <label class="form-label font-weight-semibold text-dark small">Тип поездки</label>
+                                <label class="form-label font-weight-semibold text-dark small">Тип должности</label>
                                 <select name="job_type" class="form-control form-control-modern">
                                     <option value="">Все типы</option>
                                     {% for type_value, type_name in job_types %}
@@ -101,7 +123,7 @@
                                 <select name="employee_id" class="form-control form-control-modern">
                                     <option value="">Все сотрудники</option>
                                     {% for emp in employees %}
-                                        <option value="{{ emp.document__person__id }}" {% if selected_employee == emp.document__person__id|stringformat:"s" %}selected{% endif %}>
+                                        <option value="{{ emp.id }}" {% if selected_employee == emp.id|stringformat:"s" %}selected{% endif %}>
                                             {{ emp.employee_full_name }}
                                         </option>
                                     {% endfor %}
@@ -129,7 +151,7 @@
             {% else %}
                 <!-- Statistics KPI Cards -->
                 <div class="row g-3 mb-4">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <div class="card card-modern shadow-sm border-0 kpi-card">
                             <div class="card-body p-4 d-flex align-items-center justify-content-between">
                                 <div>
@@ -142,12 +164,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <div class="card card-modern shadow-sm border-0 kpi-card">
                             <div class="card-body p-4 d-flex align-items-center justify-content-between">
                                 <div>
                                     <div class="text-muted small text-uppercase font-weight-bold mb-1">Итого расходов</div>
-                                    <div class="fs-2 fw-bold text-success">{{ total_sum|floatformat:2 }} ₽</div>
+                                    <div class="fs-2 fw-bold text-success">{{ total_amount|floatformat:2 }} ₽</div>
                                 </div>
                                 <div class="p-3 rounded-circle text-success" style="background-color: rgba(71, 164, 71, 0.12);">
                                     <i class="bx bx-money fs-2"></i>
@@ -155,7 +177,20 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
+                        <div class="card card-modern shadow-sm border-0 kpi-card">
+                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small text-uppercase font-weight-bold mb-1">Сотрудников</div>
+                                    <div class="fs-2 fw-bold text-info">{{ total_employees }}</div>
+                                </div>
+                                <div class="p-3 rounded-circle text-info" style="background-color: rgba(23, 162, 184, 0.12);">
+                                    <i class="bx bx-user fs-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
                         <div class="card card-modern shadow-sm border-0 kpi-card">
                             <div class="card-body p-4 d-flex align-items-center justify-content-between">
                                 <div>
@@ -164,7 +199,7 @@
                                         {% if selected_month %}{{ selected_month }} / {% endif %}{{ selected_year }}
                                     </div>
                                 </div>
-                                <div class="p-3 rounded-circle text-info" style="background-color: rgba(23, 162, 184, 0.12);">
+                                <div class="p-3 rounded-circle text-warning" style="background-color: rgba(237, 156, 40, 0.12);">
                                     <i class="bx bx-calendar fs-2"></i>
                                 </div>
                             </div>
@@ -172,43 +207,148 @@
                     </div>
                 </div>
 
-                <!-- Table Card -->
+                <!-- Report Tabs Card -->
                 <div class="card card-modern shadow-sm border-0 mb-4">
                     <header class="card-header bg-light py-3 px-4">
-                        <h5 class="card-title text-dark mb-0 font-weight-bold">
-                            <i class="bx bx-table text-primary me-2"></i>Детализированная ведомость
-                        </h5>
+                        <ul class="nav nav-tabs card-header-tabs" id="expenseReportTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="detailed-tab" data-bs-toggle="tab" data-bs-target="#detailed-pane" type="button" role="tab" aria-controls="detailed-pane" aria-selected="true">
+                                    <i class="bx bx-list-check me-1"></i> Подробная ведомость
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="by-month-tab" data-bs-toggle="tab" data-bs-target="#by-month-pane" type="button" role="tab" aria-controls="by-month-pane" aria-selected="false">
+                                    <i class="bx bx-bar-chart-alt-2 me-1"></i> Сводка по месяцам и категориям
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="by-employee-tab" data-bs-toggle="tab" data-bs-target="#by-employee-pane" type="button" role="tab" aria-controls="by-employee-pane" aria-selected="false">
+                                    <i class="bx bx-user-pin me-1"></i> Детализация по сотрудникам
+                                </button>
+                            </li>
+                        </ul>
                     </header>
-                    <div class="card-body p-3">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0" id="expenseTable" style="width: 100%;">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Сотрудник</th>
-                                        <th>СЗ / Приказ</th>
-                                        <th>Период</th>
-                                        <th>МПД</th>
-                                        <th>Тип</th>
-                                        <th class="text-end">Сумма</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in report_data %}
-                                        <tr>
-                                            <td class="fw-semibold text-dark">{{ item.employee_name }}</td>
-                                            <td class="font-monospace text-primary">№ {{ item.order_number|default:item.memo_number }}</td>
-                                            <td class="font-monospace small text-muted">{{ item.date_start|date:"d.m.Y" }} — {{ item.date_end|date:"d.m.Y" }}</td>
-                                            <td>{{ item.place_production_activity|default:"—" }}</td>
-                                            <td><span class="badge bg-light text-dark border">{{ item.job_type|default:"Командировка" }}</span></td>
-                                            <td class="text-end fw-bold font-monospace text-success">{{ item.total_cost|floatformat:2 }} ₽</td>
-                                        </tr>
-                                    {% empty %}
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">Нет данных</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <div class="card-body p-4">
+                        <div class="tab-content" id="expenseReportTabContent">
+                            <!-- Tab 1: Detailed Report -->
+                            <div class="tab-pane fade show active" id="detailed-pane" role="tabpanel" aria-labelledby="detailed-tab" tabindex="0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered table-expense align-middle mb-0" style="min-width: 1000px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Месяц</th>
+                                                <th>Сотрудник</th>
+                                                <th>Должность</th>
+                                                <th>Категория</th>
+                                                <th>Даты поездки</th>
+                                                <th class="text-end">Суточные</th>
+                                                <th class="text-end">Проезд</th>
+                                                <th class="text-end">Проживание</th>
+                                                <th class="text-end">Прочие</th>
+                                                <th class="text-end">Итого</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in report_data %}
+                                                <tr>
+                                                    <td class="fw-semibold text-dark font-monospace">{{ item.month }}</td>
+                                                    <td class="fw-semibold text-dark">{{ item.employee_name }}</td>
+                                                    <td class="small text-muted">{{ item.job_name }}</td>
+                                                    <td><span class="badge bg-light text-dark border">{{ item.job_type }}</span></td>
+                                                    <td class="font-monospace small text-muted text-nowrap">{{ item.date_start }} — {{ item.date_end }}</td>
+                                                    <td class="text-end font-monospace">{{ item.daily_allowance|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ item.travel_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ item.accommodation_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ item.other_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end fw-bold font-monospace text-success">{{ item.total_cost|floatformat:2 }} ₽</td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="10" class="text-center text-muted py-4">Нет данных для отображения</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: By Month and Job Type -->
+                            <div class="tab-pane fade" id="by-month-pane" role="tabpanel" aria-labelledby="by-month-tab" tabindex="0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered table-expense align-middle mb-0" style="min-width: 800px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Месяц</th>
+                                                <th>Категория должности</th>
+                                                <th class="text-end">Суточные</th>
+                                                <th class="text-end">Проезд</th>
+                                                <th class="text-end">Проживание</th>
+                                                <th class="text-end">Прочие</th>
+                                                <th class="text-end">Итого</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in report_by_month_job_list %}
+                                                <tr class="{% if row.month == 'ИТОГО' %}table-primary fw-bold{% endif %}">
+                                                    <td class="font-monospace fw-semibold">{{ row.month }}</td>
+                                                    <td>{{ row.job_type }}</td>
+                                                    <td class="text-end font-monospace">{{ row.daily_allowance|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ row.travel_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ row.accommodation_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ row.other_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace fw-bold {% if row.month == 'ИТОГО' %}text-primary{% else %}text-success{% endif %}">{{ row.total_cost|floatformat:2 }} ₽</td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="7" class="text-center text-muted py-4">Нет данных</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Tab 3: By Employee -->
+                            <div class="tab-pane fade" id="by-employee-pane" role="tabpanel" aria-labelledby="by-employee-tab" tabindex="0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered table-expense align-middle mb-0" style="min-width: 900px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Категория</th>
+                                                <th>ФИО сотрудника</th>
+                                                <th>Табельный №</th>
+                                                <th>Должность</th>
+                                                <th class="text-center">Поездок</th>
+                                                <th class="text-end">Суточные</th>
+                                                <th class="text-end">Проезд</th>
+                                                <th class="text-end">Проживание</th>
+                                                <th class="text-end">Прочие</th>
+                                                <th class="text-end">Итого</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in report_by_employee_list %}
+                                                <tr>
+                                                    <td><span class="badge bg-light text-dark border">{{ row.job_type }}</span></td>
+                                                    <td class="fw-semibold text-dark">{{ row.fio }}</td>
+                                                    <td class="font-monospace small">{{ row.service_number }}</td>
+                                                    <td class="small text-muted">{{ row.job_name }}</td>
+                                                    <td class="text-center fw-bold font-monospace">{{ row.trips_count }}</td>
+                                                    <td class="text-end font-monospace">{{ row.daily_allowance|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ row.travel_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ row.accommodation_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace">{{ row.other_expense|floatformat:2 }} ₽</td>
+                                                    <td class="text-end font-monospace fw-bold text-success">{{ row.total_cost|floatformat:2 }} ₽</td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="10" class="text-center text-muted py-4">Нет данных</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

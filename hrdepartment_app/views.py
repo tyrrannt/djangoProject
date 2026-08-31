@@ -1780,11 +1780,29 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
 
 
 class ExpenseReportView(LoginRequiredMixin, TemplateView):
+    """Отображает аналитический отчет по командировочным расходам сотрудников.
+
+    Анализирует согласованные служебные записки с расходами (суточные, проезд,
+    проживание, прочие), формирует сводку по категориям должностей, детализацию
+    по сотрудникам и подробную ведомость.
+
+    Attributes:
+        template_name (str): Путь к шаблону отчета.
+    """
     template_name = 'hrdepartment_app/expense_report.html'
 
     def get_context_data(self, **kwargs):
+        """Формирует контекстные данные отчета с фильтрацией по году, месяцу, типу должности и сотруднику.
+
+        Args:
+            **kwargs: Дополнительные именованные аргументы.
+
+        Returns:
+            dict: Словарь контекста для рендеринга шаблона.
+        """
         context = super().get_context_data(**kwargs)
         context["title"] = 'Отчет по затратам на командировки'
+
         # Получаем параметры фильтрации
         year = self.request.GET.get('year', datetime.now().year)
         month = self.request.GET.get('month', None)
@@ -1815,8 +1833,14 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
 
         if df.empty:
             context['no_data'] = True
+            context['total_records'] = 0
+            context['total_amount'] = 0.0
+            context['total_sum'] = 0.0
+            context['total_employees'] = 0
+            context['report_data'] = []
+            context['report_by_month_job_list'] = []
+            context['report_by_employee_list'] = []
         else:
-
             # Преобразуем даты
             df['document__period_from'] = pd.to_datetime(df['document__period_from'])
             df['document__period_for'] = pd.to_datetime(df['document__period_for'])
@@ -1830,7 +1854,7 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
 
             # Конвертируем каждую колонку в числовой формат
             for col in numeric_columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
             expense_cols = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense']
             if int(year) > 2025:
@@ -1838,10 +1862,10 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
 
             # Создаем полное имя сотрудника
             df['ФИО'] = (
-                    df['document__person__last_name'] + ' ' +
-                    df['document__person__first_name'] + ' ' +
-                    df['document__person__surname']
-            )
+                    df['document__person__last_name'].fillna('') + ' ' +
+                    df['document__person__first_name'].fillna('') + ' ' +
+                    df['document__person__surname'].fillna('')
+            ).str.strip()
 
             # Создаем отображение типа должности
             job_type_display = {
@@ -1850,7 +1874,7 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 '2': 'Инженерный состав',
                 '3': 'Транспортный отдел'
             }
-            df['Тип'] = df['document__person__user_work_profile__job__type_of_job'].map(job_type_display)
+            df['Тип'] = df['document__person__user_work_profile__job__type_of_job'].map(job_type_display).fillna('—')
 
             # ==================== ОТЧЕТ 1: СВОДКА ПО МЕСЯЦАМ И ТИПАМ ДОЛЖНОСТЕЙ ====================
             report_by_month_job = df.groupby(['Месяц', 'Тип']).agg({
@@ -1858,8 +1882,6 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 'travel_expense': 'sum',
                 'accommodation_expense': 'sum',
                 'other_expense': 'sum',
-                # 'prepaid_expense_summ': 'sum',
-                # 'id': 'count'
             }).round(2)
 
             report_by_month_job['total_expense'] = report_by_month_job[expense_cols].sum(axis=1)
@@ -1877,7 +1899,7 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             total_row = report_by_month_job[columns_to_sum].sum()
 
             total_row['Месяц'] = 'ИТОГО'
-            total_row['Тип'] = ''
+            total_row['Тип'] = 'Все категории'
             report_by_month_job = pd.concat([report_by_month_job, pd.DataFrame([total_row])], ignore_index=True)
 
             # ==================== ОТЧЕТ 2: ДЕТАЛИЗАЦИЯ ПО СОТРУДНИКАМ ====================
@@ -1921,44 +1943,73 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 'travel_expense',
                 'accommodation_expense',
                 'other_expense',
-                'prepaid_expense_summ'
+                'prepaid_expense_summ',
+                'document__official_memo_type'
             ]].copy()
 
-            detailed_report.columns = [
-                'Месяц', 'Сотрудник', 'Табельный номер', 'Должность', 'Тип должности',
-                'Дата начала', 'Дата окончания', 'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого'
-            ]
-
             # Сортируем по месяцу и сотруднику
-            detailed_report = detailed_report.sort_values(['Месяц', 'Сотрудник'])
+            detailed_report = detailed_report.sort_values(['Месяц', 'ФИО'])
 
             # ==================== ФОРМИРОВАНИЕ КОНТЕКСТА ====================
-            # Преобразуем отчеты в HTML
-            context['report_by_month_job_html'] = report_by_month_job.to_html(
-                classes='table table-striped table-bordered',
-                index=False,
-                float_format=lambda x: f'{x:,.2f}'
-            )
-
-            context['report_by_employee_html'] = report_by_employee.to_html(
-                classes='table table-striped table-bordered',
-                index=False,
-                float_format=lambda x: f'{x:,.2f}'
-            )
-
-            context['detailed_report_html'] = detailed_report.to_html(
-                classes='table table-striped table-bordered',
-                index=False,
-                float_format=lambda x: f'{x:,.2f}' if isinstance(x, (int, float)) else x
-            )
-            detailed_report.to_csv('data.csv')
-            # Статистика
+            total_sum = float(df['prepaid_expense_summ'].sum())
             context['total_records'] = len(df)
-            context['total_amount'] = df['prepaid_expense_summ'].sum()
-            context['total_employees'] = df['document__person__id'].nunique()
+            context['total_amount'] = total_sum
+            context['total_sum'] = total_sum
+            context['total_employees'] = int(df['document__person__id'].nunique())
+
+            # Структурированные списки словарей для шаблона
+            month_job_list = []
+            for _, row in report_by_month_job.iterrows():
+                month_job_list.append({
+                    'month': str(row['Месяц']),
+                    'job_type': str(row['Тип']),
+                    'daily_allowance': float(row['Суточные']),
+                    'travel_expense': float(row['Проезд']),
+                    'accommodation_expense': float(row['Проживание']),
+                    'other_expense': float(row['Прочие']),
+                    'total_cost': float(row['Итого']),
+                })
+            context['report_by_month_job_list'] = month_job_list
+
+            employee_report_list = []
+            for _, row in report_by_employee.iterrows():
+                employee_report_list.append({
+                    'job_type': str(row['Тип']),
+                    'fio': str(row['ФИО']),
+                    'service_number': str(row['Табельный номер']) if pd.notna(row['Табельный номер']) else '—',
+                    'job_name': str(row['Должность']) if pd.notna(row['Должность']) else '—',
+                    'trips_count': int(row['Количество поездок']),
+                    'daily_allowance': float(row['Суточные']),
+                    'travel_expense': float(row['Проезд']),
+                    'accommodation_expense': float(row['Проживание']),
+                    'other_expense': float(row['Прочие']),
+                    'total_cost': float(row['Итого']),
+                })
+            context['report_by_employee_list'] = employee_report_list
+
+            detailed_list = []
+            for _, row in detailed_report.iterrows():
+                p_from = row['document__period_from']
+                p_for = row['document__period_for']
+                memo_type = row.get('document__official_memo_type', '')
+                memo_type_name = 'Командировка' if str(memo_type) == '1' else 'Служебная поездка'
+                detailed_list.append({
+                    'month': str(row['Месяц']),
+                    'employee_name': str(row['ФИО']),
+                    'service_number': str(row['document__person__service_number']) if pd.notna(row['document__person__service_number']) else '—',
+                    'job_name': str(row['document__person__user_work_profile__job__name']) if pd.notna(row['document__person__user_work_profile__job__name']) else '—',
+                    'job_type': str(row['Тип']) if pd.notna(row['Тип']) else memo_type_name,
+                    'date_start': p_from.strftime('%d.%m.%Y') if pd.notna(p_from) else '—',
+                    'date_end': p_for.strftime('%d.%m.%Y') if pd.notna(p_for) else '—',
+                    'daily_allowance': float(row['daily_allowance']),
+                    'travel_expense': float(row['travel_expense']),
+                    'accommodation_expense': float(row['accommodation_expense']),
+                    'other_expense': float(row['other_expense']),
+                    'total_cost': float(row['prepaid_expense_summ']),
+                })
+            context['report_data'] = detailed_list
 
         # Фильтры для формы
-
         years_unique = set(ApprovalOficialMemoProcess.objects.filter(
             document__period_from__isnull=False
         ).values_list('document__period_from__year', flat=True).distinct())
@@ -1977,17 +2028,37 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             ('3', 'Транспортный отдел')
         ]
 
-        # Параметры фильтрации
-        context['selected_year'] = year
-        context['selected_month'] = month
-        context['selected_job_type'] = job_type
-        context['selected_employee'] = employee_id
+        # Список сотрудников для выпадающего списка
+        employees_qs = ApprovalOficialMemoProcess.objects.filter(
+            document__official_memo_type__in=['1', '3'],
+            document__person__isnull=False
+        ).values(
+            'document__person__id',
+            'document__person__last_name',
+            'document__person__first_name',
+            'document__person__surname'
+        ).distinct().order_by('document__person__last_name', 'document__person__first_name')
 
-        if not df.empty:
-            # Список сотрудников для фильтра
-            employees = df[['document__person__id', 'ФИО']].drop_duplicates()
-            employees = employees.sort_values('ФИО')
-            context['employees'] = employees.to_dict('records')
+        employees_list = []
+        seen_emp_ids = set()
+        for emp in employees_qs:
+            eid = emp['document__person__id']
+            if eid not in seen_emp_ids:
+                seen_emp_ids.add(eid)
+                fn = f"{emp['document__person__last_name'] or ''} {emp['document__person__first_name'] or ''} {emp['document__person__surname'] or ''}".strip()
+                employees_list.append({
+                    'id': eid,
+                    'document__person__id': eid,
+                    'employee_full_name': fn,
+                    'name': fn
+                })
+        context['employees'] = employees_list
+
+        # Параметры фильтрации
+        context['selected_year'] = str(year) if year else ''
+        context['selected_month'] = str(month) if month else ''
+        context['selected_job_type'] = str(job_type) if job_type else ''
+        context['selected_employee'] = str(employee_id) if employee_id else ''
 
         return context
 
