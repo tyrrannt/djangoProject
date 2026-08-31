@@ -4,9 +4,10 @@
 <!-- ============================================
      НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ (MOBILE BOTTOM APP BAR)
      Отображается только на мобильных экранах (<=768px)
+     Динамическая ролевая адаптация (Role-Based Smart Navigation)
 ============================================ -->
 <nav class="mobile-bottom-bar" aria-label="Мобильная навигация">
-    <!-- 1. Главная / Профиль -->
+    <!-- 1. Главная / Профиль (Доступно всем) -->
     <a href="{% url 'customers_app:profile' request.user.pk %}"
        class="mobile-nav-item {% if request.resolver_match.view_name == 'customers_app:profile' %}active{% endif %}"
        aria-label="Главная страница профиля">
@@ -14,21 +15,39 @@
         <span>Главная</span>
     </a>
 
-    <!-- 2. Служебные записки -->
-    <a href="{% url 'hrdepartment_app:memo_list' %}"
-       class="mobile-nav-item {% if 'memo' in request.path and 'bpmemo' not in request.path %}active{% endif %}"
-       aria-label="Служебные записки">
-        <i class="bx bx-file-blank"></i>
-        <span>Служебки</span>
-    </a>
+    <!-- 2. Слот 2: Служебные записки (при наличии прав) ИЛИ Календарь задач -->
+    {% if perms.hrdepartment_app.view_officialmemo or user.is_superuser %}
+        <a href="{% url 'hrdepartment_app:memo_list' %}"
+           class="mobile-nav-item {% if 'memo' in request.path and 'bpmemo' not in request.path %}active{% endif %}"
+           aria-label="Служебные записки">
+            <i class="bx bx-file-blank"></i>
+            <span>Служебки</span>
+        </a>
+    {% else %}
+        <a href="{% url 'tasks_app:task-list' %}"
+           class="mobile-nav-item {% if 'tasks' in request.path %}active{% endif %}"
+           aria-label="Календарь задач">
+            <i class="bx bx-calendar"></i>
+            <span>Задачи</span>
+        </a>
+    {% endif %}
 
-    <!-- 3. Бизнес-процессы -->
-    <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
-       class="mobile-nav-item {% if 'bpmemo' in request.path %}active{% endif %}"
-       aria-label="Бизнес-процессы">
-        <i class="bx bx-git-branch"></i>
-        <span>Процессы</span>
-    </a>
+    <!-- 3. Слот 3: Бизнес-процессы (при наличии прав) ИЛИ Журнал разъездов -->
+    {% if perms.hrdepartment_app.view_approvaloficialmemoprocess or user.is_superuser %}
+        <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
+           class="mobile-nav-item {% if 'bpmemo' in request.path %}active{% endif %}"
+           aria-label="Бизнес-процессы">
+            <i class="bx bx-git-branch"></i>
+            <span>Процессы</span>
+        </a>
+    {% else %}
+        <a href="{% url 'hrdepartment_app:reportcard_list' %}"
+           class="mobile-nav-item {% if 'reportcard' in request.path %}active{% endif %}"
+           aria-label="Журнал разъездов">
+            <i class="bx bx-time-five"></i>
+            <span>Разъезды</span>
+        </a>
+    {% endif %}
 
     <!-- 4. Уведомления (Открывает мобильную шторку уведомлений) -->
     <button type="button" class="mobile-nav-item" id="mobileNotificationsBtn"
@@ -123,6 +142,7 @@
 
 <!-- ============================================
      МОБИЛЬНАЯ ШТОРКА БЫСТРЫХ ДЕЙСТВИЙ (BOTTOM SHEET)
+     С проверкой прав доступа
 ============================================ -->
 <div class="modal fade mobile-bottom-sheet" id="mobileQuickActionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -134,28 +154,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
 
-            <!-- Список быстрых действий -->
+            <!-- Список быстрых действий с ролевым доступом -->
             <div class="d-flex flex-column">
-                <a href="{% url 'hrdepartment_app:memo_add' %}" class="quick-action-btn">
-                    <div class="quick-action-icon bg-primary text-white">
-                        <i class="bx bx-file-blank"></i>
-                    </div>
-                    <div>
-                        <div>Создать служебную записку</div>
-                        <small class="text-muted font-weight-normal">На командировку, поездку или хоз. нужды</small>
-                    </div>
-                </a>
-
-                <a href="{% url 'hrdepartment_app:bpmemo_add' %}" class="quick-action-btn">
-                    <div class="quick-action-icon bg-info text-white">
-                        <i class="bx bx-git-branch"></i>
-                    </div>
-                    <div>
-                        <div>Инициировать бизнес-процесс</div>
-                        <small class="text-muted font-weight-normal">Согласование служебной поездки</small>
-                    </div>
-                </a>
-
+                <!-- 1. Добавить местоположение (Доступно 100% сотрудников) -->
                 <a href="{% url 'hrdepartment_app:users_events_add' %}" class="quick-action-btn">
                     <div class="quick-action-icon bg-success text-white">
                         <i class="bx bx-map-pin"></i>
@@ -166,15 +167,55 @@
                     </div>
                 </a>
 
-                <a href="{% url 'customers_app:profile' request.user.pk %}" class="quick-action-btn">
+                <!-- 2. Создать служебную записку (Только при наличии прав) -->
+                {% if perms.hrdepartment_app.add_officialmemo or user.is_superuser %}
+                    <a href="{% url 'hrdepartment_app:memo_add' %}" class="quick-action-btn">
+                        <div class="quick-action-icon bg-primary text-white">
+                            <i class="bx bx-file-blank"></i>
+                        </div>
+                        <div>
+                            <div>Создать служебную записку</div>
+                            <small class="text-muted font-weight-normal">На командировку, поездку или хоз. нужды</small>
+                        </div>
+                    </a>
+                {% endif %}
+
+                <!-- 3. Инициировать бизнес-процесс (Только при наличии прав) -->
+                {% if perms.hrdepartment_app.add_approvaloficialmemoprocess or user.is_superuser %}
+                    <a href="{% url 'hrdepartment_app:bpmemo_add' %}" class="quick-action-btn">
+                        <div class="quick-action-icon bg-info text-white">
+                            <i class="bx bx-git-branch"></i>
+                        </div>
+                        <div>
+                            <div>Инициировать бизнес-процесс</div>
+                            <small class="text-muted font-weight-normal">Согласование служебной поездки</small>
+                        </div>
+                    </a>
+                {% endif %}
+
+                <!-- 4. Календарь задач (Доступно всем) -->
+                <a href="{% url 'tasks_app:task-list' %}" class="quick-action-btn">
                     <div class="quick-action-icon bg-warning text-dark">
                         <i class="bx bx-calendar-event"></i>
                     </div>
                     <div>
-                        <div>Планировщик задач</div>
-                        <small class="text-muted font-weight-normal">Перейти к календарю событий</small>
+                        <div>Календарь задач</div>
+                        <small class="text-muted font-weight-normal">Запланировать задачу или событие</small>
                     </div>
                 </a>
+
+                <!-- 5. Журнал разъездов (Для рядовых сотрудников без прав на СЗ) -->
+                {% if not perms.hrdepartment_app.add_officialmemo and not perms.hrdepartment_app.add_approvaloficialmemoprocess and not user.is_superuser %}
+                    <a href="{% url 'hrdepartment_app:reportcard_list' %}" class="quick-action-btn">
+                        <div class="quick-action-icon bg-secondary text-white">
+                            <i class="bx bx-time-five"></i>
+                        </div>
+                        <div>
+                            <div>Журнал разъездов</div>
+                            <small class="text-muted font-weight-normal">Просмотреть учёт рабочего времени</small>
+                        </div>
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>
