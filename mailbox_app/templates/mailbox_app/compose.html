@@ -123,20 +123,28 @@
     <script src="{% static 'admin_templates/vendor/summernote/summernote-bs4.js' %}"></script>
     <script>
         $(document).ready(function() {
+            const isMobile = window.innerWidth <= 768;
+            const summernoteToolbar = isMobile ? [
+                ['style', ['bold', 'italic', 'underline']],
+                ['para', ['ul', 'ol']],
+                ['insert', ['link']]
+            ] : [
+                ['style', ['style', 'bold', 'italic', 'underline', 'clear']],
+                ['font', ['strikethrough', 'superscript', 'subscript']],
+                ['fontsize', ['fontsize']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'hr']],
+                ['view', ['fullscreen', 'codeview']]
+            ];
+
             // Инициализация Summernote
             $('#id_body_html').summernote({
-                height: 320,
+                height: isMobile ? 220 : 320,
+                minHeight: 180,
                 placeholder: 'Введите текст письма...',
-                toolbar: [
-                    ['style', ['style', 'bold', 'italic', 'underline', 'clear']],
-                    ['font', ['strikethrough', 'superscript', 'subscript']],
-                    ['fontsize', ['fontsize']],
-                    ['color', ['color']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['table', ['table']],
-                    ['insert', ['link', 'hr']],
-                    ['view', ['fullscreen', 'codeview']]
-                ]
+                toolbar: summernoteToolbar
             });
 
             // Функция привязки автодополнения контактов
