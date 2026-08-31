@@ -1,0 +1,72 @@
+{% load static %}
+{% load static_version %}
+
+<link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+
+<!-- Боковая навигационная колонка папок почты -->
+<menu id="content-menu" class="inner-menu" role="menu">
+    <div class="nano">
+        <div class="nano-content">
+            <div class="inner-menu-toggle-inside">
+                <a href="#" class="inner-menu-collapse">
+                    <i class="fas fa-chevron-up d-inline-block d-md-none"></i>
+                    <i class="fas fa-chevron-left d-none d-md-inline-block"></i> Свернуть меню
+                </a>
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Развернуть <i class="fas fa-chevron-down"></i>
+                </a>
+            </div>
+
+            <div class="mailbox-sidebar-container">
+                <!-- Кнопка Написать письмо -->
+                <a href="{% url 'mailbox_app:compose' %}" class="mailbox-compose-btn mb-3">
+                    <i class="bx bx-edit font-size-18"></i> Написать письмо
+                </a>
+
+                <!-- Информация об активном ящике -->
+                <div class="mailbox-user-card">
+                    <div class="user-name text-truncate" title="{{ account.display_name|default:account.email }}">
+                        <i class="bx bx-user me-1 text-primary"></i> {{ account.display_name|default:account.email }}
+                    </div>
+                    <div class="user-email text-truncate mt-1">{{ account.email }}</div>
+                </div>
+
+                <!-- Заголовок секции папок -->
+                <div class="d-flex align-items-center justify-content-between px-2 mb-2">
+                    <span class="text-uppercase text-muted small font-weight-bold" style="font-size: 11px; letter-spacing: 0.5px;">Папки</span>
+                </div>
+
+                <!-- Дерево папок почты -->
+                <ul class="mailbox-folders-list">
+                    {% for f in folders %}
+                        <li>
+                            <a href="{% url 'mailbox_app:folder' f.raw_name %}"
+                               class="mailbox-folder-link {% if current_folder == f.raw_name %}active{% endif %}">
+                                <span class="text-truncate d-flex align-items-center">
+                                    <i class="{{ f.icon }}"></i>
+                                    <span class="text-truncate">{{ f.display_name }}</span>
+                                </span>
+                                {% if f.unseen > 0 %}
+                                    <span class="mailbox-folder-badge">
+                                        {{ f.unseen }}
+                                    </span>
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% empty %}
+                        <li class="text-muted small py-2 px-2">Загрузка папок...</li>
+                    {% endfor %}
+                </ul>
+
+                <hr class="separator my-3" style="border-top: 1px solid #e2e8f0;">
+
+                <!-- Настройки ящика -->
+                <div>
+                    <a href="{% url 'mailbox_app:settings' %}" class="mailbox-settings-link">
+                        <i class="bx bx-cog font-size-18"></i> Настройки и подпись
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</menu>

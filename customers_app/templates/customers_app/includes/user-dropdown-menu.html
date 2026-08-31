@@ -71,6 +71,14 @@
                 </a>
             </li>
 
+            <!-- Корпоративная почта -->
+            <li>
+                <a role="menuitem" tabindex="-1" href="{% url 'mailbox_app:index' %}">
+                    <i class="bx bx-envelope me-2 text-primary"></i>
+                    <span>Корпоративная почта</span>
+                </a>
+            </li>
+
             <!-- Личные данные (быстрый доступ) -->
             <li>
                 <a role="menuitem" tabindex="-1" href="{% url 'customers_app:staff' user.pk %}">

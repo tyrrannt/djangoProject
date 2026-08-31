@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "channels",
     "dynamic_formsets",
     "chat_app.apps.ChatAppConfig",
+    "mailbox_app.apps.MailboxAppConfig",
     "django_bootstrap5",  # Если используем django-bootstrap5
     "rest_framework",
     "drf_spectacular",

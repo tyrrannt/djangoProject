@@ -204,6 +204,17 @@
                     </div>
                 </a>
 
+                <!-- 5. Написать письмо (Корпоративная почта) -->
+                <a href="{% url 'mailbox_app:compose' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-primary text-white">
+                        <i class="bx bx-envelope"></i>
+                    </div>
+                    <div>
+                        <div>Написать письмо</div>
+                        <small class="text-muted font-weight-normal">Корпоративная почта</small>
+                    </div>
+                </a>
+
                 <!-- 5. Журнал разъездов (Для рядовых сотрудников без прав на СЗ) -->
                 {% if not perms.hrdepartment_app.add_officialmemo and not perms.hrdepartment_app.add_approvaloficialmemoprocess and not user.is_superuser %}
                     <a href="{% url 'hrdepartment_app:reportcard_list' %}" class="quick-action-btn">

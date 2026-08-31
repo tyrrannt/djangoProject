@@ -1,0 +1,239 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    Написать письмо — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-bs4.css' %}" />
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox data-mailbox-view="compose">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Форма написания письма -->
+            <div class="inner-body mailbox-compose">
+                <div class="mailbox-compose-container">
+                    <header class="mailbox-compose-header">
+                        <h4 class="mailbox-page-title">
+                            <i class="bx bx-edit text-primary"></i> Новое сообщение
+                        </h4>
+                        <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                            <i class="bx bx-x font-size-16"></i> <span>Отмена</span>
+                        </a>
+                    </header>
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger mb-4" role="alert">
+                            <i class="bx bx-error-circle me-2"></i> Пожалуйста, проверьте правильность заполнения полей: {{ form.errors }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" id="composeMailForm">
+                        {% csrf_token %}
+
+                        <!-- Поле Кому -->
+                        <div class="mailbox-form-row position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="mailRecipientInput" class="m-0">
+                                    Кому: <span class="text-danger">*</span>
+                                </label>
+                                <div class="mailbox-toggle-links">
+                                    <a onclick="toggleField('ccRow')">+ Копия</a> &nbsp;|&nbsp; 
+                                    <a onclick="toggleField('bccRow')">+ Скрытая копия</a>
+                                </div>
+                            </div>
+                            {{ form.to }}
+                            <div id="contactAutocompleteList" class="contact-autocomplete-box"></div>
+                        </div>
+
+                        <!-- Поле Копия (Скрыто по умолчанию) -->
+                        <div class="mailbox-form-row position-relative" id="ccRow" style="display: none;">
+                            <label>Копия:</label>
+                            {{ form.cc }}
+                            <div id="contactAutocompleteListCc" class="contact-autocomplete-box"></div>
+                        </div>
+
+                        <!-- Поле Скрытая копия (Скрыто по умолчанию) -->
+                        <div class="mailbox-form-row position-relative" id="bccRow" style="display: none;">
+                            <label>Скрытая копия:</label>
+                            {{ form.bcc }}
+                            <div id="contactAutocompleteListBcc" class="contact-autocomplete-box"></div>
+                        </div>
+
+                        <!-- Поле Тема -->
+                        <div class="mailbox-form-row">
+                            <label>Тема:</label>
+                            {{ form.subject }}
+                        </div>
+
+                        <!-- Поле Текст сообщения -->
+                        <div class="mailbox-form-row mb-4">
+                            <label>Сообщение:</label>
+                            {{ form.body_html }}
+                        </div>
+
+                        <!-- Вложения файлов -->
+                        <div class="p-3 bg-light rounded border mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-1">
+                                    <i class="bx bx-paperclip text-primary font-size-18"></i> Прикрепить файлы
+                                </label>
+                                <small class="text-muted">Можно выбрать несколько файлов</small>
+                            </div>
+                            {{ form.attachments }}
+                            <div id="selectedFilesList" class="mt-2 d-flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <!-- Кнопки действий -->
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top gap-3 flex-wrap">
+                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-1">
+                                <i class="bx bx-arrow-back font-size-16"></i> <span>Отмена</span>
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2 shadow-sm" id="sendMailBtn">
+                                <i class="bx bx-paper-plane font-size-18"></i> <span>Отправить письмо</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'admin_templates/vendor/summernote/summernote-bs4.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            // Инициализация Summernote
+            $('#id_body_html').summernote({
+                height: 320,
+                placeholder: 'Введите текст письма...',
+                toolbar: [
+                    ['style', ['style', 'bold', 'italic', 'underline', 'clear']],
+                    ['font', ['strikethrough', 'superscript', 'subscript']],
+                    ['fontsize', ['fontsize']],
+                    ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['table', ['table']],
+                    ['insert', ['link', 'hr']],
+                    ['view', ['fullscreen', 'codeview']]
+                ]
+            });
+
+            // Функция привязки автодополнения контактов
+            function attachContactAutocomplete(inputElem, boxElem) {
+                if (!inputElem || !boxElem) return;
+
+                let debounceTimer;
+                inputElem.addEventListener('input', function() {
+                    clearTimeout(debounceTimer);
+                    const val = this.value;
+                    const lastToken = val.split(',').pop().trim();
+
+                    if (lastToken.length < 2) {
+                        boxElem.style.display = 'none';
+                        return;
+                    }
+
+                    debounceTimer = setTimeout(() => {
+                        fetch(`{% url 'mailbox_app:api_contacts' %}?q=${encodeURIComponent(lastToken)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                boxElem.innerHTML = '';
+                                if (data.results && data.results.length > 0) {
+                                    data.results.forEach(contact => {
+                                        const item = document.createElement('div');
+                                        item.className = 'contact-autocomplete-item';
+                                        item.innerHTML = `
+                                            <div class="font-weight-semibold text-dark font-size-14">${contact.name}</div>
+                                            <div class="text-muted font-size-12 d-flex justify-content-between">
+                                                <span>${contact.email}</span>
+                                                <span class="badge bg-light text-muted">${contact.job || ''}</span>
+                                            </div>
+                                        `;
+                                        item.onclick = function() {
+                                            const tokens = inputElem.value.split(',');
+                                            tokens.pop();
+                                            tokens.push(`"${contact.name}" <${contact.email}>`);
+                                            inputElem.value = tokens.join(', ').replace(/^,\s*/, '') + ', ';
+                                            boxElem.style.display = 'none';
+                                            inputElem.focus();
+                                        };
+                                        boxElem.appendChild(item);
+                                    });
+                                    boxElem.style.display = 'block';
+                                } else {
+                                    boxElem.style.display = 'none';
+                                }
+                            })
+                            .catch(() => {
+                                boxElem.style.display = 'none';
+                            });
+                    }, 250);
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!inputElem.contains(e.target) && !boxElem.contains(e.target)) {
+                        boxElem.style.display = 'none';
+                    }
+                });
+            }
+
+            // Подключение автодополнения ко всем полям адресатов
+            attachContactAutocomplete(
+                document.getElementById('mailRecipientInput'),
+                document.getElementById('contactAutocompleteList')
+            );
+            attachContactAutocomplete(
+                document.getElementById('id_cc'),
+                document.getElementById('contactAutocompleteListCc')
+            );
+            attachContactAutocomplete(
+                document.getElementById('id_bcc'),
+                document.getElementById('contactAutocompleteListBcc')
+            );
+
+            // Предпросмотр выбранных файлов
+            const fileInput = document.getElementById('id_attachments');
+            const filesContainer = document.getElementById('selectedFilesList');
+            if (fileInput && filesContainer) {
+                fileInput.addEventListener('change', function() {
+                    filesContainer.innerHTML = '';
+                    if (this.files && this.files.length > 0) {
+                        Array.from(this.files).forEach(file => {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge bg-white text-dark border p-2 d-flex align-items-center gap-1 shadow-sm';
+                            const sizeKb = (file.size / 1024).toFixed(1);
+                            badge.innerHTML = `<i class="bx bx-file text-primary"></i> ${file.name} <small class="text-muted">(${sizeKb} КБ)</small>`;
+                            filesContainer.appendChild(badge);
+                        });
+                    }
+                });
+            }
+        });
+
+        function toggleField(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.style.display = row.style.display === 'none' ? 'block' : 'none';
+                if (row.style.display === 'block') {
+                    const input = row.querySelector('input');
+                    if (input) input.focus();
+                }
+            }
+        }
+    </script>
+{% endblock %}

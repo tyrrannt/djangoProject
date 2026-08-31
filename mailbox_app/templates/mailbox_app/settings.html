@@ -1,0 +1,141 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    Настройки почты — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-bs4.css' %}" />
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основная область настроек -->
+            <div class="inner-body mailbox-settings">
+                <div class="mailbox-settings-container">
+                    <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                        <h4 class="mailbox-page-title">
+                            <i class="bx bx-cog text-primary"></i> Настройки почтового ящика
+                        </h4>
+                        <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                            <i class="bx bx-arrow-back font-size-16"></i> <span>К письмам</span>
+                        </a>
+                    </header>
+
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+
+                        <!-- Блок 1: Учетная запись -->
+                        <div class="mailbox-settings-card">
+                            <div class="mailbox-settings-card-title">
+                                <i class="bx bx-user text-primary"></i> Профиль пользователя
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label font-weight-semibold text-dark mb-1">Корпоративный Email:</label>
+                                    {{ form.email }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label font-weight-semibold text-dark mb-1">Имя отправителя (Display Name):</label>
+                                    {{ form.display_name }}
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label font-weight-semibold text-dark mb-1">Пароль от почты:</label>
+                                    {{ form.password }}
+                                    <small class="text-muted d-block mt-1">Пароль хранится в зашифрованном виде (Fernet AES). Оставьте пустым, если не меняется.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 2: Сервер входящей почты (IMAP) -->
+                        <div class="mailbox-settings-card">
+                            <div class="mailbox-settings-card-title">
+                                <i class="bx bx-download text-primary"></i> Входящая почта (IMAP — Kerio Connect)
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label font-weight-semibold text-dark mb-1">Сервер IMAP:</label>
+                                    {{ form.imap_host }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label font-weight-semibold text-dark mb-1">Порт IMAP (SSL 993):</label>
+                                    {{ form.imap_port }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 3: Сервер исходящей почты (SMTP) -->
+                        <div class="mailbox-settings-card">
+                            <div class="mailbox-settings-card-title">
+                                <i class="bx bx-upload text-primary"></i> Исходящая почта (SMTP — Kerio Connect)
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label font-weight-semibold text-dark mb-1">Сервер SMTP:</label>
+                                    {{ form.smtp_host }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label font-weight-semibold text-dark mb-1">Порт SMTP (SSL 465):</label>
+                                    {{ form.smtp_port }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 4: Подпись -->
+                        <div class="mailbox-settings-card">
+                            <div class="mailbox-settings-card-title">
+                                <i class="bx bx-edit text-primary"></i> Автоматическая подпись к письмам (HTML)
+                            </div>
+                            <div>
+                                {{ form.signature_html }}
+                                <small class="text-muted d-block mt-2">Визуальная подпись будет автоматически подставляться в конец каждого создаваемого письма</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center gap-3 pt-3 border-top flex-wrap">
+                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-1">
+                                <i class="bx bx-arrow-back font-size-16"></i> <span>К письмам</span>
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2 shadow-sm">
+                                <i class="bx bx-save font-size-18"></i> <span>Сохранить настройки</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'admin_templates/vendor/summernote/summernote-bs4.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            $('#id_signature_html').summernote({
+                height: 180,
+                placeholder: 'Введите текст подписи (например: С уважением, Иванов И.И.)...',
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['strikethrough']],
+                    ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link', 'hr']],
+                    ['view', ['codeview']]
+                ]
+            });
+        });
+    </script>
+{% endblock %}

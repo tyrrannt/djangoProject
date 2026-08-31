@@ -46,7 +46,9 @@
         {% endif %}
         {% if object.email %}
             <div class="text-muted small text-break mb-1">
-                <i class="bx bx-envelope text-primary me-1"></i>{{ object.email }}
+                <a href="{% url 'mailbox_app:index' %}" class="text-decoration-none text-muted" title="Открыть корпоративную почту">
+                    <i class="bx bx-envelope text-primary me-1"></i>{{ object.email }}
+                </a>
             </div>
         {% endif %}
         {% if object.user_work_profile.department %}

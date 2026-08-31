@@ -1,0 +1,558 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    {{ current_folder_display }} — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основная область списка писем -->
+            <div class="inner-body mailbox-folder">
+                <!-- Шапка папки и поиск -->
+                <header class="mailbox-header-bar">
+                    <div class="d-flex align-items-center gap-2">
+                        <a id="mailboxToggleSidebar" class="sidebar-toggle-btn trigger-toggle-sidebar d-md-none text-dark me-2">
+                            <i class="bx bx-menu font-size-22"></i>
+                        </a>
+                        <h4 class="mailbox-page-title">
+                            {{ current_folder_display }}
+                            <span class="mailbox-count-badge">{{ total_count }} писем</span>
+                        </h4>
+                    </div>
+
+                    <!-- Форма поиска -->
+                    <form method="get" class="search nav-form m-0" style="min-width: 280px; max-width: 360px;">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Поиск по теме или автору...">
+                            <button class="btn btn-primary" type="submit" title="Искать">
+                                <i class="bx bx-search"></i>
+                            </button>
+                            {% if search_query %}
+                                <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary" title="Сбросить поиск">
+                                    <i class="bx bx-x"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </header>
+
+                {% if error_message %}
+                    <div class="alert alert-danger m-3" role="alert">
+                        <i class="bx bx-error-circle me-2"></i> {{ error_message }}
+                    </div>
+                {% endif %}
+
+                <!-- Панель быстрых фильтров и выпадающей сортировки (Outlook / Thunderbird style) -->
+                <div class="mailbox-quick-filters px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                        <a href="?filter=all{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="mailbox-filter-btn {% if filter_by == 'all' or not filter_by %}active{% endif %}">
+                            Все
+                        </a>
+                        <a href="?filter=unread{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="mailbox-filter-btn {% if filter_by == 'unread' %}active{% endif %}">
+                            <i class="bx bx-envelope"></i> Непрочитанные
+                        </a>
+                        <a href="?filter=flagged{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="mailbox-filter-btn {% if filter_by == 'flagged' %}active{% endif %}">
+                            <i class="bx bxs-star text-warning"></i> С флажком
+                        </a>
+                        <a href="?filter=attachments{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="mailbox-filter-btn {% if filter_by == 'attachments' %}active{% endif %}">
+                            <i class="bx bx-paperclip"></i> С вложениями
+                        </a>
+                    </div>
+
+                    <!-- Выпадающий список сортировки -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none"
+                                type="button" id="sortDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bx bx-sort font-size-16 text-primary"></i>
+                            <span>{{ current_sort_label }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="sortDropdownBtn" style="min-width: 240px; border-radius: 10px; font-size: 13px;">
+                            <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">Сортировка по дате</li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'date' and sort_dir == 'desc' %}active fw-bold{% endif %}"
+                                   href="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-calendar-event me-2"></i> Сначала новые</span>
+                                    <i class="bx bx-down-arrow-alt"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'date' and sort_dir == 'asc' %}active fw-bold{% endif %}"
+                                   href="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-calendar-event me-2"></i> Сначала старые</span>
+                                    <i class="bx bx-up-arrow-alt"></i>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">По автору / теме</li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'from' and sort_dir == 'asc' %}active fw-bold{% endif %}"
+                                   href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-user me-2"></i> По автору (А → Я)</span>
+                                    <i class="bx bx-sort-a-z"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'from' and sort_dir == 'desc' %}active fw-bold{% endif %}"
+                                   href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-user me-2"></i> По автору (Я → А)</span>
+                                    <i class="bx bx-sort-z-a"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'subject' and sort_dir == 'asc' %}active fw-bold{% endif %}"
+                                   href="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-message-square-detail me-2"></i> По теме (А → Я)</span>
+                                    <i class="bx bx-sort-a-z"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'subject' and sort_dir == 'desc' %}active fw-bold{% endif %}"
+                                   href="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-message-square-detail me-2"></i> По теме (Я → А)</span>
+                                    <i class="bx bx-sort-z-a"></i>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">По размеру и статусу</li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'size' and sort_dir == 'desc' %}active fw-bold{% endif %}"
+                                   href="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-archive me-2"></i> По размеру (убывание)</span>
+                                    <i class="bx bx-down-arrow-alt"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'size' and sort_dir == 'asc' %}active fw-bold{% endif %}"
+                                   href="?sort=size&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-archive me-2"></i> По размеру (возрастание)</span>
+                                    <i class="bx bx-up-arrow-alt"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'flagged' %}active fw-bold{% endif %}"
+                                   href="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bxs-star text-warning me-2"></i> Сначала важные</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'unread' %}active fw-bold{% endif %}"
+                                   href="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-envelope text-primary me-2"></i> Сначала непрочитанные</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'attachments' %}active fw-bold{% endif %}"
+                                   href="?sort=attachments&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                    <span><i class="bx bx-paperclip me-2"></i> Сначала с вложениями</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Панель массовых действий и пагинации -->
+                <div class="mailbox-toolbar">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check m-0 d-flex align-items-center">
+                            <input type="checkbox" class="form-check-input" id="selectAllMails" title="Выбрать все на странице">
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if is_junk %}
+                                <button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('not_spam')" title="Переместить выбранные во «Входящие» и обучить спам-фильтр">
+                                    <i class="bx bx-check-shield"></i> <span class="d-none d-sm-inline">Не спам</span>
+                                </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('mark_seen')" title="Пометить как прочитанное">
+                                <i class="bx bx-envelope-open"></i> <span class="d-none d-sm-inline">Прочитано</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('mark_unseen')" title="Пометить как непрочитанное">
+                                <i class="bx bx-envelope"></i> <span class="d-none d-sm-inline">Не прочитано</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('delete')" title="Удалить выбранные">
+                                <i class="bx bx-trash"></i> <span class="d-none d-sm-inline">Удалить</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Пагинация -->
+                    {% if total_pages > 1 %}
+                        <div class="d-flex align-items-center gap-2 small text-muted">
+                            <span>Страница {{ page }} из {{ total_pages }} ({{ total_count }})</span>
+                            <div class="d-flex align-items-center gap-1">
+                                {% if has_prev %}
+                                    <a href="?page={{ prev_page }}{{ query_prefix }}" class="btn btn-outline-secondary btn-sm" title="Предыдущая">
+                                        <i class="bx bx-chevron-left"></i>
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-outline-secondary btn-sm" disabled><i class="bx bx-chevron-left"></i></button>
+                                {% endif %}
+
+                                {% if has_next %}
+                                    <a href="?page={{ next_page }}{{ query_prefix }}" class="btn btn-outline-secondary btn-sm" title="Следующая">
+                                        <i class="bx bx-chevron-right"></i>
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-outline-secondary btn-sm" disabled><i class="bx bx-chevron-right"></i></button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Таблица списка писем с кликабельными колонками сортировки -->
+                <div class="table-responsive">
+                    <table class="mailbox-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;" class="ps-3">
+                                </th>
+                                <th style="width: 36px;" class="p-0 text-center {% if sort_by == 'flagged' %}active-sort{% endif %}">
+                                    <a href="?sort=flagged&dir={% if sort_by == 'flagged' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по важности">
+                                        <i class="bx {% if sort_by == 'flagged' %}bxs-star text-warning{% else %}bx-star{% endif %}"></i>
+                                    </a>
+                                </th>
+                                <th style="width: 220px;" class="{% if sort_by == 'from' %}active-sort{% endif %}">
+                                    <a href="?sort=from&dir={% if sort_by == 'from' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по автору">
+                                        <span>От кого / Кому</span>
+                                        {% if sort_by == 'from' %}
+                                            <i class="bx {% if sort_dir == 'asc' %}bx-sort-up text-primary{% else %}bx-sort-down text-primary{% endif %}"></i>
+                                        {% else %}
+                                            <i class="bx bx-sort-alt-2 opacity-50 font-size-12"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th class="{% if sort_by == 'subject' %}active-sort{% endif %}">
+                                    <a href="?sort=subject&dir={% if sort_by == 'subject' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по теме">
+                                        <span>Тема сообщения</span>
+                                        {% if sort_by == 'subject' %}
+                                            <i class="bx {% if sort_dir == 'asc' %}bx-sort-up text-primary{% else %}bx-sort-down text-primary{% endif %}"></i>
+                                        {% else %}
+                                            <i class="bx bx-sort-alt-2 opacity-50 font-size-12"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th style="width: 90px;" class="text-end mailbox-hide-mobile {% if sort_by == 'size' %}active-sort{% endif %}">
+                                    <a href="?sort=size&dir={% if sort_by == 'size' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по размеру">
+                                        <span>Размер</span>
+                                        {% if sort_by == 'size' %}
+                                            <i class="bx {% if sort_dir == 'desc' %}bx-sort-down text-primary{% else %}bx-sort-up text-primary{% endif %}"></i>
+                                        {% else %}
+                                            <i class="bx bx-sort-alt-2 opacity-50 font-size-12"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th style="width: 140px;" class="text-end pe-3 mailbox-hide-mobile {% if sort_by == 'date' %}active-sort{% endif %}">
+                                    <a href="?sort=date&dir={% if sort_by == 'date' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по дате">
+                                        <span>Дата</span>
+                                        {% if sort_by == 'date' %}
+                                            <i class="bx {% if sort_dir == 'desc' %}bx-sort-down text-primary{% else %}bx-sort-up text-primary{% endif %}"></i>
+                                        {% else %}
+                                            <i class="bx bx-sort-alt-2 opacity-50 font-size-12"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for msg in messages_list %}
+                                <tr class="{% if not msg.is_seen %}unread{% else %}read{% endif %}"
+                                    onclick="if(!event.target.closest('.no-row-click')) { window.location='{% url 'mailbox_app:email_detail' current_folder msg.uid %}'; }">
+                                    
+                                    <!-- Чекбокс -->
+                                    <td style="width: 40px;" class="ps-3 no-row-click">
+                                        <div class="form-check m-0">
+                                            <input type="checkbox" class="form-check-input mail-select-checkbox" value="{{ msg.uid }}">
+                                        </div>
+                                    </td>
+
+                                    <!-- Звездочка (Важное) -->
+                                    <td style="width: 36px;" class="p-0 text-center no-row-click">
+                                        <i class="bx {% if msg.is_flagged %}bxs-star mail-star active{% else %}bx-star mail-star{% endif %}"
+                                           onclick="toggleMailFlag('{{ current_folder }}', {{ msg.uid }}, this)"
+                                           title="Отметить как важное"></i>
+                                    </td>
+
+                                    <!-- Отправитель -->
+                                    <td style="width: 220px; max-width: 220px;" class="text-truncate">
+                                        <span class="mail-sender text-truncate d-block">
+                                            {{ msg.from_name }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Тема письма -->
+                                    <td class="mailbox-subject-cell text-truncate">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="mail-subject text-truncate">
+                                                {{ msg.subject }}
+                                            </span>
+                                            {% if msg.has_attachments %}
+                                                <i class="bx bx-paperclip text-muted ms-2 flex-shrink-0" style="font-size: 16px;" title="Письмо содержит вложенные файлы"></i>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    <!-- Размер -->
+                                    <td style="width: 90px;" class="mail-size mailbox-hide-mobile">
+                                        {{ msg.size_human|default:"-" }}
+                                    </td>
+
+                                    <!-- Дата -->
+                                    <td style="width: 140px;" class="mail-date pe-3 mailbox-hide-mobile">
+                                        {% if msg.date %}
+                                            {{ msg.date|date:"d.m.Y H:i" }}
+                                        {% else %}
+                                            {{ msg.date_raw|slice:":16" }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <div class="py-4">
+                                            <i class="bx bx-envelope-open display-4 text-muted opacity-50 mb-2"></i>
+                                            <div class="font-weight-semibold font-size-16">В этой папке нет писем</div>
+                                            <div class="small mt-1">{% if search_query %}По вашему запросу «{{ search_query }}» ничего не найдено{% elif filter_by != 'all' %}Нет писем, соответствующих выбранному фильтру{% else %}Папка пуста{% endif %}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Нижняя пагинация для длинных списков -->
+                {% if total_pages > 1 %}
+                    <div class="p-3 border-top d-flex justify-content-end align-items-center bg-white">
+                        <div class="d-flex align-items-center gap-2 small text-muted">
+                            <span>Страница {{ page }} из {{ total_pages }} (Всего: {{ total_count }})</span>
+                            <div class="d-flex align-items-center gap-1">
+                                {% if has_prev %}
+                                    <a href="?page={{ prev_page }}{{ query_prefix }}" class="btn btn-outline-secondary btn-sm" title="Предыдущая">
+                                        <i class="bx bx-chevron-left"></i>
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-outline-secondary btn-sm" disabled><i class="bx bx-chevron-left"></i></button>
+                                {% endif %}
+
+                                {% if has_next %}
+                                    <a href="?page={{ next_page }}{{ query_prefix }}" class="btn btn-outline-secondary btn-sm" title="Следующая">
+                                        <i class="bx bx-chevron-right"></i>
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-outline-secondary btn-sm" disabled><i class="bx bx-chevron-right"></i></button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div class="modal fade" id="deleteMailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-body p-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" id="deleteModalIconBox" style="width: 68px; height: 68px; background: rgba(220, 53, 69, 0.12); color: #dc3545;">
+                        <i class="bx bx-trash" id="deleteModalIcon" style="font-size: 34px;"></i>
+                    </div>
+                    <h5 class="font-weight-bold text-dark mb-2" id="deleteModalTitle">Удалить выбранные письма?</h5>
+                    <p class="text-muted small mb-4" id="deleteModalDesc">Выбранные письма будут перемещены в папку «Корзина».</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
+                            Отмена
+                        </button>
+                        <button type="button" class="btn btn-danger px-4 py-2 font-weight-semibold d-flex align-items-center gap-1 shadow-sm" id="confirmDeleteActionBtn">
+                            <i class="bx bx-trash font-size-18" id="confirmActionIcon"></i> <span id="confirmDeleteBtnText">Удалить</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно предупреждения (когда ничего не выбрано) -->
+    <div class="modal fade" id="warningMailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-body p-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 60px; height: 60px; background: rgba(255, 193, 7, 0.15); color: #e0a800;">
+                        <i class="bx bx-error" style="font-size: 32px;"></i>
+                    </div>
+                    <h5 class="font-weight-bold text-dark mb-2" id="warningModalTitle">Выберите письма</h5>
+                    <p class="text-muted small mb-4" id="warningModalDesc">Пожалуйста, отметьте хотя бы одно письмо из списка для выполнения этого действия.</p>
+                    <button type="button" class="btn btn-primary px-4 py-2 font-weight-semibold" data-bs-dismiss="modal">
+                        Понятно
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        let pendingBatchAction = null;
+        let pendingUids = [];
+
+        function showWarningModal(title, text) {
+            if (title) document.getElementById('warningModalTitle').innerText = title;
+            if (text) document.getElementById('warningModalDesc').innerText = text;
+            const modalEl = document.getElementById('warningMailModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        }
+
+        // Переключение чекбокса "Выбрать все"
+        const selectAllCheckbox = document.getElementById('selectAllMails');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.mail-select-checkbox');
+                checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        }
+
+        // Переключение важности (Flagged)
+        function toggleMailFlag(folder, uid, element) {
+            fetch("{% url 'mailbox_app:api_action' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: 'toggle_flag',
+                    folder: folder,
+                    uid: uid,
+                    flag: '\\Flagged'
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok' || data.success) {
+                    element.classList.toggle('bxs-star');
+                    element.classList.toggle('bx-star');
+                    element.classList.toggle('active');
+                } else {
+                    showWarningModal('Ошибка', data.error || 'Не удалось обновить статус');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showWarningModal('Ошибка связи', 'Сетевая ошибка при обновлении флага письма');
+            });
+        }
+
+        // Пакетные действия над письмами
+        function handleBatchAction(actionType) {
+            const selectedUids = Array.from(document.querySelectorAll('.mail-select-checkbox:checked')).map(cb => parseInt(cb.value));
+            if (selectedUids.length === 0) {
+                showWarningModal('Письма не выбраны', 'Пожалуйста, выберите хотя бы одно письмо из списка.');
+                return;
+            }
+
+            if (actionType === 'delete') {
+                document.getElementById('deleteModalIconBox').style.background = 'rgba(220, 53, 69, 0.12)';
+                document.getElementById('deleteModalIconBox').style.color = '#dc3545';
+                document.getElementById('deleteModalIcon').className = 'bx bx-trash';
+                document.getElementById('deleteModalTitle').innerText = `Удалить письма (${selectedUids.length} шт.)?`;
+                document.getElementById('deleteModalDesc').innerText = 'Выбранные письма будут перемещены в папку «Корзина».';
+                document.getElementById('confirmDeleteBtnText').innerText = 'Удалить';
+                document.getElementById('confirmDeleteActionBtn').className = 'btn btn-danger px-4 py-2 font-weight-semibold d-flex align-items-center gap-1 shadow-sm';
+                pendingBatchAction = 'delete';
+                pendingUids = selectedUids;
+                const modalEl = document.getElementById('deleteMailModal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+                return;
+            }
+
+            if (actionType === 'not_spam') {
+                document.getElementById('deleteModalIconBox').style.background = 'rgba(40, 167, 69, 0.15)';
+                document.getElementById('deleteModalIconBox').style.color = '#28a745';
+                document.getElementById('deleteModalIcon').className = 'bx bx-check-shield';
+                document.getElementById('deleteModalTitle').innerText = `Вернуть во «Входящие» (${selectedUids.length} шт.)?`;
+                document.getElementById('deleteModalDesc').innerText = 'Письма будут перемещены во «Входящие», отправители добавлены в список надежных контактов, а спам-фильтр сервера обучен.';
+                document.getElementById('confirmDeleteBtnText').innerText = 'Это не спам';
+                document.getElementById('confirmDeleteActionBtn').className = 'btn btn-success px-4 py-2 font-weight-semibold d-flex align-items-center gap-1 shadow-sm';
+                pendingBatchAction = 'not_spam';
+                pendingUids = selectedUids;
+                const modalEl = document.getElementById('deleteMailModal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+                return;
+            }
+
+            executeAction(actionType, selectedUids);
+        }
+
+        const confirmBtn = document.getElementById('confirmDeleteActionBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                if (pendingBatchAction && pendingUids.length > 0) {
+                    executeAction(pendingBatchAction, pendingUids);
+                }
+            });
+        }
+
+        function executeAction(actionType, uids) {
+            const btn = document.getElementById('confirmDeleteActionBtn');
+            if (btn) btn.disabled = true;
+
+            fetch("{% url 'mailbox_app:api_action' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: actionType,
+                    folder: '{{ current_folder }}',
+                    uids: uids
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok' || data.success) {
+                    window.location.reload();
+                } else {
+                    showWarningModal('Ошибка', data.error || 'Неизвестная ошибка');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showWarningModal('Ошибка связи', 'Сетевая ошибка при выполнении действия');
+            })
+            .finally(() => {
+                if (btn) btn.disabled = false;
+            });
+        }
+    </script>
+{% endblock %}

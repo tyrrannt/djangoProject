@@ -58,6 +58,7 @@ urlpatterns = [
     path('flight/', include('flight_planning.urls')),
     path('finance/', include('finance_app.urls')),
     path('api/finance/', include('finance_app.api_urls')),
+    path('mail/', include('mailbox_app.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls'), name="ck_editor_5_upload_file"),
     path('__debug__/', include('debug_toolbar.urls')),
 ]
