@@ -27,11 +27,17 @@
             <div class="inner-body mailbox-compose">
                 <div class="mailbox-compose-container">
                     <header class="mailbox-compose-header">
-                        <h4 class="mailbox-page-title">
-                            <i class="bx bx-edit text-primary"></i> Новое сообщение
-                        </h4>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                            </button>
+                            <h4 class="mailbox-page-title m-0">
+                                <i class="bx bx-edit text-primary d-none d-sm-inline"></i> <span>Новое сообщение</span>
+                            </h4>
+                        </div>
                         <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                            <i class="bx bx-x font-size-16"></i> <span>Отмена</span>
+                            <i class="bx bx-x font-size-16"></i> <span class="d-none d-sm-inline">Отмена</span>
                         </a>
                     </header>
 

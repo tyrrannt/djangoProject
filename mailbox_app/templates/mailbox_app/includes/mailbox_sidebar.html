@@ -1,22 +1,10 @@
 {% load static %}
 {% load static_version %}
 
-<link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
-
-<!-- Боковая навигационная колонка папок почты -->
-<menu id="content-menu" class="inner-menu" role="menu">
+<!-- Десктопная боковая панель папок (скрыта на мобильных <=768px) -->
+<menu id="content-menu" class="inner-menu d-none d-md-block" role="menu">
     <div class="nano">
         <div class="nano-content">
-            <div class="inner-menu-toggle-inside">
-                <a href="#" class="inner-menu-collapse">
-                    <i class="fas fa-chevron-up d-inline-block d-md-none"></i>
-                    <i class="fas fa-chevron-left d-none d-md-inline-block"></i> Свернуть меню
-                </a>
-                <a href="#" class="inner-menu-expand" data-open="inner-menu">
-                    Развернуть <i class="fas fa-chevron-down"></i>
-                </a>
-            </div>
-
             <div class="mailbox-sidebar-container">
                 <!-- Кнопка Написать письмо -->
                 <a href="{% url 'mailbox_app:compose' %}" class="mailbox-compose-btn mb-3">
@@ -70,3 +58,54 @@
         </div>
     </div>
 </menu>
+
+<!-- Мобильная шторка папок (Thunderbird Mobile Slide-out Drawer) для экранов <=768px -->
+<div class="offcanvas offcanvas-start mailbox-mobile-drawer d-md-none" tabindex="-1" id="mailboxMobileDrawer" aria-labelledby="mailboxMobileDrawerLabel">
+    <div class="offcanvas-header bg-light border-bottom py-3 px-3">
+        <div class="d-flex align-items-center gap-2">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; font-size: 18px;">
+                <i class="bx bx-envelope"></i>
+            </div>
+            <div class="overflow-hidden">
+                <h6 class="offcanvas-title fw-bold text-dark m-0 text-truncate" id="mailboxMobileDrawerLabel">
+                    {{ account.display_name|default:"Корпоративная почта" }}
+                </h6>
+                <small class="text-muted text-truncate d-block" style="font-size: 12px;">{{ account.email }}</small>
+            </div>
+        </div>
+        <button type="button" class="btn-close text-reset shadow-none" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+    </div>
+    <div class="offcanvas-body p-3">
+        <!-- Кнопка Написать письмо -->
+        <a href="{% url 'mailbox_app:compose' %}" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2 mb-3 shadow-sm" style="border-radius: 8px; font-weight: 600;">
+            <i class="bx bx-edit font-size-18"></i> Написать письмо
+        </a>
+
+        <!-- Список папок в стиле Thunderbird Mobile -->
+        <div class="text-uppercase text-muted fw-bold px-2 mb-2" style="font-size: 11px; letter-spacing: 0.5px;">Папки почты</div>
+        <div class="list-group list-group-flush border rounded-3 overflow-hidden mb-4">
+            {% for f in folders %}
+                <a href="{% url 'mailbox_app:folder' f.raw_name %}"
+                   class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if current_folder == f.raw_name %}active fw-bold{% endif %}">
+                    <span class="d-flex align-items-center gap-2 text-truncate">
+                        <i class="{{ f.icon }} font-size-18 {% if current_folder == f.raw_name %}text-white{% else %}text-primary{% endif %}"></i>
+                        <span class="text-truncate">{{ f.display_name }}</span>
+                    </span>
+                    {% if f.unseen > 0 %}
+                        <span class="badge {% if current_folder == f.raw_name %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill">
+                            {{ f.unseen }}
+                        </span>
+                    {% endif %}
+                </a>
+            {% empty %}
+                <div class="p-3 text-muted small">Папки не загружены</div>
+            {% endfor %}
+        </div>
+
+        <div class="border-top pt-3">
+            <a href="{% url 'mailbox_app:settings' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px;">
+                <i class="bx bx-cog font-size-18"></i> Настройки и подпись
+            </a>
+        </div>
+    </div>
+</div>

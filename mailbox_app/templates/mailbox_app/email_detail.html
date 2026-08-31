@@ -25,11 +25,17 @@
             <!-- Содержимое письма -->
             <div class="inner-body mailbox-email">
                 <div class="mailbox-detail-container">
-                    <!-- Панель действий -->
+                    <!-- Панель действий (Thunderbird Mobile Detail Toolbar) -->
                     <div class="mailbox-detail-toolbar">
                         <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <!-- Кнопка вызова Drawer папок на мобильных -->
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder"></i>
+                            </button>
+
                             <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                                <i class="bx bx-arrow-back font-size-16"></i> <span>Назад к папке</span>
+                                <i class="bx bx-arrow-back font-size-16"></i> <span class="d-none d-sm-inline">Назад к папке</span>
                             </a>
                             {% if is_junk %}
                                 <button type="button" class="btn btn-success btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="markCurrentAsNotSpam()" title="Переместить во «Входящие» и обучить спам-фильтр">
@@ -40,13 +46,13 @@
                                 <i class="bx bx-reply font-size-16"></i> <span>Ответить</span>
                             </a>
                             <a href="{% url 'mailbox_app:compose' %}?forward_uid={{ email.uid }}&folder={{ current_folder }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                                <i class="bx bx-share font-size-16"></i> <span>Переслать</span>
+                                <i class="bx bx-share font-size-16"></i> <span class="d-none d-sm-inline">Переслать</span>
                             </a>
                         </div>
 
                         <div>
-                            <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none" onclick="deleteCurrentEmail()">
-                                <i class="bx bx-trash font-size-16"></i> <span>Удалить</span>
+                            <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none" onclick="deleteCurrentEmail()" title="Удалить письмо">
+                                <i class="bx bx-trash font-size-16"></i> <span class="d-none d-sm-inline">Удалить</span>
                             </button>
                         </div>
                     </div>

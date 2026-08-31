@@ -26,12 +26,18 @@
             <!-- Основная область настроек -->
             <div class="inner-body mailbox-settings">
                 <div class="mailbox-settings-container">
-                    <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
-                        <h4 class="mailbox-page-title">
-                            <i class="bx bx-cog text-primary"></i> Настройки почтового ящика
-                        </h4>
+                    <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                            </button>
+                            <h4 class="mailbox-page-title m-0">
+                                <i class="bx bx-cog text-primary d-none d-sm-inline"></i> <span>Настройки ящика</span>
+                            </h4>
+                        </div>
                         <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                            <i class="bx bx-arrow-back font-size-16"></i> <span>К письмам</span>
+                            <i class="bx bx-arrow-back font-size-16"></i> <span class="d-none d-sm-inline">К письмам</span>
                         </a>
                     </header>
 

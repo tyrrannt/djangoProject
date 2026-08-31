@@ -24,32 +24,41 @@
 
             <!-- Основная область списка писем -->
             <div class="inner-body mailbox-folder">
-                <!-- Шапка папки и поиск -->
+                <!-- Шапка папки и поиск (Thunderbird Mobile App Bar) -->
                 <header class="mailbox-header-bar">
-                    <div class="d-flex align-items-center gap-2">
-                        <a id="mailboxToggleSidebar" class="sidebar-toggle-btn trigger-toggle-sidebar d-md-none text-dark me-2">
-                            <i class="bx bx-menu font-size-22"></i>
-                        </a>
-                        <h4 class="mailbox-page-title">
-                            {{ current_folder_display }}
-                            <span class="mailbox-count-badge">{{ total_count }} писем</span>
-                        </h4>
-                    </div>
-
-                    <!-- Форма поиска -->
-                    <form method="get" class="search nav-form m-0" style="min-width: 280px; max-width: 360px;">
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Поиск по теме или автору...">
-                            <button class="btn btn-primary" type="submit" title="Искать">
-                                <i class="bx bx-search"></i>
+                    <div class="d-flex align-items-center justify-content-between gap-2 w-100 flex-wrap">
+                        <!-- Кнопка вызова Drawer папок на мобильных + Заголовок на десктопах -->
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                                <span>{{ current_folder_display }}</span>
+                                <i class="bx bx-chevron-down font-size-14"></i>
                             </button>
-                            {% if search_query %}
-                                <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary" title="Сбросить поиск">
-                                    <i class="bx bx-x"></i>
-                                </a>
-                            {% endif %}
+                            <h4 class="mailbox-page-title d-none d-md-flex align-items-center gap-2 m-0">
+                                {{ current_folder_display }}
+                                <span class="mailbox-count-badge">{{ total_count }} писем</span>
+                            </h4>
+                            <span class="badge bg-light text-secondary border d-md-none" style="font-size: 11px;">
+                                {{ total_count }}
+                            </span>
                         </div>
-                    </form>
+
+                        <!-- Форма поиска -->
+                        <form method="get" class="mailbox-search-form m-0" style="min-width: 240px; max-width: 360px;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Поиск писем...">
+                                <button class="btn btn-primary" type="submit" title="Искать">
+                                    <i class="bx bx-search"></i>
+                                </button>
+                                {% if search_query %}
+                                    <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary" title="Сбросить поиск">
+                                        <i class="bx bx-x"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
                 </header>
 
                 {% if error_message %}
@@ -80,11 +89,11 @@
                     </div>
 
                     <!-- Выпадающий список сортировки -->
-                    <div class="dropdown">
+                    <div class="dropdown flex-shrink-0">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none"
                                 type="button" id="sortDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bx bx-sort font-size-16 text-primary"></i>
-                            <span>{{ current_sort_label }}</span>
+                            <span class="d-none d-sm-inline">{{ current_sort_label }}</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="sortDropdownBtn" style="min-width: 240px; border-radius: 10px; font-size: 13px;">
                             <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">Сортировка по дате</li>
@@ -172,11 +181,11 @@
 
                 <!-- Панель массовых действий и пагинации -->
                 <div class="mailbox-toolbar">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="form-check m-0 d-flex align-items-center">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="form-check m-0 d-flex align-items-center me-1">
                             <input type="checkbox" class="form-check-input" id="selectAllMails" title="Выбрать все на странице">
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-1">
                             {% if is_junk %}
                                 <button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('not_spam')" title="Переместить выбранные во «Входящие» и обучить спам-фильтр">
                                     <i class="bx bx-check-shield"></i> <span class="d-none d-sm-inline">Не спам</span>
@@ -196,8 +205,9 @@
 
                     <!-- Пагинация -->
                     {% if total_pages > 1 %}
-                        <div class="d-flex align-items-center gap-2 small text-muted">
-                            <span>Страница {{ page }} из {{ total_pages }} ({{ total_count }})</span>
+                        <div class="d-flex align-items-center gap-1 small text-muted ms-auto">
+                            <span class="d-none d-sm-inline me-1">{{ page }} из {{ total_pages }} ({{ total_count }})</span>
+                            <span class="d-sm-none fw-bold me-1" style="font-size: 11px;">{{ page }}/{{ total_pages }}</span>
                             <div class="d-flex align-items-center gap-1">
                                 {% if has_prev %}
                                     <a href="?page={{ prev_page }}{{ query_prefix }}" class="btn btn-outline-secondary btn-sm" title="Предыдущая">
