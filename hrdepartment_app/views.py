@@ -1931,6 +1931,11 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             )
 
             # ==================== ОТЧЕТ 3: ПОДРОБНАЯ ТАБЛИЦА ВСЕХ ЗАПИСЕЙ ====================
+            for col in ['document__official_memo_type', 'document__person__service_number',
+                        'document__person__user_work_profile__job__name', 'Тип']:
+                if col not in df.columns:
+                    df[col] = None
+
             detailed_report = df[[
                 'Месяц',
                 'ФИО',

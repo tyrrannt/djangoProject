@@ -1040,9 +1040,13 @@ class ApprovalProcess(models.Model):
 
 
 class ApprovalOficialMemoProcessManager(models.Manager):
+    """Менеджер бизнес-процессов служебных записок."""
+
     def get_expense_report_data(self):
-        """
-        Получает данные для отчета по затратам
+        """Получает агрегированные и детализированные данные для отчета по затратам на командировки.
+
+        Returns:
+            QuerySet: Набор значений согласованных бухгалтерией процессов с финансовыми показателями.
         """
         return self.select_related(
             'document',
@@ -1056,6 +1060,7 @@ class ApprovalOficialMemoProcessManager(models.Manager):
             cancellation=False
         ).values(
             'id',
+            'document__official_memo_type',
             'document__period_from',
             'document__period_for',
             'document__person__id',
