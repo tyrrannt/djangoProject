@@ -1,73 +1,98 @@
 {% load static %}
-<div class="card-body">
+<div class="card-body p-3 p-md-4">
     <!-- ============================================
-         АВАТАР И ИНФОРМАЦИЯ ПОЛЬЗОВАТЕЛЯ (Porto Admin Thumb-Info)
+         АВАТАР И ИНФОРМАЦИЯ ПОЛЬЗОВАТЕЛЯ
     ============================================ -->
-    <div class="thumb-info mb-3">
-        {% if databaseuser.avatar %}
-            <img src="{{ databaseuser.avatar.url }}?v={{ object.updated_at.timestamp }}" class="rounded img-fluid w-100"
-                 alt="{{ databaseuser.username }}">
-        {% else %}
-            <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid w-100"
-                 alt="{{ databaseuser.username }}">
-        {% endif %}
-        <div class="thumb-info-title">
-            <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}{% if birthday_difference %}: {{ birthday_difference }}{% endif %}</span>
-            <span class="thumb-info-type">{{ object.user_work_profile.job|default:"Сотрудник" }}</span>
+    <div class="user-profile-header mb-3">
+        <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-start text-center text-sm-start gap-3">
+            <div class="position-relative flex-shrink-0">
+                {% if databaseuser.avatar %}
+                    <img src="{{ databaseuser.avatar.url }}?v={{ object.updated_at.timestamp }}" 
+                         class="rounded-circle profile-avatar-img"
+                         alt="{{ databaseuser.username }}">
+                {% else %}
+                    <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" 
+                         class="rounded-circle profile-avatar-img"
+                         alt="{{ databaseuser.username }}">
+                {% endif %}
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <h4 class="fw-bold text-dark mb-1 text-break">
+                    {{ object.last_name }} {{ object.first_name }}
+                    {% if birthday_difference %}<span class="badge bg-warning text-dark fs-8 ms-1">{{ birthday_difference }}</span>{% endif %}
+                </h4>
+                <div class="text-muted small mb-2 text-break">
+                    <span class="badge bg-light text-dark border">
+                        <i class="bx bx-briefcase text-primary me-1"></i>{{ object.user_work_profile.job|default:"Сотрудник" }}
+                    </span>
+                </div>
+                {% if object.email %}
+                    <div class="text-muted small text-break mb-1">
+                        <i class="bx bx-envelope me-1"></i>{{ object.email }}
+                    </div>
+                {% endif %}
+                {% if object.user_work_profile.department %}
+                    <div class="text-muted small text-break">
+                        <i class="bx bx-buildings me-1"></i>{{ object.user_work_profile.department }}
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <!-- ============================================
          ПРОГРЕСС ЗАПОЛНЕНИЯ ПРОФИЛЯ
     ============================================ -->
-    <div class="widget-toggle-expand mb-3">
-        <div class="widget-header d-flex justify-content-between align-items-center flex-wrap">
-            <h5 class="mb-2 font-weight-semibold text-dark">Заполнение профиля: {{ profile_info }}%</h5>
-            <div class="widget-toggle">+</div>
+    <div class="widget-toggle-expand mb-3 p-3 bg-light rounded border">
+        <div class="widget-header d-flex justify-content-between align-items-center flex-wrap mb-2">
+            <span class="font-weight-semibold text-dark small">Заполнение профиля: <strong>{{ profile_info }}%</strong></span>
+            <div class="widget-toggle text-primary" style="cursor: pointer;">+</div>
         </div>
         <div class="widget-content-collapsed">
-            <div class="progress progress-xs light">
-                <div class="progress-bar" role="progressbar" aria-valuenow="{{ profile_info }}" aria-valuemin="0"
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-primary" role="progressbar" aria-valuenow="{{ profile_info }}" aria-valuemin="0"
                      aria-valuemax="100" style="width: {{ profile_info }}%;">
-                    {{ profile_info }}%
                 </div>
             </div>
         </div>
-        <div class="widget-content-expanded">
-            <ul class="simple-todo-list mt-3">
-                <li {% if databaseuser.avatar %} class="completed" {% endif %}>Изображение профиля</li>
-                <li {% if user_private %} class="completed" {% endif %}>Личная информация</li>
-                <li {% if user_work %} class="completed" {% endif %}>Рабочая информация</li>
+        <div class="widget-content-expanded mt-2">
+            <ul class="list-unstyled mb-0 small">
+                <li class="d-flex align-items-center gap-1 mb-1 {% if databaseuser.avatar %}text-success fw-semibold{% else %}text-muted{% endif %}">
+                    <i class="bx {% if databaseuser.avatar %}bx-check-circle{% else %}bx-circle{% endif %}"></i> Фотография профиля
+                </li>
+                <li class="d-flex align-items-center gap-1 mb-1 {% if user_private %}text-success fw-semibold{% else %}text-muted{% endif %}">
+                    <i class="bx {% if user_private %}bx-check-circle{% else %}bx-circle{% endif %}"></i> Личная информация
+                </li>
+                <li class="d-flex align-items-center gap-1 {% if user_work %}text-success fw-semibold{% else %}text-muted{% endif %}">
+                    <i class="bx {% if user_work %}bx-check-circle{% else %}bx-circle{% endif %}"></i> Рабочая информация
+                </li>
             </ul>
         </div>
     </div>
 
     <!-- ============================================
-         СТАТИСТИКА И ДЕЙСТВИЯ
+         СТАТИСТИКА И ДАТЫ
     ============================================ -->
-    <div class="d-block">
-        <hr class="dotted short">
-        <h5 class="mb-2 mt-3">Моя статистика:</h5>
-        <div class="mb-3">
-            <p class="text-2 mb-1">
-                <i class="fas fa-sign-in-alt text-muted me-2"></i>
-                Последний вход: <strong>{{ user.last_login|date:"d.m.Y H:i"|default:"—" }}</strong>
-            </p>
-            <p class="text-2 mb-0">
-                <i class="fas fa-calendar-alt text-muted me-2"></i>
-                Дата регистрации: <strong>{{ user.date_joined|date:"d.m.Y"|default:"—" }}</strong>
-            </p>
+    <div class="p-3 bg-light rounded border mb-3 small">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted"><i class="bx bx-log-in text-primary me-1"></i>Последний вход:</span>
+            <span class="fw-semibold text-dark">{{ user.last_login|date:"d.m.Y H:i"|default:"—" }}</span>
         </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted"><i class="bx bx-calendar text-primary me-1"></i>Регистрация:</span>
+            <span class="fw-semibold text-dark">{{ user.date_joined|date:"d.m.Y"|default:"—" }}</span>
+        </div>
+    </div>
 
-        <!-- Кнопки действий -->
-        <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
-            <a href="{% url 'customers_app:staff' user.pk %}" class="btn btn-outline-primary flex-grow-1">
-                <i class="fas fa-user me-1"></i> Подробнее...
-            </a>
-            <a href="{% url 'hrdepartment_app:users_events_add' %}" class="btn btn-outline-success flex-grow-1">
-                <i class="fas fa-map-marker-alt me-1"></i> Добавить местоположение
-            </a>
-        </div>
-        <hr class="dotted short">
+    <!-- ============================================
+         КНОПКИ ДЕЙСТВИЙ
+    ============================================ -->
+    <div class="d-grid gap-2">
+        <a href="{% url 'customers_app:staff' user.pk %}" class="btn btn-outline-primary btn-touch font-weight-semibold">
+            <i class="bx bx-user-circle me-2"></i> Подробная анкета
+        </a>
+        <a href="{% url 'hrdepartment_app:users_events_add' %}" class="btn btn-outline-success btn-touch font-weight-semibold">
+            <i class="bx bx-map-pin me-2"></i> Добавить местоположение
+        </a>
     </div>
 </div>

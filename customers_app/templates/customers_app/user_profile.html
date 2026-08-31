@@ -6,516 +6,562 @@
     {{ title }}
 {% endblock %}
 
-<!-- ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ PortoAdmin -->
 {% block custom_css %}
     <style>
         /* ============================================
-           КАСТОМНЫЕ СТИЛИ ДЛЯ ДАШБОРДА
-           Не переопределяют базовые стили PortoAdmin
+           ДИЗАЙН-СИСТЕМА И АДАПТИВНЫЕ СТИЛИ ПРОФИЛЯ
         ============================================ */
+        :root {
+            --touch-target-size: 42px;
+        }
 
-        /* Улучшение отображения календаря на мобильных устройствах */
-        @media (max-width: 768px) {
-            .fc-header-toolbar {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
 
-            .fc-header-toolbar .fc-toolbar-chunk {
-                display: flex;
-                justify-content: center;
-                margin-bottom: 0.5rem;
-            }
-
-            .fc-toolbar-title {
-                font-size: 1.2rem !important;
-            }
-
-            .fc-daygrid-day-number {
-                font-size: 0.8rem !important;
-            }
-
-            .fc-event-title {
-                font-size: 0.7rem !important;
-            }
-
-            .calendar-container {
-                min-height: 400px;
-            }
-
-            /* Улучшение отображения вкладок на мобильных */
-            .nav-tabs {
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .nav-tabs .nav-item {
-                white-space: nowrap;
-            }
-
-            /* Адаптация боковой панели с个人信息 */
-            .personal-info-card {
-                margin-bottom: 1rem;
+        .profile-avatar-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        @media (min-width: 992px) {
+            .profile-avatar-img {
+                width: 100px;
+                height: 100px;
             }
         }
 
-        /* Стили для хронологии (лента событий) */
+        .card-stat-hover {
+            transition: all 0.2s ease;
+        }
+        .card-stat-hover:hover {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            transform: translateX(2px);
+        }
+
+        /* Адаптивная навигация по табам с горизонтальным скроллом */
+        .nav-tabs-responsive {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+            gap: 4px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 2px;
+            margin-bottom: 0;
+        }
+        .nav-tabs-responsive::-webkit-scrollbar {
+            display: none; /* Chrome, Safari */
+        }
+        .nav-tabs-responsive .nav-item {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .nav-tabs-responsive .nav-link {
+            border-radius: 8px 8px 0 0;
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #475569;
+            background: transparent;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        .nav-tabs-responsive .nav-link:hover {
+            color: #0088cc;
+            background-color: #f8fafc;
+        }
+        .nav-tabs-responsive .nav-link.active {
+            color: #0088cc !important;
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 #e2e8f0 #ffffff !important;
+            border-bottom: 2px solid #ffffff !important;
+            box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Контейнер контента табов */
+        .tab-content-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+
+        /* Стили календаря FullCalendar */
+        .calendar-container {
+            min-height: 520px;
+        }
+        @media (max-width: 768px) {
+            .nav-tabs-responsive .nav-link {
+                padding: 8px 12px;
+                font-size: 0.825rem;
+            }
+            .calendar-container {
+                min-height: 420px;
+            }
+            .fc .fc-toolbar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            .fc .fc-toolbar-chunk {
+                display: flex !important;
+                justify-content: center !important;
+            }
+            .fc .fc-toolbar-title {
+                font-size: 1.1rem !important;
+                text-align: center;
+            }
+            .fc .fc-button {
+                padding: 6px 10px !important;
+                font-size: 0.8rem !important;
+            }
+            .fc-daygrid-day-number {
+                font-size: 0.75rem !important;
+                padding: 2px !important;
+            }
+            .fc-event-title {
+                font-size: 0.7rem !important;
+                line-height: 1.2 !important;
+            }
+        }
+
+        /* Стили для хронологии событий */
         .timeline-simple .tm-items {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-
         .timeline-simple .tm-items li {
             position: relative;
-            padding: 0 0 1.5rem 1.5rem;
-            border-left: 2px solid #e9ecef;
+            padding: 0 0 1.25rem 1.25rem;
+            border-left: 2px solid #e2e8f0;
         }
-
         .timeline-simple .tm-items li:last-child {
             padding-bottom: 0;
         }
-
         .timeline-simple .tm-box {
-            background: #f8f9fa;
+            background: #f8fafc;
             padding: 1rem;
             border-radius: 8px;
+            border: 1px solid #e2e8f0;
             transition: all 0.2s ease;
         }
-
         .timeline-simple .tm-box:hover {
-            background: #fff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-color: #cbd5e1;
+        }
+        .timeline-simple .tm-box img,
+        .timeline-simple .tm-box table {
+            max-width: 100% !important;
+            height: auto !important;
         }
 
-        /* Стили для таблиц отчетов */
-        .report-table-wrapper {
-            overflow-x: auto;
-            margin-top: 1rem;
-        }
-
-        .report-table-wrapper table {
-            width: 100%;
-            min-width: 600px;
-            border-collapse: collapse;
-        }
-
-        .report-table-wrapper th,
-        .report-table-wrapper td {
-            padding: 0.75rem;
-            text-align: right;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .report-table-wrapper th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-        }
-
-        /* Стили для форм в табах */
-        .filter-form {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 10px;
+        /* Стили для форм фильтрации */
+        .filter-box {
+            background: #f8fafc;
+            padding: 1.25rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
             margin-bottom: 1.5rem;
         }
 
-        /* Адаптация для планшетов */
-        @media (max-width: 992px) {
-            .sidebar-info {
-                margin-bottom: 1.5rem;
-            }
+        /* Изолированные таблицы со скроллом */
+        .table-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-top: 1rem;
+            background: #ffffff;
+        }
+        .table-scroll-container table {
+            width: 100%;
+            min-width: 650px;
+            margin-bottom: 0;
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <div class="row">
+    <div class="row g-4">
         <!-- ============================================
-             ЛЕВАЯ КОЛОНКА: ПЕРСОНАЛЬНАЯ ИНФОРМАЦИЯ И СТАТИСТИКА
-             Адаптирована для PortoAdmin с сохранением структуры
-        ============================================ -->
-        <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0 sidebar-info">
-            <section class="card personal-info-card">
-                <!-- Блок с персональной информацией пользователя -->
+             ЛЕВАЯ КОЛОНКА: ПРОФИЛЬ И СТАТИСТИКА
+             ============================================ -->
+        <div class="col-lg-4 col-xl-3">
+            <section class="card border-0 shadow-sm mb-4">
+                <!-- Блок персональной информации -->
                 {% include 'customers_app/block_personal_info.html' %}
-
-                <!-- Место для динамического приложения (оставлено как есть) -->
-                <h1 id="app"></h1>
-
-                <!-- Блок со статистикой пользователя -->
-                {% include 'customers_app/block_statistics.html' %}
             </section>
+
+            <!-- Блок со статистикой портала -->
+            {% include 'customers_app/block_statistics.html' %}
         </div>
 
         <!-- ============================================
              ПРАВАЯ КОЛОНКА: ОСНОВНОЙ КОНТЕНТ С ВКЛАДКАМИ
-             Вкладки: Планировщик, Лента событий, Расчетный листок,
-                      Учет рабочего времени, Отпуск, СОУТ
-        ============================================ -->
+             ============================================ -->
         <div class="col-lg-8 col-xl-9">
             <div class="tabs">
-                <!-- НАВИГАЦИЯ ПО ВКЛАДКАМ (PortoAdmin стиль) -->
-                <ul class="nav nav-tabs tabs-primary">
-                    <li class="nav-item active">
-                        <button class="nav-link" data-bs-target="#tasks" data-bs-toggle="tab">
-                            <i class="fas fa-calendar-alt me-2"></i>Планировщик событий
+                <!-- НАВИГАЦИЯ ПО ВКЛАДКАМ -->
+                <ul class="nav nav-tabs nav-tabs-responsive" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-tasks-btn" data-bs-target="#tasks" data-bs-toggle="tab" type="button" role="tab">
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i>Планировщик
                         </button>
                     </li>
                     {% if grouped_schedule or user.is_superuser %}
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#graff" data-bs-toggle="tab">
-                            <i class="fa-solid fa-helicopter me-2"></i>Мой график
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-graff-btn" data-bs-target="#graff" data-bs-toggle="tab" type="button" role="tab">
+                            <i class="fa-solid fa-helicopter me-2 text-info"></i>Мой график
                         </button>
                     </li>
                     {% endif %}
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">
-                            <i class="fas fa-stream me-2"></i>Лента событий
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-overview-btn" data-bs-target="#overview" data-bs-toggle="tab" type="button" role="tab">
+                            <i class="fas fa-stream me-2 text-warning"></i>Лента событий
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">
-                            <i class="fas fa-calculator me-2"></i>Расчетный листок
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-calculation-btn" data-bs-target="#calculation" data-bs-toggle="tab" type="button" role="tab">
+                            <i class="fas fa-calculator me-2 text-success"></i>Расчетный листок
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#reportcard" data-bs-toggle="tab">
-                            <i class="fas fa-clock me-2"></i>Учет рабочего времени
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-reportcard-btn" data-bs-target="#reportcard" data-bs-toggle="tab" type="button" role="tab">
+                            <i class="fas fa-clock me-2 text-danger"></i>Учет времени
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#vacation" data-bs-toggle="tab">
-                            <i class="fas fa-umbrella-beach me-2"></i>Отпуск
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-vacation-btn" data-bs-target="#vacation" data-bs-toggle="tab" type="button" role="tab">
+                            <i class="fas fa-umbrella-beach me-2 text-primary"></i>Отпуск
                         </button>
                     </li>
-                    <li class="nav-item" disabled="true">
-                        <button class="nav-link" data-bs-target="#sout" data-bs-toggle="tab">
-                            <i class="fas fa-chart-line me-2"></i>СОУТ
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-sout-btn" data-bs-target="#sout" data-bs-toggle="tab" type="button" role="tab">
+                            <i class="fas fa-chart-line me-2 text-muted"></i>СОУТ
                         </button>
                     </li>
                 </ul>
 
-                <!-- ============================================
-                     ВКЛАДКА 1: ПЛАНИРОВЩИК СОБЫТИЙ (КАЛЕНДАРЬ ЗАДАЧ)
-                     Адаптирован для мобильных устройств
-                ============================================ -->
-                <div class="tab-content">
-                    <div id="tasks" class="tab-pane active">
-                        <div class="p-3">
-                            <!-- Контейнер для календаря -->
-                            <div id="calendar" class="calendar-container"></div>
-                        </div>
-                    </div>
-                    <div id="graff" class="tab-pane">
-                        <div class="p-3">
-                             <!-- График планирования (для пилотов) -->
-                            {% if grouped_schedule %}
-                                <div class="mb-4">
-                                    <h5 class="font-weight-semibold text-dark mb-3">
-                                        <i class="fas fa-calendar-alt me-2 text-success"></i>Мой график на:  {% now "F Y" %}
-                                    </h5>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-striped border">
-                                            <thead class="bg-light">
-                                            <tr>
-                                                <th>Период</th>
-                                                <th>Дней</th>
-                                                <th>МПД / Статус</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for item in grouped_schedule %}
-                                                <tr {% if item.is_gap %}class="text-muted italic" style="background-color: #fcfcfc;"{% endif %}>
-                                                    <td>
-                                                        {% if item.start_date == item.end_date %}
-                                                            {{ item.start_date|date:"d" }}
-                                                        {% else %}
-                                                            {{ item.start_date|date:"d" }}-{{ item.end_date|date:"d" }}
-                                                        {% endif %}
-                                                        {{ item.start_date|date:"E" }}
-                                                    </td>
-                                                    <td>{{ item.days_count }}</td>
-                                                    <td>
-                                                        {% if item.is_gap %}
-                                                            <span class="text-muted">— {{ item.mpd_name }} —</span>
-                                                        {% else %}
-                                                            <span class="fw-bold">{{ item.mpd_name }}</span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="text-end">
-                                        <a href="{% url 'flight_planning:my_schedule' %}" class="btn btn-xs btn-outline-info">
-                                            Подробный график
-                                        </a>
-                                    </div>
-                                </div>
-                            {% endif %}
+                <!-- СОДЕРЖИМОЕ ВКЛАДОК -->
+                <div class="tab-content tab-content-card p-3 p-md-4">
+                    <!-- ============================================
+                         ВКЛАДКА 1: ПЛАНИРОВЩИК СОБЫТИЙ
+                         ============================================ -->
+                    <div id="tasks" class="tab-pane active" role="tabpanel">
+                        <div class="calendar-container">
+                            <div id="calendar"></div>
                         </div>
                     </div>
 
                     <!-- ============================================
+                         ВКЛАДКА 1.1: ГРАФИК ПЛАНИРОВАНИЯ (ПИЛОТЫ)
+                         ============================================ -->
+                    {% if grouped_schedule or user.is_superuser %}
+                    <div id="graff" class="tab-pane" role="tabpanel">
+                        {% if grouped_schedule %}
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="fas fa-calendar-alt me-2 text-success"></i>Мой график на: {% now "F Y" %}
+                                </h5>
+                                <a href="{% url 'flight_planning:my_schedule' %}" class="btn btn-outline-info btn-touch btn-sm">
+                                    <i class="bx bx-expand-alt me-1"></i> Подробный график
+                                </a>
+                            </div>
+                            <div class="table-scroll-container">
+                                <table class="table table-hover table-striped align-middle mb-0">
+                                    <thead class="bg-light text-dark fw-semibold">
+                                        <tr>
+                                            <th>Период</th>
+                                            <th>Дней</th>
+                                            <th>МПД / Статус</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in grouped_schedule %}
+                                            <tr {% if item.is_gap %}class="text-muted fst-italic" style="background-color: #fafafa;"{% endif %}>
+                                                <td>
+                                                    {% if item.start_date == item.end_date %}
+                                                        {{ item.start_date|date:"d" }}
+                                                    {% else %}
+                                                        {{ item.start_date|date:"d" }}-{{ item.end_date|date:"d" }}
+                                                    {% endif %}
+                                                    {{ item.start_date|date:"E" }}
+                                                </td>
+                                                <td><span class="badge bg-light text-dark border">{{ item.days_count }}</span></td>
+                                                <td>
+                                                    {% if item.is_gap %}
+                                                        <span class="text-muted">— {{ item.mpd_name }} —</span>
+                                                    {% else %}
+                                                        <span class="fw-bold text-dark">{{ item.mpd_name }}</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info text-center my-4">
+                                <i class="bx bx-info-circle me-2"></i> График планирования на текущий месяц отсутствует.
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- ============================================
                          ВКЛАДКА 2: ЛЕНТА СОБЫТИЙ (ХРОНОЛОГИЯ)
-                         Отображение постов и мероприятий
-                    ============================================ -->
-                    <div id="overview" class="tab-pane">
-                        <div class="p-3">
-
-
-
-
-                        <!-- Кнопка добавления нового поста -->
-                            <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3 align-items-left font-weight-semibold line-height-1 mb-4">
-                                <i class='bx bx-list-plus text-4 me-2'></i> Добавить событие
-                            </a>
-
-                            <h4 class="mb-3 font-weight-semibold text-dark">
+                         ============================================ -->
+                    <div id="overview" class="tab-pane" role="tabpanel">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
+                            <h4 class="fw-bold text-dark mb-0">
                                 <i class="fas fa-history me-2 text-primary"></i>Хронология событий
                             </h4>
+                            <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-touch font-weight-semibold">
+                                <i class='bx bx-list-plus me-1 fs-5'></i> Добавить событие
+                            </a>
+                        </div>
 
-                            <!-- Временная шкала (PortoAdmin стиль) -->
-                            <div class="timeline timeline-simple mt-3 mb-3">
-                                <div class="tm-body">
-                                    <!-- Будущие события (high priority) -->
-                                    <ol class="tm-items">
-                                        {% for item in post_high %}
-                                            {% if item.allowed_placed %}
-                                                <li>
-                                                    <div class="tm-box">
-                                                        <p class="text-muted mb-0">
-                                                            <i class="fas fa-tag me-1"></i>ID: {{ item.id }}
-                                                        </p>
-                                                        {% if item.post_date_start %}
-                                                            <p class="text-muted mb-0">
-                                                                <i class="fas fa-calendar-alt me-1"></i>{{ item.post_date_start }}
-                                                            </p>
-                                                        {% else %}
-                                                            <p class="text-muted mb-0">
-                                                                <i class="fas fa-calendar-plus me-1"></i>{{ item.creation_date }}
-                                                            </p>
-                                                        {% endif %}
-                                                        <p class="mt-2">{{ item.post_description | safe }}</p>
-                                                        <p class="text-danger mb-0">
+                        <!-- Временная шкала событий -->
+                        <div class="timeline timeline-simple">
+                            <div class="tm-body">
+                                <!-- Будущие события (high priority) -->
+                                <ol class="tm-items">
+                                    {% for item in post_high %}
+                                        {% if item.allowed_placed %}
+                                            <li>
+                                                <div class="tm-box">
+                                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 text-muted small mb-1">
+                                                        <span><i class="fas fa-tag me-1 text-primary"></i>ID: {{ item.id }}</span>
+                                                        <span>
+                                                            <i class="fas fa-calendar-alt me-1 text-primary"></i>
+                                                            {{ item.post_date_start|default:item.creation_date }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="post-content my-2 text-dark">{{ item.post_description | safe }}</div>
+                                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top">
+                                                        <span class="text-danger small font-weight-semibold">
                                                             <i class="fas fa-user-check me-1"></i>Ответственный: {{ item.responsible }}
-                                                        </p>
+                                                        </span>
                                                         {% if user == item.responsible %}
-                                                            <a href="{% url 'customers_app:post_update' item.pk %}" class="btn btn-sm btn-outline-primary mt-2">
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}" class="btn btn-sm btn-outline-primary">
                                                                 <i class="fas fa-edit me-1"></i>Изменить
                                                             </a>
                                                         {% endif %}
                                                     </div>
-                                                </li>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </ol>
+                                                </div>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ol>
 
-                                    <!-- Разделитель "Сегодня" -->
-                                    <div class="tm-title">
-                                        <h5 class="m-0 pt-2 pb-2 text-dark font-weight-semibold text-uppercase">
-                                            <i class="fas fa-calendar-day me-2 text-primary"></i>{% now "d - m - Y г." %}
-                                        </h5>
-                                    </div>
-
-                                    <!-- Прошедшие события (low priority) -->
-                                    <ol class="tm-items">
-                                        {% for item in post_low %}
-                                            {% if item.allowed_placed %}
-                                                <li>
-                                                    <div class="tm-box">
-                                                        {% if item.post_date_start %}
-                                                            <p class="text-muted mb-0">
-                                                                <i class="fas fa-calendar-alt me-1"></i>{{ item.post_date_start }}
-                                                            </p>
-                                                        {% else %}
-                                                            <p class="text-muted mb-0">
-                                                                <i class="fas fa-calendar-plus me-1"></i>{{ item.creation_date }}
-                                                            </p>
-                                                        {% endif %}
-                                                        <p class="mt-2">{{ item.post_description | safe }}</p>
-                                                        <p class="text-danger mb-0">
-                                                            <i class="fas fa-user-check me-1"></i>Ответственный: {{ item.responsible }}
-                                                        </p>
-                                                        {% if user == item.responsible %}
-                                                            <a href="{% url 'customers_app:post_update' item.pk %}" class="btn btn-sm btn-outline-primary mt-2">
-                                                                <i class="fas fa-edit me-1"></i>Изменить
-                                                            </a>
-                                                        {% endif %}
-                                                    </div>
-                                                </li>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </ol>
+                                <!-- Разделитель "Сегодня" -->
+                                <div class="tm-title my-3">
+                                    <h5 class="m-0 py-2 px-3 bg-light rounded text-dark font-weight-semibold text-uppercase d-inline-block border">
+                                        <i class="fas fa-calendar-day me-2 text-primary"></i>{% now "d - m - Y г." %}
+                                    </h5>
                                 </div>
+
+                                <!-- Прошедшие события (low priority) -->
+                                <ol class="tm-items">
+                                    {% for item in post_low %}
+                                        {% if item.allowed_placed %}
+                                            <li>
+                                                <div class="tm-box">
+                                                    <div class="text-muted small mb-1">
+                                                        <i class="fas fa-calendar-alt me-1 text-primary"></i>
+                                                        {{ item.post_date_start|default:item.creation_date }}
+                                                    </div>
+                                                    <div class="post-content my-2 text-dark">{{ item.post_description | safe }}</div>
+                                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top">
+                                                        <span class="text-danger small font-weight-semibold">
+                                                            <i class="fas fa-user-check me-1"></i>Ответственный: {{ item.responsible }}
+                                                        </span>
+                                                        {% if user == item.responsible %}
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}" class="btn btn-sm btn-outline-primary">
+                                                                <i class="fas fa-edit me-1"></i>Изменить
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ol>
                             </div>
                         </div>
                     </div>
 
                     <!-- ============================================
                          ВКЛАДКА 3: РАСЧЕТНЫЙ ЛИСТОК
-                         Фильтр по месяцу и году, отображение начислений/удержаний
-                    ============================================ -->
-                    <div id="calculation" class="tab-pane">
-                        <div class="p-3">
-                            <!-- Форма фильтрации (PortoAdmin стиль) -->
-                            <div class="filter-form">
-                                <div class="row g-3">
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <label class="form-label fw-semibold">Месяц</label>
-                                        <select class="form-control select-style-1" name="filter_month" id="id_filter_month">
-                                            {% for key, value in month_dict.items %}
-                                                <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
-                                                    {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <label class="form-label fw-semibold">Год</label>
-                                        <select class="form-control select-style-1" name="filter_year" id="id_filter_year">
-                                            {% for key, value in year_dict.items %}
-                                                <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
-                                                    {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <label class="form-label fw-semibold">Пароль (опционально)</label>
-                                        <input class="form-control" type="password" id="id_pxmx" placeholder="Введите пароль">
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3 d-flex align-items-end">
-                                        <button class="btn btn-primary w-100" onclick="filter_date()">
-                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
-                                        </button>
-                                    </div>
+                         ============================================ -->
+                    <div id="calculation" class="tab-pane" role="tabpanel">
+                        <!-- Форма фильтрации -->
+                        <div class="filter-box">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label class="form-label fw-semibold text-dark small">Месяц:</label>
+                                    <select class="form-select" name="filter_month" id="id_filter_month">
+                                        {% for key, value in month_dict.items %}
+                                            <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
+                                                {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label class="form-label fw-semibold text-dark small">Год:</label>
+                                    <select class="form-select" name="filter_year" id="id_filter_year">
+                                        {% for key, value in year_dict.items %}
+                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
+                                                {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label class="form-label fw-semibold text-dark small">Пароль (опционально):</label>
+                                    <input class="form-control" type="password" id="id_pxmx" placeholder="Введите пароль">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <button class="btn btn-primary btn-touch w-100 font-weight-semibold" onclick="filter_date()">
+                                        <i class='bx bxs-file-find me-2'></i> Сформировать
+                                    </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Результаты: Начисления -->
-                            <div class="mt-4">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="fas fa-plus-circle text-success me-2"></i>Начисления
-                                </h5>
-                                <div id="id_accrued" class="table-responsive"></div>
-                            </div>
+                        <!-- Результаты: Начисления -->
+                        <div class="mt-4">
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="fas fa-plus-circle text-success me-2"></i>Начисления
+                            </h5>
+                            <div id="id_accrued" class="table-scroll-container"></div>
+                        </div>
 
-                            <!-- Результаты: Удержания -->
-                            <div class="mt-4">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="fas fa-minus-circle text-danger me-2"></i>Удержания
-                                </h5>
-                                <div id="id_withheld" class="table-responsive"></div>
-                            </div>
+                        <!-- Результаты: Удержания -->
+                        <div class="mt-4">
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="fas fa-minus-circle text-danger me-2"></i>Удержания
+                            </h5>
+                            <div id="id_withheld" class="table-scroll-container"></div>
+                        </div>
 
-                            <!-- Результаты: Выплачено -->
-                            <div class="mt-4">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="fas fa-ruble-sign text-primary me-2"></i>К выплате
-                                </h5>
-                                <div id="id_paid" class="table-responsive"></div>
-                            </div>
+                        <!-- Результаты: Выплачено -->
+                        <div class="mt-4">
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="fas fa-ruble-sign text-primary me-2"></i>К выплате
+                            </h5>
+                            <div id="id_paid" class="table-scroll-container"></div>
                         </div>
                     </div>
 
                     <!-- ============================================
                          ВКЛАДКА 4: УЧЕТ РАБОЧЕГО ВРЕМЕНИ
-                         Табель учета рабочего времени с фильтрацией
-                    ============================================ -->
-                    <div id="reportcard" class="tab-pane">
-                        <div class="p-3">
-                            <!-- Форма фильтрации -->
-                            <div class="filter-form">
-                                <div class="row g-3">
-                                    <div class="col-sm-12 col-md-6 col-lg-4">
-                                        <label class="form-label fw-semibold">Месяц</label>
-                                        <select class="form-control select-style-1" name="report_month" id="id_report_month">
-                                            {% for key, value in month_dict.items %}
-                                                <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
-                                                    {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-4">
-                                        <label class="form-label fw-semibold">Год</label>
-                                        <select class="form-control select-style-1" name="report_year" id="id_report_year">
-                                            {% for key, value in year_dict.items %}
-                                                <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
-                                                    {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-4 d-flex gap-2">
-                                        <button class="btn btn-primary flex-grow-1" onclick="report_date()">
-                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
-                                        </button>
-                                        <button class="btn btn-info" onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">
-                                            <i class='bx bxs-book-content text-4 me-2'></i> Журнал
-                                        </button>
-                                    </div>
+                         ============================================ -->
+                    <div id="reportcard" class="tab-pane" role="tabpanel">
+                        <!-- Форма фильтрации -->
+                        <div class="filter-box">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-sm-6 col-lg-4">
+                                    <label class="form-label fw-semibold text-dark small">Месяц:</label>
+                                    <select class="form-select" name="report_month" id="id_report_month">
+                                        {% for key, value in month_dict.items %}
+                                            <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
+                                                {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-4">
+                                    <label class="form-label fw-semibold text-dark small">Год:</label>
+                                    <select class="form-select" name="report_year" id="id_report_year">
+                                        {% for key, value in year_dict.items %}
+                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
+                                                {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-lg-4 d-flex gap-2">
+                                    <button class="btn btn-primary btn-touch flex-grow-1 font-weight-semibold" onclick="report_date()">
+                                        <i class='bx bxs-file-find me-1'></i> Сформировать
+                                    </button>
+                                    <button class="btn btn-outline-info btn-touch" onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';" title="Перейти в журнал табелей">
+                                        <i class='bx bxs-book-content me-1'></i> Журнал
+                                    </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Результат: Таблица с табелем -->
-                            <div class="report-table-wrapper">
-                                <div id="id_report"></div>
-                            </div>
+                        <!-- Результат: Таблица с табелем -->
+                        <div class="table-scroll-container">
+                            <div id="id_report"></div>
                         </div>
                     </div>
 
                     <!-- ============================================
                          ВКЛАДКА 5: ОТПУСК
-                         Калькулятор дней отпуска
-                    ============================================ -->
-                    <div id="vacation" class="tab-pane">
-                        <div class="p-3">
-                            <div class="alert alert-info mb-4">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Данные пока могут содержать не точную информацию. Раздел в разработке!
-                            </div>
+                         ============================================ -->
+                    <div id="vacation" class="tab-pane" role="tabpanel">
+                        <div class="alert alert-info mb-4 d-flex align-items-center gap-2">
+                            <i class="fas fa-info-circle fs-5 flex-shrink-0"></i>
+                            <div>Данные могут содержать предварительную информацию. Раздел находится в режиме доработки.</div>
+                        </div>
 
-                            <!-- Форма для расчета отпуска -->
-                            <div class="filter-form">
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-sm-12 col-md-6 col-lg-4">
-                                        <label class="form-label fw-semibold">Выберите дату начала отпуска:</label>
-                                        <input class="form-control form-control-modern" type="date" min="2023-01-01" id="id_vacation_date" name="vacation_date"/>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <button class="btn btn-primary w-100" onclick="report_vacation()">
-                                            <i class='bx bxs-file-find text-4 me-2'></i> Рассчитать
-                                        </button>
-                                    </div>
+                        <!-- Форма для расчета отпуска -->
+                        <div class="filter-box">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+                                    <label class="form-label fw-semibold text-dark small">Выберите дату начала отпуска:</label>
+                                    <input class="form-control" type="date" min="2023-01-01" id="id_vacation_date" name="vacation_date"/>
+                                </div>
+                                <div class="col-12 col-sm-4 col-md-6 col-lg-3">
+                                    <button class="btn btn-primary btn-touch w-100 font-weight-semibold" onclick="report_vacation()">
+                                        <i class='bx bxs-calculator me-2'></i> Рассчитать
+                                    </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Результат: количество дней отпуска -->
-                            <div class="mt-4">
-                                <div id="id_days" class="alert alert-success text-center">
-                                    <i class="fas fa-calendar-check me-2"></i>
-                                    Результат расчета появится здесь
-                                </div>
+                        <!-- Результат расчета -->
+                        <div class="mt-4">
+                            <div id="id_days" class="alert alert-success text-center py-3">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                Результат расчета появится здесь после выбора даты
                             </div>
                         </div>
                     </div>
 
                     <!-- ============================================
-                         ВКЛАДКА 6: СОУТ (Специальная оценка условий труда)
-                         Заглушка для будущего функционала
-                    ============================================ -->
-                    <div id="sout" class="tab-pane">
-                        <div class="p-3">
-                            <div class="text-center py-5">
-                                <i class="fas fa-chart-line fa-4x text-muted mb-3 opacity-25"></i>
-                                <h4 class="text-muted">Раздел находится в разработке</h4>
-                                <p class="text-muted">Здесь будет размещаться специальная оценка условий труда.</p>
-                            </div>
+                         ВКЛАДКА 6: СОУТ
+                         ============================================ -->
+                    <div id="sout" class="tab-pane" role="tabpanel">
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3 opacity-25"></i>
+                            <h4 class="text-muted fw-bold">Раздел находится в разработке</h4>
+                            <p class="text-muted small">Здесь будет размещаться специальная оценка условий труда (СОУТ).</p>
                         </div>
                     </div>
                 </div>
@@ -524,26 +570,25 @@
     </div>
 
     <!-- ============================================
-         МОДАЛЬНОЕ ОКНО ДЛЯ БЫСТРОГО СОЗДАНИЯ ЗАДАЧИ
-         Используется в календаре при перетаскивании событий
-    ============================================ -->
+         МОДАЛЬНОЕ ОКНО БЫСТРОГО СОЗДАНИЯ ЗАДАЧИ
+         ============================================ -->
     <div class="modal fade" id="eventTitleModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">
+                    <h5 class="modal-title font-weight-semibold">
                         <i class="fas fa-plus-circle me-2"></i>Создание быстрого события
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="eventTitle" class="form-label fw-semibold required">Название события <span class="text-danger">*</span></label>
+                        <label for="eventTitle" class="form-label fw-semibold text-dark small">Название события <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="eventTitle" placeholder="Введите название события" maxlength="200">
                         <div class="invalid-feedback">Пожалуйста, введите название события</div>
                     </div>
                     <div class="mb-3">
-                        <label for="eventPriority" class="form-label fw-semibold">Приоритет</label>
+                        <label for="eventPriority" class="form-label fw-semibold text-dark small">Приоритет</label>
                         <select class="form-select" id="eventPriority">
                             <option value="primary">Основной</option>
                             <option value="warning">Предупреждающий</option>
@@ -552,28 +597,26 @@
                             <option value="dark">Темный</option>
                         </select>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="eventDate" class="form-label fw-semibold">Дата</label>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-sm-6">
+                            <label for="eventDate" class="form-label fw-semibold text-dark small">Дата</label>
                             <input type="date" class="form-control" id="eventDate">
                         </div>
-                        <div class="col-md-6">
-                            <label for="eventTime" class="form-label fw-semibold">Время</label>
+                        <div class="col-12 col-sm-6">
+                            <label for="eventTime" class="form-label fw-semibold text-dark small">Время</label>
                             <input type="time" class="form-control" id="eventTime" step="60">
-                            <div class="form-text">Часы:Минуты</div>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="eventDuration" class="form-label fw-semibold">Длительность (часы)</label>
+                        <label for="eventDuration" class="form-label fw-semibold text-dark small">Длительность (часы)</label>
                         <input type="number" class="form-control" id="eventDuration" value="1" min="0.5" step="0.5">
-                        <div class="form-text">Продолжительность события в часах</div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-touch" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i>Отмена
                     </button>
-                    <button type="button" class="btn btn-primary" id="saveEventBtn">
+                    <button type="button" class="btn btn-primary btn-touch font-weight-semibold" id="saveEventBtn">
                         <i class="fas fa-save me-1"></i>Создать
                     </button>
                 </div>
@@ -583,9 +626,8 @@
 {% endblock %}
 
 {% block custom_script %}
-    <!-- СКРИПТЫ ДЛЯ КАЛЕНДАРЯ И УВЕДОМЛЕНИЙ -->
+    <!-- Уведомление о просроченных задачах -->
     <script>
-        // Уведомление о просроченных задачах
         document.addEventListener('DOMContentLoaded', function () {
             {% for task in tasks %}
                 {% if task.due_date and task.due_date|date:"Y-m-d" == today %}
@@ -597,7 +639,7 @@
         });
     </script>
 
-    <!-- ПОЛНЫЙ СКРИПТ КАЛЕНДАРЯ -->
+    <!-- Скрипт FullCalendar -->
     <script>
         (function ($) {
             'use strict';
@@ -628,7 +670,6 @@
                     else toastr.info(message);
                     return;
                 }
-                // Fallback для уведомлений
                 alert(message);
             }
 
@@ -699,7 +740,6 @@
 
             function initCalendarDragNDrop() {
                 if (typeof FullCalendar === 'undefined' || typeof FullCalendar.Draggable === 'undefined') {
-                    console.warn('FullCalendar.Draggable not available');
                     return;
                 }
                 var Draggable = FullCalendar.Draggable;
@@ -724,10 +764,7 @@
 
             function initCalendar() {
                 var calendarEl = document.getElementById('calendar');
-                if (!calendarEl) {
-                    console.error('Calendar element not found');
-                    return;
-                }
+                if (!calendarEl) return;
 
                 var calendarEvents = [];
                 {% for task in repeat_tasks %}
@@ -916,16 +953,23 @@
                         if (timeInput && !timeInput.value) timeInput.value = formatTime(now);
                     });
                 }
+
+                // Перерисовка календаря при переключении на его вкладку
+                $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                    if (e.target.getAttribute('data-bs-target') === '#tasks' && calendarInstance) {
+                        calendarInstance.updateSize();
+                    }
+                });
             });
         })(jQuery);
     </script>
 
-    <!-- СКРИПТЫ ДЛЯ ВКЛАДКИ "РАСЧЕТНЫЙ ЛИСТОК" -->
+    <!-- Скрипты вкладки "Расчетный листок" -->
     <script type="text/javascript">
         function filter_date() {
-            current_year = $("#id_filter_year").val();
-            current_month = $("#id_filter_month").val();
-            pxmp = $("#id_pxmx").val()
+            var current_year = $("#id_filter_year").val();
+            var current_month = $("#id_filter_month").val();
+            var pxmp = $("#id_pxmx").val();
             $.ajax({
                 type: "GET",
                 url: '{% url 'customers_app:profile' user.pk %}',
@@ -936,25 +980,21 @@
                 },
                 dataType: "json",
                 success: function (data) {
-                    var ref = $('#id_accrued').html('');
-                    var ref = $('#id_accrued').html(data[0]);
-                    var ref = $('#id_withheld').html('');
-                    var ref = $('#id_withheld').html(data[1]);
-                    var ref = $('#id_paid').html('');
-                    var ref = $('#id_paid').html(data[2]);
-                    var ref = $('#id_pxmx').val('')
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
+                    $('#id_accrued').html(data[0] || '');
+                    $('#id_withheld').html(data[1] || '');
+                    $('#id_paid').html(data[2] || '');
+                    $('#id_pxmx').val('');
                 },
-                failure: function (data) {
-                    console.log("failure");
+                error: function () {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error('Ошибка при загрузке расчетного листка');
+                    }
                 }
             });
         }
     </script>
 
-    <!-- СКРИПТЫ ДЛЯ ВКЛАДКИ "УЧЕТ РАБОЧЕГО ВРЕМЕНИ" -->
+    <!-- Скрипты вкладки "Учет рабочего времени" -->
     <script type="text/javascript">
         function applyStyles() {
             const table = document.getElementById('my_table_id');
@@ -991,8 +1031,8 @@
         }
 
         function report_date() {
-            report_year = $("#id_report_year").val();
-            report_month = $("#id_report_month").val();
+            var report_year = $("#id_report_year").val();
+            var report_month = $("#id_report_month").val();
             $.ajax({
                 type: "GET",
                 url: '{% url 'customers_app:profile' user.pk %}',
@@ -1002,24 +1042,28 @@
                 },
                 dataType: "json",
                 success: function (data) {
-                    var ref = $('#id_report').html('');
-                    var ref = $('#id_report').html(data);
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
+                    $('#id_report').html(data);
                     applyStyles();
                 },
-                failure: function (data) {
-                    console.log("failure");
+                error: function () {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error('Ошибка при загрузке табеля');
+                    }
                 }
             });
         }
     </script>
 
-    <!-- СКРИПТЫ ДЛЯ ВКЛАДКИ "ОТПУСК" -->
+    <!-- Скрипты вкладки "Отпуск" -->
     <script type="text/javascript">
         function report_vacation() {
-            vacation_date = $("#id_vacation_date").val();
+            var vacation_date = $("#id_vacation_date").val();
+            if (!vacation_date) {
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('Выберите дату начала отпуска');
+                }
+                return;
+            }
             $.ajax({
                 type: "GET",
                 url: '{% url 'customers_app:profile' user.pk %}',
@@ -1028,18 +1072,14 @@
                 },
                 dataType: "json",
                 success: function (data) {
-                    var ref = $('#id_days').html('');
-                    var ref = $('#id_days').html(data);
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
+                    $('#id_days').html(data);
                 },
-                failure: function (data) {
-                    console.log("failure");
+                error: function () {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error('Ошибка при расчете отпуска');
+                    }
                 }
             });
         }
     </script>
 {% endblock %}
-
-<!-- ОСНОВНОЙ КОНТЕНТ СТРАНИЦЫ -->
