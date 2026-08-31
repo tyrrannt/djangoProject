@@ -328,6 +328,16 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             ).count(),
         })
 
+        if user_obj.birthday:
+            context['birthday_difference'] = get_today_data_delta(user_obj.birthday, 1)
+        else:
+            context['birthday_difference'] = None
+
+        if hasattr(user_obj, 'user_work_profile') and user_obj.user_work_profile and user_obj.user_work_profile.date_of_employment:
+            context['employment_difference'] = get_today_data_delta(user_obj.user_work_profile.date_of_employment, 0)
+        else:
+            context['employment_difference'] = None
+
         get_profile_fill(self, context, user_obj)
 
         # ----- 3. ГРАФИК ПЛАНИРОВАНИЯ (для пилотов) -----

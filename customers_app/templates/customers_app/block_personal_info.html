@@ -1,40 +1,59 @@
 {% load static %}
 <div class="card-body p-3">
     <!-- ============================================
-         ФОТОГРАФИЯ И ОСНОВНАЯ ИНФОРМАЦИЯ
+         ФОТОГРАФИЯ И БЕЙДЖИ ВОЗРАСТА / СТАЖА (Porto Thumb-Info)
     ============================================ -->
-    <div class="profile-photo-wrapper mb-3 text-center text-sm-start">
+    <div class="thumb-info mb-3">
         {% if databaseuser.avatar %}
             <img src="{{ databaseuser.avatar.url }}?v={{ object.updated_at.timestamp }}" 
-                 class="img-fluid rounded profile-desktop-photo mb-2"
+                 class="rounded img-fluid w-100"
                  alt="{{ databaseuser.username }}">
         {% else %}
             <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" 
-                 class="img-fluid rounded profile-desktop-photo mb-2"
+                 class="rounded img-fluid w-100"
                  alt="{{ databaseuser.username }}">
         {% endif %}
         
-        <div class="profile-user-details mt-2">
-            <h4 class="fw-bold text-dark mb-1 text-break">
-                {{ object.last_name }} {{ object.first_name }}
-                {% if birthday_difference %}<span class="badge bg-warning text-dark fs-8 ms-1">{{ birthday_difference }}</span>{% endif %}
-            </h4>
-            <div class="mb-2 text-break">
-                <span class="badge bg-primary text-white font-weight-normal px-2 py-1 job-badge">
-                    <i class="bx bx-briefcase me-1"></i>{{ object.user_work_profile.job|default:"Сотрудник" }}
-                </span>
-            </div>
-            {% if object.email %}
-                <div class="text-muted small text-break mb-1">
-                    <i class="bx bx-envelope text-primary me-1"></i>{{ object.email }}
-                </div>
-            {% endif %}
-            {% if object.user_work_profile.department %}
-                <div class="text-muted small text-break">
-                    <i class="bx bx-buildings text-primary me-1"></i>{{ object.user_work_profile.department }}
-                </div>
+        <div class="thumb-info-title">
+            <span class="thumb-info-inner">
+                {% if birthday_difference %}
+                    ВОЗРАСТ: {{ birthday_difference|upper }}
+                {% else %}
+                    {{ object.last_name }} {{ object.first_name }}
+                {% endif %}
+            </span>
+            {% if employment_difference %}
+                <span class="thumb-info-type">Стаж: {{ employment_difference }}</span>
+            {% elif object.user_work_profile.job %}
+                <span class="thumb-info-type">{{ object.user_work_profile.job }}</span>
             {% endif %}
         </div>
+    </div>
+
+    <!-- ============================================
+         ФИО, ДОЛЖНОСТЬ И КОНТАКТЫ
+    ============================================ -->
+    <div class="profile-user-details mb-3">
+        <h4 class="fw-bold text-dark mb-1 text-break">
+            {{ object.last_name }} {{ object.first_name }}
+        </h4>
+        {% if object.user_work_profile.job %}
+            <div class="mb-2 text-break">
+                <span class="badge bg-light text-dark border px-2 py-1 job-badge">
+                    <i class="bx bx-briefcase text-primary me-1"></i>{{ object.user_work_profile.job }}
+                </span>
+            </div>
+        {% endif %}
+        {% if object.email %}
+            <div class="text-muted small text-break mb-1">
+                <i class="bx bx-envelope text-primary me-1"></i>{{ object.email }}
+            </div>
+        {% endif %}
+        {% if object.user_work_profile.department %}
+            <div class="text-muted small text-break">
+                <i class="bx bx-buildings text-primary me-1"></i>{{ object.user_work_profile.department }}
+            </div>
+        {% endif %}
     </div>
 
     <!-- ============================================

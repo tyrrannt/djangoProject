@@ -52,18 +52,60 @@
             transform: translateY(-1px);
         }
 
-        /* Фотография профиля */
-        .profile-desktop-photo {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
+        /* Классический информационный блок Porto Thumb-Info с возрастом и стажем */
+        .thumb-info {
+            position: relative;
             border-radius: 8px;
+            overflow: hidden;
+            background: #0f172a;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1rem;
         }
-        @media (max-width: 768px) {
-            .profile-desktop-photo {
-                height: 200px;
-            }
+        .thumb-info img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .thumb-info .thumb-info-title {
+            position: absolute;
+            bottom: 6%;
+            left: 0;
+            background: rgba(15, 23, 42, 0.85);
+            color: #ffffff;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            z-index: 2;
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+            max-width: 92%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .thumb-info .thumb-info-inner {
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+        .thumb-info .thumb-info-type {
+            background-color: #0284c7;
+            color: #ffffff;
+            border-radius: 3px;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            margin-top: 4px;
+            text-transform: none;
+            white-space: normal;
+            word-break: break-word;
         }
 
         .job-badge {
