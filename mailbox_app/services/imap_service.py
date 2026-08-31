@@ -120,7 +120,8 @@ class ImapMailService:
         """
         self.host = host
         self.port = port
-        self.email = email_addr
+        self.email = email_addr or ""
+        self.email_addr = email_addr or ""
         self.password = password
         self.use_ssl = use_ssl
         self.client: Optional[imaplib.IMAP4] = None
