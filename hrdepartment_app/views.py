@@ -7099,17 +7099,24 @@ def ajax_create_unit(request):
 
 
 class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """Представление для отображения списка доверенностей с разграничением прав доступа."""
+
     model = PowerOfAttorney
     template_name = 'hrdepartment_app/poa_list.html'
     context_object_name = 'poas'
     permission_required = 'hrdepartment_app.view_powerofattorney'
 
     def __init__(self, *args, **kwargs):
+        """Инициализация представления с кэшем ролей."""
         super().__init__(*args, **kwargs)
         self._user_roles = None
 
     def get_user_roles(self):
-        """Кешируем роли пользователя"""
+        """Кэширует и возвращает роли пользователя в бизнес-процессе доверенностей.
+
+        Returns:
+            dict: Словарь с множествами ID пользователей 'full_access' и 'limited_access'.
+        """
         if self._user_roles is None:
             routes = BusinessProcessRoutes.objects.filter(
                 business_process_type=3
@@ -7137,11 +7144,30 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return self._user_roles
 
     def get_context_data(self, *, object_list=None, **kwargs):
+        """Формирует контекст данных для шаблона.
+
+        Args:
+            object_list: Список объектов.
+            **kwargs: Дополнительные аргументы контекста.
+
+        Returns:
+            dict: Контекст шаблона.
+        """
         context = super().get_context_data(**kwargs)
         context["title"] = "Доверенности"
         return context
 
     def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос страницы или AJAX-запрос DataTables с учетом прав доступа.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse | JsonResponse: Ответ со страницей или JSON-данными для DataTables.
+        """
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = [
                 'number', 'issue_date', 'expiry_date',
@@ -7150,13 +7176,18 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             ]
             context = ajax_search(
                 request, self, search_list,
-                PowerOfAttorney, Q(), triger=3
+                self.get_queryset(), Q(), triger=3
             )
             return JsonResponse(context, safe=False)
 
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
+        """Возвращает отфильтрованный QuerySet доверенностей в зависимости от прав и роли пользователя.
+
+        Returns:
+            QuerySet: Отфильтрованный список объектов PowerOfAttorney.
+        """
         qs = PowerOfAttorney.objects.all().order_by('-issue_date', '-number')
         user = self.request.user
 
@@ -7180,10 +7211,48 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 
 class PoaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    """Представление для просмотра детальной информации о доверенности с проверкой прав."""
+
     model = PowerOfAttorney
     template_name = 'hrdepartment_app/poa_detail.html'
     context_object_name = 'poa'
     permission_required = 'hrdepartment_app.view_powerofattorney'
+
+    def get_queryset(self):
+        """Ограничивает доступ к доверенности в соответствии с правами пользователя.
+
+        Returns:
+            QuerySet: Допустимые для просмотра объекты PowerOfAttorney.
+        """
+        qs = super().get_queryset()
+        user = self.request.user
+
+        if user.is_superuser:
+            return qs
+
+        routes = BusinessProcessRoutes.objects.filter(
+            business_process_type=3
+        ).values_list('person_executor', 'person_agreement', 'person_clerk')
+
+        full_access = set()
+        clerks = set()
+        for executor, agreement, clerk in routes:
+            if executor:
+                full_access.add(executor)
+            if agreement:
+                full_access.add(agreement)
+            if clerk:
+                clerks.add(clerk)
+
+        if user.pk in full_access:
+            return qs
+        elif user.pk in clerks:
+            persons = [e for e in BusinessProcessRoutes.objects.filter(
+                business_process_type=3
+            ).values_list('person_executor', flat=True).distinct() if e is not None]
+            return qs.filter(initiator_name_user__in=persons)
+        else:
+            return qs.filter(grantee_name_user=user)
 
 
 class PoaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
