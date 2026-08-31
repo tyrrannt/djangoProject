@@ -78,7 +78,7 @@
                                 <button type="submit" class="btn btn-primary btn-touch font-weight-semibold flex-grow-1">
                                     <i class="bx bx-check me-2"></i> Применить
                                 </button>
-                                <a href="{% url 'hrdepartment_app:export-absence-data' %}?year={{ selected_year }}&month={{ selected_month }}" class="btn btn-success btn-touch font-weight-semibold">
+                                <a href="{% url 'hrdepartment_app:export_absence_data' %}?year={{ selected_year }}&month={{ selected_month }}" class="btn btn-success btn-touch font-weight-semibold">
                                     <i class="bx bx-download me-2"></i> Экспорт (CSV)
                                 </a>
                             </div>
@@ -114,7 +114,7 @@
                                         <td>{{ employee.sick_leaves }}</td>
                                         <td>{{ employee.time_offs }}</td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:employee_absence_details' employee.employee__id %}" class="btn btn-sm btn-outline-primary btn-touch">
+                                            <a href="{% url 'hrdepartment_app:employee_absence_details' employee.employee__username %}" class="btn btn-sm btn-outline-primary btn-touch">
                                                 <i class="bx bx-show me-1"></i> Детализация
                                             </a>
                                         </td>

@@ -5100,6 +5100,18 @@ def unacknowledge_document(request):
 
 @login_required
 def seasonality_report(request):
+    """Формирует отчет по сезонности отпусков и перегрузкам по месяцам года.
+
+    Анализирует фактические (основные и прочие) и запланированные отпуска
+    сотрудников за выбранный год, вычисляет процентные отклонения и определяет
+    статус загрузки каждого месяца.
+
+    Args:
+        request: HttpRequest объект с опциональным GET-параметром 'year'.
+
+    Returns:
+        HttpResponse: Отрендеренная страница отчета со статистикой и графиком.
+    """
     # Получение выбранного года
     selected_year = request.GET.get("year")
     current_year = datetime.now().year
@@ -5152,10 +5164,15 @@ def seasonality_report(request):
     # Общие фактические отпуска (основные + прочие)
     total_actual_counts = [main + other for main, other in zip(main_counts, other_counts)]
 
+    month_names_ru = [
+        "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+    ]
+
     # Анализ перегрузок
     overload_analysis = []
     for month_name, planned, main, other in zip(
-            [f"{i}-й месяц" for i in range(1, 13)],
+            month_names_ru,
             planned_counts,
             main_counts,
             other_counts
@@ -5194,7 +5211,8 @@ def seasonality_report(request):
 
     # Данные для шаблона
     context = {
-        "months": [f"{i}-й месяц" for i in range(1, 13)],
+        "months": month_names_ru,
+        "months_labels": month_names_ru,
         "main_counts": main_counts,
         "other_counts": other_counts,
         "planned_counts": planned_counts,
@@ -5317,6 +5335,17 @@ def export_seasonality_data(request):
 
 @login_required
 def absence_analysis(request):
+    """Формирует сводный отчет по пропускам работы, больничным и отгулам сотрудников.
+
+    Анализирует типы записей табеля, соответствующие неявкам (болезнь, отгулы, отсутствие),
+    группирует по сотрудникам и считает общее количество пропусков, больничных и отгулов.
+
+    Args:
+        request: HttpRequest объект с опциональными GET-параметрами 'year' и 'month'.
+
+    Returns:
+        HttpResponse: Отрендеренная страница аналитики пропусков.
+    """
     # Типы записей, которые считаются пропусками
     absence_types = ["4", "7", "9", "16", "17", "20"]
 
@@ -5331,11 +5360,13 @@ def absence_analysis(request):
     if selected_month:
         absences = absences.filter(report_card_day__month=selected_month)
 
-    # Группируем данные по сотрудникам и считаем количество пропусков
+    # Группируем данные по сотрудникам и считаем количество пропусков, больничных и отгулов
     employee_absences = absences.values(
         'employee__username', 'employee__first_name', 'employee__last_name'
     ).annotate(
-        total_absences=Count('id')
+        total_absences=Count('id'),
+        sick_leaves=Count('id', filter=Q(record_type='4')),
+        time_offs=Count('id', filter=Q(record_type__in=["7", "9", "16", "17", "20"]))
     ).order_by('-total_absences')
 
     # Подготовка данных для графика
@@ -5372,6 +5403,14 @@ def absence_analysis(request):
 
 @login_required
 def export_absence_data(request):
+    """Экспортирует данные по пропускам сотрудников в CSV-файл.
+
+    Args:
+        request: HttpRequest объект с параметрами фильтрации 'year' и 'month'.
+
+    Returns:
+        HttpResponse: CSV-файл с выгрузкой количества пропусков по сотрудникам.
+    """
     # Типы записей, которые считаются пропусками
     absence_types = ["4", "7", "9", "16", "17", "20"]
 
@@ -5392,23 +5431,39 @@ def export_absence_data(request):
 
     # Создаем CSV-писатель
     writer = csv.writer(response)
-    writer.writerow(['ФИО', 'Количество пропусков'])
+    writer.writerow(['ФИО', 'Количество пропусков', 'Больничные', 'Отгулы'])
 
     # Группируем данные по сотрудникам и записываем в CSV
     employee_absences = absences.values(
         'employee__username', 'employee__first_name', 'employee__last_name'
     ).annotate(
-        total_absences=Count('id')
+        total_absences=Count('id'),
+        sick_leaves=Count('id', filter=Q(record_type='4')),
+        time_offs=Count('id', filter=Q(record_type__in=["7", "9", "16", "17", "20"]))
     ).order_by('-total_absences')
 
     for emp in employee_absences:
-        writer.writerow([f"{emp['employee__first_name']} {emp['employee__last_name']}", emp['total_absences']])
+        writer.writerow([
+            f"{emp['employee__first_name']} {emp['employee__last_name']}",
+            emp['total_absences'],
+            emp['sick_leaves'],
+            emp['time_offs']
+        ])
 
     return response
 
 
 @login_required
 def employee_absence_details(request, username):
+    """Отображает детальную историю пропусков конкретного сотрудника.
+
+    Args:
+        request: HttpRequest объект с параметрами фильтрации 'year' и 'month'.
+        username (str): Имя пользователя (username) сотрудника.
+
+    Returns:
+        HttpResponse: Отрендеренная страница детализации пропусков сотрудника.
+    """
     # Типы записей, которые считаются пропусками
     absence_types = ["4", "7", "9", "16", "17", "20"]
 
@@ -6348,16 +6403,14 @@ def generate_student_agreement(request, pk):
 
         # 4. Получаем модули (НОВОЕ)
         modules = agreement.training_unit.all()
-
         if modules:
+            # Формируем список названий модулей
             modules_list = [str(module.full_unit_name) for module in modules]
+            # Объединяем с переносом строки для отображения в Word
+            modules_text = '\n'.join(modules_list)
             show_modules = True
-            modules_text = '\n'.join(
-                str(module.full_unit_name)
-                for module in modules
-            )
         else:
-            modules_list = []
+            modules_text = ''
             show_modules = False
 
         # 5. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
