@@ -356,23 +356,27 @@
                 {#                    <button class="btn btn-warning mt-2">Распечатать#}
                 {#                    </button>#}
                 {% if object.scan_file %}
-                    <iframe id="pdfFrame" src="{{ object.scan_file.url }}"
-                            hidden="hidden"></iframe>
                     <script>
-                        function printPDF() {
-                            var iframe = document.getElementById('pdfFrame');
-                            if (iframe.contentWindow) {
-                                iframe.contentWindow.print();
-                            } else {
-                                console.error("PDF is not loaded yet.");
-                            }
+                        function printPdfDocument(pdfUrl, btnEl) {
+                            if (!pdfUrl) { alert('Скан документа для печати не прикреплен.'); return; }
+                            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                            if (isMobile) { var win = window.open(pdfUrl, '_blank'); if (!win) window.location.href = pdfUrl; return; }
+                            fetch(pdfUrl, { cache: 'no-cache' }).then(function(res) { if (!res.ok) throw new Error('ERR'); return res.blob(); }).then(function(blob) {
+                                var blobUrl = URL.createObjectURL(blob);
+                                var old = document.getElementById('pdfPrintIframe'); if (old) old.remove();
+                                var iframe = document.createElement('iframe');
+                                iframe.id = 'pdfPrintIframe';
+                                iframe.style.position = 'fixed'; iframe.style.right = '0'; iframe.style.bottom = '0'; iframe.style.width = '1px'; iframe.style.height = '1px'; iframe.style.border = 'none'; iframe.style.opacity = '0.01'; iframe.style.pointerEvents = 'none'; iframe.style.zIndex = '-9999';
+                                iframe.src = blobUrl;
+                                iframe.onload = function() { setTimeout(function() { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 120000); } catch (e) { fallbackPrint(pdfUrl); } }, 300); };
+                                iframe.onerror = function() { fallbackPrint(pdfUrl); };
+                                document.body.appendChild(iframe);
+                            }).catch(function() { fallbackPrint(pdfUrl); });
+                            function fallbackPrint(url) { try { var w = window.open(url, '_blank'); if (w) { w.focus(); w.onload = function() { try { w.print(); } catch(e){} }; } else { window.location.href = url; } } catch(e) { window.location.href = url; } }
                         }
-
-                        // Проверка загрузки PDF
-                        var iframe = document.getElementById('pdfFrame');
-                        iframe.onload = function () {
-                            console.log("PDF loaded successfully.");
-                        };
+                        function printPDF() {
+                            printPdfDocument('{{ object.scan_file.url }}');
+                        }
                     </script>
                 {% endif %}
             </div>

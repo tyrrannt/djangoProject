@@ -2,29 +2,63 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
-{% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
 
+{% block title %}
+    Редактирование приказа № {{ object.document_number|default:"б/н" }} от {{ object.document_date|date:"d.m.Y" }} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        /* Сброс плавающей панели кнопок PortoAdmin для фиксации внутри карточки */
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .toggle-content .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        .file-box-preview {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
@@ -33,204 +67,256 @@
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
     <!-- start: page -->
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.media }}
-        <div class="col-12 mb-4"><div class="card card-modern shadow-sm border-0"><div class="card-body p-4"><h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }}
-                от {{ object.document_date }}</h4>
-            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                <section class="toggle active">
-                    <label>Основные реквизиты</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-lg-12 text-black-50">
-                                        <label for="id_document_name">Наименование документа</label>
-                                        {{ form.document_name }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_foundation">Документ основание</label>
-                                        {{ form.document_foundation | attr:"onchange=DocumentsChange()" }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_date">Дата документа</label>
-                                        <input type="date" class="form-control form-control-modern"
-                                               name="document_date" value="{{ object.document_date | date:'c' }}"
-                                               id="id_document_date" onchange="DocumentsDateChange()"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_number">Номер документа</label>
-                                        <input type="text" class="form-control form-control-modern"
-                                               name="document_number" value="{{ object.document_number }}"
-                                               id="id_document_number"/>
-                                    </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_access">Уровень доступа</label>
-                                        {{ form.access }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_validity_period_start">Действителен с:</label>
-                                        <input type="date" class="form-control form-control-modern"
-                                               name="validity_period_start"
-                                               value="{{ object.validity_period_start | date:'c' }}"
-                                               id="id_validity_period_start"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_validity_period_end">Действителен по:</label>
-                                        <input type="date" class="form-control form-control-modern"
-                                               name="validity_period_end"
-                                               value="{{ object.validity_period_end | date:'c' }}"
-                                               id="id_validity_period_end"/>
-                                    </div>
-                                </div>
-                            </div>
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" action="#" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.media }}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-edit text-primary me-2"></i>Редактирование приказа № {{ object.document_number|default:"б/н" }} от {{ object.document_date|date:"d.m.Y" }}
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Внесите необходимые изменения в параметры приказа и сохраните форму</p>
                         </div>
-                    </div>
-                </section>
-                <section class="toggle">
-                    <label>Служебная информация</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_executor">Исполнитель</label>
-                                        <select class="form-control mb-4 form-control-modern"
-                                                name="executor" id="id_executor"
-                                                data-plugin-selectTwo>
-                                            <option value="{{ user.pk }}" selected>{{ user }}</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_employee">Ответственное лицо</label>
-                                        {{ form.employee }}
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_order_type">Тип приказа</label>
-                                        {{ form.document_order_type }}
-                                    </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50 mt-3">
-                                        <label for="id_allowed_placed">Разрешение на публикацию:</label>
-                                        <input type="checkbox" class="mt-2"
-                                               name="allowed_placed"
-                                               {% if object.allowed_placed %}checked{% endif %}
-                                               id="id_allowed_placed"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50 mt-3">
-                                        <label for="id_actuality">Актуальность:</label>
-                                        <input type="checkbox" class="mt-2"
-                                               name="actuality" {% if object.actuality %}checked{% endif %}
-                                               id="id_actuality"/>
-                                    </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-sm-12 text-black-50 mt-3">
-                                        <label for="id_description">Содержание:</label>
-                                        <div class="ck ck-content">
-                                            {{ form.description | safe }}
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'hrdepartment_app:order' object.pk %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> К карточке приказа
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                            <!-- Секция 1: Основные реквизиты -->
+                            <section class="toggle active">
+                                <label><i class="bx bx-file me-1"></i> 1. Основные реквизиты</label>
+                                <div class="toggle-content">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label" for="{{ form.document_name.id_for_label }}">
+                                                Наименование документа <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.document_name }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="{{ form.document_foundation.id_for_label }}">Документ основание</label>
+                                            {{ form.document_foundation | attr:"onchange=DocumentsChange()" }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_document_date">
+                                                Дата документа <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="date" class="form-control form-control-modern"
+                                                   name="document_date" value="{{ object.document_date | date:'c' }}"
+                                                   id="id_document_date" onchange="DocumentsDateChange()"/>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_document_number">
+                                                Номер документа <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control form-control-modern font-weight-bold"
+                                                   name="document_number" value="{{ object.document_number }}"
+                                                   id="id_document_number"/>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="{{ form.access.id_for_label }}">
+                                                Уровень доступа <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.access }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_validity_period_start">Действителен с:</label>
+                                            <input type="date" class="form-control form-control-modern"
+                                                   name="validity_period_start"
+                                                   value="{{ object.validity_period_start | date:'c' }}"
+                                                   id="id_validity_period_start"/>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_validity_period_end">Действителен по:</label>
+                                            <input type="date" class="form-control form-control-modern"
+                                                   name="validity_period_end"
+                                                   value="{{ object.validity_period_end | date:'c' }}"
+                                                   id="id_validity_period_end"/>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <section class="toggle">
-                    <label>Файл</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-lg-6 text-black-50">
-                                        <label for="id_doc_file">Файл документа:</label>
-                                        {% if object.doc_file %}
-                                            <span><a href="{{ object.doc_file.url }}">Файл приказа <img
-                                                    src="{% static 'Extension/docx.png' %}"></a></span>
-                                        {% endif %}
-                                    </div>
-                                    {#                                    </div>#}
-                                    {#                                    <div class="row text">#}
-                                    <div class="col-lg-6 text-black-50">
-                                        <label for="id_scan_file">Скан приказа:</label>
-                                        <input type="file" name="scan_file" class="form-control mb-4"
-                                               id="id_scan_file" accept="*.application/pdf">
+                            </section>
+
+                            <!-- Секция 2: Служебная информация -->
+                            <section class="toggle">
+                                <label><i class="bx bx-user-pin me-1"></i> 2. Служебная информация</label>
+                                <div class="toggle-content">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="id_executor">Исполнитель</label>
+                                            <select class="form-control form-control-modern"
+                                                    name="executor" id="id_executor"
+                                                    data-plugin-selectTwo>
+                                                <option value="{{ object.executor.pk|default:user.pk }}" selected>{{ object.executor|default:user }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="{{ form.employee.id_for_label }}">Ответственные лица</label>
+                                            {{ form.employee }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="{{ form.document_order_type.id_for_label }}">
+                                                Тип приказа <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.document_order_type }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label d-block">Разрешение на публикацию:</label>
+                                            <div class="form-check form-switch mt-1">
+                                                <input type="checkbox" class="form-check-input"
+                                                       name="allowed_placed"
+                                                       {% if object.allowed_placed %}checked{% endif %}
+                                                       id="id_allowed_placed"/>
+                                                <label class="form-check-label ms-2" for="id_allowed_placed">Разрешить публикацию</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label d-block">Актуальность:</label>
+                                            <div class="form-check form-switch mt-1">
+                                                <input type="checkbox" class="form-check-input"
+                                                       name="actuality" {% if object.actuality %}checked{% endif %}
+                                                       id="id_actuality"/>
+                                                <label class="form-check-label ms-2" for="id_actuality">Актуальный приказ</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 mt-3">
+                                            <label class="form-label" for="id_description">Содержание:</label>
+                                            <div class="ck ck-content">
+                                                {{ form.description | safe }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </section>
 
+                            <!-- Секция 3: Файлы -->
+                            <section class="toggle">
+                                <label><i class="bx bx-paperclip me-1"></i> 3. Файлы документа</label>
+                                <div class="toggle-content">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label" for="id_doc_file">
+                                                <i class="bx bx-file text-primary me-1"></i> Файл документа (.doc, .docx):
+                                            </label>
+                                            {% if object.doc_file %}
+                                                <div class="file-box-preview">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <img src="{% static 'Extension/docx.png' %}" width="24" height="24" alt="DOCX">
+                                                        <span class="small font-weight-semibold text-truncate" style="max-width: 200px;">Текущий файл Word</span>
+                                                    </div>
+                                                    <a href="{{ object.doc_file.url }}?v={{ object.document_updated_at.timestamp }}" target="_blank" class="btn btn-xs btn-outline-primary">
+                                                        <i class="bx bx-download me-1"></i> Скачать
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                            <input type="file" name="doc_file" class="form-control form-control-modern" id="id_doc_file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                                            <div class="form-text small text-muted">Загрузите новый файл для замены текущего</div>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label" for="id_scan_file">
+                                                <i class="bx bxs-file-pdf text-danger me-1"></i> Скан приказа (.pdf):
+                                            </label>
+                                            {% if object.scan_file %}
+                                                <div class="file-box-preview">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <img src="{% static 'Extension/pdf.png' %}" width="24" height="24" alt="PDF">
+                                                        <span class="small font-weight-semibold text-truncate" style="max-width: 200px;">Текущий скан PDF</span>
+                                                    </div>
+                                                    <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" target="_blank" class="btn btn-xs btn-outline-danger">
+                                                        <i class="bx bx-file me-1"></i> Открыть
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                            <input type="file" name="scan_file" class="form-control form-control-modern" id="id_scan_file" accept=".pdf,application/pdf">
+                                            <div class="form-text small text-muted">Загрузите новый скан в формате PDF</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     </div>
-                </section>
-            </div>
-        </div>
-        </div></div></div>
-<div class="row action-buttons">
-            <div class="col-12 col-md-auto">
-                <button type="submit"
-                        class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                        data-loading-text="Loading...">
-                    <i class="bx bx-save text-4 me-2"></i> Сохранить
-                </button>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:order_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
+
+                    <!-- Card Footer Action Buttons (Strictly within card boundaries) -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit"
+                                        class="btn btn-success btn-touch font-weight-semibold"
+                                        data-loading-text="Сохранение...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:order' object.pk %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'hrdepartment_app:order_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку приказов
+                                </a>
+                            </div>
+                            {% if user.is_superuser %}
+                                <div>
+                                    <a href="#"
+                                       class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
+            </form>
         </div>
-    </form>
+    </div>
     <!-- end: page -->
-    <!-- end: page -->
+
     <script type="text/javascript">
         function DocumentsChange() {
-            document_foundation = document.getElementById("id_document_foundation").value;
+            var docFoundationElem = document.getElementById("id_document_foundation");
+            if (!docFoundationElem) return;
+            var document_foundation = docFoundationElem.value;
             var validity_period_start = document.getElementById("id_validity_period_start");
             var validity_period_end = document.getElementById("id_validity_period_end");
-            //var document_date = document.getElementById("id_document_date");
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:order_update' object.pk %}',
+                url: '{% url "hrdepartment_app:order_update" object.pk %}',
                 data: {
                     "document_foundation": document_foundation,
                 },
                 dataType: "json",
                 success: function (data) {
-                    // any process in data
-                    validity_period_start.removeAttribute("value")
-                    validity_period_start.setAttribute("value", data['period_from'])
-                    $("#id_validity_period_start").trigger("create")
-                    validity_period_end.removeAttribute("value")
-                    validity_period_end.setAttribute("value", data['period_for'])
-                    $("#id_validity_period_end").trigger("create")
-                    {#document_date.removeAttribute("value")#}
-                    {#document_date.setAttribute("value", data['document_date'])#}
-                    {#$("#id_document_date").trigger("create")#}
-                    if (data === 'ok') {
-                        console.log("success");
+                    if (validity_period_start && data['period_from']) {
+                        validity_period_start.value = data['period_from'];
+                        $("#id_validity_period_start").trigger("change");
                     }
-                    ;
+                    if (validity_period_end && data['period_for']) {
+                        validity_period_end.value = data['period_for'];
+                        $("#id_validity_period_end").trigger("change");
+                    }
                     DocumentsDateChange();
                 },
                 failure: function (data) {
@@ -248,7 +334,9 @@
             $('#id_document_order_type').val(2).change();
             var text = 'Кирюшкина Ирина Алексеевна';
             var index = $('#id_employee option:contains(' + text + ')').val();
-            $('#id_employee').val(index).change();
+            if (index) {
+                $('#id_employee').val(index).change();
+            }
         };
 
         /**
@@ -257,23 +345,21 @@
          * Изменяет placeholder поля document_number, на полученные данные, и вызывает функцию ChangeSelect
          */
         function DocumentsDateChange() {
-            document_date = document.getElementById("id_document_date").value;
+            var docDateElem = document.getElementById("id_document_date");
+            if (!docDateElem) return;
+            var document_date = docDateElem.value;
             var document_number = document.getElementById("id_document_number");
-            var access = document.getElementById("id_access");
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:order_update' object.pk %}',
+                url: '{% url "hrdepartment_app:order_update" object.pk %}',
                 data: {
                     "document_date": document_date,
                 },
                 dataType: "json",
                 success: function (data) {
                     ChangeSelect();
-                    document_number.removeAttribute("placeholder")
-                    document_number.setAttribute("placeholder", data['document_date'])
-                    $("#id_document_number").trigger("create")
-                    if (data === 'ok') {
-                        console.log("success");
+                    if (document_number && data['document_date']) {
+                        document_number.setAttribute("placeholder", data['document_date']);
                     }
                 },
                 failure: function (data) {

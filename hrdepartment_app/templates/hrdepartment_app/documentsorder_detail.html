@@ -2,30 +2,61 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
-{% block custom_css %}
-<style>
-    :root {
-        --touch-target-size: 44px;
-    }
-    .btn-touch {
-        min-height: var(--touch-target-size);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 8px 18px;
-        font-weight: 600;
-    }
-</style>
 
+{% block title %}
+    Приказ № {{ object.document_number|default:"б/н" }} от {{ object.document_date|date:"d.m.Y" }} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
     <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        /* Сброс плавающей панели кнопок PortoAdmin для фиксации внутри карточки */
+        .action-buttons {
+            position: static !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            z-index: auto !important;
+        }
+        .toggle-content .form-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        .file-box-preview {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
         object, embed {
             display: none;
         }
@@ -38,217 +69,358 @@
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
-{% block title %}
-    {{ title }}
-{% endblock %}
-
 {% block content %}
     <!-- start: page -->
-    <div class="order-details action-buttons-fixed" method="post">
-        <div class="col-12 mb-4"><div class="card card-modern shadow-sm border-0"><div class="card-body p-4"><h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }}
-                от {{ object.document_date }}</h4>
-            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                <section class="toggle active">
-                    <label>Основные реквизиты</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-lg-12 text-black-50">
-                                        <label for="id_document_name">Наименование документа</label>
-                                        <input type="text" class="form-control form-control-modern"
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-file text-primary me-2"></i>Приказ № {{ object.document_number|default:"б/н" }} от {{ object.document_date|date:"d.m.Y" }}
+                        </h4>
+                        <div class="d-flex flex-wrap gap-2 align-items-center mt-1">
+                            <span class="badge bg-primary">{{ object.get_document_order_type_display|default:"Приказ" }}</span>
+                            {% if object.access %}
+                                <span class="badge bg-info text-dark"><i class="bx bx-lock-open-alt me-1"></i>{{ object.access }}</span>
+                            {% endif %}
+                            {% if object.actuality %}
+                                <span class="badge bg-success"><i class="bx bx-check me-1"></i>Актуален</span>
+                            {% else %}
+                                <span class="badge bg-secondary"><i class="bx bx-time-five me-1"></i>Не актуален</span>
+                            {% endif %}
+                            {% if object.allowed_placed %}
+                                <span class="badge bg-success"><i class="bx bx-globe me-1"></i>Опубликован</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{% url 'hrdepartment_app:order_list' %}" class="btn btn-outline-secondary btn-touch">
+                            <i class="bx bx-arrow-back me-1"></i> К списку приказов
+                        </a>
+                    </div>
+                </header>
+
+                <div class="card-body p-4">
+                    <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                        <!-- Секция 1: Основные реквизиты -->
+                        <section class="toggle active">
+                            <label><i class="bx bx-info-circle me-1"></i> Основные реквизиты</label>
+                            <div class="toggle-content">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label" for="id_document_name">Наименование документа</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
                                                name="document_name" value="{{ object.document_name }}"
-                                               id="id_document_name"/>
+                                               id="id_document_name" readonly/>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_foundation">Документ основание</label>
-                                        <input type="text" class="form-control form-control-modern"
-                                               name="document_foundation" value="{{ object.document_foundation }}"
-                                               id="id_document_foundation"/>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_document_foundation">Документ основание</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
+                                               name="document_foundation" value="{{ object.document_foundation|default:'—' }}"
+                                               id="id_document_foundation" readonly/>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_date">Дата документа</label>
-                                        <input type="date" class="form-control form-control-modern"
-                                               name="document_date" value="{{ object.document_date | date:'c' }}"
-                                               id="id_document_date"/>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_document_date">Дата документа</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
+                                               name="document_date" value="{{ object.document_date|date:'d.m.Y' }}"
+                                               id="id_document_date" readonly/>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_number">Номер документа</label>
-                                        <input type="text" class="form-control form-control-modern"
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_document_number">Номер документа</label>
+                                        <input type="text" class="form-control form-control-modern bg-light font-weight-bold"
                                                name="document_number" value="{{ object.document_number }}"
-                                               id="id_document_number"/>
+                                               id="id_document_number" readonly/>
                                     </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_access">Уровень доступа</label>
-                                        <input type="text" class="form-control form-control-modern"
-                                               name="access" value="{{ object.access }}" id="id_access"/>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_access">Уровень доступа</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
+                                               name="access" value="{{ object.access|default:'—' }}" id="id_access" readonly/>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_validity_period_start">Действителен с:</label>
-                                        <input type="date" class="form-control form-control-modern"
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_validity_period_start">Действителен с:</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
                                                name="validity_period_start"
-                                               value="{{ object.validity_period_start | date:'c' }}"
-                                               id="id_validity_period_start"/>
+                                               value="{{ object.validity_period_start|date:'d.m.Y'|default:'—' }}"
+                                               id="id_validity_period_start" readonly/>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_validity_period_end">Действителен по:</label>
-                                        <input type="date" class="form-control form-control-modern"
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_validity_period_end">Действителен по:</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
                                                name="validity_period_end"
-                                               value="{{ object.validity_period_end | date:'c' }}"
-                                               id="id_validity_period_end"/>
+                                               value="{{ object.validity_period_end|date:'d.m.Y'|default:'—' }}"
+                                               id="id_validity_period_end" readonly/>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </section>
-                <section class="toggle">
-                    <label>Служебная информация</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_executor">Исполнитель</label>
-                                        <select class="form-control mb-4 form-control-modern"
-                                                name="executor" id="id_executor"
-                                                data-plugin-selectTwo>
-                                            <option value="{{ object.executor.pk }}"
-                                                    selected>{{ object.executor }}</option>
-                                        </select>
+                        </section>
+
+                        <!-- Секция 2: Служебная информация -->
+                        <section class="toggle">
+                            <label><i class="bx bx-user-check me-1"></i> Служебная информация</label>
+                            <div class="toggle-content">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_executor">Исполнитель</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
+                                               value="{{ object.executor|default:'—' }}" id="id_executor" readonly/>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_employee">Ответственное лицо</label>
-                                        <select class="form-control mb-4 form-control-modern"
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_employee">Ответственные лица</label>
+                                        <select class="form-control form-control-modern bg-light"
                                                 name="employee" id="id_employee"
-                                                data-plugin-selectTwo multiple>
+                                                data-plugin-selectTwo multiple disabled>
                                             {% for item in object.employee.all %}
                                                 <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                            {% empty %}
+                                                <option selected>Не назначены</option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_order_type">Тип приказа</label>
-                                        <input type="text" class="form-control form-control-modern"
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="id_document_order_type">Тип приказа</label>
+                                        <input type="text" class="form-control form-control-modern bg-light"
                                                name="document_order_type"
-                                               value="{{ object.get_document_order_type_display }}"
-                                               id="id_document_order_type"/>
+                                               value="{{ object.get_document_order_type_display|default:'—' }}"
+                                               id="id_document_order_type" readonly/>
                                     </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50 mt-3">
-                                        <label for="id_allowed_placed">Разрешение на публикацию:</label>
-                                        <input type="checkbox" class="mt-2"
-                                               name="allowed_placed"
-                                               {% if object.allowed_placed %}checked{% endif %}
-                                               id="id_allowed_placed"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50 mt-3">
-                                        <label for="id_actuality">Актуальность:</label>
-                                        <input type="checkbox" class="mt-2"
-                                               name="actuality" {% if object.actuality %}checked{% endif %}
-                                               id="id_actuality"/>
-                                    </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-sm-12 text-black-50 mt-3">
-                                        <label for="id_description">Содержание:</label>
-                                        <div class="ck ck-content">
-                                            {{ form.description | safe }}
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label d-block">Разрешение на публикацию:</label>
+                                        <div class="form-check form-switch mt-1">
+                                            <input type="checkbox" class="form-check-input"
+                                                   name="allowed_placed"
+                                                   {% if object.allowed_placed %}checked{% endif %}
+                                                   id="id_allowed_placed" disabled/>
+                                            <label class="form-check-label ms-2" for="id_allowed_placed">
+                                                {% if object.allowed_placed %}Разрешено к публикации{% else %}Не разрешено{% endif %}
+                                            </label>
                                         </div>
                                     </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label d-block">Актуальность документа:</label>
+                                        <div class="form-check form-switch mt-1">
+                                            <input type="checkbox" class="form-check-input"
+                                                   name="actuality" {% if object.actuality %}checked{% endif %}
+                                                   id="id_actuality" disabled/>
+                                            <label class="form-check-label ms-2" for="id_actuality">
+                                                {% if object.actuality %}Актуальный документ{% else %}Архивный / не актуален{% endif %}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% if object.description %}
+                                        <div class="col-12 mt-3">
+                                            <label class="form-label" for="id_description">Содержание приказа:</label>
+                                            <div class="p-3 bg-light border rounded ck ck-content">
+                                                {{ object.description | safe }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </section>
-                <section class="toggle">
-                    <label>Файл</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-lg-4 text-black-50 mt-2">
-                                        <label for="id_doc_file">Файл приказа</label>
-                                        {% if object.doc_file %}
-                                            <span id="id_doc_file"><a
-                                                    href="{{ object.doc_file.url }}?v={{ object.document_updated_at.timestamp }}"
-                                                    target="_blank"><img
-                                                    src="{% static 'Extension/docx.png' %}"></a></span>
-                                        {% endif %}
+                        </section>
+
+                        <!-- Секция 3: Файлы документа и печать -->
+                        <section class="toggle">
+                            <label><i class="bx bx-paperclip me-1"></i> Файлы документа и печать</label>
+                            <div class="toggle-content">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-12 col-md-4">
+                                        <div class="file-box-preview">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <img src="{% static 'Extension/docx.png' %}" width="32" height="32" alt="DOCX">
+                                                <div>
+                                                    <div class="font-weight-semibold text-dark small">Файл Word (.docx)</div>
+                                                    <div class="text-muted" style="font-size: 0.75rem;">Редактируемый бланк</div>
+                                                </div>
+                                            </div>
+                                            {% if object.doc_file %}
+                                                <a href="{{ object.doc_file.url }}?v={{ object.document_updated_at.timestamp }}"
+                                                   target="_blank" class="btn btn-sm btn-outline-primary btn-touch" title="Скачать">
+                                                    <i class="bx bx-download me-1"></i> Скачать
+                                                </a>
+                                            {% else %}
+                                                <span class="badge bg-light text-muted border">Отсутствует</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
-                                    <div class="col-lg-4 text-black-50 mt-2">
-                                        <label for="id_scan_file">Скан приказа</label>
-                                        {% if object.scan_file %}
-                                            <span id="id_scan_file"><a
-                                                    href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
-                                                    target="_blank"><img
-                                                    src="{% static 'Extension/pdf.png' %}"></a></span>
-                                        {% endif %}
+                                    <div class="col-12 col-md-4">
+                                        <div class="file-box-preview">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <img src="{% static 'Extension/pdf.png' %}" width="32" height="32" alt="PDF">
+                                                <div>
+                                                    <div class="font-weight-semibold text-dark small">Скан приказа (.pdf)</div>
+                                                    <div class="text-muted" style="font-size: 0.75rem;">Подписанный скан</div>
+                                                </div>
+                                            </div>
+                                            {% if object.scan_file %}
+                                                <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
+                                                   target="_blank" class="btn btn-sm btn-outline-danger btn-touch" title="Открыть PDF">
+                                                    <i class="bx bx-file me-1"></i> Открыть
+                                                </a>
+                                            {% else %}
+                                                <span class="badge bg-light text-muted border">Отсутствует</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
-                                    <div class="col-lg-4 text-black-50 mt-2">
-                                        <button class="btn btn-warning mt-2" onclick="printPDF()">Распечатать приказ
-                                        </button>
+                                    <div class="col-12 col-md-4">
                                         {% if object.scan_file %}
-                                            <iframe id="pdfFrame"
-                                                    src="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
-                                                    hidden="hidden"></iframe>
+                                            <button type="button" class="btn btn-outline-warning btn-touch w-100 font-weight-semibold" id="btn-print-order" onclick="printPdfDocument('{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}', this)">
+                                                <i class="bx bx-printer text-4 me-2"></i> Распечатать приказ
+                                            </button>
                                             <script>
-                                                function printPDF() {
-                                                    var iframe = document.getElementById('pdfFrame');
-                                                    if (iframe.contentWindow) {
-                                                        iframe.contentWindow.print();
-                                                    } else {
-                                                        console.error("PDF is not loaded yet.");
+                                                /**
+                                                 * Универсальная кросс-браузерная функция печати PDF-документа.
+                                                 * Работает в Chrome, Edge, Firefox, Safari (macOS/iOS), Opera и мобильных браузерах.
+                                                 */
+                                                function printPdfDocument(pdfUrl, btnEl) {
+                                                    if (!pdfUrl) {
+                                                        alert('Скан документа для печати не прикреплен.');
+                                                        return;
+                                                    }
+
+                                                    var button = typeof btnEl === 'string' ? document.querySelector(btnEl) : btnEl;
+                                                    var originalHtml = '';
+                                                    if (button) {
+                                                        originalHtml = button.innerHTML;
+                                                        button.disabled = true;
+                                                        button.innerHTML = '<i class="bx bx-loader-alt bx-spin me-2"></i> Подготовка к печати...';
+                                                    }
+
+                                                    function restoreButton() {
+                                                        if (button) {
+                                                            button.disabled = false;
+                                                            button.innerHTML = originalHtml;
+                                                        }
+                                                    }
+
+                                                    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                                                    if (isMobile) {
+                                                        restoreButton();
+                                                        var win = window.open(pdfUrl, '_blank');
+                                                        if (!win) {
+                                                            window.location.href = pdfUrl;
+                                                        }
+                                                        return;
+                                                    }
+
+                                                    fetch(pdfUrl, { cache: 'no-cache' })
+                                                        .then(function (res) {
+                                                            if (!res.ok) throw new Error('Ошибка загрузки PDF');
+                                                            return res.blob();
+                                                        })
+                                                        .then(function (blob) {
+                                                            var blobUrl = URL.createObjectURL(blob);
+                                                            var oldIframe = document.getElementById('pdfPrintIframe');
+                                                            if (oldIframe) {
+                                                                oldIframe.remove();
+                                                            }
+
+                                                            var iframe = document.createElement('iframe');
+                                                            iframe.id = 'pdfPrintIframe';
+                                                            iframe.style.position = 'fixed';
+                                                            iframe.style.right = '0';
+                                                            iframe.style.bottom = '0';
+                                                            iframe.style.width = '1px';
+                                                            iframe.style.height = '1px';
+                                                            iframe.style.border = 'none';
+                                                            iframe.style.opacity = '0.01';
+                                                            iframe.style.pointerEvents = 'none';
+                                                            iframe.style.zIndex = '-9999';
+                                                            iframe.src = blobUrl;
+
+                                                            iframe.onload = function () {
+                                                                restoreButton();
+                                                                setTimeout(function () {
+                                                                    try {
+                                                                        iframe.contentWindow.focus();
+                                                                        iframe.contentWindow.print();
+                                                                        setTimeout(function () {
+                                                                            URL.revokeObjectURL(blobUrl);
+                                                                        }, 120000);
+                                                                    } catch (e) {
+                                                                        console.warn('Iframe print failed, fallback to window.open:', e);
+                                                                        fallbackPrint(pdfUrl);
+                                                                    }
+                                                                }, 300);
+                                                            };
+
+                                                            iframe.onerror = function () {
+                                                                restoreButton();
+                                                                fallbackPrint(pdfUrl);
+                                                            };
+
+                                                            document.body.appendChild(iframe);
+                                                        })
+                                                        .catch(function (err) {
+                                                            console.warn('Fetch blob failed, fallback to window.open:', err);
+                                                            restoreButton();
+                                                            fallbackPrint(pdfUrl);
+                                                        });
+
+                                                    function fallbackPrint(url) {
+                                                        try {
+                                                            var printWin = window.open(url, '_blank');
+                                                            if (printWin) {
+                                                                printWin.focus();
+                                                                printWin.onload = function () {
+                                                                    try {
+                                                                        printWin.print();
+                                                                    } catch (e) {
+                                                                        console.log('Direct print error:', e);
+                                                                    }
+                                                                };
+                                                            } else {
+                                                                window.location.href = url;
+                                                            }
+                                                        } catch (e) {
+                                                            window.location.href = url;
+                                                        }
                                                     }
                                                 }
 
-                                                // Проверка загрузки PDF
-                                                var iframe = document.getElementById('pdfFrame');
-                                                iframe.onload = function () {
-                                                    console.log("PDF loaded successfully.");
-                                                };
+                                                function printPDF() {
+                                                    {% if object.scan_file %}
+                                                        printPdfDocument('{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}', document.getElementById('btn-print-order'));
+                                                    {% endif %}
+                                                }
                                             </script>
+                                        {% else %}
+                                            <button type="button" class="btn btn-outline-secondary btn-touch w-100" disabled>
+                                                <i class="bx bx-printer text-4 me-2"></i> Печать недоступна (нет скана)
+                                            </button>
                                         {% endif %}
                                     </div>
                                 </div>
-                                <div class="row text">
-
-                                </div>
                             </div>
-
-                        </div>
+                        </section>
                     </div>
-                </section>
-            </div>
-        </div>
-        </div></div></div>
-<div class="row action-buttons">
-            <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:order_update' object.pk %}"
-                   class="btn btn-outline-success btn-touch font-weight-bold py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
-            </div>
-            <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:order_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
                 </div>
-            {% endif %}
+
+                <!-- Card Footer Action Buttons (Strictly within card boundaries) -->
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <a href="{% url 'hrdepartment_app:order_update' object.pk %}"
+                               class="btn btn-primary btn-touch font-weight-semibold">
+                                <i class="bx bx-edit text-4 me-2"></i> Изменить
+                            </a>
+                            <a href="{% url 'hrdepartment_app:order_list' %}"
+                               class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                <i class="bx bx-x text-4 me-2"></i> Закрыть
+                            </a>
+                        </div>
+                        {% if user.is_superuser %}
+                            <div>
+                                <a href="#"
+                                   class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                    <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- end: page -->
-    <!-- end: page -->
-
 {% endblock %}
