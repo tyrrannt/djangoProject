@@ -1,0 +1,198 @@
+{% load static %}
+{% load custom %}
+
+<!-- ============================================
+     НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ (MOBILE BOTTOM APP BAR)
+     Отображается только на мобильных экранах (<=768px)
+============================================ -->
+<nav class="mobile-bottom-bar" aria-label="Мобильная навигация">
+    <!-- 1. Главная / Профиль -->
+    <a href="{% url 'customers_app:profile' request.user.pk %}"
+       class="mobile-nav-item {% if request.resolver_match.view_name == 'customers_app:profile' %}active{% endif %}"
+       aria-label="Главная страница профиля">
+        <i class="bx bx-home-alt"></i>
+        <span>Главная</span>
+    </a>
+
+    <!-- 2. Служебные записки -->
+    <a href="{% url 'hrdepartment_app:memo_list' %}"
+       class="mobile-nav-item {% if 'memo' in request.path and 'bpmemo' not in request.path %}active{% endif %}"
+       aria-label="Служебные записки">
+        <i class="bx bx-file-blank"></i>
+        <span>Служебки</span>
+    </a>
+
+    <!-- 3. Бизнес-процессы -->
+    <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
+       class="mobile-nav-item {% if 'bpmemo' in request.path %}active{% endif %}"
+       aria-label="Бизнес-процессы">
+        <i class="bx bx-git-branch"></i>
+        <span>Процессы</span>
+    </a>
+
+    <!-- 4. Уведомления (Открывает мобильную шторку уведомлений) -->
+    <button type="button" class="mobile-nav-item" id="mobileNotificationsBtn"
+            data-bs-toggle="modal" data-bs-target="#mobileNotificationsModal"
+            aria-label="Уведомления">
+        <i class="bx bx-bell"></i>
+        <span>Уведомления</span>
+        {% if unread_notifications_count and unread_notifications_count > 0 %}
+            <span class="mobile-nav-badge">{{ unread_notifications_count }}</span>
+        {% endif %}
+    </button>
+
+    <!-- 5. Главное меню (Открывает боковую шторку разделов) -->
+    <button type="button" class="mobile-nav-item" id="mobileMenuToggleBtn"
+            onclick="toggleBarkolMobileSidebar(event);"
+            aria-label="Открыть главное меню">
+        <i class="bx bx-grid-alt"></i>
+        <span>Меню</span>
+    </button>
+</nav>
+
+<!-- ============================================
+     ПЛАВАЮЩАЯ КНОПКА БЫСТРЫХ ДЕЙСТВИЙ (FAB)
+============================================ -->
+<button type="button" class="mobile-fab" data-bs-toggle="modal" data-bs-target="#mobileQuickActionModal"
+        title="Быстрые действия" aria-label="Создать документ или событие">
+    <i class="bx bx-plus"></i>
+</button>
+
+<!-- ============================================
+     МОБИЛЬНАЯ ШТОРКА УВЕДОМЛЕНИЙ (BOTTOM SHEET)
+============================================ -->
+<div class="modal fade mobile-bottom-sheet" id="mobileNotificationsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content p-3">
+            <div class="bottom-sheet-handle"></div>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bx bx-bell text-primary fs-4"></i>
+                    <h5 class="fw-bold text-dark m-0">Уведомления</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+
+            <!-- Включение системных Push-уведомлений -->
+            <div class="p-3 bg-light rounded border mb-3">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="fw-bold text-dark small">🔔 Push-уведомления на телефон</div>
+                        <div class="text-muted" style="font-size: 11px;">Сигналы о согласовании СЗ и приказах в фоне</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" id="enablePushBtn"
+                            onclick="if(window.BarkolPush){ window.BarkolPush.subscribe().then(function(res){ if(res) alert('Push-уведомления успешно включены!'); else alert('Разрешите показ уведомлений в настройках браузера.'); }); }">
+                        Включить
+                    </button>
+                </div>
+            </div>
+
+            <!-- Список уведомлений -->
+            <div class="notification-list mb-2" style="max-height: 55vh; overflow-y: auto;">
+                {% if notifications %}
+                    {% for notification in notifications %}
+                        {% if notification.count > 0 %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark small">{{ notification.title }}</span>
+                                    <span class="badge bg-danger">{{ notification.count }}</span>
+                                </div>
+                                <div class="list-group list-group-flush border rounded">
+                                    {% for item, color in notification.items %}
+                                        <a href="{{ item|get_url:notification.url_name }}" class="list-group-item list-group-item-action py-2 px-3 small">
+                                            <div class="text-truncate fw-semibold" style="color: {{ color|default:'#1e293b' }};">{{ item }}</div>
+                                            <div class="text-muted" style="font-size: 11px;">{{ item.date_of_creation|date:"d.m.Y" }}</div>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bx bx-check-double text-success" style="font-size: 42px;"></i>
+                        <div class="fw-semibold text-dark mt-2">Нет новых уведомлений</div>
+                        <div class="small">Все служебные записки и задачи согласованы</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================
+     МОБИЛЬНАЯ ШТОРКА БЫСТРЫХ ДЕЙСТВИЙ (BOTTOM SHEET)
+============================================ -->
+<div class="modal fade mobile-bottom-sheet" id="mobileQuickActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content p-3">
+            <div class="bottom-sheet-handle"></div>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark m-0">Быстрое действие</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+
+            <!-- Список быстрых действий -->
+            <div class="d-flex flex-column">
+                <a href="{% url 'hrdepartment_app:memo_add' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-primary text-white">
+                        <i class="bx bx-file-blank"></i>
+                    </div>
+                    <div>
+                        <div>Создать служебную записку</div>
+                        <small class="text-muted font-weight-normal">На командировку, поездку или хоз. нужды</small>
+                    </div>
+                </a>
+
+                <a href="{% url 'hrdepartment_app:bpmemo_add' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-info text-white">
+                        <i class="bx bx-git-branch"></i>
+                    </div>
+                    <div>
+                        <div>Инициировать бизнес-процесс</div>
+                        <small class="text-muted font-weight-normal">Согласование служебной поездки</small>
+                    </div>
+                </a>
+
+                <a href="{% url 'hrdepartment_app:users_events_add' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-success text-white">
+                        <i class="bx bx-map-pin"></i>
+                    </div>
+                    <div>
+                        <div>Добавить местоположение</div>
+                        <small class="text-muted font-weight-normal">Отметить прибытие / локацию</small>
+                    </div>
+                </a>
+
+                <a href="{% url 'customers_app:profile' request.user.pk %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-warning text-dark">
+                        <i class="bx bx-calendar-event"></i>
+                    </div>
+                    <div>
+                        <div>Планировщик задач</div>
+                        <small class="text-muted font-weight-normal">Перейти к календарю событий</small>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт надежного открытия мобильного меню без конфликта событий -->
+<script>
+    function toggleBarkolMobileSidebar(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        var btn = document.querySelector('.toggle-sidebar-left');
+        if (btn) {
+            btn.click();
+        } else {
+            var $html = document.documentElement;
+            $html.classList.toggle('sidebar-left-opened');
+        }
+    }
+</script>

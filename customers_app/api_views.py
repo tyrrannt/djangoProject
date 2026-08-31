@@ -463,3 +463,96 @@ class ReportCardManualDetailAPIView(APIView):
         card.delete()
         return Response({'success': True, 'message': 'Запись успешно удалена'})
 
+
+class VapidKeyAPIView(APIView):
+    """API-представление для получения открытого VAPID-ключа."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Возвращает публичный VAPID-ключ для регистрации push-подписки на клиенте.
+
+        Args:
+            request (Request): Объект входящего HTTP-запроса.
+
+        Returns:
+            Response: JSON с полем publicKey.
+        """
+        from customers_app.services.push_service import get_vapid_public_key
+
+        return Response({"publicKey": get_vapid_public_key()})
+
+
+class PushSubscriptionAPIView(APIView):
+    """API-представление для сохранения и удаления подписок Web Push устройств."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Регистрирует или обновляет push-подписку для текущего пользователя.
+
+        Args:
+            request (Request): Объект запроса, содержащий endpoint, keys.p256dh, keys.auth.
+
+        Returns:
+            Response: Результат операции сохранения подписки.
+        """
+        from customers_app.models import PushSubscription
+
+        endpoint = request.data.get("endpoint")
+        keys = request.data.get("keys", {})
+        p256dh = keys.get("p256dh")
+        auth = keys.get("auth")
+
+        if not endpoint or not p256dh or not auth:
+            return Response(
+                {"error": "Неполные данные push-подписки (endpoint, p256dh, auth обязательны)"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+
+        subscription, created = PushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={
+                "user": request.user,
+                "p256dh": p256dh,
+                "auth": auth,
+                "user_agent": user_agent[:512],
+            },
+        )
+
+        return Response(
+            {
+                "success": True,
+                "created": created,
+                "message": "Push-подписка успешно зарегистрирована",
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    def delete(self, request):
+        """Удаляет push-подписку устройства по endpoint.
+
+        Args:
+            request (Request): Объект запроса, содержащий endpoint.
+
+        Returns:
+            Response: Результат удаления.
+        """
+        from customers_app.models import PushSubscription
+
+        endpoint = request.data.get("endpoint")
+        if not endpoint:
+            return Response(
+                {"error": "Поле endpoint обязательно"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deleted_count, _ = PushSubscription.objects.filter(
+            user=request.user, endpoint=endpoint
+        ).delete()
+
+        return Response({"success": True, "deleted": deleted_count > 0})
+
+

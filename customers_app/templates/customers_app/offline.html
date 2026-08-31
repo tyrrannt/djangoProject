@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Офлайн-режим // БАРКОЛ</title>
+    <meta name="theme-color" content="#002b49">
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #001e33;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+        }
+        .offline-card {
+            background: #002b49;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 32px 24px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .offline-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 20px auto;
+            border-radius: 50%;
+            background: rgba(2, 132, 199, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #38bdf8;
+            font-size: 36px;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+        p {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .btn-retry {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s ease, transform 0.1s ease;
+        }
+        .btn-retry:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+        .logo {
+            height: 32px;
+            margin-bottom: 20px;
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-card">
+        <img src="{% static 'admin_templates/img/logo.png' %}" alt="БАРКОЛ" class="logo">
+        <div class="offline-icon">📡</div>
+        <h1>Нет подключения к интернету</h1>
+        <p>Для работы с корпоративным порталом требуется активное сетевое соединение. Проверьте Wi-Fi или мобильный интернет и повторите попытку.</p>
+        <button class="btn-retry" onclick="window.location.reload();">Повторить попытку</button>
+    </div>
+</body>
+</html>

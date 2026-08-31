@@ -1543,3 +1543,49 @@ class VacationSchedule(models.Model):
     days = models.IntegerField(verbose_name="Количество дней", default=0)
     years = models.IntegerField(verbose_name="Год графика", default=0)
     comment = models.TextField(verbose_name="Комментарий", blank=True)
+
+
+class PushSubscription(models.Model):
+    """Модель хранения подписок устройств пользователей на Web Push уведомления.
+
+    Attributes:
+        user (ForeignKey): Пользователь, которому принадлежит подписка.
+        endpoint (TextField): Уникальный URL push-сервера браузера / вендора.
+        p256dh (CharField): Публичный ключ шифрования устройства пользователя (Diffie-Hellman P-256).
+        auth (CharField): Секретный ключ аутентификации устройства.
+        user_agent (CharField): Сведения о браузере и ОС устройства.
+        created_at (DateTimeField): Дата и время создания подписки.
+        updated_at (DateTimeField): Дата и время последнего обновления подписки.
+    """
+
+    class Meta:
+        verbose_name = "Push-подписка устройства"
+        verbose_name_plural = "Push-подписки устройств"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user"]),
+        ]
+
+    user = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.CASCADE,
+        related_name="push_subscriptions",
+        verbose_name="Пользователь",
+    )
+    endpoint = models.TextField(verbose_name="Endpoint URL push-сервера", unique=True)
+    p256dh = models.CharField(verbose_name="Ключ p256dh", max_length=255)
+    auth = models.CharField(verbose_name="Ключ auth", max_length=255)
+    user_agent = models.CharField(
+        verbose_name="Устройство / Браузер", max_length=512, blank=True, default=""
+    )
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
+
+    def __str__(self):
+        """Строковое представление подписки.
+
+        Returns:
+            str: Имя пользователя и краткий endpoint.
+        """
+        return f"{self.user} ({self.endpoint[:40]}...)"
+

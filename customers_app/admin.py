@@ -37,6 +37,7 @@ from .models import (
     CounteragentDocuments,
     UserStats,
     Apartments, ApartmentBooking, BiometricConsent, ConsentType,
+    PushSubscription,
 )
 from unfold.admin import ModelAdmin, TabularInline
 
@@ -731,3 +732,26 @@ class ConsentTypeAdmin(ModelAdmin):
         if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(PushSubscription)
+class PushSubscriptionAdmin(ModelAdmin):
+    """Административная панель для управления подписками Web Push устройств."""
+
+    list_display = ("user", "device_info", "created_at", "updated_at")
+    search_fields = ("user__username", "user__last_name", "user__first_name", "user_agent", "endpoint")
+    list_filter = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at")
+
+    def device_info(self, obj):
+        """Отображение краткой информации об устройстве.
+
+        Args:
+            obj (PushSubscription): Экземпляр подписки.
+
+        Returns:
+            str: Краткая строка устройства или браузера.
+        """
+        return obj.user_agent[:60] if obj.user_agent else "—"
+
+    device_info.short_description = "Устройство"

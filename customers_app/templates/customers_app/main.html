@@ -55,6 +55,7 @@
     <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/css/skins/default.css' %}"/>
     <link rel="stylesheet" href="{% static_version 'admin_templates/css/custom.css' %}"/>
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mobile_app.css' %}"/>
 
     {% block custom_css %}
     {% endblock %}
@@ -143,7 +144,12 @@
     </div>
 
     <!-- Контейнер для всплывающих сообщений (Toasts) -->
-    <div id="toastAreaCenter" class="position-fixed bottom-0 end-0 p-4" style="z-index: 999999;"></div>
+    <div id="toastAreaCenter" class="position-fixed bottom-0 end-0 p-4" style="z-index: 999999; pointer-events: none;"></div>
+
+
+    <!-- Мобильная нижняя навигация, FAB и шторка быстрых действий -->
+    {% include 'customers_app/includes/mobile_bottom_bar.html' %}
+
 
     <!-- Базовые вендорные библиотеки -->
     <script src="{% static 'admin_templates/vendor/jquery/jquery.js' %}"></script>
@@ -200,6 +206,14 @@
 
     <!-- Ядро клиентских скриптов портала (WebSockets, NanoScroller, QR-код, защита от зависания) -->
     <script src="{% static_version 'customers_app/js/portal_core.js' %}"></script>
+
+    <!-- Менеджер PWA (Service Worker и баннер установки) -->
+    <script src="{% static_version 'customers_app/js/pwa_manager.js' %}"></script>
+
+    <!-- Сенсорная оптимизация, тактильный отклик и Pull-to-Refresh -->
+    <script src="{% static_version 'customers_app/js/touch_ux.js' %}"></script>
+
+
 
     {% block SpecificPageVendor %}
     {% endblock %}
