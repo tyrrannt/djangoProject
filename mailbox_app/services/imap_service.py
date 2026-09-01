@@ -597,11 +597,13 @@ class ImapMailService:
             logger.error(f"[IMAP] raw_email пустой для UID {uid} в {folder_name}")
             return None
 
-        # Автоматически помечаем как прочитанное по UID
+        # Автоматически помечаем как прочитанное по UID и сбрасываем кэш
         try:
             self.client.uid("store", str(uid), "+FLAGS", "(\\Seen)")
-        except Exception:
-            pass
+            if self.email_addr:
+                invalidate_mailbox_cache(self.email_addr)
+        except Exception as e:
+            logger.debug(f"[IMAP] Не удалось установить \\Seen для UID {uid}: {e}")
 
         msg = email.message_from_bytes(raw_email)
         subject = decode_str(msg.get("Subject")) or "(Без темы)"

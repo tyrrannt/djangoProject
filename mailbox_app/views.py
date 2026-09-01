@@ -228,8 +228,8 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
 
         try:
             with self.get_imap_service(account) as imap_svc:
-                folders = imap_svc.get_folders()
                 email_data = imap_svc.get_message_detail(folder_name, uid)
+                folders = imap_svc.get_folders(force_refresh=True)
         except Exception as e:
             logger.error(f"[Mailbox] Ошибка загрузки письма {uid}: {e}")
             error_message = str(e)
@@ -735,12 +735,43 @@ class MailboxDiagnosticView(MailboxBaseMixin, TemplateView):
                 if sock:
                     sock.close()
 
+            # 2.1 Тест порта 143 (Plain IMAP в локальной сети)
+            try:
+                t0 = time.perf_counter()
+                p_sock = socket.create_connection((host, 143), timeout=3)
+                p_conn_ms = (time.perf_counter() - t0) * 1000
+                t0 = time.perf_counter()
+                p_banner = p_sock.recv(1024).decode("latin-1", errors="ignore").strip()
+                p_banner_ms = (time.perf_counter() - t0) * 1000
+                p_sock.close()
+                record("2.1 Тест порта 143 (Plain IMAP)", p_conn_ms + p_banner_ms, f"Коннект: {p_conn_ms:.1f}мс, Баннер: {p_banner_ms:.1f}мс ({p_banner[:40]})")
+            except Exception as e:
+                record("2.1 Тест порта 143 (Plain IMAP)", 0.0, f"Порт 143 закрыт или недоступен ({e})", status="INFO")
+
             # 3. IMAP Connect + SSL Handshake
             if not error_message:
                 ssl_ctx = ssl.create_default_context()
                 if host.strip().replace(".", "").isdigit():
                     ssl_ctx.check_hostname = False
                     ssl_ctx.verify_mode = ssl.CERT_NONE
+
+                # 3a. Замер чистого SSL Handshake
+                try:
+                    t0 = time.perf_counter()
+                    raw_s = socket.create_connection((host, port), timeout=5)
+                    ssl_s = ssl_ctx.wrap_socket(raw_s, server_hostname=None if host.strip().replace(".", "").isdigit() else host)
+                    pure_ssl_ms = (time.perf_counter() - t0) * 1000
+                    
+                    # 3b. Ожидание приветственного баннера от сервера
+                    t0 = time.perf_counter()
+                    server_banner = ssl_s.recv(1024).decode("latin-1", errors="ignore").strip()
+                    banner_ms = (time.perf_counter() - t0) * 1000
+                    ssl_s.close()
+                    
+                    record("3a. Чистый SSL Handshake (TLS crypto)", pure_ssl_ms, f"Шифр: {ssl_s.cipher()[0] if hasattr(ssl_s, 'cipher') else 'TLS'}")
+                    record("3b. Ожидание баннера сервера (Reverse DNS/Kerio)", banner_ms, f"Баннер: {server_banner[:60]}")
+                except Exception as e:
+                    record("3a. Проверка сокета SSL", 0.0, f"Ошибка: {e}", status="WARN")
 
                 client = None
                 t0 = time.perf_counter()
@@ -753,10 +784,10 @@ class MailboxDiagnosticView(MailboxBaseMixin, TemplateView):
                     cipher_info = ""
                     if use_ssl and hasattr(client, "ssl") and client.ssl:
                         cipher_info = f"Cipher: {client.ssl.cipher()[0]}, TLS: {client.ssl.version()}"
-                    record("3. IMAP Connect + SSL Handshake", ssl_ms, cipher_info)
+                    record("3. Полная инициализация IMAP4_SSL", ssl_ms, cipher_info)
                 except Exception as e:
                     ssl_ms = (time.perf_counter() - t0) * 1000
-                    record("3. IMAP Connect + SSL Handshake", ssl_ms, f"Ошибка SSL: {e}", status="ERR")
+                    record("3. Полная инициализация IMAP4_SSL", ssl_ms, f"Ошибка SSL: {e}", status="ERR")
                     error_message = f"Ошибка SSL-рукопожатия: {e}"
 
                 # 4. IMAP Login

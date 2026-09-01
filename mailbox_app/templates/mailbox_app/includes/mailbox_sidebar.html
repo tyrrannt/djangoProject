@@ -115,3 +115,20 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Гарантируем прикрепление мобильной шторки напрямую к <body> во избежание изоляции в stacking context
+    (function() {
+        function moveDrawerToBody() {
+            var drawer = document.getElementById("mailboxMobileDrawer");
+            if (drawer && drawer.parentElement && drawer.parentElement !== document.body) {
+                document.body.appendChild(drawer);
+            }
+        }
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", moveDrawerToBody);
+        } else {
+            moveDrawerToBody();
+        }
+    })();
+</script>

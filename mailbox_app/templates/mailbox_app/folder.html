@@ -78,8 +78,17 @@
                 {% endif %}
 
                 <!-- Панель быстрых фильтров и выпадающей сортировки (Outlook / Thunderbird style) -->
-                <div class="mailbox-quick-filters px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                <div class="mailbox-quick-filters px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between gap-2">
+                    <!-- Прокручиваемая в 1 строку лента фильтров (Filter Chips) -->
+                    <div class="mailbox-filter-chips-scroll d-flex align-items-center gap-1">
+                        <!-- Кнопка сортировки на смартфонах (открывает Bottom Sheet #mobileMailSortModal) -->
+                        <button type="button" class="mailbox-filter-btn active d-md-none flex-shrink-0 d-flex align-items-center gap-1 shadow-none"
+                                data-bs-toggle="modal" data-bs-target="#mobileMailSortModal" title="Выбрать сортировку писем">
+                            <i class="bx bx-sort text-primary"></i>
+                            <span>{{ current_sort_label|truncatechars:18 }}</span>
+                            <i class="bx bx-chevron-down ms-1" style="font-size: 10px;"></i>
+                        </button>
+
                         <a href="?filter=all{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
                            class="mailbox-filter-btn {% if filter_by == 'all' or not filter_by %}active{% endif %}">
                             Все
@@ -98,14 +107,14 @@
                         </a>
                     </div>
 
-                    <!-- Выпадающий список сортировки -->
-                    <div class="dropdown flex-shrink-0">
+                    <!-- Выпадающий список сортировки для планшетов и десктопов (скрыт на смартфонах <=768px) -->
+                    <div class="dropdown flex-shrink-0 d-none d-md-block">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none"
-                                type="button" id="sortDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                type="button" id="sortDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-display="static">
                             <i class="bx bx-sort font-size-16 text-primary"></i>
                             <span class="d-none d-sm-inline">{{ current_sort_label }}</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="sortDropdownBtn" style="min-width: 240px; border-radius: 10px; font-size: 13px;">
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="sortDropdownBtn" style="min-width: 240px; border-radius: 10px; font-size: 13px; z-index: 1060;">
                             <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">Сортировка по дате</li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'date' and sort_dir == 'desc' %}active fw-bold{% endif %}"
@@ -574,5 +583,105 @@
                 if (btn) btn.disabled = false;
             });
         }
-    </script>
-{% endblock %}
+    <!-- Мобильная шторка сортировки писем (Thunderbird Mobile Bottom Sheet) -->
+    <div class="modal fade mobile-bottom-sheet d-md-none" id="mobileMailSortModal" tabindex="-1" aria-labelledby="mobileMailSortModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-bottom m-0">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px 20px 0 0; background: #ffffff;">
+                <div class="bottom-sheet-handle mx-auto my-2" style="width: 40px; height: 5px; background: #cbd5e1; border-radius: 3px;"></div>
+                <div class="modal-header border-bottom py-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-sort-alt-2 fs-5 text-primary"></i>
+                        <h6 class="modal-title fw-bold text-dark m-0" id="mobileMailSortModalLabel">Сортировка сообщений</h6>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-3" style="max-height: 75vh; overflow-y: auto;">
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По дате получения</div>
+                    <div class="list-group list-group-flush rounded-3 border mb-3 overflow-hidden">
+                        <a href="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-calendar-event font-size-18 {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>Сначала новые</span>
+                            </span>
+                            {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'date' and sort_dir == 'asc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-calendar-event font-size-18 {% if sort_by == 'date' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>Сначала старые</span>
+                            </span>
+                            {% if sort_by == 'date' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                    </div>
+
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По автору и теме</div>
+                    <div class="list-group list-group-flush rounded-3 border mb-3 overflow-hidden">
+                        <a href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'asc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По автору (А → Я)</span>
+                            </span>
+                            {% if sort_by == 'from' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'desc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По автору (Я → А)</span>
+                            </span>
+                            {% if sort_by == 'from' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'subject' and sort_dir == 'asc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-message-square-detail font-size-18 {% if sort_by == 'subject' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По теме (А → Я)</span>
+                            </span>
+                            {% if sort_by == 'subject' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'subject' and sort_dir == 'desc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-message-square-detail font-size-18 {% if sort_by == 'subject' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По теме (Я → А)</span>
+                            </span>
+                            {% if sort_by == 'subject' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                    </div>
+
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По размеру и статусу</div>
+                    <div class="list-group list-group-flush rounded-3 border overflow-hidden">
+                        <a href="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'size' and sort_dir == 'desc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-archive font-size-18 {% if sort_by == 'size' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По размеру (убывание)</span>
+                            </span>
+                            {% if sort_by == 'size' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'flagged' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bxs-star font-size-18 {% if sort_by == 'flagged' %}text-white{% else %}text-warning{% endif %}"></i>
+                                <span>Сначала важные (со звездочкой)</span>
+                            </span>
+                            {% if sort_by == 'flagged' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'unread' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-envelope font-size-18 {% if sort_by == 'unread' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>Сначала непрочитанные</span>
+                            </span>
+                            {% if sort_by == 'unread' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
