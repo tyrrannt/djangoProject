@@ -97,6 +97,17 @@
                     <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Авиакомпания БАРКОЛ"/>
                 </a>
 
+                <!-- Кнопка вызова профиля (выезжает шторка снизу) на мобильных -->
+                <button type="button" class="mobile-header-avatar-btn d-md-none"
+                        data-bs-toggle="modal" data-bs-target="#mobileUserMenuModal"
+                        aria-label="Личный кабинет и меню профиля">
+                    <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ user.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                         alt="{{ user.username }}"
+                         class="rounded-circle"
+                         width="32"
+                         height="32"/>
+                </button>
+
                 <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"
                      data-fire-event="sidebar-left-opened" aria-label="Открыть боковое меню" role="button">
                     <i class="fas fa-bars" aria-hidden="true"></i>

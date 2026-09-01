@@ -225,7 +225,18 @@
                     </div>
                 </a>
 
-                <!-- 5. Журнал разъездов (Для рядовых сотрудников без прав на СЗ) -->
+                <!-- 6. Мой профиль и меню (Открыть шторку профиля) -->
+                <button type="button" class="quick-action-btn border-0 text-start" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#mobileUserMenuModal">
+                    <div class="quick-action-icon bg-info text-white">
+                        <i class="bx bx-user-circle"></i>
+                    </div>
+                    <div>
+                        <div>Личный кабинет и профиль</div>
+                        <small class="text-muted font-weight-normal">Почта, личные данные, смена аватара, тетрис</small>
+                    </div>
+                </button>
+
+                <!-- 7. Журнал разъездов (Для рядовых сотрудников без прав на СЗ) -->
                 {% if not perms.hrdepartment_app.add_officialmemo and not perms.hrdepartment_app.add_approvaloficialmemoprocess and not user.is_superuser %}
                     <a href="{% url 'hrdepartment_app:reportcard_list' %}" class="quick-action-btn">
                         <div class="quick-action-icon bg-secondary text-white">

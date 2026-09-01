@@ -3,24 +3,25 @@
 
 <!-- ============================================
      МЕНЮ ПОЛЬЗОВАТЕЛЯ (USER PROFILE BOX)
-     Десктоп: выпадающее меню | Мобильные: прямой переход в профиль
+     Десктопы и планшеты: выпадающая шторка сверху в неизменном виде (свернута по умолчанию)
+     Мобильные устройства (<=768px): выезжающий раздел снизу (Bottom Sheet)
      ============================================ -->
 <div id="userbox" class="userbox">
-    <!-- Для десктопа: аватар с именем и выпадающим списком -->
+    <!-- 1. Десктоп и планшеты: кнопка выпадающего меню сверху -->
     <a href="#" class="d-none d-md-flex align-items-center text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
         <figure class="profile-picture">
             <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ user.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                  alt="{{ user.username }}"
                  class="rounded-circle"
-                 width="38"
-                 height="38"
+                 width="40"
+                 height="40"
                  data-lock-picture="{% if user.avatar %}{{ user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"/>
         </figure>
         <div class="profile-info" data-lock-name="{{ user.get_full_name }}" data-lock-email="{{ user.email }}">
             <span class="name">{{ user.get_full_name|default:user.username }}</span>
             <span class="role">
                 {% if user.is_superuser %}
-                    <i class="fas fa-shield-alt me-1 text-primary"></i>Администратор
+                    <i class="fas fa-shield-alt me-1"></i>Администратор
                 {% elif user.job %}
                     {{ user.job }}
                 {% else %}
@@ -28,109 +29,269 @@
                 {% endif %}
             </span>
         </div>
-        <i class="fas fa-chevron-down custom-caret ms-2"></i>
+        <i class="fas fa-chevron-down custom-caret"></i>
     </a>
 
-    <!-- Для мобильных устройств (<=768px): прямой переход в Профиль пользователя -->
-    <a href="{% url 'customers_app:profile' user.pk %}" class="d-flex d-md-none align-items-center text-decoration-none py-1" aria-label="Мой профиль">
-        <figure class="profile-picture m-0">
-            <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ user.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
-                 alt="{{ user.username }}"
-                 class="rounded-circle shadow-sm"
-                 width="36"
-                 height="36"/>
-        </figure>
+    <!-- 2. Мобильные устройства (<=768px): клик по аватару открывает раздел снизу (Bottom Sheet) -->
+    <a href="#" class="d-flex d-md-none align-items-center mobile-userbox-trigger text-decoration-none"
+       data-bs-toggle="modal" data-bs-target="#mobileUserMenuModal" aria-label="Открыть меню профиля">
+        <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ user.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+             alt="{{ user.username }}"
+             class="rounded-circle border border-2 border-white shadow-sm"
+             width="34"
+             height="34"/>
+        <i class="fas fa-chevron-down ms-1" style="font-size: 10px; color: #ffffff;"></i>
     </a>
 
-    <!-- Десктопное выпадающее меню -->
-    <div class="dropdown-menu dropdown-menu-end d-none d-md-block shadow border-0 rounded-3 py-2">
+    <!-- 3. Десктопное и планшетное выпадающее меню (Шторка сверху, свернута по умолчанию) -->
+    <div class="dropdown-menu dropdown-menu-end">
         <ul class="list-unstyled mb-0">
             <!-- Панель администратора (только для суперпользователя) -->
             {% if user.is_superuser %}
                 <li>
-                    <a role="menuitem" tabindex="-1" href="{% url 'admin:index' %}" class="dropdown-item py-2 px-3 d-flex align-items-center">
-                        <i class="bx bx-shield-quarter me-2 text-primary font-size-18"></i>
+                    <a role="menuitem" tabindex="-1" href="{% url 'admin:index' %}">
+                        <i class="bx bx-shield-quarter me-2"></i>
                         <span>Панель администратора</span>
                     </a>
                 </li>
-                <li class="dropdown-divider my-1"></li>
+                <li class="divider"></li>
             {% endif %}
 
             <!-- Мой профиль -->
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:profile' user.pk %}" class="dropdown-item py-2 px-3 d-flex align-items-center">
-                    <i class="bx bx-user-circle me-2 text-primary font-size-18"></i>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:profile' user.pk %}">
+                    <i class="bx bx-user-circle me-2"></i>
                     <span>Мой профиль</span>
                 </a>
             </li>
 
             <!-- Корпоративная почта -->
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'mailbox_app:index' %}" class="dropdown-item py-2 px-3 d-flex align-items-center">
-                    <i class="bx bx-envelope me-2 text-primary font-size-18"></i>
+                <a role="menuitem" tabindex="-1" href="{% url 'mailbox_app:index' %}">
+                    <i class="bx bx-envelope me-2 text-primary"></i>
                     <span>Корпоративная почта</span>
                 </a>
             </li>
 
-            <!-- Личные данные -->
+            <!-- Личные данные (быстрый доступ) -->
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:staff' user.pk %}" class="dropdown-item py-2 px-3 d-flex align-items-center">
-                    <i class="bx bx-id-card me-2 text-secondary font-size-18"></i>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:staff' user.pk %}">
+                    <i class="bx bx-id-card me-2"></i>
                     <span>Личные данные</span>
                 </a>
             </li>
 
-            <!-- Изменить аватар -->
+            <!-- Настройки аккаунта -->
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:avatar_update' user.pk %}" class="dropdown-item py-2 px-3 d-flex align-items-center">
-                    <i class="bx bx-image me-2 text-secondary font-size-18"></i>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:avatar_update' user.pk %}">
+                    <i class="bx bx-image me-2"></i>
                     <span>Изменить аватар</span>
                 </a>
             </li>
 
-            <li class="dropdown-divider my-1"></li>
+            <li class="divider"></li>
+
+            <!-- Игры и развлечения -->
+            <li>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:game' %}">
+                    <i class="bx bx-joystick me-2"></i>
+                    <span>Тетрис</span>
+                    <span class="badge bg-success ms-2">Игра</span>
+                </a>
+            </li>
+
+            <li class="divider"></li>
 
             <!-- Блокировка экрана -->
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:lock_screen' %}" class="dropdown-item py-2 px-3 d-flex align-items-center">
-                    <i class="bx bx-lock me-2 text-warning font-size-18"></i>
-                    <span class="flex-grow-1">Блокировка экрана</span>
-                    <span class="badge bg-light text-muted border font-size-10 ms-2">Ctrl+L</span>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:lock_screen' %}">
+                    <i class="bx bx-lock me-2"></i>
+                    <span>Блокировка экрана</span>
+                    <span class="badge bg-info ms-2">Ctrl+L</span>
                 </a>
             </li>
 
             <!-- Выход -->
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:logout' %}" class="dropdown-item py-2 px-3 d-flex align-items-center text-danger">
-                    <i class="bx bx-power-off me-2 text-danger font-size-18"></i>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:logout' %}" class="text-danger">
+                    <i class="bx bx-power-off me-2"></i>
                     <span>Выход</span>
                 </a>
             </li>
         </ul>
 
         <!-- Дополнительная информация о сессии -->
-        <div class="dropdown-footer bg-light mt-2 pt-2 pb-1 px-3 small text-muted border-top">
-            <div class="d-flex align-items-center gap-1">
-                <i class="fas fa-clock text-muted" style="font-size: 11px;"></i>
-                <span style="font-size: 11px;">Вход: {{ user.last_login|date:"d.m.Y H:i"|default:"сегодня" }}</span>
+        <div class="dropdown-footer bg-light mt-2 pt-2 pb-1 px-3 small text-muted">
+            <div class="d-flex flex-column gap-1">
+                <div class="d-flex">
+                    <div class="flex-shrink-0" style="width: 20px;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="flex-grow-1 text-wrap" style="word-break: break-word;">
+                        Вход: {{ user.last_login|date:"d.m.Y H:i"|default:"сегодня" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================
+     4. МОБИЛЬНЫЙ РАЗДЕЛ ПОЛЬЗОВАТЕЛЯ (BOTTOM SHEET)
+     Отображается в виде выезжающей шторки снизу на экранах <=768px
+     ============================================ -->
+<div class="modal fade mobile-bottom-sheet" id="mobileUserMenuModal" tabindex="-1" aria-labelledby="mobileUserMenuModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content p-3">
+            <div class="bottom-sheet-handle"></div>
+
+            <!-- Шапка профиля пользователя -->
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ user.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                         alt="{{ user.username }}"
+                         class="rounded-circle shadow-sm border border-2 border-primary"
+                         width="48"
+                         height="48"/>
+                    <div>
+                        <div class="fw-bold text-dark fs-6" id="mobileUserMenuModalLabel">{{ user.get_full_name|default:user.username }}</div>
+                        <div class="text-muted small">
+                            {% if user.is_superuser %}
+                                <span class="badge bg-primary text-white">Администратор</span>
+                            {% elif user.job %}
+                                {{ user.job }}
+                            {% else %}
+                                {{ user.email }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+
+            <!-- Список разделов (крупные touch-кнопки в стиле quick-action-btn) -->
+            <div class="mobile-user-actions-list" style="max-height: 60vh; overflow-y: auto;">
+                {% if user.is_superuser %}
+                    <a href="{% url 'admin:index' %}" class="quick-action-btn mb-2">
+                        <div class="quick-action-icon bg-primary text-white">
+                            <i class="bx bx-shield-quarter"></i>
+                        </div>
+                        <div>
+                            <div>Панель администратора</div>
+                            <small class="text-muted font-weight-normal">Управление системой Django</small>
+                        </div>
+                    </a>
+                {% endif %}
+
+                <!-- Мой профиль -->
+                <a href="{% url 'customers_app:profile' user.pk %}" class="quick-action-btn mb-2">
+                    <div class="quick-action-icon bg-primary text-white">
+                        <i class="bx bx-user-circle"></i>
+                    </div>
+                    <div>
+                        <div>Мой профиль</div>
+                        <small class="text-muted font-weight-normal">Персональная страница сотрудника</small>
+                    </div>
+                </a>
+
+                <!-- Корпоративная почта -->
+                <a href="{% url 'mailbox_app:index' %}" class="quick-action-btn mb-2">
+                    <div class="quick-action-icon bg-info text-white">
+                        <i class="bx bx-envelope"></i>
+                    </div>
+                    <div>
+                        <div>Корпоративная почта</div>
+                        <small class="text-muted font-weight-normal">Входящие письма и сообщения</small>
+                    </div>
+                </a>
+
+                <!-- Личные данные -->
+                <a href="{% url 'customers_app:staff' user.pk %}" class="quick-action-btn mb-2">
+                    <div class="quick-action-icon bg-secondary text-white">
+                        <i class="bx bx-id-card"></i>
+                    </div>
+                    <div>
+                        <div>Личные данные</div>
+                        <small class="text-muted font-weight-normal">Паспорт, документы, контакты</small>
+                    </div>
+                </a>
+
+                <!-- Изменить аватар -->
+                <a href="{% url 'customers_app:avatar_update' user.pk %}" class="quick-action-btn mb-2">
+                    <div class="quick-action-icon bg-secondary text-white">
+                        <i class="bx bx-image"></i>
+                    </div>
+                    <div>
+                        <div>Изменить аватар</div>
+                        <small class="text-muted font-weight-normal">Загрузить фотографию профиля</small>
+                    </div>
+                </a>
+
+                <!-- Игры и развлечения: Тетрис -->
+                <a href="{% url 'customers_app:game' %}" class="quick-action-btn mb-2">
+                    <div class="quick-action-icon bg-success text-white">
+                        <i class="bx bx-joystick"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center w-100 pe-2">
+                        <div>
+                            <div>Тетрис</div>
+                            <small class="text-muted font-weight-normal">Мини-игра для отдыха</small>
+                        </div>
+                        <span class="badge bg-success">Игра</span>
+                    </div>
+                </a>
+
+                <!-- Блокировка экрана -->
+                <a href="{% url 'customers_app:lock_screen' %}" class="quick-action-btn mb-2">
+                    <div class="quick-action-icon bg-warning text-dark">
+                        <i class="bx bx-lock"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center w-100 pe-2">
+                        <div>
+                            <div>Блокировка экрана</div>
+                            <small class="text-muted font-weight-normal">Защита рабочей сессии</small>
+                        </div>
+                        <span class="badge bg-light text-muted border font-size-10">Ctrl+L</span>
+                    </div>
+                </a>
+
+                <!-- Выход -->
+                <a href="{% url 'customers_app:logout' %}" class="quick-action-btn mb-2 text-danger">
+                    <div class="quick-action-icon bg-danger text-white">
+                        <i class="bx bx-power-off"></i>
+                    </div>
+                    <div>
+                        <div>Выход из системы</div>
+                        <small class="text-muted font-weight-normal">Завершить текущий сеанс</small>
+                    </div>
+                </a>
+
+                <!-- Информация о сессии -->
+                <div class="p-2 bg-light rounded text-center text-muted small mt-2">
+                    <i class="fas fa-clock me-1"></i> Последний вход: {{ user.last_login|date:"d.m.Y H:i"|default:"сегодня" }}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Стили выпадающего меню пользователя */
+    /* ============================================
+       СТИЛИ ВЫПАДАЮЩЕГО МЕНЮ ПОЛЬЗОВАТЕЛЯ (ДЕСКТОП)
+       ============================================ */
     .userbox .dropdown-menu {
-        min-width: 250px;
-        border-radius: 10px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-        animation: fadeInDown 0.18s ease-out;
+        min-width: 260px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: none;
+        margin-top: 0.5rem;
+        animation: fadeInDown 0.2s ease-out;
     }
 
     @keyframes fadeInDown {
         from {
             opacity: 0;
-            transform: translateY(-8px);
+            transform: translateY(-10px);
         }
         to {
             opacity: 1;
@@ -138,27 +299,66 @@
         }
     }
 
-    .userbox .dropdown-item {
-        font-size: 13.5px;
-        font-weight: 500;
-        color: #334155;
-        transition: all 0.15s ease;
+    .userbox .dropdown-menu li a {
+        padding: 0.6rem 1.2rem;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+        color: #333;
+        font-size: 0.9rem;
     }
 
-    .userbox .dropdown-item:hover {
-        background-color: #f1f5f9;
-        color: #0088cc;
+    .userbox .dropdown-menu li a:hover {
+        background-color: #f8f9fa;
+        padding-left: 1.5rem;
+        color: #0d6efd;
     }
 
-    .userbox .dropdown-item.text-danger:hover {
-        background-color: #fee2e2;
-        color: #dc2626 !important;
+    .userbox .dropdown-menu li a i {
+        font-size: 1.2rem;
+        width: 1.5rem;
+        color: #6c757d;
+        transition: all 0.2s ease;
+    }
+
+    .userbox .dropdown-menu li a:hover i {
+        color: #0d6efd;
+        transform: scale(1.05);
+    }
+
+    .userbox .dropdown-menu li a.text-danger:hover {
+        background-color: #f8d7da;
+    }
+
+    .userbox .dropdown-menu li a.text-danger:hover i {
+        color: #dc3545;
+    }
+
+    .userbox .dropdown-menu .divider {
+        height: 1px;
+        margin: 0.4rem 0;
+        background: #e9ecef;
+    }
+
+    .dropdown-header {
+        padding: 0.75rem 1rem;
+        background-color: #f8f9fa;
+    }
+
+    .userbox .dropdown-menu .badge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .dropdown-footer {
+        border-top: 1px solid #e9ecef;
+        font-size: 0.7rem;
     }
 
     .custom-caret {
-        font-size: 11px;
-        color: #94a3b8;
         transition: transform 0.2s ease;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
     }
 
     .userbox.show .custom-caret {
@@ -173,6 +373,17 @@
             if (e.ctrlKey && e.key === 'l') {
                 e.preventDefault();
                 window.location.href = "{% url 'customers_app:lock_screen' %}";
+            }
+        });
+
+        // Закрытие выпадающего меню десктопа при клике вне его области
+        document.addEventListener('click', function (event) {
+            const userbox = document.getElementById('userbox');
+            const dropdownMenu = document.querySelector('.userbox .dropdown-menu');
+            if (userbox && dropdownMenu) {
+                if (!userbox.contains(event.target) && dropdownMenu.classList.contains('show')) {
+                    bootstrap.Dropdown.getInstance(document.querySelector('[data-bs-toggle="dropdown"]'))?.hide();
+                }
             }
         });
     });
