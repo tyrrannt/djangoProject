@@ -6,8 +6,9 @@
 import datetime
 import json
 from collections import defaultdict
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
+from dateutil import rrule
 import pandas as pd
 import requests
 from decouple import config
@@ -15,9 +16,9 @@ from django.db import transaction
 from django.db.models import Q
 
 from core import logger
-from administration_app.utils import get_jsons_data_filter, get_date_interval
+from administration_app.utils import get_jsons_data_filter, get_jsons_data_filter2, get_date_interval
 from customers_app.models import DataBaseUser, VacationScheduleList, VacationSchedule
-from hrdepartment_app.models import ReportCard, check_day
+from hrdepartment_app.models import ReportCard, WeekendDay, check_day
 
 
 def bulk_upsert_report_cards(to_create: List[ReportCard]):
@@ -468,3 +469,189 @@ def process_vacation_schedule(year=None):
 
         logger.info(f"Создано {objs_created} записей (vacation schedule)")
     return {"status": "success", "count": objs_created}
+
+
+def process_get_vacation(year: Optional[int] = None) -> Dict[str, Any]:
+    """Синхронизирует фактические данные по отпускам сотрудников из 1С ЗУП в табель (ReportCard).
+
+    Выполняет запрос в регистр сведений 1С ЗУП 'ДанныеОтпусковКарточкиСотрудника'
+    за указанный год, сопоставляет периоды с учетом производственного календаря (WeekendDay),
+    рабочих графиков сотрудников и формирует записи табеля (ReportCard) с помощью bulk_create.
+
+    Args:
+        year (Optional[int]): Год, за который выполняется синхронизация отпусков.
+            Если не указан, берется текущий календарный год.
+
+    Returns:
+        Dict[str, Any]: Словарь с результатом операции:
+            - status (str): Статус ('success' или 'error').
+            - count (int): Количество созданных записей табеля.
+            - year (int): Обработанный год.
+
+    Raises:
+        Exception: При критических ошибках синхронизации (перехватывается в Celery task).
+
+    Example:
+        >>> res = process_get_vacation(2026)
+        >>> print(res["count"])
+        154
+    """
+    type_of_report = {
+        "2": "Ежегодный",
+        "3": "Дополнительный ежегодный отпуск",
+        "4": "Отпуск за свой счет",
+        "5": "Дополнительный учебный отпуск (оплачиваемый)",
+        "6": "Отпуск по уходу за ребенком",
+        "7": "Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС",
+        "8": "Отпуск по беременности и родам",
+        "9": "Отпуск без оплаты согласно ТК РФ",
+        "10": "Дополнительный отпуск",
+        "11": "Дополнительный оплачиваемый отпуск пострадавшим в ",
+        "12": "Основной",
+        "19": "Отпуск на СКЛ (за счет ФСС)",
+    }
+    reverse_type_of_report = {v: k for k, v in type_of_report.items()}
+    vacation_record_types = list(type_of_report.keys())
+
+    exclude_list = ["proxmox", "shakirov"]
+    if not year:
+        year = datetime.datetime.today().year
+    else:
+        year = int(year)
+
+    # 1. Предзагрузка активных пользователей вместе с рабочими профилями (1 запрос)
+    users_qs = DataBaseUser.objects.filter(is_active=True).exclude(
+        username__in=exclude_list
+    ).select_related("user_work_profile")
+    users_dict = {u.ref_key: u for u in users_qs if u.ref_key}
+
+    # 2. Предзагрузка производственного календаря за смежные годы (1 запрос)
+    weekend_qs = WeekendDay.objects.filter(
+        weekend_day__year__gte=year - 1,
+        weekend_day__year__lte=year + 1
+    )
+    holiday_dates_type1 = {w.weekend_day for w in weekend_qs if w.weekend_type == "1" and w.weekend_day}
+    all_weekend_dates = {w.weekend_day for w in weekend_qs if w.weekend_day}
+
+    # 3. Запрос данных из 1С OData (сначала пакетный за год, при необходимости fallback по сотрудникам)
+    vacation_data = get_jsons_data_filter(
+        "InformationRegister",
+        "ДанныеОтпусковКарточкиСотрудника",
+        "year(ДатаОкончания)",
+        str(year),
+        0,
+        0,
+        False,
+        False
+    )
+
+    vacation_items = []
+    if vacation_data and isinstance(vacation_data, dict) and vacation_data.get("value"):
+        vacation_items = vacation_data["value"]
+    else:
+        # Fallback: опрос по каждому пользователю
+        for ref_key in users_dict.keys():
+            dt = get_jsons_data_filter2(
+                "InformationRegister",
+                "ДанныеОтпусковКарточкиСотрудника",
+                "Сотрудник_Key",
+                ref_key,
+                "year(ДатаОкончания)",
+                str(year),
+                0,
+                0,
+            )
+            if isinstance(dt, dict):
+                for key in dt:
+                    if isinstance(dt[key], list):
+                        vacation_items.extend(dt[key])
+
+    report_cards_to_create = []
+
+    for item in vacation_items:
+        ref_key = item.get("Сотрудник_Key")
+        if not ref_key or ref_key not in users_dict:
+            continue
+
+        usr_obj = users_dict[ref_key]
+        try:
+            start_date_str = item.get("ДатаНачала", "")[:10]
+            end_date_str = item.get("ДатаОкончания", "")[:10]
+            if not start_date_str or not end_date_str:
+                continue
+
+            start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d")
+
+            start_d = start_date.date()
+            end_d = end_date.date()
+
+            # Подсчет праздничных дней (тип 1) в интервале отпуска
+            weekend_count = sum(1 for d in holiday_dates_type1 if start_d <= d <= end_d)
+            raw_days = int(item.get("КоличествоДней", 0))
+            count_date = raw_days + weekend_count if raw_days > 0 else (end_d - start_d).days + 1
+
+            period = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
+            local_weekend = {d for d in all_weekend_dates if start_d <= d <= end_d}
+
+            view_type = item.get("ВидОтпускаПредставление", "")
+            record_type = reverse_type_of_report.get(view_type)
+            if not record_type:
+                for code, name in type_of_report.items():
+                    if name in view_type or view_type in name:
+                        record_type = code
+                        break
+            if not record_type:
+                record_type = "2"
+
+            profile = getattr(usr_obj, "user_work_profile", None)
+            sched_start = profile.personal_work_schedule_start if profile and profile.personal_work_schedule_start else datetime.time(8, 0)
+            sched_end = profile.personal_work_schedule_end if profile and profile.personal_work_schedule_end else datetime.time(17, 0)
+
+            reason = item.get("Основание", "") or "Отпуск"
+            doc_ref_key = item.get("ДокументОснование", "")
+
+            for unit in period:
+                u_date = unit.date()
+                if unit.weekday() in [0, 1, 2, 3] and u_date not in local_weekend:
+                    start_time = sched_start
+                    end_time = sched_end
+                elif unit.weekday() == 4 and u_date not in local_weekend:
+                    # В пятницу на 1 час короче
+                    delta_time = datetime.timedelta(hours=sched_end.hour, minutes=sched_end.minute) - datetime.timedelta(hours=1)
+                    start_time = sched_start
+                    total_sec = max(0, int(delta_time.total_seconds()) % 86400)
+                    end_time = datetime.time(total_sec // 3600, (total_sec % 3600) // 60, total_sec % 60)
+                else:
+                    start_time = datetime.time(0, 0)
+                    end_time = datetime.time(0, 0)
+
+                report_cards_to_create.append(ReportCard(
+                    report_card_day=unit,
+                    employee=usr_obj,
+                    start_time=start_time,
+                    end_time=end_time,
+                    record_type=record_type,
+                    reason_adjustment=reason,
+                    doc_ref_key=doc_ref_key,
+                ))
+
+        except Exception as e:
+            logger.error(f"Ошибка парсинга отпуска для {usr_obj}: {e}")
+
+    # 4. Атомарная замена записей отпусков за год
+    with transaction.atomic():
+        ReportCard.objects.filter(
+            report_card_day__year=year,
+            record_type__in=vacation_record_types
+        ).delete()
+
+        batch_size = 1000
+        objs_created = 0
+        for i in range(0, len(report_cards_to_create), batch_size):
+            batch = report_cards_to_create[i:i + batch_size]
+            objs = ReportCard.objects.bulk_create(batch)
+            objs_created += len(objs)
+
+    logger.info(f"Синхронизация отпусков ({year} год) завершена. Создано записей: {objs_created}")
+    return {"status": "success", "count": objs_created, "year": year}

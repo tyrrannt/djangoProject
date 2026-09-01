@@ -40,7 +40,7 @@ from telegram_app.management.commands.bot import send_message_tg
 from celery import shared_task
 from hrdepartment_app.services.celery_services import (
     process_sick_leave, process_report_card_daily, process_vacation_check,
-    process_save_report, process_vacation_schedule
+    process_save_report, process_vacation_schedule, process_get_vacation
 )
 
 
@@ -736,147 +736,30 @@ def get_year_report(report_year=None, html_mode=True):
         return html_table
 
 
-@app.task()
-def get_vacation(year=None):
-    type_of_report = {
-        "2": "Ежегодный",
-        "3": "Дополнительный ежегодный отпуск",
-        "4": "Отпуск за свой счет",
-        "5": "Дополнительный учебный отпуск (оплачиваемый)",
-        "6": "Отпуск по уходу за ребенком",
-        "7": "Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС",
-        "8": "Отпуск по беременности и родам",
-        "9": "Отпуск без оплаты согласно ТК РФ",
-        "10": "Дополнительный отпуск",
-        "11": "Дополнительный оплачиваемый отпуск пострадавшим в ",
-        "12": "Основной",
-        "19": "Отпуск на СКЛ (за счет ФСС)",
-    }
-    all_records = 0
-    exclude_list = ["proxmox", "shakirov"]
-    if not year:
-        year = datetime.datetime.today().year
+@shared_task(bind=True, max_retries=3)
+def get_vacation(self, year=None):
+    """Задача Celery для синхронизации фактических данных отпусков сотрудников с 1С ЗУП.
 
-    report_card_list = list()
-    for rec_item in (
-            DataBaseUser.objects.all().exclude(username__in=exclude_list).values("ref_key")
-    ):
-        dt = get_jsons_data_filter2(
-            "InformationRegister",
-            "ДанныеОтпусковКарточкиСотрудника",
-            "Сотрудник_Key",
-            rec_item["ref_key"],
-            "year(ДатаОкончания)",
-            year,
-            0,
-            0,
-        )
-        for key in dt:
-            for item in dt[key]:
-                try:
-                    usr_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
-                    start_date = datetime.datetime.strptime(
-                        item["ДатаНачала"][:10], "%Y-%m-%d"
-                    )
-                    end_date = datetime.datetime.strptime(
-                        item["ДатаОкончания"][:10], "%Y-%m-%d"
-                    )
-                    weekend_count = WeekendDay.objects.filter(
-                        Q(weekend_day__gte=start_date)
-                        & Q(weekend_day__lte=end_date)
-                        & Q(weekend_type="1")
-                    ).count()
-                    count_date = int(item["КоличествоДней"]) + weekend_count
-                    period = list(
-                        rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date)
-                    )
-                    weekend = [
-                        item.weekend_day
-                        for item in WeekendDay.objects.filter(
-                            Q(weekend_day__gte=start_date.date())
-                            & Q(weekend_day__lte=end_date.date())
-                        )
-                    ]
-                    for unit in period:
-                        if unit.weekday() in [0, 1, 2, 3] and unit.date() not in weekend:
-                            delta_time = datetime.timedelta(
-                                hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
-                                minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute,
-                            )
-                            start_time = (
-                                usr_obj.user_work_profile.personal_work_schedule_start
-                            )
-                            end_time = datetime.datetime.strptime(
-                                str(delta_time), "%H:%M:%S"
-                            ).time()
-                        elif unit.weekday() == 4 and unit not in weekend:
-                            delta_time = datetime.timedelta(
-                                hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
-                                minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute,
-                            ) - datetime.timedelta(hours=1)
-                            start_time = (
-                                usr_obj.user_work_profile.personal_work_schedule_start
-                            )
-                            end_time = datetime.datetime.strptime(
-                                str(delta_time), "%H:%M:%S"
-                            ).time()
-                        else:
-                            start_time = datetime.datetime.strptime(
-                                "00:00:00", "%H:%M:%S"
-                            ).time()
-                            end_time = datetime.datetime.strptime(
-                                "00:00:00", "%H:%M:%S"
-                            ).time()
+    Делегирует выполнение функции process_get_vacation в сервисном слое.
 
-                        value = [
-                            i
-                            for i in type_of_report
-                            if type_of_report[i] == item["ВидОтпускаПредставление"]
-                        ]
-                        # print(item)
-                        kwargs_obj = {
-                            "report_card_day": unit,
-                            "employee": usr_obj,
-                            "start_time": start_time,
-                            "end_time": end_time,
-                            "record_type": value[0],
-                            "reason_adjustment": item["Основание"],
-                            "doc_ref_key": item["ДокументОснование"],
-                        }
-                        report_card_list.append(kwargs_obj)
-                except Exception as e:
-                    logger.error(e)
+    Args:
+        year (Optional[int]): Год синхронизации (по умолчанию текущий календарный год).
+
+    Returns:
+        dict: Результат выполнения со статусом и количеством созданных записей табеля.
+
+    Raises:
+        Exception: Повторяет задачу через self.retry при сбоях сети или 1С.
+    """
+    logger.info(f"Celery task get_vacation started for year={year}")
     try:
+        res = process_get_vacation(year=year)
+        logger.info(f"Celery task get_vacation completed: {res}")
+        return res
+    except Exception as exc:
+        logger.error(f"Error in get_vacation task: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60)
 
-        if len(report_card_list) > 0:
-            for report_record in ReportCard.objects.filter(
-                    Q(report_card_day__year=year)
-                    & Q(
-                        record_type__in=[
-                            "2",
-                            "3",
-                            "4",
-                            "5",
-                            "6",
-                            "7",
-                            "8",
-                            "9",
-                            "10",
-                            "11",
-                            "12",
-                            "19",
-                        ]
-                    )
-            ):
-                report_record.delete()
-
-        objs = ReportCard.objects.bulk_create(
-            [ReportCard(**q) for q in report_card_list]
-        )
-    except Exception as _ex:
-        logger.error(f"Ошибка синхронизации записей отпуска {_ex}")
-
-    return logger.info(f"Создано {len(objs)} записей")
 
 
 @shared_task(bind=True, max_retries=3)
