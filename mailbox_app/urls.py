@@ -26,4 +26,6 @@ urlpatterns = [
     path("api/contacts/", views.MailboxContactsAPIView.as_view(), name="api_contacts"),
     # Настройки почты и подписи
     path("settings/", views.MailboxSettingsView.as_view(), name="settings"),
+    # Профилирование и диагностика производительности
+    path("diag/", views.MailboxDiagnosticView.as_view(), name="diag"),
 ]

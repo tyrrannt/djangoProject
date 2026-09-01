@@ -1,5 +1,3 @@
-"""Сервис взаимодействия с почтовым сервером по протоколу IMAP4."""
-
 import base64
 import email
 from email.header import decode_header
@@ -8,6 +6,7 @@ import imaplib
 import logging
 import re
 import ssl
+import time
 from typing import Dict, List, Optional, Tuple, Any
 
 from django.core.cache import cache
@@ -16,13 +15,19 @@ logger = logging.getLogger(__name__)
 
 
 def invalidate_mailbox_cache(email_addr: str) -> None:
-    """Сбрасывает кэш папок для указанного почтового ящика.
+    """Сбрасывает кэш папок и списков писем для указанного почтового ящика.
 
     Args:
         email_addr (str): Email адрес ящика.
     """
     if email_addr:
-        cache.delete(f"mailbox_folders_{email_addr.strip().lower()}")
+        addr = email_addr.strip().lower()
+        cache.delete(f"mailbox_folders_{addr}")
+        ver_key = f"mailbox_ver_{addr}"
+        try:
+            cache.incr(ver_key)
+        except Exception:
+            cache.set(ver_key, int(time.time()), timeout=86400 * 30)
 
 
 
@@ -304,7 +309,7 @@ class ImapMailService:
         folders.sort(key=lambda f: (order_priority.get(f["type"], 99), f["display_name"]))
 
         if cache_key:
-            cache.set(cache_key, folders, timeout=60)
+            cache.set(cache_key, folders, timeout=180)
 
         return folders
 
@@ -317,8 +322,9 @@ class ImapMailService:
         sort_by: str = "date",
         sort_dir: str = "desc",
         filter_by: str = "all",
+        force_refresh: bool = False,
     ) -> Tuple[List[Dict[str, Any]], int]:
-        """Возвращает страницу списка писем с высокоскоростной пакетной загрузкой (Batch Fetch).
+        """Возвращает страницу списка писем с высокоскоростной пакетной загрузкой (Batch Fetch) и кэшированием.
 
         Args:
             folder_name (str): Имя папки IMAP.
@@ -328,10 +334,21 @@ class ImapMailService:
             sort_by (str): Поле сортировки ('date', 'from', 'subject', 'size', 'flagged', 'unread', 'attachments').
             sort_dir (str): Направление ('asc' или 'desc').
             filter_by (str): Фильтр ('all', 'unread', 'flagged', 'attachments').
+            force_refresh (bool): Принудительный запрос в обход кэша.
 
         Returns:
             tuple[list[dict], int]: (Список превью писем, общее количество писем).
         """
+        email_clean = (self.email_addr or "").strip().lower()
+        ver_key = f"mailbox_ver_{email_clean}"
+        cache_ver = cache.get(ver_key) or 1
+        cache_key = f"mailbox_msgs_{email_clean}_{cache_ver}_{folder_name}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{query or ''}"
+
+        if not force_refresh and email_clean:
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                return cached_data
+
         if not self.client:
             return [], 0
 
@@ -402,44 +419,17 @@ class ImapMailService:
             if sort_dir == "desc":
                 uids_list.reverse()
         else:
-            # 2. Выборка UIDs:
-            # Для стандартного просмотра (сортировка по дате) используем мгновенный серверный UID SEARCH (3-5 мс)
-            if sort_by == "date":
-                status, search_data = self.client.uid("search", None, base_criteria)
-                if status == "OK" and search_data and search_data[0]:
-                    uids_list = [u for u in search_data[0].split() if u and u != b"0"]
-                    if sort_dir == "desc":
-                        uids_list.reverse()
-            else:
-                # Для кастомных сортировок (отправитель, тема, размер) используем серверный RFC 5256 SORT
-                imap_sort_fields = {
-                    "date": "DATE",
-                    "arrival": "ARRIVAL",
-                    "from": "FROM",
-                    "subject": "SUBJECT",
-                    "size": "SIZE",
-                }
-                sort_success = False
-                sort_field = imap_sort_fields.get(sort_by, "DATE")
-                try:
-                    direction = "REVERSE " if sort_dir == "desc" else ""
-                    sort_crit = f"({direction}{sort_field})"
-                    status, sort_data = self.client.uid("sort", sort_crit, "UTF-8", base_criteria)
-                    if status == "OK" and sort_data and sort_data[0]:
-                        uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
-                        sort_success = True
-                except Exception as e:
-                    logger.debug(f"[IMAP] Серверный SORT {sort_by} не удался ({e}), используем fallback")
-
-                if not sort_success:
-                    status, search_data = self.client.uid("search", None, base_criteria)
-                    if status == "OK" and search_data and search_data[0]:
-                        uids_list = [u for u in search_data[0].split() if u and u != b"0"]
-                        if sort_dir == "desc":
-                            uids_list.reverse()
+            # 2. Мгновенная серверная выборка UIDs (1-3 мс)
+            status, search_data = self.client.uid("search", None, base_criteria)
+            if status == "OK" and search_data and search_data[0]:
+                uids_list = [u for u in search_data[0].split() if u and u != b"0"]
+                if sort_dir == "desc":
+                    uids_list.reverse()
 
         total_messages = len(uids_list)
         if total_messages == 0:
+            if email_clean:
+                cache.set(cache_key, ([], 0), timeout=180)
             return [], 0
 
         # Пагинация по UIDs
@@ -448,6 +438,8 @@ class ImapMailService:
         page_uids = uids_list[start_idx:end_idx]
 
         if not page_uids:
+            if email_clean:
+                cache.set(cache_key, ([], total_messages), timeout=180)
             return [], total_messages
 
         # 3. Высокоскоростной пакетный FETCH (все 25 писем за 1 сетевой запрос вместо 25)
@@ -542,9 +534,21 @@ class ImapMailService:
         # Формируем итоговый список в точном порядке UIDs страницы
         messages = [messages_by_uid[u] for u in uids_ints if u in messages_by_uid]
 
+        # In-Memory сверхбыстрая сортировка для кастомных полей (отправитель, тема, размер)
+        if sort_by == "from":
+            messages.sort(key=lambda m: (m["from_name"] or "").lower(), reverse=(sort_dir == "desc"))
+        elif sort_by == "subject":
+            messages.sort(key=lambda m: (m["subject"] or "").lower(), reverse=(sort_dir == "desc"))
+        elif sort_by == "size":
+            messages.sort(key=lambda m: m["size_bytes"], reverse=(sort_dir == "desc"))
+
         # Фильтр по наличию вложений, если указан filter=attachments
         if filter_by == "attachments":
             messages = [m for m in messages if m["has_attachments"]]
+
+        # Сохраняем результат в кэш
+        if email_clean:
+            cache.set(cache_key, (messages, total_messages), timeout=180)
 
         return messages, total_messages
 

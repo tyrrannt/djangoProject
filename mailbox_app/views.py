@@ -1,12 +1,19 @@
 """Представления (Views) приложения корпоративной веб-почты."""
 
+import email
+from email.utils import parseaddr
 import html
+import imaplib
 import json
 import logging
+import socket
+import ssl
+import time
 from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.cache import cache
 from django.http import (
     Http404,
     HttpRequest,
@@ -88,6 +95,7 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
         sort_dir = self.request.GET.get("dir", "desc").strip().lower()
         filter_by = self.request.GET.get("filter", "all").strip().lower()
         page = int(self.request.GET.get("page", 1))
+        force_refresh = bool(self.request.GET.get("refresh"))
         per_page = 25
 
         folders = []
@@ -95,21 +103,41 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
         total_count = 0
         error_message = None
 
-        try:
-            with self.get_imap_service(account) as imap_svc:
-                folders = imap_svc.get_folders()
-                email_messages, total_count = imap_svc.get_messages(
-                    folder_name=current_folder,
-                    page=page,
-                    per_page=per_page,
-                    query=search_query if search_query else None,
-                    sort_by=sort_by,
-                    sort_dir=sort_dir,
-                    filter_by=filter_by,
-                )
-        except Exception as e:
-            logger.error(f"[Mailbox] Ошибка загрузки писем из {current_folder}: {e}")
-            error_message = f"Не удалось подключиться к серверу IMAP: {e}"
+        if account and account.email:
+            email_clean = account.email.strip().lower()
+            if force_refresh:
+                invalidate_mailbox_cache(email_clean)
+
+            ver_key = f"mailbox_ver_{email_clean}"
+            cache_ver = cache.get(ver_key) or 1
+            cache_key_folders = f"mailbox_folders_{email_clean}"
+            cache_key_msgs = f"mailbox_msgs_{email_clean}_{cache_ver}_{current_folder}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{search_query}"
+
+            cached_folders = cache.get(cache_key_folders) if not force_refresh else None
+            cached_msgs_data = cache.get(cache_key_msgs) if not force_refresh else None
+
+            if cached_folders is not None and cached_msgs_data is not None:
+                folders = cached_folders
+                email_messages, total_count = cached_msgs_data
+            else:
+                try:
+                    with self.get_imap_service(account) as imap_svc:
+                        folders = imap_svc.get_folders(force_refresh=force_refresh)
+                        email_messages, total_count = imap_svc.get_messages(
+                            folder_name=current_folder,
+                            page=page,
+                            per_page=per_page,
+                            query=search_query if search_query else None,
+                            sort_by=sort_by,
+                            sort_dir=sort_dir,
+                            filter_by=filter_by,
+                            force_refresh=force_refresh,
+                        )
+                except Exception as e:
+                    logger.error(f"[Mailbox] Ошибка загрузки писем из {current_folder}: {e}")
+                    error_message = f"Не удалось подключиться к серверу IMAP: {e}"
+        else:
+            error_message = "Почтовый аккаунт не настроен для текущего пользователя."
 
         total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
 
@@ -644,5 +672,241 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
         invalidate_mailbox_cache(self.get_account().email)
         messages.success(self.request, "Настройки почтового ящика успешно сохранены!")
         return redirect("mailbox_app:settings")
+
+
+class MailboxDiagnosticView(MailboxBaseMixin, TemplateView):
+    """Представление для детального пошагового профилирования и диагностики почтового сервера."""
+
+    template_name = "mailbox_app/diagnostic.html"
+
+    def get_context_data(self, **kwargs):
+        """Выполняет серию пошаговых тестов скорости сетевого взаимодействия и команд Kerio Connect.
+
+        Returns:
+            dict: Контекст шаблона с хронометражем операций и JSON-отчетом.
+        """
+        context = super().get_context_data(**kwargs)
+        account = self.get_account()
+        email_addr = account.email if account else ""
+        password = account.get_password() if account else ""
+        host = account.imap_host if account else "192.168.10.242"
+        port = account.imap_port if account else 993
+        use_ssl = account.imap_use_ssl if account else True
+
+        steps = []
+        error_message = None
+
+        def record(step_name: str, duration_ms: float, details: str = "", status: str = "OK"):
+            steps.append({
+                "step": step_name,
+                "ms": round(duration_ms, 2),
+                "details": details,
+                "status": status,
+            })
+
+        total_start = time.perf_counter()
+
+        if not email_addr or not password:
+            error_message = "Почтовый аккаунт или пароль не настроены для текущего пользователя."
+        else:
+            # 1. DNS Resolution
+            t0 = time.perf_counter()
+            ip_address = host
+            try:
+                ip_address = socket.gethostbyname(host)
+                dns_ms = (time.perf_counter() - t0) * 1000
+                record("1. DNS Resolution (Резолв хоста)", dns_ms, f"IP: {ip_address}")
+            except Exception as e:
+                dns_ms = (time.perf_counter() - t0) * 1000
+                record("1. DNS Resolution (Резолв хоста)", dns_ms, f"Ошибка: {e}", status="ERR")
+
+            # 2. TCP Socket Connect
+            t0 = time.perf_counter()
+            sock = None
+            try:
+                sock = socket.create_connection((host, port), timeout=5)
+                tcp_ms = (time.perf_counter() - t0) * 1000
+                record("2. TCP Socket Connect (Сетевой пинг/коннект)", tcp_ms, f"Подключено к {ip_address}:{port}")
+            except Exception as e:
+                tcp_ms = (time.perf_counter() - t0) * 1000
+                record("2. TCP Socket Connect (Сетевой пинг/коннект)", tcp_ms, f"Ошибка TCP: {e}", status="ERR")
+                error_message = f"Не удалось установить TCP-соединение с {host}:{port}: {e}"
+            finally:
+                if sock:
+                    sock.close()
+
+            # 3. IMAP Connect + SSL Handshake
+            if not error_message:
+                ssl_ctx = ssl.create_default_context()
+                if host.strip().replace(".", "").isdigit():
+                    ssl_ctx.check_hostname = False
+                    ssl_ctx.verify_mode = ssl.CERT_NONE
+
+                client = None
+                t0 = time.perf_counter()
+                try:
+                    if use_ssl:
+                        client = imaplib.IMAP4_SSL(host, port, ssl_context=ssl_ctx)
+                    else:
+                        client = imaplib.IMAP4(host, port)
+                    ssl_ms = (time.perf_counter() - t0) * 1000
+                    cipher_info = ""
+                    if use_ssl and hasattr(client, "ssl") and client.ssl:
+                        cipher_info = f"Cipher: {client.ssl.cipher()[0]}, TLS: {client.ssl.version()}"
+                    record("3. IMAP Connect + SSL Handshake", ssl_ms, cipher_info)
+                except Exception as e:
+                    ssl_ms = (time.perf_counter() - t0) * 1000
+                    record("3. IMAP Connect + SSL Handshake", ssl_ms, f"Ошибка SSL: {e}", status="ERR")
+                    error_message = f"Ошибка SSL-рукопожатия: {e}"
+
+                # 4. IMAP Login
+                if client and not error_message:
+                    t0 = time.perf_counter()
+                    try:
+                        login_status, login_res = client.login(email_addr, password)
+                        login_ms = (time.perf_counter() - t0) * 1000
+                        record("4. IMAP Login (Авторизация)", login_ms, f"Ответ сервера: {login_status}")
+                    except Exception as e:
+                        login_ms = (time.perf_counter() - t0) * 1000
+                        record("4. IMAP Login (Авторизация)", login_ms, f"Ошибка входа: {e}", status="ERR")
+                        error_message = f"Ошибка авторизации IMAP: {e}"
+
+                # 5. IMAP Capability
+                if client and not error_message:
+                    try:
+                        caps_status, caps_data = client.capability()
+                        caps_str = caps_data[0].decode("latin-1") if caps_data and caps_data[0] else ""
+                        record("5. IMAP CAPABILITY (Возможности сервера)", 0.1, f"EXT: {caps_str[:60]}...")
+                    except Exception:
+                        pass
+
+                # 6. IMAP LIST Folders
+                folder_count = 0
+                if client and not error_message:
+                    t0 = time.perf_counter()
+                    try:
+                        status, folder_list = client.list()
+                        list_ms = (time.perf_counter() - t0) * 1000
+                        if folder_list:
+                            folder_count = len([f for f in folder_list if f])
+                        record("6. IMAP LIST (Получение списка папок)", list_ms, f"Папок: {folder_count}")
+                    except Exception as e:
+                        list_ms = (time.perf_counter() - t0) * 1000
+                        record("6. IMAP LIST (Получение списка папок)", list_ms, f"Ошибка: {e}", status="ERR")
+
+                # 7. IMAP SELECT INBOX
+                inbox_msgs = 0
+                if client and not error_message:
+                    t0 = time.perf_counter()
+                    try:
+                        status, select_data = client.select('"INBOX"', readonly=True)
+                        select_ms = (time.perf_counter() - t0) * 1000
+                        if select_data and select_data[0]:
+                            inbox_msgs = int(select_data[0].decode("ascii", errors="ignore") or 0)
+                        record("7. IMAP SELECT 'INBOX' (Открытие папки)", select_ms, f"Сообщений в INBOX: {inbox_msgs}")
+                    except Exception as e:
+                        select_ms = (time.perf_counter() - t0) * 1000
+                        record("7. IMAP SELECT 'INBOX' (Открытие папки)", select_ms, f"Ошибка: {e}", status="ERR")
+
+                # 8. IMAP UID SEARCH ALL
+                uids = []
+                if client and not error_message:
+                    t0 = time.perf_counter()
+                    try:
+                        status, search_data = client.uid("search", None, "ALL")
+                        search_ms = (time.perf_counter() - t0) * 1000
+                        if search_data and search_data[0]:
+                            uids = [u for u in search_data[0].split() if u and u != b"0"]
+                        record("8. IMAP UID SEARCH ALL (Поиск всех UIDs)", search_ms, f"Всего писем: {len(uids)}")
+                    except Exception as e:
+                        search_ms = (time.perf_counter() - t0) * 1000
+                        record("8. IMAP UID SEARCH ALL (Поиск всех UIDs)", search_ms, f"Ошибка: {e}", status="ERR")
+
+                # 9. IMAP UID SEARCH UNSEEN
+                unseen_uids = []
+                if client and not error_message:
+                    t0 = time.perf_counter()
+                    try:
+                        status, unseen_data = client.uid("search", None, "UNSEEN")
+                        unseen_ms = (time.perf_counter() - t0) * 1000
+                        if unseen_data and unseen_data[0]:
+                            unseen_uids = [u for u in unseen_data[0].split() if u and u != b"0"]
+                        record("9. IMAP UID SEARCH UNSEEN (Непрочитанные)", unseen_ms, f"Непрочитанных: {len(unseen_uids)}")
+                    except Exception as e:
+                        unseen_ms = (time.perf_counter() - t0) * 1000
+                        record("9. IMAP UID SEARCH UNSEEN (Непрочитанные)", unseen_ms, f"Ошибка: {e}", status="ERR")
+
+                # 10. IMAP Batch FETCH 25
+                batch_uids = uids[-25:] if len(uids) >= 25 else uids
+                batch_bytes = 0
+                fetch_data = None
+                if client and not error_message and batch_uids:
+                    batch_uids_rev = list(reversed(batch_uids))
+                    uids_seq = ",".join(u.decode("ascii") if isinstance(u, bytes) else str(u) for u in batch_uids_rev)
+                    t0 = time.perf_counter()
+                    try:
+                        status, fetch_data = client.uid(
+                            "fetch",
+                            uids_seq,
+                            "(FLAGS INTERNALDATE RFC822.SIZE BODY.PEEK[HEADER.FIELDS (SUBJECT FROM TO DATE MESSAGE-ID CONTENT-TYPE)])"
+                        )
+                        fetch_ms = (time.perf_counter() - t0) * 1000
+                        if fetch_data:
+                            for item in fetch_data:
+                                if isinstance(item, tuple) and len(item) > 1 and isinstance(item[1], bytes):
+                                    batch_bytes += len(item[1])
+                        record("10. IMAP Batch FETCH (25 заголовков)", fetch_ms, f"Объем данных: {batch_bytes / 1024:.1f} KB")
+                    except Exception as e:
+                        fetch_ms = (time.perf_counter() - t0) * 1000
+                        record("10. IMAP Batch FETCH (25 заголовков)", fetch_ms, f"Ошибка FETCH: {e}", status="ERR")
+
+                # 11. Python Parsing of 25 headers
+                if fetch_data:
+                    t0 = time.perf_counter()
+                    parsed_count = 0
+                    for item in fetch_data:
+                        if isinstance(item, tuple) and len(item) > 1 and isinstance(item[1], bytes):
+                            msg = email.message_from_bytes(item[1])
+                            _subj = msg.get("Subject") or ""
+                            _fn, _fe = parseaddr(msg.get("From") or "")
+                            parsed_count += 1
+                    parse_ms = (time.perf_counter() - t0) * 1000
+                    record("11. Python Parsing (Парсинг 25 писем)", parse_ms, f"Обработано сообщений: {parsed_count}")
+
+                # 12. IMAP Logout
+                if client:
+                    t0 = time.perf_counter()
+                    try:
+                        client.logout()
+                        logout_ms = (time.perf_counter() - t0) * 1000
+                        record("12. IMAP Logout / Закрытие сессии", logout_ms, "Соединение корректно закрыто")
+                    except Exception:
+                        pass
+
+        total_time_ms = (time.perf_counter() - total_start) * 1000
+
+        diag_report = {
+            "target": f"{host}:{port}",
+            "ssl": use_ssl,
+            "account": email_addr,
+            "total_ms": round(total_time_ms, 2),
+            "steps": steps,
+            "error": error_message,
+        }
+        json_report_str = json.dumps(diag_report, ensure_ascii=False, indent=2)
+
+        context.update({
+            "email_addr": email_addr,
+            "host": host,
+            "port": port,
+            "use_ssl": use_ssl,
+            "steps": steps,
+            "total_time_ms": total_time_ms,
+            "total_time_sec": total_time_ms / 1000.0,
+            "error_message": error_message,
+            "json_report": json_report_str,
+        })
+        return context
+
 
 

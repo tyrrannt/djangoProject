@@ -44,20 +44,30 @@
                             </span>
                         </div>
 
-                        <!-- Форма поиска -->
-                        <form method="get" class="mailbox-search-form m-0" style="min-width: 240px; max-width: 360px;">
-                            <div class="input-group input-group-sm">
-                                <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Поиск писем...">
-                                <button class="btn btn-primary" type="submit" title="Искать">
-                                    <i class="bx bx-search"></i>
-                                </button>
-                                {% if search_query %}
-                                    <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary" title="Сбросить поиск">
-                                        <i class="bx bx-x"></i>
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </form>
+                        <!-- Действия шапки: Кнопка Обновить и Форма поиска -->
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="?refresh=1{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none"
+                               title="Проверить новые письма и обновить">
+                                <i class="bx bx-refresh font-size-18"></i>
+                                <span class="d-none d-sm-inline">Обновить</span>
+                            </a>
+
+                            <!-- Форма поиска -->
+                            <form method="get" class="mailbox-search-form m-0" style="min-width: 200px; max-width: 320px;">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Поиск писем...">
+                                    <button class="btn btn-primary" type="submit" title="Искать">
+                                        <i class="bx bx-search"></i>
+                                    </button>
+                                    {% if search_query %}
+                                        <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary" title="Сбросить поиск">
+                                            <i class="bx bx-x"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </header>
 

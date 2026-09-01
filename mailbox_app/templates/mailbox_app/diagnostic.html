@@ -1,0 +1,158 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    Диагностика почтового сервера — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <style>
+        .diag-card {
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            margin-bottom: 20px;
+        }
+        .diag-table td, .diag-table th {
+            vertical-align: middle;
+            padding: 10px 14px;
+        }
+        .diag-badge-ms {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .diag-badge-fast { background: #dcfce7; color: #166534; }
+        .diag-badge-medium { background: #fef9c3; color: #854d0e; }
+        .diag-badge-slow { background: #fee2e2; color: #991b1b; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container">
+            <div class="p-3 p-md-4 w-100" style="max-width: 1100px; margin: 0 auto;">
+                <!-- Заголовок и возврат -->
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <div>
+                        <a href="{% url 'mailbox_app:index' %}" class="btn btn-outline-secondary btn-sm mb-2">
+                            <i class="bx bx-arrow-back me-1"></i> Вернуться в почту
+                        </a>
+                        <h2 class="fw-bold text-dark m-0">🔍 Профилирование и диагностика почты</h2>
+                        <small class="text-muted">Замер сетевых задержек, SSL-рукопожатия и скорости команд Kerio Connect</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'mailbox_app:diag' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+                            <i class="bx bx-refresh fs-5"></i> Повторить замер
+                        </a>
+                        <button type="button" class="btn btn-success btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="copyDiagJson()">
+                            <i class="bx bx-copy fs-5"></i> Скопировать отчет
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Сводная информация об аккаунте -->
+                <div class="diag-card p-3 mb-4">
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted small">Почтовый ящик:</div>
+                            <div class="fw-bold text-dark">{{ email_addr }}</div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted small">IMAP хост:</div>
+                            <div class="fw-bold text-primary">{{ host }}:{{ port }} (SSL: {{ use_ssl|yesno:"Да,Нет" }})</div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted small">Общее время теста:</div>
+                            <div class="fw-bold text-dark fs-5">{{ total_time_ms|floatformat:1 }} мс ({{ total_time_sec|floatformat:2 }} с)</div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted small">Статус сервера:</div>
+                            <span class="badge {% if error_message %}bg-danger{% else %}bg-success{% endif %} fs-6">
+                                {% if error_message %}ОШИБКА{% else %}ПОДКЛЮЧЕНО (OK){% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if error_message %}
+                    <div class="alert alert-danger mb-4 shadow-sm">
+                        <h5 class="fw-bold"><i class="bx bx-error-circle me-1"></i> Ошибка при диагностике:</h5>
+                        <div>{{ error_message }}</div>
+                    </div>
+                {% endif %}
+
+                <!-- Таблица пошаговых замеров -->
+                <div class="diag-card overflow-hidden">
+                    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold m-0 text-dark">Пошаговый хронометраж операций</h5>
+                        <small class="text-muted">Замеры выполнены с точностью до 0.1 мс</small>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover diag-table m-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40px;">#</th>
+                                    <th>Операция / Команда</th>
+                                    <th style="width: 140px;" class="text-end">Время (мс)</th>
+                                    <th style="width: 100px;" class="text-center">Статус</th>
+                                    <th>Детали / Ответ сервера</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for step in steps %}
+                                    <tr>
+                                        <td class="text-muted">{{ forloop.counter }}</td>
+                                        <td class="fw-semibold text-dark">{{ step.step }}</td>
+                                        <td class="text-end">
+                                            <span class="diag-badge-ms {% if step.ms < 25 %}diag-badge-fast{% elif step.ms < 150 %}diag-badge-medium{% else %}diag-badge-slow{% endif %}">
+                                                {{ step.ms|floatformat:1 }} ms
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if step.status == 'OK' %}
+                                                <span class="badge bg-success">OK</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ step.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="small text-muted font-monospace">{{ step.details }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Блок JSON отчета для отправки в чат -->
+                <div class="diag-card p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark m-0">📋 JSON-отчет для разработчика</h6>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyDiagJson()">
+                            <i class="bx bx-copy"></i> Копировать в буфер
+                        </button>
+                    </div>
+                    <textarea id="diagJsonTextarea" class="form-control font-monospace small bg-light" rows="10" readonly>{{ json_report }}</textarea>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function copyDiagJson() {
+            var textarea = document.getElementById('diagJsonTextarea');
+            textarea.select();
+            document.execCommand('copy');
+            if (window.toastr) {
+                toastr.success('Отчет скопирован в буфер обмена!');
+            } else {
+                alert('Отчет скопирован в буфер обмена! Вставьте его в чат.');
+            }
+        }
+    </script>
+{% endblock %}
