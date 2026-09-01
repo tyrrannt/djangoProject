@@ -3,12 +3,14 @@
 Вся бизнес-логика (парсинг, обращения к API, сложные выборки БД) выносится сюда.
 Задачи из tasks.py должны лишь вызывать функции из этого файла.
 """
+import calendar
 import datetime
 import json
 from collections import defaultdict
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 
 from dateutil import rrule
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 import requests
 from decouple import config
@@ -18,10 +20,10 @@ from django.db.models import Q
 from core import logger
 from administration_app.utils import (
     get_jsons_data_filter, get_jsons_data_filter2, get_jsons_data,
-    get_date_interval, transliterate
+    get_date_interval, transliterate, adjust_time, process_group_year
 )
 from customers_app.models import DataBaseUser, DataBaseUserProfile, VacationScheduleList, VacationSchedule
-from hrdepartment_app.models import ReportCard, WeekendDay, check_day
+from hrdepartment_app.models import ReportCard, WeekendDay, check_day, ProductionCalendar, get_norm_time_at_custom_day
 
 
 def bulk_upsert_report_cards(to_create: List[ReportCard]):
@@ -886,4 +888,141 @@ def process_sync_database_users() -> Dict[str, Any]:
         "updated_profiles": len(profiles_to_bulk_update),
         "created_users": created_users_count
     }
+
+
+def process_get_year_report(report_year: Optional[int] = None, html_mode: bool = True) -> Union[str, pd.DataFrame, Dict[str, Any]]:
+    """Формирует годовой отчет учета рабочего времени сотрудников.
+
+    Анализирует отметки СКУД (типы 1, 13) и отклонения (отпуска, командировки, больничные),
+    сопоставляет их с нормами производственного календаря и рассчитывает переработки/недоработки по месяцам.
+
+    Args:
+        report_year (Optional[int]): Год для формирования отчета (по умолчанию текущий календарный год).
+        html_mode (bool): Если True, возвращает отформатированную HTML-таблицу. Если False — pandas DataFrame.
+
+    Returns:
+        Union[str, pd.DataFrame, Dict[str, Any]]: HTML-разметка таблицы или DataFrame с расчетами.
+    """
+    current_dt = datetime.datetime.now()
+    current_year = current_dt.year
+
+    if report_year and report_year < current_year:
+        year = report_year
+        start_of_year = datetime.datetime(year, 1, 1, 0, 0, 0)
+        current_date = datetime.datetime(year + 1, 1, 1)
+        first_day_of_current_month = current_date
+    else:
+        year = current_year
+        start_of_year = datetime.datetime(year, 1, 1, 0, 0, 0)
+        current_date = current_dt
+        if current_dt.month == 1:
+            last_day = calendar.monthrange(year, 1)[1]
+            first_day_of_current_month = datetime.datetime(year, 1, last_day)
+        else:
+            first_day_of_current_month = datetime.datetime(year, current_dt.month, 1)
+
+    user_set = set(
+        ReportCard.objects.filter(
+            report_card_day__year=year,
+            record_type__in=["1", "13"],
+            employee__is_active=True
+        ).values_list("employee", flat=True)
+    )
+
+    report_card_list = list(
+        ReportCard.objects.filter(
+            report_card_day__year=year,
+            report_card_day__lt=first_day_of_current_month,
+            employee__in=user_set
+        )
+        .exclude(record_type="18")
+        .select_related("employee")
+        .values_list(
+            "employee__title",
+            "report_card_day",
+            "start_time",
+            "end_time",
+            "record_type"
+        )
+    )
+
+    if not report_card_list:
+        if not html_mode:
+            return pd.DataFrame()
+        return "<div class='alert alert-info'>Нет данных для построения годового отчета за указанный период.</div>"
+
+    fields = ["FIO", "Дата", "Start", "End", "Type"]
+    df = pd.DataFrame(report_card_list, columns=fields)
+
+    df["Дата"] = pd.to_datetime(df["Дата"])
+    df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
+    df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
+    df["Type"] = df["Type"].astype(int)
+
+    df = df.groupby(["FIO", "Дата"]).apply(adjust_time).reset_index(drop=True)
+    df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()
+    df["Time"] = df.apply(
+        lambda row: row["Time"] if row["Type"] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(
+            row["Дата"], type_of_day=row["Type"]
+        ),
+        axis=1
+    )
+
+    df["Month"] = df["Дата"].dt.to_period("M")
+    grouped = df.groupby(["Month", "FIO", "Дата"]).apply(process_group_year).reset_index(name="Time")
+    grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
+    grouped["Time"] = grouped["Time"] // 60  # в минутах
+
+    first_days_of_months = []
+    current_month_start = start_of_year
+    while current_month_start <= current_date:
+        first_days_of_months.append(current_month_start)
+        current_month_start += relativedelta(months=1)
+
+    subtraction_dict = {}
+    for date_item in first_days_of_months[:-1]:
+        key = date_item.strftime("%Y-%m")
+        try:
+            norm_time = ProductionCalendar.objects.get(calendar_month=date_item)
+            subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1) * 60
+        except ProductionCalendar.DoesNotExist:
+            subtraction_dict[key] = 0
+
+    grouped = grouped.fillna("")
+
+    def subtract_value(row):
+        month_str = str(row["Month"])
+        ttime = row["Time"]
+        return ttime - subtraction_dict.get(month_str, 0)
+
+    grouped["Time"] = grouped.apply(subtract_value, axis=1)
+
+    pivot_df = grouped.pivot(index="FIO", columns="Month", values="Time")
+    pivot_df = pivot_df.fillna(0)
+    pivot_df["Sum"] = pivot_df.sum(axis=1)
+
+    def convert_time(minutes):
+        hours = abs(minutes) // 60
+        minutes_left = abs(minutes) % 60
+        if minutes < 0:
+            return f"-{hours:.0f} ч. {minutes_left:.0f} мин."
+        else:
+            return f"{hours:.0f} ч. {minutes_left:.0f} мин."
+
+    if hasattr(pivot_df, "map"):
+        formatted_pivot_df = pivot_df.map(convert_time)
+    else:
+        formatted_pivot_df = pivot_df.applymap(convert_time)
+
+    html_table = formatted_pivot_df.to_html(
+        classes="table table-ecommerce-simple table-striped dataTable mb-0",
+        table_id="datatable-editable",
+        border=1,
+        justify="center"
+    )
+
+    if not html_mode:
+        return pivot_df
+    return html_table
+
 

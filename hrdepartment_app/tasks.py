@@ -41,7 +41,7 @@ from celery import shared_task
 from hrdepartment_app.services.celery_services import (
     process_sick_leave, process_report_card_daily, process_vacation_check,
     process_save_report, process_vacation_schedule, process_get_vacation,
-    process_sync_database_users, get_type_of_employment
+    process_sync_database_users, get_type_of_employment, process_get_year_report
 )
 
 
@@ -520,55 +520,26 @@ def happy_birthday():
 #     return dictionary
 
 
-@app.task()
-def report_card_separator():
-    current_data = datetime.datetime.date(datetime.datetime.today())
-    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
-    source_url = url
-    try:
-        response = requests.get(source_url, auth=("proxmox", "PDO#rLv@Server"))
-    except Exception as _ex:
-        return f"{_ex} ошибка"
-    dicts = json.loads(response.text)
-    for item in dicts["data"]:
-        usr = item["FULLNAME"]
-        current_intervals = True if item["ISGO"] == "0" else False
-        start_time = datetime.datetime.strptime(
-            item["STARTTIME"], "%d.%m.%Y %H:%M:%S"
-        ).time()
-        if current_intervals:
-            end_time = datetime.datetime.strptime(
-                item["ENDTIME"], "%d.%m.%Y %H:%M:%S"
-            ).time()
-        else:
-            end_time = datetime.datetime(1, 1, 1, 0, 0).time()
-        rec_no = int(item["rec_no"])
+@shared_task(bind=True, max_retries=3)
+def report_card_separator(self):
+    """Периодическая задача Celery для синхронизации интервалов СКУД TimeControl за текущий день.
 
-        search_user = usr.split(" ")
-        try:
-            user_obj = DataBaseUser.objects.get(
-                last_name=search_user[0],
-                first_name=search_user[1],
-                surname=search_user[2],
-                is_active=True
-            )
-            kwargs = {
-                "report_card_day": current_data,
-                "employee": user_obj,
-                "start_time": start_time,
-                "end_time": end_time,
-                "record_type": "1",
-                "current_intervals": current_intervals,
-            }
-            ReportCard.objects.update_or_create(
-                report_card_day=current_data,
-                employee=user_obj,
-                rec_no=rec_no,
-                defaults=kwargs,
-            )
-        except Exception as _ex:
-            logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
-    return dicts
+    Делегирует исполнение в process_report_card_daily(0, 0, 0) сервисного слоя.
+
+    Returns:
+        dict: Результаты синхронизации интервалов СКУД.
+
+    Raises:
+        Exception: Повторяет задачу через self.retry при сетевых ошибках или сбоях сервера СКУД.
+    """
+    logger.info("Celery task report_card_separator started")
+    try:
+        res = process_report_card_daily(0, 0, 0)
+        logger.info(f"Celery task report_card_separator completed: {res}")
+        return res
+    except Exception as exc:
+        logger.error(f"Error in report_card_separator task: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60)
 
 
 def calc_diff(start, end):
@@ -591,150 +562,30 @@ def save_report(self):
         raise self.retry(exc=e)
 
 
-@app.task()
-def get_year_report(report_year=None, html_mode=True):
-    errors = []
-    year = datetime.datetime.today().year
+@shared_task(bind=True, max_retries=3)
+def get_year_report(self, report_year=None, html_mode=True):
+    """Задача Celery для формирования годового отчета табеля рабочего времени сотрудников.
 
-    if report_year<year:
-        year = report_year
-        first_day_of_current_month = datetime.datetime(report_year+1, 1, 1)
-        # Начало текущего года
-        start_of_year = datetime.datetime(report_year, 1, 1, 0, 0, 0)
-        current_date = first_day_of_current_month
-    else:
-        month = datetime.datetime.today().month
-        # Текущая дата
-        current_date = datetime.datetime.now()
+    Делегирует аналитический расчет в process_get_year_report сервисного слоя.
 
-        # Начало текущего года
-        start_of_year = datetime.datetime(current_date.year, 1, 1, 0, 0, 0)
+    Args:
+        report_year (Optional[int]): Год для формирования отчета (по умолчанию текущий).
+        html_mode (bool): Возврат HTML-строки (True) или DataFrame (False).
 
-        if datetime.datetime.today().month == 1:
-            last_day = calendar.monthrange(year, month)[1]
-            first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, last_day)
-        else:
-            first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
+    Returns:
+        Union[str, pd.DataFrame, dict]: Сформированный годовой отчет табеля.
 
+    Raises:
+        Exception: Повторяет задачу через self.retry при ошибках построения отчета.
+    """
+    logger.info(f"Celery task get_year_report started for year={report_year}")
     try:
-        user_list = ReportCard.objects.filter(
-            Q(report_card_day__year=year) & Q(record_type__in=["1", "13", ]) & Q(employee__is_active=True)).values_list(
-            'employee', flat=True)
-        user_set = set(list(user_list))
-    except Exception as e:
-        errors.append(e)
-    report_card_list = list()
-
-    try:
-        report_card_list = list(
-            ReportCard.objects
-            .filter(
-                report_card_day__year=year,
-                report_card_day__lt=first_day_of_current_month,
-                employee__in=user_set
-            )
-            .exclude(record_type="18")
-            .select_related('employee')
-            .values_list(
-                'employee__title',
-                'report_card_day',
-                'start_time',
-                'end_time',
-                'record_type'
-            )
-        )
-    except Exception as e:
-        print(str(e))  # лучше str(e), чем объект исключения
-
-    fields = ["FIO", "Дата", "Start", "End", "Type"]
-
-    # Создание DataFrame
-    df = pd.DataFrame(report_card_list, columns=fields)
-    try:
-        # Преобразование столбцов в нужные типы данных
-        df["Дата"] = pd.to_datetime(df["Дата"])
-        df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
-        df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
-        df["Type"] = df["Type"].astype(int)
-    except Exception as e:
-        errors.append(e)
-
-    # Группируем по FIO и Date и применяем функцию
-    df = df.groupby(['FIO', 'Дата']).apply(adjust_time).reset_index(drop=True)
-
-    # Вычисление разности между End и Start и сохранение в новом столбце Time
-    df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
-    # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
-    # df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата']), axis=1)
-    df['Time'] = df.apply(
-        lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'],
-                                                                                                            type_of_day=
-                                                                                                            row[
-                                                                                                                'Type']),
-        axis=1)
-
-    # Группировка по месяцам и ФИО
-    df["Month"] = df["Дата"].dt.to_period("M")
-
-    grouped = df.groupby(["Month", "FIO", "Дата"]).apply(process_group_year).reset_index(name="Time")
-    grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
-
-    # Вывод результата
-    # grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100) # В часах
-    grouped["Time"] = grouped["Time"] // 60  # В минутах
-
-
-
-    # Список для хранения первых дней каждого месяца
-    first_days_of_months = []
-
-    # Итерация по месяцам с начала года до текущей даты
-    current_month_start = start_of_year
-    while current_month_start <= current_date:
-        first_days_of_months.append(current_month_start)
-        current_month_start += relativedelta(months=1)
-
-    # Словарь с вычитаемыми значениями
-    subtraction_dict = dict()
-    for date in first_days_of_months[:-1]:
-        key = date.strftime('%Y-%m')
-        norm_time = ProductionCalendar.objects.get(calendar_month=date)
-        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1) * 60
-
-    grouped = grouped.fillna('')
-
-    # Функция для вычитания значения из словаря
-    def subtract_value(row):
-        month = str(row["Month"])
-        ttime = row["Time"]
-        return ttime - subtraction_dict.get(month, 0)
-
-    # Применение функции к столбцу Time
-    grouped["Time"] = grouped.apply(subtract_value, axis=1)
-
-    pivot_df = grouped.pivot(index="FIO", columns="Month", values="Time")
-    pivot_df = pivot_df.fillna(0)
-    pivot_df['Sum'] = pivot_df.sum(axis=1)
-
-    def convert_time(minutes):
-        # Преобразуем минуты в часы и минуты
-        hours = abs(minutes) // 60
-        minutes_left = abs(minutes) % 60
-        if minutes < 0:
-            return f'-{hours:.0f} ч. {minutes_left:.0f} мин.'
-        else:
-            return f'{hours:.0f} ч. {minutes_left:.0f} мин.'
-
-    pivot_df = pivot_df.applymap(convert_time)
-    html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped dataTable mb-0',
-                                  table_id='datatable-editable', border=1, justify='center')
-
-    if errors:
-        return errors
-    if html_mode == False:
-        return pivot_df
-    else:
-        return html_table
+        res = process_get_year_report(report_year=report_year, html_mode=html_mode)
+        logger.info("Celery task get_year_report completed successfully")
+        return res
+    except Exception as exc:
+        logger.error(f"Error in get_year_report task: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60)
 
 
 @shared_task(bind=True, max_retries=3)
