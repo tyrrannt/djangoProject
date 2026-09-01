@@ -9,6 +9,7 @@ import logging
 import socket
 import ssl
 import time
+from typing import Optional
 from urllib.parse import quote
 
 from django.contrib import messages
