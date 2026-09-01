@@ -8,18 +8,22 @@ app_name = "mailbox_app"
 urlpatterns = [
     # Главная страница почты (Папка Входящие)
     path("", views.MailboxFolderView.as_view(), name="index"),
-    # Просмотр конкретной папки
-    path("folder/<path:folder>/", views.MailboxFolderView.as_view(), name="folder"),
-    # Просмотр письма
-    path("folder/<path:folder>/email/<int:uid>/", views.MailboxEmailDetailView.as_view(), name="email_detail"),
-    # Написание нового письма
-    path("compose/", views.MailboxComposeView.as_view(), name="compose"),
-    # Скачивание вложения
+    # Скачивание вложения (должно быть выше общего folder)
     path(
         "folder/<path:folder>/email/<int:uid>/attachment/<int:part_index>/",
         views.MailboxAttachmentDownloadView.as_view(),
         name="download_attachment",
     ),
+    # Просмотр письма (должен быть выше общего folder)
+    path(
+        "folder/<path:folder>/email/<int:uid>/",
+        views.MailboxEmailDetailView.as_view(),
+        name="email_detail",
+    ),
+    # Написание нового письма
+    path("compose/", views.MailboxComposeView.as_view(), name="compose"),
+    # Просмотр конкретной папки (жадный path:folder)
+    path("folder/<path:folder>/", views.MailboxFolderView.as_view(), name="folder"),
     # AJAX API действий (прочитано, удаление, звездочка)
     path("api/action/", views.MailboxActionAPIView.as_view(), name="api_action"),
     # AJAX API адресной книги сотрудников
