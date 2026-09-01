@@ -58,111 +58,111 @@
                             <div class="row g-2">
                                 <!-- Права и доступы -->
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=0" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=0" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="0" data-task-name="Выдать общие права">
                                         <i class="fas fa-user-shield me-2 text-primary"></i> <span>Выдать общие права</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=1" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=1" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="1" data-task-name="Обновить права">
                                         <i class="fas fa-sync me-2 text-primary"></i> <span>Обновить права</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=2" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=2" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="2" data-task-name="Права всем (Общие)">
                                         <i class="fas fa-users me-2 text-primary"></i> <span>Права всем (Общие)</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=4" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=4" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="4" data-task-name="Обновить пароли и отправить email">
                                         <i class="fas fa-key me-2 text-primary"></i> <span>Обновить пароли</span>
                                     </a>
                                 </div>
 
                                 <!-- Синхронизация 1C и TimeControl -->
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="#" id="update-timecontrol" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=3" id="update-timecontrol" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="3" data-task-name="Синхронизация TimeControl">
                                         <i class="fas fa-business-time me-2 text-info"></i> <span>Синхронизация TimeControl</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=5" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_sick_leave">
+                                    <a href="{% url 'administration_app:property_list' %}?update=5" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" id="submit_sick_leave" data-update="5" data-task-name="Больничные листы">
                                         <i class="fas fa-file-medical me-2 text-danger"></i> <span>Больничные листы</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=7" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_sick_leave_med">
+                                    <a href="{% url 'administration_app:property_list' %}?update=7" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" id="submit_sick_leave_med" data-update="7" data-task-name="Данные по медосмотрам">
                                         <i class="fas fa-heartbeat me-2 text-danger"></i> <span>Данные по медосмотрам</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=8" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_time_off">
+                                    <a href="{% url 'administration_app:property_list' %}?update=8" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" id="submit_time_off" data-update="8" data-task-name="Данные по отгулам">
                                         <i class="fas fa-calendar-minus me-2 text-warning"></i> <span>Данные по отгулам</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=10" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_vacation">
+                                    <a href="{% url 'administration_app:property_list' %}?update=10" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" id="submit_vacation" data-update="10" data-task-name="Данные по отпускам">
                                         <i class="fas fa-plane-departure me-2 text-success"></i> <span>Данные по отпускам</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=6" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=6" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="6" data-task-name="Дни рождения (Telegram)">
                                         <i class="fas fa-birthday-cake me-2 text-warning"></i> <span>Дни рождения</span>
                                     </a>
                                 </div>
 
                                 <!-- Документы и графики -->
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=17" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_vacation_schedule">
+                                    <a href="{% url 'administration_app:property_list' %}?update=17" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" id="submit_vacation_schedule" data-update="17" data-task-name="Перенос отпусков в табель">
                                         <i class="fas fa-calendar-check me-2 text-primary"></i> <span>Перенос отпусков в табель</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=14" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=14" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="14" data-task-name="Рассылка графика отпусков">
                                         <i class="fas fa-paper-plane me-2 text-primary"></i> <span>Рассылка графика отпусков</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=15" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=15" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="15" data-task-name="Заполнение графика отпусков">
                                         <i class="fas fa-calendar-plus me-2 text-primary"></i> <span>Заполнение графика отпусков</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=19" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_vacation_schedule_admin">
+                                    <a href="{% url 'administration_app:property_list' %}?update=19" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" id="submit_vacation_schedule_admin" data-update="19" data-task-name="Рассылка графика (admin)">
                                         <i class="fas fa-user-clock me-2 text-info"></i> <span>Рассылка графика (admin)</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=9" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=9" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="9" data-task-name="Проверка договоров">
                                         <i class="fas fa-check-double me-2 text-success"></i> <span>Проверка договоров</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=18" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start" id="submit_check_contracts_docs">
+                                    <a href="{% url 'administration_app:property_list' %}?update=18" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" id="submit_check_contracts_docs" data-update="18" data-task-name="Проверка доп. документов">
                                         <i class="fas fa-file-invoice me-2 text-secondary"></i> <span>Проверка доп. документов</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=20" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=20" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="20" data-task-name="Рассылка по траншам">
                                         <i class="fas fa-bell me-2 text-warning"></i> <span>Рассылка по траншам</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=11" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=11" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="11" data-task-name="Годовой отчет">
                                         <i class="fas fa-chart-pie me-2 text-primary"></i> <span>Годовой отчет</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=12" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=12" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="12" data-task-name="Группы доступа в файл">
                                         <i class="fas fa-layer-group me-2 text-secondary"></i> <span>Группы доступа</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=13" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=13" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="13" data-task-name="Выгрузить модель в файл">
                                         <i class="fas fa-cloud-download-alt me-2 text-secondary"></i> <span>Выгрузить модель в файл</span>
                                     </a>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                    <a href="{% url 'administration_app:property_list' %}?update=16" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start">
+                                    <a href="{% url 'administration_app:property_list' %}?update=16" class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-start text-start property-task-btn" data-update="16" data-task-name="Выгрузка Kerio Connect">
                                         <i class="fas fa-mail-bulk me-2 text-info"></i> <span>Выгрузка Kerio Connect</span>
                                     </a>
                                 </div>
@@ -185,231 +185,472 @@
         </div>
     </div>
     <!-- end: page -->
+
+    <!-- Модальное окно мониторинга выполнения фоновой задачи Celery -->
+    <div class="modal fade" id="celeryTaskProgressModal" tabindex="-1" aria-labelledby="celeryTaskModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <div id="celeryModalHeaderIcon">
+                            <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                        </div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="celeryTaskModalLabel">Выполнение задачи</h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary" id="celeryTaskStateBadge">PENDING</span>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть" id="celeryModalCloseX"></button>
+                    </div>
+                </div>
+
+                <div class="modal-body p-4">
+                    <!-- Карточка сводки -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong class="text-dark" id="celeryTaskNameText">Задача...</strong>
+                            <span class="text-muted small fw-semibold" id="celeryTaskTimerText"><i class="bx bx-time-five me-1"></i>00:00</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 12px; border-radius: 6px; background-color: #e2e8f0;">
+                            <div id="celeryTaskProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center small text-muted">
+                            <span id="celeryTaskStatusMsg">Подготовка и запуск...</span>
+                            <span id="celeryTaskIdBadge" class="text-truncate" style="max-width: 260px; font-family: monospace;">ID: -</span>
+                        </div>
+                    </div>
+
+                    <!-- Терминал живых логов (Live Console Log) -->
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-uppercase fw-bold text-muted" style="font-size: 11px; letter-spacing: 0.5px;">Журнал выполнения (Live Log)</span>
+                        <button type="button" class="btn btn-link btn-sm text-muted p-0" id="celeryClearLogsBtn" style="font-size: 12px; text-decoration: none;">
+                            <i class="bx bx-trash"></i> Очистить
+                        </button>
+                    </div>
+                    <div id="celeryTaskConsole" class="bg-dark text-light p-3 rounded-3 font-monospace" style="height: 220px; overflow-y: auto; font-size: 12px; line-height: 1.6; border: 1px solid #334155; background-color: #0f172a !important;">
+                        <!-- Лог-сообщения добавляются динамически -->
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between align-items-center">
+                    <div class="text-muted small" id="celeryFooterHint">
+                        <i class="bx bx-info-circle me-1"></i> Можно свернуть окно — задача продолжится в фоне
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" id="celeryModalMinimizeBtn">
+                            <i class="bx bx-minus"></i> Свернуть в фон
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm px-4 d-none" data-bs-dismiss="modal" id="celeryModalDoneBtn">
+                            <i class="bx bx-check"></i> Завершить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Плавающий индикатор фоновой задачи при сворачивании (Floating Mini Widget) -->
+    <div id="celeryFloatingWidget" class="position-fixed bottom-0 end-0 m-4 d-none" style="z-index: 1060; cursor: pointer;">
+        <div class="bg-dark text-white p-3 rounded-pill shadow-lg d-flex align-items-center gap-3 border border-primary">
+            <div class="spinner-border spinner-border-sm text-primary" role="status" id="celeryFloatingSpinner"></div>
+            <div>
+                <div class="fw-bold small text-truncate" id="celeryFloatingTaskName" style="max-width: 180px;">Задача выполняется</div>
+                <div class="text-white-50" style="font-size: 10px;" id="celeryFloatingTaskStatus">Нажмите, чтобы открыть</div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block custom_script %}
     <script>
-        document.getElementById('submit_vacation_schedule_admin').addEventListener('click', function (event) {
-            // Предотвращаем стандартное поведение ссылки
-            event.preventDefault();
+        // Менеджер выполнения и онлайн-мониторинга задач Celery
+        const PortalTaskManager = (function () {
+            let activeTaskId = null;
+            let activeTaskName = '';
+            let pollInterval = null;
+            let timerInterval = null;
+            let startTime = null;
+            let modalInstance = null;
 
-            // Получаем значение из select с id="userSelect"
-            const userSelect = document.getElementById('userSelect');
-            const selectedUserId = userSelect.value;
+            const modalElem = document.getElementById('celeryTaskProgressModal');
+            const floatingWidget = document.getElementById('celeryFloatingWidget');
+            const floatingName = document.getElementById('celeryFloatingTaskName');
+            const floatingStatus = document.getElementById('celeryFloatingTaskStatus');
+            const consoleElem = document.getElementById('celeryTaskConsole');
+            const headerIcon = document.getElementById('celeryModalHeaderIcon');
+            const stateBadge = document.getElementById('celeryTaskStateBadge');
+            const nameText = document.getElementById('celeryTaskNameText');
+            const timerText = document.getElementById('celeryTaskTimerText');
+            const progressBar = document.getElementById('celeryTaskProgressBar');
+            const statusMsg = document.getElementById('celeryTaskStatusMsg');
+            const idBadge = document.getElementById('celeryTaskIdBadge');
+            const doneBtn = document.getElementById('celeryModalDoneBtn');
+            const minBtn = document.getElementById('celeryModalMinimizeBtn');
 
-            // Проверяем, выбран ли пользователь
-            if (!selectedUserId) {
-                alert('Пожалуйста, выберите пользователя');
-                return; // Прерываем выполнение, если пользователь не выбран
+            function getModal() {
+                if (!modalInstance && window.bootstrap && modalElem) {
+                    modalInstance = new bootstrap.Modal(modalElem);
+                }
+                return modalInstance;
             }
 
-            // Получаем текущий URL из атрибута href
-            let currentUrl = this.href;
-
-            // Добавляем параметр "user_id" к URL
-            if (currentUrl.includes('?')) {
-                currentUrl += `&user_id=${selectedUserId}`;
-            } else {
-                currentUrl += `?user_id=${selectedUserId}`;
+            function getTimestamp() {
+                const now = new Date();
+                return now.toTimeString().split(' ')[0];
             }
 
-            // Переходим по обновленному URL
-            window.location.href = currentUrl;
-        });
-    </script>
+            function logLine(message, type = 'info') {
+                if (!consoleElem) return;
+                const line = document.createElement('div');
+                let colorStyle = 'color: #93c5fd;'; // info cyan
+                let prefix = 'ℹ️';
 
-    <script>
-        document.getElementById('update-timecontrol').addEventListener('click', function (event) {
-            event.preventDefault(); // Предотвращаем переход по ссылке
+                if (type === 'success') {
+                    colorStyle = 'color: #4ade80; font-weight: 600;'; // green
+                    prefix = '✅';
+                } else if (type === 'error') {
+                    colorStyle = 'color: #f87171; font-weight: 600;'; // red
+                    prefix = '❌';
+                } else if (type === 'warn') {
+                    colorStyle = 'color: #fbbf24;'; // yellow
+                    prefix = '⚠️';
+                } else if (type === 'start') {
+                    colorStyle = 'color: #38bdf8; font-weight: 600;';
+                    prefix = '🚀';
+                } else if (type === 'queue') {
+                    colorStyle = 'color: #c084fc;';
+                    prefix = '📡';
+                } else if (type === 'step') {
+                    colorStyle = 'color: #e2e8f0;';
+                    prefix = '⚙️';
+                }
 
-            // Получаем значение даты из поля ввода
-            var controlDate = document.getElementById('control_date').value;
-
-            // Формируем URL с учетом параметра control_date
-            var baseUrl = "{% url 'administration_app:property_list' %}";
-            var newUrl = baseUrl + "?update=3&control_date=" + encodeURIComponent(controlDate);
-
-            // Перенаправляем пользователя на новый URL
-            window.location.href = newUrl;
-        });
-    </script>
-    <script>
-        document.getElementById('submit_vacation_schedule').addEventListener('click', function (event) {
-            // Предотвращаем стандартное поведение ссылки
-            event.preventDefault();
-
-            // Получаем значение из input с id="control_date"
-            const controlDate = document.getElementById('control_date').value;
-
-            // Определяем год: если дата не указана, используем текущий год
-            let year;
-            if (controlDate) {
-                year = new Date(controlDate).getFullYear();
-            } else {
-                year = new Date().getFullYear(); // Текущий год
+                line.style = colorStyle;
+                line.innerHTML = `<span style="color: #64748b;">[${getTimestamp()}]</span> ${prefix} ${escapeHtml(message)}`;
+                consoleElem.appendChild(line);
+                consoleElem.scrollTop = consoleElem.scrollHeight;
             }
 
-            // Получаем текущий URL из атрибута href
-            let currentUrl = this.href;
-
-            // Добавляем параметр "year" к URL
-            if (currentUrl.includes('?')) {
-                currentUrl += `&year=${year}`;
-            } else {
-                currentUrl += `?year=${year}`;
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
             }
 
-            // Переходим по обновленному URL
-            window.location.href = currentUrl;
-        });
-    </script>
-    <script>
-        document.getElementById('submit_vacation').addEventListener('click', function (event) {
-            // Предотвращаем стандартное поведение ссылки
-            event.preventDefault();
-
-            // Получаем значение из input с id="control_date"
-            const controlDate = document.getElementById('control_date').value;
-
-            // Определяем год: если дата не указана, используем текущий год
-            let year;
-            if (controlDate) {
-                year = new Date(controlDate).getFullYear();
-            } else {
-                year = new Date().getFullYear(); // Текущий год
+            function updateTimer() {
+                if (!startTime) return;
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+                const secs = String(elapsedSec % 60).padStart(2, '0');
+                if (timerText) timerText.innerHTML = `<i class="bx bx-time-five me-1"></i>${mins}:${secs}`;
             }
 
-            // Получаем текущий URL из атрибута href
-            let currentUrl = this.href;
-
-            // Добавляем параметр "year" к URL
-            if (currentUrl.includes('?')) {
-                currentUrl += `&year=${year}`;
-            } else {
-                currentUrl += `?year=${year}`;
+            function startTimer() {
+                startTime = Date.now();
+                if (timerInterval) clearInterval(timerInterval);
+                updateTimer();
+                timerInterval = setInterval(updateTimer, 500);
             }
 
-            // Переходим по обновленному URL
-            window.location.href = currentUrl;
-        });
-    </script>
-    <script>
-        document.getElementById('submit_sick_leave').addEventListener('click', function (event) {
-            // Предотвращаем стандартное поведение ссылки
-            event.preventDefault();
-
-            // Получаем значение из input с id="control_date"
-            const controlDate = document.getElementById('control_date').value;
-
-            // Определяем год: если дата не указана, используем текущий год
-            let year;
-            if (controlDate) {
-                year = new Date(controlDate).getFullYear();
-            } else {
-                year = new Date().getFullYear(); // Текущий год
+            function stopTimer() {
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = null;
             }
 
-            // Получаем текущий URL из атрибута href
-            let currentUrl = this.href;
-
-            // Добавляем параметр "year" к URL
-            if (currentUrl.includes('?')) {
-                currentUrl += `&year=${year}`;
-            } else {
-                currentUrl += `?year=${year}`;
+            function resetUI(taskName) {
+                activeTaskName = taskName;
+                if (nameText) nameText.textContent = taskName;
+                if (consoleElem) consoleElem.innerHTML = '';
+                if (stateBadge) {
+                    stateBadge.className = 'badge bg-secondary';
+                    stateBadge.textContent = 'PENDING';
+                }
+                if (headerIcon) {
+                    headerIcon.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span>';
+                }
+                if (progressBar) {
+                    progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-primary';
+                    progressBar.style.width = '100%';
+                }
+                if (statusMsg) statusMsg.textContent = 'Подготовка и передача в Celery...';
+                if (idBadge) idBadge.textContent = 'ID: -';
+                if (doneBtn) doneBtn.classList.add('d-none');
+                if (minBtn) minBtn.classList.remove('d-none');
+                if (floatingWidget) floatingWidget.classList.add('d-none');
             }
 
-            // Переходим по обновленному URL
-            window.location.href = currentUrl;
-        });
-    </script>
-    <script>
-        document.getElementById('submit_sick_leave_med').addEventListener('click', function (event) {
-            // Предотвращаем стандартное поведение ссылки
-            event.preventDefault();
-
-            // Получаем значение из input с id="control_date"
-            const controlDate = document.getElementById('control_date').value;
-
-            // Определяем год: если дата не указана, используем текущий год
-            let year;
-            if (controlDate) {
-                year = new Date(controlDate).getFullYear();
-            } else {
-                year = new Date().getFullYear(); // Текущий год
+            function showFloating(statusText) {
+                if (floatingWidget) {
+                    floatingWidget.classList.remove('d-none');
+                    if (floatingName) floatingName.textContent = activeTaskName;
+                    if (floatingStatus) floatingStatus.textContent = statusText || 'Выполняется...';
+                }
             }
 
-            // Получаем текущий URL из атрибута href
-            let currentUrl = this.href;
-
-            // Добавляем параметр "year" к URL
-            if (currentUrl.includes('?')) {
-                currentUrl += `&year=${year}`;
-            } else {
-                currentUrl += `?year=${year}`;
+            function hideFloating() {
+                if (floatingWidget) floatingWidget.classList.add('d-none');
             }
 
-            // Переходим по обновленному URL
-            window.location.href = currentUrl;
-        });
-    </script>
-    <script>
-        document.getElementById('submit_time_off').addEventListener('click', function (event) {
-            // Предотвращаем стандартное поведение ссылки
-            event.preventDefault();
+            function runTask(updateCode, customParams = {}, taskName = 'Фоновая задача') {
+                resetUI(taskName);
+                const modal = getModal();
+                if (modal) modal.show();
+                startTimer();
 
-            // Получаем значение из input с id="control_date"
-            const controlDate = document.getElementById('control_date').value;
+                logLine(`Инициализация запуска задачи «${taskName}»...`, 'start');
 
-            // Определяем год: если дата не указана, используем текущий год
-            let year;
-            if (controlDate) {
-                year = new Date(controlDate).getFullYear();
-            } else {
-                year = new Date().getFullYear(); // Текущий год
-            }
+                const queryParams = new URLSearchParams({
+                    update: updateCode,
+                    ...customParams
+                });
 
-            // Получаем текущий URL из атрибута href
-            let currentUrl = this.href;
+                fetch(`{% url 'administration_app:property_task_run' %}?${queryParams.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            throw new Error(data.error || 'Ошибка запуска задачи');
+                        }
 
-            // Добавляем параметр "year" к URL
-            if (currentUrl.includes('?')) {
-                currentUrl += `&year=${year}`;
-            } else {
-                currentUrl += `?year=${year}`;
-            }
-
-            // Переходим по обновленному URL
-            window.location.href = currentUrl;
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "sDom": 'BT<"clear">lfrtip',
-                "buttons": [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
-                ],
-                "ajax": "{% url 'administration_app:property_list' %}",
-                "language": {
-                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
-                },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
-                    $(nRow).attr("href", id + '/update/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
+                        if (data.is_async && data.task_id) {
+                            activeTaskId = data.task_id;
+                            if (idBadge) idBadge.textContent = `ID: ${data.task_id.substring(0, 13)}...`;
+                            logLine(`Задача передана брокеру сообщений Redis (Celery Task ID: ${data.task_id})`, 'queue');
+                            logLine(`Ожидание воркера Celery в очереди...`, 'info');
+                            startPolling(data.task_id);
+                        } else {
+                            // Синхронный результат
+                            stopTimer();
+                            onTaskSuccess(data.result || 'Операция успешно завершена!');
+                        }
+                    })
+                    .catch(err => {
+                        stopTimer();
+                        onTaskFailure(err.message);
                     });
-                },
-                "columns": [
-                    {"data": "portal_name"},
-                    {"data": "portal_paginator"},
-                    {"data": "portal_session"},
-                ],
-            });
-        });
+            }
 
+            function startPolling(taskId) {
+                if (pollInterval) clearInterval(pollInterval);
+                let pollCount = 0;
+                let lastState = '';
+
+                pollInterval = setInterval(function () {
+                    pollCount++;
+                    const statusUrl = `{% url 'administration_app:property_task_status' 'TASK_ID_PLACEHOLDER' %}`.replace('TASK_ID_PLACEHOLDER', taskId);
+
+                    fetch(statusUrl, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            const state = data.state;
+
+                            if (state !== lastState) {
+                                lastState = state;
+                                if (state === 'STARTED') {
+                                    if (stateBadge) {
+                                        stateBadge.className = 'badge bg-info text-dark';
+                                        stateBadge.textContent = 'STARTED';
+                                    }
+                                    if (statusMsg) statusMsg.textContent = 'Воркер Celery начал обработку...';
+                                    logLine('Воркер Celery принял задачу в обработку (STARTED)', 'step');
+                                } else if (state === 'PROGRESS') {
+                                    if (stateBadge) {
+                                        stateBadge.className = 'badge bg-warning text-dark';
+                                        stateBadge.textContent = 'PROGRESS';
+                                    }
+                                    const msg = data.progress?.message || 'Идет обработка данных...';
+                                    if (statusMsg) statusMsg.textContent = msg;
+                                    logLine(`Прогресс: ${msg}`, 'step');
+                                }
+                            }
+
+                            if (data.ready) {
+                                clearInterval(pollInterval);
+                                pollInterval = null;
+                                stopTimer();
+
+                                if (data.successful) {
+                                    let resMsg = 'Успешно завершено!';
+                                    if (typeof data.result === 'object' && data.result !== null) {
+                                        resMsg = JSON.stringify(data.result, null, 2);
+                                    } else if (data.result) {
+                                        resMsg = String(data.result);
+                                    }
+                                    onTaskSuccess(resMsg);
+                                } else {
+                                    onTaskFailure(data.error || 'Ошибка в процессе выполнения фоновой задачи.');
+                                }
+                            } else {
+                                if (pollCount % 5 === 0) {
+                                    logLine('Задача в процессе выполнения на сервере Celery...', 'step');
+                                }
+                            }
+                        })
+                        .catch(err => {
+                            console.debug('Polling error:', err);
+                        });
+                }, 1000);
+            }
+
+            function onTaskSuccess(resultMessage) {
+                if (stateBadge) {
+                    stateBadge.className = 'badge bg-success';
+                    stateBadge.textContent = 'SUCCESS';
+                }
+                if (headerIcon) {
+                    headerIcon.innerHTML = '<i class="bx bx-check-circle text-success fs-5"></i>';
+                }
+                if (progressBar) {
+                    progressBar.className = 'progress-bar bg-success';
+                    progressBar.style.width = '100%';
+                }
+                if (statusMsg) statusMsg.textContent = 'Задача успешно завершена!';
+                logLine(`Задача успешно выполнена! Результат: ${resultMessage}`, 'success');
+
+                if (doneBtn) doneBtn.classList.remove('d-none');
+                if (minBtn) minBtn.classList.add('d-none');
+
+                // Фоновое обновление таблицы настроек
+                if ($.fn.DataTable && $('#datatable-ecommerce-list').length) {
+                    $('#datatable-ecommerce-list').DataTable().ajax.reload(null, false);
+                }
+
+                if (floatingWidget && !floatingWidget.classList.contains('d-none')) {
+                    if (floatingStatus) floatingStatus.textContent = '✅ Завершено успешно!';
+                    setTimeout(hideFloating, 4000);
+                }
+            }
+
+            function onTaskFailure(errorMessage) {
+                if (stateBadge) {
+                    stateBadge.className = 'badge bg-danger';
+                    stateBadge.textContent = 'FAILURE';
+                }
+                if (headerIcon) {
+                    headerIcon.innerHTML = '<i class="bx bx-x-circle text-danger fs-5"></i>';
+                }
+                if (progressBar) {
+                    progressBar.className = 'progress-bar bg-danger';
+                    progressBar.style.width = '100%';
+                }
+                if (statusMsg) statusMsg.textContent = 'Ошибка выполнения задачи!';
+                logLine(`Ошибка: ${errorMessage}`, 'error');
+
+                if (doneBtn) doneBtn.classList.remove('d-none');
+                if (minBtn) minBtn.classList.add('d-none');
+
+                if (floatingWidget && !floatingWidget.classList.contains('d-none')) {
+                    if (floatingStatus) floatingStatus.textContent = '❌ Ошибка выполнения';
+                }
+            }
+
+            // Обработка клика по плавающему мини-виджету
+            if (floatingWidget) {
+                floatingWidget.addEventListener('click', function () {
+                    hideFloating();
+                    const modal = getModal();
+                    if (modal) modal.show();
+                });
+            }
+
+            // При сворачивании модального окна показываем плавающий виджет (если задача еще активна)
+            if (modalElem) {
+                modalElem.addEventListener('hide.bs.modal', function () {
+                    if (pollInterval) {
+                        showFloating('Выполняется в фоне...');
+                    }
+                });
+            }
+
+            // Очистка логов в консоли
+            const clearLogsBtn = document.getElementById('celeryClearLogsBtn');
+            if (clearLogsBtn) {
+                clearLogsBtn.addEventListener('click', function () {
+                    if (consoleElem) consoleElem.innerHTML = '';
+                });
+            }
+
+            return {
+                run: runTask
+            };
+        })();
+
+        // Привязка обработчиков ко всем сервисным кнопкам
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.property-task-btn').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const updateCode = this.getAttribute('data-update');
+                    const taskName = this.getAttribute('data-task-name') || this.querySelector('span')?.textContent?.trim() || 'Фоновая задача';
+
+                    let customParams = {};
+                    const controlDateInput = document.getElementById('control_date');
+                    const controlDateVal = controlDateInput ? controlDateInput.value : '';
+
+                    // 1. TimeControl (update=3)
+                    if (updateCode === '3') {
+                        if (controlDateVal) customParams.control_date = controlDateVal;
+                    }
+
+                    // 2. Рассылка графика admin (update=19)
+                    if (updateCode === '19') {
+                        const userSelect = document.getElementById('userSelect');
+                        const selectedUserId = userSelect ? userSelect.value : '';
+                        if (!selectedUserId) {
+                            alert('Пожалуйста, выберите пользователя в списке справа перед запуском рассылки.');
+                            return;
+                        }
+                        customParams.user_id = selectedUserId;
+                    }
+
+                    // 3. Задачи, принимающие год (5, 7, 8, 10, 17)
+                    if (['5', '7', '8', '10', '17'].includes(updateCode)) {
+                        let year = new Date().getFullYear();
+                        if (controlDateVal) {
+                            const parsedYear = new Date(controlDateVal).getFullYear();
+                            if (!isNaN(parsedYear)) year = parsedYear;
+                        }
+                        customParams.year = year;
+                    }
+
+                    PortalTaskManager.run(updateCode, customParams, taskName);
+                });
+            });
+
+            // Инициализация таблицы DataTable
+            if ($.fn.DataTable) {
+                $('#datatable-ecommerce-list').DataTable({
+                    "sDom": 'BT<"clear">lfrtip',
+                    "buttons": ['copy', 'csv', 'excel', 'pdf', 'print'],
+                    "ajax": "{% url 'administration_app:property_list' %}",
+                    "language": {
+                        "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                    },
+                    "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                        var id = aData['pk'];
+                        $(nRow).attr("href", id + '/update/');
+                        $(nRow).css('cursor', 'pointer');
+                        $(nRow).click(function () {
+                            window.location = $(this).attr('href');
+                            return false;
+                        });
+                    },
+                    "columns": [
+                        {"data": "portal_name"},
+                        {"data": "portal_paginator"},
+                        {"data": "portal_session"},
+                    ],
+                });
+            }
+        });
     </script>
 {% endblock %}

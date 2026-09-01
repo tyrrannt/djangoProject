@@ -2,6 +2,7 @@ import csv
 import datetime
 import json
 
+from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.utils.datastructures import MultiValueDictKeyError
 import requests
@@ -10,7 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
-
+from django.views import View
 from django.views.generic import ListView
 
 from administration_app.models import PortalProperty
@@ -511,6 +512,388 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '20':
                 check_overdraft_tranches_task.delay()
         return super().get(request, *args, **kwargs)
+
+
+class PortalPropertyTaskRunView(LoginRequiredMixin, View):
+    """Представление для безопасного запуска сервисных задач Celery и синхронизаций."""
+
+    def post(self, request, *args, **kwargs):
+        """Обрабатывает POST-запрос на запуск задачи.
+
+        Returns:
+            JsonResponse: Результат запуска задачи.
+        """
+        return self._handle_task_run(request)
+
+    def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос на запуск задачи.
+
+        Returns:
+            JsonResponse: Результат запуска задачи.
+        """
+        return self._handle_task_run(request)
+
+    def _handle_task_run(self, request):
+        """Выполняет запуск указанной задачи на основе параметра update.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+
+        Returns:
+            JsonResponse: Результат запуска с ID задачи Celery или данными синхронного выполнения.
+        """
+        if not request.user.is_superuser:
+            return JsonResponse({"success": False, "error": "Доступ разрешен только суперадминистратору."}, status=403)
+
+        update = str(request.POST.get("update") or request.GET.get("update") or "").strip()
+        year_str = request.POST.get("year") or request.GET.get("year")
+        try:
+            year = int(year_str) if year_str else datetime.datetime.today().year
+        except ValueError:
+            year = datetime.datetime.today().year
+
+        control_date_str = request.POST.get("control_date") or request.GET.get("control_date")
+        user_id = request.POST.get("user_id") or request.GET.get("user_id")
+
+        try:
+            if update == "0":
+                group_list = list(Groups.objects.filter(name__contains="Общая"))
+                job_list = Job.objects.all()
+                count = 0
+                for item in job_list:
+                    for unit in group_list:
+                        item.group.add(unit.id)
+                        count += 1
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": "Выдача общих прав группам",
+                    "status": "SUCCESS",
+                    "result": f"Общие права успешно привязаны к {len(job_list)} должностям (привязок: {count})."
+                })
+
+            elif update == "1":
+                users_list = DataBaseUser.objects.all().exclude(username="proxmox", is_active=False)
+                updated_count = 0
+                for user_obj in users_list:
+                    try:
+                        user_obj.groups.clear()
+                        if hasattr(user_obj, "user_work_profile") and user_obj.user_work_profile and user_obj.user_work_profile.job:
+                            for item in user_obj.user_work_profile.job.group.all():
+                                user_obj.groups.add(item)
+                        user_obj.save()
+                        updated_count += 1
+                    except Exception as e:
+                        logger.warning(f"Ошибка обновления групп у {user_obj}: {e}")
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": "Обновление прав пользователей",
+                    "status": "SUCCESS",
+                    "result": f"Права успешно актуализированы для {updated_count} пользователей."
+                })
+
+            elif update == "2":
+                users_list = DataBaseUser.objects.all().exclude(is_superuser=True)
+                user_access = AccessLevel.objects.get(level=3)
+                for item in users_list:
+                    item.user_access = user_access
+                    item.save()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": "Установка общего уровня доступа",
+                    "status": "SUCCESS",
+                    "result": f"Уровень доступа (level=3) назначен {users_list.count()} пользователям."
+                })
+
+            elif update == "3":
+                if control_date_str:
+                    current_data = datetime.datetime.strptime(control_date_str, "%Y-%m-%d").date()
+                else:
+                    current_data = datetime.datetime.today().date()
+
+                rec_obj = ReportCard.objects.filter(Q(report_card_day=current_data) & Q(record_type="1"))
+                deleted_count = rec_obj.count()
+                rec_obj.delete()
+
+                url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
+                resp = requests.get(url, auth=("proxmox", "PDO#rLv@Server"), timeout=15)
+                resp.raise_for_status()
+                dicts = json.loads(resp.text)
+                created_count = 0
+                for item in dicts.get("data", []):
+                    usr = item["FULLNAME"]
+                    current_intervals = True if item.get("ISGO") == "0" else False
+                    start_time = datetime.datetime.strptime(item["STARTTIME"], "%d.%m.%Y %H:%M:%S").time()
+                    if current_intervals:
+                        end_time = datetime.datetime.strptime(item["ENDTIME"], "%d.%m.%Y %H:%M:%S").time()
+                    else:
+                        end_time = datetime.datetime(1, 1, 1, 0, 0).time()
+                    rec_no = int(item["rec_no"])
+                    search_user = usr.split(" ")
+                    if len(search_user) >= 3:
+                        try:
+                            user_obj = DataBaseUser.objects.get(
+                                last_name=search_user[0], first_name=search_user[1], surname=search_user[2]
+                            )
+                            kwargs_rc = {
+                                "report_card_day": current_data,
+                                "employee": user_obj,
+                                "start_time": start_time,
+                                "end_time": end_time,
+                                "record_type": "1",
+                                "current_intervals": current_intervals,
+                            }
+                            ReportCard.objects.update_or_create(
+                                report_card_day=current_data, employee=user_obj, rec_no=rec_no, defaults=kwargs_rc
+                            )
+                            created_count += 1
+                        except Exception as ex:
+                            logger.error(f"{usr} не найден в БД: {ex}")
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": f"Синхронизация TimeControl ({current_data})",
+                    "status": "SUCCESS",
+                    "result": f"Синхронизация завершена. Удалено старых записей: {deleted_count}, создано/обновлено: {created_count}."
+                })
+
+            elif update == "4":
+                task = send_email_notification.delay()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": "Обновление паролей и рассылка email",
+                })
+
+            elif update == "5":
+                task = get_sick_leave.delay(year, 1)
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": f"Синхронизация больничных листов ({year} год)",
+                })
+
+            elif update == "6":
+                task = birthday_telegram.delay()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": "Поздравления с днем рождения (Telegram)",
+                })
+
+            elif update == "7":
+                task = get_sick_leave.delay(year, 2)
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": f"Синхронизация медосмотров ({year} год)",
+                })
+
+            elif update == "8":
+                task = get_sick_leave.delay(year, 3)
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": f"Синхронизация отгулов ({year} год)",
+                })
+
+            elif update == "9":
+                qs = Contract.objects.all()
+                fixed_count = 0
+                for item in qs:
+                    try:
+                        if item.parent_category and item.pk == item.parent_category.pk:
+                            item.parent_category = None
+                            item.save()
+                            fixed_count += 1
+                    except AttributeError:
+                        pass
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": "Проверка иерархии договоров",
+                    "status": "SUCCESS",
+                    "result": f"Проверка завершена. Исправлено зацикленных родительских категорий: {fixed_count}."
+                })
+
+            elif update == "10":
+                task = get_vacation.delay(year)
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": f"Синхронизация данных по отпускам ({year} год)",
+                })
+
+            elif update == "11":
+                task = get_year_report.delay()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": "Формирование годового отчета",
+                })
+
+            elif update == "12":
+                groups = Groups.objects.all()
+                groups_dict = dict()
+                for item in groups:
+                    jobs = Job.objects.filter(group=item)
+                    users_list = []
+                    for unit in jobs:
+                        users_list += [
+                            user.title for user in
+                            DataBaseUser.objects.filter(user_work_profile__job=unit).exclude(is_active=False, is_ppa=True)
+                        ]
+                    groups_dict[item.name] = users_list
+                with open("groups.json", "w", encoding="utf-8") as f:
+                    json.dump(groups_dict, f, ensure_ascii=False, indent=4)
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": "Экспорт прав групп доступа в JSON",
+                    "status": "SUCCESS",
+                    "result": f"Группы и пользователи ({len(groups_dict)} групп) успешно экспортированы в groups.json."
+                })
+
+            elif update == "13":
+                task = save_report.delay()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": "Выгрузка модели табеля в файл",
+                })
+
+            elif update == "14":
+                task = vacation_schedule_send.delay()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": "Рассылка графика отпусков сотрудникам",
+                })
+
+            elif update == "15":
+                task = vacation_check.delay()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": "Заполнение и проверка графика отпусков",
+                })
+
+            elif update == "16":
+                new_export_users_to_csv("users_export.csv")
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": "Экспорт пользователей для Kerio Connect",
+                    "status": "SUCCESS",
+                    "result": "Файл users_export.csv успешно сформирован."
+                })
+
+            elif update == "17":
+                task = vacation_schedule.delay(year)
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": f"Перенос графика отпусков в табель ({year} год)",
+                })
+
+            elif update == "18":
+                update_contract_dates_from_comment()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": False,
+                    "task_name": "Проверка дат документов договоров",
+                    "status": "SUCCESS",
+                    "result": "Даты договоров из комментариев успешно обновлены."
+                })
+
+            elif update == "19":
+                task = vacation_schedule_send.delay(triger=0, user_id=user_id)
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": f"Рассылка графика отпусков для пользователя ID={user_id}",
+                })
+
+            elif update == "20":
+                task = check_overdraft_tranches_task.delay()
+                return JsonResponse({
+                    "success": True,
+                    "is_async": True,
+                    "task_id": task.id,
+                    "task_name": "Проверка и рассылка уведомлений по траншам",
+                })
+
+            else:
+                return JsonResponse({"success": False, "error": f"Неизвестный параметр действия update={update}"}, status=400)
+
+        except Exception as e:
+            logger.exception(f"Ошибка выполнения сервисного действия update={update}: {e}")
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+class PortalPropertyTaskStatusView(LoginRequiredMixin, View):
+    """Представление для получения текущего статуса выполнения задачи Celery в реальном времени."""
+
+    def get(self, request, task_id, *args, **kwargs):
+        """Возвращает JSON с текущим состоянием задачи Celery.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            task_id (str): Идентификатор задачи Celery (UUID).
+
+        Returns:
+            JsonResponse: Состояние (PENDING/STARTED/PROGRESS/SUCCESS/FAILURE), результат или ошибка.
+        """
+        if not request.user.is_superuser:
+            return JsonResponse({"success": False, "error": "Доступ разрешен только суперадминистратору."}, status=403)
+
+        res = AsyncResult(task_id)
+        state = res.status
+        is_ready = res.ready()
+
+        result_data = None
+        error_msg = None
+        traceback_str = None
+        progress_data = None
+
+        if state == "SUCCESS":
+            result_val = res.result
+            if isinstance(result_val, (dict, list, str, int, float, bool)):
+                result_data = result_val
+            else:
+                result_data = str(result_val) if result_val is not None else "Успешно"
+        elif state == "FAILURE":
+            error_msg = str(res.result) if res.result else "Произошла ошибка при выполнении задачи."
+            traceback_str = str(res.traceback) if res.traceback else ""
+        elif state == "PROGRESS":
+            if isinstance(res.info, dict):
+                progress_data = res.info
+
+        return JsonResponse({
+            "task_id": task_id,
+            "state": state,
+            "ready": is_ready,
+            "successful": res.successful() if is_ready else False,
+            "failed": res.failed() if is_ready else False,
+            "result": result_data,
+            "error": error_msg,
+            "traceback": traceback_str,
+            "progress": progress_data,
+        })
 
 
 @login_required
