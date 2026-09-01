@@ -13,7 +13,7 @@ from typing import Optional
 from urllib.parse import quote
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.http import (
     Http404,
@@ -635,13 +635,14 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
     form_class = MailAccountSettingsForm
 
     def get_form_kwargs(self):
-        """Передает текущий инстанс MailAccount в форму.
+        """Передает текущий инстанс MailAccount и права суперадминистратора в форму.
 
         Returns:
             dict: Параметры формы.
         """
         kwargs = super().get_form_kwargs()
         kwargs["instance"] = self.get_account()
+        kwargs["is_superuser"] = bool(self.request.user.is_superuser)
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -683,10 +684,24 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
         return redirect("mailbox_app:settings")
 
 
-class MailboxDiagnosticView(MailboxBaseMixin, TemplateView):
-    """Представление для детального пошагового профилирования и диагностики почтового сервера."""
+class MailboxDiagnosticView(UserPassesTestMixin, MailboxBaseMixin, TemplateView):
+    """Представление для детального пошагового профилирования и диагностики почтового сервера.
+
+    Доступно исключительно персоналу (staff) и суперпользователям (superuser).
+    """
 
     template_name = "mailbox_app/diagnostic.html"
+
+    def test_func(self) -> bool:
+        """Проверяет права доступа к странице диагностики скорости.
+
+        Returns:
+            bool: True, если пользователь является персоналом (staff) или суперадминистратором.
+        """
+        return bool(
+            self.request.user.is_authenticated
+            and (self.request.user.is_staff or self.request.user.is_superuser)
+        )
 
     def get_context_data(self, **kwargs):
         """Выполняет серию пошаговых тестов скорости сетевого взаимодействия и команд Kerio Connect.

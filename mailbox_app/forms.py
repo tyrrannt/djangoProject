@@ -90,7 +90,16 @@ class MailComposeForm(forms.Form):
 
 
 class MailAccountSettingsForm(forms.ModelForm):
-    """Форма настроек почтового ящика и подписи пользователя."""
+    """Форма настроек почтового ящика и подписи пользователя.
+
+    Позволяет пользователям изменять имя отправителя, пароль и подпись.
+    Настройки серверов входящей (IMAP) и исходящей (SMTP) почты
+    доступны для редактирования исключительно суперпользователям (is_superuser).
+
+    Attributes:
+        password (CharField): Поле для ввода нового пароля ящика.
+        is_superuser (bool): Флаг наличия прав суперпользователя.
+    """
 
     password = forms.CharField(
         label="Пароль от почты",
@@ -121,8 +130,34 @@ class MailAccountSettingsForm(forms.ModelForm):
             "signature_html": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
         }
 
+    def __init__(self, *args, is_superuser: bool = False, **kwargs):
+        """Инициализация формы с разграничением прав на серверные настройки.
+
+        Args:
+            *args: Позиционные аргументы формы.
+            is_superuser (bool): Флаг прав суперадминистратора (по умолчанию False).
+            **kwargs: Именованные аргументы формы.
+        """
+        super().__init__(*args, **kwargs)
+        self.is_superuser = is_superuser
+        if not is_superuser:
+            # Для не-суперадминистраторов полностью исключаем поля конфигурации серверов
+            for server_field in ["imap_host", "imap_port", "smtp_host", "smtp_port"]:
+                if server_field in self.fields:
+                    del self.fields[server_field]
+            # Email доступен только для чтения
+            if "email" in self.fields:
+                self.fields["email"].widget.attrs["readonly"] = True
+
     def save(self, commit=True):
-        """Сохраняет настройки и шифрует пароль при его изменении."""
+        """Сохраняет настройки и шифрует пароль при его изменении.
+
+        Args:
+            commit (bool): Сохранять ли объект в базу данных.
+
+        Returns:
+            MailAccount: Сохраненный инстанс почтового аккаунта.
+        """
         instance = super().save(commit=False)
         raw_password = self.cleaned_data.get("password")
         if raw_password:

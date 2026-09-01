@@ -66,39 +66,41 @@
                             </div>
                         </div>
 
-                        <!-- Блок 2: Сервер входящей почты (IMAP) -->
-                        <div class="mailbox-settings-card">
-                            <div class="mailbox-settings-card-title">
-                                <i class="bx bx-download text-primary"></i> Входящая почта (IMAP — Kerio Connect)
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label class="form-label font-weight-semibold text-dark mb-1">Сервер IMAP:</label>
-                                    {{ form.imap_host }}
+                        {% if request.user.is_superuser %}
+                            <!-- Блок 2: Сервер входящей почты (IMAP) — Доступен только суперадминистраторам -->
+                            <div class="mailbox-settings-card">
+                                <div class="mailbox-settings-card-title">
+                                    <i class="bx bx-download text-primary"></i> Входящая почта (IMAP — Kerio Connect)
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label font-weight-semibold text-dark mb-1">Порт IMAP (SSL 993):</label>
-                                    {{ form.imap_port }}
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label font-weight-semibold text-dark mb-1">Сервер IMAP:</label>
+                                        {{ form.imap_host }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label font-weight-semibold text-dark mb-1">Порт IMAP (SSL 993):</label>
+                                        {{ form.imap_port }}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Блок 3: Сервер исходящей почты (SMTP) -->
-                        <div class="mailbox-settings-card">
-                            <div class="mailbox-settings-card-title">
-                                <i class="bx bx-upload text-primary"></i> Исходящая почта (SMTP — Kerio Connect)
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label class="form-label font-weight-semibold text-dark mb-1">Сервер SMTP:</label>
-                                    {{ form.smtp_host }}
+                            <!-- Блок 3: Сервер исходящей почты (SMTP) — Доступен только суперадминистраторам -->
+                            <div class="mailbox-settings-card">
+                                <div class="mailbox-settings-card-title">
+                                    <i class="bx bx-upload text-primary"></i> Исходящая почта (SMTP — Kerio Connect)
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label font-weight-semibold text-dark mb-1">Порт SMTP (SSL 465):</label>
-                                    {{ form.smtp_port }}
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label font-weight-semibold text-dark mb-1">Сервер SMTP:</label>
+                                        {{ form.smtp_host }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label font-weight-semibold text-dark mb-1">Порт SMTP (SSL 465):</label>
+                                        {{ form.smtp_port }}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        {% endif %}
 
                         <!-- Блок 4: Подпись -->
                         <div class="mailbox-settings-card">
