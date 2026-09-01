@@ -15,39 +15,13 @@
         <span>Главная</span>
     </a>
 
-    <!-- 2. Слот 2: Служебные записки (при наличии прав) ИЛИ Календарь задач -->
-    {% if perms.hrdepartment_app.view_officialmemo or user.is_superuser %}
-        <a href="{% url 'hrdepartment_app:memo_list' %}"
-           class="mobile-nav-item {% if 'memo' in request.path and 'bpmemo' not in request.path %}active{% endif %}"
-           aria-label="Служебные записки">
-            <i class="bx bx-file-blank"></i>
-            <span>Служебки</span>
-        </a>
-    {% else %}
-        <a href="{% url 'tasks_app:task-list' %}"
-           class="mobile-nav-item {% if 'tasks' in request.path %}active{% endif %}"
-           aria-label="Календарь задач">
-            <i class="bx bx-calendar"></i>
-            <span>Задачи</span>
-        </a>
-    {% endif %}
-
-    <!-- 3. Слот 3: Бизнес-процессы (при наличии прав) ИЛИ Журнал разъездов -->
-    {% if perms.hrdepartment_app.view_approvaloficialmemoprocess or user.is_superuser %}
-        <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
-           class="mobile-nav-item {% if 'bpmemo' in request.path %}active{% endif %}"
-           aria-label="Бизнес-процессы">
-            <i class="bx bx-git-branch"></i>
-            <span>Процессы</span>
-        </a>
-    {% else %}
-        <a href="{% url 'hrdepartment_app:reportcard_list' %}"
-           class="mobile-nav-item {% if 'reportcard' in request.path %}active{% endif %}"
-           aria-label="Журнал разъездов">
-            <i class="bx bx-time-five"></i>
-            <span>Разъезды</span>
-        </a>
-    {% endif %}
+    <!-- 2. Корпоративная почта (Доступно всем сотрудникам) -->
+    <a href="{% url 'mailbox_app:index' %}"
+       class="mobile-nav-item {% if 'mail' in request.path %}active{% endif %}"
+       aria-label="Корпоративная почта">
+        <i class="bx bx-envelope"></i>
+        <span>Почта</span>
+    </a>
 
     <!-- 4. Уведомления (Открывает мобильную шторку уведомлений) -->
     <button type="button" class="mobile-nav-item" id="mobileNotificationsBtn"
@@ -164,44 +138,40 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
 
-            <!-- Список быстрых действий с ролевым доступом -->
+            <!-- Список быстрых действий -->
             <div class="d-flex flex-column">
-                <!-- 1. Добавить местоположение (Доступно 100% сотрудников) -->
+                <!-- 1. Написать письмо (Корпоративная почта) -->
+                <a href="{% url 'mailbox_app:compose' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-primary text-white">
+                        <i class="bx bx-edit"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Написать письмо</div>
+                        <small class="text-muted font-weight-normal">Новое сообщение в корпоративной почте</small>
+                    </div>
+                </a>
+
+                <!-- 2. Входящая почта -->
+                <a href="{% url 'mailbox_app:index' %}" class="quick-action-btn">
+                    <div class="quick-action-icon bg-info text-white">
+                        <i class="bx bx-envelope"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Корпоративная почта</div>
+                        <small class="text-muted font-weight-normal">Входящие и папки почтового ящика</small>
+                    </div>
+                </a>
+
+                <!-- 3. Добавить местоположение (Доступно всем сотрудникам) -->
                 <a href="{% url 'hrdepartment_app:users_events_add' %}" class="quick-action-btn">
                     <div class="quick-action-icon bg-success text-white">
                         <i class="bx bx-map-pin"></i>
                     </div>
                     <div>
-                        <div>Добавить местоположение</div>
+                        <div class="fw-bold">Добавить местоположение</div>
                         <small class="text-muted font-weight-normal">Отметить прибытие / локацию</small>
                     </div>
                 </a>
-
-                <!-- 2. Создать служебную записку (Только при наличии прав) -->
-                {% if perms.hrdepartment_app.add_officialmemo or user.is_superuser %}
-                    <a href="{% url 'hrdepartment_app:memo_add' %}" class="quick-action-btn">
-                        <div class="quick-action-icon bg-primary text-white">
-                            <i class="bx bx-file-blank"></i>
-                        </div>
-                        <div>
-                            <div>Создать служебную записку</div>
-                            <small class="text-muted font-weight-normal">На командировку, поездку или хоз. нужды</small>
-                        </div>
-                    </a>
-                {% endif %}
-
-                <!-- 3. Инициировать бизнес-процесс (Только при наличии прав) -->
-                {% if perms.hrdepartment_app.add_approvaloficialmemoprocess or user.is_superuser %}
-                    <a href="{% url 'hrdepartment_app:bpmemo_add' %}" class="quick-action-btn">
-                        <div class="quick-action-icon bg-info text-white">
-                            <i class="bx bx-git-branch"></i>
-                        </div>
-                        <div>
-                            <div>Инициировать бизнес-процесс</div>
-                            <small class="text-muted font-weight-normal">Согласование служебной поездки</small>
-                        </div>
-                    </a>
-                {% endif %}
 
                 <!-- 4. Календарь задач (Доступно всем) -->
                 <a href="{% url 'tasks_app:task-list' %}" class="quick-action-btn">
@@ -209,45 +179,21 @@
                         <i class="bx bx-calendar-event"></i>
                     </div>
                     <div>
-                        <div>Календарь задач</div>
+                        <div class="fw-bold">Календарь задач</div>
                         <small class="text-muted font-weight-normal">Запланировать задачу или событие</small>
                     </div>
                 </a>
 
-                <!-- 5. Написать письмо (Корпоративная почта) -->
-                <a href="{% url 'mailbox_app:compose' %}" class="quick-action-btn">
-                    <div class="quick-action-icon bg-primary text-white">
-                        <i class="bx bx-envelope"></i>
-                    </div>
-                    <div>
-                        <div>Написать письмо</div>
-                        <small class="text-muted font-weight-normal">Корпоративная почта</small>
-                    </div>
-                </a>
-
-                <!-- 6. Мой профиль и меню (Открыть шторку профиля) -->
+                <!-- 5. Мой профиль и меню (Открыть шторку профиля) -->
                 <button type="button" class="quick-action-btn border-0 text-start" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#mobileUserMenuModal">
-                    <div class="quick-action-icon bg-info text-white">
+                    <div class="quick-action-icon bg-secondary text-white">
                         <i class="bx bx-user-circle"></i>
                     </div>
                     <div>
-                        <div>Личный кабинет и профиль</div>
-                        <small class="text-muted font-weight-normal">Почта, личные данные, смена аватара, тетрис</small>
+                        <div class="fw-bold">Личный кабинет и профиль</div>
+                        <small class="text-muted font-weight-normal">Личные данные, смена аватара, тетрис, настройки</small>
                     </div>
                 </button>
-
-                <!-- 7. Журнал разъездов (Для рядовых сотрудников без прав на СЗ) -->
-                {% if not perms.hrdepartment_app.add_officialmemo and not perms.hrdepartment_app.add_approvaloficialmemoprocess and not user.is_superuser %}
-                    <a href="{% url 'hrdepartment_app:reportcard_list' %}" class="quick-action-btn">
-                        <div class="quick-action-icon bg-secondary text-white">
-                            <i class="bx bx-time-five"></i>
-                        </div>
-                        <div>
-                            <div>Журнал разъездов</div>
-                            <small class="text-muted font-weight-normal">Просмотреть учёт рабочего времени</small>
-                        </div>
-                    </a>
-                {% endif %}
             </div>
         </div>
     </div>
