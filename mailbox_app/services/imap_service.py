@@ -210,13 +210,13 @@ class ImapMailService:
         self.close()
 
     def get_folders(self, force_refresh: bool = False) -> List[Dict[str, Any]]:
-        """Возвращает список всех папок почтового ящика со статистикой сообщений (с быстрым кэшированием).
+        """Возвращает список всех папок почтового ящика со статистикой сообщений и иерархической структурой.
 
         Args:
             force_refresh (bool): Принудительно запросить данные с IMAP сервера в обход кэша.
 
         Returns:
-            list[dict]: Список словарей папок с полями raw_name, display_name, unseen, total, icon, type.
+            list[dict]: Список словарей папок с полями raw_name, display_name, full_path_display, level, unseen, total, icon, type.
         """
         cache_key = f"mailbox_folders_{self.email_addr.strip().lower()}" if self.email_addr else None
         if cache_key and not force_refresh:
@@ -231,7 +231,7 @@ class ImapMailService:
         if status != "OK" or not folder_list:
             return []
 
-        folders = []
+        parsed_folders = []
         for folder_item in folder_list:
             if not folder_item:
                 continue
@@ -241,43 +241,75 @@ class ImapMailService:
                 continue
 
             flags_str = match.group("flags").lower()
+            delimiter = match.group("delimiter") or "/"
             raw_name = match.group("name").strip('"')
-            display_name = decode_imap_utf7(raw_name)
-            lower_name = display_name.lower()
 
             # Пропускаем папки \NoSelect и системные PIM-папки Kerio Connect (контакты, календарь, заметки)
             if "\\noselect" in flags_str or "\\nonexistent" in flags_str:
                 continue
-            if lower_name in ["contacts", "calendar", "tasks", "notes", "контакты", "календарь", "задачи", "заметки"]:
+
+            # Разбиваем путь папки по разделителю иерархии
+            raw_parts = [p for p in raw_name.split(delimiter) if p]
+            if not raw_parts:
+                raw_parts = [raw_name]
+
+            decoded_parts = [decode_imap_utf7(p) for p in raw_parts]
+            level = len(raw_parts) - 1
+            leaf_display = decoded_parts[-1]
+            root_raw = raw_parts[0]
+            root_decoded = decoded_parts[0]
+            lower_root = root_decoded.lower()
+
+            if lower_root in ["contacts", "calendar", "tasks", "notes", "контакты", "календарь", "задачи", "заметки"]:
                 continue
 
-            # Определяем иконку и системный тип папки (с учетом Kerio Connect 9.4)
-            icon = "bx bx-folder"
-            folder_type = "custom"
+            # Определяем тип корневой группы папок
+            root_type = "custom"
+            if root_raw.upper() == "INBOX" or lower_root in ("inbox", "входящие") or "\\inbox" in flags_str:
+                root_type = "inbox"
+            elif "\\sent" in flags_str or lower_root in ("sent", "sent items", "sent messages", "отправленные", "отправленные сообщения"):
+                root_type = "sent"
+            elif "\\drafts" in flags_str or lower_root in ("drafts", "draft", "черновики"):
+                root_type = "drafts"
+            elif "\\trash" in flags_str or lower_root in ("trash", "deleted", "deleted items", "deleted messages", "корзина", "удаленные"):
+                root_type = "trash"
+            elif "\\junk" in flags_str or lower_root in ("spam", "junk", "junk email", "спам"):
+                root_type = "spam"
+            elif "\\important" in flags_str or "\\flagged" in flags_str or lower_root in ("important", "важные"):
+                root_type = "important"
 
-            if "inbox" in lower_name or "входящ" in lower_name:
-                icon = "bx bx-inbox"
-                folder_type = "inbox"
-                display_name = "Входящие"
-            elif "sent" in lower_name or "отправлен" in lower_name:
-                icon = "bx bx-paper-plane"
-                folder_type = "sent"
-                display_name = "Отправленные"
-            elif "draft" in lower_name or "черновик" in lower_name:
-                icon = "bx bx-edit"
-                folder_type = "drafts"
-                display_name = "Черновики"
-            elif "trash" in lower_name or "корзин" in lower_name or "deleted" in lower_name or "удален" in lower_name:
-                icon = "bx bx-trash"
-                folder_type = "trash"
-                display_name = "Корзина"
-            elif "spam" in lower_name or "junk" in lower_name or "спам" in lower_name:
-                icon = "bx bx-error"
-                folder_type = "spam"
-                display_name = "Спам"
-            elif "important" in lower_name or "важн" in lower_name:
-                icon = "bx bx-star"
-                folder_type = "important"
+            # Определяем свойства текущей папки
+            if level == 0:
+                folder_type = root_type
+                if folder_type == "inbox":
+                    display_name = "Входящие"
+                    icon = "bx bx-inbox"
+                elif folder_type == "sent":
+                    display_name = "Отправленные"
+                    icon = "bx bx-paper-plane"
+                elif folder_type == "drafts":
+                    display_name = "Черновики"
+                    icon = "bx bx-edit"
+                elif folder_type == "trash":
+                    display_name = "Корзина"
+                    icon = "bx bx-trash"
+                elif folder_type == "spam":
+                    display_name = "Спам"
+                    icon = "bx bx-error"
+                elif folder_type == "important":
+                    display_name = "Важные"
+                    icon = "bx bx-star"
+                else:
+                    display_name = leaf_display
+                    icon = "bx bx-folder"
+                full_path_display = display_name
+            else:
+                # Вложенная подпапка (сохраняет свое индивидуальное имя и иерархию!)
+                folder_type = "subfolder"
+                display_name = leaf_display
+                icon = "bx bx-folder"
+                first_name = "Входящие" if root_type == "inbox" else decoded_parts[0]
+                full_path_display = " / ".join([first_name] + decoded_parts[1:])
 
             # Получаем количество непрочитанных и всего писем
             unseen_count = 0
@@ -295,23 +327,37 @@ class ImapMailService:
             except Exception:
                 pass
 
-            folders.append({
+            parsed_folders.append({
                 "raw_name": raw_name,
                 "display_name": display_name,
+                "full_path_display": full_path_display,
                 "unseen": unseen_count,
                 "total": total_count,
                 "icon": icon,
                 "type": folder_type,
+                "root_type": root_type,
+                "level": level,
+                "is_subfolder": level > 0,
+                "delimiter": delimiter,
+                "raw_parts": raw_parts,
+                "decoded_parts": decoded_parts,
             })
 
-        # Сортируем: Входящие первыми, далее Отправленные, Черновики, Корзина, Спам, остальные
+        # Иерархическая сортировка дерева папок:
+        # Входящие и все вложенные папки Входящих -> Отправленные -> Черновики -> Корзина -> Спам -> Пользовательские
         order_priority = {"inbox": 1, "sent": 2, "drafts": 3, "trash": 4, "spam": 5, "important": 6, "custom": 10}
-        folders.sort(key=lambda f: (order_priority.get(f["type"], 99), f["display_name"]))
+
+        def sort_key(f):
+            prio = order_priority.get(f["root_type"], 99)
+            path_tuple = tuple(p.lower() for p in f["decoded_parts"])
+            return (prio, path_tuple)
+
+        parsed_folders.sort(key=sort_key)
 
         if cache_key:
-            cache.set(cache_key, folders, timeout=180)
+            cache.set(cache_key, parsed_folders, timeout=180)
 
-        return folders
+        return parsed_folders
 
     def get_messages(
         self,

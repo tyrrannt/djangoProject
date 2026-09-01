@@ -155,7 +155,7 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
         for f in folders:
             if f.get("raw_name") == current_folder:
                 current_type = f.get("type", "custom")
-                current_folder_display = f.get("display_name", current_folder_display)
+                current_folder_display = f.get("full_path_display") or f.get("display_name", current_folder_display)
                 break
         is_junk = current_type in ("junk", "spam") or any(s in current_folder.lower() for s in ("junk", "спам", "spam"))
 
@@ -251,7 +251,7 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
         for f in folders:
             if f.get("raw_name") == folder_name:
                 current_type = f.get("type", "custom")
-                current_folder_display = f.get("display_name", current_folder_display)
+                current_folder_display = f.get("full_path_display") or f.get("display_name", current_folder_display)
                 break
         is_junk = current_type in ("junk", "spam") or any(s in folder_name.lower() for s in ("junk", "спам", "spam"))
 

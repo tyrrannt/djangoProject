@@ -24,13 +24,18 @@
                     <span class="text-uppercase text-muted small font-weight-bold" style="font-size: 11px; letter-spacing: 0.5px;">Папки</span>
                 </div>
 
-                <!-- Дерево папок почты -->
+                <!-- Дерево папок почты с поддержкой иерархии -->
                 <ul class="mailbox-folders-list">
                     {% for f in folders %}
-                        <li>
+                        <li class="{% if f.level > 0 %}mailbox-subfolder-li{% endif %}">
                             <a href="{% url 'mailbox_app:folder' f.raw_name %}"
-                               class="mailbox-folder-link {% if current_folder == f.raw_name %}active{% endif %}">
+                               class="mailbox-folder-link {% if current_folder == f.raw_name %}active{% endif %}"
+                               style="{% if f.level > 0 %}padding-left: calc(14px + {{ f.level }} * 18px) !important; font-size: 12.5px;{% endif %}"
+                               title="{{ f.full_path_display }}">
                                 <span class="text-truncate d-flex align-items-center">
+                                    {% if f.level > 0 %}
+                                        <i class="bx bx-subdirectory-right text-muted me-1" style="font-size: 15px;"></i>
+                                    {% endif %}
                                     <i class="{{ f.icon }}"></i>
                                     <span class="text-truncate">{{ f.display_name }}</span>
                                 </span>
@@ -84,13 +89,18 @@
             <i class="bx bx-edit font-size-18"></i> Написать письмо
         </a>
 
-        <!-- Список папок в стиле Thunderbird Mobile -->
+        <!-- Список папок в стиле Thunderbird Mobile с поддержкой иерархии -->
         <div class="text-uppercase text-muted fw-bold px-2 mb-2" style="font-size: 11px; letter-spacing: 0.5px;">Папки почты</div>
         <div class="list-group list-group-flush border rounded-3 overflow-hidden mb-4">
             {% for f in folders %}
                 <a href="{% url 'mailbox_app:folder' f.raw_name %}"
-                   class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if current_folder == f.raw_name %}active fw-bold{% endif %}">
+                   class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if current_folder == f.raw_name %}active fw-bold{% endif %}"
+                   style="{% if f.level > 0 %}padding-left: calc(0.75rem + {{ f.level }} * 18px) !important; font-size: 13px;{% if current_folder != f.raw_name %}background-color: #f8fafc;{% endif %}{% endif %}"
+                   title="{{ f.full_path_display }}">
                     <span class="d-flex align-items-center gap-2 text-truncate">
+                        {% if f.level > 0 %}
+                            <i class="bx bx-subdirectory-right text-muted" style="font-size: 15px;"></i>
+                        {% endif %}
                         <i class="{{ f.icon }} font-size-18 {% if current_folder == f.raw_name %}text-white{% else %}text-primary{% endif %}"></i>
                         <span class="text-truncate">{{ f.display_name }}</span>
                     </span>
