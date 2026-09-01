@@ -40,7 +40,8 @@ from telegram_app.management.commands.bot import send_message_tg
 from celery import shared_task
 from hrdepartment_app.services.celery_services import (
     process_sick_leave, process_report_card_daily, process_vacation_check,
-    process_save_report, process_vacation_schedule, process_get_vacation
+    process_save_report, process_vacation_schedule, process_get_vacation,
+    process_sync_database_users, get_type_of_employment
 )
 
 
@@ -1340,144 +1341,23 @@ def get_filter_list(filter_list, variable, meaning):
     return result[0] if len(result) == 1 else False
 
 
-@app.task()
-def get_database_user():
-    # ДУБЛИКАТ имеется в customers_util.py
-    count = DataBaseUser.objects.all().count() + 1
-    staff = get_jsons_data_filter(
-        "Catalog", "Сотрудники", "ВАрхиве", "false", 0, 0, False, False
-    )
-    individuals = get_jsons_data("Catalog", "ФизическиеЛица", 0)
-    insurance_policy = get_jsons_data(
-        "InformationRegister", "ПолисыОМСФизическихЛиц", 0
-    )
-    staff_set = set()
-    for item in staff["value"]:
-        if item["Description"] != "":
-            staff_set.add(item["Ref_Key"])
-    users_set = set()
-    for item in DataBaseUser.objects.all().exclude(is_ppa=True):
-        users_set.add(item.ref_key)
-    users_set &= staff_set  # Есть везде
-    staff_set -= users_set
-    staff_set_list = list()  # Нет в системе
-    for unit in list(staff_set):
-        if get_type_of_employment(unit):
-            staff_set_list.append(unit)
-    personal_kwargs_list, divisions_kwargs_list = list(), list()
-    # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
-    for item in staff["value"]:
-        if item["Description"] != "":
-            (
-                last_name,
-                surname,
-                birthday,
-                gender,
-                email,
-                telephone,
-                address,
-            ) = (
-                "",
-                "",
-                "1900-01-01",
-                "",
-                "",
-                "",
-                "",
-            )
-            find_item = get_filter_list(
-                individuals["value"], "Ref_Key", item["ФизическоеЛицо_Key"]
-            )
-            if not find_item:
-                continue
-            Ref_Key = find_item["Ref_Key"]
-            username = (
-                    "0" * (4 - len(str(count)))
-                    + str(count)
-                    + "_"
-                    + transliterate(find_item["Фамилия"]).lower()
-                    + "_"
-                    + transliterate(find_item["Имя"]).lower()[:1]
-                    + transliterate(find_item["Отчество"]).lower()[:1]
-            )
-            first_name = find_item["Имя"]
-            last_name = find_item["Фамилия"]
-            surname = find_item["Отчество"]
-            gender = "male" if find_item["Пол"] == "Мужской" else "female"
-            birthday = datetime.datetime.strptime(
-                find_item["ДатаРождения"][:10], "%Y-%m-%d"
-            )
-            for item3 in find_item["КонтактнаяИнформация"]:
-                if item3["Тип"] == "АдресЭлектроннойПочты":
-                    email = item3["АдресЭП"]
-                if item3["Тип"] == "Телефон":
-                    telephone = "+" + item3["НомерТелефона"]
-                if item3["Тип"] == "Адрес":
-                    address = item3["Представление"]
-            insurance_item = get_filter_list(
-                insurance_policy["value"],
-                "ФизическоеЛицо_Key",
-                item["ФизическоеЛицо_Key"],
-            )
-            oms = insurance_item["НомерПолиса"] if insurance_item else ""
-            personal_kwargs = {
-                "inn": find_item["ИНН"],
-                "snils": find_item["СтраховойНомерПФР"],
-                "oms": oms,
-            }
+@shared_task(bind=True, max_retries=3)
+def get_database_user(self):
+    """Периодическая задача Celery для синхронизации сотрудников и физлиц из 1С ЗУП.
 
-            divisions_kwargs = {
-                "person_ref_key": Ref_Key,
-                "service_number": item["Code"],
-                "first_name": first_name,
-                "last_name": last_name,
-                "surname": surname,
-                "birthday": birthday,
-                "type_users": "staff_member",
-                "gender": gender,
-                "email": email,
-                "personal_phone": telephone[:12],
-                "address": address,
-            }
-            count += 1
-            if item["Ref_Key"] in staff_set_list:
-                try:
-                    main_obj_item, main_created = DataBaseUser.objects.update_or_create(
-                        ref_key=item["Ref_Key"], defaults={**divisions_kwargs}
-                    )
+    Делегирует исполнение в process_sync_database_users сервисного слоя.
 
-                    if main_created:
-                        main_obj_item.username = username
-                except Exception as _ex:
-                    logger.error(
-                        f"Сохранение пользователя: {username}, {last_name} {first_name} {_ex}"
-                    )
-                try:
-                    obj_item, created = DataBaseUserProfile.objects.update_or_create(
-                        ref_key=item["Ref_Key"], defaults={**personal_kwargs}
-                    )
-                except Exception as _ex:
-                    logger.error(f"Сохранение профиля пользователя: {_ex}")
-                if not main_obj_item.user_profile:
-                    try:
-                        main_obj_item.user_profile = DataBaseUserProfile.objects.get(
-                            ref_key=main_obj_item.ref_key
-                        )
-                        main_obj_item.save()
-                    except Exception as _ex:
-                        logger.error(
-                            f"Сохранения профиля пользователя в модели пользователя: {_ex}"
-                        )
-            if item["Ref_Key"] in users_set:
-                personal_kwargs["ref_key"] = item["Ref_Key"]
-                divisions_kwargs["ref_key"] = item["Ref_Key"]
-                personal_kwargs_list.append(personal_kwargs)
-                divisions_kwargs_list.append(divisions_kwargs)
-    from django.db import transaction
+    Returns:
+        dict: Результаты синхронизации со статусом и количеством обновленных/созданных записей.
 
-    with transaction.atomic():
-        for item in divisions_kwargs_list:
-            DataBaseUser.objects.filter(ref_key=item["ref_key"]).update(**item)
-    with transaction.atomic():
-        for item in personal_kwargs_list:
-            DataBaseUserProfile.objects.filter(ref_key=item["ref_key"]).update(**item)
+    Raises:
+        Exception: Повторяет задачу через self.retry при сетевых ошибках 1С.
+    """
+    logger.info("Celery task get_database_user started")
+    try:
+        res = process_sync_database_users()
+        logger.info(f"Celery task get_database_user completed: {res}")
+        return res
+    except Exception as exc:
+        logger.error(f"Error in get_database_user task: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60)

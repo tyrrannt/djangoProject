@@ -16,8 +16,11 @@ from django.db import transaction
 from django.db.models import Q
 
 from core import logger
-from administration_app.utils import get_jsons_data_filter, get_jsons_data_filter2, get_date_interval
-from customers_app.models import DataBaseUser, VacationScheduleList, VacationSchedule
+from administration_app.utils import (
+    get_jsons_data_filter, get_jsons_data_filter2, get_jsons_data,
+    get_date_interval, transliterate
+)
+from customers_app.models import DataBaseUser, DataBaseUserProfile, VacationScheduleList, VacationSchedule
 from hrdepartment_app.models import ReportCard, WeekendDay, check_day
 
 
@@ -655,3 +658,232 @@ def process_get_vacation(year: Optional[int] = None) -> Dict[str, Any]:
 
     logger.info(f"Синхронизация отпусков ({year} год) завершена. Создано записей: {objs_created}")
     return {"status": "success", "count": objs_created, "year": year}
+
+
+def get_type_of_employment(ref_key: str) -> bool:
+    """Проверяет вид занятости сотрудника по документу 'ПриемНаРаботу' в 1С ЗУП.
+
+    Args:
+        ref_key (str): Уникальный GUID сотрудника в 1С.
+
+    Returns:
+        bool: True, если сотрудник принят на основное место работы или по совместительству, иначе False.
+    """
+    try:
+        data = get_jsons_data_filter(
+            "Document", "ПриемНаРаботу", "Сотрудник_Key", ref_key, 0, 0, True, True
+        )
+        if not data or not isinstance(data, dict) or not data.get("value"):
+            return False
+
+        val_list = data["value"]
+        if len(val_list) == 1:
+            return val_list[0].get("ВидЗанятости") in ["ОсновноеМестоРаботы", "Совместительство"]
+        else:
+            for item in val_list:
+                if (
+                    item.get("ВидЗанятости") in ["ОсновноеМестоРаботы", "Совместительство"]
+                    and item.get("ИсправленныйДокумент_Key") != "00000000-0000-0000-0000-000000000000"
+                ):
+                    return True
+        return False
+    except Exception as e:
+        logger.error(f"Ошибка проверки вида занятости для {ref_key}: {e}")
+        return False
+
+
+def process_sync_database_users() -> Dict[str, Any]:
+    """Синхронизирует справочник сотрудников и физлиц из 1С ЗУП с DataBaseUser и DataBaseUserProfile.
+
+    Выгружает актуальный список сотрудников (Каталог 'Сотрудники'), физических лиц (Каталог 'ФизическиеЛица')
+    и полисы ОМС (Регистр 'ПолисыОМСФизическихЛиц') из 1С ЗУП.
+    - Для существующих сотрудников выполняет массовое пакетное обновление через bulk_update.
+    - Для новых принятых сотрудников создает учетную запись и профиль.
+
+    Returns:
+        Dict[str, Any]: Результаты синхронизации:
+            - status (str): Статус ('success').
+            - updated_users (int): Количество обновленных пользователей.
+            - updated_profiles (int): Количество обновленных профилей.
+            - created_users (int): Количество созданных новых сотрудников.
+
+    Raises:
+        Exception: При ошибках взаимодействия с 1С (перехватывается в Celery task).
+    """
+    count = DataBaseUser.objects.all().count() + 1
+
+    staff = get_jsons_data_filter("Catalog", "Сотрудники", "ВАрхиве", "false", 0, 0, False, False)
+    individuals = get_jsons_data("Catalog", "ФизическиеЛица", 0)
+    insurance_policy = get_jsons_data("InformationRegister", "ПолисыОМСФизическихЛиц", 0)
+
+    staff_list = staff.get("value", []) if isinstance(staff, dict) else []
+    individuals_list = individuals.get("value", []) if isinstance(individuals, dict) else []
+    insurance_list = insurance_policy.get("value", []) if isinstance(insurance_policy, dict) else []
+
+    # 1. Построение словарей для мгновенного поиска O(1)
+    individuals_dict = {
+        item["Ref_Key"]: item for item in individuals_list if item.get("Ref_Key")
+    }
+    insurance_dict = {
+        item["ФизическоеЛицо_Key"]: item.get("НомерПолиса", "")
+        for item in insurance_list if item.get("ФизическоеЛицо_Key")
+    }
+
+    # 2. Анализ сотрудников в 1С и в Django
+    staff_set = {item["Ref_Key"] for item in staff_list if item.get("Description") and item.get("Ref_Key")}
+    existing_users_qs = DataBaseUser.objects.all().exclude(is_ppa=True)
+    existing_users_dict = {u.ref_key: u for u in existing_users_qs if u.ref_key}
+    existing_profiles_dict = {p.ref_key: p for p in DataBaseUserProfile.objects.all() if p.ref_key}
+
+    users_set = set(existing_users_dict.keys()) & staff_set
+    new_staff_keys = staff_set - users_set
+
+    # 3. Фильтрация новых сотрудников по типу занятости
+    staff_set_list = set()
+    for unit_key in new_staff_keys:
+        if get_type_of_employment(unit_key):
+            staff_set_list.add(unit_key)
+
+    users_to_bulk_update = []
+    profiles_to_bulk_update = []
+    created_users_count = 0
+
+    for item in staff_list:
+        ref_key = item.get("Ref_Key")
+        if not ref_key or item.get("Description") == "":
+            continue
+
+        person_key = item.get("ФизическоеЛицо_Key")
+        find_item = individuals_dict.get(person_key)
+        if not find_item:
+            continue
+
+        first_name = find_item.get("Имя", "")
+        last_name = find_item.get("Фамилия", "")
+        surname = find_item.get("Отчество", "")
+        gender = "male" if find_item.get("Пол") == "Мужской" else "female"
+
+        raw_birthday = find_item.get("ДатаРождения", "")[:10]
+        try:
+            birthday = datetime.datetime.strptime(raw_birthday, "%Y-%m-%d").date() if raw_birthday else None
+        except Exception:
+            birthday = None
+
+        email = ""
+        telephone = ""
+        address = ""
+        for contact in find_item.get("КонтактнаяИнформация", []):
+            contact_type = contact.get("Тип")
+            if contact_type == "АдресЭлектроннойПочты":
+                email = contact.get("АдресЭП", "")
+            elif contact_type == "Телефон":
+                raw_tel = contact.get("НомерТелефона", "")
+                telephone = ("+" + raw_tel) if raw_tel else ""
+            elif contact_type == "Адрес":
+                address = contact.get("Представление", "")
+
+        oms = insurance_dict.get(person_key, "")
+        inn = find_item.get("ИНН", "")
+        snils = find_item.get("СтраховойНомерПФР", "")
+
+        personal_kwargs = {
+            "inn": inn,
+            "snils": snils,
+            "oms": oms,
+        }
+
+        divisions_kwargs = {
+            "person_ref_key": person_key,
+            "service_number": item.get("Code", ""),
+            "first_name": first_name,
+            "last_name": last_name,
+            "surname": surname,
+            "birthday": birthday,
+            "type_users": "staff_member",
+            "gender": gender,
+            "email": email,
+            "personal_phone": telephone[:12] if telephone else "",
+            "address": address,
+        }
+
+        # Создание новых сотрудников
+        if ref_key in staff_set_list:
+            username = (
+                "0" * (4 - len(str(count)))
+                + str(count)
+                + "_"
+                + transliterate(last_name).lower()
+                + "_"
+                + transliterate(first_name).lower()[:1]
+                + transliterate(surname).lower()[:1]
+            )
+            count += 1
+            try:
+                profile_obj, _ = DataBaseUserProfile.objects.update_or_create(
+                    ref_key=ref_key,
+                    defaults=personal_kwargs
+                )
+                user_obj, user_created = DataBaseUser.objects.update_or_create(
+                    ref_key=ref_key,
+                    defaults={**divisions_kwargs, "user_profile": profile_obj}
+                )
+                if user_created:
+                    user_obj.username = username
+                    user_obj.save(update_fields=["username"])
+                created_users_count += 1
+                logger.info(f"Создан новый пользователь: {username} ({last_name} {first_name})")
+            except Exception as ex:
+                logger.error(f"Ошибка создания пользователя {username} ({last_name} {first_name}): {ex}")
+
+        # Обновление существующих сотрудников (через bulk_update)
+        elif ref_key in users_set:
+            user_obj = existing_users_dict.get(ref_key)
+            if user_obj:
+                user_modified = False
+                for field_name, new_val in divisions_kwargs.items():
+                    if hasattr(user_obj, field_name):
+                        cur_val = getattr(user_obj, field_name)
+                        if cur_val != new_val:
+                            setattr(user_obj, field_name, new_val)
+                            user_modified = True
+                if user_modified:
+                    users_to_bulk_update.append(user_obj)
+
+            profile_obj = existing_profiles_dict.get(ref_key)
+            if profile_obj:
+                profile_modified = False
+                for field_name, new_val in personal_kwargs.items():
+                    if hasattr(profile_obj, field_name):
+                        cur_val = getattr(profile_obj, field_name)
+                        if cur_val != new_val:
+                            setattr(profile_obj, field_name, new_val)
+                            profile_modified = True
+                if profile_modified:
+                    profiles_to_bulk_update.append(profile_obj)
+
+    # 4. Пакетное обновление данных в базе
+    with transaction.atomic():
+        if users_to_bulk_update:
+            update_fields = [
+                "person_ref_key", "service_number", "first_name", "last_name",
+                "surname", "birthday", "type_users", "gender", "email",
+                "personal_phone", "address"
+            ]
+            DataBaseUser.objects.bulk_update(users_to_bulk_update, fields=update_fields, batch_size=500)
+
+        if profiles_to_bulk_update:
+            DataBaseUserProfile.objects.bulk_update(
+                profiles_to_bulk_update, fields=["inn", "snils", "oms"], batch_size=500
+            )
+
+    logger.info(
+        f"Синхронизация пользователей завершена: обновлено {len(users_to_bulk_update)} пользователей, "
+        f"{len(profiles_to_bulk_update)} профилей, создано {created_users_count} новых."
+    )
+    return {
+        "status": "success",
+        "updated_users": len(users_to_bulk_update),
+        "updated_profiles": len(profiles_to_bulk_update),
+        "created_users": created_users_count
+    }
+
