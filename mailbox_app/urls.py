@@ -9,14 +9,14 @@ urlpatterns = [
     # Главная страница почты (Папка Входящие)
     path("", views.MailboxFolderView.as_view(), name="index"),
     # Просмотр конкретной папки
-    path("folder/<str:folder>/", views.MailboxFolderView.as_view(), name="folder"),
+    path("folder/<path:folder>/", views.MailboxFolderView.as_view(), name="folder"),
     # Просмотр письма
-    path("folder/<str:folder>/email/<int:uid>/", views.MailboxEmailDetailView.as_view(), name="email_detail"),
+    path("folder/<path:folder>/email/<int:uid>/", views.MailboxEmailDetailView.as_view(), name="email_detail"),
     # Написание нового письма
     path("compose/", views.MailboxComposeView.as_view(), name="compose"),
     # Скачивание вложения
     path(
-        "folder/<str:folder>/email/<int:uid>/attachment/<int:part_index>/",
+        "folder/<path:folder>/email/<int:uid>/attachment/<int:part_index>/",
         views.MailboxAttachmentDownloadView.as_view(),
         name="download_attachment",
     ),

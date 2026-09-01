@@ -43,19 +43,17 @@ logger = logging.getLogger(__name__)
 class MailboxBaseMixin(LoginRequiredMixin):
     """Базовый миксин для представлений почты: проверка и получение почтового аккаунта."""
 
-    def get_account(self) -> MailAccount:
+    def get_account(self) -> Optional[MailAccount]:
         """Возвращает или настраивает почтовый аккаунт для текущего пользователя.
 
         Returns:
-            MailAccount: Объект почтового ящика.
-
-        Raises:
-            Http404: Если у пользователя не настроена почта.
+            MailAccount, optional: Объект почтового ящика или None.
         """
-        account = get_user_mail_account(self.request.user)
-        if not account or not account.email:
-            raise Http404("Корпоративный почтовый ящик не настроен для данного пользователя.")
-        return account
+        try:
+            return get_user_mail_account(self.request.user)
+        except Exception as e:
+            logger.error(f"[Mailbox] Ошибка получения почтового аккаунта для {self.request.user}: {e}")
+            return None
 
     def get_imap_service(self, account: MailAccount) -> ImapMailService:
         """Создает и возвращает экземпляр IMAP-сервиса.
@@ -104,40 +102,50 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
         error_message = None
 
         if account and account.email:
-            email_clean = account.email.strip().lower()
-            if force_refresh:
-                invalidate_mailbox_cache(email_clean)
-
-            ver_key = f"mailbox_ver_{email_clean}"
-            cache_ver = cache.get(ver_key) or 1
-            cache_key_folders = f"mailbox_folders_{email_clean}"
-            cache_key_msgs = f"mailbox_msgs_{email_clean}_{cache_ver}_{current_folder}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{search_query}"
-
-            cached_folders = cache.get(cache_key_folders) if not force_refresh else None
-            cached_msgs_data = cache.get(cache_key_msgs) if not force_refresh else None
-
-            if cached_folders is not None and cached_msgs_data is not None:
-                folders = cached_folders
-                email_messages, total_count = cached_msgs_data
+            password = account.get_password()
+            if not password:
+                error_message = (
+                    "Пароль от корпоративной почты не задан в профиле пользователя. "
+                    "Пожалуйста, укажите пароль в настройках почты или обратитесь в отдел IT."
+                )
             else:
-                try:
-                    with self.get_imap_service(account) as imap_svc:
-                        folders = imap_svc.get_folders(force_refresh=force_refresh)
-                        email_messages, total_count = imap_svc.get_messages(
-                            folder_name=current_folder,
-                            page=page,
-                            per_page=per_page,
-                            query=search_query if search_query else None,
-                            sort_by=sort_by,
-                            sort_dir=sort_dir,
-                            filter_by=filter_by,
-                            force_refresh=force_refresh,
-                        )
-                except Exception as e:
-                    logger.error(f"[Mailbox] Ошибка загрузки писем из {current_folder}: {e}")
-                    error_message = f"Не удалось подключиться к серверу IMAP: {e}"
+                email_clean = account.email.strip().lower()
+                if force_refresh:
+                    invalidate_mailbox_cache(email_clean)
+
+                ver_key = f"mailbox_ver_{email_clean}"
+                cache_ver = cache.get(ver_key) or 1
+                cache_key_folders = f"mailbox_folders_{email_clean}"
+                cache_key_msgs = f"mailbox_msgs_{email_clean}_{cache_ver}_{current_folder}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{search_query}"
+
+                cached_folders = cache.get(cache_key_folders) if not force_refresh else None
+                cached_msgs_data = cache.get(cache_key_msgs) if not force_refresh else None
+
+                if cached_folders is not None and cached_msgs_data is not None:
+                    folders = cached_folders
+                    email_messages, total_count = cached_msgs_data
+                else:
+                    try:
+                        with self.get_imap_service(account) as imap_svc:
+                            folders = imap_svc.get_folders(force_refresh=force_refresh)
+                            email_messages, total_count = imap_svc.get_messages(
+                                folder_name=current_folder,
+                                page=page,
+                                per_page=per_page,
+                                query=search_query if search_query else None,
+                                sort_by=sort_by,
+                                sort_dir=sort_dir,
+                                filter_by=filter_by,
+                                force_refresh=force_refresh,
+                            )
+                    except Exception as e:
+                        logger.error(f"[Mailbox] Ошибка загрузки писем из {current_folder}: {e}")
+                        error_message = f"Не удалось подключиться к серверу IMAP: {e}"
         else:
-            error_message = "Почтовый аккаунт не настроен для текущего пользователя."
+            error_message = (
+                "Корпоративный почтовый ящик не настроен для вашей учетной записи (не указан корпоративный Email адрес). "
+                "Пожалуйста, обратитесь к системному администратору или в отдел кадров."
+            )
 
         total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
 
