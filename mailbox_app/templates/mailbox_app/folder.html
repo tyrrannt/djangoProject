@@ -79,14 +79,12 @@
 
                 <!-- Панель быстрых фильтров и выпадающей сортировки (Outlook / Thunderbird style) -->
                 <div class="mailbox-quick-filters px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between gap-2">
-                    <!-- Прокручиваемая в 1 строку лента фильтров (Filter Chips) -->
+                    <!-- Лента фильтров без необходимости горизонтального свайпа на смартфонах -->
                     <div class="mailbox-filter-chips-scroll d-flex align-items-center gap-1">
-                        <!-- Кнопка сортировки на смартфонах (открывает Bottom Sheet #mobileMailSortModal) -->
-                        <button type="button" class="mailbox-filter-btn active d-md-none flex-shrink-0 d-flex align-items-center gap-1 shadow-none"
-                                data-bs-toggle="modal" data-bs-target="#mobileMailSortModal" title="Выбрать сортировку писем">
-                            <i class="bx bx-sort text-primary"></i>
-                            <span>{{ current_sort_label|truncatechars:18 }}</span>
-                            <i class="bx bx-chevron-down ms-1" style="font-size: 10px;"></i>
+                        <!-- Компактная иконка сортировки на смартфонах (открывает Bottom Sheet) -->
+                        <button type="button" class="mailbox-filter-btn active d-md-none flex-shrink-0 d-flex align-items-center justify-content-center shadow-none"
+                                data-bs-toggle="modal" data-bs-target="#mobileMailSortModal" title="Сортировка писем: {{ current_sort_label }}" style="min-width: 32px; padding: 4px 6px !important;">
+                            <i class="bx bx-sort font-size-16"></i>
                         </button>
 
                         <a href="?filter=all{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
@@ -95,15 +93,21 @@
                         </a>
                         <a href="?filter=unread{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
                            class="mailbox-filter-btn {% if filter_by == 'unread' %}active{% endif %}">
-                            <i class="bx bx-envelope"></i> Непрочитанные
+                            <i class="bx bx-envelope"></i>
+                            <span class="d-none d-sm-inline">Непрочитанные</span>
+                            <span class="d-sm-none">Непроч.</span>
                         </a>
                         <a href="?filter=flagged{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
                            class="mailbox-filter-btn {% if filter_by == 'flagged' %}active{% endif %}">
-                            <i class="bx bxs-star text-warning"></i> С флажком
+                            <i class="bx bxs-star text-warning"></i>
+                            <span class="d-none d-sm-inline">С флажком</span>
+                            <span class="d-sm-none">Важные</span>
                         </a>
                         <a href="?filter=attachments{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
                            class="mailbox-filter-btn {% if filter_by == 'attachments' %}active{% endif %}">
-                            <i class="bx bx-paperclip"></i> С вложениями
+                            <i class="bx bx-paperclip"></i>
+                            <span class="d-none d-sm-inline">С вложениями</span>
+                            <span class="d-sm-none">Вложения</span>
                         </a>
                     </div>
 
