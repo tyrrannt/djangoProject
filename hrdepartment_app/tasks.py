@@ -37,6 +37,11 @@ from hrdepartment_app.models import (
     ProductionCalendar, get_norm_time_at_custom_day,
 )
 from telegram_app.management.commands.bot import send_message_tg
+from celery import shared_task
+from hrdepartment_app.services.celery_services import (
+    process_sick_leave, process_report_card_daily, process_vacation_check,
+    process_save_report, process_vacation_schedule
+)
 
 
 PROXY = f"http://{config('PROXY_LOGIN')}:{config('PROXY_PASS')}@{config('PROXY_IP')}:{config('PROXY_PORT')}"
@@ -576,46 +581,13 @@ def calc_diff(start, end):
     return diff
 
 
-@app.task()
-def save_report():
-    type_of_report = {
-        1: "Явка",
-        2: "Отпуск",
-        3: "Дополнительный ежегодный отпуск",
-        4: "Отпуск за свой счет",
-        5: "Дополнительный учебный отпуск",
-        6: "Отпуск по уходу за ребенком",
-        7: "Дополнительный неоплачиваемый отпуск",
-        8: "Отпуск по беременности и родам",
-        9: "Отпуск без оплаты согласно ТК РФ",
-        10: "Дополнительный отпуск",
-        11: "Дополнительный оплачиваемый отпуск",
-        12: "Основной",
-        13: "Ручной ввод",
-        14: "Служебная поездка",
-        15: "Командировка",
-        16: "Больничный",
-        17: "Мед осмотр",
-        18: "График отпусков",
-        19: "Отпуск на санаторно курортное лечение",
-        20: "Отгул",
-    }
-    fields = ["user", "date", "start", "end", "type", "manual_input", "reason"]
-    dates = ReportCard.objects.all().exclude(employee=None)
-    report_card_list = list()
-    for report_record in dates:
-        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time,
-                                 report_record.end_time, report_record.record_type, report_record.manual_input,
-                                 report_record.reason_adjustment, ])
-    # Преобразуем QuerySet в DataFrame
-    df = pd.DataFrame.from_records(report_card_list, columns=fields)
-    df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y")
-    df["start"] = pd.to_datetime(df["start"], format="%H:%M:%S")
-    df["end"] = pd.to_datetime(df["end"], format="%H:%M:%S")
-    df["type"] = pd.to_numeric(df["type"], errors='coerce').fillna(0).astype(int)
-    df['types'] = df['type'].map(type_of_report)
-    # Сохраняем DataFrame в CSV-файл
-    df.to_csv('dates.csv', sep=';', index=False, encoding='utf-8', na_rep='')
+@shared_task(bind=True, max_retries=3)
+def save_report(self):
+    try:
+        return process_save_report()
+    except Exception as e:
+        logger.error(f"Ошибка сохранения отчета: {e}")
+        raise self.retry(exc=e)
 
 
 @app.task()
@@ -907,52 +879,13 @@ def get_vacation(year=None):
     return logger.info(f"Создано {len(objs)} записей")
 
 
-@app.task()
-def vacation_check():
-    obj = VacationSchedule.objects.all()
-    for item in obj:
-        item.delete()
-    VACATION_TYPE = [
-        ("dd940e62-cfaf-11e6-bad8-902b345cadc2", "Отпуск за свой счет"),
-        ("b51bdb10-8fb9-11e9-80cc-309c23d346b4", "Дополнительный оплачиваемый отпуск пострадавшим на ЧАЭС"),
-        ("c3e8c3e8-cfb6-11e6-bad8-902b345cadc2", "Дополнительный неоплачиваемый отпуск пострадавшим на ЧАЭС"),
-        ("c3e8c3e7-cfb6-11e6-bad8-902b345cadc2", "Дополнительный учебный отпуск (оплачиваемый)"),
-        ("dd940e63-cfaf-11e6-bad8-902b345cadc2", "Дополнительный учебный отпуск без оплаты"),
-        ("6f4631a7-df12-11e6-950a-0cc47a7917f4", "Дополнительный отпуск КЛО, ЗКЛО, начальник ИБП"),
-        ("56f643c6-bf49-11e9-a3dc-0cc47a7917f4", "Дополнительный оплачиваемый отпуск пострадавшим в аварии на ЧАЭС"),
-        ("dd940e60-cfaf-11e6-bad8-902b345cadc2", "Дополнительный ежегодный отпуск"),
-        ("ebbd9c67-cfaf-11e6-bad8-902b345cadc2", "Основной"),
-    ]
-    vacation_list = VacationScheduleList.objects.all()
-    all_vacation_list = list()
-    for vacation in vacation_list:
-        graph_vacacion = get_jsons_data_filter(
-            "Document", "ГрафикОтпусков", "Number", vacation.document_number, 0, 0, False, True
-        )
-        for item in graph_vacacion["value"][0]["Сотрудники"]:
-            if DataBaseUser.objects.filter(ref_key=item["Сотрудник_Key"]).exists():
-                try:
-                    kwargs_obj = {
-                        "employee": DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True),
-                        "start_date": datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d"),
-                        "end_date": datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d"),
-                        "type_vacation": [v[0] for i, v in enumerate(VACATION_TYPE) if v[0] == item["ВидОтпуска_Key"]][
-                            0],
-                        "days": item["КоличествоДней"],
-                        "years": vacation.document_year,
-                        "comment": item["Примечание"],
-                    }
-                    all_vacation_list.append(kwargs_obj)
-                except DataBaseUser.DoesNotExist:
-                    pass
-    objs = ""
+@shared_task(bind=True, max_retries=3)
+def vacation_check(self):
     try:
-        objs = VacationSchedule.objects.bulk_create(
-            [VacationSchedule(**q) for q in all_vacation_list]
-        )
-    except Exception as _ex:
-        logger.error(f"Ошибка синхронизации графика отпусков {_ex}")
-    return logger.info(f"Создано {len(objs)} записей")
+        return process_vacation_check()
+    except Exception as e:
+        logger.error(f"Ошибка синхронизации графика отпусков: {e}")
+        raise self.retry(exc=e)
 
 
 @app.task()
@@ -1093,164 +1026,22 @@ def vacation_schedule_send(triger=0, user_id=0):
 #     return logger.info(f"Создано {len(objs)} записей")
 
 
-@app.task()
-def vacation_schedule(year=None):
-    # Предзагрузка сотрудников
-    users = DataBaseUser.objects.all()
-    user_dict = {user.ref_key: user for user in users}
-
-    if year:
-        year = int(year)
-    else:
-        year = datetime.datetime.now().year
-
+@shared_task(bind=True, max_retries=3)
+def vacation_schedule(self, year=None):
     try:
-        vacation_schedule_item = VacationScheduleList.objects.get(document_year=year)
-        vacation_schedule_number = vacation_schedule_item.document_number
-    except VacationScheduleList.DoesNotExist:
-        vacation_schedule_number = ""
-
-    # Получение данных
-    graph_vacacion = get_jsons_data_filter("Document", "ГрафикОтпусков", "Number", vacation_schedule_number, 0, 0,
-                                           False, True)
-    postponement_of_vacation = get_jsons_data_filter("Document", "ПереносОтпуска", "year(ИсходнаяДатаНачала)",
-                                                     str(year), 0, 0, False, False)
-
-    # Группировка переносов
-    postponement_dict = {}
-    for unit in postponement_of_vacation["value"]:
-        key = unit["Сотрудник_Key"]
-        postponement_dict.setdefault(key, []).append(unit)
-
-    # Обработка отпусков
-    vacation_list = []
-    for item in graph_vacacion["value"][0]["Сотрудники"]:
-        postponement_list = postponement_dict.get(item["Сотрудник_Key"], [])
-        if not postponement_list:
-            vacation_list.append(item)
-            continue
-
-        processed = False
-        for unit in postponement_list:
-            if unit["ИсходнаяДатаНачала"] == item["ДатаНачала"]:
-                for slice_element in unit["Переносы"]:
-                    new_item = item.copy()
-                    new_item.update({
-                        "ДатаНачала": slice_element["ДатаНачала"],
-                        "ДатаОкончания": slice_element["ДатаОкончания"],
-                        "КоличествоДней": slice_element["КоличествоДней"],
-                        "Примечание": f"Перенос отпуска №: {unit['Number']}",
-                    })
-                    vacation_list.append(new_item)
-                    processed = True
-        if not processed:
-            vacation_list.append(item)
-
-    # Удаление старых записей и создание новых
-    with transaction.atomic():
-        count, details = ReportCard.objects.filter(
-            Q(report_card_day__year=year) & Q(record_type="18")
-        ).delete()
-
-        # print(count)  # общее число удалённых объектов
-        # print(details)  # {<class 'myapp.ReportCard'>: 10, ...}
-
-        docs = graph_vacacion["value"][0]["Ref_Key"]
-        report_card_list = []
-        today = datetime.datetime.today()
-
-        for item in vacation_list:
-            end_date = datetime.datetime.strptime(item["ДатаОкончания"][:10], "%Y-%m-%d")
-            # if end_date < today or item["Сотрудник_Key"] not in user_dict:
-            #     continue
-            if item["Сотрудник_Key"] not in user_dict:
-                continue
-            start_date = datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d")
-            usr_obj = user_dict[item["Сотрудник_Key"]]
-            reason = item["Примечание"] if item["Примечание"] else "График отпусков"
-
-            for day in range(item["КоличествоДней"]):
-                current_day = start_date + datetime.timedelta(days=day)
-                report_card_list.append(ReportCard(
-                    report_card_day=current_day,
-                    employee=usr_obj,
-                    start_time=datetime.time(0, 0),
-                    end_time=datetime.time(0, 0),
-                    record_type="18",
-                    reason_adjustment=reason,
-                    doc_ref_key=docs,
-                ))
-
-        # Пакетное сохранение
-        batch_size = 1000
-        objs_created = 0
-        for i in range(0, len(report_card_list), batch_size):
-            batch = report_card_list[i:i + batch_size]
-            objs = ReportCard.objects.bulk_create(batch)
-            objs_created += len(objs)
-
-        logger.info(f"Создано {objs_created} записей")
+        return process_vacation_schedule(year)
+    except Exception as e:
+        logger.error(f"Ошибка генерации графика отпусков: {e}")
+        raise self.retry(exc=e)
 
 
-@app.task()
-def report_card_separator_daily(year=0, month=0, day=0):
-    if year == 0 and month == 0 and day == 0:
-        current_data = datetime.datetime.date(datetime.datetime.today())
-    else:
-        current_data = datetime.datetime.date(datetime.datetime(year, month, day))
-    rec_obj = ReportCard.objects.filter(
-        Q(report_card_day=current_data) & Q(record_type="1")
-    )
-    for item in rec_obj:
-        item.delete()
-
-    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
-    source_url = url
+@shared_task(bind=True, max_retries=3)
+def report_card_separator_daily(self, year=0, month=0, day=0):
     try:
-        response = requests.get(source_url, auth=("proxmox", "PDO#rLv@Server"))
-    except Exception as _ex:
-        return f"{_ex} ошибка"
-    dicts = json.loads(response.text)
-    for item in dicts["data"]:
-        usr = item["FULLNAME"]
-        current_intervals = True if item["ISGO"] == "0" else False
-        start_time = datetime.datetime.strptime(
-            item["STARTTIME"], "%d.%m.%Y %H:%M:%S"
-        ).time()
-        if current_intervals:
-            end_time = datetime.datetime.strptime(
-                item["ENDTIME"], "%d.%m.%Y %H:%M:%S"
-            ).time()
-        else:
-            end_time = datetime.datetime(1, 1, 1, 0, 0).time()
-        rec_no = int(item["rec_no"])
-
-        search_user = usr.split(" ")
-        try:
-            user_obj = DataBaseUser.objects.get(
-                last_name=search_user[0],
-                first_name=search_user[1],
-                surname=search_user[2],
-                is_active=True
-            )
-            kwargs = {
-                "report_card_day": current_data,
-                "employee": user_obj,
-                "start_time": start_time,
-                "end_time": end_time,
-                "record_type": "1",
-                "current_intervals": current_intervals,
-            }
-            ReportCard.objects.update_or_create(
-                report_card_day=current_data,
-                employee=user_obj,
-                rec_no=rec_no,
-                defaults=kwargs,
-            )
-        except Exception as _ex:
-            logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
-
-    return dicts
+        return process_report_card_daily(year, month, day)
+    except Exception as e:
+        logger.error(f"Ошибка получения табеля за день: {e}")
+        raise self.retry(exc=e)
 
 
 def report_card_separator_loc():
@@ -1494,206 +1285,16 @@ def report_card_separator_loc():
 #         logger.exception("Произошла неожиданная ошибка")
 #         return {"error": "Неизвестная ошибка", "details": str(ex)}
 
-def bulk_upsert_report_cards(to_create):
-    """
-    Массовое добавление/обновление ReportCard,
-    без использования update_conflicts/conflict_target (работает в старом Django).
-    """
-    if not to_create:
-        return
-
-    # Определяем ключи, по которым искать дубликаты
-    lookup_keys = ["report_card_day", "doc_ref_key", "employee"]
-
-    # Преобразуем объекты в набор уникальных ключей
-    key_tuples = {
-        (getattr(obj, lookup_keys[0]),
-         getattr(obj, lookup_keys[1]),
-         getattr(obj, lookup_keys[2]))
-        for obj in to_create
-    }
-
-    # Находим уже существующие в базе
-    existing = ReportCard.objects.filter(
-        **{
-            f"{lookup_keys[0]}__in": [key[0] for key in key_tuples],
-            f"{lookup_keys[1]}__in": [key[1] for key in key_tuples],
-            f"{lookup_keys[2]}__in": [key[2] for key in key_tuples],
-        }
-    )
-
-    existing_keys = {
-        (e.report_card_day, e.doc_ref_key, e.employee): e
-        for e in existing
-    }
-
-    to_insert = []
-    to_update = []
-
-    for obj in to_create:
-        key = (obj.report_card_day, obj.doc_ref_key, obj.employee)
-        if key in existing_keys:
-            # Обновляем поля у существующего объекта
-            db_obj = existing_keys[key]
-            db_obj.employee = obj.employee
-            db_obj.rec_no = obj.rec_no
-            db_obj.record_type = obj.record_type
-            db_obj.reason_adjustment = obj.reason_adjustment
-            db_obj.start_time = obj.start_time
-            db_obj.end_time = obj.end_time
-            to_update.append(db_obj)
-        else:
-            to_insert.append(obj)
-
-    with transaction.atomic():
-        if to_insert:
-            ReportCard.objects.bulk_create(to_insert, batch_size=500)
-        if to_update:
-            ReportCard.objects.bulk_update(
-                to_update,
-                fields=[
-                    "employee", "rec_no", "record_type",
-                    "reason_adjustment", "start_time", "end_time"
-                ],
-                batch_size=500
-            )
-
-
-@app.task()
-def get_sick_leave(year, trigger):
+@shared_task(bind=True, max_retries=3)
+def get_sick_leave(self, year, trigger):
     """
     Получение неявок на рабочее место.
-    :param year: Год, за который запрашиваем информацию.
-    :param trigger: 1 - больничные, 2 - мед осмотры, 3 - неоплачиваемые выходные.
-    :return: dict с результатом выполнения задачи.
     """
-    config_map = {
-        1: {
-            "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27",
-            "trigger_type": "StandardODATA.Document_БольничныйЛист",
-            "record_type": "16"
-        },
-        2: {
-            "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27",
-            "trigger_type": "StandardODATA.Document_ОплатаПоСреднемуЗаработку",
-            "record_type": "17"
-        },
-        3: {
-            "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27ДополнительныеВыходныеДниНеоплачиваемые%27",
-            "trigger_type": "StandardODATA.Document_Отгул",
-            "record_type": "20"
-        }
-    }
-
-    if trigger not in config_map:
-        logger.error(f"Неизвестный триггер: {trigger}")
-        return {"error": f"Неизвестный триггер: {trigger}"}
-
-    source_url = config_map[trigger]["url"]
-    trigger_type = config_map[trigger]["trigger_type"]
-    record_type = config_map[trigger]["record_type"]
-
     try:
-        response = requests.get(
-            source_url,
-            auth=(config("HRM_LOGIN"), config("HRM_PASS")),
-            timeout=10
-        )
-        response.raise_for_status()
-        dt = json.loads(response.text)
-        rec_number_count = 0
-
-        # Загружаем всех активных сотрудников вручную в словарь
-        users = {}
-        for user in DataBaseUser.objects.filter(is_active=True).only("ref_key", "id"):
-            users[user.ref_key] = user  # если дубль — перезапишется
-
-        # Собираем doc_ref_keys из всех подходящих записей
-        doc_ref_keys = set(
-            item["ДокументОснование"]
-            for item in dt["value"]
-            if item["Recorder_Type"] == trigger_type and item.get("Active", False)
-        )
-
-        # Загружаем все существующие записи ReportCard
-        existing_reportcards = ReportCard.objects.filter(doc_ref_key__in=doc_ref_keys)
-        existing_by_doc = defaultdict(set)
-        for rc in existing_reportcards:
-            existing_by_doc[rc.doc_ref_key].add(rc.report_card_day)
-
-        to_create = []
-        to_delete = []
-
-        for item in dt["value"]:
-            if item["Recorder_Type"] != trigger_type or not item.get("Active", False):
-                continue
-
-            doc_key = item["ДокументОснование"]
-            employee_key = item["Сотрудник_Key"]
-            user_obj = users.get(employee_key)
-
-            if not user_obj:
-                logger.error(f"{employee_key} не найден в базе данных")
-                continue
-
-            start_date = datetime.datetime.strptime(item["Начало"][:10], "%Y-%m-%d").date()
-            end_date = datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d").date()
-            interval = set(get_date_interval(start_date, end_date))
-
-            existing_dates = existing_by_doc.get(doc_key, set())
-
-            to_add = interval - existing_dates
-            to_remove = existing_dates - interval
-
-            # Планируем удаление
-            if to_remove:
-                to_delete.append({
-                    "doc_ref_key": doc_key,
-                    "days": to_remove
-                })
-
-            # Планируем добавление
-            for date in sorted(to_add):
-                rec_number_count += 1
-                start_time, end_time, type_of_day = check_day(
-                    date,
-                    datetime.time(9, 30),
-                    datetime.time(18, 0)
-                )
-
-                to_create.append(ReportCard(
-                    report_card_day=date,
-                    employee=user_obj,
-                    rec_no=rec_number_count,
-                    doc_ref_key=doc_key,
-                    record_type=record_type,
-                    reason_adjustment="Запись введена автоматически из 1С ЗУП",
-                    start_time=start_time,
-                    end_time=end_time
-                ))
-
-        # Пакетное удаление
-        for entry in to_delete:
-            ReportCard.objects.filter(
-                doc_ref_key=entry["doc_ref_key"],
-                report_card_day__in=entry["days"]
-            ).delete()
-
-        # Пакетное создание с обновлением конфликтов
-        if to_create:
-            bulk_upsert_report_cards(to_create)
-
-        return {"status": "success", "count": rec_number_count}
-
-    except requests.RequestException as req_ex:
-        logger.error(f"Ошибка запроса к API: {req_ex}")
-        return {"error": "Ошибка при получении данных", "details": str(req_ex)}
-    except json.JSONDecodeError as json_ex:
-        logger.error(f"Ошибка декодирования JSON: {json_ex}")
-        return {"error": "Ошибка JSON", "details": str(json_ex)}
-    except Exception as ex:
-        logger.exception("Произошла неожиданная ошибка")
-        return {"error": "Неизвестная ошибка", "details": str(ex)}
+        return process_sick_leave(year, trigger)
+    except Exception as e:
+        logger.error(f"Ошибка получения неявок: {e}")
+        raise self.retry(exc=e)
 
 
 @app.task(bind=True)

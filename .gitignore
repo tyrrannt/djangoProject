@@ -22,3 +22,4 @@ celerybeat-schedule
 /media_old/
 # JetBrains IDE (IntelliJ, PyCharm, WebStorm, etc.)
 .idea/
+/db.sqlite3-journal
