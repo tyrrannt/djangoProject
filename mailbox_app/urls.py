@@ -28,6 +28,8 @@ urlpatterns = [
     path("api/action/", views.MailboxActionAPIView.as_view(), name="api_action"),
     # AJAX API адресной книги сотрудников
     path("api/contacts/", views.MailboxContactsAPIView.as_view(), name="api_contacts"),
+    # AJAX API проверки непрочитанных писем и уведомлений
+    path("api/unread_count/", views.MailboxUnreadCountAPIView.as_view(), name="api_unread_count"),
     # Настройки почты и подписи
     path("settings/", views.MailboxSettingsView.as_view(), name="settings"),
     # Профилирование и диагностика производительности

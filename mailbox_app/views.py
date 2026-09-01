@@ -6,6 +6,7 @@ import html
 import imaplib
 import json
 import logging
+import re
 import socket
 import ssl
 import time
@@ -626,6 +627,91 @@ class MailboxContactsAPIView(LoginRequiredMixin, View):
                 })
 
         return JsonResponse({"results": results})
+
+
+class MailboxUnreadCountAPIView(LoginRequiredMixin, View):
+    """Легковесный AJAX эндпоинт для проверки непрочитанных входящих писем и пуш-уведомлений."""
+
+    def get(self, request):
+        """Возвращает статус непрочитанных писем и данные последнего письма.
+
+        Returns:
+            JsonResponse: Словарь с количеством непрочитанных и данными последнего письма.
+        """
+        account = get_user_mail_account(request.user)
+        if not account or not account.email or not account.get_password():
+            return JsonResponse({"success": False, "unread_count": 0, "has_new": False})
+
+        email_clean = account.email.strip().lower()
+        cache_key = f"mailbox_unread_status_{email_clean}"
+        cached_status = cache.get(cache_key)
+        if cached_status is not None:
+            return JsonResponse(cached_status)
+
+        try:
+            with ImapMailService(
+                host=account.imap_host,
+                port=account.imap_port,
+                email_addr=account.email,
+                password=account.get_password(),
+                use_ssl=account.imap_use_ssl,
+            ) as imap_svc:
+                # 1. Быстрая проверка количества UNSEEN через команду STATUS
+                status_res, status_data = imap_svc.client.status('"INBOX"', "(UNSEEN)")
+                unseen_count = 0
+                if status_res == "OK" and status_data:
+                    stat_line = status_data[0].decode("latin-1")
+                    m = re.search(r"UNSEEN\s+(\d+)", stat_line)
+                    if m:
+                        unseen_count = int(m.group(1))
+
+                latest_mail = None
+                if unseen_count > 0:
+                    # 2. Если есть непрочитанные, извлекаем заголовок последнего письма
+                    imap_svc.client.select('"INBOX"', readonly=True)
+                    s_status, s_data = imap_svc.client.search(None, "UNSEEN")
+                    if s_status == "OK" and s_data and s_data[0]:
+                        uids = s_data[0].split()
+                        if uids:
+                            last_num = uids[-1]
+                            f_status, f_data = imap_svc.client.fetch(
+                                last_num, "(UID BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])"
+                            )
+                            if f_status == "OK" and f_data:
+                                raw_uid = None
+                                raw_hdr = b""
+                                for item in f_data:
+                                    if isinstance(item, tuple):
+                                        raw_hdr = item[1]
+                                        m_uid = re.search(rb"UID\s+(\d+)", item[0])
+                                        if m_uid:
+                                            raw_uid = int(m_uid.group(1))
+
+                                msg_obj = email.message_from_bytes(raw_hdr)
+                                from_val = imap_svc._decode_header_str(msg_obj.get("From", ""))
+                                from_name, from_email = parseaddr(from_val)
+                                from_name = from_name or from_email or "Новый отправитель"
+                                subj_val = imap_svc._decode_header_str(msg_obj.get("Subject", "Без темы"))
+
+                                latest_mail = {
+                                    "uid": raw_uid,
+                                    "from_name": from_name,
+                                    "from_email": from_email,
+                                    "subject": subj_val,
+                                    "url": reverse("mailbox_app:email_detail", kwargs={"folder": "INBOX", "uid": raw_uid}) if raw_uid else reverse("mailbox_app:index"),
+                                }
+
+                res_data = {
+                    "success": True,
+                    "unread_count": unseen_count,
+                    "has_new": unseen_count > 0,
+                    "latest": latest_mail,
+                }
+                cache.set(cache_key, res_data, timeout=20)
+                return JsonResponse(res_data)
+        except Exception as e:
+            logger.debug(f"[Mailbox] Ошибка проверки непрочитанных писем: {e}")
+            return JsonResponse({"success": False, "unread_count": 0, "has_new": False, "error": str(e)})
 
 
 class MailboxSettingsView(MailboxBaseMixin, FormView):

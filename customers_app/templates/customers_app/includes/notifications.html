@@ -3,6 +3,13 @@
 
 <!-- Меню уведомлений в шапке -->
 <ul class="notifications">
+    <!-- Уведомления о новых письмах корпоративной почты -->
+    <li id="desktopMailNotificationLi" class="d-none">
+        <a href="{% url 'mailbox_app:index' %}" class="notification-icon" aria-label="Корпоративная почта" title="Новые письма">
+            <i class="bx bx-envelope"></i>
+            <span class="badge bg-primary" id="desktopMailNotificationBadge">0</span>
+        </a>
+    </li>
     {% for notification in notifications %}
         <li>
             {% if notification.count != 0 %}
