@@ -3374,22 +3374,242 @@ class ReportCardDelete(LoginRequiredMixin, DeleteView):
     success_url = "/hr/report/admin/"
 
 
-class ReportCardDetailYearXLS(View):
+def format_minutes_to_hours_minutes(minutes) -> str:
+    """Форматирует число минут в строковое представление вида '3 ч. 47 мин.'."""
+    if minutes is None or (isinstance(minutes, float) and pd.isna(minutes)):
+        return "0 ч. 0 мин."
+    try:
+        minutes_int = int(round(float(minutes)))
+    except (ValueError, TypeError):
+        return str(minutes)
+
+    sign = "-" if minutes_int < 0 else ""
+    abs_mins = abs(minutes_int)
+    hours = abs_mins // 60
+    mins_rem = abs_mins % 60
+    return f"{sign}{hours} ч. {mins_rem} мин."
+
+
+def generate_report_card_year_excel(report_year: int, pivot_df: pd.DataFrame) -> openpyxl.Workbook:
+    """Генерирует профессионально оформленный Excel-файл сводного годового отчета табеля.
+
+    Включает корпоративную шапку «ООО «Авиакомпания «БАРКОЛ»», стилизованные заголовки колонок,
+    автоширину, фиксацию областей, вывод значений в формате '3 ч. 47 мин.', цветовую индикацию
+    переработок/недоработок и строку итогов по всем сотрудникам.
+
+    Args:
+        report_year (int): Отчетный год.
+        pivot_df (pd.DataFrame): Сводная таблица минут (строки - ФИО, колонки - месяцы и Sum).
+
+    Returns:
+        openpyxl.Workbook: Оформленная рабочая книга openpyxl.
+    """
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Табель {report_year}"
+    ws.views.sheetView[0].showGridLines = True
+
+    month_names = {
+        1: "Январь", 2: "Февраль", 3: "Март", 4: "Апрель",
+        5: "Май", 6: "Июнь", 7: "Июль", 8: "Август",
+        9: "Сентябрь", 10: "Октябрь", 11: "Ноябрь", 12: "Декабрь"
+    }
+
+    def format_col_header(col):
+        col_str = str(col)
+        if col_str.lower() in ["sum", "итого"]:
+            return "ИТОГО ЗА ГОД"
+        try:
+            parts = col_str.split("-")
+            if len(parts) == 2:
+                m = int(parts[1])
+                return f"{month_names.get(m, parts[1])} {parts[0]}"
+        except Exception:
+            pass
+        return col_str
+
+    # Стили типографики и цветов
+    company_font = Font(name="Calibri", size=11, bold=True, color="1E293B")
+    dept_font = Font(name="Calibri", size=10, italic=True, color="475569")
+    title_font = Font(name="Calibri", size=13, bold=True, color="1E3A8A")
+    meta_font = Font(name="Calibri", size=9, italic=True, color="64748B")
+
+    tbl_hdr_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    tbl_hdr_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+    sum_hdr_fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
+
+    data_font = Font(name="Calibri", size=9.5, color="0F172A")
+    fio_font = Font(name="Calibri", size=9.5, bold=True, color="1E293B")
+
+    positive_font = Font(name="Calibri", size=9.5, bold=True, color="166534")
+    positive_fill = PatternFill(start_color="F0FDF4", end_color="F0FDF4", fill_type="solid")
+
+    negative_font = Font(name="Calibri", size=9.5, bold=True, color="991B1B")
+    negative_fill = PatternFill(start_color="FEF2F2", end_color="FEF2F2", fill_type="solid")
+
+    neutral_font = Font(name="Calibri", size=9.5, color="64748B")
+    zebra_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+
+    total_font = Font(name="Calibri", size=10, bold=True, color="0F172A")
+    total_fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+
+    thin_border_side = Side(border_style="thin", color="CBD5E1")
+    cell_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=thin_border_side,
+        bottom=thin_border_side,
+    )
+    header_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=thin_border_side,
+        bottom=Side(border_style="medium", color="0F172A"),
+    )
+    total_border = Border(
+        left=thin_border_side,
+        right=thin_border_side,
+        top=Side(border_style="thin", color="475569"),
+        bottom=Side(border_style="double", color="0F172A"),
+    )
+
+    # 1. Шапка документа
+    ws["A1"] = "ООО «Авиакомпания «БАРКОЛ»"
+    ws["A1"].font = company_font
+    ws["A2"] = "Отдел кадров // Табельный учет рабочего времени"
+    ws["A2"].font = dept_font
+    ws["A4"] = f"СВОДНЫЙ ГОДОВОЙ ОТЧЕТ УЧЕТА РАБОЧЕГО ВРЕМЕНИ ЗА {report_year} ГОД"
+    ws["A4"].font = title_font
+    ws["A5"] = f"Сформирован: {datetime.now().strftime('%d.%m.%Y %H:%M')} // Баланс отклонений от производственной нормы (переработка / недоработка)"
+    ws["A5"].font = meta_font
+
+    start_row = 7
+
+    if pivot_df is None or pivot_df.empty:
+        ws.cell(row=start_row, column=1, value="Нет данных для построения годового отчета за указанный период.").font = data_font
+        return wb
+
+    # 2. Заголовки таблицы
+    columns_list = list(pivot_df.columns)
+    headers = ["№ п/п", "Сотрудник (Ф.И.О.)"] + [format_col_header(col) for col in columns_list]
+
+    for col_idx, header_text in enumerate(headers, 1):
+        cell = ws.cell(row=start_row, column=col_idx, value=header_text)
+        cell.font = tbl_hdr_font
+        cell.fill = sum_hdr_fill if "ИТОГО" in header_text else tbl_hdr_fill
+        cell.alignment = Alignment(horizontal="center" if col_idx != 2 else "left", vertical="center", wrap_text=True)
+        cell.border = header_border
+
+    ws.row_dimensions[start_row].height = 28
+
+    # 3. Данные строк
+    current_row = start_row + 1
+    total_minutes_per_col = [0.0] * len(columns_list)
+
+    for row_idx, (fio, row_data) in enumerate(pivot_df.iterrows(), 1):
+        ws.row_dimensions[current_row].height = 20
+        is_even = (row_idx % 2 == 0)
+
+        # Колонка №
+        c_num = ws.cell(row=current_row, column=1, value=row_idx)
+        c_num.font = data_font
+        c_num.alignment = Alignment(horizontal="center", vertical="center")
+        c_num.border = cell_border
+        if is_even:
+            c_num.fill = zebra_fill
+
+        # Колонка ФИО
+        c_fio = ws.cell(row=current_row, column=2, value=str(fio))
+        c_fio.font = fio_font
+        c_fio.alignment = Alignment(horizontal="left", vertical="center")
+        c_fio.border = cell_border
+        if is_even:
+            c_fio.fill = zebra_fill
+
+        # Колонки месяцев и Итого
+        for col_idx, col_name in enumerate(columns_list, 1):
+            val = row_data[col_name]
+            try:
+                mins = float(val) if not pd.isna(val) else 0.0
+            except (ValueError, TypeError):
+                mins = 0.0
+
+            total_minutes_per_col[col_idx - 1] += mins
+
+            formatted_val = format_minutes_to_hours_minutes(mins)
+            cell = ws.cell(row=current_row, column=col_idx + 2, value=formatted_val)
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.border = cell_border
+
+            if mins > 0:
+                cell.font = positive_font
+                cell.fill = positive_fill
+            elif mins < 0:
+                cell.font = negative_font
+                cell.fill = negative_fill
+            else:
+                cell.font = neutral_font
+                if is_even:
+                    cell.fill = zebra_fill
+
+        current_row += 1
+
+    # 4. Строка ИТОГО ПО ВСЕМ СОТРУДНИКАМ
+    ws.row_dimensions[current_row].height = 24
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=2)
+    tot_title = ws.cell(row=current_row, column=1, value="ИТОГО ПО ВСЕМ СОТРУДНИКАМ:")
+    tot_title.font = total_font
+    tot_title.fill = total_fill
+    tot_title.alignment = Alignment(horizontal="right", vertical="center")
+    tot_title.border = total_border
+    ws.cell(row=current_row, column=2).border = total_border
+
+    for col_idx, total_mins in enumerate(total_minutes_per_col, 1):
+        cell = ws.cell(
+            row=current_row,
+            column=col_idx + 2,
+            value=format_minutes_to_hours_minutes(total_mins)
+        )
+        cell.font = total_font
+        cell.fill = total_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = total_border
+
+    # 5. Ширина колонок и фиксация шапки
+    ws.column_dimensions["A"].width = 8
+    ws.column_dimensions["B"].width = 34
+    for c_idx in range(3, len(headers) + 1):
+        col_letter = get_column_letter(c_idx)
+        ws.column_dimensions[col_letter].width = 18
+
+    ws.freeze_panes = "C8"
+
+    return wb
+
+
+class ReportCardDetailYearXLS(LoginRequiredMixin, View):
+    """Выгрузка сводного годового отчета учета рабочего времени в красивый Excel-документ."""
+
     def get(self, request, *args, **kwargs):
-        year = kwargs.get('year')
+        year = kwargs.get("year")
         if year:
-            report_year = int(year)
+            try:
+                report_year = int(year)
+            except (ValueError, TypeError):
+                report_year = datetime.now().year
         else:
             report_year = datetime.now().year
-        print(year)
+
         df = get_year_report(report_year=report_year, html_mode=False)
-        # Создание Excel-файла
-        response = HttpResponse(content_type='application/ms-excel')
-        response['Content-Disposition'] = 'attachment; filename="dataframe.xlsx"'
+        wb = generate_report_card_year_excel(report_year=report_year, pivot_df=df)
 
-        # Запись DataFrame в Excel
-        df.to_excel(response, index=True, engine='openpyxl')
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        filename = f"Табель_учета_рабочего_времени_{report_year}.xlsx"
+        response["Content-Disposition"] = f'attachment; filename="{escape_uri_path(filename)}"'
 
+        wb.save(response)
         return response
 
 
