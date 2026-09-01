@@ -7,6 +7,7 @@ from email.utils import parseaddr, parsedate_to_datetime
 import imaplib
 import logging
 import re
+import ssl
 from typing import Dict, List, Optional, Tuple, Any
 
 from django.core.cache import cache
@@ -158,7 +159,13 @@ class ImapMailService:
         for login_candidate in logins_to_try:
             try:
                 if self.use_ssl:
-                    self.client = imaplib.IMAP4_SSL(self.host, self.port)
+                    ssl_context = ssl.create_default_context()
+                    clean_host = (self.host or "").strip()
+                    # Если подключение идет напрямую по IP адресу (например, 192.168.10.242)
+                    if clean_host.replace(".", "").isdigit():
+                        ssl_context.check_hostname = False
+                        ssl_context.verify_mode = ssl.CERT_NONE
+                    self.client = imaplib.IMAP4_SSL(self.host, self.port, ssl_context=ssl_context)
                 else:
                     self.client = imaplib.IMAP4(self.host, self.port)
 

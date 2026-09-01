@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate, make_msgid
 import logging
 import smtplib
+import ssl
 import time
 from typing import List, Optional, Tuple
 
@@ -129,12 +130,18 @@ class SmtpMailService:
 
         last_smtp_error = None
         for login_candidate in logins_to_try:
+            ssl_context = ssl.create_default_context()
+            clean_smtp_host = (self.smtp_host or "").strip()
+            if clean_smtp_host.replace(".", "").isdigit():
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+
             if self.use_ssl:
-                server = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=15)
+                server = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=15, context=ssl_context)
             else:
                 server = smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=15)
                 if self.use_tls:
-                    server.starttls()
+                    server.starttls(context=ssl_context)
             try:
                 server.login(login_candidate, self.password)
                 server.sendmail(self.email, all_recipients, msg.as_string())
