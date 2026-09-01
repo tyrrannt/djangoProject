@@ -367,6 +367,20 @@ class ImapMailService:
         elif filter_by == "flagged" or sort_by == "flagged":
             base_criteria = "FLAGGED"
 
+        # Формирование критерия сортировки IMAP (RFC 5256) по реальному заголовку письма
+        sort_field = "DATE"
+        if sort_by == "from":
+            sort_field = "FROM"
+        elif sort_by == "subject":
+            sort_field = "SUBJECT"
+        elif sort_by == "size":
+            sort_field = "SIZE"
+
+        if sort_dir == "desc":
+            sort_key = f"(REVERSE {sort_field})"
+        else:
+            sort_key = f"({sort_field})"
+
         uids_list = []
 
         # 1. Поиск сообщений по запросу
@@ -380,24 +394,43 @@ class ImapMailService:
                 query_clean.title(),
             ]))
 
-            found_uids = set()
+            found_uids = []
             for var in variants:
                 try:
                     var_bytes = var.encode("utf-8")
                     if base_criteria != "ALL":
-                        status, search_data = self.client.uid(
-                            "search", "CHARSET", "UTF-8", base_criteria, "OR", "FROM", var_bytes, "SUBJECT", var_bytes
+                        status, sort_data = self.client.uid(
+                            "sort", sort_key, "UTF-8", base_criteria, "OR", "FROM", var_bytes, "SUBJECT", var_bytes
                         )
                     else:
-                        status, search_data = self.client.uid(
-                            "search", "CHARSET", "UTF-8", "OR", "FROM", var_bytes, "SUBJECT", var_bytes
+                        status, sort_data = self.client.uid(
+                            "sort", sort_key, "UTF-8", "OR", "FROM", var_bytes, "SUBJECT", var_bytes
                         )
-                    if status == "OK" and search_data and search_data[0]:
-                        for uid_item in search_data[0].split():
-                            if uid_item and uid_item != b"0":
-                                found_uids.add(uid_item)
+                    if status == "OK" and sort_data and sort_data[0]:
+                        for uid_item in sort_data[0].split():
+                            if uid_item and uid_item != b"0" and uid_item not in found_uids:
+                                found_uids.append(uid_item)
                 except Exception as e:
-                    logger.debug(f"[IMAP] Поиск варианта '{var}' не удался: {e}")
+                    logger.debug(f"[IMAP] Поиск варианта '{var}' через UID SORT не удался: {e}")
+
+            if not found_uids:
+                for var in variants:
+                    try:
+                        var_bytes = var.encode("utf-8")
+                        if base_criteria != "ALL":
+                            status, search_data = self.client.uid(
+                                "search", "CHARSET", "UTF-8", base_criteria, "OR", "FROM", var_bytes, "SUBJECT", var_bytes
+                            )
+                        else:
+                            status, search_data = self.client.uid(
+                                "search", "CHARSET", "UTF-8", "OR", "FROM", var_bytes, "SUBJECT", var_bytes
+                            )
+                        if status == "OK" and search_data and search_data[0]:
+                            for uid_item in search_data[0].split():
+                                if uid_item and uid_item != b"0" and uid_item not in found_uids:
+                                    found_uids.append(uid_item)
+                    except Exception:
+                        pass
 
             if not found_uids:
                 try:
@@ -410,21 +443,34 @@ class ImapMailService:
                         status, search_data = self.client.uid("search", None, search_crit)
                         if status == "OK" and search_data and search_data[0]:
                             for uid_item in search_data[0].split():
-                                if uid_item and uid_item != b"0":
-                                    found_uids.add(uid_item)
+                                if uid_item and uid_item != b"0" and uid_item not in found_uids:
+                                    found_uids.append(uid_item)
                 except Exception:
                     pass
 
-            uids_list = sorted(list(found_uids), key=lambda x: int(x.decode("ascii") if isinstance(x, bytes) else x))
-            if sort_dir == "desc":
-                uids_list.reverse()
+            uids_list = found_uids
         else:
-            # 2. Мгновенная серверная выборка UIDs (1-3 мс)
-            status, search_data = self.client.uid("search", None, base_criteria)
-            if status == "OK" and search_data and search_data[0]:
-                uids_list = [u for u in search_data[0].split() if u and u != b"0"]
-                if sort_dir == "desc":
-                    uids_list.reverse()
+            # 2. Серверная сортировка по реальной дате (RFC 5256 SORT)
+            try:
+                status, sort_data = self.client.uid("sort", sort_key, "UTF-8", base_criteria)
+                if status == "OK" and sort_data and sort_data[0]:
+                    uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
+            except Exception as e:
+                logger.debug(f"[IMAP] UTF-8 UID SORT не удался, пробуем US-ASCII: {e}")
+                try:
+                    status, sort_data = self.client.uid("sort", sort_key, "US-ASCII", base_criteria)
+                    if status == "OK" and sort_data and sort_data[0]:
+                        uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
+                except Exception as e2:
+                    logger.debug(f"[IMAP] US-ASCII UID SORT не удался: {e2}")
+
+            # Fallback к обычному UID SEARCH, если сервер не поддерживает расширение SORT
+            if not uids_list:
+                status, search_data = self.client.uid("search", None, base_criteria)
+                if status == "OK" and search_data and search_data[0]:
+                    uids_list = [u for u in search_data[0].split() if u and u != b"0"]
+                    if sort_dir == "desc":
+                        uids_list.reverse()
 
         total_messages = len(uids_list)
         if total_messages == 0:

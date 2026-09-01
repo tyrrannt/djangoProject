@@ -853,6 +853,20 @@ class MailboxDiagnosticView(MailboxBaseMixin, TemplateView):
                         search_ms = (time.perf_counter() - t0) * 1000
                         record("8. IMAP UID SEARCH ALL (Поиск всех UIDs)", search_ms, f"Ошибка: {e}", status="ERR")
 
+                # 8b. IMAP UID SORT (REVERSE DATE)
+                sorted_uids = []
+                if client and not error_message:
+                    t0 = time.perf_counter()
+                    try:
+                        status, sort_data = client.uid("sort", "(REVERSE DATE)", "UTF-8", "ALL")
+                        sort_ms = (time.perf_counter() - t0) * 1000
+                        if sort_data and sort_data[0]:
+                            sorted_uids = [u for u in sort_data[0].split() if u and u != b"0"]
+                        record("8b. IMAP UID SORT (REVERSE DATE)", sort_ms, f"Отсортировано по реальной дате: {len(sorted_uids)}")
+                    except Exception as e:
+                        sort_ms = (time.perf_counter() - t0) * 1000
+                        record("8b. IMAP UID SORT (REVERSE DATE)", sort_ms, f"Ошибка/Fallback: {e}", status="WARN")
+
                 # 9. IMAP UID SEARCH UNSEEN
                 unseen_uids = []
                 if client and not error_message:
