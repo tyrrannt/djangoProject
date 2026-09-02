@@ -106,44 +106,48 @@
                         </div>
 
                         <!-- Кнопки действий -->
-                        <div class="d-flex justify-content-between align-items-center pt-3 border-top gap-3 flex-wrap">
-                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-1">
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top gap-3 flex-wrap mt-4">
+                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px;">
                                 <i class="bx bx-arrow-back font-size-16"></i> <span>Отмена</span>
                             </a>
 
                             <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
                                 <!-- Индикатор запланированного времени -->
-                                <div id="scheduledNoticeBadge" class="alert alert-warning py-1 px-3 m-0 d-none align-items-center gap-2 shadow-sm font-size-13" style="border-radius: 20px;">
-                                    <i class="bx bx-time-five font-size-16 text-warning"></i>
+                                <div id="scheduledNoticeBadge" class="d-none align-items-center gap-2 shadow-sm" style="border-radius: 20px;">
+                                    <i class="bx bx-time-five font-size-16" style="color: #d97706;"></i>
                                     <span>Отправка: <strong id="scheduledNoticeTime"></strong> (МСК)</span>
-                                    <button type="button" class="btn-close ms-1 font-size-10" id="btnResetScheduled" title="Сбросить на обычную отправку" aria-label="Сбросить"></button>
+                                    <button type="button" class="btn-close ms-1" style="font-size: 9px;" id="btnResetScheduled" title="Сбросить на обычную отправку" aria-label="Сбросить"></button>
                                 </div>
 
                                 <!-- Сплит-кнопка отправки письма (Gmail / Outlook style) -->
-                                <div class="btn-group shadow-sm" id="sendBtnGroup">
-                                    <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2" id="sendMailBtn">
+                                <div class="btn-group shadow-sm" id="sendBtnGroup" style="border-radius: 8px;">
+                                    <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2" id="sendMailBtn" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">
                                         <i class="bx bx-paper-plane font-size-18" id="sendBtnIcon"></i> <span id="sendBtnText">Отправить</span>
                                     </button>
-                                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split px-2" data-bs-toggle="dropdown" aria-expanded="false" title="Дополнительные варианты отправки">
+                                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split px-3" id="sendBtnDropdownToggle" data-bs-toggle="dropdown" aria-expanded="false" title="Варианты отправки" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px; border-left: 1px solid rgba(255,255,255,0.25);">
                                         <span class="visually-hidden">Варианты отправки</span>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 8px; min-width: 250px; z-index: 1050;">
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-1" style="border-radius: 10px; min-width: 270px; z-index: 1050; box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;">
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#" id="menuSendNow">
-                                                <i class="bx bx-send font-size-18 text-primary"></i>
+                                            <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3" href="#" id="menuSendNow">
+                                                <div class="schedule-preset-icon bg-primary bg-opacity-15 text-primary" style="background-color: #eff6ff; color: #0088cc; width: 34px; height: 34px; border-radius: 6px;">
+                                                    <i class="bx bx-paper-plane font-size-18"></i>
+                                                </div>
                                                 <div>
-                                                    <div class="font-weight-semibold font-size-14">Отправить сейчас</div>
-                                                    <small class="text-muted font-size-12">Мгновенная отправка по SMTP</small>
+                                                    <div class="font-weight-semibold font-size-13 text-dark">Отправить сейчас</div>
+                                                    <small class="text-muted font-size-11">Мгновенная отправка через SMTP</small>
                                                 </div>
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider my-1"></li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#" id="menuOpenScheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleSendModal">
-                                                <i class="bx bx-time-five font-size-18 text-warning"></i>
+                                            <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3" href="#" id="menuOpenScheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleSendModal">
+                                                <div class="schedule-preset-icon bg-warning bg-opacity-15 text-warning" style="background-color: #fef3c7; color: #d97706; width: 34px; height: 34px; border-radius: 6px;">
+                                                    <i class="bx bx-time-five font-size-18"></i>
+                                                </div>
                                                 <div>
-                                                    <div class="font-weight-semibold font-size-14">Запланировать отправку</div>
-                                                    <small class="text-muted font-size-12">Выбрать дату и время</small>
+                                                    <div class="font-weight-semibold font-size-13 text-dark">Запланировать отправку</div>
+                                                    <small class="text-muted font-size-11">Выбрать дату и время (МСК)</small>
                                                 </div>
                                             </a>
                                         </li>
@@ -159,67 +163,75 @@
 
     <!-- Модальное окно планирования отправки письма -->
     <div class="modal fade" id="scheduleSendModal" tabindex="-1" aria-labelledby="scheduleSendModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-light py-3 px-4">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-light py-3 px-4 border-bottom">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #fffbeb; color: #d97706;">
                             <i class="bx bx-time-five font-size-20"></i>
                         </div>
                         <div>
-                            <h5 class="modal-title font-weight-bold text-dark m-0" id="scheduleSendModalLabel">Запланировать отправку</h5>
-                            <small class="text-muted">Часовой пояс: Московское время (UTC+3)</small>
+                            <h5 class="modal-title font-weight-bold text-dark m-0 font-size-16" id="scheduleSendModalLabel">Запланировать отправку</h5>
+                            <small class="text-muted font-size-12">Московское время (UTC+3)</small>
                         </div>
                     </div>
                     <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <p class="text-muted small mb-3">Выберите один из быстрых вариантов или укажите произвольную дату и время:</p>
+                    <p class="text-muted small mb-2 font-size-12">Выберите быстрый вариант отправки в 1 клик:</p>
 
                     <!-- Быстрые варианты в 1 клик -->
-                    <div class="d-flex flex-column gap-2 mb-4">
-                        <button type="button" class="btn btn-outline-light text-dark border d-flex align-items-center justify-content-between p-2 px-3 shadow-none schedule-preset-btn" data-preset="tomorrow_morning">
-                            <span class="d-flex align-items-center gap-2">
-                                <i class="bx bx-sun text-warning font-size-18"></i>
-                                <span class="font-weight-semibold">Завтра утром</span>
-                            </span>
-                            <span class="text-muted small" id="presetTomorrowMorningText"></span>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <button type="button" class="schedule-preset-card schedule-preset-btn" data-preset="tomorrow_morning">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #fef3c7; color: #d97706;">
+                                    <i class="bx bx-sun"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">Завтра утром (09:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="presetTomorrowMorningText"></span>
                         </button>
 
-                        <button type="button" class="btn btn-outline-light text-dark border d-flex align-items-center justify-content-between p-2 px-3 shadow-none schedule-preset-btn" data-preset="tomorrow_afternoon">
-                            <span class="d-flex align-items-center gap-2">
-                                <i class="bx bx-coffee text-primary font-size-18"></i>
-                                <span class="font-weight-semibold">Завтра днем</span>
-                            </span>
-                            <span class="text-muted small" id="presetTomorrowAfternoonText"></span>
+                        <button type="button" class="schedule-preset-card schedule-preset-btn" data-preset="tomorrow_afternoon">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #eff6ff; color: #0088cc;">
+                                    <i class="bx bx-coffee"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">Завтра днем (14:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="presetTomorrowAfternoonText"></span>
                         </button>
 
-                        <button type="button" class="btn btn-outline-light text-dark border d-flex align-items-center justify-content-between p-2 px-3 shadow-none schedule-preset-btn" data-preset="next_monday">
-                            <span class="d-flex align-items-center gap-2">
-                                <i class="bx bx-briefcase text-success font-size-18"></i>
-                                <span class="font-weight-semibold">В понедельник утром</span>
-                            </span>
-                            <span class="text-muted small" id="presetNextMondayText"></span>
+                        <button type="button" class="schedule-preset-card schedule-preset-btn" data-preset="next_monday">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #ecfdf5; color: #059669;">
+                                    <i class="bx bx-briefcase"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">В понедельник утром (09:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="presetNextMondayText"></span>
                         </button>
                     </div>
 
                     <div class="d-flex align-items-center my-3">
                         <hr class="flex-grow-1 m-0">
-                        <span class="px-2 text-muted small text-uppercase" style="font-size: 11px;">или точное время</span>
+                        <span class="px-2 text-muted small text-uppercase" style="font-size: 11px;">или точная дата</span>
                         <hr class="flex-grow-1 m-0">
                     </div>
 
                     <!-- Выбор точной даты и времени -->
                     <div class="mb-2">
-                        <label for="customScheduleDateTime" class="form-label font-weight-semibold text-dark">Дата и время отправки:</label>
-                        <input type="datetime-local" class="form-control" id="customScheduleDateTime" style="font-size: 14px;">
+                        <label for="customScheduleDateTime" class="form-label font-weight-semibold text-dark font-size-13 d-flex align-items-center gap-1">
+                            <i class="bx bx-calendar text-primary"></i> Указать дату и время отправки:
+                        </label>
+                        <input type="datetime-local" class="form-control" id="customScheduleDateTime" style="font-size: 14px; border-radius: 6px; padding: 8px 12px;">
                         <div class="invalid-feedback" id="scheduleDateError">Время отправки должно быть позже текущего момента.</div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary px-4 font-weight-semibold" id="btnConfirmSchedule">
-                        <i class="bx bx-check me-1"></i> Выбрать это время
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between border-top">
+                    <button type="button" class="btn btn-outline-secondary px-3 py-1 font-size-13" data-bs-dismiss="modal" style="border-radius: 6px;">Отмена</button>
+                    <button type="button" class="btn btn-primary font-weight-semibold px-4 py-1 font-size-13 shadow-sm d-flex align-items-center gap-1" id="btnConfirmSchedule" style="border-radius: 6px;">
+                        <i class="bx bx-check font-size-16"></i> Выбрать это время
                     </button>
                 </div>
             </div>
@@ -438,7 +450,12 @@
                 sendBtnText.textContent = 'Запланировать';
                 sendBtnIcon.className = 'bx bx-time-five font-size-18';
                 sendMailBtn.classList.remove('btn-primary');
-                sendMailBtn.classList.add('btn-warning');
+                sendMailBtn.classList.add('btn-schedule-active');
+                const dropdownToggle = document.getElementById('sendBtnDropdownToggle');
+                if (dropdownToggle) {
+                    dropdownToggle.classList.remove('btn-primary');
+                    dropdownToggle.classList.add('btn-schedule-active');
+                }
 
                 // Закрываем модальное окно
                 const modalElem = document.getElementById('scheduleSendModal');
@@ -458,7 +475,12 @@
                 sendBtnText.textContent = 'Отправить';
                 sendBtnIcon.className = 'bx bx-paper-plane font-size-18';
                 sendMailBtn.classList.add('btn-primary');
-                sendMailBtn.classList.remove('btn-warning');
+                sendMailBtn.classList.remove('btn-schedule-active');
+                const dropdownToggle = document.getElementById('sendBtnDropdownToggle');
+                if (dropdownToggle) {
+                    dropdownToggle.classList.add('btn-primary');
+                    dropdownToggle.classList.remove('btn-schedule-active');
+                }
             }
 
             // Клик по быстрым пресетам

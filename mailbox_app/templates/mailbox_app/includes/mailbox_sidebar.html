@@ -51,16 +51,16 @@
                     {% endfor %}
 
                     <!-- Раздел запланированных к отправке писем -->
-                    <li class="mt-1 pt-1 border-top">
+                    <li class="mt-2 pt-2 border-top">
                         <a href="{% url 'mailbox_app:scheduled_list' %}"
                            class="mailbox-folder-link {% if current_folder == 'scheduled' %}active{% endif %}"
                            title="Письма, запланированные к отправке по расписанию">
                             <span class="text-truncate d-flex align-items-center">
-                                <i class="bx bx-time-five text-warning"></i>
-                                <span class="text-truncate">Запланированные</span>
+                                <i class="bx bx-time-five" style="color: #d97706; font-size: 16px;"></i>
+                                <span class="text-truncate ms-1">Запланированные</span>
                             </span>
                             {% if scheduled_count > 0 %}
-                                <span class="badge bg-warning text-dark rounded-pill px-2" style="font-size: 11px;">
+                                <span class="badge badge-scheduled badge-scheduled-pending px-2" style="font-size: 11px;">
                                     {{ scheduled_count }}
                                 </span>
                             {% endif %}
@@ -142,7 +142,7 @@
                     <span class="text-truncate">Запланированные</span>
                 </span>
                 {% if scheduled_count > 0 %}
-                    <span class="badge {% if current_folder == 'scheduled' %}bg-white text-dark{% else %}bg-warning text-dark{% endif %} rounded-pill">
+                    <span class="badge {% if current_folder == 'scheduled' %}bg-white text-dark{% else %}badge-scheduled badge-scheduled-pending{% endif %} rounded-pill">
                         {{ scheduled_count }}
                     </span>
                 {% endif %}
