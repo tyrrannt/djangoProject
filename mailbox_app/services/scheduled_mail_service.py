@@ -338,3 +338,133 @@ def process_due_scheduled_emails() -> int:
             )
 
     return dispatched_count
+
+
+def get_scheduled_email_for_user(scheduled_email_id: int, user: Any) -> ScheduledEmail:
+    """Возвращает отложенное письмо с проверкой прав доступа пользователя.
+
+    Args:
+        scheduled_email_id (int): Идентификатор отложенного письма.
+        user (Any): Пользователь Django, запрашивающий доступ.
+
+    Returns:
+        ScheduledEmail: Объект отложенного письма.
+
+    Raises:
+        ValueError: Если письмо не найдено.
+        PermissionError: Если у пользователя нет прав на просмотр письма.
+    """
+    try:
+        email_obj = (
+            ScheduledEmail.objects.select_related("account", "user")
+            .prefetch_related("attachments")
+            .get(id=scheduled_email_id)
+        )
+    except ScheduledEmail.DoesNotExist:
+        raise ValueError("Запланированное письмо не найдено.")
+
+    if email_obj.user != user and not getattr(user, "is_superuser", False):
+        raise PermissionError("У вас нет прав для доступа к этому письму.")
+
+    return email_obj
+
+
+def update_scheduled_email(
+    scheduled_email_id: int,
+    user: Any,
+    to_recipients: str,
+    subject: str,
+    body_html: str,
+    scheduled_at: datetime,
+    cc_recipients: str = "",
+    bcc_recipients: str = "",
+    body_text: str = "",
+    new_files: Optional[List[Any]] = None,
+    delete_attachment_ids: Optional[List[int]] = None,
+) -> ScheduledEmail:
+    """Обновляет параметры, адресатов, текст и вложения отложенного письма.
+
+    Args:
+        scheduled_email_id (int): Идентификатор письма.
+        user (Any): Пользователь, вносящий изменения.
+        to_recipients (str): Получатели письма через запятую.
+        subject (str): Тема письма.
+        body_html (str): HTML-разметка тела письма.
+        scheduled_at (datetime): Новое запланированное время отправки.
+        cc_recipients (str, optional): Копия адресатов.
+        bcc_recipients (str, optional): Скрытая копия.
+        body_text (str, optional): Текстовая версия письма.
+        new_files (list[Any], optional): Новые файлы для прикрепления.
+        delete_attachment_ids (list[int], optional): ID вложений для удаления.
+
+    Returns:
+        ScheduledEmail: Обновленный экземпляр письма.
+
+    Raises:
+        ValueError: Если письмо не может быть отредактировано или дата в прошлом.
+        PermissionError: Если у пользователя нет прав доступа.
+    """
+    if not to_recipients or not to_recipients.strip():
+        raise ValueError("Необходимо указать хотя бы одного получателя.")
+
+    now = timezone.now()
+    if scheduled_at <= now:
+        raise ValueError("Время отправки письма должно быть в будущем.")
+
+    scheduled_email = get_scheduled_email_for_user(scheduled_email_id, user)
+
+    if scheduled_email.status in (
+        ScheduledEmail.STATUS_PROCESSING,
+        ScheduledEmail.STATUS_SENT,
+    ):
+        raise ValueError(
+            f"Нельзя редактировать письмо в статусе '{scheduled_email.get_status_display()}'."
+        )
+
+    with transaction.atomic():
+        scheduled_email.to_recipients = to_recipients.strip()
+        scheduled_email.cc_recipients = cc_recipients.strip() if cc_recipients else ""
+        scheduled_email.bcc_recipients = bcc_recipients.strip() if bcc_recipients else ""
+        scheduled_email.subject = subject.strip() if subject else "(Без темы)"
+        scheduled_email.body_html = body_html or ""
+        scheduled_email.body_text = body_text or ""
+        scheduled_email.scheduled_at = scheduled_at
+        # При редактировании возвращаем статус в очередь и сбрасываем ошибку
+        scheduled_email.status = ScheduledEmail.STATUS_PENDING
+        scheduled_email.last_error = ""
+        scheduled_email.save()
+
+        # Удаление выбранных старых вложений
+        if delete_attachment_ids:
+            for att in scheduled_email.attachments.filter(id__in=delete_attachment_ids):
+                try:
+                    att.file.delete(save=False)
+                except Exception as e:
+                    logger.warning(
+                        f"[ScheduledMail] Ошибка физического удаления файла {att.filename}: {e}"
+                    )
+                att.delete()
+
+        # Добавление новых вложений
+        if new_files:
+            for upload in new_files:
+                file_content = upload.read()
+                filename = upload.name
+                content_type = getattr(
+                    upload, "content_type", "application/octet-stream"
+                )
+                file_size = upload.size
+
+                attachment = ScheduledEmailAttachment(
+                    scheduled_email=scheduled_email,
+                    filename=filename,
+                    content_type=content_type,
+                    file_size=file_size,
+                )
+                attachment.file.save(filename, ContentFile(file_content), save=True)
+
+    logger.info(
+        f"[ScheduledMail] Письмо ID={scheduled_email.id} успешно обновлено пользователем {user}."
+    )
+    return scheduled_email
+

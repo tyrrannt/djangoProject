@@ -134,6 +134,115 @@ class MailComposeForm(forms.Form):
         return cleaned_data
 
 
+class ScheduledEmailEditForm(forms.Form):
+    """Форма редактирования параметров и текста запланированного письма."""
+
+    to = forms.CharField(
+        label="Кому",
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "email@example.com",
+                "id": "mailRecipientInput",
+                "autocomplete": "off",
+            }
+        ),
+    )
+    cc = forms.CharField(
+        label="Копия",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Копия адресатам...",
+                "autocomplete": "off",
+            }
+        ),
+    )
+    bcc = forms.CharField(
+        label="Скрытая копия",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Скрытая копия адресатам...",
+                "autocomplete": "off",
+            }
+        ),
+    )
+    subject = forms.CharField(
+        label="Тема",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Тема сообщения",
+            }
+        ),
+    )
+    body_html = forms.CharField(
+        label="Текст сообщения",
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control summernote",
+                "rows": 12,
+                "placeholder": "Текст сообщения...",
+            }
+        ),
+    )
+    scheduled_at = forms.DateTimeField(
+        label="Запланированное время",
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "mailScheduledAtInput"}),
+        input_formats=[
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%d.%m.%Y %H:%M",
+        ],
+    )
+    send_mode = forms.CharField(
+        required=False,
+        initial="scheduled",
+        widget=forms.HiddenInput(attrs={"id": "mailSendMode"}),
+    )
+    attachments = MultipleFileField(
+        label="Новые вложения",
+        required=False,
+    )
+
+    def clean(self):
+        """Выполняет валидацию даты отправки.
+
+        Returns:
+            dict: Очищенные данные формы.
+
+        Raises:
+            forms.ValidationError: При некорректном времени отправки.
+        """
+        from django.utils import timezone
+
+        cleaned_data = super().clean()
+        send_mode = cleaned_data.get("send_mode") or "scheduled"
+        scheduled_at = cleaned_data.get("scheduled_at")
+
+        if send_mode == "scheduled":
+            if not scheduled_at:
+                self.add_error("scheduled_at", "Укажите дату и время запланированной отправки.")
+                raise forms.ValidationError("Необходимо указать дату и время запланированной отправки.")
+            if timezone.is_naive(scheduled_at):
+                scheduled_at = timezone.make_aware(scheduled_at, timezone.get_current_timezone())
+            if scheduled_at <= timezone.now():
+                self.add_error("scheduled_at", "Время запланированной отправки должно быть в будущем.")
+                raise forms.ValidationError("Время запланированной отправки должно быть в будущем.")
+            cleaned_data["scheduled_at"] = scheduled_at
+
+        return cleaned_data
+
+
 class MailAccountSettingsForm(forms.ModelForm):
     """Форма настроек почтового ящика и подписи пользователя.
 

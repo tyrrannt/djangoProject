@@ -24,6 +24,16 @@ urlpatterns = [
     path("compose/", views.MailboxComposeView.as_view(), name="compose"),
     # Список писем, запланированных к отправке по расписанию
     path("scheduled/", views.MailboxScheduledListView.as_view(), name="scheduled_list"),
+    # Детальный просмотр запланированного письма
+    path("scheduled/<int:pk>/", views.MailboxScheduledDetailView.as_view(), name="scheduled_detail"),
+    # Редактирование запланированного письма
+    path("scheduled/<int:pk>/edit/", views.MailboxScheduledEditView.as_view(), name="scheduled_edit"),
+    # Скачивание вложения запланированного письма
+    path(
+        "scheduled/<int:pk>/attachment/<int:att_id>/",
+        views.MailboxScheduledAttachmentDownloadView.as_view(),
+        name="scheduled_attachment_download",
+    ),
     # AJAX API управления запланированными письмами
     path(
         "api/scheduled/action/",

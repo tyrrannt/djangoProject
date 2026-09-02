@@ -127,9 +127,9 @@
                                     <td class="mailbox-sender-cell ps-3">
                                         <!-- Мобильный заголовок карточки (адресат + статус) -->
                                         <div class="scheduled-mobile-header d-md-none">
-                                            <span class="mail-sender text-truncate fw-bold text-dark font-size-14" title="{{ mail.to_recipients }}">
+                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mail-sender text-truncate fw-bold text-dark font-size-14 text-decoration-none" title="{{ mail.to_recipients }}">
                                                 <i class="bx bx-share text-primary font-size-13 me-1"></i>{{ mail.to_display }}
-                                            </span>
+                                            </a>
                                             <div>
                                                 {% if mail.status == 'pending' %}
                                                     <span class="badge-scheduled badge-scheduled-pending">
@@ -156,15 +156,17 @@
                                         </div>
 
                                         <!-- Десктопный вывод адресата -->
-                                        <span class="mail-sender text-truncate d-none d-md-block" title="{{ mail.to_recipients }}">
+                                        <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mail-sender text-truncate d-none d-md-block text-dark text-decoration-none" title="{{ mail.to_recipients }}">
                                             <i class="bx bx-share font-size-13 text-muted me-1"></i>{{ mail.to_display }}
-                                        </span>
+                                        </a>
                                     </td>
 
                                     <!-- Тема и вложения -->
                                     <td class="mailbox-subject-cell">
                                         <div class="scheduled-mobile-subject d-md-none">
-                                            <span>{{ mail.subject|default:"(Без темы)" }}</span>
+                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="text-dark text-decoration-none fw-semibold">
+                                                {{ mail.subject|default:"(Без темы)" }}
+                                            </a>
                                             {% if mail.attachments.all %}
                                                 <span class="badge bg-light text-muted border ms-1 font-size-11" title="Прикреплено файлов: {{ mail.attachments.count }}">
                                                     <i class="bx bx-paperclip"></i> {{ mail.attachments.count }}
@@ -174,9 +176,9 @@
 
                                         <!-- Десктопный вывод темы -->
                                         <div class="mail-subject-wrap d-none d-md-flex align-items-center">
-                                            <span class="mail-subject text-truncate" title="{{ mail.subject }}">
+                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mail-subject text-truncate text-dark text-decoration-none" title="{{ mail.subject }}">
                                                 {{ mail.subject|default:"(Без темы)" }}
-                                            </span>
+                                            </a>
                                             {% if mail.attachments.all %}
                                                 <span class="badge bg-light text-muted border ms-2 flex-shrink-0 d-flex align-items-center gap-1 font-size-11" title="Прикреплено файлов: {{ mail.attachments.count }}">
                                                     <i class="bx bx-paperclip"></i> {{ mail.attachments.count }}
@@ -227,19 +229,21 @@
                                                 <span class="fw-semibold text-dark">{{ mail.scheduled_at|date:"d.m.Y H:i" }}</span>
                                             </div>
                                             <div class="d-flex align-items-center gap-1">
+                                                <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn" title="Просмотреть письмо">
+                                                    <i class="bx bx-show"></i>
+                                                </a>
+
+                                                {% if mail.can_reschedule %}
+                                                    <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-reschedule" title="Редактировать письмо">
+                                                        <i class="bx bx-edit"></i>
+                                                    </a>
+                                                {% endif %}
+
                                                 {% if mail.can_send_now %}
                                                     <button type="button" class="mailbox-action-btn mailbox-action-send"
                                                             onclick="executeMailAction('send_now', {{ mail.id }})"
                                                             title="Отправить сейчас">
                                                         <i class="bx bx-send"></i>
-                                                    </button>
-                                                {% endif %}
-
-                                                {% if mail.can_reschedule %}
-                                                    <button type="button" class="mailbox-action-btn mailbox-action-reschedule"
-                                                            onclick="openRescheduleModal({{ mail.id }}, '{{ mail.to_display|escapejs }}', '{{ mail.subject|default:"(Без темы)"|escapejs }}', '{{ mail.scheduled_at|date:'Y-m-d\TH:i' }}')"
-                                                            title="Изменить время">
-                                                        <i class="bx bx-calendar-edit"></i>
                                                     </button>
                                                 {% endif %}
 
@@ -261,6 +265,16 @@
 
                                         <!-- Десктопные кнопки действий -->
                                         <div class="d-none d-md-inline-flex align-items-center gap-1">
+                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn" title="Просмотреть письмо">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+
+                                            {% if mail.can_reschedule %}
+                                                <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-reschedule" title="Редактировать письмо">
+                                                    <i class="bx bx-edit"></i>
+                                                </a>
+                                            {% endif %}
+
                                             {% if mail.can_send_now %}
                                                 <button type="button" class="mailbox-action-btn mailbox-action-send"
                                                         onclick="executeMailAction('send_now', {{ mail.id }})"

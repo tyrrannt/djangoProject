@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.http import (
+    FileResponse,
     Http404,
     HttpRequest,
     HttpResponse,
@@ -26,10 +27,10 @@ from django.http import (
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
-from django.views.generic import FormView, ListView, TemplateView
+from django.views.generic import DetailView, FormView, ListView, TemplateView
 
 from customers_app.models import DataBaseUser
-from mailbox_app.forms import MailAccountSettingsForm, MailComposeForm
+from mailbox_app.forms import MailAccountSettingsForm, MailComposeForm, ScheduledEmailEditForm
 from mailbox_app.models import (
     MailAccount,
     MailContact,
@@ -1336,6 +1337,273 @@ class MailboxScheduledActionAPIView(MailboxBaseMixin, View):
         except Exception as err:
             logger.error(f"[Mailbox] Ошибка в MailboxScheduledActionAPIView: {err}", exc_info=True)
             return JsonResponse({"success": False, "error": str(err)}, status=400)
+
+
+class MailboxScheduledDetailView(MailboxBaseMixin, DetailView):
+    """Представление для детального просмотра параметров и содержимого отложенного письма."""
+
+    model = ScheduledEmail
+    template_name = "mailbox_app/scheduled_detail.html"
+    context_object_name = "scheduled_email"
+    pk_url_kwarg = "pk"
+
+    def get_queryset(self):
+        """Ограничивает выборку только письмами текущего пользователя или администратора.
+
+        Returns:
+            QuerySet[ScheduledEmail]: Запрос отложенных писем с предзагрузкой связей.
+        """
+        qs = (
+            ScheduledEmail.objects.select_related("account", "user")
+            .prefetch_related("attachments")
+        )
+        if not self.request.user.is_superuser:
+            qs = qs.filter(user=self.request.user)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        """Формирует контекст детального просмотра запланированного письма.
+
+        Returns:
+            dict: Словарь с данными для шаблона.
+        """
+        context = super().get_context_data(**kwargs)
+        account = self.get_account()
+        folders = []
+        if account:
+            try:
+                with self.get_imap_service(account) as imap_svc:
+                    folders = imap_svc.get_folders()
+            except Exception:
+                pass
+
+        obj = self.get_object()
+        context.update({
+            "title": "КОРПОРАТИВНАЯ ПОЧТА",
+            "breadcrumbs": [
+                {
+                    "name": "Корпоративная почта",
+                    "url": reverse("mailbox_app:folder", kwargs={"folder": "INBOX"}),
+                },
+                {
+                    "name": "Запланированные письма",
+                    "url": reverse("mailbox_app:scheduled_list"),
+                },
+                {"name": obj.subject or "(Без темы)"},
+            ],
+            "account": account,
+            "folders": folders,
+            "current_folder": "scheduled",
+            "current_folder_display": "Запланированные",
+            "scheduled_count": self.get_scheduled_count(),
+            "can_edit": obj.can_reschedule,
+            "can_cancel": obj.can_cancel,
+            "can_send_now": obj.can_send_now,
+        })
+        return context
+
+
+class MailboxScheduledEditView(MailboxBaseMixin, FormView):
+    """Представление для редактирования параметров и текста запланированного письма."""
+
+    form_class = ScheduledEmailEditForm
+    template_name = "mailbox_app/scheduled_edit.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        """Проверяет права доступа и допустимость редактирования письма.
+
+        Args:
+            request (HttpRequest): Текущий HTTP-запрос.
+
+        Returns:
+            HttpResponse: Ответ сервера.
+        """
+        self.scheduled_email = self.get_scheduled_email()
+        if not self.scheduled_email.can_reschedule:
+            messages.warning(
+                request,
+                f"Письмо в статусе «{self.scheduled_email.get_status_display()}» нельзя редактировать.",
+            )
+            return redirect("mailbox_app:scheduled_detail", pk=self.scheduled_email.id)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_scheduled_email(self) -> ScheduledEmail:
+        """Получает объект запланированного письма с проверкой прав.
+
+        Returns:
+            ScheduledEmail: Экземпляр письма.
+
+        Raises:
+            Http404: Если письмо не найдено или нет прав доступа.
+        """
+        pk = self.kwargs.get("pk")
+        from mailbox_app.services.scheduled_mail_service import get_scheduled_email_for_user
+
+        try:
+            return get_scheduled_email_for_user(pk, self.request.user)
+        except Exception:
+            raise Http404("Запланированное письмо не найдено.")
+
+    def get_initial(self):
+        """Заполняет начальные значения формы данными из существующего письма.
+
+        Returns:
+            dict: Начальные данные формы.
+        """
+        initial = super().get_initial()
+        email_obj = self.scheduled_email
+        initial.update({
+            "to": email_obj.to_recipients,
+            "cc": email_obj.cc_recipients,
+            "bcc": email_obj.bcc_recipients,
+            "subject": email_obj.subject,
+            "body_html": email_obj.body_html,
+            "scheduled_at": email_obj.scheduled_at,
+            "send_mode": "scheduled",
+        })
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """Формирует контекст шаблона редактирования отложенного письма.
+
+        Returns:
+            dict: Контекст шаблона.
+        """
+        context = super().get_context_data(**kwargs)
+        account = self.get_account()
+        folders = []
+        if account:
+            try:
+                with self.get_imap_service(account) as imap_svc:
+                    folders = imap_svc.get_folders()
+            except Exception:
+                pass
+
+        context.update({
+            "title": "КОРПОРАТИВНАЯ ПОЧТА",
+            "breadcrumbs": [
+                {
+                    "name": "Корпоративная почта",
+                    "url": reverse("mailbox_app:folder", kwargs={"folder": "INBOX"}),
+                },
+                {
+                    "name": "Запланированные письма",
+                    "url": reverse("mailbox_app:scheduled_list"),
+                },
+                {
+                    "name": self.scheduled_email.subject or "(Без темы)",
+                    "url": reverse("mailbox_app:scheduled_detail", kwargs={"pk": self.scheduled_email.id}),
+                },
+                {"name": "Редактирование"},
+            ],
+            "account": account,
+            "folders": folders,
+            "current_folder": "scheduled",
+            "current_folder_display": "Запланированные",
+            "scheduled_count": self.get_scheduled_count(),
+            "scheduled_email": self.scheduled_email,
+            "existing_attachments": self.scheduled_email.attachments.all(),
+        })
+        return context
+
+    def form_valid(self, form):
+        """Сохраняет обновленные данные запланированного письма или отправляет его немедленно.
+
+        Args:
+            form (ScheduledEmailEditForm): Валидированная форма.
+
+        Returns:
+            HttpResponse: Редирект на детальный просмотр или в реестр.
+        """
+        from mailbox_app.services.scheduled_mail_service import (
+            send_single_scheduled_email,
+            update_scheduled_email,
+        )
+
+        send_mode = form.cleaned_data.get("send_mode") or "scheduled"
+        scheduled_at = form.cleaned_data.get("scheduled_at") or self.scheduled_email.scheduled_at
+        new_files = self.request.FILES.getlist("attachments")
+
+        # Проверяем, какие из старых вложений были отмечены для удаления
+        delete_ids_raw = self.request.POST.getlist("delete_attachment_ids")
+        delete_ids = [int(i) for i in delete_ids_raw if i.isdigit()]
+
+        try:
+            updated_email = update_scheduled_email(
+                scheduled_email_id=self.scheduled_email.id,
+                user=self.request.user,
+                to_recipients=form.cleaned_data["to"],
+                subject=form.cleaned_data.get("subject", "(Без темы)"),
+                body_html=form.cleaned_data.get("body_html", ""),
+                scheduled_at=scheduled_at,
+                cc_recipients=form.cleaned_data.get("cc", ""),
+                bcc_recipients=form.cleaned_data.get("bcc", ""),
+                new_files=new_files,
+                delete_attachment_ids=delete_ids,
+            )
+
+            # Если пользователь нажал "Отправить сейчас"
+            if send_mode == "now":
+                try:
+                    send_single_scheduled_email(updated_email.id)
+                    messages.success(self.request, "Письмо успешно отправлено адресатам!")
+                    return redirect("mailbox_app:scheduled_list")
+                except Exception as e:
+                    from mailbox_app.tasks import send_scheduled_email_task
+
+                    logger.warning(f"[Mailbox] Ошибка немедленной отправки: {e}, ставим в очередь Celery")
+                    send_scheduled_email_task.delay(updated_email.id)
+                    messages.info(self.request, "Письмо сохранено и поставлено в очередь отправки Celery.")
+                    return redirect("mailbox_app:scheduled_detail", pk=updated_email.id)
+
+            messages.success(
+                self.request,
+                f"Запланированное письмо успешно обновлено! Отправка запланирована на {scheduled_at:%d.%m.%Y %H:%M} (МСК).",
+            )
+            return redirect("mailbox_app:scheduled_detail", pk=updated_email.id)
+
+        except Exception as err:
+            logger.error(f"[Mailbox] Ошибка обновления отложенного письма: {err}", exc_info=True)
+            messages.error(self.request, f"Ошибка при сохранении изменений: {err}")
+            return self.form_invalid(form)
+
+
+class MailboxScheduledAttachmentDownloadView(MailboxBaseMixin, View):
+    """Контроллер для безопасного скачивания файла-вложения запланированного письма."""
+
+    def get(self, request, pk: int, att_id: int, *args, **kwargs):
+        """Отдает бинарный файл вложения с проверкой прав доступа.
+
+        Args:
+            request (HttpRequest): Запрос пользователя.
+            pk (int): ID запланированного письма.
+            att_id (int): ID файла-вложения.
+
+        Returns:
+            FileResponse: Ответ с файлом для скачивания или просмотра.
+
+        Raises:
+            Http404: Если файл или письмо не найдены.
+        """
+        from mailbox_app.services.scheduled_mail_service import get_scheduled_email_for_user
+
+        try:
+            scheduled_email = get_scheduled_email_for_user(pk, request.user)
+            attachment = scheduled_email.attachments.get(id=att_id)
+            if not attachment.file or not attachment.file.storage.exists(attachment.file.name):
+                raise Http404("Файл не найден на диске сервера.")
+
+            response = FileResponse(
+                attachment.file.open("rb"),
+                content_type=attachment.content_type or "application/octet-stream",
+            )
+            safe_filename = quote(attachment.filename)
+            response["Content-Disposition"] = f"inline; filename*=UTF-8''{safe_filename}"
+            return response
+        except Exception as e:
+            logger.warning(f"[Mailbox] Ошибка отдачи вложения отложенного письма: {e}")
+            raise Http404("Вложение не найдено.")
+
 
 
 
