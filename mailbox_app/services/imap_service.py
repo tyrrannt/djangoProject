@@ -9,11 +9,25 @@ import logging
 import re
 import ssl
 import time
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
+
+
+def format_imap_date(d: date) -> str:
+    """Форматирует дату по стандарту RFC 3501 (dd-Mon-yyyy) с английскими названиями месяцев.
+
+    Args:
+        d (date): Объект даты.
+
+    Returns:
+        str: Строка вида '02-Sep-2026'.
+    """
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    return f"{d.day:02d}-{months[d.month - 1]}-{d.year}"
 
 
 def invalidate_mailbox_cache(email_addr: str) -> None:
@@ -371,8 +385,12 @@ class ImapMailService:
         sort_dir: str = "desc",
         filter_by: str = "all",
         force_refresh: bool = False,
+        q_scope: str = "all",
+        date_range: str = "all",
+        date_from: str = "",
+        date_to: str = "",
     ) -> Tuple[List[Dict[str, Any]], int]:
-        """Возвращает страницу списка писем с высокоскоростной пакетной загрузкой (Batch Fetch) и кэшированием.
+        """Возвращает страницу списка писем с полнотекстовым поиском (включая тело BODY) и фильтрацией по датам.
 
         Args:
             folder_name (str): Имя папки IMAP.
@@ -383,6 +401,10 @@ class ImapMailService:
             sort_dir (str): Направление ('asc' или 'desc').
             filter_by (str): Фильтр ('all', 'unread', 'flagged', 'attachments').
             force_refresh (bool): Принудительный запрос в обход кэша.
+            q_scope (str): Область поиска ('all' - везде включая тело, 'headers' - тема и автор, 'body' - только текст).
+            date_range (str): Диапазон дат ('all', 'today', 'week', 'month', 'custom').
+            date_from (str): Начальная дата диапазона (ГГГГ-ММ-ДД).
+            date_to (str): Конечная дата диапазона (ГГГГ-ММ-ДД).
 
         Returns:
             tuple[list[dict], int]: (Список превью писем, общее количество писем).
@@ -390,7 +412,9 @@ class ImapMailService:
         email_clean = (self.email_addr or "").strip().lower()
         ver_key = f"mailbox_ver_{email_clean}"
         cache_ver = cache.get(ver_key) or 1
-        cache_key = f"mailbox_msgs_v2_{email_clean}_{cache_ver}_{folder_name}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{query or ''}"
+        q_scope = (q_scope or "all").lower()
+        date_range = (date_range or "all").lower()
+        cache_key = f"mailbox_msgs_v3_{email_clean}_{cache_ver}_{folder_name}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{query or ''}_{q_scope}_{date_range}_{date_from}_{date_to}"
 
         if not force_refresh and email_clean:
             cached_data = cache.get(cache_key)
@@ -408,12 +432,43 @@ class ImapMailService:
         sort_dir = (sort_dir or "desc").lower()
         filter_by = (filter_by or "all").lower()
 
+        # Фильтрация по датам (RFC 3501 SINCE / BEFORE)
+        date_criteria_parts = []
+        now_date = datetime.now().date()
+        if date_range == "today":
+            date_criteria_parts.append(f"SINCE {format_imap_date(now_date)}")
+        elif date_range == "week":
+            week_ago = now_date - timedelta(days=7)
+            date_criteria_parts.append(f"SINCE {format_imap_date(week_ago)}")
+        elif date_range == "month":
+            month_ago = now_date - timedelta(days=30)
+            date_criteria_parts.append(f"SINCE {format_imap_date(month_ago)}")
+        elif date_range == "custom":
+            if date_from:
+                try:
+                    d_from = datetime.strptime(date_from, "%Y-%m-%d").date()
+                    date_criteria_parts.append(f"SINCE {format_imap_date(d_from)}")
+                except Exception:
+                    pass
+            if date_to:
+                try:
+                    d_to = datetime.strptime(date_to, "%Y-%m-%d").date()
+                    d_to_next = d_to + timedelta(days=1)
+                    date_criteria_parts.append(f"BEFORE {format_imap_date(d_to_next)}")
+                except Exception:
+                    pass
+
         # Базовый критерий фильтрации
-        base_criteria = "ALL"
+        criteria_list = []
         if filter_by == "unread" or sort_by == "unread":
-            base_criteria = "UNSEEN"
+            criteria_list.append("UNSEEN")
         elif filter_by == "flagged" or sort_by == "flagged":
-            base_criteria = "FLAGGED"
+            criteria_list.append("FLAGGED")
+
+        if date_criteria_parts:
+            criteria_list.extend(date_criteria_parts)
+
+        base_criteria = " ".join(criteria_list) if criteria_list else "ALL"
 
         # Формирование критерия сортировки IMAP (RFC 5256) по реальному заголовку письма
         sort_field = "DATE"
@@ -446,14 +501,18 @@ class ImapMailService:
             for var in variants:
                 try:
                     var_bytes = var.encode("utf-8")
-                    if base_criteria != "ALL":
-                        status, sort_data = self.client.uid(
-                            "sort", sort_key, "UTF-8", base_criteria, "OR", "FROM", var_bytes, "SUBJECT", var_bytes
-                        )
+                    if q_scope == "body":
+                        search_atoms = ["BODY", var_bytes]
+                    elif q_scope == "headers":
+                        search_atoms = ["OR", "FROM", var_bytes, "SUBJECT", var_bytes]
                     else:
-                        status, sort_data = self.client.uid(
-                            "sort", sort_key, "UTF-8", "OR", "FROM", var_bytes, "SUBJECT", var_bytes
-                        )
+                        # По умолчанию: поиск везде (включая тело BODY)
+                        search_atoms = ["TEXT", var_bytes]
+
+                    base_args = [base_criteria] if base_criteria != "ALL" else []
+                    full_sort_args = ["sort", sort_key, "UTF-8"] + base_args + search_atoms
+                    status, sort_data = self.client.uid(*full_sort_args)
+
                     if status == "OK" and sort_data and sort_data[0]:
                         for uid_item in sort_data[0].split():
                             if uid_item and uid_item != b"0" and uid_item not in found_uids:
@@ -465,14 +524,17 @@ class ImapMailService:
                 for var in variants:
                     try:
                         var_bytes = var.encode("utf-8")
-                        if base_criteria != "ALL":
-                            status, search_data = self.client.uid(
-                                "search", "CHARSET", "UTF-8", base_criteria, "OR", "FROM", var_bytes, "SUBJECT", var_bytes
-                            )
+                        if q_scope == "body":
+                            search_atoms = ["BODY", var_bytes]
+                        elif q_scope == "headers":
+                            search_atoms = ["OR", "FROM", var_bytes, "SUBJECT", var_bytes]
                         else:
-                            status, search_data = self.client.uid(
-                                "search", "CHARSET", "UTF-8", "OR", "FROM", var_bytes, "SUBJECT", var_bytes
-                            )
+                            search_atoms = ["TEXT", var_bytes]
+
+                        base_args = [base_criteria] if base_criteria != "ALL" else []
+                        full_search_args = ["search", "CHARSET", "UTF-8"] + base_args + search_atoms
+                        status, search_data = self.client.uid(*full_search_args)
+
                         if status == "OK" and search_data and search_data[0]:
                             for uid_item in search_data[0].split():
                                 if uid_item and uid_item != b"0" and uid_item not in found_uids:
@@ -487,7 +549,13 @@ class ImapMailService:
                         if not ascii_var:
                             continue
                         crit_prefix = f"{base_criteria} " if base_criteria != "ALL" else ""
-                        search_crit = f'({crit_prefix}(OR (FROM "{ascii_var}") (SUBJECT "{ascii_var}")))'
+                        if q_scope == "body":
+                            search_crit = f'({crit_prefix}(BODY "{ascii_var}"))'
+                        elif q_scope == "headers":
+                            search_crit = f'({crit_prefix}(OR (FROM "{ascii_var}") (SUBJECT "{ascii_var}")))'
+                        else:
+                            search_crit = f'({crit_prefix}(TEXT "{ascii_var}"))'
+
                         status, search_data = self.client.uid("search", None, search_crit)
                         if status == "OK" and search_data and search_data[0]:
                             for uid_item in search_data[0].split():

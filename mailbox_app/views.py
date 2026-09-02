@@ -113,6 +113,10 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
 
         current_folder = self.kwargs.get("folder", "INBOX")
         search_query = self.request.GET.get("q", "").strip()
+        q_scope = self.request.GET.get("scope", "all").strip().lower()
+        date_range = self.request.GET.get("date_range", "all").strip().lower()
+        date_from = self.request.GET.get("date_from", "").strip()
+        date_to = self.request.GET.get("date_to", "").strip()
         sort_by = self.request.GET.get("sort", "date").strip().lower()
         sort_dir = self.request.GET.get("dir", "desc").strip().lower()
         filter_by = self.request.GET.get("filter", "all").strip().lower()
@@ -137,34 +141,26 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
                 if force_refresh:
                     invalidate_mailbox_cache(email_clean)
 
-                ver_key = f"mailbox_ver_{email_clean}"
-                cache_ver = cache.get(ver_key) or 1
-                cache_key_folders = f"mailbox_folders_{email_clean}"
-                cache_key_msgs = f"mailbox_msgs_v2_{email_clean}_{cache_ver}_{current_folder}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{search_query}"
-
-                cached_folders = cache.get(cache_key_folders) if not force_refresh else None
-                cached_msgs_data = cache.get(cache_key_msgs) if not force_refresh else None
-
-                if cached_folders is not None and cached_msgs_data is not None:
-                    folders = cached_folders
-                    email_messages, total_count = cached_msgs_data
-                else:
-                    try:
-                        with self.get_imap_service(account) as imap_svc:
-                            folders = imap_svc.get_folders(force_refresh=force_refresh)
-                            email_messages, total_count = imap_svc.get_messages(
-                                folder_name=current_folder,
-                                page=page,
-                                per_page=per_page,
-                                query=search_query if search_query else None,
-                                sort_by=sort_by,
-                                sort_dir=sort_dir,
-                                filter_by=filter_by,
-                                force_refresh=force_refresh,
-                            )
-                    except Exception as e:
-                        logger.error(f"[Mailbox] Ошибка загрузки писем из {current_folder}: {e}")
-                        error_message = f"Не удалось подключиться к серверу IMAP: {e}"
+                try:
+                    with self.get_imap_service(account) as imap_svc:
+                        folders = imap_svc.get_folders(force_refresh=force_refresh)
+                        email_messages, total_count = imap_svc.get_messages(
+                            folder_name=current_folder,
+                            page=page,
+                            per_page=per_page,
+                            query=search_query if search_query else None,
+                            sort_by=sort_by,
+                            sort_dir=sort_dir,
+                            filter_by=filter_by,
+                            force_refresh=force_refresh,
+                            q_scope=q_scope,
+                            date_range=date_range,
+                            date_from=date_from,
+                            date_to=date_to,
+                        )
+                except Exception as e:
+                    logger.error(f"[Mailbox] Ошибка загрузки писем из {current_folder}: {e}")
+                    error_message = f"Не удалось подключиться к серверу IMAP: {e}"
         else:
             error_message = (
                 "Корпоративный почтовый ящик не настроен для вашей учетной записи (не указан корпоративный Email адрес). "
@@ -223,6 +219,29 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
         extra_query = query_dict.urlencode()
         query_prefix = f"&{extra_query}" if extra_query else ""
 
+        # Формируем параметры для сохранения поиска и диапазона дат при переключении сортировки/статусов
+        filter_dict = self.request.GET.copy()
+        for k in ("page", "refresh", "filter", "sort", "dir"):
+            filter_dict.pop(k, None)
+        filter_extra = filter_dict.urlencode()
+        filter_query_params = f"&{filter_extra}" if filter_extra else ""
+
+        date_range_labels = {
+            "all": "",
+            "today": "За сегодня",
+            "week": "За последнюю неделю",
+            "month": "За последний месяц",
+            "custom": f"Период: {date_from or '...'} — {date_to or '...'}",
+        }
+        date_range_display = date_range_labels.get(date_range, "")
+
+        scope_labels = {
+            "all": "Везде (тема, автор, текст)",
+            "headers": "Тема и автор",
+            "body": "Текст сообщения (BODY)",
+        }
+        scope_display = scope_labels.get(q_scope, "")
+
         context.update({
             "title": "КОРПОРАТИВНАЯ ПОЧТА",
             "breadcrumbs": [
@@ -244,6 +263,7 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
             "filter_by": filter_by,
             "current_sort_label": current_sort_label,
             "query_prefix": query_prefix,
+            "filter_query_params": filter_query_params,
             "messages_list": email_messages,
             "total_count": total_count,
             "page": page,
@@ -253,6 +273,12 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
             "prev_page": page - 1,
             "next_page": page + 1,
             "search_query": search_query,
+            "q_scope": q_scope,
+            "scope_display": scope_display,
+            "date_range": date_range,
+            "date_range_display": date_range_display,
+            "date_from": date_from,
+            "date_to": date_to,
             "error_message": error_message,
         })
         return context

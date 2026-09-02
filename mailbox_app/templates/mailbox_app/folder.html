@@ -46,22 +46,88 @@
 
                         <!-- Действия шапки: Кнопка Обновить и Форма поиска -->
                         <div class="d-flex align-items-center gap-2">
-                            <a href="?refresh=1{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                            <a href="?refresh=1{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                                class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none"
                                title="Проверить новые письма и обновить">
                                 <i class="bx bx-refresh font-size-18"></i>
                                 <span class="d-none d-sm-inline">Обновить</span>
                             </a>
 
-                            <!-- Форма поиска -->
-                            <form method="get" class="mailbox-search-form m-0" style="min-width: 200px; max-width: 320px;">
+                            <!-- Форма расширенного поиска и фильтрации -->
+                            <form method="get" class="mailbox-search-form m-0" style="min-width: 220px; max-width: 380px;">
+                                {% if sort_by %}<input type="hidden" name="sort" value="{{ sort_by }}">{% endif %}
+                                {% if sort_dir %}<input type="hidden" name="dir" value="{{ sort_dir }}">{% endif %}
+                                {% if filter_by and filter_by != 'all' %}<input type="hidden" name="filter" value="{{ filter_by }}">{% endif %}
+
                                 <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Поиск писем...">
+                                    <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Поиск писем..." autocomplete="off">
+
+                                    <!-- Кнопка выпадающего меню расширенного поиска и фильтра по дате -->
+                                    <button class="btn btn-outline-secondary dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Параметры поиска и фильтр по дате">
+                                        <i class="bx bx-slider-alt {% if q_scope != 'all' or date_range != 'all' %}text-primary fw-bold{% endif %}"></i>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-end shadow border-0 p-3" style="width: 310px; border-radius: 12px; z-index: 1060;">
+                                        <h6 class="dropdown-header px-0 text-uppercase font-size-11 fw-bold text-muted mb-2">Область поиска</h6>
+                                        <div class="mb-3">
+                                            <div class="form-check font-size-13 mb-1">
+                                                <input class="form-check-input" type="radio" name="scope" id="scopeAll" value="all" {% if q_scope == 'all' or not q_scope %}checked{% endif %}>
+                                                <label class="form-check-label" for="scopeAll">
+                                                    Везде (тема, автор, текст)
+                                                </label>
+                                            </div>
+                                            <div class="form-check font-size-13 mb-1">
+                                                <input class="form-check-input" type="radio" name="scope" id="scopeHeaders" value="headers" {% if q_scope == 'headers' %}checked{% endif %}>
+                                                <label class="form-check-label" for="scopeHeaders">
+                                                    Только тема и автор
+                                                </label>
+                                            </div>
+                                            <div class="form-check font-size-13">
+                                                <input class="form-check-input" type="radio" name="scope" id="scopeBody" value="body" {% if q_scope == 'body' %}checked{% endif %}>
+                                                <label class="form-check-label" for="scopeBody">
+                                                    Только текст сообщения (BODY)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="dropdown-header px-0 text-uppercase font-size-11 fw-bold text-muted mb-2 border-top pt-2">Диапазон дат</h6>
+                                        <div class="mb-2">
+                                            <select class="form-select form-select-sm" name="date_range" id="filterDateRangeSelect" onchange="toggleCustomDates(this.value)">
+                                                <option value="all" {% if date_range == 'all' or not date_range %}selected{% endif %}>За всё время</option>
+                                                <option value="today" {% if date_range == 'today' %}selected{% endif %}>За сегодня</option>
+                                                <option value="week" {% if date_range == 'week' %}selected{% endif %}>За последнюю неделю</option>
+                                                <option value="month" {% if date_range == 'month' %}selected{% endif %}>За последний месяц</option>
+                                                <option value="custom" {% if date_range == 'custom' %}selected{% endif %}>Указать период...</option>
+                                            </select>
+                                        </div>
+
+                                        <div id="customDateRangeInputs" class="{% if date_range != 'custom' %}d-none{% endif %} mb-3">
+                                            <div class="row g-1">
+                                                <div class="col-6">
+                                                    <label class="font-size-11 text-muted">С даты:</label>
+                                                    <input type="date" class="form-control form-control-sm" name="date_from" value="{{ date_from }}">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="font-size-11 text-muted">По дату:</label>
+                                                    <input type="date" class="form-control form-control-sm" name="date_to" value="{{ date_to }}">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                            <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-link btn-sm text-muted p-0 text-decoration-none font-size-12">
+                                                Сбросить всё
+                                            </a>
+                                            <button class="btn btn-primary btn-sm px-3" type="submit">
+                                                Применить
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <button class="btn btn-primary" type="submit" title="Искать">
                                         <i class="bx bx-search"></i>
                                     </button>
-                                    {% if search_query %}
-                                        <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary" title="Сбросить поиск">
+                                    {% if search_query or date_range != 'all' or q_scope != 'all' %}
+                                        <a href="{% url 'mailbox_app:folder' current_folder %}{% if filter_by and filter_by != 'all' %}?filter={{ filter_by }}{% endif %}" class="btn btn-outline-secondary" title="Сбросить поиск и фильтры">
                                             <i class="bx bx-x"></i>
                                         </a>
                                     {% endif %}
@@ -78,37 +144,56 @@
                 {% endif %}
 
                 <!-- Панель быстрых фильтров и выпадающей сортировки (Outlook / Thunderbird style) -->
-                <div class="mailbox-quick-filters px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between gap-2">
-                    <!-- Лента фильтров без необходимости горизонтального свайпа на смартфонах -->
-                    <div class="mailbox-filter-chips-scroll d-flex align-items-center gap-1">
+                <div class="mailbox-quick-filters px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <!-- Лента фильтров и чипов активных параметров -->
+                    <div class="mailbox-filter-chips-scroll d-flex align-items-center gap-1 flex-wrap">
                         <!-- Компактная иконка сортировки на смартфонах (открывает Bottom Sheet) -->
                         <button type="button" class="mailbox-filter-btn active d-md-none flex-shrink-0 d-flex align-items-center justify-content-center shadow-none"
                                 data-bs-toggle="modal" data-bs-target="#mobileMailSortModal" title="Сортировка писем: {{ current_sort_label }}" style="min-width: 32px; padding: 4px 6px !important;">
                             <i class="bx bx-sort font-size-16"></i>
                         </button>
 
-                        <a href="?filter=all{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?filter=all{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{{ filter_query_params }}"
                            class="mailbox-filter-btn {% if filter_by == 'all' or not filter_by %}active{% endif %}">
                             Все
                         </a>
-                        <a href="?filter=unread{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?filter=unread{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{{ filter_query_params }}"
                            class="mailbox-filter-btn {% if filter_by == 'unread' %}active{% endif %}">
                             <i class="bx bx-envelope"></i>
                             <span class="d-none d-sm-inline">Непрочитанные</span>
                             <span class="d-sm-none">Непроч.</span>
                         </a>
-                        <a href="?filter=flagged{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?filter=flagged{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{{ filter_query_params }}"
                            class="mailbox-filter-btn {% if filter_by == 'flagged' %}active{% endif %}">
                             <i class="bx bxs-star text-warning"></i>
                             <span class="d-none d-sm-inline">С флажком</span>
                             <span class="d-sm-none">Важные</span>
                         </a>
-                        <a href="?filter=attachments{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?filter=attachments{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{{ filter_query_params }}"
                            class="mailbox-filter-btn {% if filter_by == 'attachments' %}active{% endif %}">
                             <i class="bx bx-paperclip"></i>
                             <span class="d-none d-sm-inline">С вложениями</span>
                             <span class="d-sm-none">Вложения</span>
                         </a>
+
+                        <!-- Чипы активных фильтров поиска и дат с быстрым сбросом -->
+                        {% if date_range and date_range != 'all' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1 font-size-12 px-2 py-1 ms-1">
+                                <i class="bx bx-calendar"></i> {{ date_range_display }}
+                                <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if q_scope and q_scope != 'all' %}scope={{ q_scope }}&{% endif %}{% if filter_by %}filter={{ filter_by }}&{% endif %}{% if sort_by %}sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="text-primary text-decoration-none" title="Сбросить фильтр даты">
+                                    <i class="bx bx-x font-size-14 align-middle"></i>
+                                </a>
+                            </span>
+                        {% endif %}
+
+                        {% if q_scope and q_scope != 'all' %}
+                            <span class="badge bg-info-subtle text-info border border-info-subtle d-inline-flex align-items-center gap-1 font-size-12 px-2 py-1 ms-1">
+                                <i class="bx bx-filter-alt"></i> {{ scope_display }}
+                                <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if date_range and date_range != 'all' %}date_range={{ date_range }}&date_from={{ date_from }}&date_to={{ date_to }}&{% endif %}{% if filter_by %}filter={{ filter_by }}&{% endif %}{% if sort_by %}sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="text-info text-decoration-none" title="Искать везде">
+                                    <i class="bx bx-x font-size-14 align-middle"></i>
+                                </a>
+                            </span>
+                        {% endif %}
                     </div>
 
                     <!-- Выпадающий список сортировки для планшетов и десктопов (скрыт на смартфонах <=768px) -->
@@ -122,14 +207,14 @@
                             <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">Сортировка по дате</li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'date' and sort_dir == 'desc' %}active fw-bold{% endif %}"
-                                   href="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-calendar-event me-2"></i> Сначала новые</span>
                                     <i class="bx bx-down-arrow-alt"></i>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'date' and sort_dir == 'asc' %}active fw-bold{% endif %}"
-                                   href="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-calendar-event me-2"></i> Сначала старые</span>
                                     <i class="bx bx-up-arrow-alt"></i>
                                 </a>
@@ -138,28 +223,28 @@
                             <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">{% if show_recipient %}По получателю / теме{% else %}По автору / теме{% endif %}</li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'from' and sort_dir == 'asc' %}active fw-bold{% endif %}"
-                                   href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-user me-2"></i> {% if show_recipient %}По получателю (А → Я){% else %}По автору (А → Я){% endif %}</span>
                                     <i class="bx bx-sort-a-z"></i>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'from' and sort_dir == 'desc' %}active fw-bold{% endif %}"
-                                   href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-user me-2"></i> {% if show_recipient %}По получателю (Я → А){% else %}По автору (Я → А){% endif %}</span>
                                     <i class="bx bx-sort-z-a"></i>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'subject' and sort_dir == 'asc' %}active fw-bold{% endif %}"
-                                   href="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-message-square-detail me-2"></i> По теме (А → Я)</span>
                                     <i class="bx bx-sort-a-z"></i>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'subject' and sort_dir == 'desc' %}active fw-bold{% endif %}"
-                                   href="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-message-square-detail me-2"></i> По теме (Я → А)</span>
                                     <i class="bx bx-sort-z-a"></i>
                                 </a>
@@ -168,33 +253,33 @@
                             <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">По размеру и статусу</li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'size' and sort_dir == 'desc' %}active fw-bold{% endif %}"
-                                   href="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-archive me-2"></i> По размеру (убывание)</span>
                                     <i class="bx bx-down-arrow-alt"></i>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'size' and sort_dir == 'asc' %}active fw-bold{% endif %}"
-                                   href="?sort=size&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=size&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-archive me-2"></i> По размеру (возрастание)</span>
                                     <i class="bx bx-up-arrow-alt"></i>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'flagged' %}active fw-bold{% endif %}"
-                                   href="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bxs-star text-warning me-2"></i> Сначала важные</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'unread' %}active fw-bold{% endif %}"
-                                   href="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-envelope text-primary me-2"></i> Сначала непрочитанные</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'attachments' %}active fw-bold{% endif %}"
-                                   href="?sort=attachments&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                   href="?sort=attachments&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}">
                                     <span><i class="bx bx-paperclip me-2"></i> Сначала с вложениями</span>
                                 </a>
                             </li>
@@ -203,27 +288,40 @@
                 </div>
 
                 <!-- Панель массовых действий и пагинации -->
-                <div class="mailbox-toolbar">
+                <div class="mailbox-toolbar d-flex align-items-center justify-content-between flex-wrap gap-2 px-3 py-2 bg-light border-bottom">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <!-- Мастер-чекбокс в тулбаре -->
                         <div class="form-check m-0 d-flex align-items-center me-1">
-                            <input type="checkbox" class="form-check-input" id="selectAllMails" title="Выбрать все на странице">
+                            <input type="checkbox" class="form-check-input select-all-mails-checkbox" id="selectAllMailsToolbar" title="Выбрать все на странице">
                         </div>
-                        <div class="d-flex align-items-center gap-1">
+
+                        <!-- Счетчик выбранных писем с кнопкой отмены -->
+                        <div id="batchSelectedCounter" class="d-none align-items-center gap-2 me-2">
+                            <span class="badge bg-primary font-size-12 px-2 py-1 fw-semibold">
+                                Выбрано: <span id="selectedCountText">0</span>
+                            </span>
+                            <button type="button" class="btn btn-link btn-sm text-muted p-0 text-decoration-none font-size-12" id="btnDeselectAll" title="Снять выбор со всех писем">
+                                <i class="bx bx-x font-size-14 align-middle"></i> Снять
+                            </button>
+                        </div>
+
+                        <!-- Кнопки пакетных действий над письмами -->
+                        <div class="d-flex align-items-center gap-1" id="batchActionButtonsGroup">
                             {% if is_junk %}
-                                <button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('not_spam')" title="Переместить выбранные во «Входящие» и обучить спам-фильтр">
+                                <button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-none batch-action-btn disabled" disabled onclick="handleBatchAction('not_spam')" title="Переместить выбранные во «Входящие» и обучить спам-фильтр">
                                     <i class="bx bx-check-shield"></i> <span class="d-none d-sm-inline">Не спам</span>
                                 </button>
                             {% endif %}
-                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('mark_seen')" title="Пометить как прочитанное">
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none batch-action-btn disabled" disabled onclick="handleBatchAction('mark_seen')" title="Отметить выбранные как прочитанные">
                                 <i class="bx bx-envelope-open"></i> <span class="d-none d-sm-inline">Прочитано</span>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('mark_unseen')" title="Пометить как непрочитанное">
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none batch-action-btn disabled" disabled onclick="handleBatchAction('mark_unseen')" title="Отметить выбранные как непрочитанные">
                                 <i class="bx bx-envelope"></i> <span class="d-none d-sm-inline">Не прочитано</span>
                             </button>
 
                             <!-- Групповое перемещение в папку -->
                             <div class="btn-group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none" data-bs-toggle="dropdown" aria-expanded="false" title="Переместить выбранные письма">
+                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none batch-action-btn disabled" disabled data-bs-toggle="dropdown" aria-expanded="false" title="Переместить выбранные письма в другую папку">
                                     <i class="bx bx-folder"></i> <span class="d-none d-sm-inline">Переместить</span>
                                 </button>
                                 <ul class="dropdown-menu shadow border-0 py-2 mt-1" style="border-radius: 10px; min-width: 220px; max-height: 320px; overflow-y: auto; z-index: 1060;">
@@ -241,7 +339,7 @@
                                 </ul>
                             </div>
 
-                            <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('delete')" title="Удалить выбранные">
+                            <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none batch-action-btn disabled" disabled onclick="handleBatchAction('delete')" title="Удалить выбранные письма">
                                 <i class="bx bx-trash"></i> <span class="d-none d-sm-inline">Удалить</span>
                             </button>
                         </div>
@@ -279,14 +377,17 @@
                         <thead>
                             <tr>
                                 <th class="mailbox-col-check ps-3">
+                                    <div class="form-check m-0">
+                                        <input type="checkbox" class="form-check-input select-all-mails-checkbox" id="selectAllMailsHeader" title="Выбрать все на странице">
+                                    </div>
                                 </th>
                                 <th class="mailbox-col-star p-0 text-center {% if sort_by == 'flagged' %}active-sort{% endif %}">
-                                    <a href="?sort=flagged&dir={% if sort_by == 'flagged' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по важности">
+                                    <a href="?sort=flagged&dir={% if sort_by == 'flagged' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}" title="Сортировка по важности">
                                         <i class="bx {% if sort_by == 'flagged' %}bxs-star text-warning{% else %}bx-star{% endif %}"></i>
                                     </a>
                                 </th>
                                 <th class="mailbox-col-sender {% if sort_by == 'from' or sort_by == 'to' %}active-sort{% endif %}">
-                                    <a href="?sort=from&dir={% if sort_by == 'from' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="{% if show_recipient %}Сортировка по получателю{% else %}Сортировка по автору{% endif %}">
+                                    <a href="?sort=from&dir={% if sort_by == 'from' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}" title="{% if show_recipient %}Сортировка по получателю{% else %}Сортировка по автору{% endif %}">
                                         <span>{% if show_recipient %}Кому{% else %}От кого{% endif %}</span>
                                         {% if sort_by == 'from' or sort_by == 'to' %}
                                             <i class="bx {% if sort_dir == 'asc' %}bx-sort-up text-primary{% else %}bx-sort-down text-primary{% endif %}"></i>
@@ -296,7 +397,7 @@
                                     </a>
                                 </th>
                                 <th class="mailbox-col-subject {% if sort_by == 'subject' %}active-sort{% endif %}">
-                                    <a href="?sort=subject&dir={% if sort_by == 'subject' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по теме">
+                                    <a href="?sort=subject&dir={% if sort_by == 'subject' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}" title="Сортировка по теме">
                                         <span>Тема сообщения</span>
                                         {% if sort_by == 'subject' %}
                                             <i class="bx {% if sort_dir == 'asc' %}bx-sort-up text-primary{% else %}bx-sort-down text-primary{% endif %}"></i>
@@ -306,7 +407,7 @@
                                     </a>
                                 </th>
                                 <th class="mailbox-col-size text-end d-none d-xl-table-cell {% if sort_by == 'size' %}active-sort{% endif %}">
-                                    <a href="?sort=size&dir={% if sort_by == 'size' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по размеру">
+                                    <a href="?sort=size&dir={% if sort_by == 'size' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}" title="Сортировка по размеру">
                                         <span>Размер</span>
                                         {% if sort_by == 'size' %}
                                             <i class="bx {% if sort_dir == 'desc' %}bx-sort-down text-primary{% else %}bx-sort-up text-primary{% endif %}"></i>
@@ -316,7 +417,7 @@
                                     </a>
                                 </th>
                                 <th class="mailbox-col-date text-end pe-3 {% if sort_by == 'date' %}active-sort{% endif %}">
-                                    <a href="?sort=date&dir={% if sort_by == 'date' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по дате">
+                                    <a href="?sort=date&dir={% if sort_by == 'date' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}" title="Сортировка по дате">
                                         <span>Дата</span>
                                         {% if sort_by == 'date' %}
                                             <i class="bx {% if sort_dir == 'desc' %}bx-sort-down text-primary{% else %}bx-sort-up text-primary{% endif %}"></i>
@@ -485,14 +586,107 @@
             }
         }
 
-        // Переключение чекбокса "Выбрать все"
-        const selectAllCheckbox = document.getElementById('selectAllMails');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                const checkboxes = document.querySelectorAll('.mail-select-checkbox');
-                checkboxes.forEach(cb => cb.checked = this.checked);
+        function toggleCustomDates(val) {
+            const box = document.getElementById('customDateRangeInputs');
+            if (box) {
+                if (val === 'custom') {
+                    box.classList.remove('d-none');
+                } else {
+                    box.classList.add('d-none');
+                }
+            }
+        }
+
+        // Синхронизация и обновление состояния массового выбора писем
+        function updateBatchUI() {
+            const checkboxes = document.querySelectorAll('.mail-select-checkbox');
+            const checkedBoxes = document.querySelectorAll('.mail-select-checkbox:checked');
+            const totalCount = checkboxes.length;
+            const selectedCount = checkedBoxes.length;
+
+            const counterBox = document.getElementById('batchSelectedCounter');
+            const counterText = document.getElementById('selectedCountText');
+            const actionBtns = document.querySelectorAll('.batch-action-btn');
+            const headerMaster = document.getElementById('selectAllMailsHeader');
+            const toolbarMaster = document.getElementById('selectAllMailsToolbar');
+
+            if (counterBox && counterText) {
+                if (selectedCount > 0) {
+                    counterBox.classList.remove('d-none');
+                    counterBox.classList.add('d-flex');
+                    counterText.innerText = selectedCount;
+                } else {
+                    counterBox.classList.remove('d-flex');
+                    counterBox.classList.add('d-none');
+                }
+            }
+
+            actionBtns.forEach(btn => {
+                if (selectedCount > 0) {
+                    btn.removeAttribute('disabled');
+                    btn.classList.remove('disabled');
+                } else {
+                    btn.setAttribute('disabled', 'disabled');
+                    btn.classList.add('disabled');
+                }
+            });
+
+            const isAll = totalCount > 0 && selectedCount === totalCount;
+            const isIndeterminate = selectedCount > 0 && selectedCount < totalCount;
+
+            [headerMaster, toolbarMaster].forEach(cb => {
+                if (cb) {
+                    cb.checked = isAll;
+                    cb.indeterminate = isIndeterminate;
+                }
+            });
+
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                if (row) {
+                    if (cb.checked) {
+                        row.classList.add('selected-mail-row');
+                    } else {
+                        row.classList.remove('selected-mail-row');
+                    }
+                }
             });
         }
+
+        function toggleSelectAll(checked) {
+            const checkboxes = document.querySelectorAll('.mail-select-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checked;
+            });
+            updateBatchUI();
+        }
+
+        const headerMaster = document.getElementById('selectAllMailsHeader');
+        if (headerMaster) {
+            headerMaster.addEventListener('change', function() {
+                toggleSelectAll(this.checked);
+            });
+        }
+
+        const toolbarMaster = document.getElementById('selectAllMailsToolbar');
+        if (toolbarMaster) {
+            toolbarMaster.addEventListener('change', function() {
+                toggleSelectAll(this.checked);
+            });
+        }
+
+        const btnDeselectAll = document.getElementById('btnDeselectAll');
+        if (btnDeselectAll) {
+            btnDeselectAll.addEventListener('click', function() {
+                toggleSelectAll(false);
+            });
+        }
+
+        document.querySelectorAll('.mail-select-checkbox').forEach(cb => {
+            cb.addEventListener('change', updateBatchUI);
+        });
+
+        document.addEventListener('DOMContentLoaded', updateBatchUI);
 
         // Переключение важности (Flagged)
         function toggleMailFlag(folder, uid, element) {
@@ -664,7 +858,7 @@
                 <div class="modal-body p-3" style="max-height: 75vh; overflow-y: auto;">
                     <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По дате получения</div>
                     <div class="list-group list-group-flush rounded-3 border mb-3 overflow-hidden">
-                        <a href="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-calendar-event font-size-18 {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}text-white{% else %}text-primary{% endif %}"></i>
@@ -672,7 +866,7 @@
                             </span>
                             {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>
-                        <a href="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'date' and sort_dir == 'asc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-calendar-event font-size-18 {% if sort_by == 'date' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
@@ -684,7 +878,7 @@
 
                     <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">{% if show_recipient %}По получателю и теме{% else %}По автору и теме{% endif %}</div>
                     <div class="list-group list-group-flush rounded-3 border mb-3 overflow-hidden">
-                        <a href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'asc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
@@ -692,7 +886,7 @@
                             </span>
                             {% if sort_by == 'from' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>
-                        <a href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'desc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
@@ -700,7 +894,7 @@
                             </span>
                             {% if sort_by == 'from' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>
-                        <a href="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'subject' and sort_dir == 'asc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-message-square-detail font-size-18 {% if sort_by == 'subject' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
@@ -708,7 +902,7 @@
                             </span>
                             {% if sort_by == 'subject' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>
-                        <a href="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'subject' and sort_dir == 'desc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-message-square-detail font-size-18 {% if sort_by == 'subject' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
@@ -720,7 +914,7 @@
 
                     <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По размеру и статусу</div>
                     <div class="list-group list-group-flush rounded-3 border overflow-hidden">
-                        <a href="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'size' and sort_dir == 'desc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-archive font-size-18 {% if sort_by == 'size' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
@@ -728,7 +922,7 @@
                             </span>
                             {% if sort_by == 'size' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>
-                        <a href="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'flagged' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bxs-star font-size-18 {% if sort_by == 'flagged' %}text-white{% else %}text-warning{% endif %}"></i>
@@ -736,7 +930,7 @@
                             </span>
                             {% if sort_by == 'flagged' %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>
-                        <a href="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                        <a href="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'unread' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-envelope font-size-18 {% if sort_by == 'unread' %}text-white{% else %}text-primary{% endif %}"></i>

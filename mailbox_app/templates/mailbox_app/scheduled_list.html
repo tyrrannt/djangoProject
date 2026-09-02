@@ -109,19 +109,19 @@
                     <table class="mailbox-table scheduled-table">
                         <thead>
                             <tr>
-                                <th style="width: 22%; min-width: 140px; max-width: 210px;" class="ps-3">
+                                <th style="width: 24%; min-width: 130px; max-width: 220px;" class="ps-3">
                                     <span>Кому</span>
                                 </th>
-                                <th style="width: auto; min-width: 180px;">
+                                <th style="width: auto; min-width: 160px;">
                                     <span>Тема сообщения</span>
                                 </th>
-                                <th style="width: 160px; min-width: 150px;" class="text-center">
+                                <th style="width: 160px; min-width: 140px;" class="text-center">
                                     <span>Запланировано на</span>
                                 </th>
-                                <th style="width: 130px; min-width: 120px;" class="text-center">
+                                <th style="width: 130px; min-width: 110px;" class="text-center">
                                     <span>Статус</span>
                                 </th>
-                                <th style="width: 170px; min-width: 170px;" class="text-end pe-3">
+                                <th style="width: 85px; min-width: 85px; max-width: 95px;" class="text-end pe-3">
                                     <span>Действия</span>
                                 </th>
                             </tr>
@@ -229,8 +229,8 @@
                                         {% endif %}
                                     </td>
 
-                                    <!-- Кнопки действий -->
-                                    <td class="text-end pe-3 no-row-click">
+                                    <!-- Кнопки действий (компактная адаптивная группа) -->
+                                    <td class="text-end pe-3 no-row-click scheduled-actions-cell">
                                         <!-- Мобильный футер карточки (время + кнопки) -->
                                         <div class="scheduled-mobile-footer d-md-none">
                                             <div class="d-flex align-items-center gap-1 text-muted font-size-12">
@@ -241,78 +241,112 @@
                                                 <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn mailbox-action-view" title="Просмотреть письмо">
                                                     <i class="bx bx-show"></i>
                                                 </a>
-
-                                                {% if mail.can_reschedule %}
-                                                    <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-edit" title="Редактировать письмо">
-                                                        <i class="bx bx-edit"></i>
-                                                    </a>
-                                                {% endif %}
-
-                                                {% if mail.can_send_now %}
-                                                    <button type="button" class="mailbox-action-btn mailbox-action-send"
-                                                            onclick="executeMailAction('send_now', {{ mail.id }})"
-                                                            title="Отправить сейчас">
-                                                        <i class="bx bx-send"></i>
+                                                <div class="dropdown d-inline-block">
+                                                    <button type="button" class="mailbox-action-btn dropdown-toggle-no-caret" data-bs-toggle="dropdown" aria-expanded="false" title="Меню действий">
+                                                        <i class="bx bx-dots-vertical-rounded"></i>
                                                     </button>
-                                                {% endif %}
-
-                                                {% if mail.can_cancel %}
-                                                    <button type="button" class="mailbox-action-btn mailbox-action-cancel"
-                                                            onclick="executeMailAction('cancel', {{ mail.id }})"
-                                                            title="Отменить">
-                                                        <i class="bx bx-x"></i>
-                                                    </button>
-                                                {% else %}
-                                                    <button type="button" class="mailbox-action-btn mailbox-action-delete"
-                                                            onclick="executeMailAction('delete', {{ mail.id }})"
-                                                            title="Удалить">
-                                                        <i class="bx bx-trash"></i>
-                                                    </button>
-                                                {% endif %}
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="min-width: 200px; border-radius: 8px; font-size: 13px; z-index: 1060;">
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'mailbox_app:scheduled_detail' mail.id %}">
+                                                                <i class="bx bx-show text-primary font-size-16"></i> Просмотреть
+                                                            </a>
+                                                        </li>
+                                                        {% if mail.can_reschedule %}
+                                                            <li>
+                                                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'mailbox_app:scheduled_edit' mail.id %}">
+                                                                    <i class="bx bx-edit text-success font-size-16"></i> Редактировать
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                                                        onclick="openRescheduleModal({{ mail.id }}, '{{ mail.to_display|escapejs }}', '{{ mail.subject|default:"(Без темы)"|escapejs }}', '{{ mail.scheduled_at|date:'Y-m-d\TH:i' }}')">
+                                                                    <i class="bx bx-calendar-edit text-warning font-size-16"></i> Изменить время
+                                                                </button>
+                                                            </li>
+                                                        {% endif %}
+                                                        {% if mail.can_send_now %}
+                                                            <li>
+                                                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                                                        onclick="executeMailAction('send_now', {{ mail.id }})">
+                                                                    <i class="bx bx-send text-primary font-size-16"></i> Отправить сейчас
+                                                                </button>
+                                                            </li>
+                                                        {% endif %}
+                                                        <li><hr class="dropdown-divider my-1"></li>
+                                                        {% if mail.can_cancel %}
+                                                            <li>
+                                                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                                                                        onclick="executeMailAction('cancel', {{ mail.id }})">
+                                                                    <i class="bx bx-x font-size-16"></i> Отменить отправку
+                                                                </button>
+                                                            </li>
+                                                        {% else %}
+                                                            <li>
+                                                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                                                                        onclick="executeMailAction('delete', {{ mail.id }})">
+                                                                    <i class="bx bx-trash font-size-16"></i> Удалить из списка
+                                                                </button>
+                                                            </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <!-- Десктопные кнопки действий -->
-                                        <div class="d-none d-md-inline-flex align-items-center gap-1 flex-nowrap">
+                                        <!-- Десктопные кнопки действий: Быстрый просмотр + Выпадающее меню всех действий -->
+                                        <div class="d-none d-md-inline-flex align-items-center justify-content-end gap-1 flex-nowrap">
                                             <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn mailbox-action-view" title="Просмотреть письмо">
                                                 <i class="bx bx-show"></i>
                                             </a>
-
-                                            {% if mail.can_reschedule %}
-                                                <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-edit" title="Редактировать письмо">
-                                                    <i class="bx bx-edit"></i>
-                                                </a>
-                                            {% endif %}
-
-                                            {% if mail.can_send_now %}
-                                                <button type="button" class="mailbox-action-btn mailbox-action-send"
-                                                        onclick="executeMailAction('send_now', {{ mail.id }})"
-                                                        title="Отправить немедленно">
-                                                    <i class="bx bx-send"></i>
+                                            <div class="dropdown d-inline-block">
+                                                <button type="button" class="mailbox-action-btn dropdown-toggle-no-caret" data-bs-toggle="dropdown" aria-expanded="false" title="Действия с письмом">
+                                                    <i class="bx bx-dots-vertical-rounded"></i>
                                                 </button>
-                                            {% endif %}
-
-                                            {% if mail.can_reschedule %}
-                                                <button type="button" class="mailbox-action-btn mailbox-action-reschedule"
-                                                        onclick="openRescheduleModal({{ mail.id }}, '{{ mail.to_display|escapejs }}', '{{ mail.subject|default:"(Без темы)"|escapejs }}', '{{ mail.scheduled_at|date:'Y-m-d\TH:i' }}')"
-                                                        title="Перенести время отправки">
-                                                    <i class="bx bx-calendar-edit"></i>
-                                                </button>
-                                            {% endif %}
-
-                                            {% if mail.can_cancel %}
-                                                <button type="button" class="mailbox-action-btn mailbox-action-cancel"
-                                                        onclick="executeMailAction('cancel', {{ mail.id }})"
-                                                        title="Отменить запланированную отправку">
-                                                    <i class="bx bx-x"></i>
-                                                </button>
-                                            {% else %}
-                                                <button type="button" class="mailbox-action-btn mailbox-action-delete"
-                                                        onclick="executeMailAction('delete', {{ mail.id }})"
-                                                        title="Удалить из списка">
-                                                    <i class="bx bx-trash"></i>
-                                                </button>
-                                            {% endif %}
+                                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-1" style="min-width: 220px; border-radius: 8px; font-size: 13px; z-index: 1060;">
+                                                    <li>
+                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'mailbox_app:scheduled_detail' mail.id %}">
+                                                            <i class="bx bx-show text-primary font-size-16"></i> Просмотреть письмо
+                                                        </a>
+                                                    </li>
+                                                    {% if mail.can_reschedule %}
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'mailbox_app:scheduled_edit' mail.id %}">
+                                                                <i class="bx bx-edit text-success font-size-16"></i> Редактировать письмо
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                                                    onclick="openRescheduleModal({{ mail.id }}, '{{ mail.to_display|escapejs }}', '{{ mail.subject|default:"(Без темы)"|escapejs }}', '{{ mail.scheduled_at|date:'Y-m-d\TH:i' }}')">
+                                                                <i class="bx bx-calendar-edit text-warning font-size-16"></i> Изменить время
+                                                            </button>
+                                                        </li>
+                                                    {% endif %}
+                                                    {% if mail.can_send_now %}
+                                                        <li>
+                                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                                                    onclick="executeMailAction('send_now', {{ mail.id }})">
+                                                                <i class="bx bx-send text-primary font-size-16"></i> Отправить сейчас
+                                                            </button>
+                                                        </li>
+                                                    {% endif %}
+                                                    <li><hr class="dropdown-divider my-1"></li>
+                                                    {% if mail.can_cancel %}
+                                                        <li>
+                                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                                                                    onclick="executeMailAction('cancel', {{ mail.id }})">
+                                                                <i class="bx bx-x font-size-16"></i> Отменить отправку
+                                                            </button>
+                                                        </li>
+                                                    {% else %}
+                                                        <li>
+                                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                                                                    onclick="executeMailAction('delete', {{ mail.id }})">
+                                                                <i class="bx bx-trash font-size-16"></i> Удалить из списка
+                                                            </button>
+                                                        </li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
