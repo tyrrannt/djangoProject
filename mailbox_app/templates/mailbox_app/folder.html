@@ -135,18 +135,18 @@
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">По автору / теме</li>
+                            <li class="dropdown-header text-uppercase text-muted font-weight-bold" style="font-size: 11px;">{% if show_recipient %}По получателю / теме{% else %}По автору / теме{% endif %}</li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'from' and sort_dir == 'asc' %}active fw-bold{% endif %}"
                                    href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
-                                    <span><i class="bx bx-user me-2"></i> По автору (А → Я)</span>
+                                    <span><i class="bx bx-user me-2"></i> {% if show_recipient %}По получателю (А → Я){% else %}По автору (А → Я){% endif %}</span>
                                     <i class="bx bx-sort-a-z"></i>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between {% if sort_by == 'from' and sort_dir == 'desc' %}active fw-bold{% endif %}"
                                    href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
-                                    <span><i class="bx bx-user me-2"></i> По автору (Я → А)</span>
+                                    <span><i class="bx bx-user me-2"></i> {% if show_recipient %}По получателю (Я → А){% else %}По автору (Я → А){% endif %}</span>
                                     <i class="bx bx-sort-z-a"></i>
                                 </a>
                             </li>
@@ -252,29 +252,29 @@
                     {% endif %}
                 </div>
 
-                <!-- Таблица списка писем с кликабельными колонками сортировки -->
-                <div class="table-responsive">
+                <!-- Таблица списка писем с адаптивной компоновкой и кликабельными колонками -->
+                <div class="table-responsive mailbox-table-container">
                     <table class="mailbox-table">
                         <thead>
                             <tr>
-                                <th style="width: 40px;" class="ps-3">
+                                <th class="mailbox-col-check ps-3">
                                 </th>
-                                <th style="width: 36px;" class="p-0 text-center {% if sort_by == 'flagged' %}active-sort{% endif %}">
+                                <th class="mailbox-col-star p-0 text-center {% if sort_by == 'flagged' %}active-sort{% endif %}">
                                     <a href="?sort=flagged&dir={% if sort_by == 'flagged' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по важности">
                                         <i class="bx {% if sort_by == 'flagged' %}bxs-star text-warning{% else %}bx-star{% endif %}"></i>
                                     </a>
                                 </th>
-                                <th style="width: 220px;" class="{% if sort_by == 'from' %}active-sort{% endif %}">
-                                    <a href="?sort=from&dir={% if sort_by == 'from' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по автору">
-                                        <span>От кого / Кому</span>
-                                        {% if sort_by == 'from' %}
+                                <th class="mailbox-col-sender {% if sort_by == 'from' or sort_by == 'to' %}active-sort{% endif %}">
+                                    <a href="?sort=from&dir={% if sort_by == 'from' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="{% if show_recipient %}Сортировка по получателю{% else %}Сортировка по автору{% endif %}">
+                                        <span>{% if show_recipient %}Кому{% else %}От кого{% endif %}</span>
+                                        {% if sort_by == 'from' or sort_by == 'to' %}
                                             <i class="bx {% if sort_dir == 'asc' %}bx-sort-up text-primary{% else %}bx-sort-down text-primary{% endif %}"></i>
                                         {% else %}
                                             <i class="bx bx-sort-alt-2 opacity-50 font-size-12"></i>
                                         {% endif %}
                                     </a>
                                 </th>
-                                <th class="{% if sort_by == 'subject' %}active-sort{% endif %}">
+                                <th class="mailbox-col-subject {% if sort_by == 'subject' %}active-sort{% endif %}">
                                     <a href="?sort=subject&dir={% if sort_by == 'subject' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по теме">
                                         <span>Тема сообщения</span>
                                         {% if sort_by == 'subject' %}
@@ -284,7 +284,7 @@
                                         {% endif %}
                                     </a>
                                 </th>
-                                <th style="width: 90px;" class="text-end mailbox-hide-mobile {% if sort_by == 'size' %}active-sort{% endif %}">
+                                <th class="mailbox-col-size text-end d-none d-xl-table-cell {% if sort_by == 'size' %}active-sort{% endif %}">
                                     <a href="?sort=size&dir={% if sort_by == 'size' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по размеру">
                                         <span>Размер</span>
                                         {% if sort_by == 'size' %}
@@ -294,7 +294,7 @@
                                         {% endif %}
                                     </a>
                                 </th>
-                                <th style="width: 140px;" class="text-end pe-3 mailbox-hide-mobile {% if sort_by == 'date' %}active-sort{% endif %}">
+                                <th class="mailbox-col-date text-end pe-3 {% if sort_by == 'date' %}active-sort{% endif %}">
                                     <a href="?sort=date&dir={% if sort_by == 'date' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" title="Сортировка по дате">
                                         <span>Дата</span>
                                         {% if sort_by == 'date' %}
@@ -312,47 +312,52 @@
                                     onclick="if(!event.target.closest('.no-row-click')) { window.location='{% url 'mailbox_app:email_detail' current_folder msg.uid %}'; }">
                                     
                                     <!-- Чекбокс -->
-                                    <td style="width: 40px;" class="ps-3 no-row-click">
+                                    <td class="mailbox-col-check ps-3 no-row-click">
                                         <div class="form-check m-0">
-                                            <input type="checkbox" class="form-check-input mail-select-checkbox" value="{{ msg.uid }}">
+                                            <input type="checkbox" class="form-check-input mail-select-checkbox" value="{{ msg.uid }}" aria-label="Выбрать письмо">
                                         </div>
                                     </td>
 
                                     <!-- Звездочка (Важное) -->
-                                    <td style="width: 36px;" class="p-0 text-center no-row-click">
+                                    <td class="mailbox-col-star p-0 text-center no-row-click">
                                         <i class="bx {% if msg.is_flagged %}bxs-star mail-star active{% else %}bx-star mail-star{% endif %}"
                                            onclick="toggleMailFlag('{{ current_folder }}', {{ msg.uid }}, this)"
                                            title="Отметить как важное"></i>
                                     </td>
 
-                                    <!-- Отправитель -->
-                                    <td style="width: 220px; max-width: 220px;" class="text-truncate">
-                                        <span class="mail-sender text-truncate d-block">
-                                            {{ msg.from_name }}
+                                    <!-- Отправитель или Получатель -->
+                                    <td class="mailbox-sender-cell">
+                                        <span class="mail-sender text-truncate d-block" title="{% if show_recipient %}{{ msg.to_display|default:msg.to_name|default:msg.to_raw }}{% else %}{{ msg.from_name }}{% endif %}">
+                                            {% if show_recipient %}
+                                                <i class="bx bx-share font-size-12 text-muted me-1 d-none d-md-inline" title="Кому"></i>{{ msg.to_display|default:msg.to_name|default:msg.to_raw|default:"Без получателя" }}
+                                            {% else %}
+                                                {{ msg.from_name }}
+                                            {% endif %}
                                         </span>
                                     </td>
 
                                     <!-- Тема письма -->
-                                    <td class="mailbox-subject-cell text-truncate">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <span class="mail-subject text-truncate">
+                                    <td class="mailbox-subject-cell">
+                                        <div class="mail-subject-wrap">
+                                            <span class="mail-subject" title="{{ msg.subject }}">
                                                 {{ msg.subject }}
                                             </span>
                                             {% if msg.has_attachments %}
-                                                <i class="bx bx-paperclip text-muted ms-2 flex-shrink-0" style="font-size: 16px;" title="Письмо содержит вложенные файлы"></i>
+                                                <i class="bx bx-paperclip mail-attach-icon" title="Письмо содержит вложенные файлы"></i>
                                             {% endif %}
                                         </div>
                                     </td>
 
-                                    <!-- Размер -->
-                                    <td style="width: 90px;" class="mail-size mailbox-hide-mobile">
+                                    <!-- Размер (скрыт на экранах < 1200px для экономии места) -->
+                                    <td class="mail-size mailbox-col-size text-end d-none d-xl-table-cell">
                                         {{ msg.size_human|default:"-" }}
                                     </td>
 
                                     <!-- Дата -->
-                                    <td style="width: 140px;" class="mail-date pe-3 mailbox-hide-mobile">
+                                    <td class="mail-date mailbox-col-date pe-3 text-end">
                                         {% if msg.date %}
-                                            {{ msg.date|date:"d.m.Y H:i" }}
+                                            <span class="d-none d-xxl-inline">{{ msg.date|date:"d.m.Y H:i" }}</span>
+                                            <span class="d-xxl-none">{{ msg.date|date:"d.m.y H:i" }}</span>
                                         {% else %}
                                             {{ msg.date_raw|slice:":16" }}
                                         {% endif %}
@@ -622,13 +627,13 @@
                         </a>
                     </div>
 
-                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По автору и теме</div>
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">{% if show_recipient %}По получателю и теме{% else %}По автору и теме{% endif %}</div>
                     <div class="list-group list-group-flush rounded-3 border mb-3 overflow-hidden">
                         <a href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'asc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
-                                <span>По автору (А → Я)</span>
+                                <span>{% if show_recipient %}По получателю (А → Я){% else %}По автору (А → Я){% endif %}</span>
                             </span>
                             {% if sort_by == 'from' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>
@@ -636,7 +641,7 @@
                            class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'desc' %}active fw-bold{% endif %}">
                             <span class="d-flex align-items-center gap-2">
                                 <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
-                                <span>По автору (Я → А)</span>
+                                <span>{% if show_recipient %}По получателю (Я → А){% else %}По автору (Я → А){% endif %}</span>
                             </span>
                             {% if sort_by == 'from' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
                         </a>

@@ -1,7 +1,7 @@
 import base64
 import email
 from email.header import decode_header
-from email.utils import parseaddr, parsedate_to_datetime
+from email.utils import getaddresses, parseaddr, parsedate_to_datetime
 import imaplib
 import logging
 import re
@@ -388,7 +388,7 @@ class ImapMailService:
         email_clean = (self.email_addr or "").strip().lower()
         ver_key = f"mailbox_ver_{email_clean}"
         cache_ver = cache.get(ver_key) or 1
-        cache_key = f"mailbox_msgs_{email_clean}_{cache_ver}_{folder_name}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{query or ''}"
+        cache_key = f"mailbox_msgs_v2_{email_clean}_{cache_ver}_{folder_name}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{query or ''}"
 
         if not force_refresh and email_clean:
             cached_data = cache.get(cache_key)
@@ -586,6 +586,7 @@ class ImapMailService:
                     msg_obj = email.message_from_bytes(raw_headers)
                     subject = decode_str(msg_obj.get("Subject")) or "(Без темы)"
                     from_raw = decode_str(msg_obj.get("From")) or ""
+                    to_raw = decode_str(msg_obj.get("To")) or ""
                     date_raw = msg_obj.get("Date") or ""
                     content_type_raw = str(msg_obj.get("Content-Type") or "").lower()
 
@@ -597,6 +598,28 @@ class ImapMailService:
                     from_name, from_email = parseaddr(from_raw)
                     if not from_name:
                         from_name = from_email or from_raw or "Без отправителя"
+
+                    # Извлечение и парсинг списка адресатов (Кому / To)
+                    recipients = getaddresses([to_raw])
+                    to_display_list = []
+                    for r_name, r_email in recipients:
+                        r_name_clean = r_name.strip()
+                        r_email_clean = r_email.strip()
+                        if r_name_clean:
+                            to_display_list.append(r_name_clean)
+                        elif r_email_clean:
+                            to_display_list.append(r_email_clean)
+
+                    if to_display_list:
+                        to_display = ", ".join(to_display_list)
+                    elif to_raw.strip():
+                        to_display = to_raw.strip()
+                    else:
+                        to_display = "Без получателя"
+
+                    to_name, to_email = parseaddr(to_raw)
+                    if not to_name:
+                        to_name = to_email or to_display
 
                     parsed_date = None
                     if date_raw:
@@ -612,6 +635,10 @@ class ImapMailService:
                         "subject": subject,
                         "from_name": from_name,
                         "from_email": from_email,
+                        "to_name": to_name,
+                        "to_email": to_email,
+                        "to_raw": to_raw,
+                        "to_display": to_display,
                         "date": parsed_date,
                         "date_raw": date_raw or (parsed_date.strftime("%d.%m.%Y %H:%M") if parsed_date else ""),
                         "is_seen": is_seen,
@@ -626,9 +653,15 @@ class ImapMailService:
         # Формируем итоговый список в точном порядке UIDs страницы
         messages = [messages_by_uid[u] for u in uids_ints if u in messages_by_uid]
 
-        # In-Memory сверхбыстрая сортировка для кастомных полей (отправитель, тема, размер)
+        # In-Memory сверхбыстрая сортировка для кастомных полей (отправитель/получатель, тема, размер)
+        is_sent_or_drafts = any(s in folder_name.lower() for s in ("sent", "отправленн", "draft", "черновик"))
         if sort_by == "from":
-            messages.sort(key=lambda m: (m["from_name"] or "").lower(), reverse=(sort_dir == "desc"))
+            if is_sent_or_drafts:
+                messages.sort(key=lambda m: (m.get("to_display") or m.get("to_name") or "").lower(), reverse=(sort_dir == "desc"))
+            else:
+                messages.sort(key=lambda m: (m.get("from_name") or "").lower(), reverse=(sort_dir == "desc"))
+        elif sort_by == "to":
+            messages.sort(key=lambda m: (m.get("to_display") or m.get("to_name") or "").lower(), reverse=(sort_dir == "desc"))
         elif sort_by == "subject":
             messages.sort(key=lambda m: (m["subject"] or "").lower(), reverse=(sort_dir == "desc"))
         elif sort_by == "size":

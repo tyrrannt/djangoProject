@@ -118,7 +118,7 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
                 ver_key = f"mailbox_ver_{email_clean}"
                 cache_ver = cache.get(ver_key) or 1
                 cache_key_folders = f"mailbox_folders_{email_clean}"
-                cache_key_msgs = f"mailbox_msgs_{email_clean}_{cache_ver}_{current_folder}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{search_query}"
+                cache_key_msgs = f"mailbox_msgs_v2_{email_clean}_{cache_ver}_{current_folder}_{page}_{per_page}_{sort_by}_{sort_dir}_{filter_by}_{search_query}"
 
                 cached_folders = cache.get(cache_key_folders) if not force_refresh else None
                 cached_msgs_data = cache.get(cache_key_msgs) if not force_refresh else None
@@ -160,11 +160,27 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
                 break
         is_junk = current_type in ("junk", "spam") or any(s in current_folder.lower() for s in ("junk", "спам", "spam"))
 
+        cf_lower = current_folder.lower()
+        is_sent = (
+            current_type == "sent"
+            or any(f.get("raw_name") == current_folder and f.get("root_type") == "sent" for f in folders)
+            or any(s in cf_lower for s in ("sent", "отправленн"))
+        )
+        is_drafts = (
+            current_type == "drafts"
+            or any(f.get("raw_name") == current_folder and f.get("root_type") == "drafts" for f in folders)
+            or any(s in cf_lower for s in ("draft", "черновик"))
+        )
+        show_recipient = is_sent or is_drafts
+
+        recipient_label = "получателю" if show_recipient else "автору"
         sort_labels = {
             ("date", "desc"): "По дате (сначала новые)",
             ("date", "asc"): "По дате (сначала старые)",
-            ("from", "asc"): "По автору (А → Я)",
-            ("from", "desc"): "По автору (Я → А)",
+            ("from", "asc"): f"По {recipient_label} (А → Я)",
+            ("from", "desc"): f"По {recipient_label} (Я → А)",
+            ("to", "asc"): "По получателю (А → Я)",
+            ("to", "desc"): "По получателю (Я → А)",
             ("subject", "asc"): "По теме (А → Я)",
             ("subject", "desc"): "По теме (Я → А)",
             ("size", "desc"): "По размеру (убывание)",
@@ -197,6 +213,9 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
             "current_folder_display": current_folder_display,
             "current_folder_type": current_type,
             "is_junk": is_junk,
+            "is_sent": is_sent,
+            "is_drafts": is_drafts,
+            "show_recipient": show_recipient,
             "sort_by": sort_by,
             "sort_dir": sort_dir,
             "filter_by": filter_by,
@@ -256,6 +275,19 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
                 break
         is_junk = current_type in ("junk", "spam") or any(s in folder_name.lower() for s in ("junk", "спам", "spam"))
 
+        fn_lower = folder_name.lower()
+        is_sent = (
+            current_type == "sent"
+            or any(f.get("raw_name") == folder_name and f.get("root_type") == "sent" for f in folders)
+            or any(s in fn_lower for s in ("sent", "отправленн"))
+        )
+        is_drafts = (
+            current_type == "drafts"
+            or any(f.get("raw_name") == folder_name and f.get("root_type") == "drafts" for f in folders)
+            or any(s in fn_lower for s in ("draft", "черновик"))
+        )
+        show_recipient = is_sent or is_drafts
+
         context.update({
             "title": "КОРПОРАТИВНАЯ ПОЧТА",
             "breadcrumbs": [
@@ -269,6 +301,9 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
             "current_folder_display": current_folder_display,
             "current_folder_type": current_type,
             "is_junk": is_junk,
+            "is_sent": is_sent,
+            "is_drafts": is_drafts,
+            "show_recipient": show_recipient,
             "email": email_data,
             "error_message": error_message,
         })

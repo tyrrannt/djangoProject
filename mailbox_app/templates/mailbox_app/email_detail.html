@@ -76,14 +76,24 @@
                     <!-- Тема письма -->
                     <h3 class="mailbox-detail-subject">{{ email.subject|default:"(Без темы)" }}</h3>
 
-                    <!-- Карточка отправителя -->
+                    <!-- Карточка отправителя / получателя -->
                     <div class="mailbox-sender-box">
                         <div class="mailbox-avatar">
-                            {{ email.from_name|default:"?"|first|upper }}
+                            {% if show_recipient and email.to_raw %}
+                                {{ email.to_raw|first|upper }}
+                            {% else %}
+                                {{ email.from_name|default:"?"|first|upper }}
+                            {% endif %}
                         </div>
                         <div class="mailbox-sender-info">
                             <div class="mailbox-sender-header">
-                                <span class="mailbox-sender-name">{{ email.from_name|default:"Без отправителя" }}</span>
+                                <span class="mailbox-sender-name">
+                                    {% if show_recipient and email.to_raw %}
+                                        Кому: {{ email.to_raw }}
+                                    {% else %}
+                                        {{ email.from_name|default:"Без отправителя" }}
+                                    {% endif %}
+                                </span>
                                 <span class="mailbox-sender-date">
                                     {% if email.date %}
                                         <i class="bx bx-time-five me-1"></i>{{ email.date|date:"d E Y, H:i" }}
@@ -93,8 +103,13 @@
                                 </span>
                             </div>
                             <div class="mailbox-sender-meta">
-                                <div><b>От:</b> &lt;{{ email.from_email }}&gt;</div>
-                                {% if email.to_raw %}<div><b>Кому:</b> {{ email.to_raw }}</div>{% endif %}
+                                {% if show_recipient %}
+                                    {% if email.to_raw %}<div><b>Кому:</b> {{ email.to_raw }}</div>{% endif %}
+                                    <div><b>От:</b> &lt;{{ email.from_email }}&gt;</div>
+                                {% else %}
+                                    <div><b>От:</b> &lt;{{ email.from_email }}&gt;</div>
+                                    {% if email.to_raw %}<div><b>Кому:</b> {{ email.to_raw }}</div>{% endif %}
+                                {% endif %}
                                 {% if email.cc_raw %}<div><b>Копия:</b> {{ email.cc_raw }}</div>{% endif %}
                             </div>
                         </div>
