@@ -26,19 +26,29 @@
             <!-- Форма написания письма -->
             <div class="inner-body mailbox-compose">
                 <div class="mailbox-compose-container">
-                    <header class="mailbox-compose-header">
+                    <header class="mailbox-compose-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
                             <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
                                     data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
                                 <i class="bx bx-folder-open font-size-18"></i>
                             </button>
-                            <h4 class="mailbox-page-title m-0">
+                            <h4 class="mailbox-page-title m-0 fw-bold text-dark font-size-17">
                                 <i class="bx bx-edit text-primary d-none d-sm-inline"></i> <span>Новое сообщение</span>
                             </h4>
                         </div>
-                        <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                            <i class="bx bx-x font-size-16"></i> <span class="d-none d-sm-inline">Отмена</span>
-                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Индикатор статуса черновика -->
+                            <div id="draftStatusBadge" class="text-muted small d-none align-items-center gap-1 font-size-12 me-1">
+                                <i class="bx bx-check-circle text-success font-size-15" id="draftStatusIcon"></i>
+                                <span id="draftStatusText">Черновик сохранен</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm" id="btnManualSaveDraft" title="Сохранить в папку «Черновики»">
+                                <i class="bx bx-save font-size-16"></i> <span class="d-none d-sm-inline">Сохранить черновик</span>
+                            </button>
+                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm" id="btnCancelCompose">
+                                <i class="bx bx-x font-size-16"></i> <span class="d-none d-sm-inline">Отмена</span>
+                            </a>
+                        </div>
                     </header>
 
                     {% if form.errors %}
@@ -51,6 +61,7 @@
                         {% csrf_token %}
                         {{ form.send_mode }}
                         {{ form.scheduled_at }}
+                        <input type="hidden" name="draft_uid" id="draftUidInput" value="{{ draft_uid|default:'' }}">
 
                         <!-- Поле Кому -->
                         <div class="mailbox-form-row position-relative">
@@ -67,15 +78,15 @@
                             <div id="contactAutocompleteList" class="contact-autocomplete-box"></div>
                         </div>
 
-                        <!-- Поле Копия (Скрыто по умолчанию) -->
-                        <div class="mailbox-form-row position-relative" id="ccRow" style="display: none;">
+                        <!-- Поле Копия -->
+                        <div class="mailbox-form-row position-relative" id="ccRow" style="{% if not form.cc.value %}display: none;{% endif %}">
                             <label>Копия:</label>
                             {{ form.cc }}
                             <div id="contactAutocompleteListCc" class="contact-autocomplete-box"></div>
                         </div>
 
-                        <!-- Поле Скрытая копия (Скрыто по умолчанию) -->
-                        <div class="mailbox-form-row position-relative" id="bccRow" style="display: none;">
+                        <!-- Поле Скрытая копия -->
+                        <div class="mailbox-form-row position-relative" id="bccRow" style="{% if not form.bcc.value %}display: none;{% endif %}">
                             <label>Скрытая копия:</label>
                             {{ form.bcc }}
                             <div id="contactAutocompleteListBcc" class="contact-autocomplete-box"></div>
@@ -521,6 +532,137 @@
             if (btnResetScheduled) {
                 btnResetScheduled.addEventListener('click', function() {
                     resetToImmediateSend();
+                });
+            }
+
+            // === Автосохранение и управление черновиками ===
+            let isFormDirty = false;
+            let isSubmitting = false;
+            const draftUidInput = document.getElementById('draftUidInput');
+            const draftStatusBadge = document.getElementById('draftStatusBadge');
+            const draftStatusIcon = document.getElementById('draftStatusIcon');
+            const draftStatusText = document.getElementById('draftStatusText');
+            const btnManualSaveDraft = document.getElementById('btnManualSaveDraft');
+            const recipientInput = document.getElementById('mailRecipientInput');
+            const ccInput = document.getElementById('id_cc');
+            const bccInput = document.getElementById('id_bcc');
+            const subjectInput = document.getElementById('id_subject');
+
+            function markDirty() {
+                isFormDirty = true;
+            }
+
+            if (recipientInput) recipientInput.addEventListener('input', markDirty);
+            if (ccInput) ccInput.addEventListener('input', markDirty);
+            if (bccInput) bccInput.addEventListener('input', markDirty);
+            if (subjectInput) subjectInput.addEventListener('input', markDirty);
+
+            $('#id_body_html').on('summernote.change', function() {
+                isFormDirty = true;
+            });
+
+            function saveDraft(isManual = false) {
+                if (isSubmitting) return;
+
+                const toVal = recipientInput ? recipientInput.value.trim() : '';
+                const ccVal = ccInput ? ccInput.value.trim() : '';
+                const bccVal = bccInput ? bccInput.value.trim() : '';
+                const subjVal = subjectInput ? subjectInput.value.trim() : '';
+                const bodyVal = $('#id_body_html').summernote('code');
+                const plainBody = $('<div>').html(bodyVal).text().trim();
+
+                if (!toVal && !subjVal && !plainBody) {
+                    if (isManual) alert('Форма пуста — нечего сохранять в черновики.');
+                    return;
+                }
+
+                if (draftStatusBadge && draftStatusText && draftStatusIcon) {
+                    draftStatusBadge.classList.remove('d-none');
+                    draftStatusBadge.classList.add('d-flex');
+                    draftStatusIcon.className = 'spinner-border spinner-border-sm text-primary font-size-10';
+                    draftStatusText.textContent = 'Сохранение...';
+                }
+
+                fetch("{% url 'mailbox_app:api_save_draft' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        to: toVal,
+                        cc: ccVal,
+                        bcc: bccVal,
+                        subject: subjVal,
+                        body_html: bodyVal,
+                        draft_uid: draftUidInput ? draftUidInput.value : ''
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.draft_uid && draftUidInput) {
+                            draftUidInput.value = data.draft_uid;
+                        }
+                        isFormDirty = false;
+                        if (draftStatusBadge && draftStatusText && draftStatusIcon) {
+                            draftStatusIcon.className = 'bx bx-check-circle text-success font-size-15';
+                            draftStatusText.textContent = 'Черновик сохранен в ' + (data.saved_at || '');
+                        }
+                        if (isManual && btnManualSaveDraft) {
+                            btnManualSaveDraft.classList.add('btn-success');
+                            btnManualSaveDraft.classList.remove('btn-outline-secondary');
+                            setTimeout(() => {
+                                btnManualSaveDraft.classList.remove('btn-success');
+                                btnManualSaveDraft.classList.add('btn-outline-secondary');
+                            }, 1500);
+                        }
+                    } else {
+                        if (draftStatusText) draftStatusText.textContent = 'Ошибка автосохранения';
+                    }
+                })
+                .catch(err => {
+                    if (draftStatusText) draftStatusText.textContent = 'Сбой сети';
+                });
+            }
+
+            if (btnManualSaveDraft) {
+                btnManualSaveDraft.addEventListener('click', function() {
+                    saveDraft(true);
+                });
+            }
+
+            setInterval(function() {
+                if (isFormDirty && !isSubmitting) {
+                    saveDraft(false);
+                }
+            }, 30000);
+
+            window.addEventListener('beforeunload', function(e) {
+                if (isFormDirty && !isSubmitting) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
+            const composeMailForm = document.getElementById('composeMailForm');
+            if (composeMailForm) {
+                composeMailForm.addEventListener('submit', function() {
+                    isSubmitting = true;
+                    isFormDirty = false;
+                });
+            }
+
+            const btnCancelCompose = document.getElementById('btnCancelCompose');
+            if (btnCancelCompose) {
+                btnCancelCompose.addEventListener('click', function(e) {
+                    if (isFormDirty) {
+                        if (!confirm('У вас есть несохраненные изменения. Закрыть форму?')) {
+                            e.preventDefault();
+                        } else {
+                            isFormDirty = false;
+                        }
+                    }
                 });
             }
         });

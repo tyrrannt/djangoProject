@@ -48,6 +48,31 @@
                             <a href="{% url 'mailbox_app:compose' %}?forward_uid={{ email.uid }}&folder={{ current_folder }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
                                 <i class="bx bx-share font-size-16"></i> <span class="d-none d-sm-inline">Переслать</span>
                             </a>
+
+                            <!-- Перемещение в другую папку -->
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none" data-bs-toggle="dropdown" aria-expanded="false" title="Переместить письмо в другую папку">
+                                    <i class="bx bx-folder font-size-16"></i> <span class="d-none d-sm-inline">Переместить</span>
+                                </button>
+                                <ul class="dropdown-menu shadow border-0 py-2 mt-1" style="border-radius: 10px; min-width: 220px; max-height: 320px; overflow-y: auto; z-index: 1050;">
+                                    <li class="dropdown-header text-uppercase text-muted" style="font-size: 11px;">Выберите папку:</li>
+                                    {% for f in folders %}
+                                        {% if f.raw_name != current_folder %}
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 cursor-pointer" onclick="moveCurrentEmail('{{ f.raw_name|escapejs }}')">
+                                                    <i class="{{ f.icon }} font-size-16 text-muted"></i>
+                                                    <span class="text-truncate">{{ f.full_path_display|default:f.display_name }}</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+
+                            <!-- Кнопка печати -->
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="window.print()" title="Распечатать официальную версию письма">
+                                <i class="bx bx-printer font-size-16"></i> <span class="d-none d-sm-inline">Печать</span>
+                            </button>
                         </div>
 
                         <div>
@@ -72,6 +97,20 @@
                             </button>
                         </div>
                     {% endif %}
+
+                    <!-- Официальный служебный бланк для печати (виден только при печати) -->
+                    <div class="print-official-header d-none">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                            <div>
+                                <div class="h5 fw-bold text-uppercase mb-1" style="color: #0088cc; letter-spacing: 0.5px;">АВИАПРЕДПРИЯТИЕ «БАРКОЛ»</div>
+                                <div class="text-muted small">Корпоративная система электронной почты</div>
+                            </div>
+                            <div class="text-end text-muted small">
+                                <div class="fw-semibold text-dark">Служебная печатная копия сообщения</div>
+                                <div>Дата печати: {% now "d.m.Y H:i" %} (МСК)</div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Тема письма -->
                     <h3 class="mailbox-detail-subject">{{ email.subject|default:"(Без темы)" }}</h3>
@@ -162,13 +201,13 @@
                                                 </div>
                                             </div>
                                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                                {% if att.is_image %}
-                                                    <a href="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1"
-                                                       target="_blank"
-                                                       class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                                                       title="Открыть изображение">
+                                                {% if att.is_image or att.filename|lower|slice:"-4:" == ".pdf" %}
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 shadow-none"
+                                                            onclick="openAttachmentPreview('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1', '{{ att.filename|escapejs }}', {% if att.filename|lower|slice:'-4:' == '.pdf' %}true{% else %}false{% endif %})"
+                                                            title="Предпросмотр файла в браузере">
                                                         <i class="bx bx-show"></i> <span class="d-none d-md-inline">Просмотр</span>
-                                                    </a>
+                                                    </button>
                                                 {% endif %}
                                                 <a href="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}"
                                                    class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
@@ -246,11 +285,127 @@
                 </div>
             </div>
         </div>
+    <!-- Модальное окно предпросмотра документов и PDF прямо в браузере -->
+    <div class="modal fade" id="previewAttachmentModal" tabindex="-1" aria-labelledby="previewAttachmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden; height: 86vh;">
+                <div class="modal-header bg-light py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                        <i class="bx bx-file text-primary font-size-22" id="previewFileIcon"></i>
+                        <h6 class="modal-title font-weight-semibold text-dark m-0 text-truncate" id="previewFileName">Предпросмотр документа</h6>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm font-size-12">
+                            <i class="bx bx-download"></i> <span>Скачать</span>
+                        </a>
+                        <a href="#" id="previewExternalBtn" target="_blank" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none font-size-12" title="Открыть в отдельной вкладке">
+                            <i class="bx bx-window-open"></i> <span class="d-none d-sm-inline">В новой вкладке</span>
+                        </a>
+                        <button type="button" class="btn-close shadow-none ms-1" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-0 d-flex align-items-center justify-content-center bg-dark position-relative" style="height: calc(86vh - 54px); overflow: hidden;">
+                    <div id="previewLoader" class="text-white text-center position-absolute" style="z-index: 10;">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Загрузка документа...
+                    </div>
+                    <iframe id="previewIframe" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                    <img id="previewImg" src="" alt="Предпросмотр" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;" />
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
 {% block custom_script %}
     <script>
+        function openAttachmentPreview(url, filename, isPdf) {
+            const modalEl = document.getElementById('previewAttachmentModal');
+            const iframe = document.getElementById('previewIframe');
+            const img = document.getElementById('previewImg');
+            const loader = document.getElementById('previewLoader');
+            const title = document.getElementById('previewFileName');
+            const icon = document.getElementById('previewFileIcon');
+            const downloadBtn = document.getElementById('previewDownloadBtn');
+            const externalBtn = document.getElementById('previewExternalBtn');
+
+            if (title) title.textContent = filename;
+            if (downloadBtn) {
+                // Скачивание без inline=1
+                downloadBtn.href = url.replace('?inline=1', '');
+            }
+            if (externalBtn) externalBtn.href = url;
+
+            if (loader) loader.style.display = 'block';
+
+            if (isPdf) {
+                if (icon) icon.className = 'bx bxs-file-pdf text-danger font-size-22';
+                if (img) img.style.display = 'none';
+                if (iframe) {
+                    iframe.style.display = 'block';
+                    iframe.onload = function() {
+                        if (loader) loader.style.display = 'none';
+                    };
+                    iframe.src = url;
+                }
+            } else {
+                if (icon) icon.className = 'bx bx-image text-success font-size-22';
+                if (iframe) {
+                    iframe.style.display = 'none';
+                    iframe.src = '';
+                }
+                if (img) {
+                    img.onload = function() {
+                        if (loader) loader.style.display = 'none';
+                        img.style.display = 'block';
+                    };
+                    img.src = url;
+                }
+            }
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            // Очистка при закрытии
+            modalEl.addEventListener('hidden.bs.modal', function onHidden() {
+                if (iframe) iframe.src = '';
+                if (img) {
+                    img.src = '';
+                    img.style.display = 'none';
+                }
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+            });
+        }
+
+        function moveCurrentEmail(targetFolder) {
+            if (!targetFolder) return;
+
+            fetch("{% url 'mailbox_app:api_action' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: 'move',
+                    folder: '{{ current_folder }}',
+                    target_folder: targetFolder,
+                    uids: [{{ email.uid }}]
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok' || data.success) {
+                    window.location.href = "{% url 'mailbox_app:folder' current_folder %}";
+                } else {
+                    showWarningModal('Ошибка перемещения', data.error || 'Не удалось переместить письмо');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showWarningModal('Ошибка сети', 'Сетевая ошибка при перемещении письма');
+            });
+        }
+
         function showWarningModal(title, text) {
             if (title) document.getElementById('warningModalTitle').innerText = title;
             if (text) document.getElementById('warningModalDesc').innerText = text;

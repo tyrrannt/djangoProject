@@ -309,6 +309,9 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
             or any(f.get("raw_name") == folder_name and f.get("root_type") == "drafts" for f in folders)
             or any(s in fn_lower for s in ("draft", "черновик"))
         )
+        if is_drafts and email_data:
+            return redirect(f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}")
+
         show_recipient = is_sent or is_drafts
 
         context.update({
@@ -364,6 +367,21 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
                 signature = signature.replace("\n", "<br>")
             initial["body_html"] = f"<br><br>--<br>{signature}"
 
+        draft_uid = self.request.GET.get("draft_uid")
+        if draft_uid and str(draft_uid).isdigit():
+            try:
+                target_uid = int(draft_uid)
+                with self.get_imap_service(account) as imap_svc:
+                    draft_mail = imap_svc.get_message_detail(folder, target_uid)
+                    if draft_mail:
+                        initial["to"] = draft_mail.get("to_raw") or ""
+                        initial["cc"] = draft_mail.get("cc_raw") or ""
+                        initial["bcc"] = draft_mail.get("bcc_raw") or ""
+                        initial["subject"] = draft_mail.get("subject") or ""
+                        initial["body_html"] = draft_mail.get("body_html") or draft_mail.get("body_text") or ""
+            except Exception as e:
+                logger.warning(f"[Mailbox] Ошибка загрузки черновика: {e}")
+
         if reply_uid or forward_uid:
             target_uid = int(reply_uid or forward_uid)
             try:
@@ -396,7 +414,7 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         return initial
 
     def get_context_data(self, **kwargs):
-        """Добавляет список папок в контекст формы написания письма.
+        """Добавляет список папок и draft_uid в контекст формы написания письма.
 
         Returns:
             dict: Контекст шаблона.
@@ -420,6 +438,7 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
             "folders": folders,
             "current_folder": "compose",
             "scheduled_count": self.get_scheduled_count(),
+            "draft_uid": self.request.GET.get("draft_uid", ""),
         })
         return context
 
@@ -440,6 +459,7 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         body_html = form.cleaned_data.get("body_html", "")
         send_mode = form.cleaned_data.get("send_mode") or "now"
         scheduled_at = form.cleaned_data.get("scheduled_at")
+        draft_uid_val = self.request.POST.get("draft_uid")
 
         # Если выбрана отправка по расписанию
         if send_mode == "scheduled" and scheduled_at:
@@ -459,6 +479,13 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
                     bcc_recipients=bcc_raw,
                     uploaded_files=uploaded_files,
                 )
+                if draft_uid_val and str(draft_uid_val).isdigit():
+                    try:
+                        with self.get_imap_service(account) as imap_svc:
+                            imap_svc.delete_draft(int(draft_uid_val))
+                    except Exception as d_err:
+                        logger.debug(f"[Mailbox] Ошибка удаления черновика: {d_err}")
+
                 messages.success(
                     self.request,
                     f"Письмо «{subject}» успешно запланировано к отправке на {scheduled_at:%d.%m.%Y %H:%M} (МСК)!",
@@ -502,6 +529,14 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
                 attachments=attachments,
             )
 
+            # Если ранее был сохранен черновик — удаляем его из папки черновиков
+            if draft_uid_val and str(draft_uid_val).isdigit():
+                try:
+                    with self.get_imap_service(account) as imap_svc:
+                        imap_svc.delete_draft(int(draft_uid_val))
+                except Exception as d_err:
+                    logger.debug(f"[Mailbox] Ошибка удаления черновика после отправки: {d_err}")
+
             # Автоматическое сохранение контактов в адресную книгу
             try:
                 from email.utils import getaddresses
@@ -531,8 +566,59 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
             return self.form_invalid(form)
 
 
+class MailboxSaveDraftAPIView(MailboxBaseMixin, View):
+    """AJAX API для автосохранения и ручного сохранения черновиков на IMAP сервере."""
+
+    def post(self, request):
+        """Сохраняет черновик в папку Черновики и возвращает UID.
+
+        Returns:
+            JsonResponse: Результат операции и UID сохраненного черновика.
+        """
+        account = self.get_account()
+        if not account or not account.email or not account.get_password():
+            return JsonResponse({"success": False, "error": "Аккаунт не настроен."}, status=400)
+
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except Exception:
+            data = request.POST
+
+        to_recipients = data.get("to", "").strip()
+        cc_recipients = data.get("cc", "").strip()
+        bcc_recipients = data.get("bcc", "").strip()
+        subject = data.get("subject", "").strip()
+        body_html = data.get("body_html", "")
+        old_draft_uid = data.get("draft_uid")
+        old_uid_int = int(old_draft_uid) if old_draft_uid and str(old_draft_uid).isdigit() else None
+
+        if not to_recipients and not subject and not body_html:
+            return JsonResponse({"success": True, "draft_uid": old_uid_int, "empty": True})
+
+        try:
+            with self.get_imap_service(account) as imap_svc:
+                new_uid = imap_svc.save_draft(
+                    to_recipients=to_recipients,
+                    subject=subject,
+                    body_html=body_html,
+                    cc_recipients=cc_recipients,
+                    bcc_recipients=bcc_recipients,
+                    old_draft_uid=old_uid_int,
+                )
+            from django.utils import timezone
+            saved_time_str = timezone.now().strftime("%H:%M:%S")
+            return JsonResponse({
+                "success": True,
+                "draft_uid": new_uid,
+                "saved_at": saved_time_str,
+            })
+        except Exception as e:
+            logger.error(f"[Mailbox] Ошибка сохранения черновика: {e}")
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
 class MailboxAttachmentDownloadView(MailboxBaseMixin, View):
-    """Представление для безопасного скачивания файла-вложения."""
+    """Представление для безопасного скачивания или инлайн-просмотра файла-вложения."""
 
     def get(self, request, folder, uid, part_index):
         """Извлекает вложение из письма и отдает бинарным потоком.
@@ -567,7 +653,7 @@ class MailboxAttachmentDownloadView(MailboxBaseMixin, View):
 
 
 class MailboxActionAPIView(MailboxBaseMixin, View):
-    """AJAX API для быстрых действий над письмами (удаление, отметка прочитанности, звездочка)."""
+    """AJAX API для быстрых и групповых действий над письмами (удаление, отметка прочитанности, перемещение)."""
 
     def post(self, request):
         """Выполняет операцию над одним или несколькими письмами.
@@ -583,6 +669,7 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
 
         action = data.get("action")
         folder = data.get("folder", "INBOX")
+        target_folder = data.get("target_folder", "")
         uids = data.get("uids", [])
 
         if isinstance(uids, (int, str)):
@@ -596,20 +683,11 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
         success_count = 0
         try:
             with self.get_imap_service(account) as imap_svc:
-                for uid in uids:
-                    if action == "mark_seen":
-                        if imap_svc.mark_seen(folder, uid, is_seen=True):
-                            success_count += 1
-                    elif action == "mark_unseen":
-                        if imap_svc.mark_seen(folder, uid, is_seen=False):
-                            success_count += 1
-                    elif action == "toggle_flag":
-                        if imap_svc.toggle_flag(folder, uid, "\\Flagged"):
-                            success_count += 1
-                    elif action == "delete":
-                        if imap_svc.delete_message(folder, uid):
-                            success_count += 1
-                    elif action in ("not_spam", "unmark_spam"):
+                if action in ("mark_seen", "mark_unseen", "toggle_flag", "delete", "move"):
+                    if imap_svc.batch_action(folder, uids, action, target_folder):
+                        success_count = len(uids)
+                elif action in ("not_spam", "unmark_spam"):
+                    for uid in uids:
                         ok, sender_info = imap_svc.unmark_spam(folder, uid)
                         if ok:
                             success_count += 1
@@ -1175,7 +1253,21 @@ class MailboxScheduledListView(MailboxBaseMixin, ListView):
         )
         if status_filter in dict(ScheduledEmail.STATUS_CHOICES):
             qs = qs.filter(status=status_filter)
-        return qs.order_by("scheduled_at")
+
+        if status_filter in ("sent", "cancelled", "failed"):
+            return qs.order_by("-scheduled_at")
+        elif status_filter == "pending":
+            return qs.order_by("scheduled_at")
+        else:
+            from django.db.models import Case, When, Value, IntegerField
+            return qs.annotate(
+                status_priority=Case(
+                    When(status=ScheduledEmail.STATUS_PENDING, then=Value(1)),
+                    When(status=ScheduledEmail.STATUS_PROCESSING, then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField(),
+                )
+            ).order_by("status_priority", "scheduled_at", "-created_at")
 
     def get_context_data(self, **kwargs):
         """Формирует контекст шаблона для страницы запланированных писем.

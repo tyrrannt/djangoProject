@@ -1,7 +1,9 @@
 import base64
 import email
-from email.header import decode_header
-from email.utils import getaddresses, parseaddr, parsedate_to_datetime
+from email.header import Header, decode_header
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formatdate, getaddresses, make_msgid, parseaddr, parsedate_to_datetime
 import imaplib
 import logging
 import re
@@ -1103,6 +1105,241 @@ class ImapMailService:
             logger.error(f"[IMAP] Ошибка переноса письма UID {uid} из спама в {inbox_folder}: {e}")
 
         return False, None
+
+    def save_draft(
+        self,
+        to_recipients: str,
+        subject: str,
+        body_html: str,
+        cc_recipients: str = "",
+        bcc_recipients: str = "",
+        old_draft_uid: Optional[int] = None,
+    ) -> Optional[int]:
+        """Сохраняет черновик письма в папку 'Черновики' на сервере IMAP.
+
+        Args:
+            to_recipients (str): Адресаты письма.
+            subject (str): Тема письма.
+            body_html (str): HTML-разметка тела письма.
+            cc_recipients (str, optional): Адресаты в копии.
+            bcc_recipients (str, optional): Адресаты в скрытой копии.
+            old_draft_uid (int, optional): UID предыдущего черновика для замены.
+
+        Returns:
+            int, optional: UID сохраненного черновика или None при ошибке.
+        """
+        if not self.client:
+            return None
+
+        folders = self.get_folders()
+        drafts_folder = next(
+            (
+                f["raw_name"]
+                for f in folders
+                if f.get("type") == "drafts" or f.get("root_type") == "drafts"
+            ),
+            None,
+        )
+        if not drafts_folder:
+            drafts_folder = "Drafts"
+
+        # Если передан старый draft_uid — удаляем старую версию черновика
+        if old_draft_uid:
+            try:
+                self.client.select(f'"{drafts_folder}"', readonly=False)
+                self.client.uid("store", str(old_draft_uid), "+FLAGS", "(\\Deleted)")
+                self.client.expunge()
+            except Exception as err:
+                logger.debug(f"[IMAP] Не удалось удалить старый черновик UID {old_draft_uid}: {err}")
+
+        # Формируем MIME сообщение черновика
+        msg = MIMEMultipart("alternative")
+        msg["From"] = self.email_addr
+        if to_recipients:
+            msg["To"] = to_recipients
+        if cc_recipients:
+            msg["Cc"] = cc_recipients
+        if bcc_recipients:
+            msg["Bcc"] = bcc_recipients
+        msg["Subject"] = Header(subject or "(Без темы)", "utf-8")
+        msg["Date"] = formatdate(localtime=True)
+        msg["Message-ID"] = make_msgid()
+        msg["X-Unsent"] = "1"
+
+        plain_text = re.sub(r"<[^>]+>", "", body_html or "")
+        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+        msg.attach(MIMEText(body_html or "", "html", "utf-8"))
+
+        msg_bytes = msg.as_bytes()
+
+        try:
+            status, resp = self.client.append(
+                f'"{drafts_folder}"',
+                "(\\Draft \\Seen)",
+                imaplib.Time2Internaldate(time.time()),
+                msg_bytes,
+            )
+            if status != "OK":
+                logger.error(f"[IMAP] Ошибка сохранения черновика в {drafts_folder}: {resp}")
+                return None
+
+            new_uid = None
+            # Пробуем извлечь APPENDUID из ответа сервера (RFC 4315)
+            if resp and isinstance(resp, list):
+                resp_str = " ".join(str(r) for r in resp)
+                match = re.search(r"APPENDUID\s+\d+\s+(\d+)", resp_str)
+                if match:
+                    new_uid = int(match.group(1))
+
+            if not new_uid:
+                # Если APPENDUID не вернулся, находим последний UID в папке
+                self.client.select(f'"{drafts_folder}"', readonly=True)
+                s_stat, s_data = self.client.uid("SEARCH", None, "ALL")
+                if s_stat == "OK" and s_data and s_data[0]:
+                    all_uids = s_data[0].split()
+                    if all_uids:
+                        new_uid = int(all_uids[-1])
+
+            invalidate_mailbox_cache(self.email_addr)
+            return new_uid
+
+        except Exception as e:
+            logger.error(f"[IMAP] Исключение при сохранении черновика: {e}", exc_info=True)
+            return None
+
+    def delete_draft(self, draft_uid: int) -> bool:
+        """Удаляет черновик из папки черновиков по UID.
+
+        Args:
+            draft_uid (int): Идентификатор черновика.
+
+        Returns:
+            bool: True в случае успешного удаления.
+        """
+        if not self.client:
+            return False
+
+        folders = self.get_folders()
+        drafts_folder = next(
+            (
+                f["raw_name"]
+                for f in folders
+                if f.get("type") == "drafts" or f.get("root_type") == "drafts"
+            ),
+            "Drafts",
+        )
+        try:
+            self.client.select(f'"{drafts_folder}"', readonly=False)
+            self.client.uid("store", str(draft_uid), "+FLAGS", "(\\Deleted)")
+            self.client.expunge()
+            invalidate_mailbox_cache(self.email_addr)
+            return True
+        except Exception as e:
+            logger.error(f"[IMAP] Ошибка удаления черновика UID {draft_uid}: {e}")
+            return False
+
+    def move_messages(self, folder_name: str, uids: List[int], target_folder: str) -> bool:
+        """Перемещает список писем по UID в целевую папку.
+
+        Поддерживает RFC 6851 (IMAP MOVE) с отказоустойчивым fallback на COPY + STORE + EXPUNGE.
+
+        Args:
+            folder_name (str): Исходная папка.
+            uids (list[int]): Список идентификаторов писем.
+            target_folder (str): Имя целевой папки назначения.
+
+        Returns:
+            bool: True в случае успешного перемещения.
+        """
+        if not self.client or not uids:
+            return False
+
+        status, _ = self.client.select(f'"{folder_name}"', readonly=False)
+        if status != "OK":
+            return False
+
+        uid_set = ",".join(str(u) for u in uids)
+
+        # 1. Пробуем нативную команду MOVE (RFC 6851)
+        try:
+            mv_status, _ = self.client.uid("MOVE", uid_set, f'"{target_folder}"')
+            if mv_status == "OK":
+                invalidate_mailbox_cache(self.email_addr)
+                return True
+        except Exception:
+            pass
+
+        # 2. Fallback: COPY -> STORE \Deleted -> EXPUNGE
+        try:
+            cp_status, _ = self.client.uid("COPY", uid_set, f'"{target_folder}"')
+            if cp_status == "OK":
+                self.client.uid("store", uid_set, "+FLAGS", "(\\Deleted)")
+                self.client.expunge()
+                invalidate_mailbox_cache(self.email_addr)
+                return True
+        except Exception as e:
+            logger.error(f"[IMAP] Ошибка перемещения писем {uid_set} в {target_folder}: {e}")
+
+        return False
+
+    def batch_action(
+        self, folder_name: str, uids: List[int], action: str, target_folder: str = ""
+    ) -> bool:
+        """Выполняет массовое групповое действие над списком писем.
+
+        Args:
+            folder_name (str): Исходная папка.
+            uids (list[int]): Список UID писем.
+            action (str): Действие ('mark_seen', 'mark_unseen', 'toggle_flag', 'delete', 'move').
+            target_folder (str, optional): Целевая папка для действия 'move'.
+
+        Returns:
+            bool: True в случае успешного выполнения.
+        """
+        if not self.client or not uids:
+            return False
+
+        if action == "move":
+            return self.move_messages(folder_name, uids, target_folder)
+
+        status, _ = self.client.select(f'"{folder_name}"', readonly=False)
+        if status != "OK":
+            return False
+
+        uid_set = ",".join(str(u) for u in uids)
+
+        try:
+            if action == "mark_seen":
+                self.client.uid("store", uid_set, "+FLAGS", "(\\Seen)")
+            elif action == "mark_unseen":
+                self.client.uid("store", uid_set, "-FLAGS", "(\\Seen)")
+            elif action == "toggle_flag":
+                self.client.uid("store", uid_set, "+FLAGS", "(\\Flagged)")
+            elif action == "delete":
+                if (
+                    "trash" in folder_name.lower()
+                    or "корзин" in folder_name.lower()
+                    or "deleted" in folder_name.lower()
+                ):
+                    self.client.uid("store", uid_set, "+FLAGS", "(\\Deleted)")
+                    self.client.expunge()
+                else:
+                    folders = self.get_folders()
+                    trash_folder = next(
+                        (f["raw_name"] for f in folders if f["type"] == "trash"),
+                        None,
+                    )
+                    if trash_folder:
+                        return self.move_messages(folder_name, uids, trash_folder)
+                    else:
+                        self.client.uid("store", uid_set, "+FLAGS", "(\\Deleted)")
+                        self.client.expunge()
+
+            invalidate_mailbox_cache(self.email_addr)
+            return True
+        except Exception as e:
+            logger.error(f"[IMAP] Ошибка batch_action '{action}' для {uid_set}: {e}")
+            return False
 
 
 def _format_file_size(size_in_bytes: int) -> str:

@@ -220,6 +220,27 @@
                             <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('mark_unseen')" title="Пометить как непрочитанное">
                                 <i class="bx bx-envelope"></i> <span class="d-none d-sm-inline">Не прочитано</span>
                             </button>
+
+                            <!-- Групповое перемещение в папку -->
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none" data-bs-toggle="dropdown" aria-expanded="false" title="Переместить выбранные письма">
+                                    <i class="bx bx-folder"></i> <span class="d-none d-sm-inline">Переместить</span>
+                                </button>
+                                <ul class="dropdown-menu shadow border-0 py-2 mt-1" style="border-radius: 10px; min-width: 220px; max-height: 320px; overflow-y: auto; z-index: 1060;">
+                                    <li class="dropdown-header text-uppercase text-muted" style="font-size: 11px;">Переместить выбранные в:</li>
+                                    {% for f in folders %}
+                                        {% if f.raw_name != current_folder %}
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 cursor-pointer" onclick="handleBatchMove('{{ f.raw_name|escapejs }}')">
+                                                    <i class="{{ f.icon }} font-size-16 text-muted"></i>
+                                                    <span class="text-truncate">{{ f.full_path_display|default:f.display_name }}</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+
                             <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none" onclick="handleBatchAction('delete')" title="Удалить выбранные">
                                 <i class="bx bx-trash"></i> <span class="d-none d-sm-inline">Удалить</span>
                             </button>
@@ -590,6 +611,40 @@
             })
             .finally(() => {
                 if (btn) btn.disabled = false;
+            });
+        }
+
+        function handleBatchMove(targetFolder) {
+            const selectedUids = Array.from(document.querySelectorAll('.mail-select-checkbox:checked')).map(cb => parseInt(cb.value));
+            if (selectedUids.length === 0) {
+                showWarningModal('Письма не выбраны', 'Пожалуйста, отметьте галочками письма для перемещения.');
+                return;
+            }
+
+            fetch("{% url 'mailbox_app:api_action' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: 'move',
+                    folder: '{{ current_folder }}',
+                    target_folder: targetFolder,
+                    uids: selectedUids
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok' || data.success) {
+                    window.location.reload();
+                } else {
+                    showWarningModal('Ошибка перемещения', data.error || 'Не удалось переместить выбранные письма');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showWarningModal('Ошибка связи', 'Сетевая ошибка при перемещении писем');
             });
         }
     </script>

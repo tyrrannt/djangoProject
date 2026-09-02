@@ -40,6 +40,8 @@ urlpatterns = [
         views.MailboxScheduledActionAPIView.as_view(),
         name="api_scheduled_action",
     ),
+    # AJAX API автосохранения и сохранения черновиков
+    path("api/draft/save/", views.MailboxSaveDraftAPIView.as_view(), name="api_save_draft"),
     # Просмотр конкретной папки (жадный path:folder)
     path("folder/<path:folder>/", views.MailboxFolderView.as_view(), name="folder"),
     # AJAX API действий (прочитано, удаление, звездочка)

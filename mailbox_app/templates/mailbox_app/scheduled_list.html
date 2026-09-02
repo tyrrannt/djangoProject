@@ -25,77 +25,83 @@
             <!-- Основное тело раздела запланированных писем -->
             <div class="inner-body mailbox-folder">
                 <!-- Шапка раздела -->
-                <header class="mailbox-header px-3 py-3 border-bottom bg-white d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
-                                data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
-                            <i class="bx bx-folder-open font-size-18"></i>
-                        </button>
+                <header class="mailbox-header-bar">
+                    <div class="d-flex align-items-center justify-content-between gap-2 w-100 flex-wrap">
                         <div class="d-flex align-items-center gap-2">
-                            <div class="rounded-circle bg-warning bg-opacity-15 text-warning d-none d-sm-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #fef3c7; color: #d97706;">
-                                <i class="bx bx-time-five font-size-22"></i>
-                            </div>
-                            <div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <h4 class="mailbox-title m-0 fw-bold text-dark font-size-18">Запланированные письма</h4>
-                                    {% if status_counts.pending > 0 %}
-                                        <span class="badge badge-scheduled badge-scheduled-pending">
-                                            {{ status_counts.pending }} в очереди
-                                        </span>
-                                    {% endif %}
-                                </div>
-                                <small class="text-muted font-size-12 d-none d-sm-block">Письма, ожидающие фоновой отправки по расписанию (МСК, UTC+3)</small>
-                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                                <span>Запланированные</span>
+                                <i class="bx bx-chevron-down font-size-14"></i>
+                            </button>
+                            <h4 class="mailbox-page-title d-none d-md-flex align-items-center gap-2 m-0">
+                                <i class="bx bx-time-five text-warning font-size-22"></i>
+                                <span>Запланированные письма</span>
+                                <span class="mailbox-count-badge">{{ status_counts.pending }} в очереди</span>
+                            </h4>
+                            {% if status_counts.pending > 0 %}
+                                <span class="badge bg-warning bg-opacity-25 text-dark border d-md-none" style="font-size: 11px;">
+                                    {{ status_counts.pending }} в очереди
+                                </span>
+                            {% endif %}
                         </div>
-                    </div>
-                    <div class="mailbox-actions d-flex align-items-center gap-2">
-                        <a href="{% url 'mailbox_app:compose' %}" class="btn btn-primary btn-sm px-3 py-1 d-flex align-items-center gap-2 shadow-sm" style="border-radius: 6px; font-weight: 500;">
-                            <i class="bx bx-edit font-size-16"></i> <span>Новое письмо</span>
-                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="?refresh=1{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none"
+                               title="Обновить список писем">
+                                <i class="bx bx-refresh font-size-18"></i>
+                                <span class="d-none d-sm-inline">Обновить</span>
+                            </a>
+                            <a href="{% url 'mailbox_app:compose' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-2 shadow-sm font-weight-semibold" style="border-radius: 6px;">
+                                <i class="bx bx-edit font-size-16"></i> <span>Новое письмо</span>
+                            </a>
+                        </div>
                     </div>
                 </header>
 
-                <!-- Горизонтальная панель фильтрации по статусам -->
-                <div class="mailbox-filter-chips-scroll bg-light px-3 py-2 border-bottom">
-                    <a href="{% url 'mailbox_app:scheduled_list' %}"
-                       class="mailbox-filter-btn {% if not status_filter %}active{% endif %}">
-                        <span>Все</span>
-                        <span class="badge rounded-pill {% if not status_filter %}bg-white text-primary{% else %}bg-secondary bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
-                            {{ status_counts.all }}
-                        </span>
-                    </a>
-                    <a href="?status=pending"
-                       class="mailbox-filter-btn {% if status_filter == 'pending' %}active{% endif %}">
-                        <i class="bx bx-time-five text-warning font-size-15"></i>
-                        <span>В очереди</span>
-                        <span class="badge rounded-pill {% if status_filter == 'pending' %}bg-white text-dark{% else %}bg-warning bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
-                            {{ status_counts.pending }}
-                        </span>
-                    </a>
-                    <a href="?status=sent"
-                       class="mailbox-filter-btn {% if status_filter == 'sent' %}active{% endif %}">
-                        <i class="bx bx-check-double text-success font-size-15"></i>
-                        <span>Отправлено</span>
-                        <span class="badge rounded-pill {% if status_filter == 'sent' %}bg-white text-dark{% else %}bg-success bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
-                            {{ status_counts.sent }}
-                        </span>
-                    </a>
-                    <a href="?status=failed"
-                       class="mailbox-filter-btn {% if status_filter == 'failed' %}active{% endif %}">
-                        <i class="bx bx-error-circle text-danger font-size-15"></i>
-                        <span>Ошибки</span>
-                        <span class="badge rounded-pill {% if status_filter == 'failed' %}bg-white text-dark{% else %}bg-danger bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
-                            {{ status_counts.failed }}
-                        </span>
-                    </a>
-                    <a href="?status=cancelled"
-                       class="mailbox-filter-btn {% if status_filter == 'cancelled' %}active{% endif %}">
-                        <i class="bx bx-x-circle text-muted font-size-15"></i>
-                        <span>Отменено</span>
-                        <span class="badge rounded-pill {% if status_filter == 'cancelled' %}bg-white text-dark{% else %}bg-secondary bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
-                            {{ status_counts.cancelled }}
-                        </span>
-                    </a>
+                <!-- Горизонтальная панель фильтрации по статусам (Outlook / Thunderbird style) -->
+                <div class="mailbox-quick-filters px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between gap-2">
+                    <div class="mailbox-filter-chips-scroll d-flex align-items-center gap-1">
+                        <a href="{% url 'mailbox_app:scheduled_list' %}"
+                           class="mailbox-filter-btn {% if not status_filter %}active{% endif %}">
+                            <span>Все</span>
+                            <span class="badge rounded-pill {% if not status_filter %}bg-white text-primary{% else %}bg-secondary bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
+                                {{ status_counts.all }}
+                            </span>
+                        </a>
+                        <a href="?status=pending"
+                           class="mailbox-filter-btn {% if status_filter == 'pending' %}active{% endif %}">
+                            <i class="bx bx-time-five text-warning font-size-15"></i>
+                            <span>В очереди</span>
+                            <span class="badge rounded-pill {% if status_filter == 'pending' %}bg-white text-dark{% else %}bg-warning bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
+                                {{ status_counts.pending }}
+                            </span>
+                        </a>
+                        <a href="?status=sent"
+                           class="mailbox-filter-btn {% if status_filter == 'sent' %}active{% endif %}">
+                            <i class="bx bx-check-double text-success font-size-15"></i>
+                            <span>Отправлено</span>
+                            <span class="badge rounded-pill {% if status_filter == 'sent' %}bg-white text-dark{% else %}bg-success bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
+                                {{ status_counts.sent }}
+                            </span>
+                        </a>
+                        <a href="?status=failed"
+                           class="mailbox-filter-btn {% if status_filter == 'failed' %}active{% endif %}">
+                            <i class="bx bx-error-circle text-danger font-size-15"></i>
+                            <span>Ошибки</span>
+                            <span class="badge rounded-pill {% if status_filter == 'failed' %}bg-white text-dark{% else %}bg-danger bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
+                                {{ status_counts.failed }}
+                            </span>
+                        </a>
+                        <a href="?status=cancelled"
+                           class="mailbox-filter-btn {% if status_filter == 'cancelled' %}active{% endif %}">
+                            <i class="bx bx-x-circle text-muted font-size-15"></i>
+                            <span>Отменено</span>
+                            <span class="badge rounded-pill {% if status_filter == 'cancelled' %}bg-white text-dark{% else %}bg-secondary bg-opacity-25 text-dark{% endif %} font-size-11 ms-1">
+                                {{ status_counts.cancelled }}
+                            </span>
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Таблица отложенных писем (на десктопе — классическая таблица, на мобильных <=768px — карточки) -->
@@ -103,33 +109,33 @@
                     <table class="mailbox-table scheduled-table">
                         <thead>
                             <tr>
-                                <th style="width: 24%; min-width: 150px;" class="ps-3">
+                                <th style="width: 22%; min-width: 140px; max-width: 210px;" class="ps-3">
                                     <span>Кому</span>
                                 </th>
-                                <th style="width: auto; min-width: 200px;">
+                                <th style="width: auto; min-width: 180px;">
                                     <span>Тема сообщения</span>
                                 </th>
-                                <th style="width: 170px;" class="text-center">
+                                <th style="width: 160px; min-width: 150px;" class="text-center">
                                     <span>Запланировано на</span>
                                 </th>
-                                <th style="width: 140px;" class="text-center">
+                                <th style="width: 130px; min-width: 120px;" class="text-center">
                                     <span>Статус</span>
                                 </th>
-                                <th style="width: 140px;" class="text-end pe-3">
+                                <th style="width: 170px; min-width: 170px;" class="text-end pe-3">
                                     <span>Действия</span>
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for mail in scheduled_emails %}
-                                <tr>
+                                <tr class="scheduled-row" onclick="if(!event.target.closest('.no-row-click')) { window.location='{% url 'mailbox_app:scheduled_detail' mail.id %}'; }">
                                     <!-- Адресат -->
                                     <td class="mailbox-sender-cell ps-3">
                                         <!-- Мобильный заголовок карточки (адресат + статус) -->
                                         <div class="scheduled-mobile-header d-md-none">
-                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mail-sender text-truncate fw-bold text-dark font-size-14 text-decoration-none" title="{{ mail.to_recipients }}">
+                                            <span class="mail-sender text-truncate fw-bold text-dark font-size-14" title="{{ mail.to_recipients }}">
                                                 <i class="bx bx-share text-primary font-size-13 me-1"></i>{{ mail.to_display }}
-                                            </a>
+                                            </span>
                                             <div>
                                                 {% if mail.status == 'pending' %}
                                                     <span class="badge-scheduled badge-scheduled-pending">
@@ -156,17 +162,17 @@
                                         </div>
 
                                         <!-- Десктопный вывод адресата -->
-                                        <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mail-sender text-truncate d-none d-md-block text-dark text-decoration-none" title="{{ mail.to_recipients }}">
+                                        <span class="mail-sender text-truncate d-none d-md-block text-dark fw-semibold" title="{{ mail.to_recipients }}">
                                             <i class="bx bx-share font-size-13 text-muted me-1"></i>{{ mail.to_display }}
-                                        </a>
+                                        </span>
                                     </td>
 
                                     <!-- Тема и вложения -->
                                     <td class="mailbox-subject-cell">
                                         <div class="scheduled-mobile-subject d-md-none">
-                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="text-dark text-decoration-none fw-semibold">
+                                            <span class="text-dark fw-semibold">
                                                 {{ mail.subject|default:"(Без темы)" }}
-                                            </a>
+                                            </span>
                                             {% if mail.attachments.all %}
                                                 <span class="badge bg-light text-muted border ms-1 font-size-11" title="Прикреплено файлов: {{ mail.attachments.count }}">
                                                     <i class="bx bx-paperclip"></i> {{ mail.attachments.count }}
@@ -176,9 +182,9 @@
 
                                         <!-- Десктопный вывод темы -->
                                         <div class="mail-subject-wrap d-none d-md-flex align-items-center">
-                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mail-subject text-truncate text-dark text-decoration-none" title="{{ mail.subject }}">
+                                            <span class="mail-subject text-truncate text-dark" title="{{ mail.subject }}">
                                                 {{ mail.subject|default:"(Без темы)" }}
-                                            </a>
+                                            </span>
                                             {% if mail.attachments.all %}
                                                 <span class="badge bg-light text-muted border ms-2 flex-shrink-0 d-flex align-items-center gap-1 font-size-11" title="Прикреплено файлов: {{ mail.attachments.count }}">
                                                     <i class="bx bx-paperclip"></i> {{ mail.attachments.count }}
@@ -191,8 +197,11 @@
                                     <td class="mail-date text-center d-none d-md-table-cell">
                                         <div class="d-inline-flex align-items-center gap-1 text-dark font-size-13">
                                             <i class="bx bx-time font-size-15 text-muted"></i>
-                                            <span>{{ mail.scheduled_at|date:"d.m.Y H:i" }}</span>
+                                            <span class="fw-semibold">{{ mail.scheduled_at|date:"d.m.Y H:i" }}</span>
                                         </div>
+                                        {% if mail.status == 'sent' and mail.sent_at %}
+                                            <div class="text-muted font-size-11 mt-1">Отправлено: {{ mail.sent_at|date:"d.m.Y H:i" }}</div>
+                                        {% endif %}
                                     </td>
 
                                     <!-- Статус (десктоп) -->
@@ -221,7 +230,7 @@
                                     </td>
 
                                     <!-- Кнопки действий -->
-                                    <td class="text-end pe-3">
+                                    <td class="text-end pe-3 no-row-click">
                                         <!-- Мобильный футер карточки (время + кнопки) -->
                                         <div class="scheduled-mobile-footer d-md-none">
                                             <div class="d-flex align-items-center gap-1 text-muted font-size-12">
@@ -229,12 +238,12 @@
                                                 <span class="fw-semibold text-dark">{{ mail.scheduled_at|date:"d.m.Y H:i" }}</span>
                                             </div>
                                             <div class="d-flex align-items-center gap-1">
-                                                <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn" title="Просмотреть письмо">
+                                                <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn mailbox-action-view" title="Просмотреть письмо">
                                                     <i class="bx bx-show"></i>
                                                 </a>
 
                                                 {% if mail.can_reschedule %}
-                                                    <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-reschedule" title="Редактировать письмо">
+                                                    <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-edit" title="Редактировать письмо">
                                                         <i class="bx bx-edit"></i>
                                                     </a>
                                                 {% endif %}
@@ -264,13 +273,13 @@
                                         </div>
 
                                         <!-- Десктопные кнопки действий -->
-                                        <div class="d-none d-md-inline-flex align-items-center gap-1">
-                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn" title="Просмотреть письмо">
+                                        <div class="d-none d-md-inline-flex align-items-center gap-1 flex-nowrap">
+                                            <a href="{% url 'mailbox_app:scheduled_detail' mail.id %}" class="mailbox-action-btn mailbox-action-view" title="Просмотреть письмо">
                                                 <i class="bx bx-show"></i>
                                             </a>
 
                                             {% if mail.can_reschedule %}
-                                                <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-reschedule" title="Редактировать письмо">
+                                                <a href="{% url 'mailbox_app:scheduled_edit' mail.id %}" class="mailbox-action-btn mailbox-action-edit" title="Редактировать письмо">
                                                     <i class="bx bx-edit"></i>
                                                 </a>
                                             {% endif %}
