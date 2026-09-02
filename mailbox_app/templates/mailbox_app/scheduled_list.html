@@ -1,0 +1,346 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    Запланированные письма — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основное тело раздела запланированных писем -->
+            <div class="inner-body mailbox-folder">
+                <!-- Шапка раздела -->
+                <header class="mailbox-header">
+                    <div class="mailbox-title-wrap">
+                        <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                            <i class="bx bx-folder-open font-size-18"></i>
+                        </button>
+                        <h4 class="mailbox-title m-0">
+                            <i class="bx bx-time-five text-warning d-none d-sm-inline"></i> 
+                            <span>Запланированные письма</span>
+                            <span class="badge bg-warning text-dark rounded-pill ms-1 font-size-12">{{ status_counts.pending }}</span>
+                        </h4>
+                    </div>
+                    <div class="mailbox-actions">
+                        <a href="{% url 'mailbox_app:compose' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+                            <i class="bx bx-plus font-size-16"></i> <span class="d-none d-sm-inline">Новое письмо</span>
+                        </a>
+                    </div>
+                </header>
+
+                <!-- Горизонтальная панель фильтрации по статусам -->
+                <div class="mailbox-filter-chips-scroll">
+                    <a href="{% url 'mailbox_app:scheduled_list' %}"
+                       class="mailbox-filter-btn {% if not status_filter %}active{% endif %}">
+                        <span>Все</span>
+                        <span class="badge bg-light text-dark rounded-pill">{{ status_counts.all }}</span>
+                    </a>
+                    <a href="?status=pending"
+                       class="mailbox-filter-btn {% if status_filter == 'pending' %}active{% endif %}">
+                        <i class="bx bx-time-five text-warning"></i> <span>В очереди</span>
+                        <span class="badge bg-light text-dark rounded-pill">{{ status_counts.pending }}</span>
+                    </a>
+                    <a href="?status=sent"
+                       class="mailbox-filter-btn {% if status_filter == 'sent' %}active{% endif %}">
+                        <i class="bx bx-check-double text-success"></i> <span>Отправлено</span>
+                        <span class="badge bg-light text-dark rounded-pill">{{ status_counts.sent }}</span>
+                    </a>
+                    <a href="?status=failed"
+                       class="mailbox-filter-btn {% if status_filter == 'failed' %}active{% endif %}">
+                        <i class="bx bx-error-circle text-danger"></i> <span>Ошибки</span>
+                        <span class="badge bg-light text-dark rounded-pill">{{ status_counts.failed }}</span>
+                    </a>
+                    <a href="?status=cancelled"
+                       class="mailbox-filter-btn {% if status_filter == 'cancelled' %}active{% endif %}">
+                        <i class="bx bx-x-circle text-muted"></i> <span>Отменено</span>
+                        <span class="badge bg-light text-dark rounded-pill">{{ status_counts.cancelled }}</span>
+                    </a>
+                </div>
+
+                <!-- Таблица отложенных писем -->
+                <div class="table-responsive mailbox-table-container">
+                    <table class="mailbox-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 24%;" class="ps-3">
+                                    <span>Кому</span>
+                                </th>
+                                <th>
+                                    <span>Тема сообщения</span>
+                                </th>
+                                <th style="width: 170px;" class="text-center">
+                                    <span>Запланировано на</span>
+                                </th>
+                                <th style="width: 140px;" class="text-center">
+                                    <span>Статус</span>
+                                </th>
+                                <th style="width: 150px;" class="text-end pe-3">
+                                    <span>Действия</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mail in scheduled_emails %}
+                                <tr>
+                                    <!-- Адресат -->
+                                    <td class="mailbox-sender-cell ps-3">
+                                        <span class="mail-sender text-truncate d-block" title="{{ mail.to_recipients }}">
+                                            <i class="bx bx-share font-size-12 text-muted me-1"></i>{{ mail.to_display }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Тема и вложения -->
+                                    <td class="mailbox-subject-cell">
+                                        <div class="mail-subject-wrap">
+                                            <span class="mail-subject text-truncate" title="{{ mail.subject }}">
+                                                {{ mail.subject|default:"(Без темы)" }}
+                                            </span>
+                                            {% if mail.attachments.all %}
+                                                <span class="badge bg-light text-muted border ms-2 flex-shrink-0 d-flex align-items-center gap-1 font-size-11" title="Прикреплено файлов: {{ mail.attachments.count }}">
+                                                    <i class="bx bx-paperclip"></i> {{ mail.attachments.count }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    <!-- Дата запланированной отправки -->
+                                    <td class="mail-date text-center font-weight-semibold">
+                                        <i class="bx bx-time font-size-14 text-muted me-1"></i>
+                                        <span>{{ mail.scheduled_at|date:"d.m.Y H:i" }}</span>
+                                    </td>
+
+                                    <!-- Статус -->
+                                    <td class="text-center">
+                                        {% if mail.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark px-2 py-1 font-size-12">
+                                                <i class="bx bx-time-five me-1"></i> В очереди
+                                            </span>
+                                        {% elif mail.status == 'processing' %}
+                                            <span class="badge bg-info text-white px-2 py-1 font-size-12">
+                                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Отправка...
+                                            </span>
+                                        {% elif mail.status == 'sent' %}
+                                            <span class="badge bg-success text-white px-2 py-1 font-size-12" title="Отправлено: {{ mail.sent_at|date:'d.m.Y H:i' }}">
+                                                <i class="bx bx-check me-1"></i> Отправлено
+                                            </span>
+                                        {% elif mail.status == 'failed' %}
+                                            <span class="badge bg-danger text-white px-2 py-1 font-size-12" title="{{ mail.last_error }}">
+                                                <i class="bx bx-error me-1"></i> Ошибка
+                                            </span>
+                                        {% elif mail.status == 'cancelled' %}
+                                            <span class="badge bg-secondary text-white px-2 py-1 font-size-12">
+                                                <i class="bx bx-x me-1"></i> Отменено
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Кнопки действий -->
+                                    <td class="text-end pe-3">
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            {% if mail.can_send_now %}
+                                                <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1"
+                                                        onclick="executeMailAction('send_now', {{ mail.id }})"
+                                                        title="Отправить немедленно">
+                                                    <i class="bx bx-send"></i>
+                                                </button>
+                                            {% endif %}
+
+                                            {% if mail.can_reschedule %}
+                                                <button type="button" class="btn btn-outline-warning btn-sm px-2 py-1"
+                                                        onclick="openRescheduleModal({{ mail.id }}, '{{ mail.scheduled_at|date:'Y-m-d\TH:i' }}')"
+                                                        title="Перенести время отправки">
+                                                    <i class="bx bx-calendar-edit"></i>
+                                                </button>
+                                            {% endif %}
+
+                                            {% if mail.can_cancel %}
+                                                <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1"
+                                                        onclick="executeMailAction('cancel', {{ mail.id }})"
+                                                        title="Отменить отправку">
+                                                    <i class="bx bx-x"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1"
+                                                        onclick="executeMailAction('delete', {{ mail.id }})"
+                                                        title="Удалить из списка">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <div class="py-4">
+                                            <i class="bx bx-calendar-event display-4 text-muted opacity-50 mb-2"></i>
+                                            <div class="font-weight-semibold font-size-16">Нет запланированных писем</div>
+                                            <div class="small mt-1">{% if status_filter %}Писем с выбранным статусом не найдено{% else %}У вас нет писем, ожидающих отправки по расписанию{% endif %}</div>
+                                            <a href="{% url 'mailbox_app:compose' %}" class="btn btn-outline-primary btn-sm mt-3">
+                                                <i class="bx bx-edit me-1"></i> Написать и запланировать
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Нижняя пагинация при наличии нескольких страниц -->
+                {% if is_paginated %}
+                    <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span class="text-muted small">
+                            Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                        </span>
+                        <div class="btn-group">
+                            {% if page_obj.has_previous %}
+                                <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bx bx-chevron-left"></i> Назад
+                                </a>
+                            {% endif %}
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn btn-outline-secondary btn-sm">
+                                    Вперед <i class="bx bx-chevron-right"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Модальное окно изменения времени отправки (Reschedule) -->
+    <div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light py-3 px-4">
+                    <h5 class="modal-title font-weight-bold text-dark m-0" id="rescheduleModalLabel">
+                        <i class="bx bx-time-five text-warning me-1"></i> Изменить время отправки
+                    </h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="rescheduleMailId">
+                    <div class="mb-3">
+                        <label for="newScheduleDateTime" class="form-label font-weight-semibold text-dark">Новое время отправки (МСК):</label>
+                        <input type="datetime-local" class="form-control" id="newScheduleDateTime" style="font-size: 15px;">
+                        <div class="invalid-feedback" id="rescheduleErrorMsg">Время отправки должно быть позже текущего момента.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary font-weight-semibold px-4" id="btnSubmitReschedule">
+                        <i class="bx bx-check me-1"></i> Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        function executeMailAction(action, emailId) {
+            let confirmMsg = "";
+            if (action === "send_now") confirmMsg = "Вы действительно хотите отправить это письмо немедленно?";
+            else if (action === "cancel") confirmMsg = "Вы действительно хотите отменить запланированную отправку этого письма?";
+            else if (action === "delete") confirmMsg = "Удалить запись из списка?";
+
+            if (confirmMsg && !confirm(confirmMsg)) {
+                return;
+            }
+
+            fetch("{% url 'mailbox_app:api_scheduled_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ action: action, email_id: emailId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || "Произошла ошибка при выполнении действия.");
+                }
+            })
+            .catch(err => {
+                alert("Ошибка сети при отправке запроса: " + err);
+            });
+        }
+
+        function openRescheduleModal(emailId, currentIso) {
+            document.getElementById("rescheduleMailId").value = emailId;
+            const input = document.getElementById("newScheduleDateTime");
+            if (input) {
+                const now = new Date(Date.now() + 5 * 60 * 1000);
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const mins = String(now.getMinutes()).padStart(2, '0');
+                input.min = `${year}-${month}-${day}T${hours}:${mins}`;
+                input.value = currentIso || `${year}-${month}-${day}T${hours}:${mins}`;
+            }
+            const modalElem = document.getElementById("rescheduleModal");
+            const modal = new bootstrap.Modal(modalElem);
+            modal.show();
+        }
+
+        document.getElementById("btnSubmitReschedule").addEventListener("click", function() {
+            const emailId = document.getElementById("rescheduleMailId").value;
+            const newTime = document.getElementById("newScheduleDateTime").value;
+            const errDiv = document.getElementById("rescheduleErrorMsg");
+
+            if (!newTime || new Date(newTime) <= new Date()) {
+                if (errDiv) errDiv.style.display = "block";
+                document.getElementById("newScheduleDateTime").classList.add("is-invalid");
+                return;
+            }
+
+            fetch("{% url 'mailbox_app:api_scheduled_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    action: "reschedule",
+                    email_id: emailId,
+                    new_scheduled_at: newTime
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || "Не удалось изменить время отправки.");
+                }
+            })
+            .catch(err => {
+                alert("Ошибка сети при отправке запроса: " + err);
+            });
+        });
+    </script>
+{% endblock %}

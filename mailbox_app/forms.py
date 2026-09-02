@@ -87,6 +87,51 @@ class MailComposeForm(forms.Form):
         label="Вложения",
         required=False,
     )
+    send_mode = forms.CharField(
+        required=False,
+        initial="now",
+        widget=forms.HiddenInput(attrs={"id": "mailSendMode"}),
+    )
+    scheduled_at = forms.DateTimeField(
+        label="Запланированное время",
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "mailScheduledAtInput"}),
+        input_formats=[
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%d.%m.%Y %H:%M",
+        ],
+    )
+
+    def clean(self):
+        """Выполняет кросс-валидацию полей формы с проверкой времени отправки.
+
+        Returns:
+            dict: Очищенные данные формы.
+
+        Raises:
+            forms.ValidationError: При некорректном времени отправки по расписанию.
+        """
+        from django.utils import timezone
+
+        cleaned_data = super().clean()
+        send_mode = cleaned_data.get("send_mode") or "now"
+        scheduled_at = cleaned_data.get("scheduled_at")
+
+        if send_mode == "scheduled":
+            if not scheduled_at:
+                self.add_error("scheduled_at", "Укажите дату и время запланированной отправки.")
+                raise forms.ValidationError("Необходимо указать дату и время запланированной отправки.")
+            if timezone.is_naive(scheduled_at):
+                scheduled_at = timezone.make_aware(scheduled_at, timezone.get_current_timezone())
+            if scheduled_at <= timezone.now():
+                self.add_error("scheduled_at", "Время запланированной отправки должно быть в будущем.")
+                raise forms.ValidationError("Время запланированной отправки должно быть в будущем.")
+            cleaned_data["scheduled_at"] = scheduled_at
+
+        return cleaned_data
 
 
 class MailAccountSettingsForm(forms.ModelForm):

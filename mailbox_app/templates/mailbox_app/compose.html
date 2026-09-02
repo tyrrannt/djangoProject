@@ -49,6 +49,8 @@
 
                     <form method="post" enctype="multipart/form-data" id="composeMailForm">
                         {% csrf_token %}
+                        {{ form.send_mode }}
+                        {{ form.scheduled_at }}
 
                         <!-- Поле Кому -->
                         <div class="mailbox-form-row position-relative">
@@ -108,15 +110,121 @@
                             <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-1">
                                 <i class="bx bx-arrow-back font-size-16"></i> <span>Отмена</span>
                             </a>
-                            <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2 shadow-sm" id="sendMailBtn">
-                                <i class="bx bx-paper-plane font-size-18"></i> <span>Отправить письмо</span>
-                            </button>
+
+                            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                                <!-- Индикатор запланированного времени -->
+                                <div id="scheduledNoticeBadge" class="alert alert-warning py-1 px-3 m-0 d-none align-items-center gap-2 shadow-sm font-size-13" style="border-radius: 20px;">
+                                    <i class="bx bx-time-five font-size-16 text-warning"></i>
+                                    <span>Отправка: <strong id="scheduledNoticeTime"></strong> (МСК)</span>
+                                    <button type="button" class="btn-close ms-1 font-size-10" id="btnResetScheduled" title="Сбросить на обычную отправку" aria-label="Сбросить"></button>
+                                </div>
+
+                                <!-- Сплит-кнопка отправки письма (Gmail / Outlook style) -->
+                                <div class="btn-group shadow-sm" id="sendBtnGroup">
+                                    <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2" id="sendMailBtn">
+                                        <i class="bx bx-paper-plane font-size-18" id="sendBtnIcon"></i> <span id="sendBtnText">Отправить</span>
+                                    </button>
+                                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split px-2" data-bs-toggle="dropdown" aria-expanded="false" title="Дополнительные варианты отправки">
+                                        <span class="visually-hidden">Варианты отправки</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 8px; min-width: 250px; z-index: 1050;">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#" id="menuSendNow">
+                                                <i class="bx bx-send font-size-18 text-primary"></i>
+                                                <div>
+                                                    <div class="font-weight-semibold font-size-14">Отправить сейчас</div>
+                                                    <small class="text-muted font-size-12">Мгновенная отправка по SMTP</small>
+                                                </div>
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#" id="menuOpenScheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleSendModal">
+                                                <i class="bx bx-time-five font-size-18 text-warning"></i>
+                                                <div>
+                                                    <div class="font-weight-semibold font-size-14">Запланировать отправку</div>
+                                                    <small class="text-muted font-size-12">Выбрать дату и время</small>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </section>
+
+    <!-- Модальное окно планирования отправки письма -->
+    <div class="modal fade" id="scheduleSendModal" tabindex="-1" aria-labelledby="scheduleSendModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="bx bx-time-five font-size-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title font-weight-bold text-dark m-0" id="scheduleSendModalLabel">Запланировать отправку</h5>
+                            <small class="text-muted">Часовой пояс: Московское время (UTC+3)</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Выберите один из быстрых вариантов или укажите произвольную дату и время:</p>
+
+                    <!-- Быстрые варианты в 1 клик -->
+                    <div class="d-flex flex-column gap-2 mb-4">
+                        <button type="button" class="btn btn-outline-light text-dark border d-flex align-items-center justify-content-between p-2 px-3 shadow-none schedule-preset-btn" data-preset="tomorrow_morning">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-sun text-warning font-size-18"></i>
+                                <span class="font-weight-semibold">Завтра утром</span>
+                            </span>
+                            <span class="text-muted small" id="presetTomorrowMorningText"></span>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-light text-dark border d-flex align-items-center justify-content-between p-2 px-3 shadow-none schedule-preset-btn" data-preset="tomorrow_afternoon">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-coffee text-primary font-size-18"></i>
+                                <span class="font-weight-semibold">Завтра днем</span>
+                            </span>
+                            <span class="text-muted small" id="presetTomorrowAfternoonText"></span>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-light text-dark border d-flex align-items-center justify-content-between p-2 px-3 shadow-none schedule-preset-btn" data-preset="next_monday">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-briefcase text-success font-size-18"></i>
+                                <span class="font-weight-semibold">В понедельник утром</span>
+                            </span>
+                            <span class="text-muted small" id="presetNextMondayText"></span>
+                        </button>
+                    </div>
+
+                    <div class="d-flex align-items-center my-3">
+                        <hr class="flex-grow-1 m-0">
+                        <span class="px-2 text-muted small text-uppercase" style="font-size: 11px;">или точное время</span>
+                        <hr class="flex-grow-1 m-0">
+                    </div>
+
+                    <!-- Выбор точной даты и времени -->
+                    <div class="mb-2">
+                        <label for="customScheduleDateTime" class="form-label font-weight-semibold text-dark">Дата и время отправки:</label>
+                        <input type="datetime-local" class="form-control" id="customScheduleDateTime" style="font-size: 14px;">
+                        <div class="invalid-feedback" id="scheduleDateError">Время отправки должно быть позже текущего момента.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary px-4 font-weight-semibold" id="btnConfirmSchedule">
+                        <i class="bx bx-check me-1"></i> Выбрать это время
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block custom_script %}
@@ -235,6 +343,162 @@
                             filesContainer.appendChild(badge);
                         });
                     }
+                });
+            }
+
+            // === Логика отправки писем по расписанию ===
+            const sendModeInput = document.getElementById('mailSendMode');
+            const scheduledAtInput = document.getElementById('mailScheduledAtInput');
+            const scheduledNoticeBadge = document.getElementById('scheduledNoticeBadge');
+            const scheduledNoticeTime = document.getElementById('scheduledNoticeTime');
+            const btnResetScheduled = document.getElementById('btnResetScheduled');
+            const sendMailBtn = document.getElementById('sendMailBtn');
+            const sendBtnText = document.getElementById('sendBtnText');
+            const sendBtnIcon = document.getElementById('sendBtnIcon');
+            const customScheduleDateTime = document.getElementById('customScheduleDateTime');
+            const btnConfirmSchedule = document.getElementById('btnConfirmSchedule');
+            const scheduleDateError = document.getElementById('scheduleDateError');
+
+            // Расчет дат для пресетов
+            function getPresetDates() {
+                const now = new Date();
+                
+                // Завтра 09:00
+                const tomorrowMorning = new Date(now);
+                tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
+                tomorrowMorning.setHours(9, 0, 0, 0);
+
+                // Завтра 14:00
+                const tomorrowAfternoon = new Date(now);
+                tomorrowAfternoon.setDate(tomorrowAfternoon.getDate() + 1);
+                tomorrowAfternoon.setHours(14, 0, 0, 0);
+
+                // Следующий понедельник 09:00
+                const nextMonday = new Date(now);
+                const dayOfWeek = nextMonday.getDay();
+                let daysUntilMonday = (1 - dayOfWeek + 7) % 7;
+                if (daysUntilMonday === 0) daysUntilMonday = 7;
+                nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
+                nextMonday.setHours(9, 0, 0, 0);
+
+                return { tomorrowMorning, tomorrowAfternoon, nextMonday };
+            }
+
+            function formatDateDisplay(d) {
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                const hours = String(d.getHours()).padStart(2, '0');
+                const mins = String(d.getMinutes()).padStart(2, '0');
+                return `${day}.${month}.${year} ${hours}:${mins}`;
+            }
+
+            function formatDateIsoLocal(d) {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const hours = String(d.getHours()).padStart(2, '0');
+                const mins = String(d.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hours}:${mins}`;
+            }
+
+            // Заполнение подсказок на кнопках пресетов
+            const presets = getPresetDates();
+            const textTomorrowMorning = document.getElementById('presetTomorrowMorningText');
+            const textTomorrowAfternoon = document.getElementById('presetTomorrowAfternoonText');
+            const textNextMonday = document.getElementById('presetNextMondayText');
+            if (textTomorrowMorning) textTomorrowMorning.textContent = formatDateDisplay(presets.tomorrowMorning);
+            if (textTomorrowAfternoon) textTomorrowAfternoon.textContent = formatDateDisplay(presets.tomorrowAfternoon);
+            if (textNextMonday) textNextMonday.textContent = formatDateDisplay(presets.nextMonday);
+
+            // Минимальное время для кастомного инпута
+            if (customScheduleDateTime) {
+                const minTime = new Date(Date.now() + 5 * 60 * 1000);
+                customScheduleDateTime.min = formatDateIsoLocal(minTime);
+                customScheduleDateTime.value = formatDateIsoLocal(presets.tomorrowMorning);
+            }
+
+            // Функция применения запланированного времени
+            function applyScheduledTime(targetDate) {
+                if (targetDate <= new Date()) {
+                    if (scheduleDateError) scheduleDateError.style.display = 'block';
+                    if (customScheduleDateTime) customScheduleDateTime.classList.add('is-invalid');
+                    return false;
+                }
+
+                if (scheduleDateError) scheduleDateError.style.display = 'none';
+                if (customScheduleDateTime) customScheduleDateTime.classList.remove('is-invalid');
+
+                sendModeInput.value = 'scheduled';
+                scheduledAtInput.value = formatDateIsoLocal(targetDate);
+                scheduledNoticeTime.textContent = formatDateDisplay(targetDate);
+
+                scheduledNoticeBadge.classList.remove('d-none');
+                scheduledNoticeBadge.classList.add('d-flex');
+                sendBtnText.textContent = 'Запланировать';
+                sendBtnIcon.className = 'bx bx-time-five font-size-18';
+                sendMailBtn.classList.remove('btn-primary');
+                sendMailBtn.classList.add('btn-warning');
+
+                // Закрываем модальное окно
+                const modalElem = document.getElementById('scheduleSendModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalElem);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                return true;
+            }
+
+            // Функция сброса на обычную мгновенную отправку
+            function resetToImmediateSend() {
+                sendModeInput.value = 'now';
+                scheduledAtInput.value = '';
+                scheduledNoticeBadge.classList.add('d-none');
+                scheduledNoticeBadge.classList.remove('d-flex');
+                sendBtnText.textContent = 'Отправить';
+                sendBtnIcon.className = 'bx bx-paper-plane font-size-18';
+                sendMailBtn.classList.add('btn-primary');
+                sendMailBtn.classList.remove('btn-warning');
+            }
+
+            // Клик по быстрым пресетам
+            document.querySelectorAll('.schedule-preset-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const presetType = this.getAttribute('data-preset');
+                    const curPresets = getPresetDates();
+                    if (presetType === 'tomorrow_morning') applyScheduledTime(curPresets.tomorrowMorning);
+                    else if (presetType === 'tomorrow_afternoon') applyScheduledTime(curPresets.tomorrowAfternoon);
+                    else if (presetType === 'next_monday') applyScheduledTime(curPresets.nextMonday);
+                });
+            });
+
+            // Клик по кнопке "Выбрать это время"
+            if (btnConfirmSchedule && customScheduleDateTime) {
+                btnConfirmSchedule.addEventListener('click', function() {
+                    if (!customScheduleDateTime.value) {
+                        scheduleDateError.style.display = 'block';
+                        customScheduleDateTime.classList.add('is-invalid');
+                        return;
+                    }
+                    const chosen = new Date(customScheduleDateTime.value);
+                    applyScheduledTime(chosen);
+                });
+            }
+
+            // Клик "Отправить сейчас" в выпадающем меню
+            const menuSendNow = document.getElementById('menuSendNow');
+            if (menuSendNow) {
+                menuSendNow.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    resetToImmediateSend();
+                    sendMailBtn.click();
+                });
+            }
+
+            // Сброс запланированного времени
+            if (btnResetScheduled) {
+                btnResetScheduled.addEventListener('click', function() {
+                    resetToImmediateSend();
                 });
             }
         });

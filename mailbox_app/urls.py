@@ -22,6 +22,14 @@ urlpatterns = [
     ),
     # Написание нового письма
     path("compose/", views.MailboxComposeView.as_view(), name="compose"),
+    # Список писем, запланированных к отправке по расписанию
+    path("scheduled/", views.MailboxScheduledListView.as_view(), name="scheduled_list"),
+    # AJAX API управления запланированными письмами
+    path(
+        "api/scheduled/action/",
+        views.MailboxScheduledActionAPIView.as_view(),
+        name="api_scheduled_action",
+    ),
     # Просмотр конкретной папки (жадный path:folder)
     path("folder/<path:folder>/", views.MailboxFolderView.as_view(), name="folder"),
     # AJAX API действий (прочитано, удаление, звездочка)

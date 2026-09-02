@@ -26,11 +26,16 @@ from django.http import (
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
-from django.views.generic import FormView, TemplateView
+from django.views.generic import FormView, ListView, TemplateView
 
 from customers_app.models import DataBaseUser
 from mailbox_app.forms import MailAccountSettingsForm, MailComposeForm
-from mailbox_app.models import MailAccount
+from mailbox_app.models import (
+    MailAccount,
+    MailContact,
+    ScheduledEmail,
+    ScheduledEmailAttachment,
+)
 from mailbox_app.services.account_service import get_user_mail_account
 from mailbox_app.services.imap_service import (
     ImapMailService,
@@ -73,6 +78,22 @@ class MailboxBaseMixin(LoginRequiredMixin):
             password=account.get_password(),
             use_ssl=account.imap_use_ssl,
         )
+
+    def get_scheduled_count(self) -> int:
+        """Возвращает количество активных запланированных писем текущего пользователя.
+
+        Returns:
+            int: Количество писем в статусе 'pending'.
+        """
+        try:
+            from mailbox_app.models import ScheduledEmail
+
+            return ScheduledEmail.objects.filter(
+                user=self.request.user,
+                status=ScheduledEmail.STATUS_PENDING,
+            ).count()
+        except Exception:
+            return 0
 
 
 class MailboxFolderView(MailboxBaseMixin, TemplateView):
@@ -216,6 +237,7 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
             "is_sent": is_sent,
             "is_drafts": is_drafts,
             "show_recipient": show_recipient,
+            "scheduled_count": self.get_scheduled_count(),
             "sort_by": sort_by,
             "sort_dir": sort_dir,
             "filter_by": filter_by,
@@ -304,6 +326,7 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
             "is_sent": is_sent,
             "is_drafts": is_drafts,
             "show_recipient": show_recipient,
+            "scheduled_count": self.get_scheduled_count(),
             "email": email_data,
             "error_message": error_message,
         })
@@ -395,11 +418,12 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
             "account": account,
             "folders": folders,
             "current_folder": "compose",
+            "scheduled_count": self.get_scheduled_count(),
         })
         return context
 
     def form_valid(self, form):
-        """Обрабатывает отправку письма через SMTP-сервер.
+        """Обрабатывает отправку письма сразу через SMTP или планирует отправку по расписанию.
 
         Args:
             form (MailComposeForm): Валидированная форма.
@@ -413,6 +437,36 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         bcc_raw = form.cleaned_data.get("bcc", "")
         subject = form.cleaned_data.get("subject", "(Без темы)")
         body_html = form.cleaned_data.get("body_html", "")
+        send_mode = form.cleaned_data.get("send_mode") or "now"
+        scheduled_at = form.cleaned_data.get("scheduled_at")
+
+        # Если выбрана отправка по расписанию
+        if send_mode == "scheduled" and scheduled_at:
+            from mailbox_app.services.scheduled_mail_service import create_scheduled_email
+
+            uploaded_files = self.request.FILES.getlist("attachments")
+            try:
+                scheduled_email = create_scheduled_email(
+                    user=self.request.user,
+                    account=account,
+                    to_recipients=to_raw,
+                    scheduled_at=scheduled_at,
+                    subject=subject,
+                    body_html=body_html,
+                    body_text="",
+                    cc_recipients=cc_raw,
+                    bcc_recipients=bcc_raw,
+                    uploaded_files=uploaded_files,
+                )
+                messages.success(
+                    self.request,
+                    f"Письмо «{subject}» успешно запланировано к отправке на {scheduled_at:%d.%m.%Y %H:%M} (МСК)!",
+                )
+                return redirect("mailbox_app:scheduled_list")
+            except Exception as e:
+                logger.error(f"[Mailbox] Ошибка создания отложенного письма: {e}", exc_info=True)
+                messages.error(self.request, f"Не удалось запланировать отправку письма: {e}")
+                return self.form_invalid(form)
 
         to_list = [addr.strip() for addr in to_raw.replace(";", ",").split(",") if addr.strip()]
         cc_list = [addr.strip() for addr in cc_raw.replace(";", ",").split(",") if addr.strip()] if cc_raw else []
@@ -1097,6 +1151,192 @@ class MailboxDiagnosticView(UserPassesTestMixin, MailboxBaseMixin, TemplateView)
             "json_report": json_report_str,
         })
         return context
+
+
+class MailboxScheduledListView(MailboxBaseMixin, ListView):
+    """Представление для просмотра и управления письмами, запланированными к отправке."""
+
+    template_name = "mailbox_app/scheduled_list.html"
+    context_object_name = "scheduled_emails"
+    paginate_by = 25
+
+    def get_queryset(self):
+        """Возвращает запланированные письма текущего пользователя с фильтрацией по статусу.
+
+        Returns:
+            QuerySet[ScheduledEmail]: Запланированные письма пользователя.
+        """
+        status_filter = self.request.GET.get("status", "")
+        qs = (
+            ScheduledEmail.objects.filter(user=self.request.user)
+            .select_related("account")
+            .prefetch_related("attachments")
+        )
+        if status_filter in dict(ScheduledEmail.STATUS_CHOICES):
+            qs = qs.filter(status=status_filter)
+        return qs.order_by("scheduled_at")
+
+    def get_context_data(self, **kwargs):
+        """Формирует контекст шаблона для страницы запланированных писем.
+
+        Returns:
+            dict: Данные контекста шаблона.
+        """
+        context = super().get_context_data(**kwargs)
+        account = self.get_account()
+        folders = []
+        if account:
+            try:
+                with self.get_imap_service(account) as imap_svc:
+                    folders = imap_svc.get_folders()
+            except Exception:
+                pass
+
+        status_filter = self.request.GET.get("status", "")
+        counts = {
+            "all": ScheduledEmail.objects.filter(user=self.request.user).count(),
+            "pending": ScheduledEmail.objects.filter(
+                user=self.request.user, status=ScheduledEmail.STATUS_PENDING
+            ).count(),
+            "sent": ScheduledEmail.objects.filter(
+                user=self.request.user, status=ScheduledEmail.STATUS_SENT
+            ).count(),
+            "failed": ScheduledEmail.objects.filter(
+                user=self.request.user, status=ScheduledEmail.STATUS_FAILED
+            ).count(),
+            "cancelled": ScheduledEmail.objects.filter(
+                user=self.request.user, status=ScheduledEmail.STATUS_CANCELLED
+            ).count(),
+        }
+
+        context.update({
+            "title": "КОРПОРАТИВНАЯ ПОЧТА",
+            "breadcrumbs": [
+                {
+                    "name": "Корпоративная почта",
+                    "url": reverse("mailbox_app:folder", kwargs={"folder": "INBOX"}),
+                },
+                {"name": "Запланированные письма"},
+            ],
+            "account": account,
+            "folders": folders,
+            "current_folder": "scheduled",
+            "current_folder_display": "Запланированные",
+            "scheduled_count": self.get_scheduled_count(),
+            "status_filter": status_filter,
+            "status_counts": counts,
+            "status_choices": ScheduledEmail.STATUS_CHOICES,
+        })
+        return context
+
+
+class MailboxScheduledActionAPIView(MailboxBaseMixin, View):
+    """AJAX API контроллер для управления отложенными письмами."""
+
+    def post(self, request, *args, **kwargs):
+        """Обрабатывает запросы на отмену, отправку сейчас или перенос письма.
+
+        Args:
+            request (HttpRequest): Запрос с параметрами действия.
+
+        Returns:
+            JsonResponse: Результат выполнения операции в формате JSON.
+        """
+        import json
+        from django.http import JsonResponse
+        from django.utils.dateparse import parse_datetime
+        from mailbox_app.services.scheduled_mail_service import (
+            cancel_scheduled_email,
+            reschedule_email,
+            send_single_scheduled_email,
+        )
+
+        try:
+            if request.content_type == "application/json":
+                data = json.loads(request.body.decode("utf-8"))
+            else:
+                data = request.POST
+
+            action = data.get("action")
+            email_id_raw = data.get("email_id")
+            if not email_id_raw or not action:
+                return JsonResponse(
+                    {"success": False, "error": "Некорректные параметры запроса."},
+                    status=400,
+                )
+
+            email_id = int(email_id_raw)
+
+            if action == "cancel":
+                cancel_scheduled_email(email_id, request.user)
+                return JsonResponse(
+                    {"success": True, "message": "Отправка письма успешно отменена."}
+                )
+
+            elif action == "send_now":
+                from mailbox_app.tasks import send_scheduled_email_task
+
+                try:
+                    send_single_scheduled_email(email_id)
+                    return JsonResponse(
+                        {"success": True, "message": "Письмо успешно отправлено!"}
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"[Mailbox] Прямая отправка не удалась, ставим в Celery: {e}"
+                    )
+                    send_scheduled_email_task.delay(email_id)
+                    return JsonResponse(
+                        {"success": True, "message": "Письмо поставлено в очередь на отправку."}
+                    )
+
+            elif action == "reschedule":
+                new_dt_raw = data.get("new_scheduled_at", "")
+                if not new_dt_raw:
+                    return JsonResponse(
+                        {"success": False, "error": "Не указана новая дата отправки."},
+                        status=400,
+                    )
+                new_dt = parse_datetime(new_dt_raw)
+                if not new_dt:
+                    return JsonResponse(
+                        {"success": False, "error": "Неверный формат даты и времени."},
+                        status=400,
+                    )
+                if timezone.is_naive(new_dt):
+                    new_dt = timezone.make_aware(new_dt, timezone.get_current_timezone())
+                reschedule_email(email_id, new_dt, request.user)
+                return JsonResponse({
+                    "success": True,
+                    "message": f"Время отправки изменено на {new_dt:%d.%m.%Y %H:%M} (МСК).",
+                })
+
+            elif action == "delete":
+                scheduled_email = ScheduledEmail.objects.get(id=email_id)
+                if scheduled_email.user != request.user and not request.user.is_superuser:
+                    return JsonResponse(
+                        {"success": False, "error": "Доступ запрещен."},
+                        status=403,
+                    )
+                if scheduled_email.status == ScheduledEmail.STATUS_PROCESSING:
+                    return JsonResponse(
+                        {"success": False, "error": "Нельзя удалить письмо в процессе отправки."},
+                        status=400,
+                    )
+                scheduled_email.delete()
+                return JsonResponse(
+                    {"success": True, "message": "Запись успешно удалена."}
+                )
+
+            return JsonResponse(
+                {"success": False, "error": f"Неизвестное действие '{action}'."},
+                status=400,
+            )
+
+        except Exception as err:
+            logger.error(f"[Mailbox] Ошибка в MailboxScheduledActionAPIView: {err}", exc_info=True)
+            return JsonResponse({"success": False, "error": str(err)}, status=400)
+
 
 
 

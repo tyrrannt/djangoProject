@@ -66,6 +66,10 @@ app.conf.beat_schedule = {
         'task': 'testing_app.tasks.send_deadline_reminders_task',
         'schedule': crontab(hour='8', minute='0'),
     },
+    'mailbox_process_scheduled_emails': {
+        'task': 'mailbox_app.tasks.process_scheduled_emails_task',
+        'schedule': crontab(minute='*/1'),
+    },
 
 
     # 'sync_finance_directories': {
