@@ -1,4 +1,4 @@
-"""Сервисы формирования сертификатов, генерации QR-кодов и проверки подлинности."""
+"""Сервисы формирования уведомлений о результатах проверки знаний, генерации QR-кодов и проверки подлинности."""
 
 import io
 from typing import Dict, Any, Optional
@@ -224,20 +224,20 @@ def get_user_dative_name(user) -> str:
 
 
 def get_certificate_context(attempt: TestingAttempt, request=None) -> Dict[str, Any]:
-    """Формирует полный набор контекстных данных для отображения и печати сертификата.
+    """Формирует полный набор контекстных данных для отображения и печати уведомления.
 
     Args:
         attempt (TestingAttempt): Успешная попытка тестирования.
         request (Optional[HttpRequest]): HTTP-запрос для построения абсолютных путей.
 
     Returns:
-        Dict[str, Any]: Словарь с юридическими и персональными реквизитами сертификата.
+        Dict[str, Any]: Словарь с юридическими и персональными реквизитами уведомления.
     """
     assignment = attempt.assignment
     testing = assignment.testing
     finished_at = attempt.finished_at or timezone.now()
 
-    # Срок действия сертификата: 1 год со дня успешной сдачи
+    # Срок действия результатов проверки (уведомления): 1 год со дня успешной сдачи
     valid_until = finished_at + timedelta(days=365)
 
     qr_url = generate_certificate_qr_code(attempt, request=request)
@@ -255,7 +255,7 @@ def get_certificate_context(attempt: TestingAttempt, request=None) -> Dict[str, 
         "assignment": assignment,
         "testing": testing,
         "company_name": "ООО Авиакомпания «БАРКОЛ»",
-        "certificate_title": "УДОСТОВЕРЕНИЕ (СЕРТИФИКАТ)",
+        "certificate_title": "УВЕДОМЛЕНИЕ",
         "certificate_subtitle": "О прохождении периодической проверки знаний",
         "result_number": attempt.result_number,
         "certificate_uuid": attempt.certificate_uuid,
@@ -277,15 +277,15 @@ def get_certificate_context(attempt: TestingAttempt, request=None) -> Dict[str, 
 
 
 def verify_certificate_by_uuid(certificate_uuid: str) -> Optional[Dict[str, Any]]:
-    """Выполняет поиск и верификацию сертификата по его уникальному UUID.
+    """Выполняет поиск и верификацию уведомления по его уникальному UUID.
 
     Используется на закрытой странице проверки подлинности (QR-код).
 
     Args:
-        certificate_uuid (str): Уникальный UUID сертификата.
+        certificate_uuid (str): Уникальный UUID уведомления.
 
     Returns:
-        Optional[Dict[str, Any]]: Данные верифицированного сертификата или None при отсутствии.
+        Optional[Dict[str, Any]]: Данные верифицированного уведомления или None при отсутствии.
     """
     attempt = TestingAttempt.objects.filter(
         certificate_uuid=certificate_uuid,

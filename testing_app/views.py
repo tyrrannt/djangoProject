@@ -939,11 +939,11 @@ class TestAttemptResultView(LoginRequiredMixin, View):
 
 
 # ==============================================================================
-# СЕРТИФИКАТЫ И ПРОВЕРКА ПОДЛИННОСТИ (ЭТАП 5)
+# УВЕДОМЛЕНИЯ О РЕЗУЛЬТАТАХ И ПРОВЕРКА ПОДЛИННОСТИ (ЭТАП 5)
 # ==============================================================================
 
 class CertificateView(LoginRequiredMixin, View):
-    """Отображение и печать бланка сертификата о прохождении проверки знаний."""
+    """Отображение и печать бланка уведомления о прохождении проверки знаний."""
 
     template_name = "testing_app/certificate.html"
 
@@ -954,7 +954,7 @@ class CertificateView(LoginRequiredMixin, View):
         )
 
         if not attempt.is_passed:
-            messages.error(request, "Сертификат выдается только при успешной сдаче тестирования.")
+            messages.error(request, "Уведомление формируется только при успешной сдаче тестирования.")
             return redirect("testing_app:test_result", attempt_id=attempt.id)
 
         # Доступ разрешен самому сотруднику, руководству и ответственным
@@ -966,7 +966,7 @@ class CertificateView(LoginRequiredMixin, View):
         )
 
         if not is_owner and not is_manager:
-            messages.error(request, "У вас нет прав для доступа к этому сертификату.")
+            messages.error(request, "У вас нет прав для доступа к этому уведомлению.")
             return redirect("testing_app:my_tests")
 
         context = get_certificate_context(attempt, request=request)
@@ -1030,18 +1030,18 @@ class AttemptTestSheetView(LoginRequiredMixin, View):
 
 
 class CertificateVerifyView(LoginRequiredMixin, View):
-    """Закрытая страница проверки подлинности сертификата по QR-коду (строго с авторизацией)."""
+    """Закрытая страница проверки подлинности уведомления по QR-коду (строго с авторизацией)."""
 
     template_name = "testing_app/certificate_verify.html"
 
     def get(self, request, certificate_uuid, *args, **kwargs):
         cert_data = verify_certificate_by_uuid(str(certificate_uuid))
 
-        # Запись в аудит факта проверки подлинности сертификата
+        # Запись в аудит факта проверки подлинности уведомления
         TestingAuditLog.objects.create(
             user=request.user,
             action="certificate_verify",
-            object_repr=f"Проверка сертификата UUID {certificate_uuid}",
+            object_repr=f"Проверка уведомления UUID {certificate_uuid}",
             details={
                 "is_found": cert_data is not None,
                 "viewer": request.user.get_full_name(),

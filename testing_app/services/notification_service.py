@@ -151,7 +151,7 @@ def send_testing_assignment_notification(assignment_id: int) -> bool:
 
 
 def send_testing_result_notification(attempt_id: int) -> bool:
-    """Отправляет сотруднику email с результатами сдачи теста и ссылкой на сертификат.
+    """Отправляет сотруднику email с результатами сдачи теста и ссылкой на уведомление.
 
     Args:
         attempt_id (int): ID попытки TestingAttempt.
@@ -186,7 +186,7 @@ def send_testing_result_notification(attempt_id: int) -> bool:
         btn_action = f"""
         <div style="text-align: center; margin: 25px 0;">
             <a href="/testing/attempt/{attempt.id}/certificate/" style="background-color: #166534; color: #FFFFFF; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                Просмотреть и распечатать сертификат
+                Просмотреть и распечатать уведомление
             </a>
         </div>
         """

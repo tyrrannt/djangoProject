@@ -639,8 +639,8 @@ class TestingAttempt(models.Model):
         score_percentage (float): Набранный процент правильных ответов.
         is_passed (bool): Сдано успешно или нет.
         completion_reason (str): Причина завершения попытки.
-        certificate_uuid (UUID): Уникальный неизменяемый UUID для QR-кода и проверки.
-        result_number (str): Уникальный номер сертификата (TEST-YYYY-XXXXXXXX).
+        certificate_uuid (UUID): Уникальный неизменяемый UUID для QR-кода и уведомления.
+        result_number (str): Уникальный номер уведомления (БАРКОЛ-ТО-YYYY-XXXXXX).
         qr_code_image (Image): Сгенерированное изображение QR-кода.
     """
 
@@ -719,7 +719,7 @@ class TestingAttempt(models.Model):
         default=uuid.uuid4,
         unique=True,
         db_index=True,
-        verbose_name="Уникальный UUID сертификата"
+        verbose_name="Уникальный UUID уведомления"
     )
     result_number = models.CharField(
         max_length=50,

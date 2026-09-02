@@ -1,7 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 
-{% block title %}Верификация сертификата — Корпоративный портал БАРКОЛ{% endblock %}
+{% block title %}Проверка подлинности уведомления — Корпоративный портал БАРКОЛ{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center my-4">
@@ -11,7 +11,7 @@
             <div class="card card-modern shadow border-0 overflow-hidden">
                 <div class="card-header bg-success text-white text-center py-4">
                     <i class="bx bx-check-shield display-3 mb-2 d-block"></i>
-                    <h3 class="font-weight-bold mb-1 text-white">СЕРТИФИКАТ ПОДЛИННЫЙ</h3>
+                    <h3 class="font-weight-bold mb-1 text-white">УВЕДОМЛЕНИЕ ПОДЛИННОЕ</h3>
                     <p class="mb-0 opacity-75 fs-6">
                         Запись успешно подтверждена в официальном реестре ООО «Авиакомпания «БАРКОЛ»
                     </p>
@@ -84,12 +84,12 @@
 
                     <div class="bg-light p-3 rounded border text-muted small">
                         <i class="bx bx-info-circle me-1 text-info"></i>
-                        Данный сертификат подтверждает успешное прохождение периодической проверки знаний по техническому обслуживанию ВС и имеет юридическую силу в соответствии с ФАП и регламентами авиакомпании «БАРКОЛ».
+                        Данное уведомление подтверждает успешное прохождение периодической проверки знаний по техническому обслуживанию ВС и имеет юридическую силу в соответствии с ФАП и регламентами авиакомпании «БАРКОЛ».
                     </div>
 
                     <div class="mt-4 pt-3 border-top text-center">
                         <a href="{% url 'testing_app:certificate_view' cert_data.attempt.id %}" class="btn btn-outline-primary shadow-sm">
-                            <i class="bx bx-show me-1"></i> Просмотреть бланк сертификата
+                            <i class="bx bx-show me-1"></i> Просмотреть бланк уведомления
                         </a>
                     </div>
                 </div>
@@ -99,7 +99,7 @@
             <div class="card card-modern shadow border-0 overflow-hidden">
                 <div class="card-header bg-danger text-white text-center py-4">
                     <i class="bx bx-shield-x display-3 mb-2 d-block"></i>
-                    <h3 class="font-weight-bold mb-1 text-white">СЕРТИФИКАТ НЕ НАЙДЕН</h3>
+                    <h3 class="font-weight-bold mb-1 text-white">УВЕДОМЛЕНИЕ НЕ НАЙДЕНО</h3>
                     <p class="mb-0 opacity-75 fs-6">
                         Документ с указанным уникальным кодом не зарегистрирован в системе или аннулирован
                     </p>
@@ -113,7 +113,7 @@
                     <p class="text-muted">
                         Возможные причины:<br>
                         • Ссылка была сформирована с ошибкой;<br>
-                        • Сертификат был отозван или аннулирован аттестационной комиссией;<br>
+                        • Уведомление было отозвано или аннулировано аттестационной комиссией;<br>
                         • Тестирование не было завершено с положительным результатом.
                     </p>
 
