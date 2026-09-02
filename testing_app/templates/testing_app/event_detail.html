@@ -1,0 +1,984 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}{{ event.title }} — Тестирование сотрудников{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='events' %}
+
+<!-- Шапка карточки мероприятия -->
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h2 class="font-weight-bold text-dark mb-0">{{ event.title }}</h2>
+                {% if event.status == 'active' %}
+                    <span class="badge bg-success font-size-13">Активно</span>
+                {% elif event.status == 'scheduled' %}
+                    <span class="badge bg-info text-white font-size-13">Запланировано</span>
+                {% elif event.status == 'preparing' %}
+                    <span class="badge bg-warning text-dark font-size-13">Подготовка</span>
+                {% elif event.status == 'completed' %}
+                    <span class="badge bg-secondary font-size-13">Завершено</span>
+                {% elif event.status == 'archived' %}
+                    <span class="badge bg-dark font-size-13">Архив</span>
+                {% else %}
+                    <span class="badge bg-light text-dark border font-size-13">Черновик</span>
+                {% endif %}
+            </div>
+            <p class="text-muted mb-0 mt-1">
+                <i class="bx bx-news me-1"></i>Приказ №{{ event.order_number }} от {{ event.order_date|date:"d.m.Y" }}
+                {% if event.order_name %}— «{{ event.order_name }}»{% endif %}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'testing_app:event_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> К списку
+            </a>
+            <a href="{% url 'testing_app:event_update' event.id %}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-edit fs-5"></i> Изменить параметры
+            </a>
+            <a href="{% url 'testing_app:event_export_excel' event.id %}" class="btn btn-outline-success d-inline-flex align-items-center gap-1 shadow-sm" title="Выгрузить официальный протокол в Excel">
+                <i class="bx bx-download fs-5"></i> Протокол Excel
+            </a>
+            <a href="{% url 'testing_app:event_export_csv' event.id %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm" title="Выгрузить в CSV">
+                <i class="bx bx-file fs-5"></i> CSV
+            </a>
+
+            <!-- Дропдаун смены статуса -->
+            <div class="dropdown">
+                <button class="btn btn-dark dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-transfer fs-5"></i> Статус мероприятия
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li>
+                        <form method="post" action="{% url 'testing_app:event_status_change' event.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="active">
+                            <button type="submit" class="dropdown-item text-success font-weight-semibold">
+                                <i class="bx bx-play-circle me-1"></i> Перевести в «Активно»
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'testing_app:event_status_change' event.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="scheduled">
+                            <button type="submit" class="dropdown-item text-info font-weight-semibold">
+                                <i class="bx bx-calendar-check me-1"></i> Перевести в «Запланировано»
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'testing_app:event_status_change' event.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="preparing">
+                            <button type="submit" class="dropdown-item text-warning font-weight-semibold">
+                                <i class="bx bx-time me-1"></i> Перевести в «Подготовка»
+                            </button>
+                        </form>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form method="post" action="{% url 'testing_app:event_status_change' event.id %}" onsubmit="return confirm('Завершить тестирование? Новые попытки будут заблокированы.');">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit" class="dropdown-item text-secondary">
+                                <i class="bx bx-check-double me-1"></i> Завершить тестирование
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Вкладки управления мероприятием -->
+<ul class="nav nav-tabs nav-tabs-modern mb-4" id="eventTabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'overview' or not active_tab %}active{% endif %}" id="overview-tab" data-bs-toggle="tab" href="#overview" role="tab">
+            <i class="bx bx-info-circle me-1"></i> 1. Общие сведения и Чек-лист
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'positions' %}active{% endif %}" id="positions-tab" data-bs-toggle="tab" href="#positions" role="tab">
+            <i class="bx bx-briefcase me-1"></i> 2. Должности групп
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'employees' %}active{% endif %}" id="employees-tab" data-bs-toggle="tab" href="#employees" role="tab">
+            <i class="bx bx-user-check me-1"></i> 3. Назначенные сотрудники ({{ event.assignments.count }})
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'categories' %}active{% endif %}" id="categories-tab" data-bs-toggle="tab" href="#categories" role="tab">
+            <i class="bx bx-pie-chart-alt-2 me-1"></i> 4. Категории вопросов (100%)
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content" id="eventTabsContent">
+    <!-- ВКЛАДКА 1: Общие сведения и чек-лист готовности к запуску -->
+    <div class="tab-pane fade {% if active_tab == 'overview' or not active_tab %}show active{% endif %}" id="overview" role="tabpanel">
+        <div class="row">
+            <!-- Параметры -->
+            <div class="col-lg-6 col-12 mb-4">
+                <div class="card card-modern shadow-sm h-100">
+                    <header class="card-header bg-light border-bottom">
+                        <h5 class="card-title text-dark mb-0"><i class="bx bx-slider text-primary me-1"></i> Установленные параметры</h5>
+                    </header>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Период начала:</div>
+                                <div class="font-weight-bold text-dark">{{ event.start_datetime|date:"d.m.Y H:i" }}</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Период окончания:</div>
+                                <div class="font-weight-bold text-dark">{{ event.end_datetime|date:"d.m.Y H:i" }}</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Количество вопросов:</div>
+                                <div class="font-weight-bold text-primary fs-5">{{ event.questions_count }} вопр.</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Проходной результат:</div>
+                                <div class="font-weight-bold text-success fs-5">{{ event.passing_score_percentage }}%</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Таймер одной попытки:</div>
+                                <div class="font-weight-bold text-dark">{{ event.attempt_duration_minutes }} минут</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Максимально попыток:</div>
+                                <div class="font-weight-bold text-dark">{{ event.max_attempts }} попыток</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="text-muted small">Описание:</div>
+                                <div>{{ event.description|default:"Нет описания" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Чек-лист готовности согласно разделу 85 ТЗ -->
+            <div class="col-lg-6 col-12 mb-4">
+                <div class="card card-modern shadow-sm h-100">
+                    <header class="card-header d-flex justify-content-between align-items-center {% if is_ready_to_launch %}bg-success text-white{% else %}bg-warning-subtle border-bottom{% endif %}">
+                        <h5 class="card-title mb-0 {% if is_ready_to_launch %}text-white{% else %}text-dark{% endif %}">
+                            <i class="bx bx-check-shield me-1"></i> Чек-лист готовности к запуску (Раздел 85 ТЗ)
+                        </h5>
+                        {% if is_ready_to_launch %}
+                            <span class="badge bg-white text-success font-weight-bold">Готово к запуску</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark font-weight-bold">Требуется настройка</span>
+                        {% endif %}
+                    </header>
+                    <div class="card-body p-4">
+                        {% if is_ready_to_launch %}
+                            <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+                                <i class="bx bx-check-circle fs-3 text-success"></i>
+                                <div>Все 14 условий готовности выполнены. Мероприятие готово к переводу в статус «Активно».</div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning mb-3">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error me-1"></i> Обнаружены незавершенные условия перед запуском:</div>
+                                <ul class="mb-0 ps-3 small">
+                                    {% for err in readiness_errors %}
+                                        <li>{{ err }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <div class="small text-muted">
+                            Автоматическая проверка контролирует корректность дат, ненулевые лимиты, создание 2 групп, привязку должностей без пересечений, наличие сотрудников, распределение категорий строго на 100% и достаточность вопросов в банке.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВКЛАДКА 2: Настройка должностей и распределение сотрудников по группам -->
+    <div class="tab-pane fade {% if active_tab == 'positions' %}show active{% endif %}" id="positions" role="tabpanel">
+        <form method="post" id="distributionForm" action="{% url 'testing_app:event_positions_update' event.id %}">
+            {% csrf_token %}
+
+            <!-- Контейнеры для скрытых input'ов при отправке формы -->
+            <div id="hiddenInputsContainer"></div>
+
+            <!-- БЛОК 1: Выбор должностей по принадлежности (division_affiliation) -->
+            <div class="card card-modern shadow-sm mb-4">
+                <header class="card-header bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title text-dark mb-0">
+                            <i class="bx bx-filter-alt text-primary me-1"></i> Шаг 1. Формирование пула должностей по принадлежности (division_affiliation)
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">
+                            Выберите типы принадлежности в левом окне, затем отметьте нужные должности в правом окне. Должности могут пересекаться между группами.
+                        </p>
+                    </div>
+                </header>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <!-- Левое окно: Типы принадлежности -->
+                        <div class="col-md-4 col-12">
+                            <div class="border rounded p-3 h-100 bg-white">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-category text-primary me-1"></i> Принадлежность:
+                                    </h6>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" id="selectAllAffiliationsBtn">Все</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" id="clearAllAffiliationsBtn">Сброс</button>
+                                    </div>
+                                </div>
+                                <div class="affiliation-list-box" style="max-height: 220px; overflow-y: auto;">
+                                    {% for aff in affiliations %}
+                                        <div class="form-check py-1 border-bottom border-light">
+                                            <input class="form-check-input aff-checkbox" type="checkbox" value="{{ aff.id }}" id="aff_{{ aff.id }}"
+                                                   {% if aff.id in selected_aff_ids %}checked{% endif %}>
+                                            <label class="form-check-label text-dark font-weight-semibold" for="aff_{{ aff.id }}" style="cursor: pointer;">
+                                                {{ aff.name }}
+                                            </label>
+                                        </div>
+                                    {% empty %}
+                                        <div class="text-muted small p-2">Нет доступных типов принадлежности с должностями.</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Правое окно: Должности -->
+                        <div class="col-md-8 col-12">
+                            <div class="border rounded p-3 h-100 bg-white">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                    <h6 class="font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-briefcase text-primary me-1"></i> Должности (<span id="jobsCountBadge">0</span>):
+                                    </h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="text" id="jobSearchInput" class="form-control form-control-sm" placeholder="Поиск должности..." style="width: 180px;">
+                                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" id="selectAllVisibleJobsBtn">Выбрать все</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" id="clearAllJobsBtn">Сброс</button>
+                                    </div>
+                                </div>
+                                <div id="jobsListBox" class="jobs-list-box p-1" style="max-height: 220px; overflow-y: auto;">
+                                    {% for job in affiliated_jobs %}
+                                        <div class="form-check py-1 px-2 border-bottom border-light job-item"
+                                             data-aff-id="{{ job.division_affiliation_id }}"
+                                             data-job-name="{{ job.name|lower }}">
+                                            <input class="form-check-input job-checkbox" type="checkbox" value="{{ job.id }}" id="job_{{ job.id }}"
+                                                   {% if job.id in selected_job_ids %}checked{% endif %}>
+                                            <label class="form-check-label text-dark d-flex justify-content-between align-items-center" for="job_{{ job.id }}" style="cursor: pointer;">
+                                                <span>{{ job.name }}</span>
+                                                <span class="badge bg-light text-muted border small ms-2">{{ job.division_affiliation.name }}</span>
+                                            </label>
+                                        </div>
+                                    {% empty %}
+                                        <div class="text-muted small p-2">Должности не найдены.</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- БЛОК 2: Распределение сотрудников по 2 группам (Три окна со стрелками) -->
+            <div class="card card-modern shadow-sm">
+                <header class="card-header bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title text-dark mb-0">
+                            <i class="bx bx-transfer-alt text-primary me-1"></i> Шаг 2. Распределение сотрудников по группам (3 окна со стрелками)
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">
+                            Выделите сотрудников в общем списке и нажмите стрелку для переноса в нужную группу. При перемещении сотрудник пропадает из общего списка.
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-white text-dark border px-2 py-1">Всего кандидатов: <strong id="totalCandidatesCount">0</strong></span>
+                    </div>
+                </header>
+                <div class="card-body p-3">
+                    <div class="row g-3 align-items-stretch">
+                        <!-- Окно 1: Общий пул сотрудников -->
+                        <div class="col-lg-4 col-md-12">
+                            <div class="card h-100 border shadow-none bg-light">
+                                <div class="card-header py-2 bg-white border-bottom d-flex justify-content-between align-items-center">
+                                    <span class="font-weight-bold text-dark small">
+                                        <i class="bx bx-group text-secondary me-1"></i> Общий список сотрудников
+                                    </span>
+                                    <span id="poolBadge" class="badge bg-secondary">0</span>
+                                </div>
+                                <div class="p-2 bg-white border-bottom">
+                                    <input type="text" id="poolSearch" class="form-control form-control-sm" placeholder="🔍 Поиск по ФИО...">
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" id="selectAllPoolBtn">Выделить всех</button>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" id="unselectAllPoolBtn">Снять выделение</button>
+                                    </div>
+                                </div>
+                                <div id="poolContainer" class="employee-box p-2" style="min-height: 280px; max-height: 380px; overflow-y: auto;">
+                                    <!-- Динамический список -->
+                                </div>
+                                <div class="card-footer bg-white border-top p-2 d-flex flex-column gap-1">
+                                    <button type="button" class="btn btn-sm btn-primary w-100 d-flex justify-content-center align-items-center gap-1 shadow-sm" id="movePoolToG1Btn">
+                                        <span>В Группу 1</span> <i class="bx bx-right-arrow-alt fs-5"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-success w-100 d-flex justify-content-center align-items-center gap-1 shadow-sm" id="movePoolToG2Btn">
+                                        <span>В Группу 2</span> <i class="bx bx-right-arrow-alt fs-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Окно 2: Группа 1 (Обеспечение ТО ВС) -->
+                        <div class="col-lg-4 col-md-12">
+                            <div class="card h-100 border shadow-none" style="background-color: #F8FAFC;">
+                                <div class="card-header py-2 bg-white border-bottom border-primary d-flex justify-content-between align-items-center">
+                                    <span class="font-weight-bold text-primary small text-truncate" title="{{ group1.name }}">
+                                        <i class="bx bx-cog me-1"></i> Группа 1: Обеспечение ТО ВС
+                                    </span>
+                                    <span id="g1Badge" class="badge bg-primary">0</span>
+                                </div>
+                                <div class="p-2 bg-white border-bottom">
+                                    <input type="text" id="g1Search" class="form-control form-control-sm" placeholder="🔍 Поиск по ФИО...">
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" id="selectAllG1Btn">Выделить всех</button>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" id="unselectAllG1Btn">Снять выделение</button>
+                                    </div>
+                                </div>
+                                <div id="g1Container" class="employee-box p-2" style="min-height: 280px; max-height: 380px; overflow-y: auto;">
+                                    <!-- Динамический список -->
+                                </div>
+                                <div class="card-footer bg-white border-top p-2 d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 d-flex justify-content-center align-items-center gap-1" id="moveG1ToPoolBtn" title="Вернуть в общий список">
+                                        <i class="bx bx-left-arrow-alt fs-5"></i> <span>В общий</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success flex-grow-1 d-flex justify-content-center align-items-center gap-1" id="moveG1ToG2Btn" title="Переместить в Группу 2">
+                                        <span>В Гр. 2</span> <i class="bx bx-right-arrow-alt fs-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Окно 3: Группа 2 (Выполнение ТО ВС) -->
+                        <div class="col-lg-4 col-md-12">
+                            <div class="card h-100 border shadow-none" style="background-color: #F0FDF4;">
+                                <div class="card-header py-2 bg-white border-bottom border-success d-flex justify-content-between align-items-center">
+                                    <span class="font-weight-bold text-success small text-truncate" title="{{ group2.name }}">
+                                        <i class="bx bx-wrench me-1"></i> Группа 2: Выполнение ТО ВС
+                                    </span>
+                                    <span id="g2Badge" class="badge bg-success">0</span>
+                                </div>
+                                <div class="p-2 bg-white border-bottom">
+                                    <input type="text" id="g2Search" class="form-control form-control-sm" placeholder="🔍 Поиск по ФИО...">
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" id="selectAllG2Btn">Выделить всех</button>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" id="unselectAllG2Btn">Снять выделение</button>
+                                    </div>
+                                </div>
+                                <div id="g2Container" class="employee-box p-2" style="min-height: 280px; max-height: 380px; overflow-y: auto;">
+                                    <!-- Динамический список -->
+                                </div>
+                                <div class="card-footer bg-white border-top p-2 d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 d-flex justify-content-center align-items-center gap-1" id="moveG2ToPoolBtn" title="Вернуть в общий список">
+                                        <i class="bx bx-left-arrow-alt fs-5"></i> <span>В общий</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1 d-flex justify-content-center align-items-center gap-1" id="moveG2ToG1Btn" title="Переместить в Группу 1">
+                                        <i class="bx bx-left-arrow-alt fs-5"></i> <span>В Гр. 1</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4 pt-3 border-top">
+                        <div class="text-muted small">
+                            <i class="bx bx-info-circle text-primary me-1"></i>
+                            При сохранении назначения сотрудников будут синхронизированы в базе данных.
+                        </div>
+                        <button type="button" id="saveDistributionBtn" class="btn btn-primary px-4 py-2 shadow-sm font-weight-bold">
+                            <i class="bx bx-save me-1"></i> Сохранить должности и распределение сотрудников
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ВКЛАДКА 3: Назначенные сотрудники -->
+    <div class="tab-pane fade {% if active_tab == 'employees' %}show active{% endif %}" id="employees" role="tabpanel">
+        <div class="card card-modern shadow-sm">
+            <header class="card-header bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="card-title text-dark mb-0">
+                    <i class="bx bx-user-pin text-primary me-1"></i> Реестр назначенных сотрудников (Всего: {{ event.assignments.count }})
+                </h5>
+                <button type="button" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#manualAssignModal">
+                    <i class="bx bx-user-plus fs-5"></i> Назначить сотрудника вручную
+                </button>
+            </header>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;" class="text-center">#</th>
+                                <th>ФИО сотрудника</th>
+                                <th>Должность (снимок)</th>
+                                <th>Подразделение (снимок)</th>
+                                <th style="width: 220px;">Группа</th>
+                                <th style="width: 140px;" class="text-center">Способ</th>
+                                <th style="width: 130px;" class="text-center">Статус</th>
+                                <th style="width: 90px;" class="text-center">Попыток</th>
+                                <th style="width: 80px;" class="text-center">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assign in event.assignments.all %}
+                            <tr>
+                                <td class="text-center text-muted small">{{ forloop.counter }}</td>
+                                <td class="font-weight-bold text-dark">
+                                    {{ assign.employee.get_full_name }}
+                                </td>
+                                <td>{{ assign.assigned_job_title }}</td>
+                                <td class="text-muted small">{{ assign.assigned_division_title|default:"—" }}</td>
+                                <td>
+                                    <span class="badge {% if assign.group.code == 'ensuring_maintenance' %}bg-primary-subtle text-primary border border-primary{% else %}bg-success-subtle text-success border border-success{% endif %}">
+                                        {{ assign.group.name }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if assign.assignment_type == 'auto_by_position' %}
+                                        <span class="badge bg-light text-muted border">Авто</span>
+                                    {% else %}
+                                        <span class="badge bg-info text-white">Вручную</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if assign.status == 'passed' %}
+                                        <span class="badge bg-success">Пройдено</span>
+                                    {% elif assign.status == 'in_progress' %}
+                                        <span class="badge bg-warning text-dark">В процессе</span>
+                                    {% elif assign.status == 'on_control' %}
+                                        <span class="badge bg-danger">На контроле</span>
+                                    {% elif assign.status == 'failed' %}
+                                        <span class="badge bg-danger">Не пройдено</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border">Не начато</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center font-weight-bold">
+                                    {{ assign.attempts_used }} / {{ event.max_attempts }}
+                                </td>
+                                <td class="text-center">
+                                    {% if assign.attempts_used == 0 %}
+                                        <form method="post" action="{% url 'testing_app:event_remove_assign' event.id assign.id %}" onsubmit="return confirm('Исключить сотрудника из тестирования?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Исключить">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted small" title="Нельзя удалить начатую попытку">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="bx bx-user-x fs-1 d-block mb-2 text-secondary"></i>
+                                    Сотрудники еще не назначены. На вкладке «Должности групп» выберите должности и нажмите «Синхронизировать» либо добавьте вручную.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВКЛАДКА 4: Процентное распределение категорий -->
+    <div class="tab-pane fade {% if active_tab == 'categories' %}show active{% endif %}" id="categories" role="tabpanel">
+        <div class="card card-modern shadow-sm">
+            <header class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title text-dark mb-0">
+                    <i class="bx bx-pie-chart-alt text-primary me-1"></i> Распределение категорий вопросов (Строго 100%)
+                </h5>
+                <div>
+                    Текущая сумма: <strong id="totalPercentBadge" class="badge {% if total_percentage == 100 %}bg-success{% else %}bg-danger{% endif %} font-size-14">{{ total_percentage }}%</strong>
+                </div>
+            </header>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-3">
+                    Укажите процентную квоту для каждой категории вопросов. Количество вопросов рассчитывается автоматически исходя из общего числа ({{ event.questions_count }} вопр.).
+                </p>
+
+                <form method="post" action="{% url 'testing_app:event_categories_update' event.id %}">
+                    {% csrf_token %}
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Категория</th>
+                                    <th style="width: 150px;" class="text-center">Доступно в банке</th>
+                                    <th style="width: 180px;" class="text-center">Процент участия (%)</th>
+                                    <th style="width: 160px;" class="text-center">В тесте (вопросов)</th>
+                                    <th style="width: 140px;" class="text-center">Достаточность</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in categories_data %}
+                                <tr>
+                                    <td class="font-weight-bold text-dark">
+                                        <i class="bx bx-folder me-1 text-primary"></i>{{ item.category.name }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark border">{{ item.active_count }} вопр.</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="cat_percent_{{ item.category.id }}" value="{{ item.percentage }}" min="0" max="100" class="form-control text-center cat-pct-input" data-active="{{ item.active_count }}">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center font-weight-bold text-primary cat-calc-count">
+                                        {{ item.calculated_count }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.is_sufficient %}
+                                            <span class="badge bg-success-subtle text-success border border-success">Достаточно</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger">Не хватает!</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        Активные категории не найдены. Сначала создайте категории в банке вопросов.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm" id="saveCategoriesBtn">
+                            <i class="bx bx-save me-1"></i> Сохранить распределение категорий
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно ручного назначения сотрудника -->
+<div class="modal fade" id="manualAssignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'testing_app:event_manual_assign' event.id %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title text-white font-weight-bold"><i class="bx bx-user-plus me-1"></i> Ручное назначение сотрудника</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold text-dark">Целевая группа тестирования:</label>
+                    {{ manual_assign_form.group }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold text-dark">Выберите сотрудника:</label>
+                    {{ manual_assign_form.employee }}
+                </div>
+                <div class="form-text text-muted">
+                    Сотрудник будет включен в тестирование со способом формирования «Добавлен вручную».
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" class="btn btn-success">Добавить в группу</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. Логика процентов категорий (Вкладка 4)
+    const totalQuestions = {{ event.questions_count }};
+    const pctInputs = document.querySelectorAll(".cat-pct-input");
+    const badge = document.getElementById("totalPercentBadge");
+
+    function updatePercentages() {
+        let sum = 0;
+        pctInputs.forEach(input => {
+            const val = parseInt(input.value) || 0;
+            sum += val;
+            const calcCell = input.closest("tr")?.querySelector(".cat-calc-count");
+            if (calcCell) {
+                calcCell.textContent = Math.round((val / 100.0) * totalQuestions);
+            }
+        });
+        if (badge) {
+            badge.textContent = sum + "%";
+            if (sum === 100) {
+                badge.className = "badge bg-success font-size-14";
+            } else {
+                badge.className = "badge bg-danger font-size-14";
+            }
+        }
+    }
+
+    pctInputs.forEach(input => {
+        input.addEventListener("input", updatePercentages);
+    });
+
+    // 2. Интерактивное распределение должностей и сотрудников (Вкладка 2)
+    const rawCandidates = {{ candidates_json|safe }};
+    const group1Id = {{ group1.id }};
+    const group2Id = {{ group2.id }};
+
+    // Инициализация состояния кандидатов
+    rawCandidates.forEach(c => {
+        if (c.assigned_group_id === group1Id) {
+            c.location = "g1";
+        } else if (c.assigned_group_id === group2Id) {
+            c.location = "g2";
+        } else {
+            c.location = "pool";
+        }
+        c.selected = false;
+        c.is_job_selected = false;
+    });
+
+    const affCheckboxes = document.querySelectorAll(".aff-checkbox");
+    const jobItems = document.querySelectorAll(".job-item");
+    const jobCheckboxes = document.querySelectorAll(".job-checkbox");
+    const jobSearchInput = document.getElementById("jobSearchInput");
+    const jobsCountBadge = document.getElementById("jobsCountBadge");
+
+    function filterJobsByAffiliation() {
+        const selectedAffIds = new Set(
+            Array.from(affCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value)
+        );
+        const searchVal = (jobSearchInput ? jobSearchInput.value.toLowerCase().trim() : "");
+
+        let visibleCount = 0;
+        jobItems.forEach(item => {
+            const affId = item.getAttribute("data-aff-id");
+            const jobName = item.getAttribute("data-job-name") || "";
+            const matchAff = selectedAffIds.has(affId);
+            const matchSearch = !searchVal || jobName.includes(searchVal);
+
+            if (matchAff && matchSearch) {
+                item.style.display = "";
+                visibleCount++;
+            } else {
+                item.style.display = "none";
+            }
+        });
+        if (jobsCountBadge) jobsCountBadge.textContent = visibleCount;
+    }
+
+    affCheckboxes.forEach(cb => {
+        cb.addEventListener("change", function() {
+            filterJobsByAffiliation();
+            syncCandidateVisibility();
+            renderLists();
+        });
+    });
+
+    if (jobSearchInput) {
+        jobSearchInput.addEventListener("input", filterJobsByAffiliation);
+    }
+
+    document.getElementById("selectAllAffiliationsBtn")?.addEventListener("click", function() {
+        affCheckboxes.forEach(cb => cb.checked = true);
+        filterJobsByAffiliation();
+        syncCandidateVisibility();
+        renderLists();
+    });
+
+    document.getElementById("clearAllAffiliationsBtn")?.addEventListener("click", function() {
+        affCheckboxes.forEach(cb => cb.checked = false);
+        filterJobsByAffiliation();
+        syncCandidateVisibility();
+        renderLists();
+    });
+
+    document.getElementById("selectAllVisibleJobsBtn")?.addEventListener("click", function() {
+        jobItems.forEach(item => {
+            if (item.style.display !== "none") {
+                const cb = item.querySelector(".job-checkbox");
+                if (cb) cb.checked = true;
+            }
+        });
+        syncCandidateVisibility();
+        renderLists();
+    });
+
+    document.getElementById("clearAllJobsBtn")?.addEventListener("click", function() {
+        jobCheckboxes.forEach(cb => cb.checked = false);
+        syncCandidateVisibility();
+        renderLists();
+    });
+
+    jobCheckboxes.forEach(cb => {
+        cb.addEventListener("change", function() {
+            syncCandidateVisibility();
+            renderLists();
+        });
+    });
+
+    function getSelectedJobIds() {
+        const ids = new Set();
+        jobCheckboxes.forEach(cb => {
+            if (cb.checked) ids.add(parseInt(cb.value));
+        });
+        return ids;
+    }
+
+    function syncCandidateVisibility() {
+        const selectedJobs = getSelectedJobIds();
+        rawCandidates.forEach(c => {
+            c.is_job_selected = selectedJobs.has(c.job_id);
+        });
+    }
+
+    // Рендеринг списков сотрудников
+    const poolContainer = document.getElementById("poolContainer");
+    const g1Container = document.getElementById("g1Container");
+    const g2Container = document.getElementById("g2Container");
+    const poolBadge = document.getElementById("poolBadge");
+    const g1Badge = document.getElementById("g1Badge");
+    const g2Badge = document.getElementById("g2Badge");
+    const totalCandidatesCount = document.getElementById("totalCandidatesCount");
+
+    const poolSearch = document.getElementById("poolSearch");
+    const g1Search = document.getElementById("g1Search");
+    const g2Search = document.getElementById("g2Search");
+
+    function createEmployeeCard(c) {
+        const div = document.createElement("div");
+        div.className = `p-2 mb-2 rounded border employee-card ${c.selected ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-dark shadow-xs'}`;
+        div.style.cursor = "pointer";
+        div.style.userSelect = "none";
+        div.style.transition = "all 0.15s ease";
+        div.setAttribute("data-id", c.id);
+
+        div.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="font-weight-bold small ${c.selected ? 'text-white' : 'text-dark'}">${c.full_name}</div>
+                <input type="checkbox" class="form-check-input ms-1" ${c.selected ? 'checked' : ''} style="pointer-events: none;">
+            </div>
+            <div class="small ${c.selected ? 'text-white-50' : 'text-muted'} text-truncate" title="${c.job_name}" style="font-size: 11.5px;">${c.job_name}</div>
+            <div class="small ${c.selected ? 'text-white-50' : 'text-muted'} text-truncate" style="font-size: 11px;">${c.division_name}</div>
+        `;
+
+        div.addEventListener("click", function() {
+            c.selected = !c.selected;
+            renderLists();
+        });
+
+        return div;
+    }
+
+    function renderLists() {
+        const poolSearchVal = (poolSearch?.value || "").toLowerCase().trim();
+        const g1SearchVal = (g1Search?.value || "").toLowerCase().trim();
+        const g2SearchVal = (g2Search?.value || "").toLowerCase().trim();
+
+        if (poolContainer) poolContainer.innerHTML = "";
+        if (g1Container) g1Container.innerHTML = "";
+        if (g2Container) g2Container.innerHTML = "";
+
+        let poolCount = 0;
+        let g1Count = 0;
+        let g2Count = 0;
+        let totalCount = 0;
+
+        rawCandidates.forEach(c => {
+            if (!c.is_job_selected) return;
+
+            totalCount++;
+            const nameLower = c.full_name.toLowerCase();
+
+            if (c.location === "pool") {
+                poolCount++;
+                if (!poolSearchVal || nameLower.includes(poolSearchVal)) {
+                    poolContainer.appendChild(createEmployeeCard(c));
+                }
+            } else if (c.location === "g1") {
+                g1Count++;
+                if (!g1SearchVal || nameLower.includes(g1SearchVal)) {
+                    g1Container.appendChild(createEmployeeCard(c));
+                }
+            } else if (c.location === "g2") {
+                g2Count++;
+                if (!g2SearchVal || nameLower.includes(g2SearchVal)) {
+                    g2Container.appendChild(createEmployeeCard(c));
+                }
+            }
+        });
+
+        if (poolBadge) poolBadge.textContent = poolCount;
+        if (g1Badge) g1Badge.textContent = g1Count;
+        if (g2Badge) g2Badge.textContent = g2Count;
+        if (totalCandidatesCount) totalCandidatesCount.textContent = totalCount;
+
+        if (poolCount === 0 && poolContainer) {
+            poolContainer.innerHTML = '<div class="text-muted small text-center p-3">Все сотрудники распределены или не выбраны должности.</div>';
+        }
+        if (g1Count === 0 && g1Container) {
+            g1Container.innerHTML = '<div class="text-muted small text-center p-3">В Группе 1 пока нет сотрудников.</div>';
+        }
+        if (g2Count === 0 && g2Container) {
+            g2Container.innerHTML = '<div class="text-muted small text-center p-3">В Группе 2 пока нет сотрудников.</div>';
+        }
+    }
+
+    poolSearch?.addEventListener("input", renderLists);
+    g1Search?.addEventListener("input", renderLists);
+    g2Search?.addEventListener("input", renderLists);
+
+    // Действия выделения
+    document.getElementById("selectAllPoolBtn")?.addEventListener("click", () => {
+        rawCandidates.forEach(c => { if (c.is_job_selected && c.location === "pool") c.selected = true; });
+        renderLists();
+    });
+    document.getElementById("unselectAllPoolBtn")?.addEventListener("click", () => {
+        rawCandidates.forEach(c => { if (c.location === "pool") c.selected = false; });
+        renderLists();
+    });
+
+    document.getElementById("selectAllG1Btn")?.addEventListener("click", () => {
+        rawCandidates.forEach(c => { if (c.is_job_selected && c.location === "g1") c.selected = true; });
+        renderLists();
+    });
+    document.getElementById("unselectAllG1Btn")?.addEventListener("click", () => {
+        rawCandidates.forEach(c => { if (c.location === "g1") c.selected = false; });
+        renderLists();
+    });
+
+    document.getElementById("selectAllG2Btn")?.addEventListener("click", () => {
+        rawCandidates.forEach(c => { if (c.is_job_selected && c.location === "g2") c.selected = true; });
+        renderLists();
+    });
+    document.getElementById("unselectAllG2Btn")?.addEventListener("click", () => {
+        rawCandidates.forEach(c => { if (c.location === "g2") c.selected = false; });
+        renderLists();
+    });
+
+    // Перемещение между списками
+    function moveSelected(fromLocation, toLocation) {
+        let count = 0;
+        rawCandidates.forEach(c => {
+            if (c.is_job_selected && c.location === fromLocation && c.selected) {
+                c.location = toLocation;
+                c.selected = false;
+                count++;
+            }
+        });
+        if (count === 0) {
+            // Если ничего не выделено, пробуем найти видимых кандидатов
+            const visible = rawCandidates.filter(c => c.is_job_selected && c.location === fromLocation);
+            if (visible.length === 1) {
+                visible[0].location = toLocation;
+                visible[0].selected = false;
+            } else {
+                alert("Сначала выделите одного или нескольких сотрудников кликом.");
+                return;
+            }
+        }
+        renderLists();
+    }
+
+    document.getElementById("movePoolToG1Btn")?.addEventListener("click", () => moveSelected("pool", "g1"));
+    document.getElementById("movePoolToG2Btn")?.addEventListener("click", () => moveSelected("pool", "g2"));
+    document.getElementById("moveG1ToPoolBtn")?.addEventListener("click", () => moveSelected("g1", "pool"));
+    document.getElementById("moveG1ToG2Btn")?.addEventListener("click", () => moveSelected("g1", "g2"));
+    document.getElementById("moveG2ToPoolBtn")?.addEventListener("click", () => moveSelected("g2", "pool"));
+    document.getElementById("moveG2ToG1Btn")?.addEventListener("click", () => moveSelected("g2", "g1"));
+
+    // Отправка формы
+    const form = document.getElementById("distributionForm");
+    const hiddenInputsContainer = document.getElementById("hiddenInputsContainer");
+    const saveBtn = document.getElementById("saveDistributionBtn");
+
+    saveBtn?.addEventListener("click", function() {
+        if (!hiddenInputsContainer || !form) return;
+        hiddenInputsContainer.innerHTML = "";
+
+        // Выбранные должности
+        const selectedJobs = getSelectedJobIds();
+        selectedJobs.forEach(jid => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "selected_jobs";
+            input.value = jid;
+            hiddenInputsContainer.appendChild(input);
+        });
+
+        // Сотрудники Группы 1
+        rawCandidates.forEach(c => {
+            if (c.is_job_selected && c.location === "g1") {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "group1_employees";
+                input.value = c.id;
+                hiddenInputsContainer.appendChild(input);
+            }
+        });
+
+        // Сотрудники Группы 2
+        rawCandidates.forEach(c => {
+            if (c.is_job_selected && c.location === "g2") {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "group2_employees";
+                input.value = c.id;
+                hiddenInputsContainer.appendChild(input);
+            }
+        });
+
+        form.submit();
+    });
+
+    // Первоначальная инициализация
+    filterJobsByAffiliation();
+    syncCandidateVisibility();
+    renderLists();
+});
+</script>
+
+<style>
+.employee-card:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+.employee-box::-webkit-scrollbar {
+    width: 5px;
+}
+.employee-box::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 4px;
+}
+.jobs-list-box::-webkit-scrollbar,
+.affiliation-list-box::-webkit-scrollbar {
+    width: 5px;
+}
+.jobs-list-box::-webkit-scrollbar-thumb,
+.affiliation-list-box::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}

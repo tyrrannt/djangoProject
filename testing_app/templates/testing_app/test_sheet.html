@@ -1,0 +1,374 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Экзаменационный лист: {{ employee_full_name }} — {{ result_number|default:attempt.id }}{% endblock %}
+
+{% block content %}
+<!-- Верхняя панель управления (не печатается) -->
+<div class="row mb-3 no-print">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-0">
+                <i class="bx bx-file text-primary me-1"></i> Экзаменационный лист проверки знаний
+            </h3>
+            <span class="text-muted small">Протокол сдачи теста № {{ result_number|default:attempt.id }}</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'testing_app:test_result' attempt.id %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> К результатам
+            </a>
+            {% if is_passed %}
+                <a href="{% url 'testing_app:certificate_view' attempt.id %}" class="btn btn-outline-success d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bx bx-award fs-5"></i> Сертификат
+                </a>
+            {% endif %}
+            <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm" onclick="window.print();">
+                <i class="bx bx-printer fs-5"></i> Распечатать лист тестирования (А4)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Официальный печатный экзаменационный лист -->
+<div class="test-sheet-container bg-white shadow-sm p-4 mx-auto mb-5">
+    <!-- Шапка документа с логотипом компании -->
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3 sheet-header">
+        <div class="d-flex align-items-center gap-3">
+            <img src="{% static 'admin_templates/img/logo.png' %}" alt="ООО Авиакомпания «БАРКОЛ»" class="sheet-logo" style="max-height: 55px; width: auto;">
+            <div>
+                <div class="sheet-company-title font-weight-bold text-uppercase text-dark" style="font-size: 16px; letter-spacing: 0.5px;">
+                    ООО Авиакомпания «БАРКОЛ»
+                </div>
+                <div class="text-muted small text-uppercase" style="font-size: 11px;">
+                    Инженерно-авиационная служба (ИАС) • Экзаменационный отдел
+                </div>
+            </div>
+        </div>
+        <div class="text-end">
+            <div class="font-monospace font-weight-bold text-dark" style="font-size: 13px;">
+                № {{ result_number|default:attempt.id }}
+            </div>
+            <div class="small text-muted" style="font-size: 11px;">
+                Дата: {{ attempt.completed_at|date:"d.m.Y H:i" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Заголовок протокола -->
+    <div class="text-center my-3">
+        <h4 class="font-weight-bold text-uppercase text-dark mb-1" style="letter-spacing: 1px;">
+            ЭКЗАМЕНАЦИОННЫЙ ЛИСТ ПРОВЕРКИ ЗНАНИЙ
+        </h4>
+        <div class="text-muted small text-uppercase font-weight-semibold">
+            Протокол прохождения периодического тестирования персонала
+        </div>
+    </div>
+
+    <!-- Сводная карточка реквизитов сотрудника и тестирования -->
+    <div class="sheet-info-table-wrapper mb-3">
+        <table class="table table-bordered table-sm sheet-meta-table mb-0">
+            <tbody>
+                <tr>
+                    <th style="width: 25%; background-color: #F8FAFC;">Тестируемый сотрудник:</th>
+                    <td style="width: 40%;" class="font-weight-bold text-dark">{{ employee_full_name }}</td>
+                    <th style="width: 20%; background-color: #F8FAFC;">Группа аттестации:</th>
+                    <td style="width: 15%;" class="font-weight-semibold text-primary">{{ group_name }}</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #F8FAFC;">Должность:</th>
+                    <td class="text-dark">{{ job_title }}</td>
+                    <th style="background-color: #F8FAFC;">Номер попытки:</th>
+                    <td>№ {{ attempt.attempt_number }} из {{ testing.max_attempts }}</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #F8FAFC;">Подразделение:</th>
+                    <td class="text-dark">{{ division_title|default:"Инженерно-авиационная служба" }}</td>
+                    <th style="background-color: #F8FAFC;">Затраченное время:</th>
+                    <td>{{ duration_formatted }}</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #F8FAFC;">Основание (Приказ):</th>
+                    <td class="text-dark">Приказ №{{ testing.order_number }} от {{ testing.order_date|date:"d.m.Y" }} «{{ testing.order_name }}»</td>
+                    <th style="background-color: #F8FAFC;">Итоговый результат:</th>
+                    <td>
+                        <span class="font-weight-bold {% if is_passed %}text-success{% else %}text-danger{% endif %}">
+                            {{ score_percentage }}%
+                        </span>
+                        <span class="text-muted small">(порог: {{ attempt.passing_score_percentage }}%)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <th style="background-color: #F8FAFC;">Заключение комиссии:</th>
+                    <td colspan="3">
+                        {% if is_passed %}
+                            <span class="sheet-status-badge badge-passed">
+                                <i class="bx bx-check-circle me-1"></i> ТЕСТ СДАН (АТТЕСТОВАН) — Правильных ответов: {{ correct_count }} из {{ total_questions }}
+                            </span>
+                        {% else %}
+                            <span class="sheet-status-badge badge-failed">
+                                <i class="bx bx-x-circle me-1"></i> ТЕСТ НЕ СДАН (НЕ АТТЕСТОВАН) — Правильных ответов: {{ correct_count }} из {{ total_questions }}
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Детальная ведомость вопросов и ответов -->
+    <div class="sheet-questions-section mb-4">
+        <div class="sheet-section-title font-weight-bold text-dark text-uppercase border-bottom pb-1 mb-2" style="font-size: 13px;">
+            Ведомость ответов на экзаменационные вопросы:
+        </div>
+
+        <table class="table table-bordered sheet-questions-table">
+            <thead>
+                <tr style="background-color: #F1F5F9; font-size: 11.5px;">
+                    <th style="width: 5%; text-align: center;">№</th>
+                    <th style="width: 52%;">Вопрос и варианты ответов</th>
+                    <th style="width: 25%;">Выбранный ответ сотрудника</th>
+                    <th style="width: 10%; text-align: center;">Оценка</th>
+                    <th style="width: 8%; text-align: center;">Время</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in questions %}
+                <tr class="sheet-q-row {% if q.is_correct %}q-row-correct{% else %}q-row-incorrect{% endif %}">
+                    <td class="text-center font-weight-bold" style="font-size: 12px;">
+                        {{ q.order_num }}
+                    </td>
+                    <td>
+                        <div class="sheet-q-category text-muted small mb-1" style="font-size: 10.5px;">
+                            [{{ q.category_name }}]
+                        </div>
+                        <div class="sheet-q-text font-weight-semibold text-dark mb-2" style="font-size: 12px; line-height: 1.35;">
+                            {{ q.question_text }}
+                        </div>
+
+                        <!-- Перечень всех вариантов ответов -->
+                        <div class="sheet-options-list small ps-1" style="font-size: 11px;">
+                            {% for opt in q.options %}
+                                <div class="sheet-opt-item d-flex align-items-baseline gap-1 py-05 {% if opt.id == q.selected_option_id and opt.is_correct %}text-success font-weight-bold{% elif opt.id == q.selected_option_id and not opt.is_correct %}text-danger font-weight-bold text-decoration-line-through{% elif opt.is_correct %}text-success{% else %}text-secondary{% endif %}">
+                                    <span class="sheet-opt-marker">
+                                        {% if opt.id == q.selected_option_id %}
+                                            {% if opt.is_correct %}[✓]{% else %}[✗]{% endif %}
+                                        {% elif opt.is_correct %}
+                                            [•]
+                                        {% else %}
+                                            [ ]
+                                        {% endif %}
+                                    </span>
+                                    <span>
+                                        {{ opt.text }}
+                                        {% if opt.id == q.selected_option_id and opt.is_correct %}
+                                            <span class="badge bg-success-subtle text-success border border-success ms-1 print-badge" style="font-size: 9.5px;">(Выбор тестируемого — верно)</span>
+                                        {% elif opt.id == q.selected_option_id and not opt.is_correct %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger ms-1 print-badge" style="font-size: 9.5px;">(Выбор тестируемого — ошибка)</span>
+                                        {% elif opt.is_correct %}
+                                            <span class="badge bg-light text-success border border-success ms-1 print-badge" style="font-size: 9.5px;">(Правильный ответ)</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if q.explanation %}
+                            <div class="sheet-explanation text-muted mt-2 pt-1 border-top border-light fst-italic" style="font-size: 10.5px;">
+                                <span class="font-weight-semibold">Пояснение:</span> {{ q.explanation }}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 11.5px;">
+                        {% for opt in q.options %}
+                            {% if opt.id == q.selected_option_id %}
+                                <div class="font-weight-bold {% if q.is_correct %}text-success{% else %}text-danger{% endif %}">
+                                    {{ opt.text }}
+                                </div>
+                            {% endif %}
+                        {% empty %}
+                            <span class="text-muted font-italic">Ответ не предоставлен</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-center align-middle">
+                        {% if q.is_correct %}
+                            <span class="sheet-badge-correct">ВЕРНО</span>
+                        {% else %}
+                            <span class="sheet-badge-wrong">НЕВЕРНО</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center align-middle small text-muted font-monospace" style="font-size: 11px;">
+                        {{ q.seconds_spent }} сек.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Блок официальных подписей для архива и отдела кадров -->
+    <div class="sheet-signatures-block mt-4 pt-3 border-top">
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="sheet-sign-item mb-3">
+                    <div class="d-flex justify-content-between align-items-baseline border-bottom pb-1">
+                        <span class="small font-weight-bold text-dark">
+                            С результатами тестирования, порядком проверки и оценками ознакомлен:
+                        </span>
+                        <span class="small font-monospace text-dark">
+                            ____________________ / {{ employee_full_name }} / «___» __________ 20___ г.
+                        </span>
+                    </div>
+                    <div class="text-muted text-end" style="font-size: 10px;">(подпись сотрудника, расшифровка, дата)</div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-12">
+                <div class="sheet-sign-item">
+                    <div class="d-flex justify-content-between align-items-baseline border-bottom pb-1">
+                        <span class="small font-weight-bold text-dark">
+                            Ответственный за тестирование:
+                        </span>
+                        <span class="small font-monospace text-dark">
+                            ____________________ / ____________________
+                        </span>
+                    </div>
+                    <div class="text-muted text-end" style="font-size: 10px;">(подпись, расшифровка)</div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-12">
+                <div class="sheet-sign-item">
+                    <div class="d-flex justify-content-between align-items-baseline border-bottom pb-1">
+                        <span class="small font-weight-bold text-dark">
+                            Принято на хранение в архив ИАС:
+                        </span>
+                        <span class="small font-monospace text-dark">
+                            ____________________ / «___» __________ 20___ г.
+                        </span>
+                    </div>
+                    <div class="text-muted text-end" style="font-size: 10px;">(подпись лица, принявшего протокол)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Стили экзаменационного листа для экрана */
+.test-sheet-container {
+    max-width: 960px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+}
+.sheet-meta-table th {
+    font-size: 11.5px;
+    vertical-align: middle;
+}
+.sheet-meta-table td {
+    font-size: 12px;
+    vertical-align: middle;
+}
+.sheet-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.badge-passed {
+    background-color: #ECFDF5;
+    color: #065F46;
+    border: 1px solid #10B981;
+}
+.badge-failed {
+    background-color: #FEF2F2;
+    color: #991B1B;
+    border: 1px solid #EF4444;
+}
+.sheet-badge-correct {
+    display: inline-block;
+    padding: 2px 6px;
+    background-color: #D1FAE5;
+    color: #065F46;
+    font-weight: 700;
+    font-size: 10.5px;
+    border-radius: 3px;
+}
+.sheet-badge-wrong {
+    display: inline-block;
+    padding: 2px 6px;
+    background-color: #FEE2E2;
+    color: #991B1B;
+    font-weight: 700;
+    font-size: 10.5px;
+    border-radius: 3px;
+}
+.q-row-correct {
+    background-color: #FFFFFF;
+}
+.q-row-incorrect {
+    background-color: #FFFBFB;
+}
+
+/* Безупречные стили печати на формате А4 */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm 12mm;
+    }
+    html, body {
+        background: #FFFFFF !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        font-size: 10pt !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .no-print, header, nav, aside, .sidebar-left, .header, .page-header,
+    .mobile-bottom-bar, .mobile-fab, #sidebar-left, .sidebar, footer, .inner-menu-toggle,
+    .sidebar-right, .notifications, .profile-info, .logo-container, .breadcrumbs,
+    .modal, .modal-backdrop {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    .inner-wrapper, .content-body, section.body, .row, .col-12 {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        width: 100% !important;
+        background: transparent !important;
+    }
+    .test-sheet-container {
+        position: relative !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .sheet-meta-table, .sheet-questions-table {
+        border-color: #000000 !important;
+    }
+    .sheet-meta-table th, .sheet-meta-table td,
+    .sheet-questions-table th, .sheet-questions-table td {
+        border-color: #CCCCCC !important;
+        color: #000000 !important;
+    }
+    .sheet-q-row {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    .sheet-signatures-block {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    .print-badge {
+        border-width: 1px !important;
+    }
+}
+</style>
+{% endblock %}

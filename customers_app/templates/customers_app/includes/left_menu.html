@@ -362,6 +362,30 @@
                                     <li><a class="nav-link" href="{% url 'hrdepartment_app:labor_protection_list' %}"><i class="bx bx-hard-hat me-1" aria-hidden="true"></i><span>Процедуры по охране труда</span></a></li>
                                 </ul>
                             </li>
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <i class="bx bx-wrench me-1" aria-hidden="true"></i>
+                                    <span>АТП ИАС</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li class="nav-parent">
+                                        <a class="nav-link" href="#">
+                                            <i class="bx bx-check-circle me-1" aria-hidden="true"></i>
+                                            <span>Тестирование</span>
+                                        </a>
+                                        <ul class="nav nav-children">
+                                            <li><a class="nav-link" href="{% url 'testing_app:my_tests' %}"><i class="bx bx-user me-1" aria-hidden="true"></i><span>Мои тестирования</span></a></li>
+                                            {% if user.is_superuser or user.is_staff or user|has_group:"Ответственные за тестирование" %}
+                                                <li><a class="nav-link" href="{% url 'testing_app:dashboard' %}"><i class="bx bx-tachometer me-1" aria-hidden="true"></i><span>Дашборд</span></a></li>
+                                                <li><a class="nav-link" href="{% url 'testing_app:event_list' %}"><i class="bx bx-calendar-event me-1" aria-hidden="true"></i><span>Мероприятия (Приказы)</span></a></li>
+                                                <li><a class="nav-link" href="{% url 'testing_app:questions_bank' %}"><i class="bx bx-collection me-1" aria-hidden="true"></i><span>Банк вопросов</span></a></li>
+                                                <li><a class="nav-link" href="{% url 'testing_app:questions_import' %}"><i class="bx bx-upload me-1" aria-hidden="true"></i><span>Импорт из Excel</span></a></li>
+                                                <li><a class="nav-link" href="{% url 'testing_app:categories_list' %}"><i class="bx bx-category me-1" aria-hidden="true"></i><span>Категории вопросов</span></a></li>
+                                            {% endif %}
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
                         </ul>
                     </li>
 

@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "dynamic_formsets",
     "chat_app.apps.ChatAppConfig",
     "mailbox_app.apps.MailboxAppConfig",
+    "testing_app.apps.TestingAppConfig",
     "django_bootstrap5",  # Если используем django-bootstrap5
     "rest_framework",
     "drf_spectacular",

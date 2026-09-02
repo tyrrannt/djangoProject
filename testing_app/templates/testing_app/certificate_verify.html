@@ -1,0 +1,130 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Верификация сертификата — Корпоративный портал БАРКОЛ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-lg-8 col-12">
+        {% if cert_data and cert_data.is_valid %}
+            <!-- Успешная верификация -->
+            <div class="card card-modern shadow border-0 overflow-hidden">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <i class="bx bx-check-shield display-3 mb-2 d-block"></i>
+                    <h3 class="font-weight-bold mb-1 text-white">СЕРТИФИКАТ ПОДЛИННЫЙ</h3>
+                    <p class="mb-0 opacity-75 fs-6">
+                        Запись успешно подтверждена в официальном реестре ООО «Авиакомпания «БАРКОЛ»
+                    </p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap border-bottom pb-3 mb-4 gap-2">
+                        <div>
+                            <span class="text-muted small text-uppercase">Регистрационный номер:</span>
+                            <div class="h4 font-weight-bold text-dark mb-0 font-monospace">{{ cert_data.result_number }}</div>
+                        </div>
+                        <div>
+                            {% if cert_data.is_expired %}
+                                <span class="badge bg-danger fs-6 px-3 py-2">Срок действия истек</span>
+                            {% else %}
+                                <span class="badge bg-success fs-6 px-3 py-2">Действителен</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Сведения о владельце -->
+                    <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="bx bx-user text-primary me-1"></i> Сведения о владельце
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <span class="text-muted small">ФИО специалиста:</span>
+                            <div class="h5 font-weight-bold text-dark mb-0">{{ cert_data.employee_name }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small">Должность в приказе:</span>
+                            <div class="font-weight-semibold text-dark">{{ cert_data.job_title }}</div>
+                        </div>
+                        {% if cert_data.division_title %}
+                        <div class="col-12">
+                            <span class="text-muted small">Подразделение:</span>
+                            <div class="text-dark">{{ cert_data.division_title }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Сведения о проверке знаний -->
+                    <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="bx bx-certification text-primary me-1"></i> Сведения о проверке знаний
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <span class="text-muted small">Мероприятие:</span>
+                            <div class="font-weight-semibold text-dark">{{ cert_data.testing_title }}</div>
+                            <div class="small text-muted">{{ cert_data.order_info }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small">Группа аттестации:</span>
+                            <div class="font-weight-semibold text-primary">{{ cert_data.group_name }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small">Итоговый балл:</span>
+                            <div class="font-weight-bold text-success">
+                                {{ cert_data.score_percentage }}% (порог: {{ cert_data.passing_score_percentage }}%)
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small">Дата успешной сдачи:</span>
+                            <div class="text-dark">{{ cert_data.finished_at|date:"d.m.Y H:i" }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small">Действителен до:</span>
+                            <div class="font-weight-bold text-dark">{{ cert_data.valid_until|date:"d.m.Y" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded border text-muted small">
+                        <i class="bx bx-info-circle me-1 text-info"></i>
+                        Данный сертификат подтверждает успешное прохождение периодической проверки знаний по техническому обслуживанию ВС и имеет юридическую силу в соответствии с ФАП и регламентами авиакомпании «БАРКОЛ».
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top text-center">
+                        <a href="{% url 'testing_app:certificate_view' cert_data.attempt.id %}" class="btn btn-outline-primary shadow-sm">
+                            <i class="bx bx-show me-1"></i> Просмотреть бланк сертификата
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Ошибка верификации -->
+            <div class="card card-modern shadow border-0 overflow-hidden">
+                <div class="card-header bg-danger text-white text-center py-4">
+                    <i class="bx bx-shield-x display-3 mb-2 d-block"></i>
+                    <h3 class="font-weight-bold mb-1 text-white">СЕРТИФИКАТ НЕ НАЙДЕН</h3>
+                    <p class="mb-0 opacity-75 fs-6">
+                        Документ с указанным уникальным кодом не зарегистрирован в системе или аннулирован
+                    </p>
+                </div>
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="alert alert-warning text-start mb-4">
+                        <div class="font-weight-bold mb-1"><i class="bx bx-error me-1"></i> Данные запроса:</div>
+                        <div class="small">Идентификатор UUID: <span class="font-monospace">{{ searched_uuid }}</span></div>
+                    </div>
+
+                    <p class="text-muted">
+                        Возможные причины:<br>
+                        • Ссылка была сформирована с ошибкой;<br>
+                        • Сертификат был отозван или аннулирован аттестационной комиссией;<br>
+                        • Тестирование не было завершено с положительным результатом.
+                    </p>
+
+                    <div class="mt-4">
+                        <a href="{% url 'testing_app:my_tests' %}" class="btn btn-primary px-4">
+                            <i class="bx bx-home me-1"></i> В личный кабинет проверок знаний
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

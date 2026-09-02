@@ -1,0 +1,262 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Результаты тестирования: {{ testing.title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-award text-primary me-1"></i> Протокол результатов тестирования
+            </h2>
+            <p class="text-muted mb-0">
+                {{ testing.title }} — Приказ №{{ testing.order_number }} от {{ testing.order_date|date:"d.m.Y" }}
+            </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'testing_app:my_tests' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> К моим проверкам
+            </a>
+            <a href="{% url 'testing_app:attempt_test_sheet' attempt.id %}" class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-file fs-5"></i> Экзаменационный лист (А4)
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Главный баннер результата -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card card-modern border-0 shadow text-white {% if is_passed %}bg-success{% else %}bg-danger{% endif %}">
+            <div class="card-body p-4 text-center">
+                {% if is_passed %}
+                    <i class="bx bx-check-shield display-3 mb-2 d-block text-white"></i>
+                    <h2 class="font-weight-bold mb-1 text-white">ПРОВЕРКА ЗНАНИЙ УСПЕШНО ПРОЙДЕНА!</h2>
+                    <p class="fs-5 mb-3 text-white" style="opacity: 0.95;">Вы подтвердили необходимую квалификацию для выполнения работ</p>
+                    <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap mb-2">
+                        <div class="bg-white text-dark px-4 py-2 rounded-pill shadow-sm font-weight-bold">
+                            <i class="bx bx-certification text-success me-1"></i>
+                            Регистрационный номер: <span class="text-primary font-monospace">{{ result_number }}</span>
+                        </div>
+                        <a href="{% url 'testing_app:certificate_view' attempt.id %}" class="btn btn-light text-success font-weight-bold shadow-sm px-4 py-2 rounded-pill">
+                            <i class="bx bx-award me-1"></i> Просмотреть сертификат
+                        </a>
+                        <a href="{% url 'testing_app:attempt_test_sheet' attempt.id %}" class="btn btn-light text-dark font-weight-bold shadow-sm px-4 py-2 rounded-pill">
+                            <i class="bx bx-printer me-1"></i> Распечатать лист тестирования
+                        </a>
+                    </div>
+                {% else %}
+                    <i class="bx bx-x-circle display-3 mb-2 d-block text-white"></i>
+                    <h2 class="font-weight-bold mb-1 text-white">ТЕСТИРОВАНИЕ НЕ ПРОЙДЕНО</h2>
+                    <p class="fs-5 mb-3 text-white" style="opacity: 0.95;">
+                        Набранный процент ответов ниже установленного порогового значения ({{ attempt.passing_score_percentage }}%)
+                    </p>
+                    <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                        {% if assignment.attempts_used < testing.max_attempts %}
+                            <form method="post" action="{% url 'testing_app:start_attempt' assignment.id %}" class="d-inline-block">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-light text-danger font-weight-bold shadow-sm px-4 py-2 rounded-pill">
+                                    <i class="bx bx-redo me-1"></i> Использовать следующую попытку ({{ assignment.attempts_used|add:1 }} из {{ testing.max_attempts }})
+                                </button>
+                            </form>
+                        {% else %}
+                            <div class="d-inline-block bg-white text-danger px-4 py-2 rounded-pill shadow-sm font-weight-bold">
+                                Лимит попыток ({{ testing.max_attempts }}) исчерпан. Обратитесь к комиссии.
+                            </div>
+                        {% endif %}
+                        <a href="{% url 'testing_app:attempt_test_sheet' attempt.id %}" class="btn btn-light text-dark font-weight-bold shadow-sm px-4 py-2 rounded-pill">
+                            <i class="bx bx-printer me-1"></i> Распечатать лист тестирования
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Сводные KPI метрики попытки -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card card-modern border shadow-sm text-center py-3 bg-white">
+            <div class="text-secondary small text-uppercase font-weight-bold">Итоговый балл</div>
+            <div class="h2 font-weight-bold {% if is_passed %}text-success{% else %}text-danger{% endif %} mb-0 mt-1">
+                {{ score_percentage }}%
+            </div>
+            <div class="small text-muted font-weight-semibold">Порог: {{ attempt.passing_score_percentage }}%</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern border shadow-sm text-center py-3 bg-white">
+            <div class="text-secondary small text-uppercase font-weight-bold">Правильных ответов</div>
+            <div class="h2 font-weight-bold text-dark mb-0 mt-1">
+                {{ correct_count }} / {{ total_questions }}
+            </div>
+            <div class="small text-muted font-weight-semibold">вопросов</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern border shadow-sm text-center py-3 bg-white">
+            <div class="text-secondary small text-uppercase font-weight-bold">Попытка</div>
+            <div class="h2 font-weight-bold text-primary mb-0 mt-1">
+                №{{ attempt.attempt_number }}
+            </div>
+            <div class="small text-muted font-weight-semibold">из {{ testing.max_attempts }} макс.</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern border shadow-sm text-center py-3 bg-white">
+            <div class="text-secondary small text-uppercase font-weight-bold">Причина завершения</div>
+            <div class="h5 font-weight-bold mb-0 mt-2">
+                {% if attempt.completion_reason == 'timeout' %}
+                    <span class="text-danger"><i class="bx bx-time me-1"></i>Таймаут</span>
+                {% elif attempt.completion_reason == 'manual_submit' %}
+                    <span class="text-success"><i class="bx bx-check me-1"></i>Завершено</span>
+                {% else %}
+                    <span class="text-dark">{{ attempt.get_completion_reason_display }}</span>
+                {% endif %}
+            </div>
+            <div class="small text-muted font-weight-semibold">{{ attempt.finished_at|date:"d.m.Y H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Детальный анализ ответов по вопросам с максимальной контрастностью -->
+<div class="card card-modern shadow-sm border">
+    <header class="card-header bg-light border-bottom d-flex justify-content-between align-items-center py-3">
+        <h5 class="card-title text-dark font-weight-bold mb-0">
+            <i class="bx bx-list-ul text-primary me-1"></i> Анализ ответов попытки
+        </h5>
+        <span class="badge bg-white text-dark border font-weight-semibold">Все вопросы и варианты ответов</span>
+    </header>
+    <div class="card-body p-4">
+        <div class="accordion" id="resultsAccordion">
+            {% for item in questions %}
+            <div class="accordion-item border rounded mb-3 overflow-hidden shadow-xs">
+                <h2 class="accordion-header" id="heading{{ item.order_num }}">
+                    <button class="accordion-button collapsed py-3 text-dark {% if item.is_correct %}accordion-header-correct{% else %}accordion-header-wrong{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ item.order_num }}" aria-expanded="false">
+                        <div class="d-flex justify-content-between align-items-center w-100 me-3 flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge {% if item.is_correct %}bg-success text-white{% else %}bg-danger text-white{% endif %} font-weight-bold px-2 py-1">
+                                    {% if item.is_correct %}<i class="bx bx-check"></i> Вопрос {{ item.order_num }}{% else %}<i class="bx bx-x"></i> Вопрос {{ item.order_num }}{% endif %}
+                                </span>
+                                <span class="badge bg-white text-dark border font-weight-semibold">{{ item.category_name }}</span>
+                                <span class="font-weight-bold text-dark text-truncate" style="max-width: 540px;">{{ item.question_text }}</span>
+                            </div>
+                            <span class="small font-weight-bold {% if item.is_correct %}text-success{% else %}text-danger{% endif %} text-uppercase">
+                                {% if item.is_correct %}
+                                    <i class="bx bx-check-circle me-1"></i>Верно
+                                {% else %}
+                                    <i class="bx bx-x-circle me-1"></i>Ошибка
+                                {% endif %}
+                            </span>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse{{ item.order_num }}" class="accordion-collapse collapse" aria-labelledby="heading{{ item.order_num }}" data-bs-parent="#resultsAccordion">
+                    <div class="accordion-body p-4 bg-white border-top">
+                        <h6 class="font-weight-bold text-dark mb-3 fs-6" style="line-height: 1.4;">{{ item.question_text }}</h6>
+
+                        <!-- Варианты ответов с идеальной читаемостью -->
+                        <div class="row g-2 mb-3">
+                            {% for opt in item.options %}
+                            <div class="col-12">
+                                <div class="p-3 rounded d-flex align-items-center justify-content-between flex-wrap gap-2 {% if opt.id == item.selected_option_id and opt.is_correct %}opt-box-correct-chosen{% elif opt.id == item.selected_option_id and not opt.is_correct %}opt-box-wrong-chosen{% elif opt.is_correct %}opt-box-correct-standard{% else %}opt-box-standard{% endif %}">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge {% if opt.is_correct %}bg-success text-white{% elif opt.id == item.selected_option_id %}bg-danger text-white{% else %}bg-white text-dark border{% endif %} font-weight-bold">
+                                            {{ forloop.counter }}
+                                        </span>
+                                        <span class="opt-text font-weight-semibold text-dark">
+                                            {{ opt.text }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if opt.is_correct %}
+                                            <span class="badge bg-success text-white shadow-xs px-2 py-1">
+                                                <i class="bx bx-check me-1"></i>Правильный ответ
+                                            </span>
+                                        {% endif %}
+                                        {% if opt.id == item.selected_option_id %}
+                                            <span class="badge {% if opt.is_correct %}bg-success text-white{% else %}bg-danger text-white{% endif %} shadow-xs px-2 py-1">
+                                                <i class="bx bx-user me-1"></i>Ваш выбор
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if item.explanation %}
+                        <div class="p-3 rounded mb-0" style="background-color: #EFF6FF; border: 1.5px solid #BFDBFE; color: #1E3A8A;">
+                            <div class="font-weight-bold mb-1">
+                                <i class="bx bx-info-circle me-1"></i>Пояснение к вопросу:
+                            </div>
+                            <div style="font-size: 13.5px; line-height: 1.4; color: #1E3A8A;">
+                                {{ item.explanation }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Стили для гарантированной контрастности и читаемости */
+.accordion-header-correct {
+    background-color: #F0FDF4 !important;
+    border-left: 5px solid #10B981 !important;
+}
+.accordion-header-wrong {
+    background-color: #FEF2F2 !important;
+    border-left: 5px solid #EF4444 !important;
+}
+.accordion-button:not(.collapsed) {
+    box-shadow: none !important;
+}
+
+/* Стили карточек вариантов ответов */
+.opt-box-correct-chosen {
+    background-color: #ECFDF5 !important;
+    border: 2px solid #10B981 !important;
+}
+.opt-box-correct-chosen .opt-text {
+    color: #064E3B !important;
+    font-weight: 700 !important;
+}
+
+.opt-box-wrong-chosen {
+    background-color: #FEF2F2 !important;
+    border: 2px solid #EF4444 !important;
+}
+.opt-box-wrong-chosen .opt-text {
+    color: #7F1D1D !important;
+    font-weight: 700 !important;
+}
+
+.opt-box-correct-standard {
+    background-color: #F0FDF4 !important;
+    border: 1.5px solid #86EFAC !important;
+}
+.opt-box-correct-standard .opt-text {
+    color: #065F46 !important;
+    font-weight: 600 !important;
+}
+
+.opt-box-standard {
+    background-color: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
+}
+.opt-box-standard .opt-text {
+    color: #1E293B !important;
+}
+
+.shadow-xs {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+</style>
+{% endblock %}

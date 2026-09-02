@@ -1,6 +1,18 @@
 {% load static %}
 {% load custom %}
 
+<style>
+@media print {
+    .mobile-bottom-bar,
+    .mobile-fab,
+    .modal.mobile-bottom-sheet,
+    .modal-backdrop {
+        display: none !important;
+        visibility: hidden !important;
+    }
+}
+</style>
+
 <!-- ============================================
      НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ (MOBILE BOTTOM APP BAR)
      Отображается только на мобильных экранах (<=768px)

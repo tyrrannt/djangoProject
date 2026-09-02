@@ -4268,6 +4268,17 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         # Возвращаем модифицированную форму
         return form
 
+class ProvisionsDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = Provisions
+    template_name = "hrdepartment_app/provisions_confirm_delete.html"
+    success_url = reverse_lazy("hrdepartment_app:provisions_list")
+    permission_required = "hrdepartment_app.delete_provisions"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context["title"] = f"Удаление - {self.get_object()}"
+        return context
+
 
 # Инструктажи
 class BriefingsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):

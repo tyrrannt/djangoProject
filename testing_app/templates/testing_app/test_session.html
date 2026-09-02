@@ -1,0 +1,491 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Тестирование: {{ testing.title }} — Вопрос 1{% endblock %}
+
+{% block content %}
+<!-- Верхняя панель: статус, прогресс и таймер -->
+<div class="row mb-3 align-items-center">
+    <div class="col-md-7 col-12 mb-2 mb-md-0">
+        <h4 class="font-weight-bold text-dark mb-1 d-flex align-items-center flex-wrap gap-2">
+            <span>{{ testing.title }}</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary font-size-12">
+                Попытка №{{ attempt.attempt_number }} из {{ testing.max_attempts }}
+            </span>
+        </h4>
+        <div class="small text-muted">
+            <i class="bx bx-check-circle text-success me-1"></i>Отвечено:
+            <span id="answeredCounter" class="font-weight-bold text-dark">{{ answered_count }}</span> из {{ total_questions }} вопросов
+            (<span id="progressPercent">{% widthratio answered_count total_questions 100 %}</span>%)
+        </div>
+    </div>
+
+    <!-- Серверный таймер -->
+    <div class="col-md-5 col-12 text-md-end text-start">
+        <div class="d-inline-flex align-items-center gap-2 bg-white px-3 py-2 rounded shadow-sm border" id="timerBox">
+            <i class="bx bx-time-five fs-4 text-primary" id="timerIcon"></i>
+            <div class="text-start">
+                <div class="text-muted" style="font-size: 11px; line-height: 1;">ОСТАЛОСЬ ВРЕМЕНИ:</div>
+                <div class="font-weight-bold h4 mb-0 text-dark" id="timerDisplay">--:--</div>
+            </div>
+            <span id="saveStatusBadge" class="badge bg-success-subtle text-success ms-2 font-size-11 border border-success">
+                <i class="bx bx-cloud-check me-1"></i>Сохранено
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Полоса общего прогресса -->
+<div class="progress mb-4" style="height: 6px;">
+    <div id="testProgressBar" class="progress-bar bg-success" role="progressbar" style="width: {% widthratio answered_count total_questions 100 %}%;"></div>
+</div>
+
+<div class="row">
+    <!-- Навигатор по вопросам (Сетка номеров) -->
+    <div class="col-lg-3 col-12 mb-4 order-lg-2">
+        <div class="card card-modern shadow-sm sticky-top" style="top: 80px; z-index: 10;">
+            <div class="card-header bg-light border-bottom py-2 d-flex justify-content-between align-items-center">
+                <h6 class="card-title text-dark font-weight-bold mb-0">
+                    <i class="bx bx-grid-alt text-primary me-1"></i> Навигатор вопросов
+                </h6>
+                <span class="badge bg-white text-dark border small" id="navAnsweredRatio">{{ answered_count }} / {{ total_questions }}</span>
+            </div>
+            <div class="card-body p-3">
+                <div class="nav-questions-grid mb-3" id="questionNavGrid">
+                    {% for q in questions %}
+                    <button type="button"
+                            class="q-nav-btn {% if q.is_answered %}q-nav-answered{% else %}q-nav-unanswered{% endif %} {% if forloop.first %}active-nav{% endif %}"
+                            id="nav-btn-{{ q.order_num }}"
+                            data-target-q="{{ q.order_num }}"
+                            title="Вопрос {{ q.order_num }}">
+                        <span>{{ q.order_num }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <!-- Легенда статусов -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2 border-top small text-muted mb-3" style="font-size: 11.5px;">
+                    <div class="d-inline-flex align-items-center gap-1">
+                        <span class="legend-dot bg-success"></span> Отвечен
+                    </div>
+                    <div class="d-inline-flex align-items-center gap-1">
+                        <span class="legend-dot bg-light border"></span> В ожидании
+                    </div>
+                    <div class="d-inline-flex align-items-center gap-1">
+                        <span class="legend-dot border border-primary bg-primary-subtle"></span> Текущий
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="button" class="btn btn-danger shadow-sm d-flex align-items-center justify-content-center gap-1 py-2 font-weight-bold" data-bs-toggle="modal" data-bs-target="#finishConfirmModal">
+                        <i class="bx bx-check-double fs-5"></i> Завершить тест
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Область отображения активного вопроса -->
+    <div class="col-lg-9 col-12 mb-4 order-lg-1">
+        {% for q in questions %}
+        <div class="card card-modern shadow-sm question-pane {% if not forloop.first %}d-none{% endif %}" id="q-pane-{{ q.order_num }}" data-qid="{{ q.id }}">
+            <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary fs-6 px-3 py-1">Вопрос {{ q.order_num }} из {{ total_questions }}</span>
+                    <span class="badge bg-light text-dark border">
+                        <i class="bx bx-folder text-primary me-1"></i>{{ q.category_name }}
+                    </span>
+                </div>
+                <span class="text-muted small">Один правильный ответ</span>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- Текст вопроса -->
+                <div class="h5 font-weight-bold text-dark mb-4 lh-base">
+                    {{ q.question_text }}
+                </div>
+
+                <!-- Варианты ответов -->
+                <div class="options-container d-flex flex-column gap-3">
+                    {% for opt in q.options %}
+                    <div class="option-card border rounded p-3 cursor-pointer position-relative transition-all {% if q.selected_option_id == opt.id %}border-primary bg-primary-subtle selected-option{% else %}bg-white hover-bg-light{% endif %}"
+                         data-opt-id="{{ opt.id }}"
+                         data-qid="{{ q.id }}"
+                         data-qnum="{{ q.order_num }}"
+                         style="cursor: pointer;">
+                        <div class="form-check m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input mt-1 opt-radio" type="radio" name="option_for_{{ q.id }}" id="opt_{{ opt.id }}" value="{{ opt.id }}" {% if q.selected_option_id == opt.id %}checked{% endif %}>
+                            <label class="form-check-label w-100 text-dark font-weight-semibold cursor-pointer" for="opt_{{ opt.id }}" style="cursor: pointer;">
+                                <span class="me-2 text-muted">{{ forloop.counter }}.</span> {{ opt.text }}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Нижняя панель навигации по вопросам -->
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    <button type="button" class="btn btn-outline-secondary prev-q-btn {% if forloop.first %}disabled{% endif %}" data-prev="{{ q.order_num|add:'-1' }}">
+                        <i class="bx bx-chevron-left me-1"></i> Предыдущий
+                    </button>
+
+                    <span class="small text-muted d-none d-sm-inline">Используйте навигатор справа для быстрого перехода</span>
+
+                    {% if forloop.last %}
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#finishConfirmModal">
+                        Проверить и завершить <i class="bx bx-check ms-1"></i>
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-primary next-q-btn" data-next="{{ q.order_num|add:'1' }}">
+                        Следующий <i class="bx bx-chevron-right ms-1"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения завершения тестирования -->
+<div class="modal fade" id="finishConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'testing_app:finish_attempt' attempt.id %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white font-weight-bold">
+                    <i class="bx bx-help-circle me-1"></i> Завершение тестирования
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-2">Вы уверены, что хотите досрочно завершить тестирование?</p>
+                <div class="p-3 bg-light rounded border mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Отвечено вопросов:</span>
+                        <strong id="modalAnsweredCount" class="text-success">{{ answered_count }} из {{ total_questions }}</strong>
+                    </div>
+                    <div id="unansweredWarning" class="{% if answered_count == total_questions %}d-none{% endif %} text-danger small font-weight-bold mt-2">
+                        <i class="bx bx-error me-1"></i>Внимание! У вас есть неотвеченные вопросы. Они будут засчитаны как неверные!
+                    </div>
+                </div>
+                <div class="small text-muted">
+                    После подтверждения попытка будет окончательно зафиксирована и сформирован протокол результатов.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Вернуться к вопросам</button>
+                <button type="submit" class="btn btn-danger px-4">Да, завершить тест</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.transition-all { transition: all 0.2s ease-in-out; }
+.selected-option { background-color: #EFF6FF !important; border-color: #3B82F6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+/* Сетка навигатора вопросов */
+.nav-questions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.nav-questions-grid::-webkit-scrollbar {
+    width: 4px;
+}
+.nav-questions-grid::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+
+/* Кнопки навигатора */
+.q-nav-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    transition: all 0.18s ease-in-out !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    border: 1.5px solid transparent !important;
+}
+
+.q-nav-btn span {
+    display: block;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.q-nav-unanswered {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+    color: #334155 !important;
+}
+.q-nav-unanswered:hover {
+    background-color: #E2E8F0 !important;
+    border-color: #94A3B8 !important;
+    color: #0F172A !important;
+    transform: translateY(-1px);
+}
+
+.q-nav-answered {
+    background-color: #10B981 !important;
+    border-color: #059669 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
+}
+.q-nav-answered:hover {
+    background-color: #059669 !important;
+    box-shadow: 0 3px 6px rgba(16, 185, 129, 0.35) !important;
+    transform: translateY(-1px);
+}
+
+.active-nav {
+    border: 2.5px solid #2563EB !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3) !important;
+    transform: scale(1.06) !important;
+    z-index: 2 !important;
+}
+.active-nav.q-nav-unanswered {
+    background-color: #EFF6FF !important;
+    color: #1D4ED8 !important;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+/* Адаптивность для смартфонов и планшетов */
+@media (max-width: 991px) {
+    .nav-questions-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        gap: 6px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .q-nav-btn {
+        flex-shrink: 0;
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        font-size: 13px !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let remainingSeconds = {{ remaining_seconds }};
+    const totalQuestions = {{ total_questions }};
+    const saveUrl = "{% url 'testing_app:save_draft_answer' attempt.id %}";
+    const finishUrl = "{% url 'testing_app:finish_attempt' attempt.id %}";
+    const csrfToken = "{{ csrf_token }}";
+
+    const timerDisplay = document.getElementById("timerDisplay");
+    const timerBox = document.getElementById("timerBox");
+    const saveStatus = document.getElementById("saveStatusBadge");
+    const answeredCounter = document.getElementById("answeredCounter");
+    const progressPercent = document.getElementById("progressPercent");
+    const testProgressBar = document.getElementById("testProgressBar");
+    const modalAnsweredCount = document.getElementById("modalAnsweredCount");
+    const unansweredWarning = document.getElementById("unansweredWarning");
+    const navAnsweredRatio = document.getElementById("navAnsweredRatio");
+
+    let currentQNum = 1;
+    let questionStartTime = Date.now();
+
+    // 1. Таймер обратного отсчета
+    function updateTimer() {
+        if (remainingSeconds <= 0) {
+            timerDisplay.textContent = "00:00";
+            // Автоматическое завершение по таймауту
+            autoFinishOnTimeout();
+            return;
+        }
+
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        timerDisplay.textContent = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
+
+        // Предупреждение если осталось меньше 5 минут
+        if (remainingSeconds <= 300) {
+            timerBox.classList.add("border-danger", "bg-danger-subtle");
+            timerDisplay.classList.add("text-danger");
+        }
+
+        remainingSeconds--;
+    }
+
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+
+    function autoFinishOnTimeout() {
+        clearInterval(timerInterval);
+        alert("Время тестирования истекло! Результаты сохраняются...");
+        const form = document.querySelector("#finishConfirmModal form");
+        if (form) form.submit();
+    }
+
+    // 2. Переключение между вопросами
+    function showQuestion(qNum) {
+        document.querySelectorAll(".question-pane").forEach(pane => pane.classList.add("d-none"));
+        const targetPane = document.getElementById("q-pane-" + qNum);
+        if (targetPane) {
+            targetPane.classList.remove("d-none");
+            currentQNum = qNum;
+            questionStartTime = Date.now();
+        }
+
+        document.querySelectorAll(".q-nav-btn").forEach(btn => btn.classList.remove("active-nav"));
+        const navBtn = document.getElementById("nav-btn-" + qNum);
+        if (navBtn) {
+            navBtn.classList.add("active-nav");
+            if (navBtn.scrollIntoView) {
+                navBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+            }
+        }
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Кнопки навигатора
+    document.querySelectorAll(".q-nav-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const target = parseInt(this.getAttribute("data-target-q"));
+            showQuestion(target);
+        });
+    });
+
+    // Кнопки след/пред
+    document.querySelectorAll(".prev-q-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const prev = parseInt(this.getAttribute("data-prev"));
+            if (prev >= 1) showQuestion(prev);
+        });
+    });
+
+    document.querySelectorAll(".next-q-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const next = parseInt(this.getAttribute("data-next"));
+            if (next <= totalQuestions) showQuestion(next);
+        });
+    });
+
+    // 3. Выбор варианта ответа и AJAX-автосохранение
+    document.querySelectorAll(".option-card").forEach(card => {
+        card.addEventListener("click", function() {
+            const qid = this.getAttribute("data-qid");
+            const optId = this.getAttribute("data-opt-id");
+            const qnum = this.getAttribute("data-qnum");
+
+            // Визуальное выделение карточки
+            const container = this.closest(".options-container");
+            container.querySelectorAll(".option-card").forEach(c => {
+                c.classList.remove("selected-option", "border-primary", "bg-primary-subtle");
+                c.classList.add("bg-white");
+                const radio = c.querySelector(".opt-radio");
+                if (radio) radio.checked = false;
+            });
+
+            this.classList.add("selected-option", "border-primary", "bg-primary-subtle");
+            this.classList.remove("bg-white");
+            const radio = this.querySelector(".opt-radio");
+            if (radio) radio.checked = true;
+
+            // Кнопка в навигаторе окрашивается в зеленый цвет (отвечено)
+            const navBtn = document.getElementById("nav-btn-" + qnum);
+            if (navBtn) {
+                navBtn.classList.remove("q-nav-unanswered");
+                navBtn.classList.add("q-nav-answered");
+            }
+
+            // Расчет затраченного времени на вопрос
+            const spentSeconds = Math.round((Date.now() - questionStartTime) / 1000);
+            questionStartTime = Date.now();
+
+            // Индикатор сохранения
+            saveStatus.className = "badge bg-warning-subtle text-warning ms-2 font-size-11 border border-warning";
+            saveStatus.innerHTML = "<i class='bx bx-loader-alt bx-spin me-1'></i>Сохранение...";
+
+            // AJAX запрос на сервер
+            fetch(saveUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    attempt_question_id: parseInt(qid),
+                    selected_option_id: parseInt(optId),
+                    spent_seconds: spentSeconds
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    saveStatus.className = "badge bg-success-subtle text-success ms-2 font-size-11 border border-success";
+                    saveStatus.innerHTML = "<i class='bx bx-cloud-check me-1'></i>Сохранено";
+
+                    // Обновляем таймер из ответа сервера для идеальной синхронизации
+                    if (data.remaining_seconds !== undefined) {
+                        remainingSeconds = data.remaining_seconds;
+                    }
+
+                    // Обновляем счетчики отвеченных
+                    if (data.answered_count !== undefined) {
+                        answeredCounter.textContent = data.answered_count;
+                        modalAnsweredCount.textContent = data.answered_count + " из " + totalQuestions;
+                        if (navAnsweredRatio) {
+                            navAnsweredRatio.textContent = data.answered_count + " / " + totalQuestions;
+                        }
+                        const pct = Math.round((data.answered_count / totalQuestions) * 100);
+                        progressPercent.textContent = pct;
+                        testProgressBar.style.width = pct + "%";
+
+                        if (data.answered_count >= totalQuestions) {
+                            unansweredWarning.classList.add("d-none");
+                        } else {
+                            unansweredWarning.classList.remove("d-none");
+                        }
+                    }
+                } else if (data.is_expired) {
+                    autoFinishOnTimeout();
+                } else {
+                    saveStatus.className = "badge bg-danger-subtle text-danger ms-2 font-size-11 border border-danger";
+                    saveStatus.innerHTML = "<i class='bx bx-error me-1'></i>Ошибка сохранения";
+                }
+            })
+            .catch(err => {
+                console.error("Save error:", err);
+                saveStatus.className = "badge bg-danger-subtle text-danger ms-2 font-size-11 border border-danger";
+                saveStatus.innerHTML = "<i class='bx bx-error me-1'></i>Ошибка сети";
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

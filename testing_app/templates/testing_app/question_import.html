@@ -1,0 +1,187 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}Импорт вопросов из Excel — Тестирование сотрудников{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='import' %}
+
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-upload text-primary me-1"></i> Пакетный импорт вопросов из Excel
+            </h2>
+            <p class="text-muted mb-0">Загрузка банка вопросов и вариантов ответов из структурированной книги Excel (.xlsx)</p>
+        </div>
+        <div>
+            <a href="{% url 'testing_app:questions_bank' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> Вернуться в банк вопросов
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Левая колонка: форма загрузки и шаблон -->
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern shadow-sm h-100">
+            <header class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title text-white mb-0">
+                    <i class="bx bx-file me-1"></i> Форма загрузки файла
+                </h5>
+                <a href="{% url 'testing_app:question_template_download' %}" class="btn btn-sm btn-light font-weight-bold text-primary shadow-sm">
+                    <i class="bx bx-download me-1"></i> Скачать шаблон (.xlsx)
+                </a>
+            </header>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-dark">{{ form.file.label }}</label>
+                        {{ form.file }}
+                        {% if form.file.errors %}
+                            <div class="text-danger small mt-1">{{ form.file.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text text-muted mt-2">
+                            {{ form.file.help_text }}
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bx bx-cloud-upload fs-4"></i> Начать импорт вопросов
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="bg-light p-3 rounded border">
+                    <h6 class="font-weight-bold text-dark mb-2">
+                        <i class="bx bx-help-circle text-info me-1"></i> Инструкция по подготовке файла:
+                    </h6>
+                    <ol class="small text-muted mb-0 ps-3">
+                        <li class="mb-1">Скачайте эталонный шаблон Excel по кнопке выше.</li>
+                        <li class="mb-1"><strong>Колонка 1 (Категория):</strong> укажите название категории (если категории нет в системе, она создастся автоматически).</li>
+                        <li class="mb-1"><strong>Колонка 2 (Текст вопроса):</strong> полная формулировка вопроса.</li>
+                        <li class="mb-1"><strong>Колонки 3–6 (Варианты ответов 1..4):</strong> все 4 варианта должны быть заполнены.</li>
+                        <li class="mb-1"><strong>Колонка 7 (Номер правильного ответа):</strong> целое число от <strong>1 до 4</strong>.</li>
+                        <li class="mb-1"><strong>Колонка 8 (Сложность):</strong> Низкая, Средняя, Повышенная или Высокая (по умолчанию: Средняя).</li>
+                        <li><strong>Колонка 9 (Пояснение):</strong> текст комментария к правильному ответу (опционально).</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка: результаты импорта -->
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern shadow-sm h-100">
+            <header class="card-header bg-white border-bottom">
+                <h5 class="card-title text-dark mb-0">
+                    <i class="bx bx-list-check text-success me-1"></i> Результаты импорта
+                </h5>
+            </header>
+            <div class="card-body p-4">
+                {% if import_result %}
+                    {% if import_result.success %}
+                        <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+                            <i class="bx bx-check-circle fs-3 text-success"></i>
+                            <div>
+                                <h6 class="mb-0 font-weight-bold">Импорт успешно завершен!</h6>
+                                <div class="small">Всего обработано строк: {{ import_result.total_rows }}.</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3 text-center">
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-success-subtle">
+                                    <div class="small text-muted">Создано вопросов</div>
+                                    <div class="h4 font-weight-bold text-success mb-0">{{ import_result.created_questions }}</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-info-subtle">
+                                    <div class="small text-muted">Новых категорий</div>
+                                    <div class="h4 font-weight-bold text-info mb-0">{{ import_result.created_categories }}</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="small text-muted">Пропущено</div>
+                                    <div class="h4 font-weight-bold text-secondary mb-0">{{ import_result.skipped_questions }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if import_result.errors %}
+                            <div class="alert alert-warning mb-3">
+                                <h6 class="font-weight-bold text-warning mb-2">
+                                    <i class="bx bx-error me-1"></i> Предупреждения по строкам ({{ import_result.errors|length }}):
+                                </h6>
+                                <ul class="small mb-0 ps-3 text-dark" style="max-height: 150px; overflow-y: auto;">
+                                    {% for err in import_result.errors %}
+                                        <li>{{ err }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if import_result.created_items %}
+                            <h6 class="font-weight-bold text-dark mt-3 mb-2">Добавленные вопросы (первые {{ import_result.created_items|length }}):</h6>
+                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                <table class="table table-sm table-striped small mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Категория</th>
+                                            <th>Вопрос</th>
+                                            <th class="text-center">Верный</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for itm in import_result.created_items %}
+                                        <tr>
+                                            <td><span class="badge bg-light text-dark border">{{ itm.category }}</span></td>
+                                            <td>{{ itm.text }}</td>
+                                            <td class="text-center font-weight-bold text-success">#{{ itm.correct_option }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+                            <i class="bx bx-x-circle fs-3 text-danger"></i>
+                            <div>
+                                <h6 class="mb-0 font-weight-bold">Ошибка выполнения импорта</h6>
+                                <div class="small">Данные не были сохранены в базу данных.</div>
+                            </div>
+                        </div>
+
+                        {% if import_result.errors %}
+                            <div class="alert alert-danger mb-0">
+                                <ul class="small mb-0 ps-3">
+                                    {% for err in import_result.errors %}
+                                        <li>{{ err }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bx bx-upload fs-1 d-block mb-2 text-secondary"></i>
+                        Выберите файл Excel с вопросами и нажмите «Начать импорт вопросов».<br>
+                        Здесь отобразится детальный отчет о добавленных записях.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

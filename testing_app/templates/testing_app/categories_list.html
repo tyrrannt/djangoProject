@@ -1,0 +1,157 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}Категории вопросов — Тестирование сотрудников{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='categories' %}
+
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-folder text-primary me-1"></i> Справочник категорий вопросов
+            </h2>
+            <p class="text-muted mb-0">Классификация банка вопросов по тематическим направлениям и дисциплинам</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'testing_app:questions_bank' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> В банк вопросов
+            </a>
+            <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                <i class="bx bx-plus fs-5"></i> Новая категория
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card card-modern shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60px;" class="text-center">#</th>
+                                <th style="width: 250px;">Наименование</th>
+                                <th>Описание</th>
+                                <th style="width: 140px;" class="text-center">Вопросов всего</th>
+                                <th style="width: 120px;" class="text-center">Статус</th>
+                                <th style="width: 140px;" class="text-center">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr>
+                                <td class="text-center text-muted font-weight-bold">{{ cat.id }}</td>
+                                <td class="font-weight-semibold text-dark">
+                                    <i class="bx bx-folder me-1 text-primary"></i> {{ cat.name }}
+                                </td>
+                                <td class="text-muted small">
+                                    {{ cat.description|default:"—" }}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1">
+                                        {{ cat.total_questions }} вопр.
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if cat.is_active %}
+                                        <span class="badge bg-success">Активна</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Неактивна</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <a href="{% url 'testing_app:questions_bank' %}?category={{ cat.id }}" class="btn btn-sm btn-outline-primary me-1" title="Смотреть вопросы">
+                                        <i class="bx bx-list-ul"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editModal{{ cat.id }}" title="Редактировать">
+                                        <i class="bx bx-edit"></i>
+                                    </button>
+
+                                    <!-- Модальное окно редактирования -->
+                                    <div class="modal fade text-start" id="editModal{{ cat.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form method="post" action="{% url 'testing_app:category_update' cat.id %}" class="modal-content">
+                                                {% csrf_token %}
+                                                <div class="modal-header bg-light">
+                                                    <h5 class="modal-title font-weight-bold">Редактирование категории</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body p-3">
+                                                    <div class="mb-3">
+                                                        <label class="form-label font-weight-semibold">Название:</label>
+                                                        <input type="text" name="name" class="form-control" value="{{ cat.name }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label font-weight-semibold">Описание:</label>
+                                                        <textarea name="description" class="form-control" rows="3">{{ cat.description }}</textarea>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input type="checkbox" name="is_active" class="form-check-input" id="activeCheck{{ cat.id }}" {% if cat.is_active %}checked{% endif %}>
+                                                        <label class="form-check-label" for="activeCheck{{ cat.id }}">Категория активна</label>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bx bx-folder-open fs-1 d-block mb-2 text-secondary"></i>
+                                    Категории еще не созданы. Создайте категорию вручную или загрузите вопросы через Excel-шаблон.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно создания новой категории -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'testing_app:category_create' %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white font-weight-bold">
+                    <i class="bx bx-plus me-1"></i> Новая категория вопросов
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold text-dark">Название категории:</label>
+                    {{ form.name }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold text-dark">Описание:</label>
+                    {{ form.description }}
+                </div>
+                <div class="form-check">
+                    {{ form.is_active }}
+                    <label class="form-check-label text-dark" for="{{ form.is_active.id_for_label }}">
+                        Категория активна
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" class="btn btn-primary">Создать категорию</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

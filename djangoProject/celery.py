@@ -58,6 +58,14 @@ app.conf.beat_schedule = {
         'task': 'finance_app.tasks.check_overdraft_tranches_task',
         'schedule': crontab(hour=9, minute=0),
     },
+    'testing_check_expired_attempts': {
+        'task': 'testing_app.tasks.check_expired_attempts_task',
+        'schedule': crontab(minute='*/5'),
+    },
+    'testing_deadline_reminders': {
+        'task': 'testing_app.tasks.send_deadline_reminders_task',
+        'schedule': crontab(hour='8', minute='0'),
+    },
 
 
     # 'sync_finance_directories': {

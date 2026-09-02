@@ -1,0 +1,166 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}Мои тестирования — Корпоративный портал БАРКОЛ{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='my_tests' %}
+
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-check-shield text-primary me-1"></i> Мои проверки знаний
+            </h2>
+            <p class="text-muted mb-0">Периодическая проверка знаний по техническому обслуживанию воздушных судов</p>
+        </div>
+        {% if user.is_staff or user.is_superuser %}
+        <div>
+            <a href="{% url 'testing_app:dashboard' %}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-tachometer fs-5"></i> Панель управления
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    {% for assign in assignments %}
+    <div class="col-lg-6 col-12 mb-4">
+        <div class="card card-modern shadow-sm h-100 border-0">
+            <div class="card-header d-flex justify-content-between align-items-center py-3 {% if assign.status == 'passed' %}bg-success text-white{% elif assign.status == 'failed' or assign.status == 'on_control' %}bg-danger text-white{% else %}bg-light border-bottom{% endif %}">
+                <div class="font-weight-bold {% if assign.status == 'passed' or assign.status == 'failed' or assign.status == 'on_control' %}text-white{% else %}text-dark{% endif %}">
+                    {{ assign.testing.title }}
+                </div>
+                <div>
+                    {% if assign.status == 'passed' %}
+                        <span class="badge bg-white text-success font-weight-bold">Сдано</span>
+                    {% elif assign.status == 'in_progress' %}
+                        <span class="badge bg-warning text-dark">В процессе</span>
+                    {% elif assign.status == 'on_control' %}
+                        <span class="badge bg-white text-danger font-weight-bold">На контроле</span>
+                    {% elif assign.status == 'failed' %}
+                        <span class="badge bg-white text-danger font-weight-bold">Не сдано</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Не начато</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="small text-muted mb-2">
+                        <i class="bx bx-news me-1"></i>Приказ №{{ assign.testing.order_number }} от {{ assign.testing.order_date|date:"d.m.Y" }}
+                    </div>
+
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <div class="row g-2 small">
+                            <div class="col-sm-6">
+                                <span class="text-muted">Группа:</span>
+                                <strong class="text-dark d-block">{{ assign.group.name }}</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted">Должность в приказе:</span>
+                                <strong class="text-dark d-block">{{ assign.assigned_job_title }}</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted">Вопросов в тесте:</span>
+                                <strong class="text-dark d-block">{{ assign.testing.questions_count }} вопр. (порог {{ assign.testing.passing_score_percentage }}%)</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted">Таймер попытки:</span>
+                                <strong class="text-dark d-block">{{ assign.testing.attempt_duration_minutes }} минут</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small text-muted">Использовано попыток:</span>
+                        <span class="font-weight-bold text-dark">{{ assign.attempts_used }} из {{ assign.testing.max_attempts }}</span>
+                    </div>
+
+                    <!-- Прогресс попыток -->
+                    <div class="progress mb-4" style="height: 8px;">
+                        <div class="progress-bar {% if assign.status == 'passed' %}bg-success{% elif assign.attempts_used >= assign.testing.max_attempts %}bg-danger{% else %}bg-primary{% endif %}"
+                             role="progressbar"
+                             style="width: {% widthratio assign.attempts_used assign.testing.max_attempts 100 %}%;">
+                        </div>
+                    </div>
+
+                    <!-- История попыток -->
+                    {% if assign.attempts.all %}
+                        <div class="border rounded p-2 mb-3 bg-white">
+                            <div class="small font-weight-bold text-dark mb-1">История попыток:</div>
+                            <ul class="list-unstyled mb-0 small">
+                                {% for att in assign.attempts.all %}
+                                <li class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                    <span>Попытка №{{ att.attempt_number }} ({{ att.started_at|date:"d.m.Y H:i" }})</span>
+                                    <div>
+                                        {% if att.status == 'completed' %}
+                                            <span class="font-weight-bold {% if att.is_passed %}text-success{% else %}text-danger{% endif %} me-2">
+                                                {{ att.score_percentage }}%
+                                            </span>
+                                            <a href="{% url 'testing_app:test_result' att.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Просмотр">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Не завершена</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="pt-2 border-top">
+                    {% if assign.status == 'passed' %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-success font-weight-bold small">
+                                <i class="bx bx-check-double me-1"></i>Проверка знаний успешно пройдена
+                            </span>
+                            {% with last_pass=assign.attempts.last %}
+                                {% if last_pass %}
+                                    <a href="{% url 'testing_app:test_result' last_pass.id %}" class="btn btn-outline-success btn-sm">
+                                        <i class="bx bx-award me-1"></i> Протокол сдачи
+                                    </a>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    {% elif assign.attempts_used < assign.testing.max_attempts %}
+                        <form method="post" action="{% url 'testing_app:start_attempt' assign.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bx bx-play-circle fs-4"></i>
+                                <span>
+                                    {% if assign.status == 'in_progress' %}
+                                        Продолжить тестирование
+                                    {% else %}
+                                        Начать тестирование (Попытка {{ assign.attempts_used|add:1 }})
+                                    {% endif %}
+                                </span>
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-danger mb-0 py-2 text-center small font-weight-bold">
+                            Лимит попыток исчерпан. Обратитесь к комиссии по проверке знаний.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card card-modern shadow-sm text-center py-5">
+            <div class="card-body">
+                <i class="bx bx-calendar-check fs-1 text-muted mb-3 d-block"></i>
+                <h5 class="font-weight-bold text-dark mb-1">У вас нет назначенных проверок знаний</h5>
+                <p class="text-muted mb-0">Когда будет издан приказ о проверке знаний с вашей должностью, тестирование появится на этой странице.</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

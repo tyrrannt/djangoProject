@@ -95,6 +95,7 @@ urlpatterns = [
     path('provisions/add/', ProvisionsAdd.as_view(), name='provisions_add'),
     path('provisions/<int:pk>/', ProvisionsDetail.as_view(), name='provisions'),
     path('provisions/<int:pk>/update/', ProvisionsUpdate.as_view(), name='provisions_update'),
+    path('provisions/<int:pk>/delete/', ProvisionsDelete.as_view(), name='provisions_delete'),
 
     path('briefings/', BriefingsList.as_view(), name='briefings_list'),
     path('briefings/add/', BriefingsAdd.as_view(), name='briefings_add'),

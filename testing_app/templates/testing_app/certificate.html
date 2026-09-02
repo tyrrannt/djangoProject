@@ -1,0 +1,254 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Сертификат: {{ employee_name }} — {{ result_number }}{% endblock %}
+
+{% block content %}
+<!-- Панель действий вверху (не печатается) -->
+<div class="row mb-3 no-print">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-0">
+                <i class="bx bx-award text-success me-1"></i> Сертификат проверки знаний
+            </h3>
+            <span class="text-muted small">Регистрационный номер: {{ result_number }}</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'testing_app:test_result' attempt.id %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> К результатам
+            </a>
+            <a href="{% url 'testing_app:attempt_test_sheet' attempt.id %}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-file fs-5"></i> Лист тестирования
+            </a>
+            <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm" onclick="window.print();">
+                <i class="bx bx-printer fs-5"></i> Распечатать сертификат (А4)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Печатный представительский бланк сертификата -->
+<div class="certificate-container shadow-sm mx-auto mb-5">
+    <div class="certificate-border">
+        <div class="certificate-inner">
+            <!-- Шапка сертификата с логотипом -->
+            <div class="text-center mb-3">
+                <img src="{% static 'admin_templates/img/logo.png' %}" alt="ООО Авиакомпания «БАРКОЛ»" class="cert-company-logo mb-2" style="max-height: 52px; width: auto;">
+                <div class="certificate-org-title text-uppercase font-weight-bold">
+                    ООО Авиакомпания «БАРКОЛ»
+                </div>
+                <div class="text-muted small text-uppercase letter-spacing-1">
+                    Инженерно-авиационная служба (ИАС) • Проверка знаний персонала
+                </div>
+                <hr class="cert-divider my-2">
+                <h1 class="certificate-main-title text-uppercase font-weight-bold mb-1">
+                    СЕРТИФИКАТ
+                </h1>
+                <div class="certificate-subtitle text-uppercase">
+                    о прохождении периодической проверки знаний
+                </div>
+                <div class="text-muted small mt-1 font-monospace">
+                    № {{ result_number }}
+                </div>
+            </div>
+
+            <!-- Текст подтверждения: ФИО в дательном падеже (Кому?) -->
+            <div class="text-center my-3">
+                <div class="text-muted mb-1 fs-6">Настоящий сертификат выдан:</div>
+                <div class="certificate-person-name font-weight-bold text-dark">
+                    {{ employee_name_dative|default:employee_name }}
+                </div>
+                <div class="certificate-person-job mt-1 text-secondary">
+                    {{ job_title }} {% if division_title %}• {{ division_title }}{% endif %}
+                </div>
+            </div>
+
+            <!-- Детали аттестации -->
+            <div class="cert-details-box mx-auto my-3 p-3 rounded">
+                <div class="row g-2 small text-center text-md-start">
+                    <div class="col-md-6 col-12">
+                        <span class="text-muted">Основание:</span>
+                        <div class="font-weight-semibold text-dark">{{ order_info }}</div>
+                    </div>
+                    <div class="col-md-6 col-12">
+                        <span class="text-muted">Группа аттестации:</span>
+                        <div class="font-weight-semibold text-primary">{{ group_name }}</div>
+                    </div>
+                    <div class="col-md-6 col-12 mt-2">
+                        <span class="text-muted">Результат проверки:</span>
+                        <div class="font-weight-bold text-success">
+                            {{ score_percentage }}% (порог: {{ passing_score_percentage }}%, верно: {{ correct_answers_count }} из {{ total_questions }})
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-12 mt-2">
+                        <span class="text-muted">Срок действия:</span>
+                        <div class="font-weight-semibold text-dark">С {{ issue_date }} по {{ valid_until_date }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Подписи и QR-код -->
+            <div class="row align-items-end mt-4 pt-2">
+                <div class="col-7">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between border-bottom pb-1 mb-1">
+                            <span class="small font-weight-semibold">Председатель комиссии:</span>
+                            <span class="small text-muted font-italic">/___________________/</span>
+                        </div>
+                        <div class="small text-muted text-end" style="font-size: 10px;">(подпись, расшифровка)</div>
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-content-between border-bottom pb-1 mb-1">
+                            <span class="small font-weight-semibold">Ответственный за тестирование:</span>
+                            <span class="small text-muted font-italic">/___________________/</span>
+                        </div>
+                        <div class="small text-muted text-end" style="font-size: 10px;">(подпись, расшифровка)</div>
+                    </div>
+                </div>
+
+                <div class="col-5 text-center">
+                    {% if qr_code_url %}
+                        <img src="{{ qr_code_url }}" alt="QR-код проверки подлинности" class="cert-qr-img shadow-sm rounded border p-1" style="width: 90px; height: 90px;">
+                    {% endif %}
+                    <div class="small text-muted mt-1" style="font-size: 9.5px; line-height: 1.2;">
+                        Проверка подлинности (QR-код)<br>
+                        <span class="font-monospace text-muted">{{ certificate_uuid }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Стили бланка сертификата */
+.certificate-container {
+    max-width: 800px;
+    background: #FFFFFF;
+    padding: 15px;
+}
+.certificate-border {
+    border: 4px double #1E3A8A;
+    padding: 12px;
+    position: relative;
+    background: #FAFCFF;
+}
+.certificate-inner {
+    border: 1px solid #CBD5E1;
+    padding: 30px 35px;
+    background: #FFFFFF;
+    position: relative;
+}
+.certificate-org-title {
+    font-size: 18px;
+    color: #1E3A8A;
+    letter-spacing: 1px;
+}
+.cert-divider {
+    border-top: 2px solid #1E3A8A;
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.8;
+}
+.certificate-main-title {
+    font-size: 30px;
+    color: #1E3A8A;
+    letter-spacing: 3px;
+}
+.certificate-subtitle {
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    color: #475569;
+    font-weight: 600;
+}
+.certificate-person-name {
+    font-size: 24px;
+    text-decoration: underline;
+    text-decoration-color: #1E3A8A;
+}
+.certificate-person-job {
+    font-size: 14px;
+}
+.cert-details-box {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    max-width: 650px;
+}
+
+/* Безупречные стили печати сертификата на листе формата А4 */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 8mm 10mm;
+    }
+    html, body {
+        background: #FFFFFF !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        font-size: 11pt !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .no-print, header, nav, aside, .sidebar-left, .header, .page-header,
+    .mobile-bottom-bar, .mobile-fab, #sidebar-left, .sidebar, footer, .inner-menu-toggle,
+    .sidebar-right, .notifications, .profile-info, .logo-container, .breadcrumbs,
+    .modal, .modal-backdrop {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    .inner-wrapper, .content-body, section.body, .row, .col-12 {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        width: 100% !important;
+        background: transparent !important;
+    }
+    .certificate-container {
+        position: relative !important;
+        width: 100% !important;
+        max-width: 185mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    .certificate-border {
+        border: 3pt double #1E3A8A !important;
+        padding: 6mm !important;
+        background: #FAFCFF !important;
+        box-sizing: border-box !important;
+    }
+    .certificate-inner {
+        border: 1pt solid #CBD5E1 !important;
+        padding: 8mm 10mm !important;
+        background: #FFFFFF !important;
+        box-sizing: border-box !important;
+    }
+    .cert-company-logo {
+        max-height: 48px !important;
+    }
+    .certificate-main-title {
+        font-size: 24pt !important;
+        letter-spacing: 2px !important;
+        color: #1E3A8A !important;
+    }
+    .certificate-person-name {
+        font-size: 18pt !important;
+        color: #000000 !important;
+    }
+    .cert-details-box {
+        background-color: #F8FAFC !important;
+        border: 1pt solid #CBD5E1 !important;
+        padding: 5mm !important;
+        margin-top: 4mm !important;
+        margin-bottom: 4mm !important;
+    }
+}
+</style>
+{% endblock %}

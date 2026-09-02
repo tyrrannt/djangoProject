@@ -1,0 +1,141 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}
+    {% if object %}Редактирование мероприятия{% else %}Новое мероприятие тестирования{% endif %} — Тестирование сотрудников
+{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='events' %}
+
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-calendar-plus text-primary me-1"></i>
+                {% if object %}Редактирование мероприятия «{{ object.title }}»{% else %}Создание мероприятия тестирования{% endif %}
+            </h2>
+            <p class="text-muted mb-0">Регистрация приказа и базовых параметров проведения проверки знаний работников</p>
+        </div>
+        <div>
+            <a href="{% if object %}{% url 'testing_app:event_detail' object.pk %}{% else %}{% url 'testing_app:event_list' %}{% endif %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> Назад
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-12">
+        <form method="post" class="card card-modern shadow-sm">
+            {% csrf_token %}
+            <div class="card-body p-4">
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4">
+                        {% for err in form.non_field_errors %}
+                            <div>{{ err }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- 1. Основание: приказ и наименование -->
+                <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                    <i class="bx bx-file text-primary me-1"></i> Основание проведения и наименование
+                </h5>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Наименование тестирования:</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Номер приказа:</label>
+                        {{ form.order_number }}
+                        {% if form.order_number.errors %}<div class="text-danger small mt-1">{{ form.order_number.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Дата приказа:</label>
+                        {{ form.order_date }}
+                        {% if form.order_date.errors %}<div class="text-danger small mt-1">{{ form.order_date.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label font-weight-semibold text-dark">Наименование приказа:</label>
+                        {{ form.order_name }}
+                        {% if form.order_name.errors %}<div class="text-danger small mt-1">{{ form.order_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label font-weight-semibold text-dark">Описание / распоряжение:</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <!-- 2. Сроки проведения -->
+                <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3 mt-4">
+                    <i class="bx bx-time-five text-primary me-1"></i> Сроки проведения проверки знаний
+                </h5>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Дата и время начала тестирования:</label>
+                        {{ form.start_datetime }}
+                        {% if form.start_datetime.errors %}<div class="text-danger small mt-1">{{ form.start_datetime.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">До наступления этого времени сотрудники не смогут начать тест.</div>
+                    </div>
+                    <div class="col-md-6 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Дата и время окончания тестирования:</label>
+                        {{ form.end_datetime }}
+                        {% if form.end_datetime.errors %}<div class="text-danger small mt-1">{{ form.end_datetime.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">После наступления дедлайна создание новых попыток блокируется.</div>
+                    </div>
+                </div>
+
+                <!-- 3. Параметры теста -->
+                <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3 mt-4">
+                    <i class="bx bx-slider-alt text-primary me-1"></i> Параметры тестирования
+                </h5>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Количество вопросов:</label>
+                        {{ form.questions_count }}
+                        {% if form.questions_count.errors %}<div class="text-danger small mt-1">{{ form.questions_count.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">По умолчанию: 20</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Проходной балл (%):</label>
+                        {{ form.passing_score_percentage }}
+                        {% if form.passing_score_percentage.errors %}<div class="text-danger small mt-1">{{ form.passing_score_percentage.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">По умолчанию: 80%</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Макс. число попыток:</label>
+                        {{ form.max_attempts }}
+                        {% if form.max_attempts.errors %}<div class="text-danger small mt-1">{{ form.max_attempts.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">По умолчанию: 5</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Таймер попытки (мин):</label>
+                        {{ form.attempt_duration_minutes }}
+                        {% if form.attempt_duration_minutes.errors %}<div class="text-danger small mt-1">{{ form.attempt_duration_minutes.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">По умолчанию: 60 мин</div>
+                    </div>
+                    <div class="col-md-6 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Текущий статус мероприятия:</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a href="{% if object %}{% url 'testing_app:event_detail' object.pk %}{% else %}{% url 'testing_app:event_list' %}{% endif %}" class="btn btn-outline-secondary px-4">
+                        Отмена
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bx bx-save me-1"></i> Сохранить мероприятие
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

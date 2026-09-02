@@ -1,0 +1,136 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    {% if object %}Редактирование вопроса #{{ object.id }}{% else %}Создание вопроса{% endif %} — Тестирование сотрудников
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">
+                <i class="bx bx-edit text-primary me-1"></i>
+                {% if object %}Редактирование вопроса #{{ object.id }}{% else %}Создание вопроса вручную{% endif %}
+            </h2>
+            <p class="text-muted mb-0">Заполнение параметров вопроса и 4 вариантов ответов с указанием правильного</p>
+        </div>
+        <div>
+            <a href="{% url 'testing_app:questions_bank' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bx bx-arrow-back fs-5"></i> Назад в банк вопросов
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-12">
+        <form method="post" class="card card-modern shadow-sm">
+            {% csrf_token %}
+            <div class="card-body p-4">
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for err in form.non_field_errors %}
+                            <div>{{ err }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Основные параметры вопроса -->
+                <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                    <i class="bx bx-file text-primary me-1"></i> Параметры вопроса
+                </h5>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Категория вопроса:</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Сложность:</label>
+                        {{ form.difficulty }}
+                        {% if form.difficulty.errors %}
+                            <div class="text-danger small mt-1">{{ form.difficulty.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label font-weight-semibold text-dark">Статус:</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label font-weight-semibold text-dark">Текст формулировки вопроса:</label>
+                    {{ form.text }}
+                    {% if form.text.errors %}
+                        <div class="text-danger small mt-1">{{ form.text.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label font-weight-semibold text-dark">Пояснение к правильному ответу (опционально):</label>
+                    {{ form.explanation }}
+                    {% if form.explanation.errors %}
+                        <div class="text-danger small mt-1">{{ form.explanation.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Варианты ответов -->
+                <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bx bx-list-check text-success me-1"></i> Варианты ответов (ровно 4 варианта)</span>
+                    <span class="small text-muted font-weight-normal">Отметьте галочкой один правильный ответ</span>
+                </h5>
+
+                {{ options_formset.management_form }}
+
+                {% if options_formset.non_form_errors %}
+                    <div class="alert alert-danger">
+                        {% for err in options_formset.non_form_errors %}
+                            <div>{{ err }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="row g-3">
+                    {% for opt_form in options_formset %}
+                        <div class="col-12">
+                            {{ opt_form.id }}
+                            {{ opt_form.order_num }}
+                            <div class="input-group">
+                                <span class="input-group-text font-weight-bold text-muted" style="min-width: 45px;">
+                                    {{ forloop.counter }}
+                                </span>
+                                {{ opt_form.text }}
+                                <div class="input-group-text bg-light gap-2 px-3">
+                                    {{ opt_form.is_correct }}
+                                    <label class="form-check-label small font-weight-bold text-success mb-0" for="{{ opt_form.is_correct.id_for_label }}">
+                                        Правильный
+                                    </label>
+                                </div>
+                            </div>
+                            {% if opt_form.text.errors %}
+                                <div class="text-danger small mt-1">{{ opt_form.text.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a href="{% url 'testing_app:questions_bank' %}" class="btn btn-outline-secondary px-4">
+                        Отмена
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bx bx-save me-1"></i> Сохранить вопрос
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

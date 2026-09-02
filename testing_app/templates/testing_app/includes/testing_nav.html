@@ -1,0 +1,73 @@
+{% load static %}
+
+<!-- Сквозная навигационная панель модуля тестирования -->
+<div class="card card-modern shadow-sm border-0 mb-4 no-print testing-nav-bar">
+    <div class="card-body p-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="testing-nav-scroll-wrapper">
+            <ul class="nav nav-pills gap-1 flex-nowrap flex-md-wrap">
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'my_tests' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:my_tests' %}">
+                        <i class="bx bx-user me-1"></i> <span>Мои тестирования</span>
+                    </a>
+                </li>
+                {% if is_manager %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'dashboard' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:dashboard' %}">
+                            <i class="bx bx-tachometer me-1"></i> <span>Дашборд</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'events' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:event_list' %}">
+                            <i class="bx bx-calendar-event me-1"></i> <span>Мероприятия</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'questions' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:questions_bank' %}">
+                            <i class="bx bx-collection me-1"></i> <span>Банк вопросов</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'import' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:questions_import' %}">
+                            <i class="bx bx-upload me-1"></i> <span>Импорт из Excel</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'categories' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:categories_list' %}">
+                            <i class="bx bx-category me-1"></i> <span>Категории</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+        <div class="d-none d-lg-flex align-items-center text-muted small pe-2">
+            <span class="badge bg-light text-primary border me-2">АТП ИАС</span>
+            <span>Периодическая проверка знаний</span>
+        </div>
+    </div>
+</div>
+
+<style>
+.testing-nav-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    padding-bottom: 2px;
+}
+.testing-nav-scroll-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+.testing-nav-scroll-wrapper::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 4px;
+}
+.testing-nav-bar .nav-link {
+    font-size: 13.5px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: all 0.15s ease-in-out;
+}
+.testing-nav-bar .nav-link:hover:not(.active) {
+    background-color: #F1F5F9;
+}
+</style>
