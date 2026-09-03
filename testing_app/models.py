@@ -1,8 +1,10 @@
 """Модели данных системы периодического тестирования сотрудников (testing_app)."""
 
+import os
 import uuid
 from typing import Optional, List, Dict, Any
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
 
@@ -982,3 +984,326 @@ class TestingAuditLog(models.Model):
     def __str__(self) -> str:
         user_name = self.user.get_full_name() if self.user else "Система"
         return f"[{self.created_at.strftime('%d.%m.%Y %H:%M')}] {user_name}: {self.action} ({self.object_repr})"
+
+
+# ==============================================================================
+# ЛЕКЦИОННЫЕ И ВИДЕОМАТЕРИАЛЫ ДЛЯ ТЕСТИРОВАНИЯ
+# ==============================================================================
+
+def lecture_upload_path(instance, filename: str, prefix_dir: str, file_prefix: str) -> str:
+    """Генерирует путь сохранения файла по шаблону: префикс/год/месяц/Префикс_UUID.расширение.
+
+    Аналогично системе хранения документов и инструктажей Briefings.
+
+    Args:
+        instance (models.Model): Экземпляр модели (LectureMaterial или VideoLecture).
+        filename (str): Исходное имя загружаемого пользователем файла.
+        prefix_dir (str): Относительный базовый каталог сохранения.
+        file_prefix (str): Префикс имени файла (DOC, SCAN, VIDEO).
+
+    Returns:
+        str: Относительный путь для сохранения файла в директории MEDIA.
+    """
+    now = timezone.now()
+    year_str = now.strftime("%Y")
+    month_str = now.strftime("%m")
+    ext = os.path.splitext(filename)[1].lstrip(".").lower()
+    unique_id = uuid.uuid4().hex
+    new_filename = f"{file_prefix}_{unique_id}.{ext}" if ext else f"{file_prefix}_{unique_id}"
+    return os.path.join(prefix_dir, year_str, month_str, new_filename)
+
+
+def lecture_doc_upload_to(instance, filename: str) -> str:
+    """Формирует путь сохранения исходного документа лекции (.doc, .docx).
+
+    Args:
+        instance (LectureMaterial): Экземпляр лекционного материала.
+        filename (str): Исходное имя файла.
+
+    Returns:
+        str: Относительный путь в формате: 'lectures/docs/YYYY/MM/DOC_UUID.ext'.
+    """
+    return lecture_upload_path(instance, filename, "lectures/docs", "DOC")
+
+
+def lecture_scan_upload_to(instance, filename: str) -> str:
+    """Формирует путь сохранения электронного образа (скана) лекции (.pdf).
+
+    Args:
+        instance (LectureMaterial): Экземпляр лекционного материала.
+        filename (str): Исходное имя файла.
+
+    Returns:
+        str: Относительный путь в формате: 'lectures/scans/YYYY/MM/SCAN_UUID.ext'.
+    """
+    return lecture_upload_path(instance, filename, "lectures/scans", "SCAN")
+
+
+def video_lecture_upload_to(instance, filename: str) -> str:
+    """Формирует путь сохранения видеофайла лекции (.mp4).
+
+    Args:
+        instance (VideoLecture): Экземпляр видеолекции.
+        filename (str): Исходное имя файла.
+
+    Returns:
+        str: Относительный путь в формате: 'lectures/videos/YYYY/MM/VIDEO_UUID.ext'.
+    """
+    return lecture_upload_path(instance, filename, "lectures/videos", "VIDEO")
+
+
+class LectureMaterial(models.Model):
+    """Модель лекционного материала для теоретической подготовки сотрудников.
+
+    Хранит текстовые методические материалы, исходные редактируемые файлы (.doc, .docx)
+    и электронные образы (.pdf) для онлайн-просмотра сотрудниками перед сдачей тестов.
+
+    Attributes:
+        title (str): Наименование лекционного материала.
+        doc_file (FieldFile): Исходный файл документа (форматы doc, docx).
+        scan_file (FieldFile): Скан документа для встроенного просмотра (формат pdf).
+        is_actual (bool): Признак актуальности лекции (неактуальные скрыты от обычных сотрудников).
+        description (str): Краткое описание или аннотация к лекции.
+        created_by (ForeignKey): Пользователь (ответственный), добавивший лекцию.
+        created_at (datetime): Дата и время добавления записи.
+        updated_at (datetime): Дата и время последнего обновления.
+    """
+
+    title = models.CharField(
+        max_length=255,
+        verbose_name="Наименование лекции",
+        db_index=True
+    )
+    doc_file = models.FileField(
+        upload_to=lecture_doc_upload_to,
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=["doc", "docx"])],
+        verbose_name="Файл документа (doc, docx)",
+        help_text="Исходный редактируемый файл лекции в формате .doc или .docx"
+    )
+    scan_file = models.FileField(
+        upload_to=lecture_scan_upload_to,
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+        verbose_name="Скан документа (pdf)",
+        help_text="Электронный образ или скан документа в формате PDF для встроенного просмотра"
+    )
+    is_actual = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Актуальность",
+        help_text="Признак актуальности материала (неактуальные скрываются от сотрудников)"
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Описание / Аннотация",
+        help_text="Краткое содержание или методические указания к лекционному материалу"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_lectures",
+        verbose_name="Создал"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name="Дата добавления"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+
+    class Meta:
+        verbose_name = "Лекционный материал"
+        verbose_name_plural = "Лекционные материалы"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+    @property
+    def total_views_count(self) -> int:
+        """Суммарное количество обращений сотрудников к данному материалу."""
+        res = self.view_logs.aggregate(total=models.Sum("views_count"))
+        return res["total"] or 0
+
+    @property
+    def unique_viewers_count(self) -> int:
+        """Количество уникальных сотрудников, открывавших данный материал."""
+        return self.view_logs.values("user_id").distinct().count()
+
+
+class VideoLecture(models.Model):
+    """Модель видеолекции для теоретической подготовки сотрудников.
+
+    Хранит видеоматериалы в формате MP4 для просмотра сотрудниками на портале.
+
+    Attributes:
+        title (str): Наименование видеолекции.
+        video_file (FieldFile): Видеозапись лекции в формате .mp4.
+        is_actual (bool): Признак актуальности видеоматериала.
+        description (str): Краткое описание или план видеолекции.
+        created_by (ForeignKey): Пользователь (ответственный), добавивший видео.
+        created_at (datetime): Дата и время добавления записи.
+        updated_at (datetime): Дата и время последнего обновления.
+    """
+
+    title = models.CharField(
+        max_length=255,
+        verbose_name="Наименование видеолекции",
+        db_index=True
+    )
+    video_file = models.FileField(
+        upload_to=video_lecture_upload_to,
+        validators=[FileExtensionValidator(allowed_extensions=["mp4"])],
+        verbose_name="Видеофайл (mp4)",
+        help_text="Видеозапись в формате MP4"
+    )
+    is_actual = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Актуальность",
+        help_text="Признак актуальности видеоматериала (неактуальные скрываются от сотрудников)"
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Описание / Аннотация",
+        help_text="Краткое содержание или таймкоды видеолекции"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_video_lectures",
+        verbose_name="Создал"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name="Дата добавления"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+
+    class Meta:
+        verbose_name = "Видеолекция"
+        verbose_name_plural = "Видеолекции"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+    @property
+    def total_views_count(self) -> int:
+        """Суммарное количество обращений сотрудников к данной видеолекции."""
+        res = self.view_logs.aggregate(total=models.Sum("views_count"))
+        return res["total"] or 0
+
+    @property
+    def unique_viewers_count(self) -> int:
+        """Количество уникальных сотрудников, просмотревших данную видеолекцию."""
+        return self.view_logs.values("user_id").distinct().count()
+
+
+class MaterialViewLog(models.Model):
+    """Журнал фиксации обращений сотрудников к лекционным и видеоматериалам.
+
+    Позволяет формировать сводную аналитику и отчетность по изучению
+    теоретической базы перед сдачей тестирования.
+
+    Attributes:
+        user (ForeignKey): Сотрудник, изучавший материал.
+        material_type (str): Тип учебного материала ('lecture' или 'video').
+        lecture (ForeignKey): Ссылка на лекционный материал (если материал текстовый).
+        video_lecture (ForeignKey): Ссылка на видеолекцию (если материал видео).
+        first_viewed_at (datetime): Дата и время первого обращения сотрудника.
+        last_viewed_at (datetime): Дата и время последнего обращения сотрудника.
+        views_count (int): Общее число открытий / просмотров данным сотрудником.
+        last_ip (str): IP-адрес сотрудника при последнем обращении.
+    """
+
+    class MaterialType(models.TextChoices):
+        LECTURE = "lecture", "Лекционный материал"
+        VIDEO = "video", "Видеолекция"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="material_views",
+        verbose_name="Сотрудник"
+    )
+    material_type = models.CharField(
+        max_length=20,
+        choices=MaterialType.choices,
+        db_index=True,
+        verbose_name="Тип материала"
+    )
+    lecture = models.ForeignKey(
+        LectureMaterial,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="view_logs",
+        verbose_name="Лекционный материал"
+    )
+    video_lecture = models.ForeignKey(
+        VideoLecture,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="view_logs",
+        verbose_name="Видеолекция"
+    )
+    first_viewed_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name="Первое обращение"
+    )
+    last_viewed_at = models.DateTimeField(
+        auto_now=True,
+        db_index=True,
+        verbose_name="Последнее обращение"
+    )
+    views_count = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Количество обращений"
+    )
+    last_ip = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        verbose_name="IP-адрес"
+    )
+
+    class Meta:
+        verbose_name = "Запись журнала обращений к материалам"
+        verbose_name_plural = "Журнал обращений к материалам"
+        ordering = ["-last_viewed_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "lecture"],
+                name="unique_user_lecture_view",
+                condition=models.Q(lecture__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["user", "video_lecture"],
+                name="unique_user_video_view",
+                condition=models.Q(video_lecture__isnull=False),
+            ),
+        ]
+
+    def __str__(self) -> str:
+        mat_title = self.lecture.title if self.lecture else (self.video_lecture.title if self.video_lecture else "Не указан")
+        user_name = self.user.get_full_name() if self.user else "Неизвестный"
+        return f"{user_name} -> {mat_title} ({self.get_material_type_display()}, обращений: {self.views_count})"
+

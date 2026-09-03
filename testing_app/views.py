@@ -33,6 +33,9 @@ from testing_app.models import (
     AttemptQuestion,
     UserAnswer,
     TestingAuditLog,
+    LectureMaterial,
+    VideoLecture,
+    MaterialViewLog,
 )
 from testing_app.forms import (
     QuestionImportForm,
@@ -42,12 +45,22 @@ from testing_app.forms import (
     TestingForm,
     GroupPositionsForm,
     ManualAssignmentForm,
+    LectureMaterialForm,
+    VideoLectureForm,
 )
 from testing_app.services.excel_service import (
     generate_question_import_template,
     import_questions_from_excel,
 )
-from customers_app.models import Affiliation, Job, DataBaseUser
+from testing_app.services.material_service import (
+    log_material_access,
+    get_material_dashboard_stats,
+    get_material_access_report_qs,
+    export_material_report_excel,
+    export_material_report_csv,
+)
+from administration_app.utils import get_client_ip
+from customers_app.models import Affiliation, Job, DataBaseUser, Division
 from testing_app.services.event_service import (
     ensure_default_groups_exist,
     sync_group_positions,
@@ -166,6 +179,7 @@ class ManagerDashboardView(LoginRequiredMixin, TestingManagerRequiredMixin, Temp
         context["divisions_stats"] = get_divisions_breakdown_analytics(event_id)
         context["hardest_questions"] = get_top_hardest_questions(limit=5)
         context["live_sessions"] = get_live_active_sessions(event_id)
+        context["materials_stats"] = get_material_dashboard_stats()
 
         return context
 
@@ -1123,6 +1137,481 @@ class TestingProtocolCsvExportView(LoginRequiredMixin, TestingManagerRequiredMix
         )
 
         return response
+
+
+# ==============================================================================
+# ЛЕКЦИОННЫЙ МАТЕРИАЛ (ЭТАП 7)
+# ==============================================================================
+
+class LectureListView(LoginRequiredMixin, ListView):
+    """Список лекционных материалов для теоретической подготовки сотрудников.
+
+    Обычным сотрудникам отображаются только актуальные материалы,
+    ответственным за тестирование — все с возможностью управления и добавления.
+    """
+
+    model = LectureMaterial
+    template_name = "testing_app/lecture_list.html"
+    context_object_name = "lectures"
+    paginate_by = 12
+
+    def get_queryset(self):
+        user = self.request.user
+        is_manager = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        qs = LectureMaterial.objects.all().select_related("created_by")
+
+        if not is_manager:
+            qs = qs.filter(is_actual=True)
+        else:
+            status_filter = self.request.GET.get("status")
+            if status_filter == "actual":
+                qs = qs.filter(is_actual=True)
+            elif status_filter == "archived":
+                qs = qs.filter(is_actual=False)
+
+        q = self.request.GET.get("q")
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+        return qs.order_by("-created_at")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["is_manager"] = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        context["active_tab"] = "lectures"
+        context["search_query"] = self.request.GET.get("q", "")
+        context["selected_status"] = self.request.GET.get("status", "")
+        return context
+
+
+class LectureDetailView(LoginRequiredMixin, DetailView):
+    """Просмотр лекционного материала со встроенным отображением скана (PDF).
+
+    При открытии лекции фиксируется обращение сотрудника в журнале MaterialViewLog.
+    """
+
+    model = LectureMaterial
+    template_name = "testing_app/lecture_detail.html"
+    context_object_name = "lecture"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        user = self.request.user
+        is_manager = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        if not obj.is_actual and not is_manager:
+            raise Http404("Лекционный материал перенесен в архив или недоступен.")
+        return obj
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        # Фиксируем обращение сотрудника к лекционному материалу
+        ip_addr = get_client_ip(request)
+        log_material_access(request.user, self.object, ip_addr)
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        is_manager = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        context["is_manager"] = is_manager
+        context["active_tab"] = "lectures"
+        if is_manager:
+            context["recent_views"] = (
+                self.object.view_logs.select_related("user")
+                .prefetch_related("user__user_work_profile__job", "user__user_work_profile__division")
+                .order_by("-last_viewed_at")[:10]
+            )
+        return context
+
+
+class LectureCreateView(LoginRequiredMixin, TestingManagerRequiredMixin, CreateView):
+    """Создание нового лекционного материала ответственным за тестирование."""
+
+    model = LectureMaterial
+    form_class = LectureMaterialForm
+    template_name = "testing_app/lecture_form.html"
+    success_url = reverse_lazy("testing_app:lecture_list")
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f"Лекционный материал «{self.object.title}» успешно добавлен.")
+        TestingAuditLog.objects.create(
+            user=self.request.user,
+            action="create_lecture",
+            object_repr=f"Создание лекции: {self.object.title}",
+            details={"lecture_id": self.object.id}
+        )
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "lectures"
+        context["page_title"] = "Добавление лекционного материала"
+        return context
+
+
+class LectureUpdateView(LoginRequiredMixin, TestingManagerRequiredMixin, UpdateView):
+    """Редактирование лекционного материала ответственным за тестирование."""
+
+    model = LectureMaterial
+    form_class = LectureMaterialForm
+    template_name = "testing_app/lecture_form.html"
+    success_url = reverse_lazy("testing_app:lecture_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Лекционный материал «{self.object.title}» успешно обновлен.")
+        TestingAuditLog.objects.create(
+            user=self.request.user,
+            action="update_lecture",
+            object_repr=f"Обновление лекции: {self.object.title}",
+            details={"lecture_id": self.object.id}
+        )
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "lectures"
+        context["page_title"] = f"Редактирование: {self.object.title}"
+        return context
+
+
+class LectureDeleteView(LoginRequiredMixin, TestingManagerRequiredMixin, DeleteView):
+    """Удаление лекционного материала ответственным за тестирование."""
+
+    model = LectureMaterial
+    template_name = "testing_app/lecture_confirm_delete.html"
+    success_url = reverse_lazy("testing_app:lecture_list")
+
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        title = obj.title
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"Лекционный материал «{title}» успешно удален.")
+        TestingAuditLog.objects.create(
+            user=request.user,
+            action="delete_lecture",
+            object_repr=f"Удаление лекции: {title}",
+            details={"title": title}
+        )
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "lectures"
+        return context
+
+
+# ==============================================================================
+# ВИДЕО ЛЕКЦИИ (ЭТАП 7)
+# ==============================================================================
+
+class VideoLectureListView(LoginRequiredMixin, ListView):
+    """Список видеолекций для дистанционного обучения сотрудников.
+
+    Обычным сотрудникам доступны только актуальные видеоматериалы.
+    """
+
+    model = VideoLecture
+    template_name = "testing_app/video_lecture_list.html"
+    context_object_name = "videos"
+    paginate_by = 12
+
+    def get_queryset(self):
+        user = self.request.user
+        is_manager = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        qs = VideoLecture.objects.all().select_related("created_by")
+
+        if not is_manager:
+            qs = qs.filter(is_actual=True)
+        else:
+            status_filter = self.request.GET.get("status")
+            if status_filter == "actual":
+                qs = qs.filter(is_actual=True)
+            elif status_filter == "archived":
+                qs = qs.filter(is_actual=False)
+
+        q = self.request.GET.get("q")
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+        return qs.order_by("-created_at")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["is_manager"] = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        context["active_tab"] = "videos"
+        context["search_query"] = self.request.GET.get("q", "")
+        context["selected_status"] = self.request.GET.get("status", "")
+        return context
+
+
+class VideoLectureDetailView(LoginRequiredMixin, DetailView):
+    """Просмотр видеолекции с встроенным HTML5 видеоплеером.
+
+    При открытии страницы видеолекции фиксируется факт обращения сотрудника в журнале.
+    """
+
+    model = VideoLecture
+    template_name = "testing_app/video_lecture_detail.html"
+    context_object_name = "video"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        user = self.request.user
+        is_manager = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        if not obj.is_actual and not is_manager:
+            raise Http404("Видеолекция перенесена в архив или недоступна.")
+        return obj
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        # Фиксируем обращение к видеолекции
+        ip_addr = get_client_ip(request)
+        log_material_access(request.user, self.object, ip_addr)
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        is_manager = (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Ответственные за тестирование").exists()
+        )
+        context["is_manager"] = is_manager
+        context["active_tab"] = "videos"
+        if is_manager:
+            context["recent_views"] = (
+                self.object.view_logs.select_related("user")
+                .prefetch_related("user__user_work_profile__job", "user__user_work_profile__division")
+                .order_by("-last_viewed_at")[:10]
+            )
+        return context
+
+
+class VideoLectureCreateView(LoginRequiredMixin, TestingManagerRequiredMixin, CreateView):
+    """Создание новой видеолекции ответственным за тестирование."""
+
+    model = VideoLecture
+    form_class = VideoLectureForm
+    template_name = "testing_app/video_lecture_form.html"
+    success_url = reverse_lazy("testing_app:video_lecture_list")
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f"Видеолекция «{self.object.title}» успешно добавлена.")
+        TestingAuditLog.objects.create(
+            user=self.request.user,
+            action="create_video_lecture",
+            object_repr=f"Создание видеолекции: {self.object.title}",
+            details={"video_id": self.object.id}
+        )
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "videos"
+        context["page_title"] = "Добавление видеолекции"
+        return context
+
+
+class VideoLectureUpdateView(LoginRequiredMixin, TestingManagerRequiredMixin, UpdateView):
+    """Редактирование параметров видеолекции ответственным за тестирование."""
+
+    model = VideoLecture
+    form_class = VideoLectureForm
+    template_name = "testing_app/video_lecture_form.html"
+    success_url = reverse_lazy("testing_app:video_lecture_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Видеолекция «{self.object.title}» успешно обновлена.")
+        TestingAuditLog.objects.create(
+            user=self.request.user,
+            action="update_video_lecture",
+            object_repr=f"Обновление видеолекции: {self.object.title}",
+            details={"video_id": self.object.id}
+        )
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "videos"
+        context["page_title"] = f"Редактирование видеолекции: {self.object.title}"
+        return context
+
+
+class VideoLectureDeleteView(LoginRequiredMixin, TestingManagerRequiredMixin, DeleteView):
+    """Удаление видеолекции ответственным за тестирование."""
+
+    model = VideoLecture
+    template_name = "testing_app/video_lecture_confirm_delete.html"
+    success_url = reverse_lazy("testing_app:video_lecture_list")
+
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        title = obj.title
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"Видеолекция «{title}» успешно удалена.")
+        TestingAuditLog.objects.create(
+            user=request.user,
+            action="delete_video_lecture",
+            object_repr=f"Удаление видеолекции: {title}",
+            details={"title": title}
+        )
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "videos"
+        return context
+
+
+# ==============================================================================
+# ОТЧЕТ ОБ ОБРАЩЕНИЯХ К МАТЕРИАЛАМ (ЭТАП 7)
+# ==============================================================================
+
+class MaterialAccessReportView(LoginRequiredMixin, TestingManagerRequiredMixin, ListView):
+    """Сводный отчет по обращениям сотрудников к лекционному и видеоматериалу."""
+
+    template_name = "testing_app/material_access_report.html"
+    context_object_name = "logs"
+    paginate_by = 25
+
+    def get_queryset(self):
+        return get_material_access_report_qs(
+            material_type=self.request.GET.get("material_type"),
+            material_id=self.request.GET.get("material_id"),
+            search_query=self.request.GET.get("q"),
+            division_id=self.request.GET.get("division_id"),
+            date_from=self.request.GET.get("date_from"),
+            date_to=self.request.GET.get("date_to"),
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "material_report"
+        context["is_manager"] = True
+
+        # Справочники для фильтров
+        context["divisions"] = Division.objects.all().order_by("name")
+        context["lectures_list"] = LectureMaterial.objects.all().order_by("title")
+        context["videos_list"] = VideoLecture.objects.all().order_by("title")
+
+        # Текущие фильтры
+        context["filter_material_type"] = self.request.GET.get("material_type", "")
+        context["filter_material_id"] = self.request.GET.get("material_id", "")
+        context["filter_q"] = self.request.GET.get("q", "")
+        context["filter_division_id"] = self.request.GET.get("division_id", "")
+        context["filter_date_from"] = self.request.GET.get("date_from", "")
+        context["filter_date_to"] = self.request.GET.get("date_to", "")
+
+        # Общие KPI отчета
+        stats = get_material_dashboard_stats()
+        context["materials_stats"] = stats
+        return context
+
+
+class MaterialAccessReportExcelExportView(LoginRequiredMixin, TestingManagerRequiredMixin, View):
+    """Выгрузка отчета об обращениях к материалам в формате Microsoft Excel (.xlsx)."""
+
+    def get(self, request, *args, **kwargs):
+        qs = get_material_access_report_qs(
+            material_type=request.GET.get("material_type"),
+            material_id=request.GET.get("material_id"),
+            search_query=request.GET.get("q"),
+            division_id=request.GET.get("division_id"),
+            date_from=request.GET.get("date_from"),
+            date_to=request.GET.get("date_to"),
+        )
+        wb = export_material_report_excel(qs)
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        date_str = timezone.now().strftime("%Y-%m-%d")
+        filename = f"Отчет_обращений_к_материалам_{date_str}.xlsx"
+
+        response = HttpResponse(
+            output.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = f'attachment; filename="{escape_uri_path(filename)}"'
+
+        TestingAuditLog.objects.create(
+            user=request.user,
+            action="export_materials_excel",
+            object_repr="Выгрузка отчета по материалам Excel",
+            details={"rows_count": qs.count()}
+        )
+        return response
+
+
+class MaterialAccessReportCsvExportView(LoginRequiredMixin, TestingManagerRequiredMixin, View):
+    """Выгрузка отчета об обращениях к материалам в текстовом формате CSV (UTF-8)."""
+
+    def get(self, request, *args, **kwargs):
+        qs = get_material_access_report_qs(
+            material_type=request.GET.get("material_type"),
+            material_id=request.GET.get("material_id"),
+            search_query=request.GET.get("q"),
+            division_id=request.GET.get("division_id"),
+            date_from=request.GET.get("date_from"),
+            date_to=request.GET.get("date_to"),
+        )
+        csv_content = export_material_report_csv(qs)
+
+        date_str = timezone.now().strftime("%Y-%m-%d")
+        filename = f"Отчет_обращений_к_материалам_{date_str}.csv"
+
+        response = HttpResponse(
+            csv_content.encode("utf-8-sig"),
+            content_type="text/csv; charset=utf-8-sig"
+        )
+        response["Content-Disposition"] = f'attachment; filename="{escape_uri_path(filename)}"'
+
+        TestingAuditLog.objects.create(
+            user=request.user,
+            action="export_materials_csv",
+            object_repr="Выгрузка отчета по материалам CSV",
+            details={"rows_count": qs.count()}
+        )
+        return response
+
 
 
 

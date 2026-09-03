@@ -51,4 +51,24 @@ urlpatterns = [
     path("dashboard/live-sessions/", views.LiveMonitoringAjaxView.as_view(), name="dashboard_live_sessions"),
     path("events/<int:pk>/export/excel/", views.TestingProtocolExcelExportView.as_view(), name="event_export_excel"),
     path("events/<int:pk>/export/csv/", views.TestingProtocolCsvExportView.as_view(), name="event_export_csv"),
+
+    # Лекционный материал (Этап 7)
+    path("lectures/", views.LectureListView.as_view(), name="lecture_list"),
+    path("lectures/create/", views.LectureCreateView.as_view(), name="lecture_create"),
+    path("lectures/<int:pk>/", views.LectureDetailView.as_view(), name="lecture_detail"),
+    path("lectures/<int:pk>/edit/", views.LectureUpdateView.as_view(), name="lecture_update"),
+    path("lectures/<int:pk>/delete/", views.LectureDeleteView.as_view(), name="lecture_delete"),
+
+    # Видео лекции (Этап 7)
+    path("videos/", views.VideoLectureListView.as_view(), name="video_lecture_list"),
+    path("videos/create/", views.VideoLectureCreateView.as_view(), name="video_lecture_create"),
+    path("videos/<int:pk>/", views.VideoLectureDetailView.as_view(), name="video_lecture_detail"),
+    path("videos/<int:pk>/edit/", views.VideoLectureUpdateView.as_view(), name="video_lecture_update"),
+    path("videos/<int:pk>/delete/", views.VideoLectureDeleteView.as_view(), name="video_lecture_delete"),
+
+    # Отчет по обращениям к материалам (Этап 7)
+    path("reports/materials/", views.MaterialAccessReportView.as_view(), name="material_report"),
+    path("reports/materials/export/excel/", views.MaterialAccessReportExcelExportView.as_view(), name="material_report_excel"),
+    path("reports/materials/export/csv/", views.MaterialAccessReportCsvExportView.as_view(), name="material_report_csv"),
 ]
+

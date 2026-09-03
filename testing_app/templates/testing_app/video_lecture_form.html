@@ -1,0 +1,107 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}{{ page_title|default:"Видеолекция" }} — АТП ИАС{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='videos' %}
+
+<div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-10 col-12">
+        <div class="card card-modern shadow-sm border-0 mb-4">
+            <header class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bx bx-video text-danger fs-3"></i>
+                    <h4 class="card-title text-dark mb-0 font-weight-bold">{{ page_title }}</h4>
+                </div>
+                <a href="{% url 'testing_app:video_lecture_list' %}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+                    <i class="bx bx-arrow-back"></i> К списку видеолекций
+                </a>
+            </header>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="card-body p-4">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {% for err in form.non_field_errors %}
+                                <div><i class="bx bx-error-circle me-1"></i>{{ err }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Наименование видеолекции -->
+                    <div class="mb-4">
+                        <label for="{{ form.title.id_for_label }}" class="form-label font-weight-bold text-dark">
+                            Наименование видеолекции <span class="text-danger">*</span>
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small mt-1">{{ form.title.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="form-text text-muted">Укажите понятное и точное название (например: «Инструктаж по технике безопасности при запуске двигателей ТВ2-117»).</div>
+                    </div>
+
+                    <!-- Видеофайл (MP4) -->
+                    <div class="mb-4">
+                        <div class="p-3 bg-light rounded border">
+                            <label for="{{ form.video_file.id_for_label }}" class="form-label font-weight-bold text-dark d-flex align-items-center gap-1">
+                                <i class="bx bxs-file-video text-danger fs-5"></i> Видеофайл (.mp4) <span class="text-danger">*</span>
+                            </label>
+                            {{ form.video_file }}
+                            {% if form.video_file.errors %}
+                                <div class="text-danger small mt-1">{{ form.video_file.errors|striptags }}</div>
+                            {% endif %}
+                            <div class="form-text text-muted">
+                                Загрузите видеозапись в формате MP4 (H.264 / AAC) для корректного воспроизведения во всех браузерах.
+                            </div>
+                            {% if form.instance.video_file %}
+                                <div class="mt-2 small text-danger">
+                                    <i class="bx bx-check-circle me-1"></i> Текущий видеофайл:
+                                    <a href="{{ form.instance.video_file.url }}" target="_blank" class="text-danger text-decoration-underline">
+                                        Просмотреть загруженное видео
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Описание / Таймкоды -->
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label font-weight-bold text-dark">
+                            Описание / План видеолекции / Таймкоды
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="form-text text-muted">Укажите краткое содержание, основные временные метки или вопросы, разбираемые в видеоматериале.</div>
+                    </div>
+
+                    <!-- Актуальность -->
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <div class="form-check form-switch fs-6 d-flex align-items-center gap-2 m-0">
+                            {{ form.is_actual }}
+                            <label class="form-check-label font-weight-bold text-dark user-select-none" for="{{ form.is_actual.id_for_label }}">
+                                Видеоматериал актуален для изучения
+                            </label>
+                        </div>
+                        <div class="form-text text-muted ms-4">
+                            При снятии отметки видеолекция переходит в архив и скрывается из списка доступных для рядовых сотрудников.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light px-4 py-3 border-top d-flex justify-content-between align-items-center">
+                    <a href="{% url 'testing_app:video_lecture_list' %}" class="btn btn-outline-secondary">Отмена</a>
+                    <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                        <i class="bx bx-save fs-5"></i> Сохранить видеолекцию
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

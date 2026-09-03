@@ -1,0 +1,149 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}{{ video.title }} — Видеолекция{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='videos' %}
+
+<!-- Верхняя панель: Навигация и заголовок -->
+<div class="card card-modern shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'testing_app:video_lecture_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center" title="К списку видеолекций">
+                    <i class="bx bx-arrow-back fs-5"></i>
+                </a>
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Видеолекция</span>
+                        {% if video.is_actual %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Актуально</span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Архивный материал</span>
+                        {% endif %}
+                        <span class="text-muted small"><i class="bx bx-calendar me-1"></i>Опубликовано: {{ video.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <h3 class="font-weight-bold text-dark mb-0">{{ video.title }}</h3>
+                </div>
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                {% if video.video_file %}
+                    <a href="{{ video.video_file.url }}" download class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm" title="Скачать видеофайл">
+                        <i class="bx bx-download fs-5"></i> Скачать MP4
+                    </a>
+                {% endif %}
+
+                {% if is_manager %}
+                    <div class="btn-group shadow-sm">
+                        <a href="{% url 'testing_app:video_lecture_update' video.pk %}" class="btn btn-primary d-inline-flex align-items-center gap-1">
+                            <i class="bx bx-edit fs-5"></i> Изменить
+                        </a>
+                        <a href="{% url 'testing_app:video_lecture_delete' video.pk %}" class="btn btn-outline-danger d-inline-flex align-items-center gap-1" title="Удалить видео">
+                            <i class="bx bx-trash fs-5"></i>
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Основная область: встроенный HTML5 видеоплеер -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card card-modern shadow-sm border-0 overflow-hidden">
+            <div class="card-body p-0 bg-black text-center">
+                {% if video.video_file %}
+                    <div class="ratio ratio-16x9" style="max-height: 75vh;">
+                        <video controls controlsList="nodownload" preload="metadata" class="w-100 h-100 bg-black" style="object-fit: contain;">
+                            <source src="{{ video.video_file.url }}" type="video/mp4">
+                            Ваш браузер не поддерживает воспроизведение видео формата HTML5.
+                        </video>
+                    </div>
+                {% else %}
+                    <div class="p-5 text-white-50">
+                        <i class="bx bx-error-circle display-4 text-warning mb-2"></i>
+                        <h5>Видеофайл не прикреплен к данной записи.</h5>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if video.description %}
+                <div class="card-footer bg-white p-4 border-top">
+                    <h5 class="font-weight-bold text-dark mb-2">
+                        <i class="bx bx-info-circle text-primary me-1"></i> Содержание и методические указания к видеолекции:
+                    </h5>
+                    <div class="text-secondary" style="white-space: pre-line; line-height: 1.6;">
+                        {{ video.description }}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Статистика обращений для ответственных за тестирование -->
+{% if is_manager %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-line-chart text-danger fs-4"></i>
+                        <h5 class="card-title text-dark mb-0 font-weight-bold">
+                            Статистика просмотров данной видеолекции сотрудниками
+                        </h5>
+                    </div>
+                    <div class="d-flex gap-3 text-muted small">
+                        <span>Уникальных сотрудников: <strong class="text-success">{{ video.unique_viewers_count }}</strong></span>
+                        <span>Всего просмотров: <strong class="text-danger">{{ video.total_views_count }}</strong></span>
+                    </div>
+                </header>
+                <div class="card-body p-0">
+                    {% if recent_views %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Сотрудник</th>
+                                        <th>Должность</th>
+                                        <th>Подразделение</th>
+                                        <th class="text-center">Обращений</th>
+                                        <th>Первое обращение</th>
+                                        <th>Последнее обращение</th>
+                                        <th>IP-адрес</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for view in recent_views %}
+                                        <tr>
+                                            <td class="font-weight-semibold text-dark">
+                                                <i class="bx bx-user text-primary me-1"></i>{{ view.user.get_full_name|default:view.user.username }}
+                                            </td>
+                                            <td>{{ view.user.user_work_profile.job.get_title|default:"—" }}</td>
+                                            <td>{{ view.user.user_work_profile.division.name|default:"—" }}</td>
+                                            <td class="text-center font-weight-bold text-danger">{{ view.views_count }}</td>
+                                            <td class="small text-muted">{{ view.first_viewed_at|date:"d.m.Y H:i" }}</td>
+                                            <td class="small text-muted">{{ view.last_viewed_at|date:"d.m.Y H:i" }}</td>
+                                            <td class="small text-muted font-monospace">{{ view.last_ip|default:"—" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="bx bx-info-circle me-1"></i> Никто из сотрудников еще не просматривал эту видеолекцию.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}

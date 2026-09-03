@@ -10,10 +10,25 @@
                         <i class="bx bx-user me-1"></i> <span>Мои тестирования</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'lectures' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:lecture_list' %}">
+                        <i class="bx bx-book-reader me-1"></i> <span>Лекции</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'videos' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:video_lecture_list' %}">
+                        <i class="bx bx-video me-1"></i> <span>Видео</span>
+                    </a>
+                </li>
                 {% if is_manager %}
                     <li class="nav-item">
                         <a class="nav-link {% if active_tab == 'dashboard' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:dashboard' %}">
                             <i class="bx bx-tachometer me-1"></i> <span>Дашборд</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'material_report' %}active bg-primary text-white font-weight-bold shadow-sm{% else %}text-dark{% endif %}" href="{% url 'testing_app:material_report' %}">
+                            <i class="bx bx-line-chart me-1"></i> <span>Отчет по материалам</span>
                         </a>
                     </li>
                     <li class="nav-item">

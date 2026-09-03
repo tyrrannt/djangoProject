@@ -16,6 +16,9 @@ from testing_app.models import (
     AttemptQuestion,
     UserAnswer,
     TestingAuditLog,
+    LectureMaterial,
+    VideoLecture,
+    MaterialViewLog,
 )
 
 
@@ -131,3 +134,61 @@ class TestingAuditLogAdmin(ModelAdmin):
     list_filter = ("action",)
     search_fields = ("user__last_name", "object_repr", "action")
     readonly_fields = ("created_at", "user", "action", "object_repr", "details", "ip_address")
+
+
+@admin.register(LectureMaterial)
+class LectureMaterialAdmin(ModelAdmin):
+    """Админка лекционных материалов."""
+
+    list_display = ("title", "is_actual", "has_doc", "has_scan", "views_count_display", "created_by", "created_at")
+    list_filter = ("is_actual", "created_at")
+    search_fields = ("title", "description")
+    readonly_fields = ("created_at", "updated_at")
+
+    def has_doc(self, obj):
+        return bool(obj.doc_file)
+    has_doc.boolean = True
+    has_doc.short_description = "DOC/DOCX"
+
+    def has_scan(self, obj):
+        return bool(obj.scan_file)
+    has_scan.boolean = True
+    has_scan.short_description = "Скан PDF"
+
+    def views_count_display(self, obj):
+        return obj.total_views_count
+    views_count_display.short_description = "Просмотров"
+
+
+@admin.register(VideoLecture)
+class VideoLectureAdmin(ModelAdmin):
+    """Админка видеолекций."""
+
+    list_display = ("title", "is_actual", "has_video", "views_count_display", "created_by", "created_at")
+    list_filter = ("is_actual", "created_at")
+    search_fields = ("title", "description")
+    readonly_fields = ("created_at", "updated_at")
+
+    def has_video(self, obj):
+        return bool(obj.video_file)
+    has_video.boolean = True
+    has_video.short_description = "Видео MP4"
+
+    def views_count_display(self, obj):
+        return obj.total_views_count
+    views_count_display.short_description = "Просмотров"
+
+
+@admin.register(MaterialViewLog)
+class MaterialViewLogAdmin(ModelAdmin):
+    """Админка журнала обращений к материалам."""
+
+    list_display = ("user", "material_type", "material_title", "views_count", "first_viewed_at", "last_viewed_at", "last_ip")
+    list_filter = ("material_type", "last_viewed_at")
+    search_fields = ("user__last_name", "user__first_name", "lecture__title", "video_lecture__title", "last_ip")
+    readonly_fields = ("user", "material_type", "lecture", "video_lecture", "first_viewed_at", "last_viewed_at", "views_count", "last_ip")
+
+    def material_title(self, obj):
+        return obj.lecture.title if obj.lecture else (obj.video_lecture.title if obj.video_lecture else "—")
+    material_title.short_description = "Материал"
+

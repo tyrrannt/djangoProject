@@ -368,6 +368,18 @@
                                     <span>АТП ИАС</span>
                                 </a>
                                 <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'testing_app:lecture_list' %}">
+                                            <i class="bx bx-book-reader me-1" aria-hidden="true"></i>
+                                            <span>Лекционный материал</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'testing_app:video_lecture_list' %}">
+                                            <i class="bx bx-video me-1" aria-hidden="true"></i>
+                                            <span>Видео лекции</span>
+                                        </a>
+                                    </li>
                                     <li class="nav-parent">
                                         <a class="nav-link" href="#">
                                             <i class="bx bx-check-circle me-1" aria-hidden="true"></i>
@@ -377,6 +389,7 @@
                                             <li><a class="nav-link" href="{% url 'testing_app:my_tests' %}"><i class="bx bx-user me-1" aria-hidden="true"></i><span>Мои тестирования</span></a></li>
                                             {% if user.is_superuser or user.is_staff or user|has_group:"Ответственные за тестирование" %}
                                                 <li><a class="nav-link" href="{% url 'testing_app:dashboard' %}"><i class="bx bx-tachometer me-1" aria-hidden="true"></i><span>Дашборд</span></a></li>
+                                                <li><a class="nav-link" href="{% url 'testing_app:material_report' %}"><i class="bx bx-line-chart me-1" aria-hidden="true"></i><span>Отчет по материалам</span></a></li>
                                                 <li><a class="nav-link" href="{% url 'testing_app:event_list' %}"><i class="bx bx-calendar-event me-1" aria-hidden="true"></i><span>Мероприятия (Приказы)</span></a></li>
                                                 <li><a class="nav-link" href="{% url 'testing_app:questions_bank' %}"><i class="bx bx-collection me-1" aria-hidden="true"></i><span>Банк вопросов</span></a></li>
                                                 <li><a class="nav-link" href="{% url 'testing_app:questions_import' %}"><i class="bx bx-upload me-1" aria-hidden="true"></i><span>Импорт из Excel</span></a></li>

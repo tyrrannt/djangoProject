@@ -1,0 +1,44 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}Удаление лекционного материала — АТП ИАС{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='lectures' %}
+
+<div class="row justify-content-center">
+    <div class="col-xl-6 col-lg-8 col-12">
+        <div class="card card-modern shadow-sm border-0 mb-4 border-top border-danger border-4">
+            <div class="card-body p-4 text-center">
+                <div class="mb-3 text-danger">
+                    <i class="bx bx-trash display-3"></i>
+                </div>
+                <h4 class="font-weight-bold text-dark mb-2">Удаление лекционного материала</h4>
+                <p class="text-muted mb-4">
+                    Вы действительно уверены, что хотите удалить лекционный материал:<br>
+                    <strong class="text-dark fs-5">«{{ object.title }}»</strong>?
+                </p>
+
+                <div class="alert alert-warning text-start small mb-4">
+                    <i class="bx bx-info-circle me-1"></i>
+                    <strong>Внимание:</strong> Будут удалены файлы лекции, а также связанные с ней записи в журнале обращений сотрудников. Если вы хотите временно скрыть лекцию от сотрудников, лучше просто снять галочку «Актуальность» в режиме редактирования.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'testing_app:lecture_list' %}" class="btn btn-outline-secondary px-4">
+                            Отмена
+                        </a>
+                        <button type="submit" class="btn btn-danger px-4 d-inline-flex align-items-center gap-1">
+                            <i class="bx bx-trash"></i> Да, удалить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

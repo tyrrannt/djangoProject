@@ -1,0 +1,244 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load testing_tags %}
+
+{% block title %}Отчет об изучении лекционных и видеоматериалов — Тестирование{% endblock %}
+
+{% block content %}
+{% render_testing_nav active_tab='material_report' %}
+
+<!-- Заголовок и экспорт -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="font-weight-bold text-dark mb-1">
+            <i class="bx bx-line-chart text-primary me-2"></i> Отчет по изучению учебных материалов
+        </h2>
+        <p class="text-muted mb-0">Сводные данные об обращениях сотрудников к лекционным материалам и видеолекциям</p>
+    </div>
+
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <a href="{% url 'testing_app:material_report_excel' %}?{{ request.GET.urlencode }}" class="btn btn-outline-success d-inline-flex align-items-center gap-1 shadow-sm" title="Выгрузить отчет в формате Excel">
+            <i class="bx bx-download fs-5"></i> Скачать Excel (.xlsx)
+        </a>
+        <a href="{% url 'testing_app:material_report_csv' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm" title="Выгрузить отчет в формате CSV">
+            <i class="bx bx-file fs-5"></i> Скачать CSV
+        </a>
+    </div>
+</div>
+
+<!-- Сводные карточки показателей -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6 col-12">
+        <div class="card card-modern shadow-sm border-0 text-center py-3">
+            <div class="text-muted small text-uppercase font-weight-semibold">Изучивших сотрудников</div>
+            <div class="h2 font-weight-bold text-success mb-0 mt-1">{{ materials_stats.unique_users_count }}</div>
+            <div class="small text-muted">уникальных пользователей</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6 col-12">
+        <div class="card card-modern shadow-sm border-0 text-center py-3">
+            <div class="text-muted small text-uppercase font-weight-semibold">Всего обращений</div>
+            <div class="h2 font-weight-bold text-primary mb-0 mt-1">{{ materials_stats.total_views }}</div>
+            <div class="small text-muted">просмотров материалов</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6 col-12">
+        <div class="card card-modern shadow-sm border-0 text-center py-3">
+            <div class="text-muted small text-uppercase font-weight-semibold">Лекций в базе</div>
+            <div class="h2 font-weight-bold text-dark mb-0 mt-1">{{ materials_stats.active_lectures }}</div>
+            <div class="small text-muted">актуальных для изучения</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6 col-12">
+        <div class="card card-modern shadow-sm border-0 text-center py-3">
+            <div class="text-muted small text-uppercase font-weight-semibold">Видеолекций в базе</div>
+            <div class="h2 font-weight-bold text-dark mb-0 mt-1">{{ materials_stats.active_videos }}</div>
+            <div class="small text-muted">актуальных для просмотра</div>
+        </div>
+    </div>
+</div>
+
+<!-- Панель многопараметрической фильтрации -->
+<div class="card card-modern shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <form method="get" class="row g-3">
+            <!-- Поиск сотрудника -->
+            <div class="col-xl-3 col-md-6 col-12">
+                <label class="form-label small font-weight-bold text-dark">Поиск (ФИО / Название)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bx bx-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ filter_q }}" class="form-control" placeholder="ФИО сотрудника или материал...">
+                </div>
+            </div>
+
+            <!-- Тип материала -->
+            <div class="col-xl-2 col-md-6 col-12">
+                <label class="form-label small font-weight-bold text-dark">Тип материала</label>
+                <select name="material_type" class="form-select" onchange="this.form.submit();">
+                    <option value="" {% if not filter_material_type %}selected{% endif %}>Все типы</option>
+                    <option value="lecture" {% if filter_material_type == 'lecture' %}selected{% endif %}>Лекционный материал</option>
+                    <option value="video" {% if filter_material_type == 'video' %}selected{% endif %}>Видео лекции</option>
+                </select>
+            </div>
+
+            <!-- Подразделение -->
+            <div class="col-xl-3 col-md-6 col-12">
+                <label class="form-label small font-weight-bold text-dark">Подразделение сотрудника</label>
+                <select name="division_id" class="form-select" onchange="this.form.submit();">
+                    <option value="">Все подразделения</option>
+                    {% for div in divisions %}
+                        <option value="{{ div.id }}" {% if filter_division_id == div.id|stringformat:"s" %}selected{% endif %}>
+                            {{ div.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Период дат -->
+            <div class="col-xl-2 col-md-3 col-6">
+                <label class="form-label small font-weight-bold text-dark">Период с</label>
+                <input type="date" name="date_from" value="{{ filter_date_from }}" class="form-control">
+            </div>
+            <div class="col-xl-2 col-md-3 col-6">
+                <label class="form-label small font-weight-bold text-dark">Период по</label>
+                <input type="date" name="date_to" value="{{ filter_date_to }}" class="form-control">
+            </div>
+
+            <!-- Кнопки применения/сброса -->
+            <div class="col-12 d-flex justify-content-end gap-2 pt-2 border-top">
+                {% if filter_q or filter_material_type or filter_division_id or filter_date_from or filter_date_to %}
+                    <a href="{% url 'testing_app:material_report' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1">
+                        <i class="bx bx-reset"></i> Сбросить фильтры
+                    </a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1 px-4">
+                    <i class="bx bx-filter-alt"></i> Применить
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Таблица обращений -->
+<div class="card card-modern shadow-sm border-0 mb-4">
+    <header class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 class="card-title text-dark mb-0 font-weight-bold">
+            Журнал обращений сотрудников к теории
+        </h5>
+        <span class="badge bg-light text-dark border">Найдено записей: {{ paginator.count|default:logs|length }}</span>
+    </header>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Сотрудник</th>
+                        <th>Должность</th>
+                        <th>Подразделение</th>
+                        <th>Тип материала</th>
+                        <th>Наименование материала</th>
+                        <th class="text-center" style="width: 130px;">Обращений</th>
+                        <th>Первое обращение</th>
+                        <th>Последнее обращение</th>
+                        <th class="text-end">IP-адрес</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                        <tr>
+                            <td class="text-muted small">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                            <td class="font-weight-semibold text-dark">
+                                <i class="bx bx-user text-primary me-1"></i>{{ log.user.get_full_name|default:log.user.username }}
+                            </td>
+                            <td>{{ log.user.user_work_profile.job.get_title|default:"—" }}</td>
+                            <td>{{ log.user.user_work_profile.division.name|default:"—" }}</td>
+                            <td>
+                                {% if log.material_type == 'lecture' %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1">
+                                        <i class="bx bx-book-reader"></i> Лекция
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle d-inline-flex align-items-center gap-1">
+                                        <i class="bx bx-video"></i> Видео
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.lecture %}
+                                    <a href="{% url 'testing_app:lecture_detail' log.lecture.pk %}" class="text-dark font-weight-semibold text-decoration-none hover-primary">
+                                        {{ log.lecture.title }}
+                                    </a>
+                                {% elif log.video_lecture %}
+                                    <a href="{% url 'testing_app:video_lecture_detail' log.video_lecture.pk %}" class="text-dark font-weight-semibold text-decoration-none hover-primary">
+                                        {{ log.video_lecture.title }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Материал удален</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-primary border font-weight-bold fs-6 px-2 py-1">
+                                    {{ log.views_count }}
+                                </span>
+                            </td>
+                            <td class="small text-muted">{{ log.first_viewed_at|date:"d.m.Y H:i" }}</td>
+                            <td class="small text-muted">{{ log.last_viewed_at|date:"d.m.Y H:i" }}</td>
+                            <td class="text-end small text-muted font-monospace">{{ log.last_ip|default:"—" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="bx bx-folder-open display-4 text-muted mb-2 d-block"></i>
+                                Записей об обращениях по выбранным критериям не найдено.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Пагинация -->
+    {% if is_paginated %}
+        <div class="card-footer bg-light p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted small">
+                Показаны записи {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ paginator.count }}
+            </span>
+            <nav aria-label="Навигация по страницам">
+                <ul class="pagination pagination-modern mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filter_q %}&q={{ filter_q }}{% endif %}{% if filter_material_type %}&material_type={{ filter_material_type }}{% endif %}{% if filter_division_id %}&division_id={{ filter_division_id }}{% endif %}{% if filter_date_from %}&date_from={{ filter_date_from }}{% endif %}{% if filter_date_to %}&date_to={{ filter_date_to }}{% endif %}">&laquo;</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if filter_q %}&q={{ filter_q }}{% endif %}{% if filter_material_type %}&material_type={{ filter_material_type }}{% endif %}{% if filter_division_id %}&division_id={{ filter_division_id }}{% endif %}{% if filter_date_from %}&date_from={{ filter_date_from }}{% endif %}{% if filter_date_to %}&date_to={{ filter_date_to }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filter_q %}&q={{ filter_q }}{% endif %}{% if filter_material_type %}&material_type={{ filter_material_type }}{% endif %}{% if filter_division_id %}&division_id={{ filter_division_id }}{% endif %}{% if filter_date_from %}&date_from={{ filter_date_from }}{% endif %}{% if filter_date_to %}&date_to={{ filter_date_to }}{% endif %}">&raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.hover-primary:hover {
+    color: #0088cc !important;
+}
+</style>
+
+{% endblock %}

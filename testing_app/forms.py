@@ -5,7 +5,14 @@ from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.utils import timezone
 
-from testing_app.models import Question, AnswerOption, QuestionCategory, Testing
+from testing_app.models import (
+    Question,
+    AnswerOption,
+    QuestionCategory,
+    Testing,
+    LectureMaterial,
+    VideoLecture,
+)
 
 
 class QuestionImportForm(forms.Form):
@@ -218,4 +225,72 @@ class ManualAssignmentForm(forms.Form):
         # Исключаем тех, кто уже назначен
         assigned_ids = testing.assignments.values_list("employee_id", flat=True)
         self.fields["employee"].queryset = DataBaseUser.objects.filter(is_active=True).exclude(id__in=assigned_ids).order_by("last_name", "first_name")
+
+
+class LectureMaterialForm(forms.ModelForm):
+    """Форма создания и редактирования лекционного материала."""
+
+    class Meta:
+        model = LectureMaterial
+        fields = ["title", "doc_file", "scan_file", "is_actual", "description"]
+        widgets = {
+            "title": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Введите наименование лекции (например: РО-8Т. Раздел 001)"
+            }),
+            "doc_file": forms.FileInput(attrs={
+                "class": "form-control",
+                "accept": ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            }),
+            "scan_file": forms.FileInput(attrs={
+                "class": "form-control",
+                "accept": ".pdf,application/pdf"
+            }),
+            "is_actual": forms.CheckboxInput(attrs={
+                "class": "form-check-input"
+            }),
+            "description": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 4,
+                "placeholder": "Краткая аннотация, методические указания или содержание лекции..."
+            }),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        doc_file = cleaned_data.get("doc_file")
+        scan_file = cleaned_data.get("scan_file")
+
+        # При создании новой лекции желательно прикрепить хотя бы один файл
+        if not self.instance.pk and not doc_file and not scan_file:
+            raise ValidationError("Необходимо прикрепить хотя бы один файл (скан документа PDF или файл Word doc/docx).")
+
+        return cleaned_data
+
+
+class VideoLectureForm(forms.ModelForm):
+    """Форма создания и редактирования видеолекции."""
+
+    class Meta:
+        model = VideoLecture
+        fields = ["title", "video_file", "is_actual", "description"]
+        widgets = {
+            "title": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Введите наименование видеолекции (например: Практическое обслуживание ТВ2-117)"
+            }),
+            "video_file": forms.FileInput(attrs={
+                "class": "form-control",
+                "accept": ".mp4,video/mp4"
+            }),
+            "is_actual": forms.CheckboxInput(attrs={
+                "class": "form-check-input"
+            }),
+            "description": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 4,
+                "placeholder": "Краткое описание, таймкоды видео или содержание тем..."
+            }),
+        }
+
 
