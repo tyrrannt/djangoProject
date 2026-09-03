@@ -244,11 +244,6 @@
     {% block SpecificPageVendor %}
     {% endblock %}
 
-    <!-- Автоматическая блокировка экрана при неактивности -->
-    <script>
-        if (window.initPortalInactivityTimer) {
-            window.initPortalInactivityTimer("{% url 'customers_app:lock_screen' %}");
-        }
-    </script>
+    <!-- Автоматическая блокировка экрана при неактивности отключена (оставлена только ручная блокировка) -->
 </body>
 </html>
