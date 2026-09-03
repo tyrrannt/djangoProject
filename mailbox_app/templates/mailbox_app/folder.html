@@ -346,6 +346,13 @@
                                 <i class="bx bx-trash"></i> <span class="d-none d-sm-inline">Удалить</span>
                             </button>
                         </div>
+
+                        <!-- Кнопка «Прочитать всё» в текущей папке -->
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none ms-1"
+                                id="btnMarkAllRead" onclick="handleMarkAllRead()" title="Пометить все непрочитанные письма в папке «{{ current_folder_display }}» как прочитанные">
+                            <i class="bx bx-check-double text-primary font-size-16"></i>
+                            <span class="d-none d-md-inline">Прочитать всё</span>
+                        </button>
                     </div>
 
                     <!-- Пагинация -->
@@ -769,10 +776,28 @@
             executeAction(actionType, selectedUids);
         }
 
+        // Пометить все письма в текущей папке как прочитанные
+        function handleMarkAllRead() {
+            document.getElementById('deleteModalIconBox').style.background = 'rgba(13, 110, 253, 0.12)';
+            document.getElementById('deleteModalIconBox').style.color = '#0d6efd';
+            document.getElementById('deleteModalIcon').className = 'bx bx-check-double';
+            document.getElementById('deleteModalTitle').innerText = 'Отметить всё прочитанным?';
+            document.getElementById('deleteModalDesc').innerText = 'Все непрочитанные письма в папке «{{ current_folder_display|escapejs }}» будут помечены как прочитанные.';
+            document.getElementById('confirmDeleteBtnText').innerText = 'Прочитать всё';
+            document.getElementById('confirmDeleteActionBtn').className = 'btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-1 shadow-sm';
+            pendingBatchAction = 'mark_all_seen';
+            pendingUids = [];
+            const modalEl = document.getElementById('deleteMailModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        }
+
         const confirmBtn = document.getElementById('confirmDeleteActionBtn');
         if (confirmBtn) {
             confirmBtn.addEventListener('click', function() {
-                if (pendingBatchAction && pendingUids.length > 0) {
+                if (pendingBatchAction && (pendingUids.length > 0 || pendingBatchAction === 'mark_all_seen')) {
                     executeAction(pendingBatchAction, pendingUids);
                 }
             });

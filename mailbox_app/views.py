@@ -927,6 +927,15 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
         target_folder = data.get("target_folder", "")
         uids = data.get("uids", [])
 
+        if action == "mark_all_seen":
+            try:
+                with self.get_imap_service(account) as imap_svc:
+                    count = imap_svc.mark_all_read(folder)
+                    return JsonResponse({"success": True, "processed": count, "action": action})
+            except Exception as e:
+                logger.error(f"[Mailbox] Ошибка mark_all_seen для папки {folder}: {e}")
+                return JsonResponse({"success": False, "error": str(e)}, status=500)
+
         if isinstance(uids, (int, str)):
             uids = [int(uids)]
         else:

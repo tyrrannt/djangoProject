@@ -1452,6 +1452,40 @@ class ImapMailService:
             logger.error(f"[IMAP] Ошибка batch_action '{action}' для {uid_set}: {e}")
             return False
 
+    def mark_all_read(self, folder_name: str) -> int:
+        """Помечает все непрочитанные сообщения в указанной папке как прочитанные.
+
+        Args:
+            folder_name (str): Название папки IMAP.
+
+        Returns:
+            int: Количество обновленных сообщений.
+        """
+        if not self.client:
+            return 0
+
+        status, _ = self.client.select(f'"{folder_name}"', readonly=False)
+        if status != "OK":
+            return 0
+
+        try:
+            status, search_data = self.client.uid("search", None, "UNSEEN")
+            if status != "OK" or not search_data or not search_data[0]:
+                return 0
+
+            raw_uids = [u for u in search_data[0].split() if u and u != b"0"]
+            if not raw_uids:
+                return 0
+
+            uid_set = ",".join(u.decode("ascii") if isinstance(u, bytes) else str(u) for u in raw_uids)
+            self.client.uid("store", uid_set, "+FLAGS", "(\\Seen)")
+            invalidate_mailbox_cache(self.email_addr)
+            return len(raw_uids)
+        except Exception as e:
+            logger.error(f"[IMAP] Ошибка отметки всех писем прочитанными в папке {folder_name}: {e}")
+            return 0
+
+
 
 def _format_file_size(size_in_bytes: int) -> str:
     """Форматирует размер файла в удобочитаемый вид (КБ, МБ).
