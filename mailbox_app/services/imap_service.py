@@ -1220,15 +1220,20 @@ class ImapMailService:
             except Exception as err:
                 logger.debug(f"[IMAP] Не удалось удалить старый черновик UID {old_draft_uid}: {err}")
 
+        from mailbox_app.services.smtp_service import format_recipient_addresses
+
         # Формируем MIME сообщение черновика
         msg = MIMEMultipart("alternative")
         msg["From"] = self.email_addr
-        if to_recipients:
-            msg["To"] = to_recipients
-        if cc_recipients:
-            msg["Cc"] = cc_recipients
-        if bcc_recipients:
-            msg["Bcc"] = bcc_recipients
+        to_hdr, _ = format_recipient_addresses(to_recipients)
+        if to_hdr:
+            msg["To"] = to_hdr
+        cc_hdr, _ = format_recipient_addresses(cc_recipients)
+        if cc_hdr:
+            msg["Cc"] = cc_hdr
+        bcc_hdr, _ = format_recipient_addresses(bcc_recipients)
+        if bcc_hdr:
+            msg["Bcc"] = bcc_hdr
         msg["Subject"] = Header(subject or "(Без темы)", "utf-8")
         msg["Date"] = formatdate(localtime=True)
         msg["Message-ID"] = make_msgid()

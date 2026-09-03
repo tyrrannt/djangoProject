@@ -323,9 +323,14 @@ class ScheduledEmail(models.Model):
         recipients = self.get_recipients_list("to")
         if not recipients:
             return "Без получателя"
+
+        from email.utils import parseaddr
+        name_part, email_part = parseaddr(recipients[0])
+        first_display = name_part.strip().strip("\"'") or email_part.strip() or recipients[0]
+
         if len(recipients) == 1:
-            return recipients[0]
-        return f"{recipients[0]} (+{len(recipients) - 1})"
+            return first_display
+        return f"{first_display} (+{len(recipients) - 1})"
 
     @property
     def can_cancel(self) -> bool:

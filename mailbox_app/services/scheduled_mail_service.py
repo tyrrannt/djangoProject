@@ -187,14 +187,19 @@ def send_single_scheduled_email(scheduled_email_id: int) -> bool:
             )
 
             # Автосохранение адресатов в адресную книгу
+            from email.utils import parseaddr
+
             all_recipients = to_list + cc_list + bcc_list
-            for email_addr in all_recipients:
-                if "@" in email_addr:
+            for raw_addr in all_recipients:
+                name_part, email_part = parseaddr(raw_addr)
+                email_clean = email_part.strip().lower()
+                if email_clean and "@" in email_clean:
+                    clean_name = name_part.strip().strip("\"'") or email_clean.split("@")[0]
                     try:
                         MailContact.objects.get_or_create(
                             user=scheduled_email.user,
-                            email=email_addr.lower(),
-                            defaults={"name": email_addr.split("@")[0], "source": "auto"},
+                            email=email_clean,
+                            defaults={"name": clean_name, "source": "auto"},
                         )
                     except Exception:
                         pass
