@@ -186,9 +186,9 @@ class ImapMailService:
                     if clean_host.replace(".", "").isdigit():
                         ssl_context.check_hostname = False
                         ssl_context.verify_mode = ssl.CERT_NONE
-                    self.client = imaplib.IMAP4_SSL(self.host, self.port, ssl_context=ssl_context)
+                    self.client = imaplib.IMAP4_SSL(self.host, self.port, ssl_context=ssl_context, timeout=10.0)
                 else:
-                    self.client = imaplib.IMAP4(self.host, self.port)
+                    self.client = imaplib.IMAP4(self.host, self.port, timeout=10.0)
 
                 status, response = self.client.login(login_candidate, self.password)
                 if status == "OK":
@@ -207,13 +207,24 @@ class ImapMailService:
         return False
 
     def close(self) -> None:
-        """Безопасно закрывает соединение с сервером."""
+        """Безопасно и быстро закрывает соединение с сервером без зависания."""
         if self.client:
             try:
+                # Ограничиваем таймаут сокета перед logout до 2 секунд, чтобы не блокировать Gunicorn
+                if hasattr(self.client, "sock") and self.client.sock:
+                    try:
+                        self.client.sock.settimeout(2.0)
+                    except Exception:
+                        pass
                 self.client.logout()
             except Exception:
                 pass
             finally:
+                try:
+                    if hasattr(self.client, "sock") and self.client.sock:
+                        self.client.sock.close()
+                except Exception:
+                    pass
                 self.client = None
 
     def __enter__(self):
@@ -328,20 +339,23 @@ class ImapMailService:
                 full_path_display = " / ".join([first_name] + decoded_parts[1:])
 
             # Получаем количество непрочитанных и всего писем
+            # Опрашиваем статус по сети ТОЛЬКО для Входящих (INBOX), чтобы исключить проблему
+            # N+1 сетевых запросов (20-30 последовательных вызовов STATUS к удаленному серверу)
             unseen_count = 0
             total_count = 0
-            try:
-                status_res, status_data = self.client.status(f'"{raw_name}"', "(UNSEEN MESSAGES)")
-                if status_res == "OK" and status_data:
-                    stat_line = status_data[0].decode("latin-1")
-                    unseen_m = re.search(r"UNSEEN\s+(\d+)", stat_line)
-                    total_m = re.search(r"MESSAGES\s+(\d+)", stat_line)
-                    if unseen_m:
-                        unseen_count = int(unseen_m.group(1))
-                    if total_m:
-                        total_count = int(total_m.group(1))
-            except Exception:
-                pass
+            if root_type == "inbox" or len(folder_list) <= 3:
+                try:
+                    status_res, status_data = self.client.status(f'"{raw_name}"', "(UNSEEN MESSAGES)")
+                    if status_res == "OK" and status_data:
+                        stat_line = status_data[0].decode("latin-1")
+                        unseen_m = re.search(r"UNSEEN\s+(\d+)", stat_line)
+                        total_m = re.search(r"MESSAGES\s+(\d+)", stat_line)
+                        if unseen_m:
+                            unseen_count = int(unseen_m.group(1))
+                        if total_m:
+                            total_count = int(total_m.group(1))
+                except Exception:
+                    pass
 
             parsed_folders.append({
                 "raw_name": raw_name,
@@ -371,7 +385,7 @@ class ImapMailService:
         parsed_folders.sort(key=sort_key)
 
         if cache_key:
-            cache.set(cache_key, parsed_folders, timeout=180)
+            cache.set(cache_key, parsed_folders, timeout=1800)  # Кэшируем дерево папок на 30 минут
 
         return parsed_folders
 
@@ -566,27 +580,49 @@ class ImapMailService:
 
             uids_list = found_uids
         else:
-            # 2. Серверная сортировка по реальной дате (RFC 5256 SORT)
-            try:
-                status, sort_data = self.client.uid("sort", sort_key, "UTF-8", base_criteria)
-                if status == "OK" and sort_data and sort_data[0]:
-                    uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
-            except Exception as e:
-                logger.debug(f"[IMAP] UTF-8 UID SORT не удался, пробуем US-ASCII: {e}")
+            # 2. Серверная сортировка писем
+            is_fast_date_desc = (
+                sort_by == "date"
+                and sort_dir == "desc"
+                and filter_by == "all"
+                and date_range == "all"
+                and not query
+            )
+            if is_fast_date_desc:
+                # В протоколе IMAP UID писем возрастают строго монотонно.
+                # Вызов UID SEARCH ALL выполняется почтовым сервером мгновенно (по индексу)
+                # и избавляет удаленный сервер от парсинга и сортировки заголовков 10 000+ писем.
                 try:
-                    status, sort_data = self.client.uid("sort", sort_key, "US-ASCII", base_criteria)
+                    status, search_data = self.client.uid("search", None, "ALL")
+                    if status == "OK" and search_data and search_data[0]:
+                        raw_uids = [u for u in search_data[0].split() if u and u != b"0"]
+                        raw_uids.reverse()  # Новые письма (с наибольшим UID) первыми
+                        uids_list = raw_uids
+                except Exception as e:
+                    logger.debug(f"[IMAP] Fast UID SEARCH не удался: {e}")
+
+            if not uids_list:
+                # Серверная сортировка по реальной дате (RFC 5256 SORT) для кастомных фильтров
+                try:
+                    status, sort_data = self.client.uid("sort", sort_key, "UTF-8", base_criteria)
                     if status == "OK" and sort_data and sort_data[0]:
                         uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
-                except Exception as e2:
-                    logger.debug(f"[IMAP] US-ASCII UID SORT не удался: {e2}")
+                except Exception as e:
+                    logger.debug(f"[IMAP] UTF-8 UID SORT не удался, пробуем US-ASCII: {e}")
+                    try:
+                        status, sort_data = self.client.uid("sort", sort_key, "US-ASCII", base_criteria)
+                        if status == "OK" and sort_data and sort_data[0]:
+                            uids_list = [u for u in sort_data[0].split() if u and u != b"0"]
+                    except Exception as e2:
+                        logger.debug(f"[IMAP] US-ASCII UID SORT не удался: {e2}")
 
-            # Fallback к обычному UID SEARCH, если сервер не поддерживает расширение SORT
-            if not uids_list:
-                status, search_data = self.client.uid("search", None, base_criteria)
-                if status == "OK" and search_data and search_data[0]:
-                    uids_list = [u for u in search_data[0].split() if u and u != b"0"]
-                    if sort_dir == "desc":
-                        uids_list.reverse()
+                # Fallback к обычному UID SEARCH, если сервер не поддерживает расширение SORT
+                if not uids_list:
+                    status, search_data = self.client.uid("search", None, base_criteria)
+                    if status == "OK" and search_data and search_data[0]:
+                        uids_list = [u for u in search_data[0].split() if u and u != b"0"]
+                        if sort_dir == "desc":
+                            uids_list.reverse()
 
         total_messages = len(uids_list)
         if total_messages == 0:
