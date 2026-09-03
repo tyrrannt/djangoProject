@@ -805,6 +805,7 @@ class ImapMailService:
         from_raw = decode_str(msg.get("From")) or ""
         to_raw = decode_str(msg.get("To")) or ""
         cc_raw = decode_str(msg.get("Cc")) or ""
+        bcc_raw = decode_str(msg.get("Bcc")) or ""
         date_raw = msg.get("Date") or ""
 
         from_name, from_email = parseaddr(from_raw)
@@ -962,6 +963,7 @@ class ImapMailService:
             "from_raw": from_raw,
             "to_raw": to_raw,
             "cc_raw": cc_raw,
+            "bcc_raw": bcc_raw,
             "date": parsed_date,
             "date_raw": date_raw,
             "body_html": body_html,

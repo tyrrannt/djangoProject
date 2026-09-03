@@ -289,6 +289,42 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
 
     template_name = "mailbox_app/email_detail.html"
 
+    def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос детального просмотра письма.
+
+        Если письмо открывается из папки 'Черновики' (Drafts), перенаправляет
+        пользователя на страницу редактирования черновика в композере compose.
+
+        Args:
+            request: Объект HTTP-запроса.
+            *args: Дополнительные позиционные аргументы.
+            **kwargs: Именованные параметры маршрута (folder, uid).
+
+        Returns:
+            HttpResponse: Редирект в форму написания письма или отрендеренная страница.
+        """
+        folder_name = self.kwargs.get("folder", "INBOX")
+        uid = int(self.kwargs.get("uid"))
+        fn_lower = folder_name.lower()
+
+        # Быстрая проверка по имени папки черновиков
+        if any(s in fn_lower for s in ("draft", "черновик")):
+            return redirect(f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}")
+
+        account = self.get_account()
+        try:
+            with self.get_imap_service(account) as imap_svc:
+                folders = imap_svc.get_folders()
+                for f in folders:
+                    if f.get("raw_name") == folder_name:
+                        if f.get("type") == "drafts" or f.get("root_type") == "drafts":
+                            return redirect(f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}")
+                        break
+        except Exception:
+            pass
+
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         """Загружает полное содержимое письма с сервера IMAP.
 
@@ -335,8 +371,6 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
             or any(f.get("raw_name") == folder_name and f.get("root_type") == "drafts" for f in folders)
             or any(s in fn_lower for s in ("draft", "черновик"))
         )
-        if is_drafts and email_data:
-            return redirect(f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}")
 
         show_recipient = is_sent or is_drafts
 

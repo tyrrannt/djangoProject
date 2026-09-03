@@ -431,7 +431,7 @@
                         <tbody>
                             {% for msg in messages_list %}
                                 <tr class="{% if not msg.is_seen %}unread{% else %}read{% endif %}"
-                                    onclick="if(!event.target.closest('.no-row-click')) { window.location='{% url 'mailbox_app:email_detail' current_folder msg.uid %}'; }">
+                                    onclick="if(!event.target.closest('.no-row-click')) { window.location='{% if is_drafts %}{% url 'mailbox_app:compose' %}?draft_uid={{ msg.uid }}&folder={{ current_folder|urlencode }}{% else %}{% url 'mailbox_app:email_detail' current_folder msg.uid %}{% endif %}'; }">
                                     
                                     <!-- Чекбокс -->
                                     <td class="mailbox-col-check ps-3 no-row-click">
