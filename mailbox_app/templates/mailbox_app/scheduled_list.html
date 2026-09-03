@@ -24,6 +24,9 @@
 
             <!-- Основное тело раздела запланированных писем -->
             <div class="inner-body mailbox-folder">
+                <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
+                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
                 <!-- Шапка раздела -->
                 <header class="mailbox-header-bar">
                     <div class="d-flex align-items-center justify-content-between gap-2 w-100 flex-wrap">

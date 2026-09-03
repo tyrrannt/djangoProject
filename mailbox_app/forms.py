@@ -1,7 +1,9 @@
 """Формы для приложения корпоративной почты."""
 
 from django import forms
-from mailbox_app.models import MailAccount
+from django.contrib.auth import get_user_model
+from mailbox_app.models import MailAccount, Mailbox
+from mailbox_app.services.mailbox_defaults import DEFAULT_DOMAIN, get_domain_defaults
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -318,4 +320,141 @@ class MailAccountSettingsForm(forms.ModelForm):
             instance.set_password(raw_password)
         if commit:
             instance.save()
+        return instance
+
+
+class MailboxAdminForm(forms.ModelForm):
+    """Форма создания и редактирования корпоративного или дополнительного почтового ящика.
+
+    Позволяет администратору настраивать параметры подключения к IMAP и SMTP,
+    привязывать сотрудников с доступом Many-to-Many и управлять безопасностью паролей.
+    """
+
+    raw_imap_password = forms.CharField(
+        label="Пароль IMAP",
+        widget=forms.PasswordInput(
+            render_value=True,
+            attrs={
+                "class": "form-control",
+                "id": "id_imap_password",
+                "placeholder": "Введите пароль...",
+                "autocomplete": "new-password",
+            },
+        ),
+        required=False,
+        help_text="Оставьте пустым, если не требуется менять текущий пароль",
+    )
+    raw_smtp_password = forms.CharField(
+        label="Пароль SMTP",
+        widget=forms.PasswordInput(
+            render_value=True,
+            attrs={
+                "class": "form-control",
+                "id": "id_smtp_password",
+                "placeholder": "Пароль SMTP...",
+                "autocomplete": "new-password",
+            },
+        ),
+        required=False,
+        help_text="Если не указан или включено 'Совпадает с IMAP', используется пароль IMAP",
+    )
+    smtp_same_as_imap = forms.BooleanField(
+        label="Параметры авторизации SMTP совпадают с IMAP",
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_smtp_same_as_imap"}),
+    )
+
+    class Meta:
+        model = Mailbox
+        fields = [
+            "name",
+            "email",
+            "domain",
+            "description",
+            "is_active",
+            "incoming_protocol",
+            "imap_host",
+            "imap_port",
+            "imap_security",
+            "imap_username",
+            "smtp_host",
+            "smtp_port",
+            "smtp_security",
+            "smtp_username",
+            "display_name",
+            "signature_html",
+            "users",
+        ]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Отдел кадров", "required": True}),
+            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "hr@barkol.ru", "id": "id_email", "required": True}),
+            "domain": forms.TextInput(attrs={"class": "form-control", "placeholder": "barkol.ru", "id": "id_domain"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Назначение почтового ящика..."}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "incoming_protocol": forms.Select(attrs={"class": "form-select", "id": "id_incoming_protocol"}),
+            "imap_host": forms.TextInput(attrs={"class": "form-control", "id": "id_imap_host"}),
+            "imap_port": forms.NumberInput(attrs={"class": "form-control", "id": "id_imap_port"}),
+            "imap_security": forms.Select(attrs={"class": "form-select", "id": "id_imap_security"}),
+            "imap_username": forms.TextInput(attrs={"class": "form-control", "id": "id_imap_username", "placeholder": "hr@barkol.ru"}),
+            "smtp_host": forms.TextInput(attrs={"class": "form-control", "id": "id_smtp_host"}),
+            "smtp_port": forms.NumberInput(attrs={"class": "form-control", "id": "id_smtp_port"}),
+            "smtp_security": forms.Select(attrs={"class": "form-select", "id": "id_smtp_security"}),
+            "smtp_username": forms.TextInput(attrs={"class": "form-control", "id": "id_smtp_username", "placeholder": "hr@barkol.ru"}),
+            "display_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Отдел кадров ООО 'Баркол'"}),
+            "signature_html": forms.Textarea(attrs={"class": "form-control summernote-signature", "rows": 4}),
+            "users": forms.SelectMultiple(attrs={"class": "form-select select2-users", "style": "width: 100%; min-height: 180px;"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Инициализирует форму с предзаполнением паролей и доменных пресетов."""
+        super().__init__(*args, **kwargs)
+        User = get_user_model()
+        self.fields["users"].queryset = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+        self.fields["users"].label = "Сотрудники с доступом"
+
+        if self.instance and self.instance.pk:
+            self.fields["raw_imap_password"].initial = self.instance.get_password()
+            self.fields["raw_smtp_password"].initial = self.instance.get_smtp_password()
+            if self.instance.encrypted_smtp_password and self.instance.encrypted_smtp_password != self.instance.encrypted_imap_password:
+                self.fields["smtp_same_as_imap"].initial = False
+        else:
+            defaults = get_domain_defaults(DEFAULT_DOMAIN)
+            self.initial.setdefault("domain", defaults["domain"])
+            self.initial.setdefault("imap_host", defaults["imap_host"])
+            self.initial.setdefault("imap_port", defaults["imap_port"])
+            self.initial.setdefault("imap_security", defaults["imap_security"])
+            self.initial.setdefault("smtp_host", defaults["smtp_host"])
+            self.initial.setdefault("smtp_port", defaults["smtp_port"])
+            self.initial.setdefault("smtp_security", defaults["smtp_security"])
+
+    def save(self, commit=True):
+        """Сохраняет ящик с безопасным шифрованием паролей IMAP и SMTP.
+
+        Args:
+            commit (bool): Сохранять ли объект в базу данных.
+
+        Returns:
+            Mailbox: Сохраненный инстанс корпоративного ящика.
+        """
+        instance = super().save(commit=False)
+        raw_imap = self.cleaned_data.get("raw_imap_password")
+        raw_smtp = self.cleaned_data.get("raw_smtp_password")
+        same_as_imap = self.cleaned_data.get("smtp_same_as_imap")
+
+        if raw_imap:
+            instance.set_password(raw_imap)
+
+        if same_as_imap:
+            instance.smtp_username = instance.imap_username
+            if raw_imap:
+                instance.set_smtp_password(raw_imap)
+            elif instance.encrypted_imap_password:
+                instance.encrypted_smtp_password = instance.encrypted_imap_password
+        elif raw_smtp:
+            instance.set_smtp_password(raw_smtp)
+
+        if commit:
+            instance.save()
+            self.save_m2m()
         return instance

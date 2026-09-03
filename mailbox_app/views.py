@@ -10,12 +10,13 @@ import re
 import socket
 import ssl
 import time
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.cache import cache
+from django.db import models
 from django.http import (
     FileResponse,
     Http404,
@@ -24,50 +25,153 @@ from django.http import (
     HttpResponseRedirect,
     JsonResponse,
 )
-from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.shortcuts import redirect, render, get_object_or_404
+from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import DetailView, FormView, ListView, TemplateView
+from django.views.generic import DetailView, FormView, ListView, TemplateView, CreateView, UpdateView
+
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from customers_app.models import DataBaseUser
-from mailbox_app.forms import MailAccountSettingsForm, MailComposeForm, ScheduledEmailEditForm
+from mailbox_app.forms import (
+    MailAccountSettingsForm,
+    MailComposeForm,
+    MailboxAdminForm,
+    ScheduledEmailEditForm,
+)
 from mailbox_app.models import (
     MailAccount,
     MailContact,
+    Mailbox,
     ScheduledEmail,
     ScheduledEmailAttachment,
 )
 from mailbox_app.services.account_service import get_user_mail_account
+from mailbox_app.services.connection_test_service import test_full_mailbox_connection
 from mailbox_app.services.imap_service import (
     ImapMailService,
     decode_imap_utf7,
     invalidate_mailbox_cache,
 )
+from mailbox_app.services.mailbox_defaults import get_domain_defaults
 from mailbox_app.services.smtp_service import SmtpMailService
 
 logger = logging.getLogger(__name__)
 
 
 class MailboxBaseMixin(LoginRequiredMixin):
-    """Базовый миксин для представлений почты: проверка и получение почтового аккаунта."""
+    """Базовый миксин для представлений почты: проверка и получение активного почтового аккаунта."""
 
-    def get_account(self) -> Optional[MailAccount]:
-        """Возвращает или настраивает почтовый аккаунт для текущего пользователя.
+    def get_available_mailboxes(self) -> List[Dict[str, Any]]:
+        """Возвращает список всех доступных текущему пользователю почтовых ящиков.
+
+        Первым элементом всегда идет основной персональный почтовый ящик сотрудника.
+        Последующими элементами идут дополнительные корпоративные ящики (Mailbox),
+        к которым сотруднику предоставлен доступ (Many-to-Many).
 
         Returns:
-            MailAccount, optional: Объект почтового ящика или None.
+            List[Dict[str, Any]]: Список словарей с описанием доступных ящиков.
         """
+        mailboxes: List[Dict[str, Any]] = []
+        user = self.request.user
+        if not user.is_authenticated:
+            return mailboxes
+
+        try:
+            primary_account = get_user_mail_account(user)
+            if primary_account:
+                mailboxes.append({
+                    "id": "primary",
+                    "name": "Моя почта",
+                    "email": primary_account.email,
+                    "is_primary": True,
+                    "is_active": primary_account.is_active,
+                    "account": primary_account,
+                })
+        except Exception as e:
+            logger.debug(f"[Mailbox] Ошибка получения основного ящика: {e}")
+
+        try:
+            from mailbox_app.models import Mailbox
+
+            user_mailboxes = Mailbox.objects.filter(is_active=True, users=user).distinct()
+            for mb in user_mailboxes:
+                mailboxes.append({
+                    "id": str(mb.id),
+                    "name": mb.name,
+                    "email": mb.email,
+                    "is_primary": False,
+                    "is_active": mb.is_active,
+                    "account": mb,
+                })
+        except Exception as e:
+            logger.error(f"[Mailbox] Ошибка получения дополнительных ящиков: {e}")
+
+        return mailboxes
+
+    def get_active_mailbox_id(self) -> str:
+        """Определяет идентификатор текущего активного почтового ящика пользователя.
+
+        Проверяет GET/POST параметр 'mailbox', затем сохраненное значение в сессии.
+        Проверяет наличие прав доступа у пользователя к запрашиваемому ящику.
+        При отсутствии прав или недоступности ящика возвращает 'primary'.
+
+        Returns:
+            str: Идентификатор активного ящика ('primary' или строковый ID Mailbox).
+        """
+        user = self.request.user
+        req_mb = self.request.GET.get("mailbox") or self.request.POST.get("mailbox")
+        if req_mb:
+            req_mb = str(req_mb).strip()
+        else:
+            req_mb = str(self.request.session.get("active_mailbox_id", "primary")).strip()
+
+        if req_mb == "primary":
+            self.request.session["active_mailbox_id"] = "primary"
+            return "primary"
+
+        if req_mb.isdigit():
+            from mailbox_app.models import Mailbox
+
+            mb_id = int(req_mb)
+            has_access = (
+                user.is_superuser
+                or Mailbox.objects.filter(id=mb_id, is_active=True, users=user).exists()
+            )
+            if has_access:
+                self.request.session["active_mailbox_id"] = str(mb_id)
+                return str(mb_id)
+
+        self.request.session["active_mailbox_id"] = "primary"
+        return "primary"
+
+    def get_account(self) -> Optional[Any]:
+        """Возвращает или настраивает почтовый аккаунт для активного ящика.
+
+        Returns:
+            MailAccount | Mailbox, optional: Объект активного почтового ящика или None.
+        """
+        active_id = self.get_active_mailbox_id()
+        if active_id != "primary":
+            try:
+                from mailbox_app.models import Mailbox
+
+                return Mailbox.objects.get(id=int(active_id), is_active=True)
+            except Exception as e:
+                logger.warning(f"[Mailbox] Не удалось получить дополнительный ящик {active_id}: {e}")
+
         try:
             return get_user_mail_account(self.request.user)
         except Exception as e:
             logger.error(f"[Mailbox] Ошибка получения почтового аккаунта для {self.request.user}: {e}")
             return None
 
-    def get_imap_service(self, account: MailAccount) -> ImapMailService:
+    def get_imap_service(self, account: Any) -> ImapMailService:
         """Создает и возвращает экземпляр IMAP-сервиса.
 
         Args:
-            account (MailAccount): Почтовый аккаунт.
+            account (MailAccount | Mailbox): Почтовый аккаунт.
 
         Returns:
             ImapMailService: Сервис подключения к IMAP.
@@ -78,6 +182,33 @@ class MailboxBaseMixin(LoginRequiredMixin):
             email_addr=account.email,
             password=account.get_password(),
             use_ssl=account.imap_use_ssl,
+        )
+
+    def get_smtp_service(self, account: Any) -> SmtpMailService:
+        """Создает и возвращает экземпляр SMTP-сервиса.
+
+        Args:
+            account (MailAccount | Mailbox): Почтовый аккаунт.
+
+        Returns:
+            SmtpMailService: Сервис отправки почты по SMTP.
+        """
+        account_pass = (
+            account.get_smtp_password()
+            if hasattr(account, "get_smtp_password")
+            else account.get_password()
+        )
+        return SmtpMailService(
+            smtp_host=account.smtp_host,
+            smtp_port=account.smtp_port,
+            email_addr=account.email,
+            password=account_pass,
+            display_name=getattr(account, "display_name", "") or account.email,
+            use_ssl=account.smtp_use_ssl,
+            use_tls=account.smtp_use_tls,
+            imap_host=account.imap_host,
+            imap_port=account.imap_port,
+            imap_use_ssl=account.imap_use_ssl,
         )
 
     def get_scheduled_count(self) -> int:
@@ -95,6 +226,57 @@ class MailboxBaseMixin(LoginRequiredMixin):
             ).count()
         except Exception:
             return 0
+
+    def get_mailbox_context(self) -> Dict[str, Any]:
+        """Формирует контекстные переменные для вкладок и тулбара ящиков.
+
+        Returns:
+            Dict[str, Any]: Словарь с данными доступных ящиков и активной вкладки.
+        """
+        available = self.get_available_mailboxes()
+        active_id = self.get_active_mailbox_id()
+        account = self.get_account()
+
+        for mb in available:
+            mb["is_current"] = (mb["id"] == active_id)
+
+        can_manage = (
+            self.request.user.is_superuser
+            or self.request.user.is_staff
+            or self.request.user.has_perm("mailbox_app.manage_mailboxes")
+        )
+
+        return {
+            "account": account,
+            "active_mailbox": account,
+            "available_mailboxes": available,
+            "has_multiple_mailboxes": len(available) > 1,
+            "active_mailbox_id": active_id,
+            "is_primary_mailbox": (active_id == "primary"),
+            "can_manage_mailboxes": can_manage,
+            "mailbox_query_param": f"&mailbox={active_id}" if active_id != "primary" else "",
+            "mailbox_param": f"?mailbox={active_id}" if active_id != "primary" else "",
+            "scheduled_count": self.get_scheduled_count(),
+        }
+
+    def get_context_data(self, **kwargs):
+        """Дополняет контекст представлений данными активного ящика, папок и списком вкладок."""
+        context = super().get_context_data(**kwargs) if hasattr(super(), "get_context_data") else {}
+        account = self.get_account()
+        folders = []
+        if account:
+            try:
+                with self.get_imap_service(account) as imap_svc:
+                    folders = imap_svc.get_folders()
+            except Exception as e:
+                logger.debug(f"[Mailbox] Ошибка получения папок: {e}")
+
+        context.update(self.get_mailbox_context())
+        context.setdefault("account", account)
+        context.setdefault("folders", folders)
+        context.setdefault("current_folder", "INBOX")
+        context.setdefault("scheduled_count", self.get_scheduled_count())
+        return context
 
 
 class MailboxFolderView(MailboxBaseMixin, TemplateView):
@@ -566,18 +748,7 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         for f in uploaded_files:
             attachments.append((f.name, f.content_type, f.read()))
 
-        smtp_service = SmtpMailService(
-            smtp_host=account.smtp_host,
-            smtp_port=account.smtp_port,
-            email_addr=account.email,
-            password=account.get_password(),
-            display_name=account.display_name,
-            use_ssl=account.smtp_use_ssl,
-            use_tls=account.smtp_use_tls,
-            imap_host=account.imap_host,
-            imap_port=account.imap_port,
-            imap_use_ssl=account.imap_use_ssl,
-        )
+        smtp_service = self.get_smtp_service(account)
 
         try:
             smtp_service.send_email(
@@ -1755,6 +1926,285 @@ class MailboxScheduledAttachmentDownloadView(MailboxBaseMixin, View):
         except Exception as e:
             logger.warning(f"[Mailbox] Ошибка отдачи вложения отложенного письма: {e}")
             raise Http404("Вложение не найдено.")
+
+
+class MailboxAdminAccessMixin(MailboxBaseMixin, UserPassesTestMixin):
+    """Миксин проверки прав доступа к управлению корпоративными почтовыми ящиками."""
+
+    def test_func(self) -> bool:
+        """Проверяет наличие прав суперпользователя, персонала или разрешения manage_mailboxes.
+
+        Returns:
+            bool: True, если доступ разрешен.
+        """
+        user = self.request.user
+        return (
+            user.is_authenticated
+            and (user.is_superuser or user.is_staff or user.has_perm("mailbox_app.manage_mailboxes"))
+        )
+
+    def handle_no_permission(self):
+        """Обрабатывает отказ в доступе."""
+        messages.error(self.request, "У вас нет прав для управления корпоративными почтовыми ящиками.")
+        return redirect("mailbox_app:index")
+
+
+class MailboxAdminListView(MailboxAdminAccessMixin, ListView):
+    """Список корпоративных почтовых ящиков для администрирования."""
+
+    template_name = "mailbox_app/admin/mailbox_list.html"
+    context_object_name = "mailboxes"
+    paginate_by = 20
+
+    def get_queryset(self):
+        """Возвращает отфильтрованный список ящиков с подсчетом сотрудников.
+
+        Returns:
+            QuerySet: Список ящиков Mailbox.
+        """
+        from mailbox_app.models import Mailbox
+
+        qs = Mailbox.objects.prefetch_related("users").order_by("name", "email")
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                models.Q(name__icontains=q)
+                | models.Q(email__icontains=q)
+                | models.Q(domain__icontains=q)
+            )
+        status_filter = self.request.GET.get("status")
+        if status_filter == "active":
+            qs = qs.filter(is_active=True)
+        elif status_filter == "inactive":
+            qs = qs.filter(is_active=False)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        """Формирует контекст для страницы администрирования ящиков.
+
+        Returns:
+            dict: Контекст шаблона.
+        """
+        context = super().get_context_data(**kwargs)
+        from mailbox_app.models import Mailbox
+
+        context.update({
+            "title": "УПРАВЛЕНИЕ ПОЧТОВЫМИ ЯЩИКАМИ",
+            "search_query": self.request.GET.get("q", ""),
+            "status_filter": self.request.GET.get("status", "all"),
+            "total_count": Mailbox.objects.count(),
+            "active_count": Mailbox.objects.filter(is_active=True).count(),
+        })
+        return context
+
+
+class MailboxAdminCreateView(MailboxAdminAccessMixin, CreateView):
+    """Создание нового корпоративного почтового ящика."""
+
+    template_name = "mailbox_app/admin/mailbox_form.html"
+    form_class = MailboxAdminForm
+    success_url = reverse_lazy("mailbox_app:mailbox_admin_list")
+
+    def get_context_data(self, **kwargs):
+        """Контекст формы создания ящика.
+
+        Returns:
+            dict: Контекст шаблона.
+        """
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "ДОБАВЛЕНИЕ ПОЧТОВОГО ЯЩИКА",
+            "is_create": True,
+        })
+        return context
+
+    def form_valid(self, form):
+        """Сохраняет ящик и выводит сообщение об успехе.
+
+        Args:
+            form (MailboxAdminForm): Валидированная форма.
+
+        Returns:
+            HttpResponse: Редирект на список ящиков.
+        """
+        response = super().form_valid(form)
+        messages.success(self.request, f"Почтовый ящик «{self.object.name}» ({self.object.email}) успешно создан!")
+        return response
+
+
+class MailboxAdminUpdateView(MailboxAdminAccessMixin, UpdateView):
+    """Редактирование параметров корпоративного почтового ящика."""
+
+    template_name = "mailbox_app/admin/mailbox_form.html"
+    form_class = MailboxAdminForm
+    context_object_name = "mailbox"
+    success_url = reverse_lazy("mailbox_app:mailbox_admin_list")
+
+    def get_queryset(self):
+        """Возвращает queryset редактируемых ящиков."""
+        from mailbox_app.models import Mailbox
+
+        return Mailbox.objects.all()
+
+    def get_context_data(self, **kwargs):
+        """Контекст формы редактирования ящика.
+
+        Returns:
+            dict: Контекст шаблона.
+        """
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": f"РЕДАКТИРОВАНИЕ: {self.object.name}",
+            "is_create": False,
+            "mailbox": self.object,
+        })
+        return context
+
+    def form_valid(self, form):
+        """Сохраняет обновленный ящик и выводит уведомление.
+
+        Args:
+            form (MailboxAdminForm): Валидированная форма.
+
+        Returns:
+            HttpResponse: Редирект на список ящиков.
+        """
+        response = super().form_valid(form)
+        messages.success(self.request, f"Параметры ящика «{self.object.name}» успешно сохранены!")
+        return response
+
+
+class MailboxAdminToggleActiveView(MailboxAdminAccessMixin, View):
+    """Переключение статуса активности почтового ящика."""
+
+    def post(self, request, pk, *args, **kwargs):
+        """Инвертирует признак is_active для ящика.
+
+        Args:
+            request: HTTP-запрос.
+            pk (int): Первичный ключ ящика.
+
+        Returns:
+            HttpResponse: Редирект в список ящиков.
+        """
+        from mailbox_app.models import Mailbox
+
+        mailbox = get_object_or_404(Mailbox, pk=pk)
+        mailbox.is_active = not mailbox.is_active
+        mailbox.save(update_fields=["is_active", "updated_at"])
+        status_text = "активирован" if mailbox.is_active else "деактивирован"
+        messages.info(request, f"Почтовый ящик «{mailbox.name}» {status_text}.")
+        return redirect("mailbox_app:mailbox_admin_list")
+
+
+class MailboxAdminDeleteView(MailboxAdminAccessMixin, View):
+    """Удаление корпоративного почтового ящика."""
+
+    def post(self, request, pk, *args, **kwargs):
+        """Удаляет ящик из базы данных.
+
+        Args:
+            request: HTTP-запрос.
+            pk (int): Первичный ключ ящика.
+
+        Returns:
+            HttpResponse: Редирект в список ящиков.
+        """
+        from mailbox_app.models import Mailbox
+
+        mailbox = get_object_or_404(Mailbox, pk=pk)
+        name = mailbox.name
+        email_addr = mailbox.email
+        mailbox.delete()
+        messages.warning(request, f"Почтовый ящик «{name}» ({email_addr}) удален.")
+        return redirect("mailbox_app:mailbox_admin_list")
+
+
+class MailboxTestConnectionAPIView(MailboxAdminAccessMixin, View):
+    """AJAX API проверки подключения к IMAP и SMTP."""
+
+    def post(self, request, *args, **kwargs):
+        """Выполняет проверку соединения с серверами IMAP и SMTP.
+
+        Args:
+            request: HTTP POST запрос с параметрами подключения.
+
+        Returns:
+            JsonResponse: Результаты проверки с текстовыми отчетами.
+        """
+        import json
+        from mailbox_app.models import Mailbox
+        from mailbox_app.services.connection_test_service import test_full_mailbox_connection
+
+        if request.content_type == "application/json":
+            try:
+                data = json.loads(request.body)
+            except Exception:
+                data = {}
+        else:
+            data = request.POST
+
+        mailbox_id = data.get("mailbox_id")
+        if mailbox_id and str(mailbox_id).isdigit():
+            try:
+                mb = Mailbox.objects.get(id=int(mailbox_id))
+                imap_host = mb.imap_host
+                imap_port = mb.imap_port
+                imap_security = mb.imap_security
+                imap_username = mb.imap_username or mb.email
+                imap_password = mb.get_password()
+                smtp_host = mb.smtp_host
+                smtp_port = mb.smtp_port
+                smtp_security = mb.smtp_security
+                smtp_username = mb.smtp_username or imap_username
+                smtp_password = mb.get_smtp_password()
+            except Mailbox.DoesNotExist:
+                return JsonResponse({"success": False, "message": "Ящик не найден."}, status=404)
+        else:
+            imap_host = data.get("imap_host", "").strip()
+            imap_port = int(data.get("imap_port") or 993)
+            imap_security = data.get("imap_security", "ssl").strip()
+            imap_username = data.get("imap_username", "").strip()
+            imap_password = data.get("imap_password", "").strip()
+            smtp_host = data.get("smtp_host", "").strip()
+            smtp_port = int(data.get("smtp_port") or 465)
+            smtp_security = data.get("smtp_security", "ssl").strip()
+            smtp_username = data.get("smtp_username", "").strip() or imap_username
+            smtp_password = data.get("smtp_password", "").strip() or imap_password
+
+        res = test_full_mailbox_connection(
+            imap_host=imap_host,
+            imap_port=imap_port,
+            imap_security=imap_security,
+            imap_username=imap_username,
+            imap_password=imap_password,
+            smtp_host=smtp_host,
+            smtp_port=smtp_port,
+            smtp_security=smtp_security,
+            smtp_username=smtp_username,
+            smtp_password=smtp_password,
+        )
+        return JsonResponse(res)
+
+
+class MailboxDomainPresetAPIView(MailboxAdminAccessMixin, View):
+    """AJAX API получения параметров подключения по умолчанию для почтового домена."""
+
+    def get(self, request, *args, **kwargs):
+        """Возвращает настройки по умолчанию для домена.
+
+        Args:
+            request: HTTP GET запрос с параметром domain.
+
+        Returns:
+            JsonResponse: Параметры серверов по умолчанию.
+        """
+        from mailbox_app.services.mailbox_defaults import get_domain_defaults
+
+        domain = request.GET.get("domain", "").strip()
+        defaults = get_domain_defaults(domain)
+        return JsonResponse(defaults)
+
 
 
 

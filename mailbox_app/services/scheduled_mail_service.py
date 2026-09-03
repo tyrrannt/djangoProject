@@ -60,9 +60,15 @@ def create_scheduled_email(
         raise ValueError("Время отправки письма должно быть в будущем.")
 
     with transaction.atomic():
+        acc_kw = {}
+        from mailbox_app.models import Mailbox, MailAccount
+        if isinstance(account, Mailbox):
+            acc_kw["mailbox"] = account
+        else:
+            acc_kw["account"] = account
+
         scheduled_email = ScheduledEmail.objects.create(
             user=user,
-            account=account,
             to_recipients=to_recipients.strip(),
             cc_recipients=cc_recipients.strip() if cc_recipients else "",
             bcc_recipients=bcc_recipients.strip() if bcc_recipients else "",
@@ -71,6 +77,7 @@ def create_scheduled_email(
             body_text=body_text or "",
             scheduled_at=scheduled_at,
             status=ScheduledEmail.STATUS_PENDING,
+            **acc_kw,
         )
 
         if uploaded_files:
@@ -138,7 +145,14 @@ def send_single_scheduled_email(scheduled_email_id: int) -> bool:
         scheduled_email.attempts_count += 1
         scheduled_email.save(update_fields=["status", "attempts_count", "updated_at"])
 
-    account = scheduled_email.account
+    account = scheduled_email.get_mail_service_account()
+    if not account:
+        logger.error(f"[ScheduledMail] Для запланированного письма ID={scheduled_email_id} не найден почтовый ящик")
+        scheduled_email.status = ScheduledEmail.STATUS_FAILED
+        scheduled_email.last_error = "Почтовый ящик отправителя не настроен или был удален."
+        scheduled_email.save(update_fields=["status", "last_error", "updated_at"])
+        return False
+
     to_list = scheduled_email.get_recipients_list("to")
     cc_list = scheduled_email.get_recipients_list("cc")
     bcc_list = scheduled_email.get_recipients_list("bcc")
@@ -154,11 +168,12 @@ def send_single_scheduled_email(scheduled_email_id: int) -> bool:
                 f"[ScheduledMail] Ошибка чтения вложения ID={att.id} ({att.filename}): {file_err}"
             )
 
+    account_pass = account.get_smtp_password() if hasattr(account, "get_smtp_password") else account.get_password()
     smtp_service = SmtpMailService(
         smtp_host=account.smtp_host,
         smtp_port=account.smtp_port,
         email_addr=account.email,
-        password=account.get_password(),
+        password=account_pass,
         display_name=account.display_name,
         use_ssl=account.smtp_use_ssl,
         use_tls=account.smtp_use_tls,

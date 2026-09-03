@@ -42,6 +42,14 @@ urlpatterns = [
     ),
     # AJAX API автосохранения и сохранения черновиков
     path("api/draft/save/", views.MailboxSaveDraftAPIView.as_view(), name="api_save_draft"),
+    # Администрирование корпоративных почтовых ящиков
+    path("admin/mailboxes/", views.MailboxAdminListView.as_view(), name="mailbox_admin_list"),
+    path("admin/mailboxes/create/", views.MailboxAdminCreateView.as_view(), name="mailbox_admin_create"),
+    path("admin/mailboxes/<int:pk>/edit/", views.MailboxAdminUpdateView.as_view(), name="mailbox_admin_edit"),
+    path("admin/mailboxes/<int:pk>/toggle/", views.MailboxAdminToggleActiveView.as_view(), name="mailbox_admin_toggle"),
+    path("admin/mailboxes/<int:pk>/delete/", views.MailboxAdminDeleteView.as_view(), name="mailbox_admin_delete"),
+    path("api/mailbox/test-connection/", views.MailboxTestConnectionAPIView.as_view(), name="api_mailbox_test_connection"),
+    path("api/mailbox/domain-defaults/", views.MailboxDomainPresetAPIView.as_view(), name="api_mailbox_domain_defaults"),
     # Просмотр конкретной папки (жадный path:folder)
     path("folder/<path:folder>/", views.MailboxFolderView.as_view(), name="folder"),
     # AJAX API действий (прочитано, удаление, звездочка)

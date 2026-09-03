@@ -1,0 +1,471 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    {{ title }} — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-bs4.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}" />
+    <style>
+        .form-section-header {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .preset-pill {
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px 9px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .preset-pill:hover {
+            background: #0088cc;
+            color: #ffffff;
+            border-color: #0088cc;
+        }
+        .preset-pill.active {
+            background: #0088cc;
+            color: #ffffff;
+            border-color: #0088cc;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основная область формы -->
+            <div class="inner-body mailbox-settings">
+                <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
+                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
+                <div class="mailbox-settings-container" style="max-width: 1000px;">
+                    <!-- Шапка формы -->
+                    <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                            </button>
+                            <h4 class="mailbox-page-title m-0 d-flex align-items-center gap-2">
+                                <i class="bx bx-briefcase-alt-2 text-primary"></i>
+                                <span>{{ title }}</span>
+                            </h4>
+                        </div>
+                        <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                            <i class="bx bx-arrow-back font-size-16"></i> <span class="d-none d-sm-inline">К списку ящиков</span>
+                        </a>
+                    </header>
+
+                    <form method="post" id="mailboxAdminForm" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger py-2 px-3 mb-4 font-size-13">
+                                <strong>Пожалуйста, исправьте следующие ошибки:</strong>
+                                <ul class="mb-0 mt-1">
+                                    {% for field, errors in form.errors.items %}
+                                        <li>{{ field }}: {{ errors|join:", " }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <!-- Блок 1: Основные сведения -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-info-circle text-primary font-size-18"></i>
+                                    <span>Основные сведения</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label fw-bold font-size-13">Наименование ящика <span class="text-danger">*</span></label>
+                                        {{ form.name }}
+                                        <small class="text-muted font-size-11">Отображается на вкладке ящика, например «Отдел кадров» или «Приёмная»</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label fw-bold font-size-13">Почтовый адрес (Email) <span class="text-danger">*</span></label>
+                                        {{ form.email }}
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label fw-bold font-size-13">Домен ящика</label>
+                                        {{ form.domain }}
+                                        <div class="d-flex align-items-center gap-1 mt-2 flex-wrap">
+                                            <span class="text-muted font-size-11 me-1">Пресеты:</span>
+                                            <span class="preset-pill" onclick="applyDomainPreset('barkol.ru')">barkol.ru</span>
+                                            <span class="preset-pill" onclick="applyDomainPreset('yandex.ru')">yandex.ru</span>
+                                            <span class="preset-pill" onclick="applyDomainPreset('mail.ru')">mail.ru</span>
+                                            <span class="preset-pill" onclick="applyDomainPreset('gmail.com')">gmail.com</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label fw-bold font-size-13">Имя отправителя (From)</label>
+                                        {{ form.display_name }}
+                                        <small class="text-muted font-size-11">Если не заполнено, будет использоваться наименование ящика</small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold font-size-13">Описание / Назначение</label>
+                                        {{ form.description }}
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check form-switch mt-2">
+                                            {{ form.is_active }}
+                                            <label class="form-check-label fw-semibold font-size-13" for="{{ form.is_active.id_for_label }}">
+                                                Ящик активен (доступен для работы сотрудникам)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 2: Входящая почта (IMAP) -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-download text-primary font-size-18"></i>
+                                    <span>Входящая почта (IMAP)</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label fw-bold font-size-13">Протокол</label>
+                                        {{ form.incoming_protocol }}
+                                    </div>
+
+                                    <div class="col-12 col-md-5">
+                                        <label class="form-label fw-bold font-size-13">Сервер IMAP <span class="text-danger">*</span></label>
+                                        {{ form.imap_host }}
+                                    </div>
+
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label fw-bold font-size-13">Порт IMAP</label>
+                                        {{ form.imap_port }}
+                                    </div>
+
+                                    <div class="col-6 col-md-4">
+                                        <label class="form-label fw-bold font-size-13">Шифрование IMAP</label>
+                                        {{ form.imap_security }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label fw-bold font-size-13">Логин IMAP</label>
+                                        {{ form.imap_username }}
+                                        <small class="text-muted font-size-11">Обычно совпадает с полным email</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label fw-bold font-size-13">Пароль IMAP</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.raw_imap_password }}
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_imap_password', this)">
+                                                <i class="bx bx-show"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted font-size-11">{{ form.raw_imap_password.help_text }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 3: Исходящая почта (SMTP) -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-send text-primary font-size-18"></i>
+                                    <span>Исходящая почта (SMTP)</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label fw-bold font-size-13">Сервер SMTP <span class="text-danger">*</span></label>
+                                        {{ form.smtp_host }}
+                                    </div>
+
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label fw-bold font-size-13">Порт SMTP</label>
+                                        {{ form.smtp_port }}
+                                    </div>
+
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label fw-bold font-size-13">Шифрование SMTP</label>
+                                        {{ form.smtp_security }}
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check form-switch my-1">
+                                            {{ form.smtp_same_as_imap }}
+                                            <label class="form-check-label fw-semibold font-size-13" for="{{ form.smtp_same_as_imap.id_for_label }}">
+                                                Логин и пароль SMTP совпадают с IMAP
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 smtp-custom-auth-field {% if form.smtp_same_as_imap.value %}d-none{% endif %}">
+                                        <label class="form-label fw-bold font-size-13">Логин SMTP</label>
+                                        {{ form.smtp_username }}
+                                    </div>
+
+                                    <div class="col-12 col-md-6 smtp-custom-auth-field {% if form.smtp_same_as_imap.value %}d-none{% endif %}">
+                                        <label class="form-label fw-bold font-size-13">Пароль SMTP</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.raw_smtp_password }}
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_smtp_password', this)">
+                                                <i class="bx bx-show"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted font-size-11">{{ form.raw_smtp_password.help_text }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 4: Назначение сотрудников с доступом (Many-to-Many) -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-user-check text-primary font-size-18"></i>
+                                    <span>Сотрудники с доступом (Many-to-Many)</span>
+                                </div>
+
+                                <p class="text-muted font-size-12 mb-3">
+                                    Выберите одного или нескольких сотрудников, которым будет предоставлен доступ к данному ящику.
+                                    У выбранных сотрудников ящик появится в виде отдельной вкладки в корпоративной почте.
+                                </p>
+
+                                <div class="mb-2">
+                                    {{ form.users }}
+                                </div>
+                                <small class="text-muted font-size-11">
+                                    Удерживайте Ctrl (или Cmd на Mac) для выбора нескольких сотрудников.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Блок 5: Подпись к письмам -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-pen text-primary font-size-18"></i>
+                                    <span>Подпись к письмам (HTML)</span>
+                                </div>
+
+                                <div class="mb-2">
+                                    {{ form.signature_html }}
+                                </div>
+                                <small class="text-muted font-size-11">
+                                    Индивидуальная подпись, которая автоматически добавляется к новым письмам, отправляемым с этого адреса.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Блок живой проверки подключения -->
+                        <div id="liveTestBanner" class="alert d-none py-3 px-3 mb-4 font-size-13 shadow-sm border" style="border-radius: 8px;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span id="liveTestIcon" class="font-size-18"></span>
+                                <strong id="liveTestTitle"></strong>
+                            </div>
+                            <div id="liveTestImap" class="font-size-12 mt-1"></div>
+                            <div id="liveTestSmtp" class="font-size-12 mt-1"></div>
+                        </div>
+
+                        <!-- Панель кнопок сохранения и проверки -->
+                        <div class="d-flex align-items-center justify-content-between pt-3 pb-5 flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm">
+                                    <i class="bx bx-check font-size-18"></i>
+                                    <span>{% if is_create %}Создать почтовый ящик{% else %}Сохранить изменения{% endif %}</span>
+                                </button>
+                                <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary px-3 py-2">
+                                    Отмена
+                                </a>
+                            </div>
+
+                            <button type="button" id="btnTestConnForm" class="btn btn-outline-info px-3 py-2 d-flex align-items-center gap-1 shadow-sm" onclick="runLiveConnectionTest()">
+                                <i class="bx bx-wifi font-size-18"></i>
+                                <span>Проверить подключение</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Скрипты управления формой -->
+    <script src="{% static 'admin_templates/vendor/summernote/summernote-bs4.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            // Инициализация Summernote для подписи
+            $('.summernote-signature').summernote({
+                height: 120,
+                placeholder: 'Введите подпись подразделения / сотрудника...',
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link']],
+                    ['view', ['codeview']]
+                ]
+            });
+
+            // Инициализация Select2 для сотрудников
+            $('.select2-users').select2({
+                placeholder: "Выберите сотрудников с доступом...",
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap'
+            });
+
+            // Переключатель "Совпадает с IMAP"
+            $('#id_smtp_same_as_imap').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('.smtp-custom-auth-field').addClass('d-none');
+                } else {
+                    $('.smtp-custom-auth-field').removeClass('d-none');
+                }
+            });
+
+            // Автоопределение домена при вводе email
+            $('#id_email').on('input', function() {
+                var emailVal = $(this).val().trim();
+                if (emailVal.indexOf('@') !== -1) {
+                    var domainPart = emailVal.split('@')[1].trim().toLowerCase();
+                    if (domainPart && !$('#id_domain').val()) {
+                        $('#id_domain').val(domainPart);
+                    }
+                }
+            });
+        });
+
+        // Показать/скрыть пароль
+        function togglePasswordVisibility(fieldId, btn) {
+            var input = document.getElementById(fieldId);
+            if (input.type === "password") {
+                input.type = "text";
+                btn.innerHTML = '<i class="bx bx-hide"></i>';
+            } else {
+                input.type = "password";
+                btn.innerHTML = '<i class="bx bx-show"></i>';
+            }
+        }
+
+        // Применение пресетов доменов
+        function applyDomainPreset(domainName) {
+            $('#id_domain').val(domainName);
+            fetch("{% url 'mailbox_app:api_mailbox_domain_defaults' %}?domain=" + encodeURIComponent(domainName))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.imap_host) $('#id_imap_host').val(data.imap_host);
+                    if (data.imap_port) $('#id_imap_port').val(data.imap_port);
+                    if (data.imap_security) $('#id_imap_security').val(data.imap_security);
+                    if (data.smtp_host) $('#id_smtp_host').val(data.smtp_host);
+                    if (data.smtp_port) $('#id_smtp_port').val(data.smtp_port);
+                    if (data.smtp_security) $('#id_smtp_security').val(data.smtp_security);
+                })
+                .catch(err => console.error("Ошибка загрузки пресета:", err));
+        }
+
+        // Живая проверка подключения из полей формы
+        function runLiveConnectionTest() {
+            var btn = document.getElementById('btnTestConnForm');
+            var banner = document.getElementById('liveTestBanner');
+            var icon = document.getElementById('liveTestIcon');
+            var title = document.getElementById('liveTestTitle');
+            var imapDiv = document.getElementById('liveTestImap');
+            var smtpDiv = document.getElementById('liveTestSmtp');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Проверка...';
+
+            banner.className = 'alert alert-info py-3 px-3 mb-4 font-size-13 shadow-sm border';
+            banner.classList.remove('d-none');
+            icon.innerHTML = '<i class="bx bx-loader bx-spin text-primary"></i>';
+            title.textContent = 'Выполняется тестирование подключения...';
+            imapDiv.textContent = 'Подключение к IMAP: проверка...';
+            smtpDiv.textContent = 'Подключение к SMTP: проверка...';
+
+            var payload = {
+                imap_host: $('#id_imap_host').val().trim(),
+                imap_port: $('#id_imap_port').val().trim(),
+                imap_security: $('#id_imap_security').val(),
+                imap_username: $('#id_imap_username').val().trim() || $('#id_email').val().trim(),
+                imap_password: $('#id_imap_password').val(),
+                smtp_host: $('#id_smtp_host').val().trim(),
+                smtp_port: $('#id_smtp_port').val().trim(),
+                smtp_security: $('#id_smtp_security').val(),
+                smtp_username: $('#id_smtp_same_as_imap').is(':checked') ? ($('#id_imap_username').val().trim() || $('#id_email').val().trim()) : $('#id_smtp_username').val().trim(),
+                smtp_password: $('#id_smtp_same_as_imap').is(':checked') ? $('#id_imap_password').val() : $('#id_smtp_password').val()
+            };
+
+            fetch("{% url 'mailbox_app:api_mailbox_test_connection' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-wifi font-size-18"></i> <span>Проверить подключение</span>';
+
+                if (data.success) {
+                    banner.className = 'alert alert-success py-3 px-3 mb-4 font-size-13 shadow-sm border border-success';
+                    icon.innerHTML = '<i class="bx bx-check-circle text-success font-size-20"></i>';
+                    title.textContent = 'Подключение успешно установлено!';
+                } else {
+                    banner.className = 'alert alert-warning py-3 px-3 mb-4 font-size-13 shadow-sm border border-warning';
+                    icon.innerHTML = '<i class="bx bx-error-circle text-warning font-size-20"></i>';
+                    title.textContent = 'Обнаружены проблемы при подключении:';
+                }
+
+                imapDiv.innerHTML = `<strong>IMAP:</strong> ${data.imap_ok ? '<span class="text-success">OK</span>' : '<span class="text-danger">Ошибка</span>'} — ${data.imap_message}`;
+                smtpDiv.innerHTML = `<strong>SMTP:</strong> ${data.smtp_ok ? '<span class="text-success">OK</span>' : '<span class="text-danger">Ошибка</span>'} — ${data.smtp_message}`;
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-wifi font-size-18"></i> <span>Проверить подключение</span>';
+                banner.className = 'alert alert-danger py-3 px-3 mb-4 font-size-13 shadow-sm border';
+                icon.innerHTML = '<i class="bx bx-x-circle text-danger font-size-20"></i>';
+                title.textContent = 'Ошибка выполнения запроса: ' + err;
+            });
+        }
+    </script>
+{% endblock %}

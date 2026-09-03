@@ -13,10 +13,10 @@
 
                 <!-- Информация об активном ящике -->
                 <div class="mailbox-user-card">
-                    <div class="user-name text-truncate" title="{{ account.display_name|default:account.email }}">
-                        <i class="bx bx-user me-1 text-primary"></i> {{ account.display_name|default:account.email }}
+                    <div class="user-name text-truncate" title="{% if account %}{{ account.display_name|default:account.email }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}">
+                        <i class="bx bx-user me-1 text-primary"></i> {% if account %}{{ account.display_name|default:account.email }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}
                     </div>
-                    <div class="user-email text-truncate mt-1">{{ account.email }}</div>
+                    <div class="user-email text-truncate mt-1">{% if account %}{{ account.email }}{% else %}{{ request.user.email|default:"Корпоративная почта" }}{% endif %}</div>
                 </div>
 
                 <!-- Заголовок секции папок -->
@@ -72,6 +72,11 @@
 
                 <!-- Настройки ящика и диагностика -->
                 <div class="d-flex flex-column gap-1">
+                    {% if can_manage_mailboxes %}
+                        <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="mailbox-settings-link text-primary fw-semibold">
+                            <i class="bx bx-briefcase-alt-2 font-size-18"></i> Управление ящиками
+                        </a>
+                    {% endif %}
                     <a href="{% url 'mailbox_app:settings' %}" class="mailbox-settings-link">
                         <i class="bx bx-cog font-size-18"></i> Настройки и подпись
                     </a>
@@ -95,9 +100,9 @@
             </div>
             <div class="overflow-hidden">
                 <h6 class="offcanvas-title fw-bold text-dark m-0 text-truncate" id="mailboxMobileDrawerLabel">
-                    {{ account.display_name|default:"Корпоративная почта" }}
+                    {% if account %}{{ account.display_name|default:account.email }}{% else %}{{ request.user.get_full_name|default:"Корпоративная почта" }}{% endif %}
                 </h6>
-                <small class="text-muted text-truncate d-block" style="font-size: 12px;">{{ account.email }}</small>
+                <small class="text-muted text-truncate d-block" style="font-size: 12px;">{% if account %}{{ account.email }}{% else %}{{ request.user.email|default:"" }}{% endif %}</small>
             </div>
         </div>
         <button type="button" class="btn-close text-reset shadow-none" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
@@ -150,6 +155,11 @@
         </div>
 
         <div class="border-top pt-3 d-flex flex-column gap-2">
+            {% if can_manage_mailboxes %}
+                <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-semibold" style="border-radius: 8px;">
+                    <i class="bx bx-briefcase-alt-2 font-size-18"></i> Управление ящиками
+                </a>
+            {% endif %}
             <a href="{% url 'mailbox_app:settings' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px;">
                 <i class="bx bx-cog font-size-18"></i> Настройки и подпись
             </a>

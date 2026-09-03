@@ -25,6 +25,9 @@
 
             <!-- Форма написания письма -->
             <div class="inner-body mailbox-compose">
+                <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
+                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
                 <div class="mailbox-compose-container">
                     <header class="mailbox-compose-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">

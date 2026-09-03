@@ -24,6 +24,9 @@
 
             <!-- Основная область списка писем -->
             <div class="inner-body mailbox-folder">
+                <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
+                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
                 <!-- Шапка папки и поиск (Thunderbird Mobile App Bar) -->
                 <header class="mailbox-header-bar">
                     <div class="d-flex align-items-center justify-content-between gap-2 w-100 flex-wrap">

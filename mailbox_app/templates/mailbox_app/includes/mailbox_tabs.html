@@ -1,0 +1,42 @@
+{% load static %}
+
+{% if available_mailboxes %}
+<!-- Полоса вкладок почтовых ящиков в стиле Thunderbird -->
+<div class="mailbox-tabs-bar-wrapper">
+    <div class="mailbox-tabs-container d-flex align-items-center justify-content-between">
+        <nav class="mailbox-tabs-scroll" id="mailboxTabsScroll" aria-label="Почтовые ящики">
+            {% for mb in available_mailboxes %}
+                <a href="{% url 'mailbox_app:folder' folder='INBOX' %}?mailbox={{ mb.id }}"
+                   class="mailbox-tab-item {% if mb.is_current %}active{% endif %}"
+                   title="{{ mb.name }} ({{ mb.email }})">
+                    <div class="mailbox-tab-icon">
+                        {% if mb.is_primary %}
+                            <i class="bx bx-user-circle"></i>
+                        {% else %}
+                            <i class="bx bx-briefcase-alt-2"></i>
+                        {% endif %}
+                    </div>
+                    <div class="mailbox-tab-info">
+                        <span class="mailbox-tab-title text-truncate">{{ mb.name }}</span>
+                        <span class="mailbox-tab-email text-truncate">{{ mb.email }}</span>
+                    </div>
+                    {% if mb.is_current %}
+                        <span class="mailbox-tab-active-dot" title="Активный почтовый ящик"></span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </nav>
+
+        {% if can_manage_mailboxes %}
+            <div class="mailbox-tabs-actions ms-2 flex-shrink-0 d-flex align-items-center mb-1">
+                <a href="{% url 'mailbox_app:mailbox_admin_list' %}"
+                   class="btn btn-outline-secondary btn-sm mailbox-manage-btn d-inline-flex align-items-center gap-1 shadow-none"
+                   title="Управление корпоративными почтовыми ящиками">
+                    <i class="bx bx-cog font-size-15"></i>
+                    <span class="d-none d-md-inline">Управление ящиками</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

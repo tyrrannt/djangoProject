@@ -3,12 +3,12 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
-from mailbox_app.models import MailAccount
+from mailbox_app.models import MailAccount, Mailbox
 
 
 @admin.register(MailAccount)
 class MailAccountAdmin(ModelAdmin):
-    """Административное представление почтовых ящиков сотрудников."""
+    """Административное представление персональных почтовых ящиков сотрудников."""
 
     list_display = (
         "user",
@@ -72,3 +72,90 @@ class MailAccountAdmin(ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(Mailbox)
+class MailboxAdmin(ModelAdmin):
+    """Административное представление корпоративных и дополнительных почтовых ящиков."""
+
+    list_display = (
+        "name",
+        "email",
+        "domain",
+        "imap_host",
+        "smtp_host",
+        "is_active",
+        "updated_at",
+    )
+    search_fields = (
+        "name",
+        "email",
+        "domain",
+        "description",
+    )
+    list_filter = (
+        "is_active",
+        "incoming_protocol",
+        "imap_security",
+        "smtp_security",
+    )
+    filter_horizontal = ("users",)
+    readonly_fields = ("created_at", "updated_at")
+
+    fieldsets = (
+        (
+            "Основная информация",
+            {
+                "fields": (
+                    "name",
+                    "email",
+                    "domain",
+                    "display_name",
+                    "description",
+                    "is_active",
+                )
+            },
+        ),
+        (
+            "Доступ сотрудников",
+            {
+                "fields": ("users",),
+            },
+        ),
+        (
+            "Параметры входящей почты (IMAP)",
+            {
+                "fields": (
+                    "incoming_protocol",
+                    "imap_host",
+                    "imap_port",
+                    "imap_security",
+                    "imap_username",
+                    "encrypted_imap_password",
+                )
+            },
+        ),
+        (
+            "Параметры исходящей почты (SMTP)",
+            {
+                "fields": (
+                    "smtp_host",
+                    "smtp_port",
+                    "smtp_security",
+                    "smtp_username",
+                    "encrypted_smtp_password",
+                )
+            },
+        ),
+        (
+            "Подпись и метаданные",
+            {
+                "fields": (
+                    "signature_html",
+                    "created_at",
+                    "updated_at",
+                )
+            },
+        ),
+    )
+

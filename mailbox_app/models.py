@@ -161,6 +161,281 @@ class MailContact(models.Model):
         return f"{self.name} <{self.email}>" if self.name else self.email
 
 
+class Mailbox(models.Model):
+    """Модель корпоративного или дополнительного почтового ящика.
+
+    Представляет собой самостоятельную сущность почтового ящика (отделы, службы,
+    общие адреса, внешние ящики), к которому может быть предоставлен доступ
+    произвольному набору сотрудников (отношение многие-ко-многим).
+
+    Attributes:
+        name (CharField): Наименование ящика (например, 'Отдел кадров').
+        email (EmailField): Корпоративный email адрес.
+        domain (CharField): Домен почтового адреса (например, 'barkol.ru').
+        description (TextField): Описание и назначение ящика.
+        is_active (BooleanField): Признак активности.
+        incoming_protocol (CharField): Протокол входящей почты ('imap' или 'pop3').
+        imap_host (CharField): Сервер IMAP.
+        imap_port (IntegerField): Порт IMAP.
+        imap_security (CharField): Тип шифрования IMAP ('ssl', 'starttls', 'plain').
+        imap_username (CharField): Логин IMAP.
+        encrypted_imap_password (CharField): Зашифрованный пароль IMAP.
+        smtp_host (CharField): Сервер SMTP.
+        smtp_port (IntegerField): Порт SMTP.
+        smtp_security (CharField): Тип шифрования SMTP ('ssl', 'starttls', 'plain').
+        smtp_username (CharField): Логин SMTP.
+        encrypted_smtp_password (CharField): Зашифрованный пароль SMTP.
+        display_name (CharField): Имя отправителя для поля From.
+        signature_html (TextField): HTML-подпись к письмам.
+        users (ManyToManyField): Сотрудники, имеющие доступ к ящику.
+        created_at (DateTimeField): Дата создания.
+        updated_at (DateTimeField): Дата обновления.
+    """
+
+    PROTOCOL_IMAP = "imap"
+    PROTOCOL_POP3 = "pop3"
+    PROTOCOL_CHOICES = [
+        (PROTOCOL_IMAP, "IMAP"),
+        (PROTOCOL_POP3, "POP3"),
+    ]
+
+    SECURITY_SSL = "ssl"
+    SECURITY_STARTTLS = "starttls"
+    SECURITY_PLAIN = "plain"
+    SECURITY_CHOICES = [
+        (SECURITY_SSL, "SSL/TLS"),
+        (SECURITY_STARTTLS, "STARTTLS"),
+        (SECURITY_PLAIN, "Без шифрования"),
+    ]
+
+    class Meta:
+        verbose_name = "Корпоративный почтовый ящик"
+        verbose_name_plural = "Корпоративные почтовые ящики"
+        ordering = ["name", "email"]
+        permissions = [
+            ("manage_mailboxes", "Может управлять общими и корпоративными почтовыми ящиками"),
+        ]
+
+    name = models.CharField(
+        verbose_name="Наименование ящика",
+        max_length=255,
+        help_text="Например: 'Отдел кадров', 'Приёмная', 'Бухгалтерия'",
+    )
+    email = models.EmailField(
+        verbose_name="Почтовый адрес (Email)",
+        max_length=255,
+        unique=True,
+    )
+    domain = models.CharField(
+        verbose_name="Домен",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Определяется автоматически из адреса, например: barkol.ru",
+    )
+    description = models.TextField(
+        verbose_name="Описание / Назначение",
+        blank=True,
+        default="",
+    )
+    is_active = models.BooleanField(
+        verbose_name="Активен",
+        default=True,
+    )
+
+    # Параметры входящей почты
+    incoming_protocol = models.CharField(
+        verbose_name="Протокол входящей почты",
+        max_length=10,
+        choices=PROTOCOL_CHOICES,
+        default=PROTOCOL_IMAP,
+    )
+    imap_host = models.CharField(
+        verbose_name="Сервер IMAP",
+        max_length=255,
+        default="imap.barkol.ru",
+    )
+    imap_port = models.IntegerField(
+        verbose_name="Порт IMAP",
+        default=993,
+    )
+    imap_security = models.CharField(
+        verbose_name="Шифрование IMAP",
+        max_length=10,
+        choices=SECURITY_CHOICES,
+        default=SECURITY_SSL,
+    )
+    imap_username = models.CharField(
+        verbose_name="Логин IMAP",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Если не указан, используется полный email",
+    )
+    encrypted_imap_password = models.CharField(
+        verbose_name="Зашифрованный пароль IMAP",
+        max_length=512,
+        blank=True,
+        default="",
+    )
+
+    # Параметры исходящей почты (SMTP)
+    smtp_host = models.CharField(
+        verbose_name="Сервер SMTP",
+        max_length=255,
+        default="sm.barkol.ru",
+    )
+    smtp_port = models.IntegerField(
+        verbose_name="Порт SMTP",
+        default=465,
+    )
+    smtp_security = models.CharField(
+        verbose_name="Шифрование SMTP",
+        max_length=10,
+        choices=SECURITY_CHOICES,
+        default=SECURITY_SSL,
+    )
+    smtp_username = models.CharField(
+        verbose_name="Логин SMTP",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Если не указан, используется логин IMAP или email",
+    )
+    encrypted_smtp_password = models.CharField(
+        verbose_name="Зашифрованный пароль SMTP",
+        max_length=512,
+        blank=True,
+        default="",
+        help_text="Если не указан, используется пароль входящей почты",
+    )
+
+    display_name = models.CharField(
+        verbose_name="Имя отправителя",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Имя в поле 'От кого' (From). Если пусто, берется наименование ящика",
+    )
+    signature_html = models.TextField(
+        verbose_name="Подпись к письмам (HTML)",
+        blank=True,
+        default="",
+    )
+
+    users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="accessible_mailboxes",
+        blank=True,
+        verbose_name="Сотрудники с доступом",
+        help_text="Сотрудники, которым разрешена работа с данным почтовым ящиком",
+    )
+
+    created_at = models.DateTimeField(verbose_name="Создан", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Обновлен", auto_now=True)
+
+    def __str__(self) -> str:
+        """Строковое представление ящика.
+
+        Returns:
+            str: Название и email.
+        """
+        return f"{self.name} <{self.email}>"
+
+    def save(self, *args, **kwargs) -> None:
+        """Автоматически нормализует домен, логины и отображаемое имя перед сохранением."""
+        if "@" in self.email:
+            self.email = self.email.strip().lower()
+            if not self.domain:
+                self.domain = self.email.split("@")[1].strip().lower()
+        if not self.imap_username:
+            self.imap_username = self.email
+        if not self.smtp_username:
+            self.smtp_username = self.imap_username
+        if not self.display_name:
+            self.display_name = self.name
+        super().save(*args, **kwargs)
+
+    @property
+    def password(self) -> str:
+        """Расшифровывает и возвращает пароль входящей почты.
+
+        Returns:
+            str: Пароль в открытом виде.
+        """
+        return decrypt_password(self.encrypted_imap_password)
+
+    @password.setter
+    def password(self, raw_pass: str) -> None:
+        """Шифрует и сохраняет пароль входящей почты.
+
+        Args:
+            raw_pass (str): Пароль в открытом виде.
+        """
+        self.encrypted_imap_password = encrypt_password(raw_pass)
+
+    def set_password(self, raw_pass: str) -> None:
+        """Шифрует и сохраняет пароль входящей почты.
+
+        Args:
+            raw_pass (str): Исходный пароль.
+        """
+        self.encrypted_imap_password = encrypt_password(raw_pass)
+
+    def get_password(self) -> str:
+        """Возвращает расшифрованный пароль входящей почты.
+
+        Returns:
+            str: Пароль в открытом виде.
+        """
+        return decrypt_password(self.encrypted_imap_password)
+
+    def set_smtp_password(self, raw_pass: str) -> None:
+        """Шифрует и сохраняет пароль исходящей почты SMTP.
+
+        Args:
+            raw_pass (str): Исходный пароль.
+        """
+        self.encrypted_smtp_password = encrypt_password(raw_pass)
+
+    def get_smtp_password(self) -> str:
+        """Возвращает расшифрованный пароль SMTP (с fallback на пароль IMAP).
+
+        Returns:
+            str: Пароль в открытом виде.
+        """
+        if self.encrypted_smtp_password:
+            return decrypt_password(self.encrypted_smtp_password)
+        return self.get_password()
+
+    @property
+    def imap_use_ssl(self) -> bool:
+        """Флаг использования SSL для IMAP.
+
+        Returns:
+            bool: True, если тип шифрования SSL.
+        """
+        return self.imap_security == self.SECURITY_SSL
+
+    @property
+    def smtp_use_ssl(self) -> bool:
+        """Флаг использования SSL для SMTP.
+
+        Returns:
+            bool: True, если тип шифрования SSL.
+        """
+        return self.smtp_security == self.SECURITY_SSL
+
+    @property
+    def smtp_use_tls(self) -> bool:
+        """Флаг использования STARTTLS для SMTP.
+
+        Returns:
+            bool: True, если тип шифрования STARTTLS.
+        """
+        return self.smtp_security == self.SECURITY_STARTTLS
+
+
 class ScheduledEmail(models.Model):
     """Модель отложенного письма для отправки по расписанию.
 
@@ -169,7 +444,8 @@ class ScheduledEmail(models.Model):
 
     Attributes:
         user (ForeignKey): Пользователь, создавший отложенное письмо.
-        account (ForeignKey): Почтовый ящик, с которого будет производиться отправка.
+        account (ForeignKey): Персональный почтовый ящик автора.
+        mailbox (ForeignKey): Корпоративный или дополнительный почтовый ящик.
         to_recipients (TextField): Получатели письма (email через запятую).
         cc_recipients (TextField): Адреса в копии письма (Cc).
         bcc_recipients (TextField): Адреса в скрытой копии (Bcc).
@@ -219,7 +495,17 @@ class ScheduledEmail(models.Model):
         MailAccount,
         on_delete=models.CASCADE,
         related_name="scheduled_emails",
-        verbose_name="Почтовый ящик",
+        verbose_name="Почтовый ящик (персональный)",
+        null=True,
+        blank=True,
+    )
+    mailbox = models.ForeignKey(
+        Mailbox,
+        on_delete=models.CASCADE,
+        related_name="scheduled_emails",
+        verbose_name="Корпоративный ящик",
+        null=True,
+        blank=True,
     )
     to_recipients = models.TextField(
         verbose_name="Получатели (Кому)",
@@ -358,6 +644,24 @@ class ScheduledEmail(models.Model):
             bool: True, если статус pending или failed.
         """
         return self.status in (self.STATUS_PENDING, self.STATUS_FAILED)
+
+    def get_mail_service_account(self):
+        """Возвращает активный объект ящика для отправки (Mailbox или MailAccount).
+
+        Returns:
+            Mailbox | MailAccount: Объект ящика для подключения к почтовым сервисам.
+        """
+        return self.mailbox or self.account
+
+    @property
+    def sender_email(self) -> str:
+        """Возвращает адрес отправителя.
+
+        Returns:
+            str: Корпоративный email ящика.
+        """
+        acc = self.get_mail_service_account()
+        return acc.email if acc else ""
 
     def __str__(self) -> str:
         """Строковое представление запланированного письма.
