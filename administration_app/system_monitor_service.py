@@ -46,38 +46,114 @@ def format_uptime(uptime_seconds: int) -> str:
     return " ".join(parts)
 
 
+# Глобальное состояние для непрерывного вычисления сетевой скорости между замерами
+_LAST_NET_IO: Dict[str, Any] = {
+    "bytes_sent": None,
+    "bytes_recv": None,
+    "timestamp": None,
+    "speed_sent_kb": 0.0,
+    "speed_recv_kb": 0.0,
+}
+
+
+def get_hardware_environment() -> Dict[str, Any]:
+    """Определяет физическую или виртуальную среду исполнения (KVM, Proxmox, Bare Metal) и параметры процессора.
+
+    Returns:
+        Dict[str, Any]: Словарь с признаками виртуализации (is_virtual), типом среды (virt_type)
+        и текущей частотой vCPU в ГГц (cpu_freq_ghz).
+    """
+    is_virtual = False
+    virt_type = "Физический сервер"
+    cpu_freq_ghz = 2.80
+
+    # Проверка аппаратных DMI-дескрипторов
+    try:
+        if os.path.exists("/sys/class/dmi/id/product_name"):
+            with open("/sys/class/dmi/id/product_name", "r") as f:
+                prod = f.read().strip()
+                if prod in ("KVM", "Bochs", "QEMU", "VirtualBox", "VMware Virtual Platform"):
+                    is_virtual = True
+                    virt_type = "KVM (Proxmox VE)" if prod == "KVM" else prod
+    except Exception:
+        pass
+
+    if not is_virtual:
+        try:
+            with open("/proc/cpuinfo", "r") as f:
+                cpuinfo = f.read()
+                if "hypervisor" in cpuinfo:
+                    is_virtual = True
+                    virt_type = "KVM (Proxmox VE)"
+        except Exception:
+            pass
+
+    # Считывание тактовой частоты процессора (МГц -> ГГц)
+    try:
+        with open("/proc/cpuinfo", "r") as f:
+            for line in f:
+                if "cpu MHz" in line:
+                    mhz = float(line.split(":")[1].strip())
+                    cpu_freq_ghz = round(mhz / 1000, 2)
+                    break
+    except Exception:
+        pass
+
+    return {
+        "is_virtual": is_virtual,
+        "virt_type": virt_type,
+        "cpu_freq_ghz": cpu_freq_ghz,
+    }
+
+
 def get_cpu_temperature() -> Optional[float]:
     """Безопасно определяет текущую температуру центрального процессора.
 
     Поддерживает сенсоры физических процессоров Intel ('coretemp'), AMD ('k10temp'),
-    ARM ('cpu_thermal', 'soc_thermal') и системные сенсоры ACPI. На виртуальных машинах
-    без проброшенных термодатчиков возвращает None без генерации исключений.
+    ARM ('cpu_thermal', 'soc_thermal') и системные сенсоры ACPI. Также проверяет прямые
+    файлы sysfs (/sys/class/thermal/ и /sys/class/hwmon/). На виртуальных машинах (KVM/Proxmox)
+    без проброшенных физических датчиков возвращает None.
 
     Returns:
         Optional[float]: Температура в градусах Цельсия или None при отсутствии датчиков.
     """
-    if os.name != "posix" or not hasattr(psutil, "sensors_temperatures"):
+    if os.name != "posix":
         return None
 
+    # 1. Опрос psutil.sensors_temperatures
+    if hasattr(psutil, "sensors_temperatures"):
+        try:
+            temps = psutil.sensors_temperatures()
+            if temps:
+                sensor_priorities = ["coretemp", "k10temp", "cpu_thermal", "soc_thermal", "acpitz"]
+                for sensor_name in sensor_priorities:
+                    if sensor_name in temps and temps[sensor_name]:
+                        entry = temps[sensor_name][0]
+                        if entry.current is not None and entry.current > 0:
+                            return round(float(entry.current), 1)
+
+                for entries in temps.values():
+                    if entries and entries[0].current is not None and entries[0].current > 0:
+                        return round(float(entries[0].current), 1)
+        except Exception:
+            pass
+
+    # 2. Прямой поиск в sysfs /sys/class/thermal/thermal_zone*/temp
     try:
-        temps = psutil.sensors_temperatures()
-        if not temps:
-            return None
-
-        # Проверяем популярные сенсоры
-        sensor_priorities = ["coretemp", "k10temp", "cpu_thermal", "soc_thermal", "acpitz"]
-        for sensor_name in sensor_priorities:
-            if sensor_name in temps and temps[sensor_name]:
-                entry = temps[sensor_name][0]
-                if entry.current is not None and entry.current > 0:
-                    return round(float(entry.current), 1)
-
-        # Fallback: первый попавшийся непустой сенсор
-        for entries in temps.values():
-            if entries and entries[0].current is not None and entries[0].current > 0:
-                return round(float(entries[0].current), 1)
+        import glob
+        for path in glob.glob("/sys/class/thermal/thermal_zone*/temp"):
+            try:
+                with open(path, "r") as f:
+                    val = float(f.read().strip())
+                    if val > 1000:
+                        val /= 1000.0  # миллиградусы -> градусы
+                    if 10.0 <= val <= 120.0:
+                        return round(val, 1)
+            except Exception:
+                continue
     except Exception:
-        return None
+        pass
+
     return None
 
 
@@ -192,6 +268,7 @@ def get_system_metrics(
         disk_percent = 0.0
 
     # 4. Сеть и скорость передачи данных
+    global _LAST_NET_IO
     net_io = psutil.net_io_counters()
     net_sent_total_mb = round(net_io.bytes_sent / (1024 ** 2), 2)
     net_recv_total_mb = round(net_io.bytes_recv / (1024 ** 2), 2)
@@ -199,9 +276,20 @@ def get_system_metrics(
     net_sent_speed_kb = 0.0
     net_recv_speed_kb = 0.0
     if prev_bytes_sent is not None and prev_bytes_recv is not None and prev_time is not None:
-        dt = max(now - prev_time, 0.1)
-        net_sent_speed_kb = round(max((net_io.bytes_sent - prev_bytes_sent), 0) / dt / 1024, 1)
-        net_recv_speed_kb = round(max((net_io.bytes_recv - prev_bytes_recv), 0) / dt / 1024, 1)
+        dt = max(now - prev_time, 0.2)
+        net_sent_speed_kb = round(max((net_io.bytes_sent - prev_bytes_sent), 0) / dt / 1024, 2)
+        net_recv_speed_kb = round(max((net_io.bytes_recv - prev_bytes_recv), 0) / dt / 1024, 2)
+    elif _LAST_NET_IO["bytes_sent"] is not None and _LAST_NET_IO["timestamp"] is not None:
+        dt = max(now - _LAST_NET_IO["timestamp"], 0.2)
+        if dt < 30.0:
+            net_sent_speed_kb = round(max((net_io.bytes_sent - _LAST_NET_IO["bytes_sent"]), 0) / dt / 1024, 2)
+            net_recv_speed_kb = round(max((net_io.bytes_recv - _LAST_NET_IO["bytes_recv"]), 0) / dt / 1024, 2)
+
+    _LAST_NET_IO["bytes_sent"] = net_io.bytes_sent
+    _LAST_NET_IO["bytes_recv"] = net_io.bytes_recv
+    _LAST_NET_IO["timestamp"] = now
+    _LAST_NET_IO["speed_sent_kb"] = net_sent_speed_kb
+    _LAST_NET_IO["speed_recv_kb"] = net_recv_speed_kb
 
     # 5. Процессы и сетевые соединения
     processes_count = len(psutil.pids())
@@ -213,8 +301,9 @@ def get_system_metrics(
     # Топ процессов
     top_processes = get_top_processes(limit=5)
 
-    # 6. Температура CPU
+    # 6. Температура CPU и среда исполнения (KVM / Bare Metal)
     cpu_temp = get_cpu_temperature()
+    env = get_hardware_environment()
 
     # 7. Аптайм
     boot_time = psutil.boot_time()
@@ -251,6 +340,9 @@ def get_system_metrics(
         "connections_count": connections_count,
         "top_processes": top_processes,
         "cpu_temp": cpu_temp,
+        "is_virtual": env["is_virtual"],
+        "virt_type": env["virt_type"],
+        "cpu_freq_ghz": env["cpu_freq_ghz"],
         "uptime_seconds": uptime_seconds,
         "uptime_str": uptime_str,
         "db_status": db_status,
@@ -434,6 +526,17 @@ def analyze_system_health(metrics: Dict[str, Any]) -> Tuple[str, List[Dict[str, 
                 "action": "Убедитесь в нормальной циркуляции воздуха в помещении серверной и отсутствии непрерывной пиковой нагрузки.",
                 "icon": "bx bx-sun",
             })
+    elif metrics.get("is_virtual"):
+        recommendations.append({
+            "id": "virt_env_info",
+            "category": "HARDWARE",
+            "level": "info",
+            "title": f"Среда исполнения: {metrics.get('virt_type', 'KVM (Proxmox VE)')}",
+            "value": f"{metrics.get('cpu_freq_ghz', 2.8)} ГГц",
+            "description": "Сервер функционирует в виртуальной машине KVM. Физические термодатчики процессора опрашиваются на уровне родительского узла гипервизора Proxmox VE.",
+            "action": "Для контроля физической температуры серверной стойки используйте веб-интерфейс Proxmox VE (раздел Node -> Summary).",
+            "icon": "bx bx-server",
+        })
 
     # 7. Анализ сетевых соединений
     if conns is not None and conns >= 800:

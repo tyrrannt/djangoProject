@@ -278,29 +278,13 @@
     });
 
     // =========================================================================
-    // 5. Таймер неактивности пользователя (Auto-Lock Screen)
+    // 5. Таймер неактивности пользователя (Auto-Lock Screen) - Отключен
     // =========================================================================
+    // Автоматическая блокировка экрана при долгом отсутствии отключена.
+    // Сохранена только возможность ручной блокировки пользователем.
     function initInactivityTimer(lockUrl) {
-        var timer;
-        var timeoutMs = 3600000; // 1 час неактивности
-
-        function lockScreen() {
-            if (lockUrl) {
-                window.location.href = lockUrl;
-            }
-        }
-
-        function resetTimer() {
-            clearTimeout(timer);
-            timer = setTimeout(lockScreen, timeoutMs);
-        }
-
-        var events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-        events.forEach(function (eventName) {
-            document.addEventListener(eventName, resetTimer, true);
-        });
-
-        resetTimer();
+        // Функция оставлена как заглушка для обратной совместимости вызовов.
+        return;
     }
 
     window.initPortalInactivityTimer = initInactivityTimer;

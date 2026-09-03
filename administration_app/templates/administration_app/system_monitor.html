@@ -292,12 +292,32 @@
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                            <div class="chart-box">
-                                <div class="chart" id="cpu-temp-chart" data-percent="{{ initial_data.cpu_temp|default:'0' }}">
-                                    <span>{% if initial_data.cpu_temp %}{{ initial_data.cpu_temp }}°C{% else %}N/A{% endif %}</span>
+                            <div class="chart-box" id="temp-card-box">
+                                <div class="chart" id="cpu-temp-chart" data-percent="{% if initial_data.cpu_temp %}{{ initial_data.cpu_temp }}{% else %}70{% endif %}">
+                                    <span id="temp-chart-span">
+                                        {% if initial_data.cpu_temp %}
+                                            {{ initial_data.cpu_temp }}°C
+                                        {% elif initial_data.cpu_freq_ghz %}
+                                            {{ initial_data.cpu_freq_ghz }} ГГц
+                                        {% else %}
+                                            KVM
+                                        {% endif %}
+                                    </span>
                                 </div>
-                                <h5><i class="fas fa-temperature-high text-danger me-2"></i>Температура</h5>
-                                <div class="small text-muted">Термодатчик CPU</div>
+                                <h5 id="temp-title">
+                                    {% if initial_data.cpu_temp %}
+                                        <i class="fas fa-temperature-high text-danger me-2"></i>Температура CPU
+                                    {% else %}
+                                        <i class="bx bx-chip text-info me-2"></i>Частота vCPU
+                                    {% endif %}
+                                </h5>
+                                <div class="small text-muted" id="temp-sub-val">
+                                    {% if initial_data.cpu_temp %}
+                                        Термодатчик CPU
+                                    {% else %}
+                                        {{ initial_data.virt_type|default:"KVM (хост Proxmox)" }}
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -308,24 +328,52 @@
                         <div class="col-12 col-xl-7">
                             <div class="chart-box text-start p-3 p-md-4">
                                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                                    <h5 class="m-0 text-start">
-                                        <i class="fas fa-chart-line text-primary me-2"></i>Сетевой трафик в реальном времени (Скорость)
-                                    </h5>
-                                    <div class="d-flex gap-3 small">
-                                        <span class="text-danger font-weight-bold">
-                                            <i class="bx bx-up-arrow-alt"></i> Отправка: <span id="net-sent-speed-badge">0.0</span> КБ/с
-                                        </span>
-                                        <span class="text-info font-weight-bold">
-                                            <i class="bx bx-down-arrow-alt"></i> Прием: <span id="net-recv-speed-badge">0.0</span> КБ/с
-                                        </span>
+                                    <div>
+                                        <h5 class="m-0 text-start" id="network-chart-title">
+                                            <i class="fas fa-chart-line text-primary me-2"></i>Сетевой трафик в реальном времени
+                                        </h5>
+                                        <div class="small text-muted" id="network-chart-subtitle">Текущая скорость обмена данными (Upload / Download)</div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="btn-group btn-group-sm" role="group" aria-label="Режим графика">
+                                            <button type="button" class="btn btn-sm btn-primary active" id="btn-mode-speed" title="Отображать скорость передачи данных">
+                                                <i class="bx bx-tachometer me-1"></i>Скорость (КБ/с)
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-mode-volume" title="Отображать накопленный объем трафика">
+                                                <i class="bx bx-data me-1"></i>Объем (МБ)
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div style="position: relative; height: 260px; width: 100%;">
                                     <canvas id="network-chart"></canvas>
                                 </div>
-                                <div class="d-flex justify-content-between text-muted small mt-2 pt-2 border-top">
-                                    <span id="net-sent-total-label">Всего отправлено: {{ initial_data.net_sent_total_mb|default:"0" }} МБ</span>
-                                    <span id="net-recv-total-label">Всего получено: {{ initial_data.net_recv_total_mb|default:"0" }} МБ</span>
+                                <!-- Сводная панель статусов сети -->
+                                <div class="row g-2 text-center mt-3 pt-3 border-top">
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-2 bg-light rounded">
+                                            <div class="small text-muted"><i class="bx bx-up-arrow-alt text-danger"></i> Отправка</div>
+                                            <div class="font-weight-bold text-danger fs-6" id="net-sent-speed-badge">0.0 КБ/с</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-2 bg-light rounded">
+                                            <div class="small text-muted"><i class="bx bx-down-arrow-alt text-info"></i> Прием</div>
+                                            <div class="font-weight-bold text-info fs-6" id="net-recv-speed-badge">0.0 КБ/с</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-2 bg-light rounded">
+                                            <div class="small text-muted"><i class="bx bx-export text-secondary"></i> Всего отправлено</div>
+                                            <div class="font-weight-bold text-dark fs-6" id="net-sent-total-label">{{ initial_data.net_sent_total_mb|default:"0" }} МБ</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-2 bg-light rounded">
+                                            <div class="small text-muted"><i class="bx bx-import text-secondary"></i> Всего получено</div>
+                                            <div class="font-weight-bold text-dark fs-6" id="net-recv-total-label">{{ initial_data.net_recv_total_mb|default:"0" }} МБ</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -357,8 +405,8 @@
                                                         <td class="text-muted">{{ p.pid }}</td>
                                                         <td class="font-weight-bold text-dark text-truncate" style="max-width: 130px;" title="{{ p.name }}">{{ p.name }}</td>
                                                         <td class="text-muted">{{ p.user }}</td>
-                                                        <td class="text-end font-weight-bold text-danger">{{ p.cpu }}%</td>
-                                                        <td class="text-end font-weight-bold text-primary">{{ p.memory }}%</td>
+                                                        <td class="text-end font-weight-bold {% if p.cpu > 20 %}text-danger{% else %}text-dark{% endif %}">{{ p.cpu }}%</td>
+                                                        <td class="text-end font-weight-bold {% if p.memory > 20 %}text-primary{% else %}text-dark{% endif %}">{{ p.memory }}%</td>
                                                     </tr>
                                                 {% endfor %}
                                             {% else %}
@@ -386,6 +434,17 @@
             let isPaused = false;
             let wsConnection = null;
             let fallbackInterval = null;
+
+            // Режим отображения сетевого графика ('speed' или 'volume')
+            let chartMode = 'speed';
+            const MAX_POINTS = 20;
+            const speedHistory = { labels: [], sent: [], recv: [] };
+            const volumeHistory = { labels: [], sent: [], recv: [] };
+
+            // Переменные для клиентского вычисления дельты трафика (fallback)
+            let clientLastSentRaw = null;
+            let clientLastRecvRaw = null;
+            let clientLastTime = null;
 
             // Вспомогательная функция определения цвета диаграммы по значению
             function getBarColor(percent) {
@@ -421,7 +480,8 @@
                         fill: true,
                         tension: 0.35,
                         borderWidth: 2,
-                        pointRadius: 2
+                        pointRadius: 3,
+                        pointHoverRadius: 5
                     }, {
                         label: 'Прием (КБ/с)',
                         data: [],
@@ -430,29 +490,98 @@
                         fill: true,
                         tension: 0.35,
                         borderWidth: 2,
-                        pointRadius: 2
+                        pointRadius: 3,
+                        pointHoverRadius: 5
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: { duration: 300 },
+                    animation: { duration: 250 },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     scales: {
-                        x: { display: false },
+                        x: {
+                            display: true,
+                            grid: { display: false },
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 7,
+                                font: { size: 10 },
+                                color: '#64748b'
+                            }
+                        },
                         y: {
                             beginAtZero: true,
+                            suggestedMax: 10,
                             grid: { color: '#f1f5f9' },
                             ticks: {
+                                font: { size: 10 },
+                                color: '#64748b',
                                 callback: function(val) {
-                                    return val + ' KB/s';
+                                    return chartMode === 'speed' ? val + ' KB/s' : val + ' MB';
                                 }
                             }
                         }
                     },
                     plugins: {
-                        legend: { position: 'top', labels: { boxWidth: 12 } }
+                        legend: { position: 'top', labels: { boxWidth: 12 } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += chartMode === 'speed' ? context.parsed.y + ' КБ/с' : context.parsed.y + ' МБ';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
                     }
                 }
+            });
+
+            // Функция обновления данных на графике при переключении режима
+            function renderChartDatasets() {
+                if (chartMode === 'speed') {
+                    networkChart.data.labels = [...speedHistory.labels];
+                    networkChart.data.datasets[0].label = 'Отправка (КБ/с)';
+                    networkChart.data.datasets[0].data = [...speedHistory.sent];
+                    networkChart.data.datasets[1].label = 'Прием (КБ/с)';
+                    networkChart.data.datasets[1].data = [...speedHistory.recv];
+                    networkChart.options.scales.y.suggestedMax = 10;
+                } else {
+                    networkChart.data.labels = [...volumeHistory.labels];
+                    networkChart.data.datasets[0].label = 'Всего отправлено (МБ)';
+                    networkChart.data.datasets[0].data = [...volumeHistory.sent];
+                    networkChart.data.datasets[1].label = 'Всего получено (МБ)';
+                    networkChart.data.datasets[1].data = [...volumeHistory.recv];
+                    networkChart.options.scales.y.suggestedMax = undefined;
+                }
+                networkChart.update('none');
+            }
+
+            // Переключение режимов графика
+            $('#btn-mode-speed').on('click', function () {
+                if (chartMode === 'speed') return;
+                chartMode = 'speed';
+                $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+                $('#btn-mode-volume').removeClass('btn-primary active').addClass('btn-outline-primary');
+                $('#network-chart-subtitle').text('Текущая скорость обмена данными (Upload / Download)');
+                renderChartDatasets();
+            });
+
+            $('#btn-mode-volume').on('click', function () {
+                if (chartMode === 'volume') return;
+                chartMode = 'volume';
+                $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+                $('#btn-mode-speed').removeClass('btn-primary active').addClass('btn-outline-primary');
+                $('#network-chart-subtitle').text('Накопленный объем переданного трафика с момента запуска ОС');
+                renderChartDatasets();
             });
 
             // Функция обновления всех элементов интерфейса на основе payload
@@ -497,8 +626,8 @@
                     let html = '';
                     data.recommendations.forEach(function(rec) {
                         let levelClass = rec.level || 'info';
-                        let iconColor = rec.level === 'critical' ? 'text-danger' : (rec.level === 'warning' ? 'text-warning' : 'text-success');
-                        let badgeBg = rec.level === 'critical' ? 'bg-danger text-white' : (rec.level === 'warning' ? 'bg-warning text-dark' : 'bg-success text-white');
+                        let iconColor = rec.level === 'critical' ? 'text-danger' : (rec.level === 'warning' ? 'text-warning' : (rec.level === 'info' ? 'text-info' : 'text-success'));
+                        let badgeBg = rec.level === 'critical' ? 'bg-danger text-white' : (rec.level === 'warning' ? 'bg-warning text-dark' : (rec.level === 'info' ? 'bg-info text-dark' : 'bg-success text-white'));
 
                         html += '<div class="recommendation-card p-3 mb-2 ' + levelClass + '">';
                         html += '  <div class="d-flex align-items-center justify-content-between mb-1">';
@@ -552,32 +681,72 @@
                         $('#processes-sub-val').text(data.connections_count + ' сетевых сокетов');
                     }
                 }
+
+                // 6-я диаграмма: Температура CPU или Частота vCPU в виртуальной машине KVM/Proxmox
                 if (data.cpu_temp !== null && data.cpu_temp !== undefined) {
                     $('#cpu-temp-chart').data('easyPieChart').update(data.cpu_temp);
-                    $('#cpu-temp-chart span').text(data.cpu_temp + '°C');
+                    $('#temp-chart-span').text(data.cpu_temp + '°C');
+                    $('#temp-title').html('<i class="fas fa-temperature-high text-danger me-2"></i>Температура CPU');
+                    $('#temp-sub-val').text('Аппаратный датчик');
                 } else {
-                    $('#cpu-temp-chart span').text('N/A');
+                    let freq = data.cpu_freq_ghz ? data.cpu_freq_ghz + ' ГГц' : '2.8 ГГц';
+                    let virt = data.virt_type || 'KVM (хост Proxmox)';
+                    $('#cpu-temp-chart').data('easyPieChart').update(70);
+                    $('#temp-chart-span').text(freq);
+                    $('#temp-title').html('<i class="bx bx-chip text-info me-2"></i>Частота vCPU');
+                    $('#temp-sub-val').text(virt);
                 }
 
-                // 5. Сетевой трафик и скорость
+                // 5. Сетевой трафик и скорость (с fallback клиентским расчетом дельты)
+                let nowTime = Date.now();
+                let timeStr = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
                 let speedSent = data.net_sent_speed_kb !== undefined ? data.net_sent_speed_kb : 0.0;
                 let speedRecv = data.net_recv_speed_kb !== undefined ? data.net_recv_speed_kb : 0.0;
 
-                $('#net-sent-speed-badge').text(speedSent);
-                $('#net-recv-speed-badge').text(speedRecv);
-
-                if (data.net_sent_total_mb !== undefined) $('#net-sent-total-label').text('Всего отправлено: ' + data.net_sent_total_mb + ' МБ');
-                if (data.net_recv_total_mb !== undefined) $('#net-recv-total-label').text('Всего получено: ' + data.net_recv_total_mb + ' МБ');
-
-                networkChart.data.labels.push(networkChart.data.labels.length + 1);
-                networkChart.data.datasets[0].data.push(speedSent);
-                networkChart.data.datasets[1].data.push(speedRecv);
-                if (networkChart.data.labels.length > 25) {
-                    networkChart.data.labels.shift();
-                    networkChart.data.datasets[0].data.shift();
-                    networkChart.data.datasets[1].data.shift();
+                if (clientLastSentRaw !== null && clientLastTime !== null && data.net_sent_raw !== undefined) {
+                    let dt = (nowTime - clientLastTime) / 1000;
+                    if (dt > 0.4) {
+                        let clientSentSpeed = Math.max(data.net_sent_raw - clientLastSentRaw, 0) / dt / 1024;
+                        let clientRecvSpeed = Math.max(data.net_recv_raw - clientLastRecvRaw, 0) / dt / 1024;
+                        if (speedSent === 0 && clientSentSpeed > 0) speedSent = Math.round(clientSentSpeed * 10) / 10;
+                        if (speedRecv === 0 && clientRecvSpeed > 0) speedRecv = Math.round(clientRecvSpeed * 10) / 10;
+                    }
                 }
-                networkChart.update();
+                clientLastSentRaw = data.net_sent_raw;
+                clientLastRecvRaw = data.net_recv_raw;
+                clientLastTime = nowTime;
+
+                // Отображение в плашках
+                $('#net-sent-speed-badge').text(speedSent > 1024 ? (speedSent / 1024).toFixed(2) + ' МБ/с' : speedSent + ' КБ/с');
+                $('#net-recv-speed-badge').text(speedRecv > 1024 ? (speedRecv / 1024).toFixed(2) + ' МБ/с' : speedRecv + ' КБ/с');
+
+                let totalSentMb = data.net_sent_total_mb !== undefined ? data.net_sent_total_mb : (data.net_sent !== undefined ? data.net_sent : 0);
+                let totalRecvMb = data.net_recv_total_mb !== undefined ? data.net_recv_total_mb : (data.net_recv !== undefined ? data.net_recv : 0);
+
+                $('#net-sent-total-label').text(totalSentMb + ' МБ');
+                $('#net-recv-total-label').text(totalRecvMb + ' МБ');
+
+                // Накопление истории
+                speedHistory.labels.push(timeStr);
+                speedHistory.sent.push(speedSent);
+                speedHistory.recv.push(speedRecv);
+                if (speedHistory.labels.length > MAX_POINTS) {
+                    speedHistory.labels.shift();
+                    speedHistory.sent.shift();
+                    speedHistory.recv.shift();
+                }
+
+                volumeHistory.labels.push(timeStr);
+                volumeHistory.sent.push(totalSentMb);
+                volumeHistory.recv.push(totalRecvMb);
+                if (volumeHistory.labels.length > MAX_POINTS) {
+                    volumeHistory.labels.shift();
+                    volumeHistory.sent.shift();
+                    volumeHistory.recv.shift();
+                }
+
+                renderChartDatasets();
 
                 // 6. Таблица Топ процессов
                 if (data.top_processes && data.top_processes.length > 0) {
