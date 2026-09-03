@@ -4,19 +4,24 @@ import email
 from email.utils import parseaddr
 import html
 import imaplib
+import io
 import json
 import logging
+import os
 import re
 import socket
 import ssl
 import time
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 from urllib.parse import quote
+import zipfile
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.db import models
+from django.db.models import Q
 from django.http import (
     FileResponse,
     Http404,
@@ -37,12 +42,17 @@ from customers_app.models import DataBaseUser
 from mailbox_app.forms import (
     MailAccountSettingsForm,
     MailComposeForm,
+    MailContactForm,
+    MailPrintSettingsForm,
+    MailTemplateForm,
     MailboxAdminForm,
     ScheduledEmailEditForm,
 )
 from mailbox_app.models import (
     MailAccount,
     MailContact,
+    MailPrintSettings,
+    MailTemplate,
     Mailbox,
     ScheduledEmail,
     ScheduledEmailAttachment,
@@ -269,6 +279,11 @@ class MailboxBaseMixin(LoginRequiredMixin):
             mb["is_current"] = (mb["id"] == active_id)
 
         can_manage = is_mailbox_admin(self.request.user)
+        contacts_count = 0
+        try:
+            contacts_count = MailContact.objects.filter(user=self.request.user).count()
+        except Exception:
+            pass
 
         return {
             "account": account,
@@ -281,6 +296,7 @@ class MailboxBaseMixin(LoginRequiredMixin):
             "mailbox_query_param": f"&mailbox={active_id}" if active_id != "primary" else "",
             "mailbox_param": f"?mailbox={active_id}" if active_id != "primary" else "",
             "scheduled_count": self.get_scheduled_count(),
+            "contacts_count": contacts_count,
         }
 
     def get_context_data(self, **kwargs):
@@ -301,6 +317,26 @@ class MailboxBaseMixin(LoginRequiredMixin):
         context.setdefault("current_folder", "INBOX")
         context.setdefault("scheduled_count", self.get_scheduled_count())
         return context
+
+
+class MailboxAdminAccessMixin(MailboxBaseMixin, UserPassesTestMixin):
+    """Миксин проверки прав доступа к управлению корпоративными почтовыми ящиками."""
+
+    def test_func(self) -> bool:
+        """Проверяет наличие прав суперадминистратора, группы «Администраторы почты» или разрешения manage_mailboxes.
+
+        Returns:
+            bool: True, если доступ разрешен.
+        """
+        return is_mailbox_admin(self.request.user)
+
+    def handle_no_permission(self):
+        """Обрабатывает отказ в доступе."""
+        messages.error(
+            self.request,
+            "У вас нет прав для управления корпоративными почтовыми ящиками. Доступ разрешен только Администраторам почты.",
+        )
+        return redirect("mailbox_app:index")
 
 
 class MailboxFolderView(MailboxBaseMixin, TemplateView):
@@ -580,6 +616,14 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
 
         show_recipient = is_sent or is_drafts
 
+        from_email_clean = (email_data.get("from_email") or "").lower().strip() if email_data else ""
+        is_in_contacts = False
+        if from_email_clean and self.request.user.is_authenticated:
+            try:
+                is_in_contacts = MailContact.objects.filter(user=self.request.user, email=from_email_clean).exists()
+            except Exception:
+                pass
+
         context.update({
             "title": "КОРПОРАТИВНАЯ ПОЧТА",
             "breadcrumbs": [
@@ -596,6 +640,7 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
             "is_sent": is_sent,
             "is_drafts": is_drafts,
             "show_recipient": show_recipient,
+            "is_in_contacts": is_in_contacts,
             "scheduled_count": self.get_scheduled_count(),
             "email": email_data,
             "error_message": error_message,
@@ -694,6 +739,16 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         except Exception:
             pass
 
+        templates = []
+        try:
+            templates = list(
+                MailTemplate.objects.filter(
+                    Q(is_global=True) | Q(user=self.request.user)
+                ).values("id", "name", "subject", "body_html", "is_global")
+            )
+        except Exception as t_err:
+            logger.debug(f"[Mailbox] Ошибка загрузки шаблонов писем: {t_err}")
+
         context.update({
             "title": "КОРПОРАТИВНАЯ ПОЧТА",
             "breadcrumbs": [
@@ -705,6 +760,8 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
             "current_folder": "compose",
             "scheduled_count": self.get_scheduled_count(),
             "draft_uid": self.request.GET.get("draft_uid", ""),
+            "mail_templates": templates,
+            "mail_templates_json": json.dumps(templates),
         })
         return context
 
@@ -1061,6 +1118,293 @@ class MailboxContactsAPIView(LoginRequiredMixin, View):
         return JsonResponse({"results": results})
 
 
+class MailboxDownloadAttachmentsZipView(MailboxBaseMixin, View):
+    """Скачивание всех вложений письма единым ZIP-архивом с оригинальными именами файлов."""
+
+    def get(self, request, folder: str, uid: int):
+        """Формирует и отдает ZIP-архив всех вложений сообщения.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            folder (str): Имя папки IMAP.
+            uid (int): Уникальный номер сообщения в папке.
+
+        Returns:
+            HttpResponse: Поток бинарных данных архива или редирект с ошибкой.
+        """
+        account = self.get_account()
+        try:
+            with self.get_imap_service(account) as imap_svc:
+                msg_data = imap_svc.get_message_detail(folder, uid)
+                if not msg_data or not msg_data.get("attachments"):
+                    messages.warning(request, "В данном сообщении отсутствуют прикрепленные файлы.")
+                    return redirect("mailbox_app:email_detail", folder=folder, uid=uid)
+
+                attachments = msg_data["attachments"]
+                buffer = io.BytesIO()
+                with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                    used_filenames = set()
+                    for att in attachments:
+                        data = att.get("data")
+                        if not data and att.get("part_index") is not None:
+                            data = imap_svc.download_attachment(folder, uid, att["part_index"])
+
+                        if not data:
+                            continue
+
+                        raw_name = att.get("filename") or f"attachment_{att.get('part_index', 1)}"
+                        # Предотвращение коллизий одинаковых имен
+                        filename = raw_name
+                        counter = 1
+                        while filename in used_filenames:
+                            name_part, ext_part = os.path.splitext(raw_name)
+                            filename = f"{name_part}_{counter}{ext_part}"
+                            counter += 1
+                        used_filenames.add(filename)
+
+                        zinfo = zipfile.ZipInfo(filename)
+                        zinfo.date_time = datetime.now().timetuple()[:6]
+                        zinfo.compress_type = zipfile.ZIP_DEFLATED
+                        zip_file.writestr(zinfo, data)
+
+                buffer.seek(0)
+                subj_clean = re.sub(r'[\\/*?:"<>|]', "", msg_data.get("subject", "письмо") or "письмо").strip()
+                zip_filename = f"Вложения_{subj_clean[:35]}_UID{uid}.zip"
+                safe_encoded = quote(zip_filename)
+
+                response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+                response["Content-Disposition"] = f"attachment; filename*=UTF-8''{safe_encoded}"
+                return response
+        except Exception as e:
+            logger.error(f"[Mailbox] Ошибка упаковки вложений в ZIP для UID {uid}: {e}")
+            messages.error(request, f"Не удалось сформировать архив вложений: {e}")
+            return redirect("mailbox_app:email_detail", folder=folder, uid=uid)
+
+
+class MailboxContactsListView(MailboxBaseMixin, ListView):
+    """Представление реестра персональной адресной книги сотрудника."""
+
+    template_name = "mailbox_app/contacts_list.html"
+    context_object_name = "contacts"
+    paginate_by = 30
+
+    def get_queryset(self):
+        """Возвращает контакты пользователя с фильтрацией по поисковому запросу.
+
+        Returns:
+            QuerySet: Список объектов MailContact.
+        """
+        qs = MailContact.objects.filter(user=self.request.user).order_by("name", "email")
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        """Формирует контекст данных адресной книги с формой и поиском."""
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "КОРПОРАТИВНАЯ ПОЧТА — АДРЕСНАЯ КНИГА",
+            "breadcrumbs": [
+                {"name": "Корпоративная почта", "url": reverse("mailbox_app:folder", kwargs={"folder": "INBOX"})},
+                {"name": "Адресная книга"},
+            ],
+            "current_folder": "contacts",
+            "contact_form": MailContactForm(),
+            "search_query": self.request.GET.get("q", "").strip(),
+        })
+        return context
+
+
+class MailboxContactCreateOrUpdateView(MailboxBaseMixin, View):
+    """AJAX и стандартный обработчик создания/обновления контакта в адресной книге."""
+
+    def post(self, request):
+        """Сохраняет контакт пользователя.
+
+        Returns:
+            JsonResponse | HttpResponseRedirect: Результат сохранения.
+        """
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            data = request.POST
+
+        name = (data.get("name") or "").strip()
+        email_addr = (data.get("email") or "").strip().lower()
+
+        if not email_addr:
+            if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get("Content-Type", ""):
+                return JsonResponse({"success": False, "error": "Email адрес обязателен для заполнения"}, status=400)
+            messages.error(request, "Email адрес обязателен для заполнения.")
+            return redirect("mailbox_app:contacts_list")
+
+        contact, created = MailContact.objects.update_or_create(
+            user=request.user,
+            email=email_addr,
+            defaults={
+                "name": name or email_addr.split("@")[0],
+                "source": "manual",
+            },
+        )
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get("Content-Type", ""):
+            return JsonResponse({
+                "success": True,
+                "created": created,
+                "contact": {"id": contact.id, "name": contact.name, "email": contact.email},
+            })
+
+        msg_text = f"Контакт «{contact.name}» успешно сохранен!"
+        messages.success(request, msg_text)
+        return redirect("mailbox_app:contacts_list")
+
+
+class MailboxContactDeleteView(MailboxBaseMixin, View):
+    """Удаление контакта из адресной книги."""
+
+    def post(self, request, pk: int):
+        """Удаляет контакт текущего пользователя."""
+        contact = get_object_or_404(MailContact, pk=pk, user=request.user)
+        contact_name = contact.name or contact.email
+        contact.delete()
+        messages.success(request, f"Контакт «{contact_name}» успешно удален из адресной книги.")
+        return redirect("mailbox_app:contacts_list")
+
+
+class MailboxTemplatesAPIView(MailboxBaseMixin, View):
+    """API для получения, создания и удаления шаблонов ответов / писем."""
+
+    def get(self, request):
+        """Возвращает доступные пользователю шаблоны (корпоративные и персональные)."""
+        templates = list(
+            MailTemplate.objects.filter(
+                Q(is_global=True) | Q(user=request.user)
+            ).values("id", "name", "subject", "body_html", "is_global")
+        )
+        return JsonResponse({"success": True, "templates": templates})
+
+    def post(self, request):
+        """Создает новый шаблон письма."""
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            data = request.POST
+
+        name = (data.get("name") or "").strip()
+        subject = (data.get("subject") or "").strip()
+        body_html = (data.get("body_html") or "").strip()
+        is_global = bool(data.get("is_global", False))
+
+        # Сделать общекорпоративным разрешено только администраторам почты
+        if is_global and not is_mailbox_admin(request.user):
+            is_global = False
+
+        if not name or not body_html:
+            return JsonResponse({"success": False, "error": "Название и текст шаблона обязательны"}, status=400)
+
+        tmpl = MailTemplate.objects.create(
+            name=name,
+            subject=subject,
+            body_html=body_html,
+            is_global=is_global,
+            user=request.user if not is_global else None,
+        )
+        return JsonResponse({
+            "success": True,
+            "template": {
+                "id": tmpl.id,
+                "name": tmpl.name,
+                "subject": tmpl.subject,
+                "body_html": tmpl.body_html,
+                "is_global": tmpl.is_global,
+            },
+        })
+
+    def delete(self, request, pk: int):
+        """Удаляет шаблон (только свой либо любой для администратора почты)."""
+        qs = MailTemplate.objects.filter(pk=pk)
+        if not is_mailbox_admin(request.user):
+            qs = qs.filter(user=request.user)
+
+        tmpl = qs.first()
+        if not tmpl:
+            return JsonResponse({"success": False, "error": "Шаблон не найден или нет прав на удаление"}, status=404)
+
+        tmpl.delete()
+        return JsonResponse({"success": True})
+
+
+class MailboxPrintLetterheadView(MailboxBaseMixin, TemplateView):
+    """Представление официального типографского бланка электронного письма для архива и печати."""
+
+    template_name = "mailbox_app/print_letterhead.html"
+
+    def get_context_data(self, **kwargs):
+        """Загружает данные письма и настройки бланка печати."""
+        context = super().get_context_data(**kwargs)
+        account = self.get_account()
+        folder_name = self.kwargs.get("folder", "INBOX")
+        uid = int(self.kwargs.get("uid"))
+
+        email_data = None
+        try:
+            with self.get_imap_service(account) as imap_svc:
+                email_data = imap_svc.get_message_detail(folder_name, uid)
+        except Exception as e:
+            logger.error(f"[Mailbox] Ошибка загрузки письма для печати UID {uid}: {e}")
+
+        if not email_data:
+            raise Http404("Письмо не найдено для печати.")
+
+        print_settings = MailPrintSettings.get_settings()
+
+        context.update({
+            "email": email_data,
+            "folder": folder_name,
+            "folder_display": decode_imap_utf7(folder_name),
+            "print_settings": print_settings,
+            "print_timestamp": datetime.now(),
+        })
+        return context
+
+
+class MailboxPrintSettingsAdminView(MailboxAdminAccessMixin, FormView):
+    """Представление настройки официального бланка печати для администраторов почты."""
+
+    template_name = "mailbox_app/admin/print_settings.html"
+    form_class = MailPrintSettingsForm
+    success_url = reverse_lazy("mailbox_app:admin_print_settings")
+
+    def get_form_kwargs(self):
+        """Передает инстанс настроек в форму."""
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = MailPrintSettings.get_settings()
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        """Формирует контекст страницы настроек бланка."""
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "НАСТРОЙКИ ПЕЧАТНОГО БЛАНКА ПОЧТЫ",
+            "breadcrumbs": [
+                {"name": "Корпоративная почта", "url": reverse("mailbox_app:folder", kwargs={"folder": "INBOX"})},
+                {"name": "Управление ящиками", "url": reverse("mailbox_app:mailbox_admin_list")},
+                {"name": "Настройки бланка печати"},
+            ],
+            "print_settings": MailPrintSettings.get_settings(),
+        })
+        return context
+
+    def form_valid(self, form):
+        """Сохраняет настройки бланка с фиксацией автора изменений."""
+        instance = form.save(commit=False)
+        instance.updated_by = self.request.user
+        instance.save()
+        messages.success(self.request, "Настройки официального печатного бланка успешно сохранены!")
+        return super().form_valid(form)
+
+
 class MailboxUnreadCountAPIView(LoginRequiredMixin, View):
     """Легковесный AJAX эндпоинт для проверки непрочитанных входящих писем и пуш-уведомлений."""
 
@@ -1202,21 +1546,13 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
         return redirect("mailbox_app:settings")
 
 
-class MailboxDiagnosticView(UserPassesTestMixin, MailboxBaseMixin, TemplateView):
+class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
     """Представление для детального пошагового профилирования и диагностики почтового сервера.
 
     Доступно исключительно суперадминистраторам и участникам группы «Администраторы почты».
     """
 
     template_name = "mailbox_app/diagnostic.html"
-
-    def test_func(self) -> bool:
-        """Проверяет права доступа к странице диагностики скорости.
-
-        Returns:
-            bool: True, если пользователь является суперадминистратором или входит в группу «Администраторы почты».
-        """
-        return is_mailbox_admin(self.request.user)
 
     def handle_no_permission(self):
         """Обрабатывает отказ в доступе к диагностике."""
@@ -1964,26 +2300,6 @@ class MailboxScheduledAttachmentDownloadView(MailboxBaseMixin, View):
         except Exception as e:
             logger.warning(f"[Mailbox] Ошибка отдачи вложения отложенного письма: {e}")
             raise Http404("Вложение не найдено.")
-
-
-class MailboxAdminAccessMixin(MailboxBaseMixin, UserPassesTestMixin):
-    """Миксин проверки прав доступа к управлению корпоративными почтовыми ящиками."""
-
-    def test_func(self) -> bool:
-        """Проверяет наличие прав суперадминистратора, группы «Администраторы почты» или разрешения manage_mailboxes.
-
-        Returns:
-            bool: True, если доступ разрешен.
-        """
-        return is_mailbox_admin(self.request.user)
-
-    def handle_no_permission(self):
-        """Обрабатывает отказ в доступе."""
-        messages.error(
-            self.request,
-            "У вас нет прав для управления корпоративными почтовыми ящиками. Доступ разрешен только Администраторам почты.",
-        )
-        return redirect("mailbox_app:index")
 
 
 class MailboxAdminListView(MailboxAdminAccessMixin, ListView):

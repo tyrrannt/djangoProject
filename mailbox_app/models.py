@@ -740,3 +740,116 @@ class ScheduledEmailAttachment(models.Model):
             str: Имя файла и его размер.
         """
         return f"{self.filename} ({self.file_size_human})"
+
+
+class MailTemplate(models.Model):
+    """Модель шаблона письма для быстрого написания и типовых ответов сотрудников.
+
+    Attributes:
+        name (CharField): Название шаблона (например, «Согласование документов»).
+        subject (CharField): Тема письма по умолчанию.
+        body_html (TextField): Текст шаблона.
+        is_global (BooleanField): Общекорпоративный шаблон (доступен всем).
+        user (ForeignKey): Автор шаблона (для персональных шаблонов).
+        created_at (DateTimeField): Дата создания.
+        updated_at (DateTimeField): Дата обновления.
+    """
+
+    class Meta:
+        verbose_name = "Шаблон письма"
+        verbose_name_plural = "Шаблоны писем"
+        ordering = ["-is_global", "name"]
+
+    name = models.CharField(max_length=255, verbose_name="Название шаблона")
+    subject = models.CharField(
+        max_length=255, blank=True, default="", verbose_name="Тема по умолчанию"
+    )
+    body_html = models.TextField(verbose_name="Текст шаблона")
+    is_global = models.BooleanField(
+        default=False,
+        verbose_name="Общекорпоративный шаблон",
+        help_text="Если включено, шаблон доступен всем сотрудникам компании",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="mail_templates",
+        null=True,
+        blank=True,
+        verbose_name="Автор",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создан")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлен")
+
+    def __str__(self) -> str:
+        prefix = "🏢 [Общий] " if self.is_global else "👤 "
+        return f"{prefix}{self.name}"
+
+
+class MailPrintSettings(models.Model):
+    """Модель настроек официального печатного бланка письма (для подшивки в дела и архив).
+
+    Настраивается администраторами почты (is_mailbox_admin) для всей организации.
+
+    Attributes:
+        organization_name (CharField): Наименование организации.
+        header_title (CharField): Заголовок бланка.
+        sub_header (CharField): Подзаголовок бланка.
+        footer_note (TextField): Примечание в подвале бланка.
+        show_logo (BooleanField): Отображать логотип компании.
+        updated_at (DateTimeField): Дата последнего изменения.
+        updated_by (ForeignKey): Пользователь, обновивший настройки.
+    """
+
+    class Meta:
+        verbose_name = "Настройки бланка печати почты"
+        verbose_name_plural = "Настройки бланка печати почты"
+
+    organization_name = models.CharField(
+        max_length=255,
+        default="ООО «Авиакомпания «Баркол»",
+        verbose_name="Наименование организации",
+    )
+    header_title = models.CharField(
+        max_length=255,
+        default="СЛУЖЕБНАЯ КОРПОРАТИВНАЯ ПЕРЕПИСКА",
+        verbose_name="Заголовок бланка",
+    )
+    sub_header = models.CharField(
+        max_length=255,
+        default="Официальная распечатка электронного сообщения",
+        verbose_name="Подзаголовок",
+    )
+    footer_note = models.TextField(
+        default="Электронный документ сформирован в корпоративном портале. Подлинность подтверждена сервером почты.",
+        verbose_name="Примечание в подвале",
+    )
+    show_logo = models.BooleanField(
+        default=True,
+        verbose_name="Отображать логотип",
+    )
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Кто обновил",
+    )
+
+    @classmethod
+    def get_settings(cls) -> "MailPrintSettings":
+        """Возвращает действующие настройки печати (Singleton pattern).
+
+        Returns:
+            MailPrintSettings: Единственный экземпляр настроек.
+        """
+        instance = cls.objects.first()
+        if not instance:
+            instance = cls.objects.create()
+        return instance
+
+    def __str__(self) -> str:
+        return f"Настройки бланка: {self.organization_name}"
+

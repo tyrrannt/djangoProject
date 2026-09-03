@@ -65,6 +65,21 @@
                                 </span>
                             {% endif %}
                         </a>
+                    <!-- Персональная адресная книга -->
+                    <li>
+                        <a href="{% url 'mailbox_app:contacts_list' %}"
+                           class="mailbox-folder-link {% if current_folder == 'contacts' %}active{% endif %}"
+                           title="Адресная книга и сохраненные контакты">
+                            <span class="d-flex align-items-center gap-2 text-truncate">
+                                <i class="bx bx-book-content font-size-18 text-primary"></i>
+                                <span class="text-truncate ms-1">Адресная книга</span>
+                            </span>
+                            {% if contacts_count > 0 %}
+                                <span class="badge bg-light text-muted border px-2" style="font-size: 11px;">
+                                    {{ contacts_count }}
+                                </span>
+                            {% endif %}
+                        </a>
                     </li>
                 </ul>
 
@@ -75,6 +90,9 @@
                     {% if can_manage_mailboxes %}
                         <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="mailbox-settings-link text-primary fw-semibold">
                             <i class="bx bx-briefcase-alt-2 font-size-18"></i> Управление ящиками
+                        </a>
+                        <a href="{% url 'mailbox_app:admin_print_settings' %}" class="mailbox-settings-link text-primary" style="font-size: 13px;">
+                            <i class="bx bx-printer font-size-18"></i> Бланк печати
                         </a>
                     {% endif %}
                     <a href="{% url 'mailbox_app:settings' %}" class="mailbox-settings-link">
@@ -152,12 +170,30 @@
                     </span>
                 {% endif %}
             </a>
+
+            <!-- Адресная книга на мобильном -->
+            <a href="{% url 'mailbox_app:contacts_list' %}"
+               class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 border-top {% if current_folder == 'contacts' %}active fw-bold{% endif %}"
+               title="Адресная книга">
+                <span class="d-flex align-items-center gap-2 text-truncate">
+                    <i class="bx bx-book-content font-size-18 {% if current_folder == 'contacts' %}text-white{% else %}text-primary{% endif %}"></i>
+                    <span class="text-truncate">Адресная книга</span>
+                </span>
+                {% if contacts_count > 0 %}
+                    <span class="badge {% if current_folder == 'contacts' %}bg-white text-dark{% else %}bg-light text-muted border{% endif %} rounded-pill">
+                        {{ contacts_count }}
+                    </span>
+                {% endif %}
+            </a>
         </div>
 
         <div class="border-top pt-3 d-flex flex-column gap-2">
             {% if can_manage_mailboxes %}
                 <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-semibold" style="border-radius: 8px;">
                     <i class="bx bx-briefcase-alt-2 font-size-18"></i> Управление ящиками
+                </a>
+                <a href="{% url 'mailbox_app:admin_print_settings' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px; font-size: 13px;">
+                    <i class="bx bx-printer font-size-18"></i> Бланк печати
                 </a>
             {% endif %}
             <a href="{% url 'mailbox_app:settings' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px;">

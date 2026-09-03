@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Официальный бланк письма UID {{ email.uid }} — {{ email.subject|default:"(Без темы)" }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            color: #212529;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .letterhead-container {
+            max-width: 860px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 40px 50px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .action-toolbar {
+            max-width: 860px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .header-logo {
+            max-height: 60px;
+            width: auto;
+        }
+
+        .header-title-box h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0056b3;
+            margin: 0 0 4px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title-box .header-sub {
+            font-size: 13px;
+            color: #6c757d;
+            margin: 0;
+        }
+
+        .official-badge-box {
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .official-badge-box .badge-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .official-badge-box .badge-date {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .meta-table {
+            width: 100%;
+            margin-bottom: 25px;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .meta-table th {
+            width: 160px;
+            padding: 6px 12px;
+            color: #495057;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            vertical-align: top;
+            font-weight: 600;
+        }
+
+        .meta-table td {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            vertical-align: top;
+            word-break: break-word;
+        }
+
+        .message-body-section {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 25px;
+            background: #fff;
+            min-height: 220px;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .message-body-section img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .attachments-list {
+            margin-bottom: 25px;
+            font-size: 13px;
+        }
+
+        .attachments-list-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .official-footer {
+            border-top: 2px solid #dee2e6;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .stamp-box {
+            border: 2px dashed #6c757d;
+            border-radius: 6px;
+            padding: 10px 15px;
+            display: inline-block;
+            text-align: center;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #495057;
+        }
+
+        .signature-line-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 30px;
+            font-size: 13px;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #212529;
+            width: 250px;
+            margin-bottom: 3px;
+        }
+
+        @media print {
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .letterhead-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 15px 20px !important;
+                max-width: 100% !important;
+            }
+            .message-body-section {
+                border: 1px solid #ccc !important;
+            }
+            @page {
+                margin: 1.5cm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Панель действий в окне браузера -->
+    <div class="action-toolbar no-print">
+        <a href="javascript:window.close();" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+            <i class="bx bx-arrow-back"></i> Закрыть
+        </a>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Формат: А4 / Официальный бланк</span>
+            <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm px-3" onclick="window.print()">
+                <i class="bx bx-printer font-size-16"></i> Распечатать бланк
+            </button>
+        </div>
+    </div>
+
+    <!-- Основной бланк документа -->
+    <div class="letterhead-container">
+        <!-- Шапка официального бланка компании -->
+        <div class="header-brand">
+            {% if print_settings.show_logo %}
+                <img src="/static/customers_app/img/logo.png" alt="Логотип" class="header-logo" onerror="this.style.display='none';">
+            {% endif %}
+            <div class="header-title-box">
+                <h1>{{ print_settings.organization_name }}</h1>
+                <div class="header-sub fw-semibold text-uppercase">{{ print_settings.header_title }}</div>
+                <div class="header-sub">{{ print_settings.sub_header }}</div>
+            </div>
+            <div class="official-badge-box">
+                <div class="badge-title">Электронный документ</div>
+                <div class="badge-date">UID: #{{ email.uid }} | {{ folder_display }}</div>
+                <div class="badge-date mt-1">Распечатано: {{ print_timestamp|date:"d.m.Y H:i" }}</div>
+            </div>
+        </div>
+
+        <!-- Таблица реквизитов сообщения -->
+        <table class="meta-table">
+            <tbody>
+                <tr>
+                    <th>Отправитель (From):</th>
+                    <td>
+                        <strong>{{ email.from_name|default:email.from_email }}</strong>
+                        {% if email.from_email %}&lt;{{ email.from_email }}&gt;{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Получатель (To):</th>
+                    <td>{{ email.to_raw|default:"(Не указан)" }}</td>
+                </tr>
+                {% if email.cc_raw %}
+                    <tr>
+                        <th>Копия (Cc):</th>
+                        <td>{{ email.cc_raw }}</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Дата отправления:</th>
+                    <td>
+                        {% if email.date %}
+                            {{ email.date|date:"d E Y г. в H:i:s" }} (МСК)
+                        {% else %}
+                            {{ email.date_raw }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Тема письма:</th>
+                    <td><strong class="font-size-15">{{ email.subject|default:"(Без темы)" }}</strong></td>
+                </tr>
+                {% if email.message_id %}
+                    <tr>
+                        <th>Идентификатор (Message-ID):</th>
+                        <td class="text-muted small" style="font-family: monospace;">{{ email.message_id }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Опись прикрепленных вложений (если есть) -->
+        {% if email.attachments %}
+            <div class="attachments-list">
+                <div class="attachments-list-title d-flex align-items-center gap-1">
+                    <i class="bx bx-paperclip text-primary"></i>
+                    <span>Опись приложенных файлов ({{ email.attachments|length }} шт.):</span>
+                </div>
+                <table class="meta-table mb-2">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="width: 40px; text-align: center;">№</th>
+                            <th>Имя файла вложения</th>
+                            <th style="width: 140px; text-align: right;">Размер</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for att in email.attachments %}
+                            <tr>
+                                <td style="text-align: center;">{{ forloop.counter }}</td>
+                                <td><i class="bx bx-file text-muted me-1"></i> {{ att.filename }}</td>
+                                <td style="text-align: right;">{{ att.size_human|default:"-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        <!-- Содержимое письма -->
+        <div class="message-body-section">
+            {% if email.body_html %}
+                {{ email.body_html|safe }}
+            {% elif email.body_text %}
+                <div style="white-space: pre-wrap; font-family: inherit;">{{ email.body_text }}</div>
+            {% else %}
+                <div class="text-muted fst-italic">Сообщение не содержит текста.</div>
+            {% endif %}
+        </div>
+
+        <!-- Подвал официального бланка и отметка архива -->
+        <div class="official-footer">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <div class="stamp-box">
+                    <strong>КОРПОРАТИВНЫЙ АРХИВ ЭЛЕКТРОННОЙ ПОЧТЫ</strong><br>
+                    Сервер: barkol.ru | Подлинность подтверждена IMAP/SMTP<br>
+                    Дата формирования: {{ print_timestamp|date:"d.m.Y H:i:s" }}
+                </div>
+                <div class="text-end small">
+                    {{ print_settings.footer_note }}
+                </div>
+            </div>
+
+            <!-- Зона визирования и подписи -->
+            <div class="signature-line-box">
+                <div>
+                    <div>Ответственное лицо:</div>
+                    <div class="signature-line mt-4"></div>
+                    <div class="small text-muted">(должность, ФИО)</div>
+                </div>
+                <div>
+                    <div>Подпись / Дата:</div>
+                    <div class="signature-line mt-4"></div>
+                    <div class="small text-muted">(подпись)</div>
+                </div>
+                <div>
+                    <div>Отметка о подшивке в дело:</div>
+                    <div class="signature-line mt-4"></div>
+                    <div class="small text-muted">(номер дела / том)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

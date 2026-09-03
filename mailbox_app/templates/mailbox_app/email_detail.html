@@ -72,10 +72,11 @@
                                 </ul>
                             </div>
 
-                            <!-- Кнопка печати -->
-                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="window.print()" title="Распечатать официальную версию письма">
-                                <i class="bx bx-printer font-size-16"></i> <span class="d-none d-sm-inline">Печать</span>
-                            </button>
+                            <!-- Кнопка официального бланка / печати -->
+                            <a href="{% url 'mailbox_app:print_letterhead' current_folder email.uid %}" target="_blank"
+                               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" title="Открыть и распечатать официальный служебный бланк письма">
+                                <i class="bx bx-printer font-size-16 text-primary"></i> <span class="d-none d-sm-inline">Официальный бланк</span>
+                            </a>
                         </div>
 
                         <div>
@@ -147,9 +148,44 @@
                             <div class="mailbox-sender-meta">
                                 {% if show_recipient %}
                                     {% if email.to_raw %}<div><b>Кому:</b> {{ email.to_raw }}</div>{% endif %}
-                                    <div><b>От:</b> &lt;{{ email.from_email }}&gt;</div>
+                                    <div class="d-flex align-items-center flex-wrap gap-1">
+                                        <b>От:</b> &lt;{{ email.from_email }}&gt;
+                                        {% if email.from_email %}
+                                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}?q={{ email.from_email|urlencode }}&scope=headers"
+                                               class="badge bg-light text-primary border text-decoration-none ms-1 px-2 py-1 align-middle"
+                                               title="Найти все письма с {{ email.from_name|default:email.from_email }}">
+                                                <i class="bx bx-search-alt align-middle me-1"></i>Все письма автора
+                                            </a>
+                                        {% endif %}
+                                    </div>
                                 {% else %}
-                                    <div><b>От:</b> &lt;{{ email.from_email }}&gt;</div>
+                                    <div class="d-flex align-items-center flex-wrap gap-1">
+                                        <b>От:</b> &lt;{{ email.from_email }}&gt;
+                                        {% if email.from_email %}
+                                            <!-- Поиск всей переписки с автором в 1 клик -->
+                                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}?q={{ email.from_email|urlencode }}&scope=headers"
+                                               class="badge bg-light text-primary border text-decoration-none ms-1 px-2 py-1 align-middle"
+                                               title="Найти всю переписку с {{ email.from_name|default:email.from_email }}">
+                                                <i class="bx bx-search-alt align-middle me-1"></i>Все письма автора
+                                            </a>
+
+                                            <!-- Быстрое добавление в контакты -->
+                                            {% if not is_in_contacts %}
+                                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 ms-1 align-middle font-size-12 d-inline-flex align-items-center gap-1 shadow-none"
+                                                        id="btnAddSenderToContacts" onclick="addContactQuick('{{ email.from_name|escapejs }}', '{{ email.from_email|escapejs }}')"
+                                                        title="Сохранить отправителя в персональную адресную книгу">
+                                                    <i class="bx bx-user-plus font-size-13"></i> В контакты
+                                                </button>
+                                                <span id="contactAddedBadge" class="badge bg-success-subtle text-success border border-success-subtle ms-1 d-none py-1 px-2 align-middle">
+                                                    <i class="bx bx-check me-1"></i>В контактах
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-light text-success border ms-1 py-1 px-2 align-middle" title="Контакт уже сохранен в адресной книге">
+                                                    <i class="bx bx-check me-1"></i>В контактах
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
                                     {% if email.to_raw %}<div><b>Кому:</b> {{ email.to_raw }}</div>{% endif %}
                                 {% endif %}
                                 {% if email.cc_raw %}<div><b>Копия:</b> {{ email.cc_raw }}</div>{% endif %}
@@ -175,9 +211,19 @@
                     <!-- Вложенные файлы -->
                     {% if email.attachments %}
                         <div class="mailbox-attachments-box">
-                            <h5 class="font-weight-semibold text-dark mb-3 d-flex align-items-center gap-2">
-                                <i class="bx bx-paperclip text-primary font-size-18"></i> Вложенные файлы ({{ email.attachments|length }})
-                            </h5>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                <h5 class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-2">
+                                    <i class="bx bx-paperclip text-primary font-size-18"></i> Вложенные файлы ({{ email.attachments|length }})
+                                </h5>
+                                {% if email.attachments|length > 1 %}
+                                    <a href="{% url 'mailbox_app:download_all_attachments_zip' current_folder email.uid %}"
+                                       class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-none"
+                                       title="Скачать все файлы вложения единым ZIP-архивом">
+                                        <i class="bx bx-archive-in font-size-16"></i>
+                                        <span>Скачать все архивом (.zip)</span>
+                                    </a>
+                                {% endif %}
+                            </div>
                             <div class="row g-3">
                                 {% for att in email.attachments %}
                                     <div class="col-lg-4 col-md-6 col-12">
@@ -484,6 +530,43 @@
             .catch(err => {
                 console.error(err);
                 showWarningModal('Ошибка связи', 'Сетевая ошибка при выполнении операции');
+            });
+        function addContactQuick(name, email) {
+            const btn = document.getElementById('btnAddSenderToContacts');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+            }
+            fetch("{% url 'mailbox_app:contact_save' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ name: name, email: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (btn) btn.classList.add('d-none');
+                    const badge = document.getElementById('contactAddedBadge');
+                    if (badge) badge.classList.remove('d-none');
+                } else {
+                    showWarningModal('Ошибка', data.error || 'Не удалось сохранить контакт');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bx bx-user-plus font-size-13"></i> В контакты';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showWarningModal('Ошибка связи', 'Сетевая ошибка при добавлении контакта');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-user-plus font-size-13"></i> В контакты';
+                }
             });
         }
     </script>

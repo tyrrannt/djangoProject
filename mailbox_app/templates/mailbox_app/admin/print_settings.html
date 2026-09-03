@@ -1,0 +1,212 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    Настройки печатного бланка — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <style>
+        .settings-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .preview-box {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox>
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основная область настроек бланка -->
+            <div class="inner-body mailbox-folder">
+                <!-- Шапка страницы -->
+                <header class="mailbox-header-bar mb-4">
+                    <div class="d-flex align-items-center justify-content-between gap-2 w-100 flex-wrap">
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                                <i class="bx bx-arrow-back"></i> <span class="d-none d-sm-inline">К ящикам</span>
+                            </a>
+                            <h4 class="mailbox-page-title m-0 d-flex align-items-center gap-2">
+                                <i class="bx bx-printer text-primary"></i> Настройки официального бланка печати
+                            </h4>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                <i class="bx bx-shield-quarter me-1"></i>Только Администраторы почты
+                            </span>
+                        </div>
+                    </div>
+                </header>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show py-2 px-3 mb-4 small" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close py-2 px-3 small" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="row g-4">
+                    <!-- Форма редактирования настроек -->
+                    <div class="col-lg-6 col-12">
+                        <div class="settings-card">
+                            <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bx bx-slider-alt text-primary font-size-20"></i> Параметры бланка письма
+                            </h5>
+                            <p class="text-muted small mb-4">
+                                Настройки определяют вид официальной печатной копии сообщений, используемой для подшивки в дела, номенклатуры и передачи в архив.
+                            </p>
+
+                            <form method="post">
+                                {% csrf_token %}
+
+                                <div class="mb-3">
+                                    <label class="form-label font-weight-semibold text-dark font-size-13">
+                                        Наименование организации <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.organization_name }}
+                                    <div class="form-text small text-muted">Отображается в главной строке шапки документа.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label font-weight-semibold text-dark font-size-13">
+                                        Заголовок бланка
+                                    </label>
+                                    {{ form.header_title }}
+                                    <div class="form-text small text-muted">Например: СЛУЖЕБНАЯ КОРПОРАТИВНАЯ ПЕРЕПИСКА.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label font-weight-semibold text-dark font-size-13">
+                                        Подзаголовок
+                                    </label>
+                                    {{ form.sub_header }}
+                                    <div class="form-text small text-muted">Пояснение назначения документа.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label font-weight-semibold text-dark font-size-13">
+                                        Примечание в подвале бланка
+                                    </label>
+                                    {{ form.footer_note }}
+                                    <div class="form-text small text-muted">Текст юридической отметки или штампа подлинности внизу листа.</div>
+                                </div>
+
+                                <div class="form-check form-switch mb-4">
+                                    {{ form.show_logo }}
+                                    <label class="form-check-label font-weight-semibold text-dark font-size-13 ms-2 cursor-pointer" for="{{ form.show_logo.id_for_label }}">
+                                        Отображать официальный логотип компании в шапке
+                                    </label>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between border-top pt-3">
+                                    <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary btn-sm px-3">
+                                        Отмена
+                                    </a>
+                                    <button type="submit" class="btn btn-primary btn-sm px-4 py-2 d-flex align-items-center gap-1 shadow-sm font-weight-semibold">
+                                        <i class="bx bx-check font-size-18"></i> Сохранить настройки
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Интерактивный предпросмотр бланка -->
+                    <div class="col-lg-6 col-12">
+                        <div class="settings-card h-100">
+                            <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bx bx-show text-primary font-size-20"></i> Образец печатного бланка
+                            </h5>
+                            <p class="text-muted small mb-3">
+                                Так будет выглядеть распечатка официального листа сотрудниками:
+                            </p>
+
+                            <div class="preview-box">
+                                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-3">
+                                    <img src="/static/customers_app/img/logo.png" alt="Logo" style="max-height: 40px;" onerror="this.style.display='none';">
+                                    <div>
+                                        <div class="fw-bold text-primary font-size-14 text-uppercase" id="previewOrgName">{{ print_settings.organization_name }}</div>
+                                        <div class="text-muted small fw-semibold text-uppercase" id="previewHeaderTitle" style="font-size: 11px;">{{ print_settings.header_title }}</div>
+                                        <div class="text-muted small" id="previewSubHeader" style="font-size: 10px;">{{ print_settings.sub_header }}</div>
+                                    </div>
+                                </div>
+
+                                <table class="table table-sm table-bordered font-size-12 mb-3">
+                                    <tbody>
+                                        <tr><th style="width: 110px; background: #f8fafc;">От:</th><td>Иванов Иван Иванович &lt;ivanov@barkol.ru&gt;</td></tr>
+                                        <tr><th style="background: #f8fafc;">Кому:</th><td>Петров Петр Петрович &lt;petrov@barkol.ru&gt;</td></tr>
+                                        <tr><th style="background: #f8fafc;">Дата:</th><td>{% now "d.m.Y H:i:s" %} (МСК)</td></tr>
+                                        <tr><th style="background: #f8fafc;">Тема:</th><td><strong>Согласование акта приема-передачи объекта</strong></td></tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="border rounded p-3 mb-3 font-size-12 bg-light text-muted" style="min-height: 90px;">
+                                    Добрый день! Направляем подписанный с нашей стороны акт...
+                                </div>
+
+                                <div class="border-top pt-2 d-flex justify-content-between align-items-center font-size-10 text-muted">
+                                    <div class="border border-dashed p-1 rounded">КОРПОРАТИВНЫЙ АРХИВ ПОЧТЫ</div>
+                                    <div class="text-end" id="previewFooterNote">{{ print_settings.footer_note }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const orgInput = document.querySelector('input[name="organization_name"]');
+            const headerInput = document.querySelector('input[name="header_title"]');
+            const subInput = document.querySelector('input[name="sub_header"]');
+            const footerInput = document.querySelector('textarea[name="footer_note"]');
+
+            if (orgInput) {
+                orgInput.addEventListener('input', function() {
+                    document.getElementById('previewOrgName').innerText = this.value || 'Наименование организации';
+                });
+            }
+            if (headerInput) {
+                headerInput.addEventListener('input', function() {
+                    document.getElementById('previewHeaderTitle').innerText = this.value || 'Заголовок бланка';
+                });
+            }
+            if (subInput) {
+                subInput.addEventListener('input', function() {
+                    document.getElementById('previewSubHeader').innerText = this.value || 'Подзаголовок';
+                });
+            }
+            if (footerInput) {
+                footerInput.addEventListener('input', function() {
+                    document.getElementById('previewFooterNote').innerText = this.value || '';
+                });
+            }
+        });
+    </script>
+{% endblock %}

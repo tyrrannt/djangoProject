@@ -14,6 +14,18 @@ urlpatterns = [
         views.MailboxAttachmentDownloadView.as_view(),
         name="download_attachment",
     ),
+    # Скачивание всех вложений архивом ZIP
+    path(
+        "folder/<path:folder>/email/<int:uid>/attachments/zip/",
+        views.MailboxDownloadAttachmentsZipView.as_view(),
+        name="download_all_attachments_zip",
+    ),
+    # Печать официального бланка письма
+    path(
+        "folder/<path:folder>/email/<int:uid>/print/",
+        views.MailboxPrintLetterheadView.as_view(),
+        name="print_letterhead",
+    ),
     # Просмотр письма (должен быть выше общего folder)
     path(
         "folder/<path:folder>/email/<int:uid>/",
@@ -22,6 +34,10 @@ urlpatterns = [
     ),
     # Написание нового письма
     path("compose/", views.MailboxComposeView.as_view(), name="compose"),
+    # Реестр адресной книги и управление контактами
+    path("contacts/", views.MailboxContactsListView.as_view(), name="contacts_list"),
+    path("contacts/save/", views.MailboxContactCreateOrUpdateView.as_view(), name="contact_save"),
+    path("contacts/<int:pk>/delete/", views.MailboxContactDeleteView.as_view(), name="contact_delete"),
     # Список писем, запланированных к отправке по расписанию
     path("scheduled/", views.MailboxScheduledListView.as_view(), name="scheduled_list"),
     # Детальный просмотр запланированного письма
@@ -48,8 +64,12 @@ urlpatterns = [
     path("admin/mailboxes/<int:pk>/edit/", views.MailboxAdminUpdateView.as_view(), name="mailbox_admin_edit"),
     path("admin/mailboxes/<int:pk>/toggle/", views.MailboxAdminToggleActiveView.as_view(), name="mailbox_admin_toggle"),
     path("admin/mailboxes/<int:pk>/delete/", views.MailboxAdminDeleteView.as_view(), name="mailbox_admin_delete"),
+    path("admin/print-settings/", views.MailboxPrintSettingsAdminView.as_view(), name="admin_print_settings"),
     path("api/mailbox/test-connection/", views.MailboxTestConnectionAPIView.as_view(), name="api_mailbox_test_connection"),
     path("api/mailbox/domain-defaults/", views.MailboxDomainPresetAPIView.as_view(), name="api_mailbox_domain_defaults"),
+    # AJAX API шаблонов ответов / писем
+    path("api/templates/", views.MailboxTemplatesAPIView.as_view(), name="api_templates"),
+    path("api/templates/<int:pk>/", views.MailboxTemplatesAPIView.as_view(), name="api_template_detail"),
     # Просмотр конкретной папки (жадный path:folder)
     path("folder/<path:folder>/", views.MailboxFolderView.as_view(), name="folder"),
     # AJAX API действий (прочитано, удаление, звездочка)

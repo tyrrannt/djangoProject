@@ -103,7 +103,45 @@
 
                         <!-- Поле Текст сообщения -->
                         <div class="mailbox-form-row mb-4">
-                            <label>Сообщение:</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+                                <label class="m-0">Сообщение:</label>
+                                <!-- Выпадающее меню шаблонов ответов -->
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none py-1 px-2"
+                                            type="button" id="templatesDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 12px; border-radius: 6px;">
+                                        <i class="bx bx-bookmark font-size-14"></i>
+                                        <span>Шаблоны ответов</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-1" style="min-width: 290px; max-height: 380px; overflow-y: auto; z-index: 1060; border-radius: 10px;">
+                                        <li class="dropdown-header text-uppercase text-muted fw-bold" style="font-size: 11px;">Готовые шаблоны:</li>
+                                        {% for t in mail_templates %}
+                                            <li>
+                                                <a class="dropdown-item py-2 px-3 cursor-pointer d-flex flex-column" onclick="applyTemplate({{ t.id }})">
+                                                    <span class="fw-semibold text-dark text-truncate">
+                                                        {% if t.is_global %}
+                                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">Общий</span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-secondary border me-1" style="font-size: 10px;">Личный</span>
+                                                        {% endif %}
+                                                        {{ t.name }}
+                                                    </span>
+                                                    {% if t.subject %}
+                                                        <small class="text-muted text-truncate" style="font-size: 11px;">Тема: {{ t.subject }}</small>
+                                                    {% endif %}
+                                                </a>
+                                            </li>
+                                        {% empty %}
+                                            <li class="px-3 py-2 text-muted small">Шаблоны пока не созданы</li>
+                                        {% endfor %}
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <a class="dropdown-item py-2 px-3 text-primary d-flex align-items-center gap-2 cursor-pointer" onclick="openSaveTemplateModal()">
+                                                <i class="bx bx-plus-circle font-size-16"></i> Сохранить текущее как шаблон
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                             {{ form.body_html }}
                         </div>
 
@@ -246,6 +284,51 @@
                     <button type="button" class="btn btn-outline-secondary px-3 py-1 font-size-13" data-bs-dismiss="modal" style="border-radius: 6px;">Отмена</button>
                     <button type="button" class="btn btn-primary font-weight-semibold px-4 py-1 font-size-13 shadow-sm d-flex align-items-center gap-1" id="btnConfirmSchedule" style="border-radius: 6px;">
                         <i class="bx bx-check font-size-16"></i> Выбрать это время
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно сохранения шаблона -->
+    <div class="modal fade" id="saveTemplateModal" tabindex="-1" aria-labelledby="saveTemplateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-light py-3 px-4 border-bottom">
+                    <h5 class="modal-title font-weight-semibold text-dark d-flex align-items-center gap-2" id="saveTemplateModalLabel">
+                        <i class="bx bx-bookmark-plus text-primary font-size-22"></i> Сохранить как шаблон
+                    </h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="templateNameInput" class="form-label font-weight-semibold text-dark font-size-13">
+                            Название шаблона <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="templateNameInput" placeholder="Например: Согласование акта" style="font-size: 14px; border-radius: 6px;">
+                    </div>
+                    <div class="mb-3">
+                        <label for="templateSubjectInput" class="form-label font-weight-semibold text-dark font-size-13">
+                            Тема письма по умолчанию
+                        </label>
+                        <input type="text" class="form-control" id="templateSubjectInput" placeholder="Необязательно, подставится в тему письма" style="font-size: 14px; border-radius: 6px;">
+                    </div>
+                    {% if can_manage_mailboxes %}
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input cursor-pointer" type="checkbox" id="templateIsGlobalInput">
+                            <label class="form-check-label font-weight-semibold text-dark font-size-13 cursor-pointer" for="templateIsGlobalInput">
+                                Сделать общекорпоративным (доступен всем сотрудникам)
+                            </label>
+                        </div>
+                    {% endif %}
+                    <div class="small text-muted">
+                        В качестве текста шаблона будет сохранен текущий текст из редактора сообщения.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between border-top">
+                    <button type="button" class="btn btn-outline-secondary px-3 py-1 font-size-13" data-bs-dismiss="modal" style="border-radius: 6px;">Отмена</button>
+                    <button type="button" class="btn btn-primary font-weight-semibold px-4 py-1 font-size-13 shadow-sm d-flex align-items-center gap-1" id="btnSubmitSaveTemplate" onclick="submitSaveTemplate()" style="border-radius: 6px;">
+                        <i class="bx bx-check font-size-16"></i> Сохранить шаблон
                     </button>
                 </div>
             </div>
@@ -679,6 +762,106 @@
                     if (input) input.focus();
                 }
             }
+        }
+
+        const mailTemplates = {{ mail_templates_json|safe|default:"[]" }};
+
+        function applyTemplate(id) {
+            const tmpl = mailTemplates.find(t => t.id === id);
+            if (!tmpl) return;
+
+            const subjectInput = document.querySelector('input[name="subject"]');
+            if (subjectInput && !subjectInput.value.trim() && tmpl.subject) {
+                subjectInput.value = tmpl.subject;
+            }
+
+            const currentContent = $('#id_body_html').summernote('code');
+            if (!currentContent || currentContent === '<p><br></p>' || currentContent.trim() === '') {
+                $('#id_body_html').summernote('code', tmpl.body_html);
+            } else {
+                $('#id_body_html').summernote('pasteHTML', tmpl.body_html + '<br>');
+            }
+            isFormDirty = true;
+        }
+
+        function openSaveTemplateModal() {
+            const modalEl = document.getElementById('saveTemplateModal');
+            if (modalEl) {
+                const subjectInput = document.querySelector('input[name="subject"]');
+                const templateSubjectInput = document.getElementById('templateSubjectInput');
+                if (subjectInput && templateSubjectInput && !templateSubjectInput.value) {
+                    templateSubjectInput.value = subjectInput.value.trim();
+                }
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        }
+
+        function submitSaveTemplate() {
+            const nameInput = document.getElementById('templateNameInput');
+            const name = nameInput ? nameInput.value.trim() : '';
+            if (!name) {
+                alert('Пожалуйста, введите название шаблона');
+                if (nameInput) nameInput.focus();
+                return;
+            }
+
+            const subjectInput = document.getElementById('templateSubjectInput');
+            const subject = subjectInput ? subjectInput.value.trim() : '';
+            const isGlobalInput = document.getElementById('templateIsGlobalInput');
+            const isGlobal = isGlobalInput ? isGlobalInput.checked : false;
+
+            const bodyHtml = $('#id_body_html').summernote('code');
+            if (!bodyHtml || bodyHtml === '<p><br></p>' || bodyHtml.trim() === '') {
+                alert('Текст письма пуст. Напишите текст сообщения для создания шаблона.');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitSaveTemplate');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Сохранение...';
+            }
+
+            fetch("{% url 'mailbox_app:api_templates' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    subject: subject,
+                    body_html: bodyHtml,
+                    is_global: isGlobal
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const modalEl = document.getElementById('saveTemplateModal');
+                    if (modalEl) {
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                    }
+                    window.location.reload();
+                } else {
+                    alert('Ошибка при сохранении шаблона: ' + (data.error || 'Неизвестная ошибка'));
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bx bx-check font-size-16"></i> Сохранить шаблон';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Сетевая ошибка при сохранении шаблона');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-check font-size-16"></i> Сохранить шаблон';
+                }
+            });
         }
     </script>
 {% endblock %}

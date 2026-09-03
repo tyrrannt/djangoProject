@@ -2,7 +2,7 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
-from mailbox_app.models import MailAccount, Mailbox
+from mailbox_app.models import MailAccount, Mailbox, MailContact, MailPrintSettings, MailTemplate
 from mailbox_app.services.mailbox_defaults import DEFAULT_DOMAIN, get_domain_defaults
 
 
@@ -458,3 +458,77 @@ class MailboxAdminForm(forms.ModelForm):
             instance.save()
             self.save_m2m()
         return instance
+
+
+class MailContactForm(forms.ModelForm):
+    """Форма добавления и редактирования контакта в адресной книге сотрудника."""
+
+    class Meta:
+        model = MailContact
+        fields = ["name", "email"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Иванов Иван Иванович или ООО «Компания»",
+                    "required": True,
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "user@example.com",
+                    "required": True,
+                }
+            ),
+        }
+
+
+class MailPrintSettingsForm(forms.ModelForm):
+    """Форма настройки официального печатного бланка письма для администраторов почты."""
+
+    class Meta:
+        model = MailPrintSettings
+        fields = [
+            "organization_name",
+            "header_title",
+            "sub_header",
+            "footer_note",
+            "show_logo",
+        ]
+        widgets = {
+            "organization_name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "ООО «Авиакомпания «Баркол»"}
+            ),
+            "header_title": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "СЛУЖЕБНАЯ КОРПОРАТИВНАЯ ПЕРЕПИСКА"}
+            ),
+            "sub_header": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Официальная распечатка электронного сообщения"}
+            ),
+            "footer_note": forms.Textarea(
+                attrs={"class": "form-control", "rows": 3}
+            ),
+            "show_logo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+
+class MailTemplateForm(forms.ModelForm):
+    """Форма создания и редактирования шаблона быстрого ответа / письма."""
+
+    class Meta:
+        model = MailTemplate
+        fields = ["name", "subject", "body_html", "is_global"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Название шаблона (например, Согласование акта)"}
+            ),
+            "subject": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Тема письма по умолчанию (необязательно)"}
+            ),
+            "body_html": forms.Textarea(
+                attrs={"class": "form-control", "rows": 6, "placeholder": "Текст сообщения шаблона..."}
+            ),
+            "is_global": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
