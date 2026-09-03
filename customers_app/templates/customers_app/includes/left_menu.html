@@ -387,7 +387,7 @@
                                         </a>
                                         <ul class="nav nav-children">
                                             <li><a class="nav-link" href="{% url 'testing_app:my_tests' %}"><i class="bx bx-user me-1" aria-hidden="true"></i><span>Мои тестирования</span></a></li>
-                                            {% if user.is_superuser or user.is_staff or user|has_group:"Ответственные за тестирование" %}
+                                            {% if user.is_superuser or user|has_group:"Ответственные за тестирование" %}
                                                 <li><a class="nav-link" href="{% url 'testing_app:dashboard' %}"><i class="bx bx-tachometer me-1" aria-hidden="true"></i><span>Дашборд</span></a></li>
                                                 <li><a class="nav-link" href="{% url 'testing_app:material_report' %}"><i class="bx bx-line-chart me-1" aria-hidden="true"></i><span>Отчет по материалам</span></a></li>
                                                 <li><a class="nav-link" href="{% url 'testing_app:event_list' %}"><i class="bx bx-calendar-event me-1" aria-hidden="true"></i><span>Мероприятия (Приказы)</span></a></li>

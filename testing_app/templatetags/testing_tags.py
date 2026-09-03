@@ -9,15 +9,18 @@ register = template.Library()
 def is_testing_manager(user) -> bool:
     """Проверяет, обладает ли пользователь правами ответственного за тестирование или администратора.
 
+    Правами обладают только суперпользователи и члены группы 'Ответственные за тестирование'.
+    Обычные сотрудники (включая staff) без членства в группе правами не обладают.
+
     Args:
         user: Экземпляр пользователя.
 
     Returns:
-        bool: True, если пользователь суперпользователь, персонал или входит в группу 'Ответственные за тестирование'.
+        bool: True, если пользователь суперпользователь или входит в группу 'Ответственные за тестирование'.
     """
     if not user or not user.is_authenticated:
         return False
-    if user.is_superuser or user.is_staff:
+    if user.is_superuser:
         return True
     return user.groups.filter(name="Ответственные за тестирование").exists()
 

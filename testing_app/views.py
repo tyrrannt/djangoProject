@@ -101,18 +101,29 @@ from testing_app.services.report_service import (
 from django.core.exceptions import ValidationError
 
 
+def is_testing_manager_user(user) -> bool:
+    """Проверяет, обладает ли пользователь правами ответственного за тестирование.
+
+    Правами обладают только суперпользователи и члены группы 'Ответственные за тестирование'.
+    Обычные сотрудники (включая тех, у кого выставлен флаг is_staff для других модулей портала)
+    доступа к управлению тестированием, созданию, редактированию и удалению материалов не имеют.
+
+    Args:
+        user: Пользователь системы.
+
+    Returns:
+        bool: True, если пользователь суперпользователь или состоит в группе 'Ответственные за тестирование'.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    return user.is_superuser or user.groups.filter(name="Ответственные за тестирование").exists()
+
+
 class TestingManagerRequiredMixin(UserPassesTestMixin):
-    """Миксин проверки прав доступа: только суперпользователи, персонал или группа 'Ответственные за тестирование'."""
+    """Миксин проверки прав доступа: только суперпользователи или группа 'Ответственные за тестирование'."""
 
     def test_func(self):
-        user = self.request.user
-        if not user.is_authenticated:
-            return False
-        return (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        return is_testing_manager_user(self.request.user)
 
     def handle_no_permission(self):
         messages.error(self.request, "У вас нет прав для доступа к управлению тестированием.")
@@ -127,12 +138,7 @@ class TestingIndexView(LoginRequiredMixin, View):
     """
 
     def get(self, request, *args, **kwargs):
-        is_manager = (
-            request.user.is_superuser
-            or request.user.is_staff
-            or request.user.groups.filter(name="Ответственные за тестирование").exists()
-        )
-        if is_manager:
+        if is_testing_manager_user(request.user):
             return redirect("testing_app:dashboard")
         return redirect("testing_app:my_tests")
 
@@ -936,13 +942,8 @@ class TestAttemptResultView(LoginRequiredMixin, View):
             pk=attempt_id
         )
 
-        # Просмотр разрешен сотруднику или ответственным/администраторам
         is_owner = (attempt.assignment.employee == request.user)
-        is_manager = (
-            request.user.is_superuser
-            or request.user.is_staff
-            or request.user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(request.user)
 
         if not is_owner and not is_manager:
             messages.error(request, "У вас нет прав для просмотра этого протокола тестирования.")
@@ -971,13 +972,8 @@ class CertificateView(LoginRequiredMixin, View):
             messages.error(request, "Уведомление формируется только при успешной сдаче тестирования.")
             return redirect("testing_app:test_result", attempt_id=attempt.id)
 
-        # Доступ разрешен самому сотруднику, руководству и ответственным
         is_owner = (attempt.assignment.employee == request.user)
-        is_manager = (
-            request.user.is_superuser
-            or request.user.is_staff
-            or request.user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(request.user)
 
         if not is_owner and not is_manager:
             messages.error(request, "У вас нет прав для доступа к этому уведомлению.")
@@ -1016,11 +1012,7 @@ class AttemptTestSheetView(LoginRequiredMixin, View):
         )
 
         is_owner = (attempt.assignment.employee == request.user)
-        is_manager = (
-            request.user.is_superuser
-            or request.user.is_staff
-            or request.user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(request.user)
 
         if not is_owner and not is_manager:
             messages.error(request, "У вас нет прав для доступа к этому экзаменационному листу.")
@@ -1157,11 +1149,7 @@ class LectureListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        is_manager = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(user)
         qs = LectureMaterial.objects.all().select_related("created_by")
 
         if not is_manager:
@@ -1182,11 +1170,7 @@ class LectureListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context["is_manager"] = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        context["is_manager"] = is_testing_manager_user(user)
         context["active_tab"] = "lectures"
         context["search_query"] = self.request.GET.get("q", "")
         context["selected_status"] = self.request.GET.get("status", "")
@@ -1206,11 +1190,7 @@ class LectureDetailView(LoginRequiredMixin, DetailView):
     def get_object(self, queryset=None):
         obj = super().get_object(queryset=queryset)
         user = self.request.user
-        is_manager = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(user)
         if not obj.is_actual and not is_manager:
             raise Http404("Лекционный материал перенесен в архив или недоступен.")
         return obj
@@ -1225,11 +1205,7 @@ class LectureDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        is_manager = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(user)
         context["is_manager"] = is_manager
         context["active_tab"] = "lectures"
         if is_manager:
@@ -1337,11 +1313,7 @@ class VideoLectureListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        is_manager = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(user)
         qs = VideoLecture.objects.all().select_related("created_by")
 
         if not is_manager:
@@ -1362,11 +1334,7 @@ class VideoLectureListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context["is_manager"] = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        context["is_manager"] = is_testing_manager_user(user)
         context["active_tab"] = "videos"
         context["search_query"] = self.request.GET.get("q", "")
         context["selected_status"] = self.request.GET.get("status", "")
@@ -1386,11 +1354,7 @@ class VideoLectureDetailView(LoginRequiredMixin, DetailView):
     def get_object(self, queryset=None):
         obj = super().get_object(queryset=queryset)
         user = self.request.user
-        is_manager = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(user)
         if not obj.is_actual and not is_manager:
             raise Http404("Видеолекция перенесена в архив или недоступна.")
         return obj
@@ -1405,11 +1369,7 @@ class VideoLectureDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        is_manager = (
-            user.is_superuser
-            or user.is_staff
-            or user.groups.filter(name="Ответственные за тестирование").exists()
-        )
+        is_manager = is_testing_manager_user(user)
         context["is_manager"] = is_manager
         context["active_tab"] = "videos"
         if is_manager:
