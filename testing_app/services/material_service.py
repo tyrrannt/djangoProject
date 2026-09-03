@@ -135,7 +135,7 @@ def get_material_access_report_qs(
         "video_lecture",
     ).prefetch_related(
         "user__user_work_profile__job",
-        "user__user_work_profile__division",
+        "user__user_work_profile__divisions",
     )
 
     if material_type in [MaterialViewLog.MaterialType.LECTURE, MaterialViewLog.MaterialType.VIDEO]:
@@ -166,7 +166,7 @@ def get_material_access_report_qs(
     if division_id:
         try:
             d_id = int(division_id)
-            qs = qs.filter(user__user_work_profile__division_id=d_id)
+            qs = qs.filter(user__user_work_profile__divisions_id=d_id)
         except (ValueError, TypeError):
             pass
 
@@ -256,7 +256,7 @@ def export_material_report_excel(queryset: models.QuerySet) -> openpyxl.Workbook
         fio = user.get_full_name() if user else "—"
         work_prof = getattr(user, "user_work_profile", None)
         job_title = str(work_prof.job) if work_prof and work_prof.job else "—"
-        division_title = str(work_prof.division) if work_prof and work_prof.division else "—"
+        division_title = str(work_prof.divisions) if work_prof and work_prof.divisions else "—"
 
         mat_type = item.get_material_type_display()
         mat_title = item.lecture.title if item.lecture else (item.video_lecture.title if item.video_lecture else "—")
@@ -345,7 +345,7 @@ def export_material_report_csv(queryset: models.QuerySet) -> str:
         fio = user.get_full_name() if user else "—"
         work_prof = getattr(user, "user_work_profile", None)
         job_title = str(work_prof.job) if work_prof and work_prof.job else "—"
-        division_title = str(work_prof.division) if work_prof and work_prof.division else "—"
+        division_title = str(work_prof.divisions) if work_prof and work_prof.divisions else "—"
 
         mat_type = item.get_material_type_display()
         mat_title = item.lecture.title if item.lecture else (item.video_lecture.title if item.video_lecture else "—")

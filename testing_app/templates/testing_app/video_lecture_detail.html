@@ -125,7 +125,7 @@
                                                 <i class="bx bx-user text-primary me-1"></i>{{ view.user.get_full_name|default:view.user.username }}
                                             </td>
                                             <td>{{ view.user.user_work_profile.job.get_title|default:"—" }}</td>
-                                            <td>{{ view.user.user_work_profile.division.name|default:"—" }}</td>
+                                            <td>{{ view.user.user_work_profile.divisions.name|default:"—" }}</td>
                                             <td class="text-center font-weight-bold text-danger">{{ view.views_count }}</td>
                                             <td class="small text-muted">{{ view.first_viewed_at|date:"d.m.Y H:i" }}</td>
                                             <td class="small text-muted">{{ view.last_viewed_at|date:"d.m.Y H:i" }}</td>

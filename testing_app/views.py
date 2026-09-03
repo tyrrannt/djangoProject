@@ -1235,7 +1235,7 @@ class LectureDetailView(LoginRequiredMixin, DetailView):
         if is_manager:
             context["recent_views"] = (
                 self.object.view_logs.select_related("user")
-                .prefetch_related("user__user_work_profile__job", "user__user_work_profile__division")
+                .prefetch_related("user__user_work_profile__job", "user__user_work_profile__divisions")
                 .order_by("-last_viewed_at")[:10]
             )
         return context
@@ -1415,7 +1415,7 @@ class VideoLectureDetailView(LoginRequiredMixin, DetailView):
         if is_manager:
             context["recent_views"] = (
                 self.object.view_logs.select_related("user")
-                .prefetch_related("user__user_work_profile__job", "user__user_work_profile__division")
+                .prefetch_related("user__user_work_profile__job", "user__user_work_profile__divisions")
                 .order_by("-last_viewed_at")[:10]
             )
         return context
