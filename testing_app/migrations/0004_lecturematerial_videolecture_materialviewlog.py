@@ -73,10 +73,10 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="materialviewlog",
-            constraint=models.UniqueConstraint(condition=models.Q(lecture__isnull=False), fields=("user", "lecture"), name="unique_user_lecture_view"),
+            constraint=models.UniqueConstraint(fields=("user", "lecture"), name="unique_user_lecture_view"),
         ),
         migrations.AddConstraint(
             model_name="materialviewlog",
-            constraint=models.UniqueConstraint(condition=models.Q(video_lecture__isnull=False), fields=("user", "video_lecture"), name="unique_user_video_view"),
+            constraint=models.UniqueConstraint(fields=("user", "video_lecture"), name="unique_user_video_view"),
         ),
     ]

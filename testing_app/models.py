@@ -1293,12 +1293,10 @@ class MaterialViewLog(models.Model):
             models.UniqueConstraint(
                 fields=["user", "lecture"],
                 name="unique_user_lecture_view",
-                condition=models.Q(lecture__isnull=False),
             ),
             models.UniqueConstraint(
                 fields=["user", "video_lecture"],
                 name="unique_user_video_view",
-                condition=models.Q(video_lecture__isnull=False),
             ),
         ]
 
