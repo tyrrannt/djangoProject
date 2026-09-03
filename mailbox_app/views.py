@@ -60,6 +60,34 @@ from mailbox_app.services.smtp_service import SmtpMailService
 logger = logging.getLogger(__name__)
 
 
+def is_mailbox_admin(user) -> bool:
+    """Проверяет наличие административных прав на корпоративную почту у пользователя.
+
+    Административный доступ (управление корпоративными ящиками, диагностика и профилирование)
+    предоставляется строго:
+    1. Суперадминистраторам (is_superuser);
+    2. Участникам специальной группы «Администраторы почты»;
+    3. Пользователям с явным разрешением 'mailbox_app.manage_mailboxes'.
+
+    Флаг обычного персонала (is_staff) намеренно исключен в целях изоляции прав.
+
+    Args:
+        user: Экземпляр модели пользователя Django.
+
+    Returns:
+        bool: True, если у пользователя есть административные права на почту, иначе False.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    if user.groups.filter(name="Администраторы почты").exists():
+        return True
+    if user.has_perm("mailbox_app.manage_mailboxes"):
+        return True
+    return False
+
+
 class MailboxBaseMixin(LoginRequiredMixin):
     """Базовый миксин для представлений почты: проверка и получение активного почтового аккаунта."""
 
@@ -136,7 +164,7 @@ class MailboxBaseMixin(LoginRequiredMixin):
 
             mb_id = int(req_mb)
             has_access = (
-                user.is_superuser
+                is_mailbox_admin(user)
                 or Mailbox.objects.filter(id=mb_id, is_active=True, users=user).exists()
             )
             if has_access:
@@ -157,7 +185,7 @@ class MailboxBaseMixin(LoginRequiredMixin):
             try:
                 from mailbox_app.models import Mailbox
 
-                return Mailbox.objects.get(id=int(active_id), is_active=True)
+                return Mailbox.objects.filter(id=int(active_id), is_active=True).first()
             except Exception as e:
                 logger.warning(f"[Mailbox] Не удалось получить дополнительный ящик {active_id}: {e}")
 
@@ -240,11 +268,7 @@ class MailboxBaseMixin(LoginRequiredMixin):
         for mb in available:
             mb["is_current"] = (mb["id"] == active_id)
 
-        can_manage = (
-            self.request.user.is_superuser
-            or self.request.user.is_staff
-            or self.request.user.has_perm("mailbox_app.manage_mailboxes")
-        )
+        can_manage = is_mailbox_admin(self.request.user)
 
         return {
             "account": account,
@@ -1120,14 +1144,14 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
     form_class = MailAccountSettingsForm
 
     def get_form_kwargs(self):
-        """Передает текущий инстанс MailAccount и права суперадминистратора в форму.
+        """Передает текущий инстанс MailAccount и права администратора почты в форму.
 
         Returns:
             dict: Параметры формы.
         """
         kwargs = super().get_form_kwargs()
         kwargs["instance"] = self.get_account()
-        kwargs["is_superuser"] = bool(self.request.user.is_superuser)
+        kwargs["is_superuser"] = is_mailbox_admin(self.request.user)
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -1172,7 +1196,7 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
 class MailboxDiagnosticView(UserPassesTestMixin, MailboxBaseMixin, TemplateView):
     """Представление для детального пошагового профилирования и диагностики почтового сервера.
 
-    Доступно исключительно персоналу (staff) и суперпользователям (superuser).
+    Доступно исключительно суперадминистраторам и участникам группы «Администраторы почты».
     """
 
     template_name = "mailbox_app/diagnostic.html"
@@ -1181,12 +1205,17 @@ class MailboxDiagnosticView(UserPassesTestMixin, MailboxBaseMixin, TemplateView)
         """Проверяет права доступа к странице диагностики скорости.
 
         Returns:
-            bool: True, если пользователь является персоналом (staff) или суперадминистратором.
+            bool: True, если пользователь является суперадминистратором или входит в группу «Администраторы почты».
         """
-        return bool(
-            self.request.user.is_authenticated
-            and (self.request.user.is_staff or self.request.user.is_superuser)
+        return is_mailbox_admin(self.request.user)
+
+    def handle_no_permission(self):
+        """Обрабатывает отказ в доступе к диагностике."""
+        messages.error(
+            self.request,
+            "У вас нет прав для доступа к диагностике почтового сервера. Доступ разрешен только Администраторам почты.",
         )
+        return redirect("mailbox_app:index")
 
     def get_context_data(self, **kwargs):
         """Выполняет серию пошаговых тестов скорости сетевого взаимодействия и команд Kerio Connect.
@@ -1932,20 +1961,19 @@ class MailboxAdminAccessMixin(MailboxBaseMixin, UserPassesTestMixin):
     """Миксин проверки прав доступа к управлению корпоративными почтовыми ящиками."""
 
     def test_func(self) -> bool:
-        """Проверяет наличие прав суперпользователя, персонала или разрешения manage_mailboxes.
+        """Проверяет наличие прав суперадминистратора, группы «Администраторы почты» или разрешения manage_mailboxes.
 
         Returns:
             bool: True, если доступ разрешен.
         """
-        user = self.request.user
-        return (
-            user.is_authenticated
-            and (user.is_superuser or user.is_staff or user.has_perm("mailbox_app.manage_mailboxes"))
-        )
+        return is_mailbox_admin(self.request.user)
 
     def handle_no_permission(self):
         """Обрабатывает отказ в доступе."""
-        messages.error(self.request, "У вас нет прав для управления корпоративными почтовыми ящиками.")
+        messages.error(
+            self.request,
+            "У вас нет прав для управления корпоративными почтовыми ящиками. Доступ разрешен только Администраторам почты.",
+        )
         return redirect("mailbox_app:index")
 
 

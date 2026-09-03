@@ -80,7 +80,7 @@
                     <a href="{% url 'mailbox_app:settings' %}" class="mailbox-settings-link">
                         <i class="bx bx-cog font-size-18"></i> Настройки и подпись
                     </a>
-                    {% if request.user.is_staff or request.user.is_superuser %}
+                    {% if can_manage_mailboxes %}
                         <a href="{% url 'mailbox_app:diag' %}" class="mailbox-settings-link text-muted" style="font-size: 12px;">
                             <i class="bx bx-tachometer font-size-18 text-primary"></i> Диагностика скорости
                         </a>
@@ -163,7 +163,7 @@
             <a href="{% url 'mailbox_app:settings' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px;">
                 <i class="bx bx-cog font-size-18"></i> Настройки и подпись
             </a>
-            {% if request.user.is_staff or request.user.is_superuser %}
+            {% if can_manage_mailboxes %}
                 <a href="{% url 'mailbox_app:diag' %}" class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px; font-size: 13px;">
                     <i class="bx bx-tachometer font-size-18"></i> Диагностика скорости
                 </a>
