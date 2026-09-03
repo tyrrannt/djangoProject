@@ -8,6 +8,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 import requests
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -15,6 +16,7 @@ from django.views import View
 from django.views.generic import ListView
 
 from administration_app.models import PortalProperty
+from administration_app.system_monitor_service import get_system_monitor_payload
 from contracts_app.models import Contract
 from contracts_app.views import update_contract_dates_from_comment
 
@@ -898,7 +900,47 @@ class PortalPropertyTaskStatusView(LoginRequiredMixin, View):
 
 @login_required
 def system_monitor(request):
-    return render(request, 'administration_app/system_monitor.html')
+    """Страница комплексного мониторинга параметров сервера и интеллектуальной диагностики.
+
+    Отображает аппаратные метрики в реальном времени, график сетевого трафика,
+    топ ресурсоемких процессов и блок рекомендаций администратору.
+
+    Args:
+        request: Объект входящего HTTP-запроса.
+
+    Returns:
+        HttpResponse: Отрендеренная страница мониторинга.
+
+    Raises:
+        PermissionDenied: Если у пользователя нет статуса персонала или суперпользователя.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied("Доступ к мониторингу параметров сервера разрешен только администраторам.")
+
+    initial_data = get_system_monitor_payload()
+    context = {
+        "title": "Мониторинг параметров сервера",
+        "initial_data": initial_data,
+        "initial_data_json": json.dumps(initial_data),
+    }
+    return render(request, "administration_app/system_monitor.html", context)
+
+
+@login_required
+def system_monitor_data_api(request):
+    """REST API эндпоинт для получения текущих метрик и рекомендаций сервера (AJAX fallback).
+
+    Args:
+        request: Объект входящего HTTP-запроса.
+
+    Returns:
+        JsonResponse: Телеметрические показатели и рекомендации в формате JSON.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    payload = get_system_monitor_payload()
+    return JsonResponse(payload)
 
 
 @login_required

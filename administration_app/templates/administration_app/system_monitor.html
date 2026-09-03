@@ -3,17 +3,32 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Мониторинг параметров сервера" }}
 {% endblock %}
 
 {% block custom_css %}
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/jquery.easy-pie-chart/2.1.6/jquery.easy-pie-chart.min.css">
     <style>
+        .monitor-kpi-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            height: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .monitor-kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 43, 73, 0.08);
+        }
+
         .chart-box {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 20px 15px;
             text-align: center;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -30,8 +45,8 @@
             font-size: 0.95rem;
             font-weight: 600;
             color: #002b49;
-            margin-top: 15px;
-            margin-bottom: 0;
+            margin-top: 12px;
+            margin-bottom: 4px;
         }
 
         .chart {
@@ -43,68 +58,316 @@
 
         .chart span {
             display: block;
-            line-height: 160px;
+            line-height: 150px;
             font-size: 24px;
             font-weight: 700;
             color: #002b49;
+        }
+
+        .recommendation-card {
+            border-radius: 10px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .recommendation-card.critical {
+            border-left: 5px solid #ef4444 !important;
+            background-color: #fffafb;
+        }
+
+        .recommendation-card.warning {
+            border-left: 5px solid #f59e0b !important;
+            background-color: #fffdfa;
+        }
+
+        .recommendation-card.success {
+            border-left: 5px solid #10b981 !important;
+            background-color: #f7fee7;
+        }
+
+        .live-pulse {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-animation 1.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .live-pulse-warn {
+            background-color: #f59e0b;
+            animation: pulse-warn 1.5s infinite;
+        }
+
+        @keyframes pulse-warn {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <!-- start: page -->
-    <div class="row">
+    <!-- Заголовок страницы и панель управления -->
+    <div class="row mb-4">
         <div class="col-12">
-            <section class="card card-modern">
-                <header class="card-header d-flex justify-content-between align-items-center">
+            <section class="card card-modern shadow-sm border-0">
+                <header class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 flex-wrap gap-3">
                     <div>
-                        <h2 class="card-title text-primary"><i class="fas fa-server me-2"></i>Мониторинг параметров сервера</h2>
-                        <p class="card-subtitle text-muted">Анализ производительности аппаратных ресурсов и сетевого трафика в реальном времени</p>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h2 class="card-title text-primary mb-0 fs-4 font-weight-bold">
+                                <i class="fas fa-server me-2"></i>Мониторинг параметров сервера
+                            </h2>
+                            <span id="ws-badge" class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1 py-1 px-2">
+                                <span class="live-pulse bg-success"></span> Live WebSocket
+                            </span>
+                        </div>
+                        <p class="card-subtitle text-muted small mb-0">
+                            Анализ производительности аппаратных ресурсов, диагностика и интеллектуальные рекомендации в реальном времени
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div id="health-badge-container">
+                            <span id="overall-health-badge" class="badge bg-success text-white px-3 py-2 fs-6 shadow-sm d-inline-flex align-items-center gap-1">
+                                <i class="bx bx-check-shield fs-5"></i> Все системы стабильны
+                            </span>
+                        </div>
+                        <button id="pause-btn" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm" title="Приостановить обновление данных на экране">
+                            <i class="bx bx-pause fs-5"></i> <span id="pause-btn-text">Пауза</span>
+                        </button>
+                        <button id="refresh-now-btn" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm" title="Запросить свежие параметры немедленно">
+                            <i class="bx bx-refresh fs-5"></i> Обновить
+                        </button>
                     </div>
                 </header>
-                <div class="card-body p-4">
-                    <div class="row g-4">
-                        <div class="col-12 col-sm-6 col-lg-4">
+
+                <div class="card-body p-3 p-md-4">
+                    <!-- Сводные KPI карточки сервера -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-4 col-xl">
+                            <div class="monitor-kpi-card">
+                                <div class="text-muted small mb-1"><i class="bx bx-time-five text-primary me-1"></i>Аптайм сервера</div>
+                                <div class="fs-5 font-weight-bold text-dark text-truncate" id="kpi-uptime">
+                                    {{ initial_data.uptime_str|default:"—" }}
+                                </div>
+                                <div class="small text-muted">Непрерывная работа ОС</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl">
+                            <div class="monitor-kpi-card">
+                                <div class="text-muted small mb-1"><i class="bx bx-tachometer text-info me-1"></i>Load Average</div>
+                                <div class="fs-5 font-weight-bold text-dark" id="kpi-loadavg">
+                                    {% if initial_data.load_avg %}
+                                        {{ initial_data.load_avg.0 }}, {{ initial_data.load_avg.1 }}, {{ initial_data.load_avg.2 }}
+                                    {% else %}
+                                        0.0, 0.0, 0.0
+                                    {% endif %}
+                                </div>
+                                <div class="small text-muted" id="kpi-cores">1 мин, 5 мин, 15 мин ({{ initial_data.cpu_count_logical|default:"1" }} ядер)</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl">
+                            <div class="monitor-kpi-card">
+                                <div class="text-muted small mb-1"><i class="bx bx-memory-card text-success me-1"></i>Свободно RAM</div>
+                                <div class="fs-5 font-weight-bold text-success" id="kpi-ram-free">
+                                    {{ initial_data.ram_available_gb|default:"0" }} ГБ
+                                </div>
+                                <div class="small text-muted" id="kpi-ram-total">Всего: {{ initial_data.ram_total_gb|default:"0" }} ГБ</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl">
+                            <div class="monitor-kpi-card">
+                                <div class="text-muted small mb-1"><i class="bx bx-hdd text-warning me-1"></i>Свободно на диске</div>
+                                <div class="fs-5 font-weight-bold text-dark" id="kpi-disk-free">
+                                    {{ initial_data.disk_free_gb|default:"0" }} ГБ
+                                </div>
+                                <div class="small text-muted" id="kpi-disk-total">Всего: {{ initial_data.disk_total_gb|default:"0" }} ГБ</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4 col-xl">
+                            <div class="monitor-kpi-card">
+                                <div class="text-muted small mb-1"><i class="bx bx-data text-primary me-1"></i>СУБД MariaDB</div>
+                                <div class="fs-5 font-weight-bold text-primary d-flex align-items-center gap-2" id="kpi-db-ping">
+                                    <span>{{ initial_data.db_ping_ms|default:"0" }} мс</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle small py-0 px-1" id="kpi-db-status">OK</span>
+                                </div>
+                                <div class="small text-muted">Задержка проверочного запроса</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Блок интеллектуальной диагностики и рекомендаций -->
+                    <div class="card card-modern shadow-sm border mb-4">
+                        <header class="card-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="card-title text-dark mb-0 fs-6 font-weight-bold d-flex align-items-center gap-2">
+                                <i class="bx bx-bulb text-warning fs-5"></i>
+                                Интеллектуальная диагностика и рекомендации
+                            </h5>
+                            <span class="small text-muted" id="recs-count-label">Показания в реальном времени</span>
+                        </header>
+                        <div class="card-body p-3" id="recommendations-container">
+                            <!-- Карточки рекомендаций генерируются автоматически -->
+                            {% if initial_data.recommendations %}
+                                {% for rec in initial_data.recommendations %}
+                                    <div class="recommendation-card p-3 mb-2 {{ rec.level }}">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="{{ rec.icon }} fs-5 {% if rec.level == 'critical' %}text-danger{% elif rec.level == 'warning' %}text-warning{% else %}text-success{% endif %}"></i>
+                                                <strong class="text-dark">{{ rec.title }}</strong>
+                                                <span class="badge {% if rec.level == 'critical' %}bg-danger{% elif rec.level == 'warning' %}bg-warning text-dark{% else %}bg-success{% endif %} small">
+                                                    {{ rec.category }}
+                                                </span>
+                                            </div>
+                                            <span class="badge bg-light text-muted border font-monospace">{{ rec.value }}</span>
+                                        </div>
+                                        <div class="small text-muted mb-2">{{ rec.description }}</div>
+                                        <div class="p-2 bg-light rounded small text-dark border-start border-3 border-primary font-monospace">
+                                            <i class="bx bx-terminal me-1 text-primary"></i><strong>Рекомендация:</strong> {{ rec.action }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="recommendation-card p-3 success">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="bx bx-check-shield fs-5 text-success"></i>
+                                        <strong class="text-success">Все компоненты работают стабильно</strong>
+                                    </div>
+                                    <div class="small text-muted">Аппаратные ресурсы сервера в норме, узких мест производительности не выявлено.</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Основные круговые диаграммы ресурсов (6 штук) -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                             <div class="chart-box">
-                                <div class="chart" id="cpu-chart" data-percent="0"><span>0</span>%</div>
+                                <div class="chart" id="cpu-chart" data-percent="{{ initial_data.cpu_percent|default:'0' }}">
+                                    <span>{{ initial_data.cpu_percent|default:"0" }}</span>%
+                                </div>
                                 <h5><i class="fas fa-microchip text-primary me-2"></i>Загрузка CPU</h5>
+                                <div class="small text-muted" id="cpu-sub-val">{{ initial_data.cpu_count_logical|default:"1" }} лог. ядер</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                             <div class="chart-box">
-                                <div class="chart" id="memory-chart" data-percent="0"><span>0</span>%</div>
-                                <h5><i class="fas fa-memory text-info me-2"></i>Оперативная память (RAM)</h5>
+                                <div class="chart" id="memory-chart" data-percent="{{ initial_data.ram_percent|default:'0' }}">
+                                    <span>{{ initial_data.ram_percent|default:"0" }}</span>%
+                                </div>
+                                <h5><i class="fas fa-memory text-info me-2"></i>Память (RAM)</h5>
+                                <div class="small text-muted" id="memory-sub-val">{{ initial_data.ram_used_gb|default:"0" }} / {{ initial_data.ram_total_gb|default:"0" }} ГБ</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                             <div class="chart-box">
-                                <div class="chart" id="disk-chart" data-percent="0"><span>0</span>%</div>
-                                <h5><i class="fas fa-hdd text-warning me-2"></i>Использование диска</h5>
+                                <div class="chart" id="disk-chart" data-percent="{{ initial_data.disk_percent|default:'0' }}">
+                                    <span>{{ initial_data.disk_percent|default:"0" }}</span>%
+                                </div>
+                                <h5><i class="fas fa-hdd text-warning me-2"></i>Диск (Root)</h5>
+                                <div class="small text-muted" id="disk-sub-val">{{ initial_data.disk_used_gb|default:"0" }} / {{ initial_data.disk_total_gb|default:"0" }} ГБ</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                             <div class="chart-box">
-                                <div class="chart" id="processes-chart" data-percent="0"><span>0</span></div>
-                                <h5><i class="fas fa-tasks text-success me-2"></i>Активные процессы</h5>
+                                <div class="chart" id="swap-chart" data-percent="{{ initial_data.swap_percent|default:'0' }}">
+                                    <span>{{ initial_data.swap_percent|default:"0" }}</span>%
+                                </div>
+                                <h5><i class="bx bx-transfer-alt text-secondary me-2"></i>Подкачка (Swap)</h5>
+                                <div class="small text-muted" id="swap-sub-val">{{ initial_data.swap_used_gb|default:"0" }} / {{ initial_data.swap_total_gb|default:"0" }} ГБ</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                             <div class="chart-box">
-                                <div class="chart" id="connections-chart" data-percent="0"><span>0</span></div>
-                                <h5><i class="fas fa-network-wired text-secondary me-2"></i>Сетевые соединения</h5>
+                                <div class="chart" id="processes-chart" data-percent="{% widthratio initial_data.processes_count|default:1 400 100 %}">
+                                    <span>{{ initial_data.processes_count|default:"0" }}</span>
+                                </div>
+                                <h5><i class="fas fa-tasks text-success me-2"></i>Процессы</h5>
+                                <div class="small text-muted" id="processes-sub-val">{{ initial_data.connections_count|default:"0" }} сетевых сокетов</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                             <div class="chart-box">
-                                <div class="chart" id="cpu-temp-chart" data-percent="0"><span>0</span>°C</div>
-                                <h5><i class="fas fa-temperature-high text-danger me-2"></i>Температура CPU</h5>
+                                <div class="chart" id="cpu-temp-chart" data-percent="{{ initial_data.cpu_temp|default:'0' }}">
+                                    <span>{% if initial_data.cpu_temp %}{{ initial_data.cpu_temp }}°C{% else %}N/A{% endif %}</span>
+                                </div>
+                                <h5><i class="fas fa-temperature-high text-danger me-2"></i>Температура</h5>
+                                <div class="small text-muted">Термодатчик CPU</div>
                             </div>
                         </div>
-                        <div class="col-12">
-                            <div class="chart-box text-start p-4">
-                                <h5 class="mb-3 text-start"><i class="fas fa-chart-line text-primary me-2"></i>Сетевой трафик в реальном времени (Sent / Received)</h5>
-                                <div style="position: relative; height: 280px; width: 100%;">
+                    </div>
+
+                    <!-- График сетевого трафика и Топ процессов -->
+                    <div class="row g-4">
+                        <!-- График сети -->
+                        <div class="col-12 col-xl-7">
+                            <div class="chart-box text-start p-3 p-md-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                    <h5 class="m-0 text-start">
+                                        <i class="fas fa-chart-line text-primary me-2"></i>Сетевой трафик в реальном времени (Скорость)
+                                    </h5>
+                                    <div class="d-flex gap-3 small">
+                                        <span class="text-danger font-weight-bold">
+                                            <i class="bx bx-up-arrow-alt"></i> Отправка: <span id="net-sent-speed-badge">0.0</span> КБ/с
+                                        </span>
+                                        <span class="text-info font-weight-bold">
+                                            <i class="bx bx-down-arrow-alt"></i> Прием: <span id="net-recv-speed-badge">0.0</span> КБ/с
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="position: relative; height: 260px; width: 100%;">
                                     <canvas id="network-chart"></canvas>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted small mt-2 pt-2 border-top">
+                                    <span id="net-sent-total-label">Всего отправлено: {{ initial_data.net_sent_total_mb|default:"0" }} МБ</span>
+                                    <span id="net-recv-total-label">Всего получено: {{ initial_data.net_recv_total_mb|default:"0" }} МБ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Таблица Топ-5 процессов -->
+                        <div class="col-12 col-xl-5">
+                            <div class="chart-box text-start p-3 p-md-4 d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="m-0 text-start">
+                                        <i class="bx bx-list-ol text-primary me-2"></i>Топ-5 ресурсоемких процессов
+                                    </h5>
+                                    <span class="badge bg-light text-muted border small">CPU & RAM</span>
+                                </div>
+                                <div class="table-responsive flex-grow-1">
+                                    <table class="table table-sm table-hover align-middle mb-0" id="top-processes-table">
+                                        <thead class="table-light small">
+                                            <tr>
+                                                <th>PID</th>
+                                                <th>Процесс</th>
+                                                <th>Пользователь</th>
+                                                <th class="text-end">CPU</th>
+                                                <th class="text-end">RAM</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="small font-monospace" id="top-processes-tbody">
+                                            {% if initial_data.top_processes %}
+                                                {% for p in initial_data.top_processes %}
+                                                    <tr>
+                                                        <td class="text-muted">{{ p.pid }}</td>
+                                                        <td class="font-weight-bold text-dark text-truncate" style="max-width: 130px;" title="{{ p.name }}">{{ p.name }}</td>
+                                                        <td class="text-muted">{{ p.user }}</td>
+                                                        <td class="text-end font-weight-bold text-danger">{{ p.cpu }}%</td>
+                                                        <td class="text-end font-weight-bold text-primary">{{ p.memory }}%</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted py-3">Опрос процессов...</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -113,7 +376,6 @@
             </section>
         </div>
     </div>
-    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
@@ -121,110 +383,296 @@
     <script src="{% static 'admin_templates/vendor/jquery.easy-pie-chart/chart.min.js' %}"></script>
     <script>
         $(function () {
-            // Инициализация easyPieChart для элементов с классом chart
+            let isPaused = false;
+            let wsConnection = null;
+            let fallbackInterval = null;
+
+            // Вспомогательная функция определения цвета диаграммы по значению
+            function getBarColor(percent) {
+                if (percent >= 90) return '#ef4444'; // красный
+                if (percent >= 75) return '#f59e0b'; // оранжевый
+                return '#0284c7'; // синий
+            }
+
+            // Инициализация easyPieChart
             $('.chart').easyPieChart({
-                barColor: '#002b49',
+                barColor: function(percent) {
+                    return getBarColor(percent);
+                },
                 trackColor: '#e2e8f0',
                 scaleColor: false,
-                lineWidth: 10,
+                lineWidth: 9,
                 lineCap: 'round',
-                size: 160,
-                animate: 1000
+                size: 150,
+                animate: 600
             });
 
-            // Инициализация Chart.js для сетевого трафика
+            // Инициализация графика сетевого трафика Chart.js
             const ctx = document.getElementById('network-chart').getContext('2d');
             const networkChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Отправлено (MB)',
+                        label: 'Отправка (КБ/с)',
                         data: [],
                         borderColor: '#e11d48',
-                        backgroundColor: 'rgba(225, 29, 72, 0.1)',
+                        backgroundColor: 'rgba(225, 29, 72, 0.08)',
                         fill: true,
-                        tension: 0.3
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 2
                     }, {
-                        label: 'Получено (MB)',
+                        label: 'Прием (КБ/с)',
                         data: [],
                         borderColor: '#0284c7',
-                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        backgroundColor: 'rgba(2, 132, 199, 0.08)',
                         fill: true,
-                        tension: 0.3
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: { duration: 300 },
                     scales: {
-                        x: {
-                            type: 'linear',
-                            position: 'bottom'
+                        x: { display: false },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                callback: function(val) {
+                                    return val + ' KB/s';
+                                }
+                            }
                         }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12 } }
                     }
                 }
             });
 
+            // Функция обновления всех элементов интерфейса на основе payload
+            function applyMonitorData(data) {
+                if (isPaused) return;
+
+                // 1. KPI показатели
+                if (data.uptime_str) $('#kpi-uptime').text(data.uptime_str);
+                if (data.load_avg) {
+                    $('#kpi-loadavg').text(data.load_avg[0] + ', ' + data.load_avg[1] + ', ' + data.load_avg[2]);
+                }
+                if (data.cpu_count_logical) {
+                    $('#kpi-cores').text('1 мин, 5 мин, 15 мин (' + data.cpu_count_logical + ' ядер)');
+                }
+                if (data.ram_available_gb !== undefined) $('#kpi-ram-free').text(data.ram_available_gb + ' ГБ');
+                if (data.ram_total_gb !== undefined) $('#kpi-ram-total').text('Всего: ' + data.ram_total_gb + ' ГБ');
+                if (data.disk_free_gb !== undefined) $('#kpi-disk-free').text(data.disk_free_gb + ' ГБ');
+                if (data.disk_total_gb !== undefined) $('#kpi-disk-total').text('Всего: ' + data.disk_total_gb + ' ГБ');
+
+                // СУБД Ping
+                if (data.db_ping_ms !== undefined) {
+                    $('#kpi-db-ping span:first').text(data.db_ping_ms + ' мс');
+                    if (data.db_status === 'ok') {
+                        $('#kpi-db-status').removeClass('bg-danger-subtle text-danger').addClass('bg-success-subtle text-success').text('OK');
+                    } else {
+                        $('#kpi-db-status').removeClass('bg-success-subtle text-success').addClass('bg-danger-subtle text-danger').text('СБОЙ');
+                    }
+                }
+
+                // 2. Общий статус здоровья системы (Overall Health)
+                const healthContainer = $('#health-badge-container');
+                if (data.overall_status === 'critical') {
+                    healthContainer.html('<span id="overall-health-badge" class="badge bg-danger text-white px-3 py-2 fs-6 shadow-sm d-inline-flex align-items-center gap-1"><i class="bx bx-error-alt fs-5"></i> Критическое состояние</span>');
+                } else if (data.overall_status === 'warning') {
+                    healthContainer.html('<span id="overall-health-badge" class="badge bg-warning text-dark px-3 py-2 fs-6 shadow-sm d-inline-flex align-items-center gap-1"><i class="bx bx-error fs-5"></i> Требует внимания</span>');
+                } else {
+                    healthContainer.html('<span id="overall-health-badge" class="badge bg-success text-white px-3 py-2 fs-6 shadow-sm d-inline-flex align-items-center gap-1"><i class="bx bx-check-shield fs-5"></i> Все системы стабильны</span>');
+                }
+
+                // 3. Блок рекомендаций
+                if (data.recommendations && data.recommendations.length > 0) {
+                    let html = '';
+                    data.recommendations.forEach(function(rec) {
+                        let levelClass = rec.level || 'info';
+                        let iconColor = rec.level === 'critical' ? 'text-danger' : (rec.level === 'warning' ? 'text-warning' : 'text-success');
+                        let badgeBg = rec.level === 'critical' ? 'bg-danger text-white' : (rec.level === 'warning' ? 'bg-warning text-dark' : 'bg-success text-white');
+
+                        html += '<div class="recommendation-card p-3 mb-2 ' + levelClass + '">';
+                        html += '  <div class="d-flex align-items-center justify-content-between mb-1">';
+                        html += '    <div class="d-flex align-items-center gap-2">';
+                        html += '      <i class="' + (rec.icon || 'bx bx-info-circle') + ' fs-5 ' + iconColor + '"></i>';
+                        html += '      <strong class="text-dark">' + rec.title + '</strong>';
+                        html += '      <span class="badge ' + badgeBg + ' small">' + rec.category + '</span>';
+                        html += '    </div>';
+                        html += '    <span class="badge bg-light text-muted border font-monospace">' + rec.value + '</span>';
+                        html += '  </div>';
+                        html += '  <div class="small text-muted mb-2">' + rec.description + '</div>';
+                        html += '  <div class="p-2 bg-light rounded small text-dark border-start border-3 border-primary font-monospace">';
+                        html += '    <i class="bx bx-terminal me-1 text-primary"></i><strong>Рекомендация:</strong> ' + rec.action;
+                        html += '  </div>';
+                        html += '</div>';
+                    });
+                    $('#recommendations-container').html(html);
+                }
+
+                // 4. Круговые диаграммы
+                if (data.cpu_percent !== undefined) {
+                    $('#cpu-chart').data('easyPieChart').update(data.cpu_percent);
+                    $('#cpu-chart span').text(data.cpu_percent);
+                }
+                if (data.ram_percent !== undefined) {
+                    $('#memory-chart').data('easyPieChart').update(data.ram_percent);
+                    $('#memory-chart span').text(data.ram_percent);
+                    if (data.ram_used_gb !== undefined && data.ram_total_gb !== undefined) {
+                        $('#memory-sub-val').text(data.ram_used_gb + ' / ' + data.ram_total_gb + ' ГБ');
+                    }
+                }
+                if (data.disk_percent !== undefined) {
+                    $('#disk-chart').data('easyPieChart').update(data.disk_percent);
+                    $('#disk-chart span').text(data.disk_percent);
+                    if (data.disk_used_gb !== undefined && data.disk_total_gb !== undefined) {
+                        $('#disk-sub-val').text(data.disk_used_gb + ' / ' + data.disk_total_gb + ' ГБ');
+                    }
+                }
+                if (data.swap_percent !== undefined) {
+                    $('#swap-chart').data('easyPieChart').update(data.swap_percent);
+                    $('#swap-chart span').text(data.swap_percent);
+                    if (data.swap_used_gb !== undefined && data.swap_total_gb !== undefined) {
+                        $('#swap-sub-val').text(data.swap_used_gb + ' / ' + data.swap_total_gb + ' ГБ');
+                    }
+                }
+                if (data.processes_count !== undefined) {
+                    let procPercent = Math.min(Math.round((data.processes_count / 300) * 100), 100);
+                    $('#processes-chart').data('easyPieChart').update(procPercent);
+                    $('#processes-chart span').text(data.processes_count);
+                    if (data.connections_count !== null && data.connections_count !== undefined) {
+                        $('#processes-sub-val').text(data.connections_count + ' сетевых сокетов');
+                    }
+                }
+                if (data.cpu_temp !== null && data.cpu_temp !== undefined) {
+                    $('#cpu-temp-chart').data('easyPieChart').update(data.cpu_temp);
+                    $('#cpu-temp-chart span').text(data.cpu_temp + '°C');
+                } else {
+                    $('#cpu-temp-chart span').text('N/A');
+                }
+
+                // 5. Сетевой трафик и скорость
+                let speedSent = data.net_sent_speed_kb !== undefined ? data.net_sent_speed_kb : 0.0;
+                let speedRecv = data.net_recv_speed_kb !== undefined ? data.net_recv_speed_kb : 0.0;
+
+                $('#net-sent-speed-badge').text(speedSent);
+                $('#net-recv-speed-badge').text(speedRecv);
+
+                if (data.net_sent_total_mb !== undefined) $('#net-sent-total-label').text('Всего отправлено: ' + data.net_sent_total_mb + ' МБ');
+                if (data.net_recv_total_mb !== undefined) $('#net-recv-total-label').text('Всего получено: ' + data.net_recv_total_mb + ' МБ');
+
+                networkChart.data.labels.push(networkChart.data.labels.length + 1);
+                networkChart.data.datasets[0].data.push(speedSent);
+                networkChart.data.datasets[1].data.push(speedRecv);
+                if (networkChart.data.labels.length > 25) {
+                    networkChart.data.labels.shift();
+                    networkChart.data.datasets[0].data.shift();
+                    networkChart.data.datasets[1].data.shift();
+                }
+                networkChart.update();
+
+                // 6. Таблица Топ процессов
+                if (data.top_processes && data.top_processes.length > 0) {
+                    let rowsHtml = '';
+                    data.top_processes.forEach(function(p) {
+                        rowsHtml += '<tr>';
+                        rowsHtml += '<td class="text-muted">' + p.pid + '</td>';
+                        rowsHtml += '<td class="font-weight-bold text-dark text-truncate" style="max-width: 130px;" title="' + p.name + '">' + p.name + '</td>';
+                        rowsHtml += '<td class="text-muted">' + p.user + '</td>';
+                        rowsHtml += '<td class="text-end font-weight-bold ' + (p.cpu > 20 ? 'text-danger' : 'text-dark') + '">' + p.cpu + '%</td>';
+                        rowsHtml += '<td class="text-end font-weight-bold ' + (p.memory > 20 ? 'text-primary' : 'text-dark') + '">' + p.memory + '%</td>';
+                        rowsHtml += '</tr>';
+                    });
+                    $('#top-processes-tbody').html(rowsHtml);
+                }
+            }
+
+            // Функция опроса через AJAX fallback
+            function pollViaAjax() {
+                if (isPaused) return;
+                $.ajax({
+                    url: '{% url "administration_app:monitoring_api_data" %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        applyMonitorData(data);
+                    },
+                    error: function(err) {
+                        console.debug('Polling error:', err);
+                    }
+                });
+            }
+
+            // Управление паузой
+            $('#pause-btn').on('click', function () {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    $(this).removeClass('btn-outline-secondary').addClass('btn-warning text-dark');
+                    $(this).find('i').removeClass('bx-pause').addClass('bx-play');
+                    $('#pause-btn-text').text('Возобновить');
+                    $('#ws-badge').html('<span class="badge bg-secondary text-white"><i class="bx bx-pause me-1"></i>Пауза</span>');
+                } else {
+                    $(this).removeClass('btn-warning text-dark').addClass('btn-outline-secondary');
+                    $(this).find('i').removeClass('bx-play').addClass('bx-pause');
+                    $('#pause-btn-text').text('Пауза');
+                    $('#ws-badge').html('<span class="badge bg-success-subtle text-success border border-success-subtle"><span class="live-pulse bg-success"></span> Live WebSocket</span>');
+                }
+            });
+
+            // Кнопка немедленного обновления
+            $('#refresh-now-btn').on('click', function () {
+                pollViaAjax();
+            });
+
+            // Подключение к WebSocket
             function connectMonitorWS() {
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-                const ws = new WebSocket(wsProtocol + window.location.host + '/ws/monitor/');
+                const wsUrl = wsProtocol + window.location.host + '/ws/monitor/';
+                wsConnection = new WebSocket(wsUrl);
 
-                ws.onmessage = function (event) {
+                wsConnection.onopen = function () {
+                    $('#ws-badge').html('<span class="live-pulse bg-success"></span> Live WebSocket').removeClass('bg-warning-subtle text-warning').addClass('bg-success-subtle text-success');
+                    if (fallbackInterval) {
+                        clearInterval(fallbackInterval);
+                        fallbackInterval = null;
+                    }
+                };
+
+                wsConnection.onmessage = function (event) {
                     try {
                         const data = JSON.parse(event.data);
-                        if (data.cpu_percent !== undefined) {
-                            $('#cpu-chart').data('easyPieChart').update(data.cpu_percent);
-                            $('#cpu-chart span').text(data.cpu_percent);
-                        }
-                        if (data.memory_percent !== undefined) {
-                            $('#memory-chart').data('easyPieChart').update(data.memory_percent);
-                            $('#memory-chart span').text(data.memory_percent);
-                        }
-                        if (data.disk_percent !== undefined) {
-                            $('#disk-chart').data('easyPieChart').update(data.disk_percent);
-                            $('#disk-chart span').text(data.disk_percent);
-                        }
-                        if (data.processes !== undefined) {
-                            $('#processes-chart').data('easyPieChart').update(data.processes);
-                            $('#processes-chart span').text(data.processes);
-                        }
-                        if (data.connections !== undefined) {
-                            $('#connections-chart').data('easyPieChart').update(data.connections);
-                            $('#connections-chart span').text(data.connections);
-                        }
-                        if (data.cpu_temp !== null && data.cpu_temp !== undefined) {
-                            $('#cpu-temp-chart').data('easyPieChart').update(data.cpu_temp);
-                            $('#cpu-temp-chart span').text(data.cpu_temp + '°C');
-                        }
-
-                        // Обновление данных для сетевого трафика
-                        if (data.net_sent !== undefined && data.net_recv !== undefined) {
-                            networkChart.data.labels.push(networkChart.data.labels.length + 1);
-                            networkChart.data.datasets[0].data.push(data.net_sent);
-                            networkChart.data.datasets[1].data.push(data.net_recv);
-                            if (networkChart.data.labels.length > 20) {
-                                networkChart.data.labels.shift();
-                                networkChart.data.datasets[0].data.shift();
-                                networkChart.data.datasets[1].data.shift();
-                            }
-                            networkChart.update();
-                        }
+                        applyMonitorData(data);
                     } catch (e) {
                         console.debug('Monitor WS parse error:', e);
                     }
                 };
 
-                ws.onerror = function (err) {
+                wsConnection.onerror = function (err) {
                     console.warn('Monitor WS error:', err);
                 };
 
-                ws.onclose = function () {
+                wsConnection.onclose = function () {
+                    $('#ws-badge').html('<span class="live-pulse live-pulse-warn"></span> Резервный опрос (API)').removeClass('bg-success-subtle text-success').addClass('bg-warning-subtle text-warning');
+                    // Запуск fallback polling каждые 3 секунды
+                    if (!fallbackInterval) {
+                        fallbackInterval = setInterval(pollViaAjax, 3000);
+                    }
+                    // Попытка переподключения WebSocket через 5 секунд
                     setTimeout(connectMonitorWS, 5000);
                 };
             }
 
+            // Старт
             connectMonitorWS();
         });
     </script>
 {% endblock %}
+

@@ -5,11 +5,13 @@ import psutil
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from asgiref.sync import sync_to_async
 import json
 
 from django.contrib.auth.models import AnonymousUser
 from chat_app.models import Message
 from administration_app.utils import transliterate
+from administration_app.system_monitor_service import get_system_monitor_payload
 
 from contracts_app.templatetags.custom import FIO_format
 
@@ -273,46 +275,54 @@ def converter(x):
 
 
 class MonitorConsumer(AsyncWebsocketConsumer):
-    """Класс для обработки соединений с веб-сокетами и отправки данных о загрузке процессора, памяти, диска, сетевого трафика, количества процессов и сетевых соединений."""
+    """Асинхронный потребитель WebSockets для потоковой трансляции метрик и рекомендаций сервера.
+
+    Передает в реальном времени телеметрические данные о состоянии CPU, памяти, дисков,
+    сетевого трафика, температуре и базы данных MariaDB, а также структурированные
+    интеллектуальные рекомендации администраторам портала.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_running = False
 
     async def connect(self):
-        """Метод для установки соединения и отправки данных о загрузке процессора, памяти, диска, сетевого трафика, количества процессов и сетевых соединений каждую секунду."""
-        if self.scope["user"] == AnonymousUser():
+        """Устанавливает WebSocket-соединение с проверкой аутентификации и запускает цикл трансляции."""
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated or not (user.is_staff or user.is_superuser):
             await self.close()
-        else:
-            await self.accept()  # Принимаем соединение
-            while True:
-                cpu_percent = psutil.cpu_percent(interval=1)  # Получаем процент загрузки процессора
-                memory_percent = psutil.virtual_memory().percent  # Получаем процент загрузки памяти
-                disk_percent = psutil.disk_usage('/').percent  # Получаем процент загрузки диска
-                net_io = psutil.net_io_counters()  # Получаем информацию о сетевом трафике
-                net_sent = net_io.bytes_sent  # Получаем количество отправленных байт
-                net_recv = net_io.bytes_recv  # Получаем количество полученных байт
-                processes = len(psutil.pids())  # Получаем количество процессов
-                connections = len(psutil.net_connections())  # Получаем количество сетевых соединений
+            return
 
-                # Получение температуры процессора (работает на Linux)
-                if os.name == 'posix':
-                    temps = psutil.sensors_temperatures()
-                    cpu_temp = temps['coretemp'][0].current if 'coretemp' in temps else None
-                else:
-                    cpu_temp = None
+        await self.accept()
+        self.is_running = True
 
-                await self.send(text_data=json.dumps({
-                    'cpu_percent': cpu_percent,  # Отправляем данные о загрузке процессора
-                    'memory_percent': memory_percent,  # Отправляем данные о загрузке памяти
-                    'disk_percent': disk_percent,  # Отправляем данные о загрузке диска
-                    'net_sent': converter(net_sent),  # Отправляем данные о количестве отправленных байт
-                    'net_recv': converter(net_recv),  # Отправляем данные о количестве полученных байт
-                    'processes': processes,  # Отправляем данные о количестве процессов
-                    'connections': connections,  # Отправляем данные о количестве сетевых соединений
-                    'cpu_temp': cpu_temp,  # Отправляем данные о температуре процессора
-                }))
-                await sleep(1)  # Ждем 1 секунду перед отправкой следующих данных
+        prev_sent = None
+        prev_recv = None
+        prev_time = None
+
+        try:
+            while self.is_running:
+                payload = await sync_to_async(get_system_monitor_payload, thread_sensitive=False)(
+                    prev_sent, prev_recv, prev_time
+                )
+                prev_sent = payload.get("net_sent_raw")
+                prev_recv = payload.get("net_recv_raw")
+                prev_time = payload.get("timestamp")
+
+                # Обратная совместимость со старыми полями шаблона
+                payload["net_sent"] = payload.get("net_sent_total_mb", 0.0)
+                payload["net_recv"] = payload.get("net_recv_total_mb", 0.0)
+                payload["processes"] = payload.get("processes_count", 0)
+                payload["connections"] = payload.get("connections_count") or 0
+
+                await self.send(text_data=json.dumps(payload))
+                await sleep(2)
+        except Exception:
+            self.is_running = False
 
     async def disconnect(self, close_code):
-        """Метод для обработки разрыва соединения."""
-        pass  # Ничего не делаем при разрыве соединения
+        """Корректно останавливает цикл трансляции метрик при разрыве соединения."""
+        self.is_running = False
 
 
 class VideoConferenceConsumer(AsyncWebsocketConsumer):
