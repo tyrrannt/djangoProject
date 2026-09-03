@@ -97,8 +97,8 @@
                                     <i class="bx bxs-file-pdf"></i> Скан PDF
                                 </span>
                             {% endif %}
-                            {% if lecture.doc_file %}
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1">
+                            {% if is_manager and lecture.doc_file %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1" title="Исходный документ Word (доступен только ответственным)">
                                     <i class="bx bxs-file-doc"></i> Word DOC/DOCX
                                 </span>
                             {% endif %}

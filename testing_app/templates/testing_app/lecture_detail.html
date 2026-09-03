@@ -31,9 +31,9 @@
 
             <!-- Кнопки действий -->
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                {% if lecture.doc_file %}
-                    <a href="{{ lecture.doc_file.url }}" download class="btn btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm" title="Скачать файл Microsoft Word">
-                        <i class="bx bxs-file-doc fs-5 text-primary"></i> Скачать DOCX
+                {% if is_manager and lecture.doc_file %}
+                    <a href="{{ lecture.doc_file.url }}" download class="btn btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm" title="Скачать исходный файл Microsoft Word (только для ответственных)">
+                        <i class="bx bxs-file-doc fs-5 text-primary"></i> Скачать DOCX (исходник)
                     </a>
                 {% endif %}
 
@@ -97,8 +97,8 @@
                         <div>
                             <h6 class="alert-heading font-weight-bold mb-1">Скан документа не загружен</h6>
                             <p class="mb-0 small">Для данной лекции электронный скан в формате PDF не прикреплен.
-                                {% if lecture.doc_file %}
-                                    Вы можете скачать исходный файл документа Word (<a href="{{ lecture.doc_file.url }}" class="alert-link">Скачать DOCX</a>).
+                                {% if is_manager and lecture.doc_file %}
+                                    Как ответственный, вы можете скачать исходный файл документа Word (<a href="{{ lecture.doc_file.url }}" class="alert-link">Скачать DOCX</a>).
                                 {% endif %}
                                 {% if is_manager %}
                                     Чтобы загрузить скан, воспользуйтесь кнопкой <a href="{% url 'testing_app:lecture_update' lecture.pk %}" class="alert-link font-weight-bold">«Изменить»</a>.
