@@ -7720,12 +7720,12 @@ var Buttons_Buttons = /*#__PURE__*/function () {
         tooltip: this.lang.paragraph.indent + this.representShortcut('indent'),
         click: this.context.createInvokeHandler('editor.indent')
       });
-      this.context.memo('button.justifyLeft', func.invoke(justifyLeft, 'render'));
-      this.context.memo('button.justifyCenter', func.invoke(justifyCenter, 'render'));
-      this.context.memo('button.justifyRight', func.invoke(justifyRight, 'render'));
-      this.context.memo('button.justifyFull', func.invoke(justifyFull, 'render'));
-      this.context.memo('button.outdent', func.invoke(outdent, 'render'));
-      this.context.memo('button.indent', func.invoke(indent, 'render'));
+      this.context.memo('button.justifyLeft', function () { return justifyLeft().render(); });
+      this.context.memo('button.justifyCenter', function () { return justifyCenter().render(); });
+      this.context.memo('button.justifyRight', function () { return justifyRight().render(); });
+      this.context.memo('button.justifyFull', function () { return justifyFull().render(); });
+      this.context.memo('button.outdent', function () { return outdent().render(); });
+      this.context.memo('button.indent', function () { return indent().render(); });
       this.context.memo('button.paragraph', function () {
         return _this2.ui.buttonGroup([_this2.button({
           className: 'dropdown-toggle',

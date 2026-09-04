@@ -375,23 +375,59 @@
             let isFormDirty = false;
             let isSubmitting = false;
             const isMobile = window.innerWidth <= 768;
+            const customAlignButtons = {
+                alignLeft: function(context) {
+                    const ui = $.summernote.ui;
+                    return ui.button({
+                        contents: '<i class="note-icon-align-left"></i>',
+                        tooltip: 'По левому краю (Ctrl+Shift+L)',
+                        click: function() { context.invoke('editor.justifyLeft'); }
+                    }).render();
+                },
+                alignCenter: function(context) {
+                    const ui = $.summernote.ui;
+                    return ui.button({
+                        contents: '<i class="note-icon-align-center"></i>',
+                        tooltip: 'По центру (Ctrl+Shift+E)',
+                        click: function() { context.invoke('editor.justifyCenter'); }
+                    }).render();
+                },
+                alignRight: function(context) {
+                    const ui = $.summernote.ui;
+                    return ui.button({
+                        contents: '<i class="note-icon-align-right"></i>',
+                        tooltip: 'По правому краю (Ctrl+Shift+R)',
+                        click: function() { context.invoke('editor.justifyRight'); }
+                    }).render();
+                },
+                alignJustify: function(context) {
+                    const ui = $.summernote.ui;
+                    return ui.button({
+                        contents: '<i class="note-icon-align-justify"></i>',
+                        tooltip: 'По ширине (Ctrl+Shift+J)',
+                        click: function() { context.invoke('editor.justifyFull'); }
+                    }).render();
+                }
+            };
+
             const summernoteToolbar = isMobile ? [
+                ['style', ['style']],
                 ['fontname', ['fontname']],
                 ['fontsize', ['fontsize']],
-                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['bold', 'italic', 'underline', 'clear']],
                 ['color', ['color']],
-                ['alignment', ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull']],
+                ['align', ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify']],
                 ['para', ['ul', 'ol']],
                 ['table', ['table']],
                 ['insert', ['link', 'hr']]
             ] : [
-                ['style', ['style', 'bold', 'italic', 'underline', 'clear']],
+                ['style', ['style']],
                 ['fontname', ['fontname']],
                 ['fontsize', ['fontsize']],
+                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
                 ['color', ['color']],
-                ['alignment', ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull']],
+                ['align', ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify']],
                 ['para', ['ul', 'ol', 'paragraph']],
-                ['font', ['strikethrough', 'superscript', 'subscript']],
                 ['table', ['table']],
                 ['insert', ['link', 'hr']],
                 ['view', ['fullscreen', 'codeview']]
@@ -418,24 +454,27 @@
                 placeholder: 'Введите текст письма...',
                 lang: 'ru-RU',
                 toolbar: summernoteToolbar,
+                buttons: customAlignButtons,
                 fontNames: availableFonts,
                 fontNamesIgnoreCheck: availableFonts,
                 fontSizes: ['8', '9', '10', '11', '12', '13', '14', '16', '18', '20', '24', '28', '36', '48', '64', '72'],
                 callbacks: {
                     onInit: function() {
-                        const $editable = $('#id_body_html').next('.note-editor').find('.note-editable');
+                        const $editor = $('#id_body_html').next('.note-editor');
+                        const $editable = $editor.find('.note-editable');
                         $editable.css({
                             'font-family': "'Times New Roman', Times, serif",
                             'font-size': '14pt',
                             'color': '#000000',
                             'line-height': '1.5'
                         });
-                        const $toolbar = $('#id_body_html').next('.note-editor').find('.note-toolbar');
-                        if (!$toolbar.find('.note-current-fontname').text().trim()) {
-                            $toolbar.find('.note-current-fontname').text('Times New Roman').css('font-family', "'Times New Roman', Times, serif");
+                        const $fontname = $editor.find('.note-current-fontname');
+                        if ($fontname.length && (!$fontname.text().trim() || $fontname.text().trim() === '..')) {
+                            $fontname.text('Times New Roman').css('font-family', "'Times New Roman', Times, serif");
                         }
-                        if (!$toolbar.find('.note-current-fontsize').text().trim()) {
-                            $toolbar.find('.note-current-fontsize').text('14');
+                        const $fontsize = $editor.find('.note-current-fontsize');
+                        if ($fontsize.length && (!$fontsize.text().trim() || $fontsize.text().trim() === '..')) {
+                            $fontsize.text('14');
                         }
                     }
                 }
