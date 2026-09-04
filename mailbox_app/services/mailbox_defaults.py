@@ -154,15 +154,15 @@ def generate_corporate_signature(user, account=None) -> str:
     <table cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; font-family: Arial, Helvetica, sans-serif;">
         <tr>
             <td style="padding-right: 16px; vertical-align: middle; border-right: 2px solid #0088cc;">
-                <a href="https://barkol.ru" target="_blank" style="text-decoration: none;" title="ООО «Авиакомпания «БАРКОЛ»">
-                    <img src="https://corp.barkol.ru/static/admin_templates/img/logo.png" alt="ООО «Авиакомпания «БАРКОЛ»" width="115" style="display: block; max-width: 115px; height: auto; border: 0;" />
+                <a href="https://barkol.ru" target="_blank" style="text-decoration: none;" title="ООО Авиакомпания «БАРКОЛ»">
+                    <img src="https://corp.barkol.ru/static/admin_templates/img/logo.png" alt="ООО Авиакомпания «БАРКОЛ»" width="115" style="display: block; max-width: 115px; height: auto; border: 0;" />
                 </a>
             </td>
             <td style="padding-left: 16px; vertical-align: middle; font-family: Arial, Helvetica, sans-serif;">
                 <div style="font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 2px;">{full_name}</div>
                 {job_html}
                 {division_html}
-                <div style="color: #0088cc; font-weight: 600; font-size: 12px; margin-bottom: 2px;">ООО «Авиакомпания «БАРКОЛ»</div>
+                <div style="color: #0088cc; font-weight: 600; font-size: 12px; margin-bottom: 2px;">ООО Авиакомпания «БАРКОЛ»</div>
                 {email_html}
                 <div style="margin-top: 3px; font-size: 11.5px;">
                     <a href="https://barkol.ru" target="_blank" style="color: #0088cc; text-decoration: none; font-weight: 500;">www.barkol.ru</a>
