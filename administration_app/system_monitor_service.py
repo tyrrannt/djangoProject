@@ -15,6 +15,8 @@ from django.core.cache import cache
 from django.db import connection
 from django.utils import timezone
 
+from administration_app.security_service import get_security_monitor_data
+
 logger = logging.getLogger(__name__)
 
 
@@ -705,4 +707,5 @@ def get_system_monitor_payload(
     metrics["overall_status"] = overall_status
     metrics["recommendations"] = recommendations
     metrics["device_stats"] = get_device_usage_stats()
+    metrics["security_stats"] = get_security_monitor_data()
     return metrics

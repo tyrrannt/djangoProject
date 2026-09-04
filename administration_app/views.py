@@ -14,9 +14,11 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 
 from administration_app.models import PortalProperty
+from administration_app.security_service import unban_ip_address, get_security_monitor_data
 from administration_app.system_monitor_service import get_system_monitor_payload
 from administration_app.utils import get_client_ip, get_device_info
 from contracts_app.models import Contract
@@ -945,6 +947,43 @@ def system_monitor_data_api(request):
 
     payload = get_system_monitor_payload()
     return JsonResponse(payload)
+
+
+@login_required
+@require_POST
+def system_monitor_unban_ip_api(request):
+    """API эндпоинт для оперативной разблокировки IP-адреса администратором из интерфейса.
+
+    Снимает блокировку в Django Cache и выполняет команду unbanip в Fail2ban (если служба активна).
+    Доступ разрешен только персоналу и суперпользователям.
+
+    Args:
+        request: Объект входящего HTTP-запроса (HttpRequest, POST).
+
+    Returns:
+        JsonResponse: Результат выполнения операции и обновленный срез параметров безопасности.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({"success": False, "error": "Доступ запрещен."}, status=403)
+
+    try:
+        data = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        data = request.POST
+
+    ip = data.get("ip", "").strip()
+    if not ip:
+        return JsonResponse({"success": False, "error": "Не указан IP-адрес для разблокировки."}, status=400)
+
+    admin_name = request.user.get_full_name() or request.user.username
+    success, msg = unban_ip_address(ip, admin_name)
+    sec_stats = get_security_monitor_data()
+
+    return JsonResponse({
+        "success": success,
+        "message": msg,
+        "security_stats": sec_stats,
+    })
 
 
 def check_my_ip(request):

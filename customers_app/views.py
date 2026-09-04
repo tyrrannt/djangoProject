@@ -30,6 +30,7 @@ from qrcode.image.styles.moduledrawers import CircleModuleDrawer
 from rest_framework import viewsets
 
 from administration_app.models import PortalProperty
+from administration_app.security_service import record_security_event
 from administration_app.services import TemplateService
 from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
@@ -957,8 +958,16 @@ def login(request):
 
         # Проверка временной блокировки IP-адреса
         if cache.get(lock_key):
+            username_attempt = request.POST.get('username', '')
             logger.warning(
-                f"SECURITY: Blocked attempt from locked IP {client_ip} for username '{request.POST.get('username', '')}'"
+                f"SECURITY: Blocked attempt from locked IP {client_ip} for username '{username_attempt}'"
+            )
+            record_security_event(
+                ip=client_ip,
+                username=username_attempt,
+                event_type="blocked",
+                attempts=5,
+                details="Попытка обращения с временно заблокированного IP",
             )
             content['errors'] = (
                 "Слишком много неудачных попыток входа с вашего IP-адреса. "
@@ -975,9 +984,18 @@ def login(request):
             if user and user.is_active:
                 auth.login(request, user)
                 # Сбрасываем счетчик неудачных попыток для IP
+                had_prior_failures = bool(cache.get(attempts_key))
                 cache.delete(attempts_key)
                 cache.delete(lock_key)
                 logger.info(f"SECURITY: Successful login for user '{user.username}' from IP {client_ip}")
+                if had_prior_failures:
+                    record_security_event(
+                        ip=client_ip,
+                        username=user.username,
+                        event_type="success",
+                        attempts=0,
+                        details="Успешный вход после предыдущих сбоев",
+                    )
 
                 try:
                     portal_session = portal.first().portal_session
@@ -1010,6 +1028,13 @@ def login(request):
                     logger.warning(
                         f"SECURITY: Rate limit exceeded for IP {client_ip}. IP locked for 15 minutes. Failed login for username '{username}'"
                     )
+                    record_security_event(
+                        ip=client_ip,
+                        username=username,
+                        event_type="lock",
+                        attempts=attempts,
+                        details="Превышен лимит 5 попыток ввода пароля. IP заблокирован на 15 минут.",
+                    )
                     content['errors'] = (
                         "Превышено максимальное количество попыток входа (5). "
                         "Ваш IP-адрес временно заблокирован на 15 минут."
@@ -1018,11 +1043,26 @@ def login(request):
                     logger.warning(
                         f"SECURITY: Failed login attempt {attempts}/5 from IP {client_ip} for username '{username}'"
                     )
+                    record_security_event(
+                        ip=client_ip,
+                        username=username,
+                        event_type="failed",
+                        attempts=attempts,
+                        details=f"Неверный логин или пароль (попытка {attempts}/5)",
+                    )
                     content['errors'] = (
                         f"Неверный логин или пароль. Осталось попыток до временной блокировки: {remaining}."
                     )
         else:
             content['errors'] = login_form.errors
+            username_attempt = request.POST.get('username', '')
+            record_security_event(
+                ip=client_ip,
+                username=username_attempt,
+                event_type="failed",
+                attempts=1,
+                details="Ошибка валидации формы при авторизации",
+            )
             try:
                 logger.warning(f"SECURITY: Login form validation error from IP {client_ip}. Data: {request.POST}")
             except Exception as _ex:

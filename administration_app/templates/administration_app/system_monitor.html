@@ -7,9 +7,19 @@
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/jquery.easy-pie-chart/2.1.6/jquery.easy-pie-chart.min.css">
     <style>
+        /* Локальная поддержка EasyPieChart без внешних CDN для надежной работы в интранете */
+        .easyPieChart {
+            position: relative;
+            text-align: center;
+        }
+
+        .easyPieChart canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
         .monitor-kpi-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -54,6 +64,7 @@
             position: relative;
             text-align: center;
             margin: 10px auto;
+            max-width: 100%;
         }
 
         .chart span {
@@ -110,6 +121,28 @@
             70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
+
+        @media (max-width: 768px) {
+            .monitor-kpi-card {
+                padding: 12px 14px;
+            }
+            .chart-box {
+                padding: 14px 8px;
+            }
+            .chart-box h5 {
+                font-size: 0.85rem;
+            }
+            .chart {
+                margin: 4px auto;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .chart span {
+                line-height: 125px !important;
+                font-size: 19px !important;
+            }
+        }
     </style>
 {% endblock %}
 
@@ -120,7 +153,7 @@
             <section class="card card-modern shadow-sm border-0">
                 <header class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 flex-wrap gap-3">
                     <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
                             <h2 class="card-title text-primary mb-0 fs-4 font-weight-bold">
                                 <i class="fas fa-server me-2"></i>Мониторинг параметров сервера
                             </h2>
@@ -138,10 +171,10 @@
                                 <i class="bx bx-check-shield fs-5"></i> Все системы стабильны
                             </span>
                         </div>
-                        <button id="pause-btn" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm" title="Приостановить обновление данных на экране">
+                        <button id="pause-btn" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm flex-grow-1 flex-sm-grow-0" title="Приостановить обновление данных на экране">
                             <i class="bx bx-pause fs-5"></i> <span id="pause-btn-text">Пауза</span>
                         </button>
-                        <button id="refresh-now-btn" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm" title="Запросить свежие параметры немедленно">
+                        <button id="refresh-now-btn" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm flex-grow-1 flex-sm-grow-0" title="Запросить свежие параметры немедленно">
                             <i class="bx bx-refresh fs-5"></i> Обновить
                         </button>
                     </div>
@@ -203,10 +236,10 @@
                         <div class="col-6 col-md-4 col-xl">
                             <div class="monitor-kpi-card">
                                 <div class="text-muted small mb-1"><i class="bx bx-globe text-info me-1"></i>Ваш IP-адрес</div>
-                                <div class="fs-6 font-weight-bold font-monospace {% if client_ip == '192.168.10.7' %}text-danger{% else %}text-dark{% endif %}" id="kpi-client-ip">
+                                <div class="fs-6 font-weight-bold font-monospace text-truncate {% if client_ip == '192.168.10.7' %}text-danger{% else %}text-dark{% endif %}" id="kpi-client-ip" title="{{ client_ip }}">
                                     {{ client_ip }}
                                 </div>
-                                <div class="small text-muted d-flex align-items-center justify-content-between">
+                                <div class="small text-muted d-flex align-items-center justify-content-between flex-wrap gap-1">
                                     {% if client_ip == '192.168.10.7' %}
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle small py-0 px-1">Шлюз Kerio</span>
                                     {% else %}
@@ -220,10 +253,10 @@
 
                     <!-- Блок интеллектуальной диагностики и рекомендаций -->
                     <div class="card card-modern shadow-sm border mb-4">
-                        <header class="card-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+                        <header class="card-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <h5 class="card-title text-dark mb-0 fs-6 font-weight-bold d-flex align-items-center gap-2">
                                 <i class="bx bx-bulb text-warning fs-5"></i>
-                                Интеллектуальная диагностика и рекомендации
+                                <span>Интеллектуальная диагностика и рекомендации</span>
                             </h5>
                             <span class="small text-muted" id="recs-count-label">Показания в реальном времени</span>
                         </header>
@@ -232,18 +265,18 @@
                             {% if initial_data.recommendations %}
                                 {% for rec in initial_data.recommendations %}
                                     <div class="recommendation-card p-3 mb-2 {{ rec.level }}">
-                                        <div class="d-flex align-items-center justify-content-between mb-1">
-                                            <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                                            <div class="d-flex align-items-center flex-wrap gap-2">
                                                 <i class="{{ rec.icon }} fs-5 {% if rec.level == 'critical' %}text-danger{% elif rec.level == 'warning' %}text-warning{% else %}text-success{% endif %}"></i>
                                                 <strong class="text-dark">{{ rec.title }}</strong>
                                                 <span class="badge {% if rec.level == 'critical' %}bg-danger{% elif rec.level == 'warning' %}bg-warning text-dark{% else %}bg-success{% endif %} small">
                                                     {{ rec.category }}
                                                 </span>
                                             </div>
-                                            <span class="badge bg-light text-muted border font-monospace">{{ rec.value }}</span>
+                                            <span class="badge bg-light text-muted border font-monospace text-wrap">{{ rec.value }}</span>
                                         </div>
-                                        <div class="small text-muted mb-2">{{ rec.description }}</div>
-                                        <div class="p-2 bg-light rounded small text-dark border-start border-3 border-primary font-monospace">
+                                        <div class="small text-muted mb-2 text-break">{{ rec.description }}</div>
+                                        <div class="p-2 bg-light rounded small text-dark border-start border-3 border-primary font-monospace text-break">
                                             <i class="bx bx-terminal me-1 text-primary"></i><strong>Рекомендация:</strong> {{ rec.action }}
                                         </div>
                                     </div>
@@ -261,53 +294,53 @@
                     </div>
 
                     <!-- Основные круговые диаграммы ресурсов (6 штук) -->
-                    <div class="row g-4 mb-4">
-                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                    <div class="row g-2 g-md-3 g-xl-4 mb-4">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="chart-box">
                                 <div class="chart" id="cpu-chart" data-percent="{{ initial_data.cpu_percent|default:'0' }}">
                                     <span>{{ initial_data.cpu_percent|default:"0" }}</span>%
                                 </div>
-                                <h5><i class="fas fa-microchip text-primary me-2"></i>Загрузка CPU</h5>
+                                <h5><i class="fas fa-microchip text-primary me-1"></i>Загрузка CPU</h5>
                                 <div class="small text-muted" id="cpu-sub-val">{{ initial_data.cpu_count_logical|default:"1" }} лог. ядер</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="chart-box">
                                 <div class="chart" id="memory-chart" data-percent="{{ initial_data.ram_percent|default:'0' }}">
                                     <span>{{ initial_data.ram_percent|default:"0" }}</span>%
                                 </div>
-                                <h5><i class="fas fa-memory text-info me-2"></i>Память (RAM)</h5>
+                                <h5><i class="fas fa-memory text-info me-1"></i>Память (RAM)</h5>
                                 <div class="small text-muted" id="memory-sub-val">{{ initial_data.ram_used_gb|default:"0" }} / {{ initial_data.ram_total_gb|default:"0" }} ГБ</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="chart-box">
                                 <div class="chart" id="disk-chart" data-percent="{{ initial_data.disk_percent|default:'0' }}">
                                     <span>{{ initial_data.disk_percent|default:"0" }}</span>%
                                 </div>
-                                <h5><i class="fas fa-hdd text-warning me-2"></i>Диск (Root)</h5>
+                                <h5><i class="fas fa-hdd text-warning me-1"></i>Диск (Root)</h5>
                                 <div class="small text-muted" id="disk-sub-val">{{ initial_data.disk_used_gb|default:"0" }} / {{ initial_data.disk_total_gb|default:"0" }} ГБ</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="chart-box">
                                 <div class="chart" id="swap-chart" data-percent="{{ initial_data.swap_percent|default:'0' }}">
                                     <span>{{ initial_data.swap_percent|default:"0" }}</span>%
                                 </div>
-                                <h5><i class="bx bx-transfer-alt text-secondary me-2"></i>Подкачка (Swap)</h5>
+                                <h5><i class="bx bx-transfer-alt text-secondary me-1"></i>Подкачка</h5>
                                 <div class="small text-muted" id="swap-sub-val">{{ initial_data.swap_used_gb|default:"0" }} / {{ initial_data.swap_total_gb|default:"0" }} ГБ</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="chart-box">
                                 <div class="chart" id="processes-chart" data-percent="{% widthratio initial_data.processes_count|default:1 400 100 %}">
                                     <span>{{ initial_data.processes_count|default:"0" }}</span>
                                 </div>
-                                <h5><i class="fas fa-tasks text-success me-2"></i>Процессы</h5>
+                                <h5><i class="fas fa-tasks text-success me-1"></i>Процессы</h5>
                                 <div class="small text-muted" id="processes-sub-val">{{ initial_data.connections_count|default:"0" }} сетевых сокетов</div>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="chart-box" id="temp-card-box">
                                 <div class="chart" id="cpu-temp-chart" data-percent="{% if initial_data.cpu_temp %}{{ initial_data.cpu_temp }}{% else %}70{% endif %}">
                                     <span id="temp-chart-span">
@@ -322,9 +355,9 @@
                                 </div>
                                 <h5 id="temp-title">
                                     {% if initial_data.cpu_temp %}
-                                        <i class="fas fa-temperature-high text-danger me-2"></i>Температура CPU
+                                        <i class="fas fa-temperature-high text-danger me-1"></i>Температура CPU
                                     {% else %}
-                                        <i class="bx bx-chip text-info me-2"></i>Частота vCPU
+                                        <i class="bx bx-chip text-info me-1"></i>Частота vCPU
                                     {% endif %}
                                 </h5>
                                 <div class="small text-muted" id="temp-sub-val">
@@ -409,7 +442,7 @@
                                             <tr>
                                                 <th>PID</th>
                                                 <th>Процесс</th>
-                                                <th>Пользователь</th>
+                                                <th class="d-none d-sm-table-cell">Пользователь</th>
                                                 <th class="text-end">CPU</th>
                                                 <th class="text-end">RAM</th>
                                             </tr>
@@ -419,8 +452,8 @@
                                                 {% for p in initial_data.top_processes %}
                                                     <tr>
                                                         <td class="text-muted">{{ p.pid }}</td>
-                                                        <td class="font-weight-bold text-dark text-truncate" style="max-width: 130px;" title="{{ p.name }}">{{ p.name }}</td>
-                                                        <td class="text-muted">{{ p.user }}</td>
+                                                        <td class="font-weight-bold text-dark text-truncate d-inline-block" style="max-width: 140px;" title="{{ p.name }}">{{ p.name }}</td>
+                                                        <td class="text-muted d-none d-sm-table-cell">{{ p.user }}</td>
                                                         <td class="text-end font-weight-bold {% if p.cpu > 20 %}text-danger{% else %}text-dark{% endif %}">{{ p.cpu }}%</td>
                                                         <td class="text-end font-weight-bold {% if p.memory > 20 %}text-primary{% else %}text-dark{% endif %}">{{ p.memory }}%</td>
                                                     </tr>
@@ -442,9 +475,9 @@
                         <header class="card-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <h5 class="card-title text-dark mb-0 fs-6 font-weight-bold d-flex align-items-center gap-2">
                                 <i class="bx bx-devices text-primary fs-5"></i>
-                                Аналитика пользовательских устройств
+                                <span>Аналитика пользовательских устройств</span>
                             </h5>
-                            <span class="badge bg-light text-muted border font-monospace" id="device-primary-segment">
+                            <span class="badge bg-light text-muted border font-monospace text-wrap text-start" id="device-primary-segment">
                                 {{ initial_data.device_stats.primary_segment|default:"Стационарные ПК и Мобильные устройства" }}
                             </span>
                         </header>
@@ -524,6 +557,126 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Служба безопасности: Защита от брутфорса и Fail2ban -->
+                    <div class="card card-modern shadow-sm border mt-4">
+                        <header class="card-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <i class="bx bx-shield-quarter text-danger fs-5"></i>
+                                <h5 class="card-title text-dark mb-0 fs-6 font-weight-bold">
+                                    <span class="d-none d-sm-inline">Служба безопасности: Попытки подбора паролей и блокировки (Fail2ban / Rate Limit)</span>
+                                    <span class="d-sm-none">Безопасность (Fail2ban / Rate Limit)</span>
+                                </h5>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge {% if initial_data.security_stats.fail2ban.is_active %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} small text-wrap" id="sec-f2b-badge">
+                                    <i class="bx bx-check-shield me-1"></i>
+                                    <span id="sec-f2b-status-text">{{ initial_data.security_stats.fail2ban.status_text|default:"Защита Django Rate Limit активна" }}</span>
+                                </span>
+                            </div>
+                        </header>
+                        <div class="card-body p-3 p-md-4">
+                            <!-- Сводные KPI безопасности -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 bg-light rounded border text-center">
+                                        <div class="small text-muted mb-1"><i class="bx bx-block text-danger me-1"></i>Заблокировано сейчас</div>
+                                        <div class="fs-4 font-weight-bold {% if initial_data.security_stats.active_locks_count > 0 %}text-danger{% else %}text-dark{% endif %}" id="sec-kpi-active-locks">
+                                            {{ initial_data.security_stats.active_locks_count|default:"0" }}
+                                        </div>
+                                        <div class="small text-muted">IP под блокировкой</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 bg-light rounded border text-center">
+                                        <div class="small text-muted mb-1"><i class="bx bx-error-circle text-warning me-1"></i>Ошибок входа сегодня</div>
+                                        <div class="fs-4 font-weight-bold text-warning" id="sec-kpi-failed-today">
+                                            {{ initial_data.security_stats.failed_today_count|default:"0" }}
+                                        </div>
+                                        <div class="small text-muted">Неудачных попыток</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 bg-light rounded border text-center">
+                                        <div class="small text-muted mb-1"><i class="bx bx-lock-alt text-danger me-1"></i>Блокировок сегодня</div>
+                                        <div class="fs-4 font-weight-bold text-dark" id="sec-kpi-locked-today">
+                                            {{ initial_data.security_stats.locked_today_count|default:"0" }}
+                                        </div>
+                                        <div class="small text-muted">Срабатываний лимита</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 bg-light rounded border text-center">
+                                        <div class="small text-muted mb-1"><i class="bx bx-slider-alt text-primary me-1"></i>Лимит попыток</div>
+                                        <div class="fs-4 font-weight-bold text-primary">5 / 15 мин</div>
+                                        <div class="small text-muted">Автобан на 15 минут</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Таблица активных блокировок и последних инцидентов -->
+                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                <strong class="text-dark fs-6 d-flex align-items-center gap-1">
+                                    <i class="bx bx-list-ul text-primary"></i> Журнал недавних событий и блокировок
+                                </strong>
+                                <span class="small text-muted">Последние 20 событий безопасности в реальном времени</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="sec-events-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Время</th>
+                                            <th>IP-адрес</th>
+                                            <th>Логин</th>
+                                            <th>Статус / Попытка</th>
+                                            <th class="d-none d-md-table-cell">Детали</th>
+                                            <th class="text-end">Действие</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sec-events-tbody">
+                                        {% if initial_data.security_stats.recent_events %}
+                                            {% for ev in initial_data.security_stats.recent_events %}
+                                                <tr>
+                                                    <td class="small text-muted font-monospace text-nowrap">{{ ev.timestamp }}</td>
+                                                    <td>
+                                                        <span class="font-monospace font-weight-bold text-dark">{{ ev.ip }}</span>
+                                                        {% if ev.is_public %}
+                                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style="font-size: 0.68rem;">Внешний IP</span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-muted border ms-1" style="font-size: 0.68rem;">Локальный IP</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="font-weight-semibold text-dark text-break">{{ ev.username }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ ev.status_class }}-subtle text-{{ ev.status_class }} border border-{{ ev.status_class }}-subtle text-wrap">
+                                                            {{ ev.status_label }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="small text-muted d-none d-md-table-cell text-break">{{ ev.details }}</td>
+                                                    <td class="text-end">
+                                                        {% if ev.is_locked %}
+                                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-sec-unban" data-ip="{{ ev.ip }}" title="Снять блокировку">
+                                                                <i class="bx bx-lock-open-alt"></i><span class="d-none d-sm-inline ms-1">Разблокировать</span>
+                                                            </button>
+                                                        {% else %}
+                                                            <span class="small text-muted">—</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4 text-muted">
+                                                    <i class="bx bx-check-shield text-success fs-3 d-block mb-1"></i>
+                                                    Инцидентов подбора паролей и активных блокировок не зафиксировано.
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
@@ -557,16 +710,20 @@
                 return '#0284c7'; // синий
             }
 
-            // Инициализация easyPieChart
+            // Инициализация easyPieChart с адаптивным диаметром для мобильных экранов
+            const isMobileScreen = window.innerWidth < 576;
+            const chartSize = isMobileScreen ? 125 : 150;
+            const chartLineWidth = isMobileScreen ? 7 : 9;
+
             $('.chart').easyPieChart({
                 barColor: function(percent) {
                     return getBarColor(percent);
                 },
                 trackColor: '#e2e8f0',
                 scaleColor: false,
-                lineWidth: 9,
+                lineWidth: chartLineWidth,
                 lineCap: 'round',
-                size: 150,
+                size: chartSize,
                 animate: 600
             });
 
@@ -734,16 +891,16 @@
                         let badgeBg = rec.level === 'critical' ? 'bg-danger text-white' : (rec.level === 'warning' ? 'bg-warning text-dark' : (rec.level === 'info' ? 'bg-info text-dark' : 'bg-success text-white'));
 
                         html += '<div class="recommendation-card p-3 mb-2 ' + levelClass + '">';
-                        html += '  <div class="d-flex align-items-center justify-content-between mb-1">';
-                        html += '    <div class="d-flex align-items-center gap-2">';
+                        html += '  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">';
+                        html += '    <div class="d-flex align-items-center flex-wrap gap-2">';
                         html += '      <i class="' + (rec.icon || 'bx bx-info-circle') + ' fs-5 ' + iconColor + '"></i>';
                         html += '      <strong class="text-dark">' + rec.title + '</strong>';
                         html += '      <span class="badge ' + badgeBg + ' small">' + rec.category + '</span>';
                         html += '    </div>';
-                        html += '    <span class="badge bg-light text-muted border font-monospace">' + rec.value + '</span>';
+                        html += '    <span class="badge bg-light text-muted border font-monospace text-wrap">' + rec.value + '</span>';
                         html += '  </div>';
-                        html += '  <div class="small text-muted mb-2">' + rec.description + '</div>';
-                        html += '  <div class="p-2 bg-light rounded small text-dark border-start border-3 border-primary font-monospace">';
+                        html += '  <div class="small text-muted mb-2 text-break">' + rec.description + '</div>';
+                        html += '  <div class="p-2 bg-light rounded small text-dark border-start border-3 border-primary font-monospace text-break">';
                         html += '    <i class="bx bx-terminal me-1 text-primary"></i><strong>Рекомендация:</strong> ' + rec.action;
                         html += '  </div>';
                         html += '</div>';
@@ -858,8 +1015,8 @@
                     data.top_processes.forEach(function(p) {
                         rowsHtml += '<tr>';
                         rowsHtml += '<td class="text-muted">' + p.pid + '</td>';
-                        rowsHtml += '<td class="font-weight-bold text-dark text-truncate" style="max-width: 130px;" title="' + p.name + '">' + p.name + '</td>';
-                        rowsHtml += '<td class="text-muted">' + p.user + '</td>';
+                        rowsHtml += '<td class="font-weight-bold text-dark text-truncate d-inline-block" style="max-width: 140px;" title="' + p.name + '">' + p.name + '</td>';
+                        rowsHtml += '<td class="text-muted d-none d-sm-table-cell">' + p.user + '</td>';
                         rowsHtml += '<td class="text-end font-weight-bold ' + (p.cpu > 20 ? 'text-danger' : 'text-dark') + '">' + p.cpu + '%</td>';
                         rowsHtml += '<td class="text-end font-weight-bold ' + (p.memory > 20 ? 'text-primary' : 'text-dark') + '">' + p.memory + '%</td>';
                         rowsHtml += '</tr>';
@@ -892,6 +1049,59 @@
                     }
                     if (data.device_stats.primary_segment) {
                         $('#device-primary-segment').text(data.device_stats.primary_segment);
+                    }
+                }
+
+                // 8. Аналитика безопасности и Fail2ban
+                if (data.security_stats) {
+                    let sec = data.security_stats;
+                    if (sec.fail2ban && sec.fail2ban.status_text) {
+                        $('#sec-f2b-status-text').text(sec.fail2ban.status_text);
+                        if (sec.fail2ban.is_active) {
+                            $('#sec-f2b-badge').removeClass('bg-primary-subtle text-primary border-primary-subtle')
+                                               .addClass('bg-success-subtle text-success border-success-subtle');
+                        }
+                    }
+                    if (sec.active_locks_count !== undefined) {
+                        $('#sec-kpi-active-locks').text(sec.active_locks_count);
+                        if (sec.active_locks_count > 0) {
+                            $('#sec-kpi-active-locks').addClass('text-danger').removeClass('text-dark');
+                        } else {
+                            $('#sec-kpi-active-locks').addClass('text-dark').removeClass('text-danger');
+                        }
+                    }
+                    if (sec.failed_today_count !== undefined) {
+                        $('#sec-kpi-failed-today').text(sec.failed_today_count);
+                    }
+                    if (sec.locked_today_count !== undefined) {
+                        $('#sec-kpi-locked-today').text(sec.locked_today_count);
+                    }
+
+                    if (sec.recent_events && sec.recent_events.length > 0) {
+                        let secRows = '';
+                        sec.recent_events.forEach(function(ev) {
+                            secRows += '<tr>';
+                            secRows += '<td class="small text-muted font-monospace text-nowrap">' + ev.timestamp + '</td>';
+                            secRows += '<td><span class="font-monospace font-weight-bold text-dark">' + ev.ip + '</span>';
+                            if (ev.is_public) {
+                                secRows += ' <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style="font-size: 0.68rem;">Внешний IP</span>';
+                            } else {
+                                secRows += ' <span class="badge bg-light text-muted border ms-1" style="font-size: 0.68rem;">Локальный IP</span>';
+                            }
+                            secRows += '</td>';
+                            secRows += '<td class="font-weight-semibold text-dark text-break">' + (ev.username || '—') + '</td>';
+                            secRows += '<td><span class="badge bg-' + ev.status_class + '-subtle text-' + ev.status_class + ' border border-' + ev.status_class + '-subtle text-wrap">' + ev.status_label + '</span></td>';
+                            secRows += '<td class="small text-muted d-none d-md-table-cell text-break">' + (ev.details || '') + '</td>';
+                            secRows += '<td class="text-end">';
+                            if (ev.is_locked) {
+                                secRows += '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-sec-unban" data-ip="' + ev.ip + '" title="Снять блокировку"><i class="bx bx-lock-open-alt"></i><span class="d-none d-sm-inline ms-1">Разблокировать</span></button>';
+                            } else {
+                                secRows += '<span class="small text-muted">—</span>';
+                            }
+                            secRows += '</td>';
+                            secRows += '</tr>';
+                        });
+                        $('#sec-events-tbody').html(secRows);
                     }
                 }
             }
@@ -931,6 +1141,67 @@
             // Кнопка немедленного обновления
             $('#refresh-now-btn').on('click', function () {
                 pollViaAjax();
+            });
+
+            // Обработка кнопки разблокировки IP
+            $(document).on('click', '.btn-sec-unban', function (e) {
+                e.preventDefault();
+                let btn = $(this);
+                let ip = btn.data('ip');
+                if (!ip) return;
+                if (!confirm('Разблокировать IP-адрес ' + ip + '?')) return;
+
+                btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin"></i>');
+
+                function getCookie(name) {
+                    let cookieValue = null;
+                    if (document.cookie && document.cookie !== '') {
+                        const cookies = document.cookie.split(';');
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                            }
+                        }
+                    }
+                    return cookieValue;
+                }
+
+                $.ajax({
+                    url: '{% url "administration_app:monitoring_api_unban_ip" %}',
+                    type: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    contentType: 'application/json',
+                    data: JSON.stringify({ ip: ip }),
+                    success: function(resp) {
+                        if (resp.success) {
+                            if (typeof PNotify !== 'undefined') {
+                                new PNotify({
+                                    title: 'Безопасность',
+                                    text: resp.message || ('IP ' + ip + ' разблокирован'),
+                                    type: 'success',
+                                    addclass: 'stack-bottomright',
+                                    delay: 3500
+                                });
+                            } else {
+                                alert(resp.message || ('IP ' + ip + ' разблокирован'));
+                            }
+                            if (resp.security_stats) {
+                                applyMonitorData({ security_stats: resp.security_stats });
+                            } else {
+                                pollViaAjax();
+                            }
+                        } else {
+                            alert('Ошибка: ' + (resp.error || resp.message || 'Не удалось разблокировать'));
+                            btn.prop('disabled', false).html('<i class="bx bx-lock-open-alt me-1"></i>Разблокировать');
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Ошибка запроса: ' + (xhr.statusText || 'Сервер недоступен'));
+                        btn.prop('disabled', false).html('<i class="bx bx-lock-open-alt me-1"></i>Разблокировать');
+                    }
+                });
             });
 
             // Подключение к WebSocket

@@ -113,6 +113,8 @@
         border-radius: 4px;
         margin: 2px 4px 2px 0;
         font-family: monospace;
+        word-break: break-all;
+        max-width: 100%;
     }
 
     .security-notice {
@@ -125,12 +127,20 @@
     }
 
     @media (max-width: 768px) {
+        .ssl-textarea {
+            min-height: 130px;
+        }
         .btn-touch {
             min-height: 48px;
         }
         .field-action-bar {
             flex-wrap: wrap;
             gap: 8px;
+        }
+        .field-action-bar .btn {
+            min-height: 36px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
         }
     }
 </style>
@@ -152,15 +162,15 @@
                 </div>
                 <!-- Верхние быстрые действия -->
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" id="btnDemo" class="btn btn-sm btn-outline-info btn-touch" title="Заполнить форму тестовыми сертификатами">
+                    <button type="button" id="btnDemo" class="btn btn-sm btn-outline-info btn-touch flex-grow-1 flex-sm-grow-0" title="Заполнить форму тестовыми сертификатами">
                         <i class="bx bx-magic-wand me-1"></i>
                         <span>Пример данных</span>
                     </button>
-                    <button type="button" id="btnInspectManual" class="btn btn-sm btn-outline-primary btn-touch" title="Проанализировать введенные компоненты">
+                    <button type="button" id="btnInspectManual" class="btn btn-sm btn-outline-primary btn-touch flex-grow-1 flex-sm-grow-0" title="Проанализировать введенные компоненты">
                         <i class="bx bx-analyse me-1"></i>
                         <span>Анализ данных</span>
                     </button>
-                    <button type="button" id="btnClearAll" class="btn btn-sm btn-outline-secondary btn-touch" title="Очистить все текстовые поля">
+                    <button type="button" id="btnClearAll" class="btn btn-sm btn-outline-secondary btn-touch flex-grow-1 flex-sm-grow-0" title="Очистить все текстовые поля">
                         <i class="bx bx-trash me-1"></i>
                         <span>Очистить всё</span>
                     </button>
@@ -322,7 +332,7 @@
         <!-- Параметры именования и паролей экспорта -->
         <div class="card ssl-card mb-3">
             <div class="card-body p-3">
-                <div class="row g-3 align-items-center">
+                <div class="row g-3 align-items-start">
                     <div class="col-12 col-md-4">
                         <label for="id_filename" class="form-label font-weight-semibold text-dark small mb-1">
                             <i class="bx bx-folder me-1 text-primary"></i>Имя файла при сохранении:
@@ -380,7 +390,7 @@
         <!-- Информационная панель анализа и валидации (динамически обновляется) -->
         <div id="inspectionSection" class="card ssl-card inspection-panel mb-3 d-none">
             <div class="card-body p-3">
-                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
                     <h5 class="font-weight-bold text-dark mb-0">
                         <i class="bx bx-check-shield text-success me-1"></i>Результаты проверки сертификата
                     </h5>
@@ -391,19 +401,19 @@
                     <!-- Домен и SAN -->
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="text-muted small">Основное имя (Common Name):</div>
-                        <div class="font-weight-bold fs-6 text-dark" id="inspectCn">—</div>
+                        <div class="font-weight-bold fs-6 text-dark text-break" id="inspectCn">—</div>
 
                         <div class="text-muted small mt-2">Альтернативные имена (SAN):</div>
-                        <div id="inspectSans" class="mt-1">—</div>
+                        <div id="inspectSans" class="mt-1 text-break">—</div>
                     </div>
 
                     <!-- Организация и Издатель -->
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="text-muted small">Организация (O):</div>
-                        <div class="font-weight-semibold text-dark" id="inspectOrg">—</div>
+                        <div class="font-weight-semibold text-dark text-break" id="inspectOrg">—</div>
 
                         <div class="text-muted small mt-2">Кем выдан (Issuer):</div>
-                        <div class="font-weight-semibold text-dark" id="inspectIssuer">—</div>
+                        <div class="font-weight-semibold text-dark text-break" id="inspectIssuer">—</div>
                     </div>
 
                     <!-- Сроки действия и ключ -->
@@ -415,22 +425,22 @@
                         </div>
 
                         <div class="text-muted small mt-2">Тип ключа и алгоритм подписи:</div>
-                        <div class="small text-dark font-weight-semibold" id="inspectKeyType">—</div>
+                        <div class="small text-dark font-weight-semibold text-break" id="inspectKeyType">—</div>
                     </div>
                 </div>
 
                 <!-- Статус совпадения ключа и цепочки -->
                 <div class="row g-2 mt-2 pt-2 border-top">
                     <div class="col-12 col-md-6">
-                        <div id="inspectKeyAlert" class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center">
-                            <i class="bx bx-info-circle fs-5 me-2"></i>
-                            <span id="inspectKeyText">Закрытый ключ не указан</span>
+                        <div id="inspectKeyAlert" class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-start">
+                            <i class="bx bx-info-circle fs-5 me-2 mt-1 flex-shrink-0"></i>
+                            <span id="inspectKeyText" class="text-break">Закрытый ключ не указан</span>
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
-                        <div id="inspectChainAlert" class="alert alert-secondary py-2 px-3 mb-0 small d-flex align-items-center">
-                            <i class="bx bx-link fs-5 me-2"></i>
-                            <span id="inspectChainText">Цепочка сертификатов: не указана</span>
+                        <div id="inspectChainAlert" class="alert alert-secondary py-2 px-3 mb-0 small d-flex align-items-start">
+                            <i class="bx bx-link fs-5 me-2 mt-1 flex-shrink-0"></i>
+                            <span id="inspectChainText" class="text-break">Цепочка сертификатов: не указана</span>
                         </div>
                     </div>
                 </div>
@@ -525,13 +535,13 @@
                 </div>
 
                 <!-- 5. Полный пакет ZIP -->
-                <div class="mt-3 pt-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <div class="mt-3 pt-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-2">
                     <div>
                         <strong class="text-dark"><i class="bx bx-package text-success me-1"></i>Полный пакет во всех форматах:</strong>
-                        <span class="text-muted small ms-1">Скачать единый ZIP-архив со всеми расширениями (.crt, .key, .pem, .der, .p7b, .pfx) и инструкцией README.txt.</span>
+                        <span class="text-muted small ms-1 d-block d-md-inline">Скачать единый ZIP-архив со всеми расширениями (.crt, .key, .pem, .der, .p7b, .pfx) и инструкцией README.txt.</span>
                     </div>
                     <div>
-                        <button type="submit" name="format" value="zip" class="btn btn-success btn-touch px-4">
+                        <button type="submit" name="format" value="zip" class="btn btn-success btn-touch px-4 w-100 w-md-auto">
                             <i class="bx bxs-file-archive me-1 fs-5"></i>Скачать всё архивом (.zip)
                         </button>
                     </div>
