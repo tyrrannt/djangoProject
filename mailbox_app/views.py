@@ -669,6 +669,7 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
 
         reply_uid = self.request.GET.get("reply_uid")
         forward_uid = self.request.GET.get("forward_uid")
+        draft_uid = self.request.GET.get("draft_uid")
         folder = self.request.GET.get("folder", "INBOX")
         to_param = self.request.GET.get("to", "")
 
@@ -686,7 +687,6 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         if not reply_uid and not forward_uid and not draft_uid:
             initial["body_html"] = f"<p><br></p><p><br></p>{signature}"
 
-        draft_uid = self.request.GET.get("draft_uid")
         if draft_uid and str(draft_uid).isdigit():
             try:
                 target_uid = int(draft_uid)
