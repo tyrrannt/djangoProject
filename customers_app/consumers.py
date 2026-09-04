@@ -302,7 +302,7 @@ class MonitorConsumer(AsyncWebsocketConsumer):
 
         try:
             while self.is_running:
-                payload = await sync_to_async(get_system_monitor_payload, thread_sensitive=False)(
+                payload = await sync_to_async(get_system_monitor_payload, thread_sensitive=True)(
                     prev_sent, prev_recv, prev_time
                 )
                 prev_sent = payload.get("net_sent_raw")

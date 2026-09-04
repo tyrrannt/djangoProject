@@ -6,11 +6,14 @@
 администратору системы.
 """
 
+import logging
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 import psutil
 from django.db import connection
+
+logger = logging.getLogger(__name__)
 
 
 def format_bytes_to_gb(value_bytes: int) -> float:
@@ -160,21 +163,35 @@ def get_cpu_temperature() -> Optional[float]:
 def get_mariadb_ping_ms() -> Tuple[str, float]:
     """Измеряет время сетевого отклика базы данных MariaDB (Ping latency).
 
-    Выполняет минимальный проверочный запрос 'SELECT 1' и фиксирует задержку.
+    Выполняет проверочный запрос 'SELECT 1' и фиксирует задержку отклика.
+    В случае обрыва соединения или таймаута сокета выполняет безопасную очистку
+    устаревшего дескриптора и повторное переподключение.
 
     Returns:
         Tuple[str, float]: Кортеж ('ok'/'error', задержка в миллисекундах).
     """
     t_start = time.perf_counter()
     try:
+        connection.close_if_unusable_or_obsolete()
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
         latency_ms = round((time.perf_counter() - t_start) * 1000, 1)
         return "ok", latency_ms
-    except Exception:
-        latency_ms = round((time.perf_counter() - t_start) * 1000, 1)
-        return "error", latency_ms
+    except Exception as exc:
+        logger.debug(f"[SystemMonitor] Ошибка первичного SELECT 1: {exc}. Попытка переподключения...")
+        try:
+            connection.close()
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+            latency_ms = round((time.perf_counter() - t_start) * 1000, 1)
+            return "ok", latency_ms
+        except Exception as retry_exc:
+            connection.close()
+            latency_ms = round((time.perf_counter() - t_start) * 1000, 1)
+            logger.warning(f"[SystemMonitor] Сбой подключения к MariaDB при SELECT 1: {retry_exc}")
+            return "error", latency_ms
 
 
 def get_top_processes(limit: int = 5) -> List[Dict[str, Any]]:
