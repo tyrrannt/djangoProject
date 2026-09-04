@@ -56,9 +56,9 @@ def _format_online_users(registry: dict) -> list:
         username = data.get('username', '')
         if uid not in users_map:
             users_map[uid] = {
-                # Индексы для гарантированной совместимости с legacy JS (user[0], user[1])
-                0: username,
-                1: uid,
+                # Строковые ключи '0' и '1' для совместимости с JS user[0], user[1] и защиты от ValueError в Channels/msgpack
+                '0': username,
+                '1': uid,
                 'user_id': uid,
                 'username': username,
                 'devices': [],
