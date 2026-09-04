@@ -162,6 +162,9 @@
                         <button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="triggerTestBrowser()">
                             <i class="bx bx-desktop fs-5"></i> 3. Тест системного баннера ОС (Notification API)
                         </button>
+                        <button type="button" class="btn btn-outline-info btn-sm d-flex align-items-center gap-1 shadow-sm text-dark" onclick="runServerPollerAll()">
+                            <i class="bx bx-broadcast fs-5 text-primary"></i> 4. 🚀 Запустить серверный поллер (проверить ВСЕ ящики компании)
+                        </button>
                     </div>
 
                     <!-- Блок оперативного результата теста API -->
@@ -439,6 +442,78 @@
         function clearPollLog() {
             var tbody = document.getElementById('diagPollLogTableBody');
             tbody.innerHTML = '<tr id="diagPollLogEmptyRow"><td colspan="5" class="text-center text-muted py-3">Лог очищен. Ожидание следующего такта опроса...</td></tr>';
+        }
+
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function runServerPollerAll() {
+            var card = document.getElementById('diagApiResultCard');
+            var summary = document.getElementById('diagApiResultSummary');
+            var jsonBox = document.getElementById('diagApiResultJson');
+            var latencyBadge = document.getElementById('diagApiLatency');
+
+            card.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+            card.classList.add('alert-info');
+            summary.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Запуск серверного поллера Celery для всех активных ящиков компании...';
+            jsonBox.textContent = 'Подключение к IMAP-серверам, проверка UNSEEN писем и отправка Web Push...';
+            latencyBadge.textContent = '... мс';
+
+            var t0 = performance.now();
+            fetch('{% url "mailbox_app:api_poller_run" %}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken') || ''
+                }
+            })
+            .then(function(res) {
+                var ms = Math.round(performance.now() - t0);
+                latencyBadge.textContent = ms + ' мс';
+                return res.json().then(function(data) {
+                    return { ok: res.ok, status: res.status, data: data, ms: ms };
+                });
+            })
+            .then(function(resObj) {
+                var d = resObj.data;
+                card.classList.remove('alert-info');
+                if (d.success) {
+                    var sm = d.summary || {};
+                    card.classList.add('alert-success');
+                    summary.innerHTML = '<strong>🚀 Серверный поллер успешно завершен:</strong> ' +
+                        'Обработано ящиков: <strong>' + (sm.processed || 0) + '</strong> | ' +
+                        'Успешно: <span class="badge bg-success">' + (sm.success || 0) + '</span> | ' +
+                        'Новых писем обнаружено: <strong class="badge bg-primary fs-6">' + (sm.new_emails_total || 0) + '</strong> | ' +
+                        'Пропущено: ' + (sm.skipped || 0) + ' | ' +
+                        'Ошибок: ' + (sm.errors ? ('<span class="badge bg-danger">' + sm.errors + '</span>') : '0');
+                } else {
+                    card.classList.add('alert-danger');
+                    summary.innerHTML = '<strong>❌ Ошибка выполнения поллера:</strong> ' + (d.error || 'Ошибка');
+                }
+                jsonBox.textContent = JSON.stringify(d, null, 2);
+                addLogEntry(new Date(), d.success ? 'POLLER_OK' : 'POLLER_ERR', (d.summary && d.summary.new_emails_total) || 0, resObj.ms + ' мс', 'Ручной запуск серверного поллера всех ящиков');
+            })
+            .catch(function(err) {
+                var ms = Math.round(performance.now() - t0);
+                latencyBadge.textContent = ms + ' мс';
+                card.classList.remove('alert-info');
+                card.classList.add('alert-danger');
+                summary.innerHTML = '<strong>❌ Сетевая ошибка HTTP:</strong> ' + err.message;
+                jsonBox.textContent = String(err);
+                addLogEntry(new Date(), 'HTTP_ERR', 0, ms + ' мс', err.message);
+            });
         }
 
         // Подписка на автоматический поллер

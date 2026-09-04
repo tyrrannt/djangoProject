@@ -75,3 +75,37 @@ def send_scheduled_email_task(self, scheduled_email_id: int) -> bool:
                 f"[Celery:ScheduledMail] Исчерпан лимит повторных попыток для письма ID={scheduled_email_id}."
             )
             return False
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def poll_mailboxes_unread_task(self) -> dict:
+    """Периодическая фоновая задача Celery Beat для серверного опроса почтовых ящиков.
+
+    Периодически проверяет статус непрочитанных писем на сервере IMAP (Kerio Connect)
+    для всех активных корпоративных (Mailbox) и персональных (MailAccount) ящиков,
+    актуализирует кэш счетчиков и рассылает Web Push уведомления о новых письмах.
+
+    Args:
+        self: Экземпляр запущенной задачи Celery.
+
+    Returns:
+        dict: Сводный результат выполнения опроса (число ящиков, новые письма, ошибки).
+    """
+    from mailbox_app.services.mail_poller_service import poll_all_active_mailboxes
+
+    logger.info("[Celery:MailPoller] Старт периодического опроса почтовых ящиков.")
+    try:
+        summary = poll_all_active_mailboxes()
+        logger.info(
+            f"[Celery:MailPoller] Опрос успешно завершен: "
+            f"ящиков={summary.get('processed')}, новых писем={summary.get('new_emails_total')}."
+        )
+        return summary
+    except Exception as exc:
+        logger.error(f"[Celery:MailPoller] Критическая ошибка при опросе ящиков: {exc}", exc_info=True)
+        try:
+            raise self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            logger.critical("[Celery:MailPoller] Исчерпан лимит повторных попыток для poll_mailboxes_unread_task.")
+            return {"status": "error", "error": str(exc)}
+

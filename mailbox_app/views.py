@@ -65,6 +65,7 @@ from mailbox_app.services.connection_test_service import test_full_mailbox_conne
 from mailbox_app.services.imap_service import (
     ImapMailService,
     decode_imap_utf7,
+    decode_str,
     invalidate_mailbox_cache,
 )
 from mailbox_app.services.mailbox_defaults import get_domain_defaults
@@ -1510,10 +1511,10 @@ class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
                                             raw_uid = int(m_uid.group(1))
 
                                 msg_obj = email.message_from_bytes(raw_hdr)
-                                from_val = imap_svc._decode_header_str(msg_obj.get("From", ""))
+                                from_val = decode_str(msg_obj.get("From", ""))
                                 from_name, from_email = parseaddr(from_val)
                                 from_name = from_name or from_email or "Новый отправитель"
-                                subj_val = imap_svc._decode_header_str(msg_obj.get("Subject", "Без темы"))
+                                subj_val = decode_str(msg_obj.get("Subject", "Без темы"))
 
                                 mailbox_param = self.get_mailbox_context().get("mailbox_query_param", "")
                                 detail_url = (
@@ -2652,6 +2653,33 @@ class MailboxDomainPresetAPIView(MailboxAdminAccessMixin, View):
         domain = request.GET.get("domain", "").strip()
         defaults = get_domain_defaults(domain)
         return JsonResponse(defaults)
+
+
+class MailboxServerPollerRunAPIView(MailboxAdminAccessMixin, View):
+    """AJAX API эндпоинт для запуска серверного поллера всех почтовых ящиков."""
+
+    def post(self, request, *args, **kwargs):
+        """Запускает опрос всех активных ящиков компании и возвращает сводный отчет.
+
+        Доступно только пользователям с правами Администратора почты.
+
+        Args:
+            request: Входящий HTTP POST запрос.
+            *args: Дополнительные позиционные аргументы.
+            **kwargs: Дополнительные именованные аргументы.
+
+        Returns:
+            JsonResponse: Сводный JSON отчет работы серверного поллера.
+        """
+        from mailbox_app.services.mail_poller_service import poll_all_active_mailboxes
+
+        try:
+            summary = poll_all_active_mailboxes()
+            return JsonResponse({"success": True, "summary": summary})
+        except Exception as e:
+            logger.error(f"[Mailbox] Ошибка ручного запуска серверного поллера: {e}", exc_info=True)
+            return JsonResponse({"success": False, "error": str(e)})
+
 
 
 

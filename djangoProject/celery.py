@@ -70,6 +70,10 @@ app.conf.beat_schedule = {
         'task': 'mailbox_app.tasks.process_scheduled_emails_task',
         'schedule': crontab(minute='*/1'),
     },
+    'mailbox_poll_unread_all': {
+        'task': 'mailbox_app.tasks.poll_mailboxes_unread_task',
+        'schedule': crontab(minute='*/1'),
+    },
 
 
     # 'sync_finance_directories': {

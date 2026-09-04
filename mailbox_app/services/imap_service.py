@@ -130,6 +130,20 @@ def decode_str(header_value: Optional[str]) -> str:
 class ImapMailService:
     """Сервис для подключения к почтовому ящику по протоколу IMAP."""
 
+    @staticmethod
+    def decode_header_str(header_value: Optional[str]) -> str:
+        """Декодирует MIME-заголовок (тему, отправителя) в Unicode строку.
+
+        Args:
+            header_value (str, optional): Сырой заголовок письма.
+
+        Returns:
+            str: Декодированная строка.
+        """
+        return decode_str(header_value)
+
+    _decode_header_str = decode_header_str
+
     def __init__(self, host: str, port: int, email_addr: str, password: str, use_ssl: bool = True):
         """Инициализирует сервис с параметрами подключения.
 
