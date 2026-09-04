@@ -190,7 +190,7 @@
                                 <div class="small text-muted" id="kpi-disk-total">Всего: {{ initial_data.disk_total_gb|default:"0" }} ГБ</div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-4 col-xl">
+                        <div class="col-6 col-md-4 col-xl">
                             <div class="monitor-kpi-card">
                                 <div class="text-muted small mb-1"><i class="bx bx-data text-primary me-1"></i>СУБД MariaDB</div>
                                 <div class="fs-5 font-weight-bold text-primary d-flex align-items-center gap-2" id="kpi-db-ping">
@@ -198,6 +198,22 @@
                                     <span class="badge bg-success-subtle text-success border border-success-subtle small py-0 px-1" id="kpi-db-status">OK</span>
                                 </div>
                                 <div class="small text-muted">Задержка проверочного запроса</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl">
+                            <div class="monitor-kpi-card">
+                                <div class="text-muted small mb-1"><i class="bx bx-globe text-info me-1"></i>Ваш IP-адрес</div>
+                                <div class="fs-6 font-weight-bold font-monospace {% if client_ip == '192.168.10.7' %}text-danger{% else %}text-dark{% endif %}" id="kpi-client-ip">
+                                    {{ client_ip }}
+                                </div>
+                                <div class="small text-muted d-flex align-items-center justify-content-between">
+                                    {% if client_ip == '192.168.10.7' %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle small py-0 px-1">Шлюз Kerio</span>
+                                    {% else %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle small py-0 px-1">Клиентский IP</span>
+                                    {% endif %}
+                                    <a href="{% url 'administration_app:check_my_ip' %}" class="small text-decoration-none">Инфо &rarr;</a>
+                                </div>
                             </div>
                         </div>
                     </div>

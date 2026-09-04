@@ -1,5 +1,6 @@
 import csv
 import datetime
+import ipaddress
 import json
 
 from celery.result import AsyncResult
@@ -17,6 +18,7 @@ from django.views.generic import ListView
 
 from administration_app.models import PortalProperty
 from administration_app.system_monitor_service import get_system_monitor_payload
+from administration_app.utils import get_client_ip
 from contracts_app.models import Contract
 from contracts_app.views import update_contract_dates_from_comment
 
@@ -918,10 +920,12 @@ def system_monitor(request):
         raise PermissionDenied("Доступ к мониторингу параметров сервера разрешен только администраторам.")
 
     initial_data = get_system_monitor_payload()
+    client_ip = get_client_ip(request)
     context = {
         "title": "Мониторинг параметров сервера",
         "initial_data": initial_data,
         "initial_data_json": json.dumps(initial_data),
+        "client_ip": client_ip,
     }
     return render(request, "administration_app/system_monitor.html", context)
 
@@ -941,6 +945,56 @@ def system_monitor_data_api(request):
 
     payload = get_system_monitor_payload()
     return JsonResponse(payload)
+
+
+def check_my_ip(request):
+    """Диагностический просмотр входящего IP-адреса и сетевых HTTP-заголовков проксирования.
+
+    Позволяет администратору или пользователю в реальном времени проверить
+    корректность передачи реального IP-адреса клиента через цепочку сетевых шлюзов
+    (Kerio Control -> NGINX Proxy Manager -> WebServer Nginx -> Gunicorn -> Django).
+
+    Args:
+        request (HttpRequest): Входящий HTTP-запрос.
+
+    Returns:
+        HttpResponse: HTML-страница диагностики либо JsonResponse (если format=json).
+    """
+    client_ip = get_client_ip(request)
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    x_real_ip = request.META.get('HTTP_X_REAL_IP', '')
+    remote_addr = request.META.get('REMOTE_ADDR', '')
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+    is_public = False
+    is_kerio_snat = (client_ip == '192.168.10.7')
+    try:
+        ip_obj = ipaddress.ip_address(client_ip)
+        is_public = not (ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved or ip_obj.is_link_local)
+    except ValueError:
+        pass
+
+    if request.GET.get('format') == 'json' or request.headers.get('accept') == 'application/json':
+        return JsonResponse({
+            'client_ip': client_ip,
+            'is_public': is_public,
+            'is_kerio_snat': is_kerio_snat,
+            'x_forwarded_for': x_forwarded_for,
+            'x_real_ip': x_real_ip,
+            'remote_addr': remote_addr,
+        })
+
+    context = {
+        'title': 'Диагностика IP-адреса',
+        'client_ip': client_ip,
+        'is_public': is_public,
+        'is_kerio_snat': is_kerio_snat,
+        'x_forwarded_for': x_forwarded_for,
+        'x_real_ip': x_real_ip,
+        'remote_addr': remote_addr,
+        'user_agent': user_agent,
+    }
+    return render(request, 'administration_app/check_my_ip.html', context)
 
 
 @login_required

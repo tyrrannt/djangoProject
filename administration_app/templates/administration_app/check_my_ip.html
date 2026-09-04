@@ -1,0 +1,120 @@
+{% extends request.user.is_authenticated|yesno:"customers_app/main.html,customers_app/base.html" %}
+{% load static %}
+
+{% block title %}
+    Диагностика IP-адреса
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card card-modern shadow-sm border mb-4">
+            <header class="card-header bg-light py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+                <h4 class="card-title text-dark mb-0 fs-5 font-weight-bold d-flex align-items-center gap-2">
+                    <i class="bx bx-globe text-primary fs-4"></i>
+                    Диагностика входящего IP-адреса
+                </h4>
+                <a href="?format=json" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <i class="bx bx-code-alt me-1"></i>JSON
+                </a>
+            </header>
+            <div class="card-body p-4">
+                <!-- Главный блок с текущим IP -->
+                <div class="text-center py-3 mb-4 rounded-3 {% if is_kerio_snat %}bg-danger-subtle border border-danger-subtle{% elif is_public %}bg-success-subtle border border-success-subtle{% else %}bg-warning-subtle border border-warning-subtle{% endif %}">
+                    <div class="text-muted small text-uppercase font-weight-semibold mb-1">Ваш определенный IP-адрес на веб-сервере:</div>
+                    <div class="display-6 font-monospace font-weight-bold {% if is_kerio_snat %}text-danger{% elif is_public %}text-success{% else %}text-dark{% endif %} mb-2">
+                        {{ client_ip }}
+                    </div>
+                    <div>
+                        {% if is_kerio_snat %}
+                            <span class="badge bg-danger fs-6 px-3 py-2">
+                                <i class="bx bx-error-circle me-1"></i> 192.168.10.7 — Шлюз Kerio Control (Source NAT активен)
+                            </span>
+                        {% elif is_public %}
+                            <span class="badge bg-success fs-6 px-3 py-2">
+                                <i class="bx bx-check-double me-1"></i> Реальный публичный IP-адрес клиента (Настройка успешна!)
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                                <i class="bx bx-info-circle me-1"></i> Частный IP адрес локальной сети ({{ client_ip }})
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Поясняющее сообщение -->
+                {% if is_kerio_snat %}
+                    <div class="alert alert-danger d-flex align-items-start gap-2 mb-4" role="alert">
+                        <i class="bx bx-error fs-4 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <strong>Source NAT всё ещё включен в Kerio Control!</strong>
+                            <p class="mb-0 small">
+                                Пакет поступает на NGINX Proxy Manager с подмененным адресом источника <code>192.168.10.7</code>.
+                                Убедитесь, что в правиле трафика Kerio Control снята галочка <em>«Включить источник NAT»</em> и нажата кнопка <em>«Применить»</em>.
+                            </p>
+                        </div>
+                    </div>
+                {% elif is_public %}
+                    <div class="alert alert-success d-flex align-items-start gap-2 mb-4" role="alert">
+                        <i class="bx bx-check-circle fs-4 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <strong>Отлично! Настройка работает корректно.</strong>
+                            <p class="mb-0 small">
+                                Сервер видит ваш реальный внешний IP-адрес из интернета. Вся цепочка (Kerio Control &rarr; NGINX Proxy Manager &rarr; WebServer Nginx &rarr; Gunicorn &rarr; Django) передает сетевые заголовки без искажений.
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Таблица сетевых заголовков -->
+                <h6 class="font-weight-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <i class="bx bx-network-chart text-muted"></i>
+                    Сетевые параметры и HTTP-заголовки запроса
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle mb-4 font-monospace small">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 35%;">Параметр / Заголовок</th>
+                                <th>Значение</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-weight-semibold text-dark">get_client_ip(request)</td>
+                                <td>
+                                    <strong class="{% if is_public %}text-success{% elif is_kerio_snat %}text-danger{% endif %}">{{ client_ip }}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">HTTP_X_FORWARDED_FOR</td>
+                                <td>{{ x_forwarded_for|default:"<em class='text-muted'>не передан</em>" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">HTTP_X_REAL_IP</td>
+                                <td>{{ x_real_ip|default:"<em class='text-muted'>не передан</em>" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">REMOTE_ADDR (сокет сервера)</td>
+                                <td>{{ remote_addr|default:"<em class='text-muted'>—</em>" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Кнопка обновления -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top">
+                    <button onclick="window.location.reload();" class="btn btn-primary btn-touch">
+                        <i class="bx bx-refresh me-1"></i> Проверить повторно
+                    </button>
+                    {% if request.user.is_staff or request.user.is_superuser %}
+                        <a href="{% url 'administration_app:monitoring' %}" class="btn btn-outline-dark btn-touch">
+                            <i class="bx bx-pulse me-1"></i> Мониторинг параметров сервера
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

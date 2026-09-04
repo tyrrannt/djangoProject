@@ -13,6 +13,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 from django.views.generic import TemplateView
 
 import library_app.views as library_views
+import administration_app.views as administration_views
 
 handler403 = library_views.show_403
 handler404 = library_views.show_404
@@ -33,6 +34,7 @@ urlpatterns = [
 
     path('', include('library_app.urls')),
     path('bklproxmoxadmin/', admin.site.urls),
+    path('my-ip/', administration_views.check_my_ip, name='direct_my_ip'),
 
     # API Schema & UI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
