@@ -1417,49 +1417,83 @@ class MailboxPrintSettingsAdminView(MailboxAdminAccessMixin, FormView):
         return super().form_valid(form)
 
 
-class MailboxUnreadCountAPIView(LoginRequiredMixin, View):
+class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
     """Легковесный AJAX эндпоинт для проверки непрочитанных входящих писем и пуш-уведомлений."""
 
     def get(self, request):
         """Возвращает статус непрочитанных писем и данные последнего письма.
 
+        Проверяет активный ящик пользователя (персональный MailAccount либо корпоративный Mailbox).
+        При обнаружении изменений обновляет количество непрочитанных в кэше дерева папок.
+
+        Args:
+            request: Входящий HTTP-запрос.
+
         Returns:
-            JsonResponse: Словарь с количеством непрочитанных и данными последнего письма.
+            JsonResponse: Словарь с количеством непрочитанных, данными последнего письма и диагностикой.
         """
-        account = get_user_mail_account(request.user)
-        if not account or not account.email or not account.get_password():
-            return JsonResponse({"success": False, "unread_count": 0, "has_new": False})
+        account = self.get_account()
+        if not account or not getattr(account, "email", None):
+            return JsonResponse({
+                "success": False,
+                "unread_count": 0,
+                "has_new": False,
+                "error": "Почтовый ящик не настроен для вашей учетной записи (отсутствует адрес почты).",
+            })
+
+        password = account.get_password()
+        if not password:
+            return JsonResponse({
+                "success": False,
+                "unread_count": 0,
+                "has_new": False,
+                "mailbox_email": account.email,
+                "mailbox_name": getattr(account, "name", account.email),
+                "error": "Пароль почтового ящика не задан в профиле пользователя или настройках почты.",
+            })
 
         email_clean = account.email.strip().lower()
+        force_refresh = request.GET.get("force") in ("1", "true")
         cache_key = f"mailbox_unread_status_{email_clean}"
-        cached_status = cache.get(cache_key)
-        if cached_status is not None:
-            return JsonResponse(cached_status)
 
+        if not force_refresh:
+            cached_status = cache.get(cache_key)
+            if cached_status is not None:
+                return JsonResponse(cached_status)
+
+        t_start = time.perf_counter()
         try:
-            with ImapMailService(
-                host=account.imap_host,
-                port=account.imap_port,
-                email_addr=account.email,
-                password=account.get_password(),
-                use_ssl=account.imap_use_ssl,
-            ) as imap_svc:
+            with self.get_imap_service(account) as imap_svc:
                 # 1. Быстрая проверка количества UNSEEN через команду STATUS
-                status_res, status_data = imap_svc.client.status('"INBOX"', "(UNSEEN)")
                 unseen_count = 0
-                if status_res == "OK" and status_data:
-                    stat_line = status_data[0].decode("latin-1")
-                    m = re.search(r"UNSEEN\s+(\d+)", stat_line)
-                    if m:
-                        unseen_count = int(m.group(1))
+                status_ok = False
+                try:
+                    status_res, status_data = imap_svc.client.status('INBOX', "(UNSEEN)")
+                    if status_res != "OK":
+                        status_res, status_data = imap_svc.client.status('"INBOX"', "(UNSEEN)")
+                    if status_res == "OK" and status_data:
+                        stat_line = status_data[0].decode("latin-1", errors="ignore")
+                        m = re.search(r"UNSEEN\s+(\d+)", stat_line)
+                        if m:
+                            unseen_count = int(m.group(1))
+                            status_ok = True
+                except Exception as status_ex:
+                    logger.debug(f"[Mailbox] Ошибка команды STATUS INBOX: {status_ex}")
+
+                # 1b. Fallback через SELECT + SEARCH UNSEEN при сбое STATUS
+                if not status_ok:
+                    imap_svc.client.select('INBOX', readonly=True)
+                    s_status, s_data = imap_svc.client.search(None, "UNSEEN")
+                    if s_status == "OK" and s_data and s_data[0]:
+                        unseen_count = len([u for u in s_data[0].split() if u])
 
                 latest_mail = None
                 if unseen_count > 0:
                     # 2. Если есть непрочитанные, извлекаем заголовок последнего письма
-                    imap_svc.client.select('"INBOX"', readonly=True)
+                    imap_svc.client.select('INBOX', readonly=True)
                     s_status, s_data = imap_svc.client.search(None, "UNSEEN")
                     if s_status == "OK" and s_data and s_data[0]:
-                        uids = s_data[0].split()
+                        uids = [u for u in s_data[0].split() if u]
                         if uids:
                             last_num = uids[-1]
                             f_status, f_data = imap_svc.client.fetch(
@@ -1481,25 +1515,61 @@ class MailboxUnreadCountAPIView(LoginRequiredMixin, View):
                                 from_name = from_name or from_email or "Новый отправитель"
                                 subj_val = imap_svc._decode_header_str(msg_obj.get("Subject", "Без темы"))
 
+                                mailbox_param = self.get_mailbox_context().get("mailbox_query_param", "")
+                                detail_url = (
+                                    reverse("mailbox_app:email_detail", kwargs={"folder": "INBOX", "uid": raw_uid})
+                                    if raw_uid
+                                    else reverse("mailbox_app:index")
+                                )
+                                if mailbox_param and "?" not in detail_url:
+                                    detail_url += "?" + mailbox_param.lstrip("&")
+
                                 latest_mail = {
                                     "uid": raw_uid,
                                     "from_name": from_name,
                                     "from_email": from_email,
                                     "subject": subj_val,
-                                    "url": reverse("mailbox_app:email_detail", kwargs={"folder": "INBOX", "uid": raw_uid}) if raw_uid else reverse("mailbox_app:index"),
+                                    "url": detail_url,
                                 }
 
+                # 3. Синхронизируем счетчик в кэше дерева папок, чтобы у папки «Входящие» не было задержки 30 минут
+                cache_key_folders = f"mailbox_folders_{email_clean}"
+                cached_folders = cache.get(cache_key_folders)
+                if cached_folders and isinstance(cached_folders, list):
+                    folder_updated = False
+                    for f in cached_folders:
+                        if f.get("root_type") == "inbox":
+                            if f.get("unseen") != unseen_count:
+                                f["unseen"] = unseen_count
+                                folder_updated = True
+                            break
+                    if folder_updated:
+                        cache.set(cache_key_folders, cached_folders, timeout=1800)
+
+                elapsed_ms = round((time.perf_counter() - t_start) * 1000, 1)
                 res_data = {
                     "success": True,
                     "unread_count": unseen_count,
                     "has_new": unseen_count > 0,
                     "latest": latest_mail,
+                    "mailbox_email": account.email,
+                    "mailbox_name": getattr(account, "name", account.email),
+                    "response_time_ms": elapsed_ms,
                 }
                 cache.set(cache_key, res_data, timeout=20)
                 return JsonResponse(res_data)
         except Exception as e:
-            logger.debug(f"[Mailbox] Ошибка проверки непрочитанных писем: {e}")
-            return JsonResponse({"success": False, "unread_count": 0, "has_new": False, "error": str(e)})
+            elapsed_ms = round((time.perf_counter() - t_start) * 1000, 1)
+            logger.warning(f"[Mailbox] Ошибка проверки непрочитанных писем для {request.user}: {e}")
+            return JsonResponse({
+                "success": False,
+                "unread_count": 0,
+                "has_new": False,
+                "error": f"Ошибка IMAP: {e}",
+                "mailbox_email": getattr(account, "email", ""),
+                "mailbox_name": getattr(account, "name", ""),
+                "response_time_ms": elapsed_ms,
+            })
 
 
 class MailboxSettingsView(MailboxBaseMixin, FormView):
@@ -1840,6 +1910,9 @@ class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
             "host": host,
             "port": port,
             "use_ssl": use_ssl,
+            "has_password": bool(password),
+            "mailbox_type": "Корпоративный (общий)" if (account and hasattr(account, "is_active")) else "Персональный",
+            "account_name": getattr(account, "name", account.email) if account else "",
             "steps": steps,
             "total_time_ms": total_time_ms,
             "total_time_sec": total_time_ms / 1000.0,

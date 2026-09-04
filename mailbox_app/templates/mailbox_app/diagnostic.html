@@ -87,10 +87,124 @@
                     </div>
                 {% endif %}
 
+                <!-- Интерактивная диагностика уведомлений и фонового опроса -->
+                <div class="diag-card p-3 mb-4 border-primary shadow-sm" style="border-left: 5px solid #0088cc;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 pb-2 border-bottom">
+                        <div>
+                            <h4 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                                <i class="bx bx-bell-ring text-primary fs-3"></i> Диагностика уведомлений и фонового поллера
+                            </h4>
+                            <small class="text-muted">Проверка фонового опроса каждые 40 сек, разрешений браузера и генерации всплывающих уведомлений</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-dark border px-3 py-2" id="diagPollerCountdownBadge">
+                                <i class="bx bx-time-five me-1"></i> Опрос через: <strong id="diagPollerTimerSec" class="text-primary">--</strong> сек
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Статусные плитки -->
+                    <div class="row g-3 mb-3">
+                        <!-- 1. Почтовый аккаунт -->
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 bg-light rounded border h-100">
+                                <div class="text-muted small mb-1">Почтовый ящик:</div>
+                                <div class="fw-bold text-truncate text-dark" title="{{ email_addr }}">{{ email_addr|default:"Не настроен" }}</div>
+                                <div class="mt-2">
+                                    {% if has_password %}
+                                        <span class="badge bg-success small"><i class="bx bx-check"></i> Пароль задан</span>
+                                    {% else %}
+                                        <span class="badge bg-danger small"><i class="bx bx-x"></i> Пароль не задан</span>
+                                    {% endif %}
+                                    <span class="badge bg-secondary small">{{ mailbox_type }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Разрешение в браузере -->
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 bg-light rounded border h-100">
+                                <div class="text-muted small mb-1">Системные уведомления ОС:</div>
+                                <div class="fw-bold" id="diagNotifPermStatus">Проверка...</div>
+                                <div class="mt-2" id="diagNotifPermAction">
+                                    <!-- Кнопка запроса разрешения появится если не granted -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Service Worker / Push -->
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 bg-light rounded border h-100">
+                                <div class="text-muted small mb-1">Service Worker (PWA):</div>
+                                <div class="fw-bold" id="diagSwStatus">Проверка...</div>
+                                <div class="mt-2 text-muted small" id="diagSwDetail">—</div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Статус последнего опроса -->
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 bg-light rounded border h-100">
+                                <div class="text-muted small mb-1">Последний опрос сервера:</div>
+                                <div class="fw-bold" id="diagLastPollStatus">Ожидание...</div>
+                                <div class="mt-2 small text-muted" id="diagLastPollTime">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Интерактивные кнопки ручного тестирования -->
+                    <div class="d-flex flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                        <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="runLiveUnreadCheck()">
+                            <i class="bx bx-refresh fs-5"></i> 1. Проверить API /mail/api/unread_count/ прямо сейчас
+                        </button>
+                        <button type="button" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="triggerTestToast()">
+                            <i class="bx bx-envelope fs-5 text-warning"></i> 2. Тест In-App Toast (всплывающий темный тост)
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="triggerTestBrowser()">
+                            <i class="bx bx-desktop fs-5"></i> 3. Тест системного баннера ОС (Notification API)
+                        </button>
+                    </div>
+
+                    <!-- Блок оперативного результата теста API -->
+                    <div id="diagApiResultCard" class="d-none alert mb-3 p-3 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong id="diagApiResultTitle">Результат запроса к API</strong>
+                            <span class="badge bg-dark font-monospace" id="diagApiLatency">—</span>
+                        </div>
+                        <div id="diagApiResultSummary" class="small mb-2"></div>
+                        <pre id="diagApiResultJson" class="m-0 p-2 bg-white rounded border small font-monospace" style="max-height: 180px; overflow-y: auto;"></pre>
+                    </div>
+
+                    <!-- Живой лог опросов каждые 40 секунд -->
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold small text-dark"><i class="bx bx-list-ul me-1"></i> Живой монитор автоматического опроса (каждые 40 сек):</span>
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-muted" onclick="clearPollLog()">Очистить лог</button>
+                        </div>
+                        <div class="table-responsive border rounded" style="max-height: 220px; overflow-y: auto;">
+                            <table class="table table-sm table-striped m-0 small">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 80px;">Время</th>
+                                        <th style="width: 100px;">Статус</th>
+                                        <th style="width: 120px;">Непрочитанных</th>
+                                        <th style="width: 100px;">Задержка</th>
+                                        <th>Детали / Ответ сервера</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="diagPollLogTableBody">
+                                    <tr id="diagPollLogEmptyRow">
+                                        <td colspan="5" class="text-center text-muted py-3">Ожидание первого такта опроса (до 40 сек)... Либо нажмите кнопку «Проверить API» выше.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Таблица пошаговых замеров -->
                 <div class="diag-card overflow-hidden">
                     <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-                        <h5 class="fw-bold m-0 text-dark">Пошаговый хронометраж операций</h5>
+                        <h5 class="fw-bold m-0 text-dark">Пошаговый хронометраж IMAP-операций</h5>
                         <small class="text-muted">Замеры выполнены с точностью до 0.1 мс</small>
                     </div>
                     <div class="table-responsive">
@@ -154,5 +268,217 @@
                 alert('Отчет скопирован в буфер обмена! Вставьте его в чат.');
             }
         }
+
+        // --- ДИАГНОСТИКА УВЕДОМЛЕНИЙ И ЖИВОГО ОПРОСА ---
+
+        function updateBrowserNotifStatus() {
+            var permEl = document.getElementById('diagNotifPermStatus');
+            var actionEl = document.getElementById('diagNotifPermAction');
+            if (!('Notification' in window)) {
+                permEl.innerHTML = '<span class="badge bg-danger">Не поддерживается браузером</span>';
+                actionEl.innerHTML = '';
+                return;
+            }
+
+            var perm = Notification.permission;
+            if (perm === 'granted') {
+                permEl.innerHTML = '<span class="badge bg-success"><i class="bx bx-check"></i> Разрешено (granted)</span>';
+                actionEl.innerHTML = '<small class="text-success">Браузер готов показывать баннеры</small>';
+            } else if (perm === 'denied') {
+                permEl.innerHTML = '<span class="badge bg-danger"><i class="bx bx-x"></i> Заблокировано (denied)</span>';
+                actionEl.innerHTML = '<small class="text-danger">Разрешите уведомления в настройках сайта браузера</small>';
+            } else {
+                permEl.innerHTML = '<span class="badge bg-warning text-dark"><i class="bx bx-help-circle"></i> Не запрошено (default)</span>';
+                actionEl.innerHTML = '<button type="button" class="btn btn-xs btn-primary py-1 px-2 small" onclick="requestBrowserPermission()"><i class="bx bx-bell"></i> Запросить разрешение</button>';
+            }
+
+            var swEl = document.getElementById('diagSwStatus');
+            var swDetail = document.getElementById('diagSwDetail');
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration('/').then(function(reg) {
+                    if (reg && reg.active) {
+                        swEl.innerHTML = '<span class="badge bg-success"><i class="bx bx-check"></i> Активен (/sw.js)</span>';
+                        swDetail.textContent = 'Scope: ' + reg.scope;
+                    } else {
+                        swEl.innerHTML = '<span class="badge bg-secondary">Ожидание регистрации</span>';
+                        swDetail.textContent = 'Регистрируется при старте PWA';
+                    }
+                }).catch(function() {
+                    swEl.innerHTML = '<span class="badge bg-info text-dark">Поддерживается</span>';
+                });
+            } else {
+                swEl.innerHTML = '<span class="badge bg-secondary">Не поддерживается</span>';
+            }
+        }
+
+        function requestBrowserPermission() {
+            if (window.BarkolMailNotifications && window.BarkolMailNotifications.requestPermission) {
+                window.BarkolMailNotifications.requestPermission();
+            } else if ('Notification' in window) {
+                Notification.requestPermission();
+            }
+            setTimeout(updateBrowserNotifStatus, 1500);
+        }
+
+        function triggerTestToast() {
+            if (window.BarkolMailNotifications && window.BarkolMailNotifications.testToast) {
+                window.BarkolMailNotifications.testToast({
+                    from_name: 'Генеральный директор',
+                    subject: 'Тестовое письмо: проверка In-App уведомления в системе БАРКОЛ',
+                    url: '{% url "mailbox_app:index" %}',
+                    uid: Date.now()
+                });
+            } else {
+                alert('Модуль BarkolMailNotifications не инициализирован.');
+            }
+        }
+
+        function triggerTestBrowser() {
+            if (!('Notification' in window)) {
+                alert('Данный браузер не поддерживает Notification API.');
+                return;
+            }
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission().then(function(res) {
+                    updateBrowserNotifStatus();
+                    if (res === 'granted') {
+                        if (window.BarkolMailNotifications && window.BarkolMailNotifications.testBrowser) {
+                            window.BarkolMailNotifications.testBrowser();
+                        }
+                    } else {
+                        alert('Разрешение отклонено (' + res + '). Включите уведомления в настройках браузера.');
+                    }
+                });
+                return;
+            }
+
+            if (window.BarkolMailNotifications && window.BarkolMailNotifications.testBrowser) {
+                window.BarkolMailNotifications.testBrowser({
+                    from_name: 'Почтовый сервер БАРКОЛ',
+                    subject: 'Проверка системного баннера на рабочем столе',
+                    url: '{% url "mailbox_app:index" %}',
+                    uid: Date.now()
+                });
+            } else {
+                new Notification('Тест БАРКОЛ', { body: 'Системные уведомления работают отлично!' });
+            }
+        }
+
+        function runLiveUnreadCheck() {
+            var card = document.getElementById('diagApiResultCard');
+            var summary = document.getElementById('diagApiResultSummary');
+            var jsonBox = document.getElementById('diagApiResultJson');
+            var latencyBadge = document.getElementById('diagApiLatency');
+
+            card.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+            card.classList.add('alert-info');
+            summary.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Отправка запроса к <code>/mail/api/unread_count/?force=1</code>...';
+            jsonBox.textContent = 'Ожидание ответа сервера...';
+            latencyBadge.textContent = '... мс';
+
+            var t0 = performance.now();
+            fetch('{% url "mailbox_app:api_unread_count" %}?force=1', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(res) {
+                var ms = Math.round(performance.now() - t0);
+                latencyBadge.textContent = ms + ' мс';
+                return res.json().then(function(data) {
+                    return { ok: res.ok, status: res.status, data: data, ms: ms };
+                });
+            })
+            .then(function(resObj) {
+                var d = resObj.data;
+                card.classList.remove('alert-info');
+                if (d.success) {
+                    card.classList.add('alert-success');
+                    summary.innerHTML = '<strong>✅ Успешный ответ:</strong> Ящик: <code>' + (d.mailbox_email || '—') +
+                        '</code> | Непрочитанных: <strong class="badge bg-primary fs-6">' + d.unread_count +
+                        '</strong> | Новое: ' + (d.has_new ? '<span class="badge bg-success">ДА</span>' : 'НЕТ');
+                } else {
+                    card.classList.add('alert-danger');
+                    summary.innerHTML = '<strong>❌ Ошибка проверки:</strong> ' + (d.error || 'Сервер вернул success=false');
+                }
+                jsonBox.textContent = JSON.stringify(d, null, 2);
+                addLogEntry(new Date(), d.success ? 'OK' : 'ERR', d.unread_count || 0, resObj.ms + ' мс', d.error || (d.latest ? ('Тема: ' + d.latest.subject) : 'Нет новых'));
+            })
+            .catch(function(err) {
+                var ms = Math.round(performance.now() - t0);
+                latencyBadge.textContent = ms + ' мс';
+                card.classList.remove('alert-info');
+                card.classList.add('alert-danger');
+                summary.innerHTML = '<strong>❌ Сетевая ошибка HTTP:</strong> ' + err.message;
+                jsonBox.textContent = String(err);
+                addLogEntry(new Date(), 'HTTP_ERR', 0, ms + ' мс', err.message);
+            });
+        }
+
+        function addLogEntry(time, status, unread, latency, details) {
+            var tbody = document.getElementById('diagPollLogTableBody');
+            var emptyRow = document.getElementById('diagPollLogEmptyRow');
+            if (emptyRow) emptyRow.remove();
+
+            var tr = document.createElement('tr');
+            var statusBadge = (status === 'OK') ? '<span class="badge bg-success">200 OK</span>' : '<span class="badge bg-danger">' + status + '</span>';
+            var timeStr = (time instanceof Date) ? time.toLocaleTimeString() : String(time);
+
+            tr.innerHTML = '<td>' + timeStr + '</td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td><strong>' + unread + '</strong></td>' +
+                '<td class="font-monospace">' + latency + '</td>' +
+                '<td class="text-truncate" style="max-width: 320px;" title="' + (details || '') + '">' + (details || '—') + '</td>';
+
+            tbody.insertBefore(tr, tbody.firstChild);
+
+            // Ограничиваем историю 15 записями
+            while (tbody.children.length > 15) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        function clearPollLog() {
+            var tbody = document.getElementById('diagPollLogTableBody');
+            tbody.innerHTML = '<tr id="diagPollLogEmptyRow"><td colspan="5" class="text-center text-muted py-3">Лог очищен. Ожидание следующего такта опроса...</td></tr>';
+        }
+
+        // Подписка на автоматический поллер
+        function initDiagnosticsMonitor() {
+            updateBrowserNotifStatus();
+
+            if (window.BarkolMailNotifications && window.BarkolMailNotifications.addListener) {
+                window.BarkolMailNotifications.addListener(function(evtType, payload) {
+                    var now = new Date();
+                    var lastStatusEl = document.getElementById('diagLastPollStatus');
+                    var lastTimeEl = document.getElementById('diagLastPollTime');
+                    if (lastTimeEl) lastTimeEl.textContent = now.toLocaleTimeString();
+
+                    if (evtType === 'success') {
+                        var d = payload.data;
+                        if (lastStatusEl) lastStatusEl.innerHTML = '<span class="badge bg-success">200 OK (' + (d.response_time_ms || 0) + ' мс)</span>';
+                        addLogEntry(now, 'OK', d.unread_count || 0, (d.response_time_ms || 0) + ' мс', d.latest ? ('Новое письмо: ' + d.latest.subject) : 'Без новых сообщений');
+                    } else {
+                        if (lastStatusEl) lastStatusEl.innerHTML = '<span class="badge bg-danger">Ошибка</span>';
+                        addLogEntry(now, 'ERR', 0, '—', payload.error || 'Ошибка');
+                    }
+                });
+            }
+
+            // Таймер обратного отсчета (секундомер)
+            setInterval(function() {
+                if (window.BarkolMailNotifications && window.BarkolMailNotifications.getStatus) {
+                    var stat = window.BarkolMailNotifications.getStatus();
+                    if (stat && stat.nextPollTime) {
+                        var remainMs = stat.nextPollTime.getTime() - Date.now();
+                        var sec = Math.max(0, Math.ceil(remainMs / 1000));
+                        var timerEl = document.getElementById('diagPollerTimerSec');
+                        if (timerEl) {
+                            timerEl.textContent = sec;
+                        }
+                    }
+                }
+            }, 500);
+        }
+
+        document.addEventListener('DOMContentLoaded', initDiagnosticsMonitor);
     </script>
 {% endblock %}
