@@ -37,6 +37,59 @@ class Groups(Group):
         }
 
 
+def sync_missing_groups() -> int:
+    """Синхронизирует записи между django.contrib.auth.models.Group и customers_app.models.Groups.
+
+    При multi-table inheritance модель Groups ожидает наличие соответствующей
+    записи в таблице customers_app_groups (group_ptr_id) для каждой строки auth_group.
+    Если группа была создана через стандартную админку Django (/admin/auth/group/)
+    или через Group.objects.create(), запись в дочерней таблице отсутствует, из-за чего
+    группа исключается при INNER JOIN (Groups.objects.all()) и не отображается в списке /users/group/.
+    Данная функция находит все отсутствующие группы и безопасно вставляет указатели наследования.
+
+    Returns:
+        int: Количество синхронизированных групп.
+    """
+    from django.db import connection
+
+    existing_group_ids = set(Groups.objects.values_list("pk", flat=True))
+    all_auth_ids = set(Group.objects.values_list("pk", flat=True))
+    missing_ids = all_auth_ids - existing_group_ids
+
+    if not missing_ids:
+        return 0
+
+    inserted_count = 0
+    with connection.cursor() as cursor:
+        for gid in missing_ids:
+            cursor.execute(
+                "INSERT INTO customers_app_groups (group_ptr_id) VALUES (%s)",
+                [gid],
+            )
+            inserted_count += 1
+    return inserted_count
+
+
+@receiver(post_save, sender=Group)
+def ensure_customers_group_ptr(sender, instance, created, **kwargs):
+    """Гарантирует создание записи в customers_app_groups при создании группы через auth.Group.
+
+    Args:
+        sender: Класс модели (django.contrib.auth.models.Group).
+        instance: Экземпляр созданной или измененной группы.
+        created (bool): Флаг создания новой записи.
+    """
+    if created:
+        from django.db import connection
+
+        if not Groups.objects.filter(pk=instance.pk).exists():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO customers_app_groups (group_ptr_id) VALUES (%s)",
+                    [instance.pk],
+                )
+
+
 class ViewDocumentsPhysical(models.Model):
     class Meta:
         verbose_name = "Вид документа физического лица"

@@ -481,6 +481,9 @@
                             <li><a class="nav-link" href="{% url 'map_viewer:index' %}"><i class="fa-solid fa-map-location-dot me-1" aria-hidden="true"></i><span>Карты</span></a></li>
                             <li><a class="nav-link" href="{% url 'tickets_app:list' %}"><i class="bx bx-envelope me-1" aria-hidden="true"></i><span>Добровольные сообщения</span></a></li>
                             <li><a class="nav-link" href="{% url 'password_manager:password_list' %}"><i class="bx bxs-key me-1" aria-hidden="true"></i><span>Хранилище паролей</span></a></li>
+                            {% if user.is_superuser or user|has_group:"Администраторы почты" %}
+                                <li><a class="nav-link" href="{% url 'administration_app:ssl_cert_converter' %}"><i class="bx bx-certification me-1" aria-hidden="true"></i><span>Конвертер SSL</span></a></li>
+                            {% endif %}
                         </ul>
                     </li>
 

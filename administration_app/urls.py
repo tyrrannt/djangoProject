@@ -17,4 +17,7 @@ urlpatterns = [
     path('test-odata/', test_1c_odata_request, name='test_1c_odata_request'),
     path('get-metadata/', get_1c_metadata, name='get_1c_metadata'),
     path('api/app-version/', views.get_app_version, name='get_app_version'),
+    path('ssl-converter/', views.ssl_cert_converter_view, name='ssl_cert_converter'),
+    path('ssl-converter/inspect/', views.ssl_cert_inspect_api, name='ssl_cert_inspect_api'),
+    path('ssl-converter/demo/', views.ssl_cert_demo_api, name='ssl_cert_demo_api'),
 ]

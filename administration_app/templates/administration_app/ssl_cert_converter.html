@@ -1,0 +1,839 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    /* Стилистика технической страницы SSL-конвертера в палитре Баркол */
+    .ssl-card {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.06);
+        background-color: #ffffff;
+        transition: box-shadow 0.2s ease-in-out;
+    }
+
+    .ssl-card:hover {
+        box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.1);
+    }
+
+    .ssl-header-badge {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .ssl-textarea {
+        font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.82rem;
+        line-height: 1.4;
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        color: #0f172a;
+        resize: vertical;
+        min-height: 190px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .ssl-textarea:focus {
+        background-color: #ffffff;
+        border-color: #0284c7;
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .field-action-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-size: 0.8rem;
+    }
+
+    .btn-touch {
+        min-height: 42px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+
+    .download-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        padding: 16px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .download-card:hover {
+        border-color: #38bdf8;
+        background-color: #ffffff;
+    }
+
+    .download-badge {
+        font-weight: 700;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        padding: 3px 8px;
+    }
+
+    .inspection-panel {
+        background-color: #ffffff;
+        border-left: 4px solid #0284c7;
+        border-radius: 8px;
+        border-top: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .san-tag {
+        display: inline-block;
+        background-color: #e0f2fe;
+        color: #0369a1;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin: 2px 4px 2px 0;
+        font-family: monospace;
+    }
+
+    .security-notice {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #166534;
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+        .btn-touch {
+            min-height: 48px;
+        }
+        .field-action-bar {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ssl-converter-page">
+    <!-- Заголовок и вводное описание -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <div>
+                    <h1 class="h3 font-weight-bold text-dark mb-1">
+                        <i class="bx bx-certification text-primary me-2"></i>Конвертер SSL-сертификатов
+                    </h1>
+                    <p class="text-muted small mb-0">
+                        Технический конвертер сертификатов, ключей и цепочек CA в форматы PEM, DER, PKCS#7 (P7B), PKCS#12 (PFX) и пакетный ZIP.
+                    </p>
+                </div>
+                <!-- Верхние быстрые действия -->
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" id="btnDemo" class="btn btn-sm btn-outline-info btn-touch" title="Заполнить форму тестовыми сертификатами">
+                        <i class="bx bx-magic-wand me-1"></i>
+                        <span>Пример данных</span>
+                    </button>
+                    <button type="button" id="btnInspectManual" class="btn btn-sm btn-outline-primary btn-touch" title="Проанализировать введенные компоненты">
+                        <i class="bx bx-analyse me-1"></i>
+                        <span>Анализ данных</span>
+                    </button>
+                    <button type="button" id="btnClearAll" class="btn btn-sm btn-outline-secondary btn-touch" title="Очистить все текстовые поля">
+                        <i class="bx bx-trash me-1"></i>
+                        <span>Очистить всё</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Информационная плашка безопасности -->
+    <div class="security-notice mb-3 d-flex align-items-center">
+        <i class="bx bxs-shield-check fs-4 me-3 text-success"></i>
+        <div>
+            <strong>Безопасная обработка в оперативной памяти:</strong> Данная страница работает исключительно на лету. Сертификаты и закрытые ключи не сохраняются в базе данных и не логируются на диск. Доступ ограничен правами суперадминистраторов и участников группы «Администраторы почты».
+        </div>
+    </div>
+
+    <!-- Блок глобальной ошибки (если возникла при отправке) -->
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bx bx-error-circle fs-4 me-2"></i>
+            <div>
+                <strong>Ошибка обработки сертификата:</strong> {{ error }}
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+    {% endif %}
+
+    <!-- Главная форма конвертации и экспорта -->
+    <form id="sslConverterForm" method="post" action="{% url 'administration_app:ssl_cert_converter' %}">
+        {% csrf_token %}
+
+        <!-- Секция ввода 3 полей -->
+        <div class="row g-3 mb-3">
+            <!-- Поле 1: SSL-сертификат -->
+            <div class="col-12 col-lg-4">
+                <div class="card ssl-card h-100">
+                    <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+                        <div class="font-weight-bold text-dark">
+                            <i class="bx bx-badge-check text-primary me-1"></i>1. SSL-сертификат
+                        </div>
+                        <span class="badge bg-primary ssl-header-badge">Обязательно</span>
+                    </div>
+                    <div class="card-body p-3 d-flex flex-column">
+                        <label for="id_cert_pem" class="form-label text-muted small mb-1">Содержимое сертификата сервера (PEM):</label>
+                        <textarea
+                            class="form-control ssl-textarea flex-grow-1"
+                            id="id_cert_pem"
+                            name="cert_pem"
+                            placeholder="-----BEGIN CERTIFICATE-----&#10;MIID...&#10;-----END CERTIFICATE-----"
+                            spellcheck="false"
+                            required
+                        >{{ cert_pem }}</textarea>
+
+                        <div class="field-action-bar text-muted">
+                            <span id="certCounter">0 симв.</span>
+                            <div class="d-flex gap-1">
+                                <input type="file" id="fileCertInput" class="d-none" accept=".crt,.pem,.cer,.txt">
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="document.getElementById('fileCertInput').click();" title="Загрузить из файла">
+                                    <i class="bx bx-upload me-1"></i>Файл
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2" id="btnClearCert" title="Очистить поле">
+                                    <i class="bx bx-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Поле 2: Ключ SSL-сертификата -->
+            <div class="col-12 col-lg-4">
+                <div class="card ssl-card h-100">
+                    <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+                        <div class="font-weight-bold text-dark">
+                            <i class="bx bx-key text-warning me-1"></i>2. Ключ SSL-сертификата
+                        </div>
+                        <span class="badge bg-secondary ssl-header-badge">Необязательно</span>
+                    </div>
+                    <div class="card-body p-3 d-flex flex-column">
+                        <label for="id_key_pem" class="form-label text-muted small mb-1">Приватный ключ (RSA/ECDSA PEM):</label>
+                        <textarea
+                            class="form-control ssl-textarea flex-grow-1"
+                            id="id_key_pem"
+                            name="key_pem"
+                            placeholder="-----BEGIN PRIVATE KEY-----&#10;MIIE...&#10;-----END PRIVATE KEY-----"
+                            spellcheck="false"
+                        >{{ key_pem }}</textarea>
+
+                        <div class="mt-2">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light text-muted" title="Пароль закрытого ключа (если он зашифрован)">
+                                    <i class="bx bx-lock-alt"></i>
+                                </span>
+                                <input
+                                    type="password"
+                                    class="form-control"
+                                    id="id_key_password"
+                                    name="key_password"
+                                    placeholder="Пароль ключа (если зашифрован)"
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="field-action-bar text-muted">
+                            <span id="keyCounter">0 симв.</span>
+                            <div class="d-flex gap-1">
+                                <input type="file" id="fileKeyInput" class="d-none" accept=".key,.pem,.txt">
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="document.getElementById('fileKeyInput').click();" title="Загрузить из файла">
+                                    <i class="bx bx-upload me-1"></i>Файл
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2" id="btnClearKey" title="Очистить поле">
+                                    <i class="bx bx-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Поле 3: Цепочка SSL-сертификатов -->
+            <div class="col-12 col-lg-4">
+                <div class="card ssl-card h-100">
+                    <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+                        <div class="font-weight-bold text-dark">
+                            <i class="bx bx-git-commit text-info me-1"></i>3. Цепочка SSL-сертификатов
+                        </div>
+                        <span class="badge bg-secondary ssl-header-badge">Необязательно</span>
+                    </div>
+                    <div class="card-body p-3 d-flex flex-column">
+                        <label for="id_chain_pem" class="form-label text-muted small mb-1">Промежуточные и корневые CA (CA Bundle):</label>
+                        <textarea
+                            class="form-control ssl-textarea flex-grow-1"
+                            id="id_chain_pem"
+                            name="chain_pem"
+                            placeholder="-----BEGIN CERTIFICATE-----&#10;[Промежуточный CA]&#10;-----END CERTIFICATE-----&#10;-----BEGIN CERTIFICATE-----&#10;[Корневой CA]&#10;-----END CERTIFICATE-----"
+                            spellcheck="false"
+                        >{{ chain_pem }}</textarea>
+
+                        <div class="field-action-bar text-muted">
+                            <span id="chainCounter">0 симв.</span>
+                            <div class="d-flex gap-1">
+                                <input type="file" id="fileChainInput" class="d-none" accept=".crt,.ca-bundle,.pem,.txt">
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="document.getElementById('fileChainInput').click();" title="Загрузить из файла">
+                                    <i class="bx bx-upload me-1"></i>Файл
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2" id="btnClearChain" title="Очистить поле">
+                                    <i class="bx bx-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Параметры именования и паролей экспорта -->
+        <div class="card ssl-card mb-3">
+            <div class="card-body p-3">
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-md-4">
+                        <label for="id_filename" class="form-label font-weight-semibold text-dark small mb-1">
+                            <i class="bx bx-folder me-1 text-primary"></i>Имя файла при сохранении:
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            id="id_filename"
+                            name="filename"
+                            value="{{ filename|default:'certificate' }}"
+                            placeholder="например, portal_barkol_ru"
+                            required
+                        >
+                        <div class="form-text small text-muted">Подставляется автоматически из Common Name сертификата</div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label for="id_pfx_password" class="form-label font-weight-semibold text-dark small mb-1">
+                            <i class="bx bx-lock me-1 text-warning"></i>Пароль для PKCS#12 (PFX):
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="id_pfx_password"
+                                name="pfx_password"
+                                value="{{ pfx_password }}"
+                                placeholder="Необязательно (пустой = без пароля)"
+                                autocomplete="new-password"
+                            >
+                            <button class="btn btn-outline-secondary" type="button" id="togglePfxPassword" title="Показать/скрыть пароль">
+                                <i class="bx bx-show" id="togglePfxIcon"></i>
+                            </button>
+                        </div>
+                        <div class="form-text small text-muted">Шифрование контейнера PFX для Windows IIS / Tomcat</div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label for="id_pem_mode" class="form-label font-weight-semibold text-dark small mb-1">
+                            <i class="bx bx-slider me-1 text-info"></i>Содержимое PEM при экспорте:
+                        </label>
+                        <select class="form-select form-select-sm" id="id_pem_mode" name="pem_mode">
+                            <option value="fullchain" {% if pem_mode == 'fullchain' %}selected{% endif %}>Fullchain (Сертификат + Цепочка CA)</option>
+                            <option value="bundle" {% if pem_mode == 'bundle' %}selected{% endif %}>Bundle (Ключ + Сертификат + Цепочка)</option>
+                            <option value="cert" {% if pem_mode == 'cert' %}selected{% endif %}>Только Сертификат (.crt)</option>
+                            <option value="key" {% if pem_mode == 'key' %}selected{% endif %}>Только Закрытый ключ (.key)</option>
+                            <option value="chain" {% if pem_mode == 'chain' %}selected{% endif %}>Только Цепочка CA (_chain.crt)</option>
+                        </select>
+                        <div class="form-text small text-muted">Для кнопки «Скачать PEM»</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Информационная панель анализа и валидации (динамически обновляется) -->
+        <div id="inspectionSection" class="card ssl-card inspection-panel mb-3 d-none">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <h5 class="font-weight-bold text-dark mb-0">
+                        <i class="bx bx-check-shield text-success me-1"></i>Результаты проверки сертификата
+                    </h5>
+                    <span id="inspectValidBadge" class="badge bg-success">Действителен</span>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Домен и SAN -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="text-muted small">Основное имя (Common Name):</div>
+                        <div class="font-weight-bold fs-6 text-dark" id="inspectCn">—</div>
+
+                        <div class="text-muted small mt-2">Альтернативные имена (SAN):</div>
+                        <div id="inspectSans" class="mt-1">—</div>
+                    </div>
+
+                    <!-- Организация и Издатель -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="text-muted small">Организация (O):</div>
+                        <div class="font-weight-semibold text-dark" id="inspectOrg">—</div>
+
+                        <div class="text-muted small mt-2">Кем выдан (Issuer):</div>
+                        <div class="font-weight-semibold text-dark" id="inspectIssuer">—</div>
+                    </div>
+
+                    <!-- Сроки действия и ключ -->
+                    <div class="col-12 col-lg-4">
+                        <div class="text-muted small">Срок действия:</div>
+                        <div class="small">
+                            <strong>С:</strong> <span id="inspectValidFrom">—</span><br>
+                            <strong>По:</strong> <span id="inspectValidTo">—</span>
+                        </div>
+
+                        <div class="text-muted small mt-2">Тип ключа и алгоритм подписи:</div>
+                        <div class="small text-dark font-weight-semibold" id="inspectKeyType">—</div>
+                    </div>
+                </div>
+
+                <!-- Статус совпадения ключа и цепочки -->
+                <div class="row g-2 mt-2 pt-2 border-top">
+                    <div class="col-12 col-md-6">
+                        <div id="inspectKeyAlert" class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center">
+                            <i class="bx bx-info-circle fs-5 me-2"></i>
+                            <span id="inspectKeyText">Закрытый ключ не указан</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div id="inspectChainAlert" class="alert alert-secondary py-2 px-3 mb-0 small d-flex align-items-center">
+                            <i class="bx bx-link fs-5 me-2"></i>
+                            <span id="inspectChainText">Цепочка сертификатов: не указана</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция скачивания в различных форматах -->
+        <div class="card ssl-card mb-4">
+            <div class="card-header bg-white border-bottom py-2 px-3">
+                <h5 class="card-title text-primary font-weight-bold mb-0">
+                    <i class="bx bx-download me-2"></i>Скачать готовый файл в различных форматах
+                </h5>
+                <p class="card-subtitle text-muted small mb-0">Выберите необходимый формат для выгрузки готового файла</p>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <!-- 1. PEM -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="download-card">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="download-badge bg-primary text-white">PEM</span>
+                                    <span class="text-muted small font-monospace">.pem / .crt</span>
+                                </div>
+                                <h6 class="font-weight-bold text-dark mb-1">PEM Сертификат</h6>
+                                <p class="text-muted small mb-3">
+                                    Текстовый формат с заголовками Base64. Стандарт для Nginx, Apache и Linux-серверов.
+                                </p>
+                            </div>
+                            <button type="submit" name="format" value="pem" class="btn btn-primary btn-touch w-100">
+                                <i class="bx bx-download me-1"></i>Скачать PEM
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. DER -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="download-card">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="download-badge bg-info text-white">DER</span>
+                                    <span class="text-muted small font-monospace">.der / .cer</span>
+                                </div>
+                                <h6 class="font-weight-bold text-dark mb-1">Бинарный DER</h6>
+                                <p class="text-muted small mb-3">
+                                    Двоичный формат ASN.1 для Windows, Java KeyStore и криптографического оборудования.
+                                </p>
+                            </div>
+                            <button type="submit" name="format" value="der" class="btn btn-info text-white btn-touch w-100">
+                                <i class="bx bx-download me-1"></i>Скачать DER
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. PKCS#7 (P7B) -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="download-card">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="download-badge bg-secondary text-white">PKCS#7</span>
+                                    <span class="text-muted small font-monospace">.p7b</span>
+                                </div>
+                                <h6 class="font-weight-bold text-dark mb-1">PKCS#7 (P7B)</h6>
+                                <p class="text-muted small mb-3">
+                                    Контейнер сертификата и цепочки доверия CA без закрытого ключа для Windows и Java.
+                                </p>
+                            </div>
+                            <button type="submit" name="format" value="p7b" class="btn btn-secondary btn-touch w-100">
+                                <i class="bx bx-download me-1"></i>Скачать P7B
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4. PKCS#12 (PFX) -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="download-card">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="download-badge bg-warning text-dark">PKCS#12</span>
+                                    <span class="text-muted small font-monospace">.pfx / .p12</span>
+                                </div>
+                                <h6 class="font-weight-bold text-dark mb-1">PKCS#12 (PFX)</h6>
+                                <p class="text-muted small mb-3">
+                                    Защищенный контейнер, включающий сертификат, закрытый ключ и цепочку (для Windows IIS / Tomcat).
+                                </p>
+                            </div>
+                            <button type="submit" name="format" value="pfx" class="btn btn-warning font-weight-bold btn-touch w-100">
+                                <i class="bx bx-download me-1"></i>Скачать PFX
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Полный пакет ZIP -->
+                <div class="mt-3 pt-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                    <div>
+                        <strong class="text-dark"><i class="bx bx-package text-success me-1"></i>Полный пакет во всех форматах:</strong>
+                        <span class="text-muted small ms-1">Скачать единый ZIP-архив со всеми расширениями (.crt, .key, .pem, .der, .p7b, .pfx) и инструкцией README.txt.</span>
+                    </div>
+                    <div>
+                        <button type="submit" name="format" value="zip" class="btn btn-success btn-touch px-4">
+                            <i class="bx bxs-file-archive me-1 fs-5"></i>Скачать всё архивом (.zip)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+(function() {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const certArea = document.getElementById('id_cert_pem');
+        const keyArea = document.getElementById('id_key_pem');
+        const chainArea = document.getElementById('id_chain_pem');
+        const keyPwdInput = document.getElementById('id_key_password');
+        const filenameInput = document.getElementById('id_filename');
+        const pfxPwdInput = document.getElementById('id_pfx_password');
+
+        const certCounter = document.getElementById('certCounter');
+        const keyCounter = document.getElementById('keyCounter');
+        const chainCounter = document.getElementById('chainCounter');
+
+        const fileCertInput = document.getElementById('fileCertInput');
+        const fileKeyInput = document.getElementById('fileKeyInput');
+        const fileChainInput = document.getElementById('fileChainInput');
+
+        const btnClearCert = document.getElementById('btnClearCert');
+        const btnClearKey = document.getElementById('btnClearKey');
+        const btnClearChain = document.getElementById('btnClearChain');
+        const btnClearAll = document.getElementById('btnClearAll');
+        const btnDemo = document.getElementById('btnDemo');
+        const btnInspectManual = document.getElementById('btnInspectManual');
+
+        const togglePfxBtn = document.getElementById('togglePfxPassword');
+        const togglePfxIcon = document.getElementById('togglePfxIcon');
+
+        // Панель инспекции
+        const inspectionSection = document.getElementById('inspectionSection');
+        const inspectValidBadge = document.getElementById('inspectValidBadge');
+        const inspectCn = document.getElementById('inspectCn');
+        const inspectSans = document.getElementById('inspectSans');
+        const inspectOrg = document.getElementById('inspectOrg');
+        const inspectIssuer = document.getElementById('inspectIssuer');
+        const inspectValidFrom = document.getElementById('inspectValidFrom');
+        const inspectValidTo = document.getElementById('inspectValidTo');
+        const inspectKeyType = document.getElementById('inspectKeyType');
+        const inspectKeyAlert = document.getElementById('inspectKeyAlert');
+        const inspectKeyText = document.getElementById('inspectKeyText');
+        const inspectChainAlert = document.getElementById('inspectChainAlert');
+        const inspectChainText = document.getElementById('inspectChainText');
+
+        // Функция обновления счетчиков символов
+        function updateCounters() {
+            if (certCounter) certCounter.textContent = (certArea.value || '').length + ' симв.';
+            if (keyCounter) keyCounter.textContent = (keyArea.value || '').length + ' симв.';
+            if (chainCounter) chainCounter.textContent = (chainArea.value || '').length + ' симв.';
+        }
+
+        // Чтение локального файла через FileReader
+        function handleFileSelect(inputElement, targetTextarea) {
+            inputElement.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    targetTextarea.value = evt.target.result;
+                    updateCounters();
+                    triggerDebouncedInspect();
+                };
+                reader.readAsText(file);
+                // сбрасываем input, чтобы можно было выбрать тот же файл повторно
+                inputElement.value = '';
+            });
+        }
+
+        handleFileSelect(fileCertInput, certArea);
+        handleFileSelect(fileKeyInput, keyArea);
+        handleFileSelect(fileChainInput, chainArea);
+
+        // Очистка отдельных полей
+        if (btnClearCert) {
+            btnClearCert.addEventListener('click', function() {
+                certArea.value = '';
+                updateCounters();
+                triggerDebouncedInspect();
+            });
+        }
+        if (btnClearKey) {
+            btnClearKey.addEventListener('click', function() {
+                keyArea.value = '';
+                updateCounters();
+                triggerDebouncedInspect();
+            });
+        }
+        if (btnClearChain) {
+            btnClearChain.addEventListener('click', function() {
+                chainArea.value = '';
+                updateCounters();
+                triggerDebouncedInspect();
+            });
+        }
+
+        // Очистка всего
+        if (btnClearAll) {
+            btnClearAll.addEventListener('click', function() {
+                certArea.value = '';
+                keyArea.value = '';
+                chainArea.value = '';
+                if (keyPwdInput) keyPwdInput.value = '';
+                if (pfxPwdInput) pfxPwdInput.value = '';
+                if (filenameInput) filenameInput.value = 'certificate';
+                updateCounters();
+                inspectionSection.classList.add('d-none');
+            });
+        }
+
+        // Переключатель видимости пароля PFX
+        if (togglePfxBtn && togglePfxIcon && pfxPwdInput) {
+            togglePfxBtn.addEventListener('click', function() {
+                if (pfxPwdInput.type === 'password') {
+                    pfxPwdInput.type = 'text';
+                    togglePfxIcon.classList.remove('bx-show');
+                    togglePfxIcon.classList.add('bx-hide');
+                } else {
+                    pfxPwdInput.type = 'password';
+                    togglePfxIcon.classList.remove('bx-hide');
+                    togglePfxIcon.classList.add('bx-show');
+                }
+            });
+        }
+
+        // Получение CSRF токена
+        function getCsrfToken() {
+            const tokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return tokenInput ? tokenInput.value : '';
+        }
+
+        // AJAX анализ данных
+        function runInspection() {
+            const certText = (certArea.value || '').trim();
+            if (!certText) {
+                inspectionSection.classList.add('d-none');
+                return;
+            }
+
+            const payload = {
+                cert_pem: certText,
+                key_pem: (keyArea.value || '').trim(),
+                chain_pem: (chainArea.value || '').trim(),
+                key_password: keyPwdInput ? keyPwdInput.value.trim() : ''
+            };
+
+            fetch("{% url 'administration_app:ssl_cert_inspect_api' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    inspectionSection.classList.remove('d-none');
+                    inspectValidBadge.className = 'badge bg-danger';
+                    inspectValidBadge.textContent = 'Ошибка формата';
+                    inspectCn.textContent = 'Некорректный сертификат';
+                    inspectOrg.textContent = data.error || 'Ошибка';
+                    return;
+                }
+
+                inspectionSection.classList.remove('d-none');
+                const info = data.cert_info;
+
+                // Заполнение инспекции
+                inspectCn.textContent = info.common_name;
+                inspectOrg.textContent = info.organization + (info.country !== '—' ? ' (' + info.country + ')' : '');
+                inspectIssuer.textContent = info.issuer_cn + (info.issuer_o !== '—' ? ' [' + info.issuer_o + ']' : '');
+                inspectValidFrom.textContent = info.valid_from;
+                inspectValidTo.textContent = info.valid_to;
+                inspectKeyType.textContent = info.key_type + ' / ' + info.signature_algorithm;
+
+                // Бейдж валидности
+                inspectValidBadge.className = 'badge bg-' + info.status_badge_class;
+                inspectValidBadge.textContent = info.status_text;
+
+                // SANs
+                if (info.sans && info.sans.length > 0) {
+                    inspectSans.innerHTML = info.sans.map(s => '<span class="san-tag">' + s + '</span>').join('');
+                } else {
+                    inspectSans.innerHTML = '<span class="text-muted small">Не указаны</span>';
+                }
+
+                // Авто-подстановка имени файла, если стоит дефолтное
+                if (data.recommended_filename && (!filenameInput.value || filenameInput.value === 'certificate')) {
+                    filenameInput.value = data.recommended_filename;
+                }
+
+                // Статус ключа
+                if (data.key_status === 'match') {
+                    inspectKeyAlert.className = 'alert alert-success py-2 px-3 mb-0 small d-flex align-items-center';
+                    inspectKeyAlert.innerHTML = '<i class="bx bx-check-circle fs-5 me-2"></i><span>' + data.key_message + '</span>';
+                } else if (data.key_status === 'mismatch') {
+                    inspectKeyAlert.className = 'alert alert-danger py-2 px-3 mb-0 small d-flex align-items-center';
+                    inspectKeyAlert.innerHTML = '<i class="bx bx-error-circle fs-5 me-2"></i><strong>' + data.key_message + '</strong>';
+                } else if (data.key_status === 'encrypted') {
+                    inspectKeyAlert.className = 'alert alert-warning py-2 px-3 mb-0 small d-flex align-items-center';
+                    inspectKeyAlert.innerHTML = '<i class="bx bx-lock-alt fs-5 me-2"></i><span>' + data.key_message + '</span>';
+                } else if (data.key_status === 'invalid') {
+                    inspectKeyAlert.className = 'alert alert-danger py-2 px-3 mb-0 small d-flex align-items-center';
+                    inspectKeyAlert.innerHTML = '<i class="bx bx-x-circle fs-5 me-2"></i><span>' + data.key_message + '</span>';
+                } else {
+                    inspectKeyAlert.className = 'alert alert-info py-2 px-3 mb-0 small d-flex align-items-center';
+                    inspectKeyAlert.innerHTML = '<i class="bx bx-info-circle fs-5 me-2"></i><span>Закрытый ключ не указан</span>';
+                }
+
+                // Статус цепочки
+                if (data.chain_count > 0) {
+                    const chainNames = data.chain_list.map(c => c.common_name).join(' → ');
+                    inspectChainAlert.className = 'alert alert-success py-2 px-3 mb-0 small d-flex align-items-center';
+                    inspectChainAlert.innerHTML = '<i class="bx bx-link-external fs-5 me-2"></i><span>Цепочка доверия (' + data.chain_count + ' серт.): ' + chainNames + '</span>';
+                } else {
+                    inspectChainAlert.className = 'alert alert-secondary py-2 px-3 mb-0 small d-flex align-items-center';
+                    inspectChainAlert.innerHTML = '<i class="bx bx-link fs-5 me-2"></i><span>Цепочка сертификатов: не указана</span>';
+                }
+            })
+            .catch(err => {
+                console.error('Ошибка анализа SSL:', err);
+            });
+        }
+
+        // Дебаунс для вызова инспекции при наборе/вставке
+        let debounceTimer = null;
+        function triggerDebouncedInspect() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(runInspection, 600);
+        }
+
+        certArea.addEventListener('input', function() {
+            updateCounters();
+            triggerDebouncedInspect();
+        });
+        keyArea.addEventListener('input', function() {
+            updateCounters();
+            triggerDebouncedInspect();
+        });
+        chainArea.addEventListener('input', function() {
+            updateCounters();
+            triggerDebouncedInspect();
+        });
+        if (keyPwdInput) {
+            keyPwdInput.addEventListener('input', triggerDebouncedInspect);
+        }
+
+        if (btnInspectManual) {
+            btnInspectManual.addEventListener('click', runInspection);
+        }
+
+        // Заполнение тестовыми данными
+        if (btnDemo) {
+            btnDemo.addEventListener('click', function() {
+                btnDemo.disabled = true;
+                btnDemo.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Генерация...';
+
+                fetch("{% url 'administration_app:ssl_cert_demo_api' %}", {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success && res.data) {
+                        certArea.value = res.data.cert_pem;
+                        keyArea.value = res.data.key_pem;
+                        chainArea.value = res.data.chain_pem;
+                        if (filenameInput) filenameInput.value = res.data.filename;
+                        updateCounters();
+                        runInspection();
+                    }
+                })
+                .catch(err => {
+                    console.error('Ошибка загрузки демо-данных:', err);
+                })
+                .finally(() => {
+                    btnDemo.disabled = false;
+                    btnDemo.innerHTML = '<i class="bx bx-magic-wand me-1"></i><span>Пример данных</span>';
+                });
+            });
+        }
+
+        // Инициализация при первичной загрузке страницы (если есть данные из POST)
+        updateCounters();
+        if ((certArea.value || '').trim().length > 0) {
+            runInspection();
+        }
+    });
+})();
+</script>
+{% endblock %}

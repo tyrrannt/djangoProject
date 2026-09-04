@@ -1150,3 +1150,194 @@ def get_app_version(request):
     prop = PortalProperty.objects.first()
     version = prop.mobile_app_version if prop else "1.0.0"
     return JsonResponse({"version": version, "download_url": "https://corp.barkol.ru/media/app/android/app-release.apk"})
+
+
+from django.http import HttpResponse
+from django.utils.encoding import escape_uri_path
+from administration_app import ssl_services
+
+
+def check_ssl_converter_perm(user) -> bool:
+    """Проверяет права доступа к разделу генерации и конвертации SSL-сертификатов.
+
+    Доступ разрешен:
+    1. Суперадминистраторам (is_superuser=True);
+    2. Участникам специальной группы «Администраторы почты».
+
+    Args:
+        user: Объект аутентифицированного пользователя Django.
+
+    Returns:
+        bool: True если доступ разрешен, False в противном случае.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return user.groups.filter(name="Администраторы почты").exists()
+
+
+@login_required
+def ssl_cert_converter_view(request):
+    """Техническая страница конвертера SSL-сертификатов для администраторов.
+
+    Позволяет администратору вставить текстовые данные SSL-сертификата, закрытого ключа
+    и цепочки сертификатов (CA Bundle), проверить их валидность и скачать готовые файлы
+    в различных форматах: PEM (Fullchain, Bundle, Cert, Key), DER, PKCS#7 (P7B),
+    PKCS#12 (PFX) или в едином ZIP-пакете.
+    Данные обрабатываются исключительно в оперативной памяти и не сохраняются в БД.
+    Доступ предоставляется суперадминистраторам и участникам группы «Администраторы почты».
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса пользователя.
+
+    Returns:
+        HttpResponse: HTML-страница конвертера (при GET или ошибке) либо сгенерированный
+            бинарный/текстовый файл сертификата для скачивания с заголовком Content-Disposition (при POST).
+
+    Raises:
+        PermissionDenied: Если у пользователя нет прав доступа.
+    """
+    if not check_ssl_converter_perm(request.user):
+        raise PermissionDenied("Доступ к разделу SSL-конвертера разрешен только суперадминистраторам и участникам группы 'Администраторы почты'.")
+
+    breadcrumbs = [
+        {"name": "Вспомогательные сервисы", "url": "#"},
+        {"name": "Конвертер SSL-сертификатов", "url": ""},
+    ]
+
+    context = {
+        "title": "Конвертер SSL-сертификатов",
+        "breadcrumbs": breadcrumbs,
+        "cert_pem": "",
+        "key_pem": "",
+        "chain_pem": "",
+        "pfx_password": "",
+        "filename": "certificate",
+        "pem_mode": "fullchain",
+        "error": None,
+    }
+
+    if request.method == "POST":
+        cert_pem = request.POST.get("cert_pem", "").strip()
+        key_pem = request.POST.get("key_pem", "").strip()
+        chain_pem = request.POST.get("chain_pem", "").strip()
+        format_type = request.POST.get("format", "zip").strip().lower()
+        pem_mode = request.POST.get("pem_mode", "fullchain").strip().lower()
+        pfx_password = request.POST.get("pfx_password", "").strip()
+        key_password = request.POST.get("key_password", "").strip() or None
+        filename = request.POST.get("filename", "").strip() or "certificate"
+
+        # Сохраняем введенные значения в контексте на случай ошибок
+        context.update({
+            "cert_pem": cert_pem,
+            "key_pem": key_pem,
+            "chain_pem": chain_pem,
+            "pfx_password": pfx_password,
+            "filename": filename,
+            "pem_mode": pem_mode,
+        })
+
+        if not cert_pem:
+            context["error"] = "Необходимо заполнить поле 'SSL-сертификат'."
+            return render(request, "administration_app/ssl_cert_converter.html", context)
+
+        try:
+            file_bytes, filename_out, content_type = ssl_services.generate_ssl_export(
+                format_type=format_type,
+                cert_pem=cert_pem,
+                key_pem=key_pem,
+                chain_pem=chain_pem,
+                pfx_password=pfx_password,
+                key_password=key_password,
+                base_name=filename,
+                pem_export_mode=pem_mode,
+            )
+            response = HttpResponse(file_bytes, content_type=content_type)
+            ascii_filename = filename_out.encode("ascii", "replace").decode("ascii").replace("?", "_")
+            response["Content-Disposition"] = f'attachment; filename="{ascii_filename}"; filename*=UTF-8\'\'{escape_uri_path(filename_out)}'
+            response["Content-Length"] = len(file_bytes)
+            return response
+        except Exception as exc:
+            context["error"] = str(exc)
+            return render(request, "administration_app/ssl_cert_converter.html", context)
+
+    return render(request, "administration_app/ssl_cert_converter.html", context)
+
+
+@login_required
+def ssl_cert_inspect_api(request):
+    """AJAX API эндпоинт для мгновенного анализа и верификации SSL компонентов.
+
+    Принимает введенные администратором строки PEM-сертификата, закрытого ключа
+    и цепочки сертификатов, проводит их криптографический аудит, извлекает CN, SAN,
+    даты действия, проверяет совпадение открытого ключа в сертификате и приватном ключе.
+    Доступ разрешен только суперадминистратору.
+
+    Args:
+        request (HttpRequest): HTTP POST-запрос с параметрами:
+            - 'cert_pem' (str): Текст сертификата в формате PEM.
+            - 'key_pem' (str, optional): Текст закрытого ключа.
+            - 'chain_pem' (str, optional): Текст цепочки промежуточных сертификатов.
+            - 'key_password' (str, optional): Пароль расшифровки ключа.
+
+    Returns:
+        JsonResponse: Результат аудита в формате:
+            - 'success' (bool): True при успешном разборе основного сертификата.
+            - 'error' (str, optional): Текст ошибки при сбое.
+            - 'cert_info' (dict): Метаданные сертификата (CN, SANs, Issuer, Dates, Key Type).
+            - 'key_status' (str): Статус ключа ('match', 'mismatch', 'invalid', 'encrypted', 'empty').
+            - 'key_message' (str): Человекочитаемый статус проверки ключа.
+            - 'chain_count' (int): Количество сертификатов в цепочке доверия.
+            - 'recommended_filename' (str): Рекомендуемое базовое имя для сохранения файлов.
+    """
+    if not check_ssl_converter_perm(request.user):
+        return JsonResponse({"success": False, "error": "Доступ разрешен только суперадминистраторам и участникам группы 'Администраторы почты'."}, status=403)
+
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Метод не поддерживается. Ожидается POST."}, status=405)
+
+    if request.content_type == "application/json":
+        try:
+            body = json.loads(request.body)
+        except Exception:
+            body = {}
+        cert_pem = body.get("cert_pem", "")
+        key_pem = body.get("key_pem", "")
+        chain_pem = body.get("chain_pem", "")
+        key_password = body.get("key_password") or None
+    else:
+        cert_pem = request.POST.get("cert_pem", "")
+        key_pem = request.POST.get("key_pem", "")
+        chain_pem = request.POST.get("chain_pem", "")
+        key_password = request.POST.get("key_password") or None
+
+    result = ssl_services.inspect_ssl_bundle(
+        cert_pem=cert_pem,
+        key_pem=key_pem,
+        chain_pem=chain_pem,
+        key_password=key_password,
+    )
+    return JsonResponse(result)
+
+
+@login_required
+def ssl_cert_demo_api(request):
+    """AJAX API эндпоинт для генерации тестовой связки SSL сертификатов.
+
+    Генерирует демонстрационную трехуровневую иерархию X.509:
+    Barkol Root CA -> Barkol Intermediate CA -> portal.barkol.ru (с ключом RSA 2048 бит).
+    Позволяет администраторам быстро протестировать форму и возможности экспорта в 1 клик.
+
+    Args:
+        request (HttpRequest): HTTP-запрос от администратора.
+
+    Returns:
+        JsonResponse: Словарь с тестовыми данными ('cert_pem', 'key_pem', 'chain_pem', 'filename').
+    """
+    if not check_ssl_converter_perm(request.user):
+        return JsonResponse({"success": False, "error": "Доступ разрешен только суперадминистраторам и участникам группы 'Администраторы почты'."}, status=403)
+
+    demo_data = ssl_services.generate_demo_ssl_bundle()
+    return JsonResponse({"success": True, "data": demo_data})
+

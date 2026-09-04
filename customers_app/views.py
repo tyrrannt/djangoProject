@@ -41,7 +41,7 @@ from customers_app.customers_util import get_database_user_work_profile, get_dat
     get_settlement_sheet, get_vacation_days, prepare_consent_context
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments, \
-    UserStats, Apartments, BiometricConsent
+    UserStats, Apartments, BiometricConsent, sync_missing_groups
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
@@ -197,6 +197,22 @@ class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'customers_app.view_groups'
 
     def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос страницы реестра групп или AJAX-запрос DataTables.
+
+        Перед отдачей данных автоматически выполняет синхронизацию групп из auth_group
+        в таблицу customers_app_groups, гарантируя отображение всех групп, созданных
+        через стандартную панель Django Admin (/admin/auth/group/).
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            *args: Позиционные аргументы маршрута.
+            **kwargs: Именованные аргументы маршрута.
+
+        Returns:
+            HttpResponse | JsonResponse: HTML-страница реестра либо JSON-пакет данных для DataTables.
+        """
+        # Гарантируем актуальность всех групп auth_group в customers_app_groups
+        sync_missing_groups()
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             group_list = Groups.objects.all()
