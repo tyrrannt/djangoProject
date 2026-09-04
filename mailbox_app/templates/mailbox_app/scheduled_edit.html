@@ -8,7 +8,7 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-bs4.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-lite.min.css' %}" />
 {% endblock %}
 
 {% block content %}
@@ -267,30 +267,74 @@
 {% endblock %}
 
 {% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/summernote/summernote-bs4.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/summernote/summernote-lite.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/summernote/lang/summernote-ru-RU.min.js' %}"></script>
     <script>
         $(document).ready(function() {
             const isMobile = window.innerWidth <= 768;
             const summernoteToolbar = isMobile ? [
-                ['style', ['bold', 'italic', 'underline']],
+                ['fontname', ['fontname']],
+                ['fontsize', ['fontsize']],
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['color', ['color']],
+                ['alignment', ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull']],
                 ['para', ['ul', 'ol']],
-                ['insert', ['link']]
+                ['table', ['table']],
+                ['insert', ['link', 'hr']]
             ] : [
                 ['style', ['style', 'bold', 'italic', 'underline', 'clear']],
-                ['font', ['strikethrough', 'superscript', 'subscript']],
+                ['fontname', ['fontname']],
                 ['fontsize', ['fontsize']],
                 ['color', ['color']],
+                ['alignment', ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull']],
                 ['para', ['ul', 'ol', 'paragraph']],
+                ['font', ['strikethrough', 'superscript', 'subscript']],
                 ['table', ['table']],
                 ['insert', ['link', 'hr']],
                 ['view', ['fullscreen', 'codeview']]
             ];
 
+            const availableFonts = [
+                'Times New Roman',
+                'Arial',
+                'Arial Black',
+                'Calibri',
+                'Comic Sans MS',
+                'Courier New',
+                'Georgia',
+                'Impact',
+                'Tahoma',
+                'Trebuchet MS',
+                'Verdana'
+            ];
+
             $('#id_body_html').summernote({
-                height: isMobile ? 220 : 320,
+                height: isMobile ? 220 : 340,
                 minHeight: 180,
                 placeholder: 'Введите текст письма...',
-                toolbar: summernoteToolbar
+                lang: 'ru-RU',
+                toolbar: summernoteToolbar,
+                fontNames: availableFonts,
+                fontNamesIgnoreCheck: availableFonts,
+                fontSizes: ['8', '9', '10', '11', '12', '13', '14', '16', '18', '20', '24', '28', '36', '48', '64', '72'],
+                callbacks: {
+                    onInit: function() {
+                        const $editable = $('#id_body_html').next('.note-editor').find('.note-editable');
+                        $editable.css({
+                            'font-family': "'Times New Roman', Times, serif",
+                            'font-size': '14pt',
+                            'color': '#000000',
+                            'line-height': '1.5'
+                        });
+                        const $toolbar = $('#id_body_html').next('.note-editor').find('.note-toolbar');
+                        if (!$toolbar.find('.note-current-fontname').text().trim()) {
+                            $toolbar.find('.note-current-fontname').text('Times New Roman').css('font-family', "'Times New Roman', Times, serif");
+                        }
+                        if (!$toolbar.find('.note-current-fontsize').text().trim()) {
+                            $toolbar.find('.note-current-fontsize').text('14');
+                        }
+                    }
+                }
             });
 
             // Автодополнение контактов

@@ -183,10 +183,30 @@ class SmtpMailService:
 
         # Текстовая и HTML часть
         msg_alternative = MIMEMultipart("alternative")
+        if not body_text and body_html:
+            cleaned = re.sub(r"<style[\s\S]*?</style>", "", body_html, flags=re.IGNORECASE)
+            cleaned = re.sub(r"<script[\s\S]*?</script>", "", cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r"<br\s*/?>", "\n", cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r"</p>", "\n\n", cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r"</div>", "\n", cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r"<[^>]+>", "", cleaned)
+            body_text = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+
         if body_text:
             msg_alternative.attach(MIMEText(body_text, "plain", "utf-8"))
+
         if body_html:
-            msg_alternative.attach(MIMEText(body_html, "html", "utf-8"))
+            clean_html = body_html.strip()
+            # Гарантируем стандартный корпоративный стиль Times New Roman, 14pt, black для всех почтовых клиентов
+            if not clean_html.lower().startswith("<!doctype") and not clean_html.lower().startswith("<html"):
+                formatted_html = (
+                    f'<div style="font-family: \'Times New Roman\', Times, serif; font-size: 14pt; color: #000000; line-height: 1.5;">\n'
+                    f'{clean_html}\n'
+                    f'</div>'
+                )
+            else:
+                formatted_html = clean_html
+            msg_alternative.attach(MIMEText(formatted_html, "html", "utf-8"))
         msg.attach(msg_alternative)
 
         # Прикрепление файлов

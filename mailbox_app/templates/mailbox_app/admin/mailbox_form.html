@@ -8,7 +8,7 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-bs4.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-lite.min.css' %}" />
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}" />
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}" />
     <style>
@@ -327,7 +327,8 @@
     </section>
 
     <!-- Скрипты управления формой -->
-    <script src="{% static 'admin_templates/vendor/summernote/summernote-bs4.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/summernote/summernote-lite.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/summernote/lang/summernote-ru-RU.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script>
         $(document).ready(function() {
@@ -335,6 +336,7 @@
             $('.summernote-signature').summernote({
                 height: 120,
                 placeholder: 'Введите подпись подразделения / сотрудника...',
+                lang: 'ru-RU',
                 toolbar: [
                     ['style', ['bold', 'italic', 'underline', 'clear']],
                     ['font', ['color']],

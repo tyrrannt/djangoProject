@@ -684,8 +684,12 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         elif "<br" not in signature.lower() and "<p" not in signature.lower():
             signature = signature.replace("\n", "<br>")
 
+        default_paragraph = (
+            '<p style="font-family: \'Times New Roman\', Times, serif; font-size: 14pt; color: #000000; line-height: 1.5;"><br></p>'
+        )
+
         if not reply_uid and not forward_uid and not draft_uid:
-            initial["body_html"] = f"<p><br></p><p><br></p>{signature}"
+            initial["body_html"] = f"{default_paragraph}{default_paragraph}{signature}"
 
         if draft_uid and str(draft_uid).isdigit():
             try:
@@ -723,10 +727,10 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
                         if reply_uid:
                             initial["to"] = orig_from
                             initial["subject"] = orig_subj if orig_subj.startswith("Re:") else f"Re: {orig_subj}"
-                            initial["body_html"] = f"<p><br></p>{signature}<br><br>{quote_block}"
+                            initial["body_html"] = f"{default_paragraph}{signature}<br><br>{quote_block}"
                         elif forward_uid:
                             initial["subject"] = orig_subj if orig_subj.startswith("Fwd:") else f"Fwd: {orig_subj}"
-                            initial["body_html"] = f"<p><br></p>{signature}<br><br>{quote_block}"
+                            initial["body_html"] = f"{default_paragraph}{signature}<br><br>{quote_block}"
             except Exception as e:
                 logger.warning(f"[Mailbox] Ошибка при подготовке ответа: {e}")
 
