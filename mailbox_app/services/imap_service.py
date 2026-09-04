@@ -977,14 +977,21 @@ class ImapMailService:
                 (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg")
             )
 
-            attachments.append({
+            att_dict = {
                 "part_index": part_idx,
                 "filename": fname,
                 "content_type": c_type,
                 "size": size_bytes,
                 "size_human": _format_file_size(size_bytes),
                 "is_image": is_img,
-            })
+            }
+            try:
+                from mailbox_app.services.attachment_security import enrich_attachment_dict
+                enrich_attachment_dict(att_dict)
+            except Exception as _sec_err:
+                logger.warning(f"[Mailbox] Ошибка обогащения метаданных вложения: {_sec_err}")
+
+            attachments.append(att_dict)
 
         # Если текста нет, но есть реальные вложения — выводим информационную плашку
         if not body_html and not body_text and attachments:

@@ -211,31 +211,69 @@
                             <div class="row g-3">
                                 {% for att in scheduled_email.attachments.all %}
                                     <div class="col-lg-4 col-md-6 col-12">
-                                        <div class="mailbox-attachment-card p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center justify-content-between">
-                                            <div class="d-flex align-items-center gap-2 text-truncate me-2">
-                                                <i class="bx bx-file font-size-24 text-primary flex-shrink-0"></i>
-                                                <div class="overflow-hidden">
-                                                    <div class="attachment-name text-truncate fw-semibold text-dark font-size-13" title="{{ att.filename }}">
-                                                        {{ att.filename }}
-                                                    </div>
-                                                    <div class="attachment-size text-muted font-size-11">
-                                                        {{ att.file_size_human }}
-                                                    </div>
+                                        <div class="mailbox-attachment-card">
+                                            <!-- 1. Иконка типа файла с отметкой уровня риска безопасности -->
+                                            <div class="attachment-icon-wrapper" title="Тип: {{ att.ext|upper|default:'Файл' }}">
+                                                <i class="{{ att.file_icon }} font-size-22"></i>
+                                                <span class="attachment-risk-indicator"
+                                                      data-bs-toggle="tooltip"
+                                                      data-bs-placement="top"
+                                                      title="{{ att.risk_tooltip }}">
+                                                    <i class="{{ att.risk_icon }} {{ att.risk_color_class }}" style="font-size: 13px;"></i>
+                                                </span>
+                                            </div>
+
+                                            <!-- 2. Наименование файла (до 2 строк, троеточие в конце базы, обязательное расширение) -->
+                                            <div class="attachment-file-body">
+                                                <div class="attachment-name-box"
+                                                     title="{{ att.filename }}"
+                                                     onclick="openAttachmentPreview('{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
+                                                    <span class="attachment-name-base">{{ att.short_base }}</span><span class="attachment-name-ext">{{ att.ext }}</span>
+                                                </div>
+                                                <div class="attachment-sub-meta">
+                                                    <span class="text-muted">{{ att.file_size_human }}</span>
+                                                    <span class="badge {{ att.risk_badge_class }}" data-bs-toggle="tooltip" title="{{ att.risk_tooltip }}">
+                                                        {{ att.risk_label }}
+                                                    </span>
                                                 </div>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                                                {% if att.filename|lower|slice:"-4:" == ".pdf" or att.filename|lower|slice:"-4:" == ".png" or att.filename|lower|slice:"-4:" == ".jpg" or att.filename|lower|slice:"-5:" == ".jpeg" %}
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 shadow-none"
-                                                            onclick="openAttachmentPreview('{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}', '{{ att.filename|escapejs }}', {% if att.filename|lower|slice:'-4:' == '.pdf' %}true{% else %}false{% endif %})"
-                                                            title="Предпросмотр документа">
-                                                        <i class="bx bx-show"></i>
-                                                    </button>
-                                                {% endif %}
-                                                <a href="{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}"
-                                                   class="btn btn-outline-primary btn-sm px-2 py-1 shadow-none flex-shrink-0"
-                                                   title="Скачать файл">
-                                                    <i class="bx bx-download"></i>
-                                                </a>
+
+                                            <!-- 3. Действия с файлом (выпадающее меню по кнопке с троеточием) -->
+                                            <div class="dropdown flex-shrink-0">
+                                                <button class="attachment-action-btn"
+                                                        type="button"
+                                                        id="schedAttDrop_{{ forloop.counter }}"
+                                                        data-bs-toggle="dropdown"
+                                                        aria-expanded="false"
+                                                        title="Действия с файлом">
+                                                    <i class="bx bx-dots-vertical-rounded font-size-18"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" aria-labelledby="schedAttDrop_{{ forloop.counter }}" style="min-width: 175px;">
+                                                    <li>
+                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                                           href="javascript:void(0);"
+                                                           onclick="openAttachmentPreview('{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
+                                                            <i class="bx bx-show text-primary font-size-16"></i>
+                                                            <span>Просмотр</span>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                                           href="{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}"
+                                                           download="{{ att.filename }}">
+                                                            <i class="bx bx-download text-success font-size-16"></i>
+                                                            <span>Скачать</span>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                                           href="{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}?inline=1"
+                                                           target="_blank">
+                                                            <i class="bx bx-window-open text-secondary font-size-16"></i>
+                                                            <span>В новой вкладке</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
                                             </div>
                                         </div>
                                     </div>
@@ -325,7 +363,7 @@
         </div>
     </div>
 
-    <!-- Модальное окно предпросмотра документов прямо в браузере -->
+    <!-- Модальное окно предпросмотра документов и вложений -->
     <div class="modal fade" id="previewAttachmentModal" tabindex="-1" aria-labelledby="previewAttachmentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden; height: 86vh;">
@@ -333,6 +371,7 @@
                     <div class="d-flex align-items-center gap-2 text-truncate me-2">
                         <i class="bx bx-file text-primary font-size-22" id="previewFileIcon"></i>
                         <h6 class="modal-title font-weight-semibold text-dark m-0 text-truncate" id="previewFileName">Предпросмотр документа</h6>
+                        <span id="previewRiskBadge" class="badge ms-2 font-size-11"></span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-shrink-0">
                         <a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm font-size-12">
@@ -348,8 +387,31 @@
                     <div id="previewLoader" class="text-white text-center position-absolute" style="z-index: 10;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Загрузка документа...
                     </div>
+                    <!-- 1. PDF / IFRAME -->
                     <iframe id="previewIframe" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                    <!-- 2. Изображение -->
                     <img id="previewImg" src="" alt="Предпросмотр" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;" />
+                    <!-- 3. Текст / Код / Логи -->
+                    <div id="previewTextContainer" class="w-100 h-100 p-3 bg-white text-dark overflow-auto" style="display: none; font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word;"></div>
+                    <!-- 4. Аудио / Видео -->
+                    <div id="previewMediaContainer" class="p-4 text-center w-100" style="display: none;">
+                        <video id="previewVideo" controls class="rounded shadow" style="max-width: 90%; max-height: 70vh; display: none;"></video>
+                        <audio id="previewAudio" controls style="display: none; width: 80%; max-width: 500px;"></audio>
+                    </div>
+                    <!-- 5. Информационная карточка для файлов без прямого рендеринга (Word, Excel, Архивы, Исполняемые файлы) -->
+                    <div id="previewInfoCard" class="p-4 text-center bg-white rounded-3 shadow-sm mx-auto my-auto" style="max-width: 520px; display: none;">
+                        <div class="mb-3">
+                            <i id="previewInfoIcon" class="bx bx-file font-size-48 text-primary"></i>
+                        </div>
+                        <h5 class="font-weight-bold text-dark mb-2" id="previewInfoName"></h5>
+                        <p class="text-muted small mb-3" id="previewInfoDesc">Файлы данного формата не могут быть безопасно отображены прямо в окне браузера без конвертации. Вы можете скачать файл на устройство.</p>
+                        <div id="previewRiskAlert" class="alert d-none text-start small mb-3 py-2 px-3"></div>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="#" id="previewInfoDownloadBtn" class="btn btn-primary px-4 py-2 font-weight-semibold d-inline-flex align-items-center gap-2 shadow-sm">
+                                <i class="bx bx-download font-size-18"></i> <span>Скачать файл</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -358,25 +420,96 @@
 
 {% block custom_script %}
     <script>
-        function openAttachmentPreview(url, filename, isPdf) {
+        function openAttachmentPreview(url, filename, previewType, riskLevel, riskTooltip) {
             const modalEl = document.getElementById('previewAttachmentModal');
+            if (!modalEl) return;
+
             const iframe = document.getElementById('previewIframe');
             const img = document.getElementById('previewImg');
+            const textContainer = document.getElementById('previewTextContainer');
+            const mediaContainer = document.getElementById('previewMediaContainer');
+            const videoEl = document.getElementById('previewVideo');
+            const audioEl = document.getElementById('previewAudio');
+            const infoCard = document.getElementById('previewInfoCard');
+            const infoIcon = document.getElementById('previewInfoIcon');
+            const infoName = document.getElementById('previewInfoName');
+            const infoDesc = document.getElementById('previewInfoDesc');
+            const riskAlert = document.getElementById('previewRiskAlert');
+            const infoDownloadBtn = document.getElementById('previewInfoDownloadBtn');
             const loader = document.getElementById('previewLoader');
             const title = document.getElementById('previewFileName');
             const icon = document.getElementById('previewFileIcon');
+            const riskBadge = document.getElementById('previewRiskBadge');
             const downloadBtn = document.getElementById('previewDownloadBtn');
             const externalBtn = document.getElementById('previewExternalBtn');
 
             if (title) title.textContent = filename;
-            if (downloadBtn) downloadBtn.href = url;
+            const cleanDownloadUrl = url.replace('?inline=1', '').replace('&inline=1', '');
+            if (downloadBtn) downloadBtn.href = cleanDownloadUrl;
+            if (infoDownloadBtn) infoDownloadBtn.href = cleanDownloadUrl;
             if (externalBtn) externalBtn.href = url;
 
+            if (riskBadge) {
+                riskBadge.className = 'badge ms-2 font-size-11 ';
+                if (riskLevel === 'high') {
+                    riskBadge.className += 'bg-danger text-white';
+                    riskBadge.textContent = 'Высокий риск';
+                } else if (riskLevel === 'medium') {
+                    riskBadge.className += 'bg-warning text-dark';
+                    riskBadge.textContent = 'Внимание';
+                } else if (riskLevel === 'low') {
+                    riskBadge.className += 'bg-success text-white';
+                    riskBadge.textContent = 'Безопасный';
+                } else {
+                    riskBadge.className += 'bg-secondary text-white';
+                    riskBadge.textContent = 'Нейтральный';
+                }
+                riskBadge.title = riskTooltip || '';
+            }
+
+            // Сброс всех отображений
+            if (iframe) { iframe.style.display = 'none'; iframe.src = ''; }
+            if (img) { img.style.display = 'none'; img.src = ''; }
+            if (textContainer) { textContainer.style.display = 'none'; textContainer.textContent = ''; }
+            if (mediaContainer) { mediaContainer.style.display = 'none'; }
+            if (videoEl) { videoEl.style.display = 'none'; videoEl.pause(); videoEl.src = ''; }
+            if (audioEl) { audioEl.style.display = 'none'; audioEl.pause(); audioEl.src = ''; }
+            if (infoCard) { infoCard.style.display = 'none'; }
             if (loader) loader.style.display = 'block';
 
-            if (isPdf) {
+            function showFallbackInfo() {
+                if (loader) loader.style.display = 'none';
+                if (infoCard) {
+                    infoCard.style.display = 'block';
+                    if (infoName) infoName.textContent = filename;
+                    if (infoIcon) {
+                        const lower = (filename || '').toLowerCase();
+                        if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+                            infoIcon.className = 'bx bxs-file-doc font-size-48 text-primary';
+                        } else if (lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
+                            infoIcon.className = 'bx bxs-spreadsheet font-size-48 text-success';
+                        } else if (lower.endsWith('.zip') || lower.endsWith('.rar') || lower.endsWith('.7z')) {
+                            infoIcon.className = 'bx bxs-file-archive font-size-48 text-warning';
+                        } else {
+                            infoIcon.className = 'bx bx-file font-size-48 text-primary';
+                        }
+                    }
+                    if (riskAlert) {
+                        if (riskLevel === 'high') {
+                            riskAlert.className = 'alert alert-danger text-start small mb-3 py-2 px-3 d-block';
+                            riskAlert.innerHTML = '<i class="bx bxs-shield-x me-1"></i> <strong>Внимание:</strong> ' + (riskTooltip || 'Файл относится к категории высокого риска безопасности.');
+                        } else if (riskLevel === 'medium') {
+                            riskAlert.className = 'alert alert-warning text-start small mb-3 py-2 px-3 d-block';
+                            riskAlert.innerHTML = '<i class="bx bxs-shield me-1"></i> ' + (riskTooltip || 'Архив или конфигурационный файл.');
+                        } else {
+                            riskAlert.className = 'alert d-none';
+                        }
+                    }
+                }
+            }
+
+            if (previewType === 'pdf') {
                 if (icon) icon.className = 'bx bxs-file-pdf text-danger font-size-22';
-                if (img) img.style.display = 'none';
                 if (iframe) {
                     iframe.style.display = 'block';
                     iframe.onload = function() {
@@ -384,19 +517,54 @@
                     };
                     iframe.src = url;
                 }
-            } else {
-                if (icon) icon.className = 'bx bx-image text-success font-size-22';
-                if (iframe) {
-                    iframe.style.display = 'none';
-                    iframe.src = '';
-                }
+            } else if (previewType === 'image') {
+                if (icon) icon.className = 'bx bx-image text-info font-size-22';
                 if (img) {
                     img.onload = function() {
                         if (loader) loader.style.display = 'none';
                         img.style.display = 'block';
                     };
+                    img.onerror = function() {
+                        showFallbackInfo();
+                    };
                     img.src = url;
                 }
+            } else if (previewType === 'text') {
+                if (icon) icon.className = 'bx bx-file-blank text-secondary font-size-22';
+                fetch(url)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Сетевая ошибка при загрузке текста');
+                        return res.text();
+                    })
+                    .then(txt => {
+                        if (loader) loader.style.display = 'none';
+                        if (textContainer) {
+                            textContainer.textContent = txt;
+                            textContainer.style.display = 'block';
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showFallbackInfo();
+                    });
+            } else if (previewType === 'video') {
+                if (icon) icon.className = 'bx bx-video text-danger font-size-22';
+                if (loader) loader.style.display = 'none';
+                if (mediaContainer && videoEl) {
+                    mediaContainer.style.display = 'block';
+                    videoEl.style.display = 'inline-block';
+                    videoEl.src = url;
+                }
+            } else if (previewType === 'audio') {
+                if (icon) icon.className = 'bx bx-music text-primary font-size-22';
+                if (loader) loader.style.display = 'none';
+                if (mediaContainer && audioEl) {
+                    mediaContainer.style.display = 'block';
+                    audioEl.style.display = 'inline-block';
+                    audioEl.src = url;
+                }
+            } else {
+                showFallbackInfo();
             }
 
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -404,10 +572,10 @@
 
             modalEl.addEventListener('hidden.bs.modal', function onHidden() {
                 if (iframe) iframe.src = '';
-                if (img) {
-                    img.src = '';
-                    img.style.display = 'none';
-                }
+                if (img) { img.src = ''; img.style.display = 'none'; }
+                if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+                if (audioEl) { audioEl.pause(); audioEl.src = ''; }
+                if (textContainer) { textContainer.textContent = ''; }
                 modalEl.removeEventListener('hidden.bs.modal', onHidden);
             });
         }

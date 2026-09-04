@@ -7,6 +7,7 @@ import imaplib
 import io
 import json
 import logging
+import mimetypes
 import os
 import re
 import socket
@@ -21,6 +22,8 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.db import models
+from django.utils.decorators import method_decorator
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db.models import Q
 from django.http import (
     FileResponse,
@@ -929,6 +932,7 @@ class MailboxSaveDraftAPIView(MailboxBaseMixin, View):
             return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
+@method_decorator(xframe_options_sameorigin, name="dispatch")
 class MailboxAttachmentDownloadView(MailboxBaseMixin, View):
     """Представление для безопасного скачивания или инлайн-просмотра файла-вложения."""
 
@@ -942,7 +946,7 @@ class MailboxAttachmentDownloadView(MailboxBaseMixin, View):
             part_index (int): Индекс части MIME.
 
         Returns:
-            HttpResponse: Файл с заголовком Content-Disposition.
+            HttpResponse: Файл с заголовком Content-Disposition и X-Frame-Options: SAMEORIGIN.
         """
         account = self.get_account()
         try:
@@ -952,12 +956,20 @@ class MailboxAttachmentDownloadView(MailboxBaseMixin, View):
                     raise Http404("Вложение не найдено.")
 
                 filename, content_type, data = result
-                response = HttpResponse(data, content_type=content_type)
+
+                # Уточняем content_type при необходимости для корректного отображения в браузере
+                if not content_type or content_type == "application/octet-stream":
+                    guessed_type, _ = mimetypes.guess_type(filename)
+                    if guessed_type:
+                        content_type = guessed_type
+
+                response = HttpResponse(data, content_type=content_type or "application/octet-stream")
                 # Кодирование имени файла по RFC 5987
                 encoded_filename = quote(filename)
                 inline = request.GET.get("inline") == "1"
                 disposition = "inline" if inline else "attachment"
                 response["Content-Disposition"] = f"{disposition}; filename*=UTF-8''{encoded_filename}"
+                response["X-Frame-Options"] = "SAMEORIGIN"
                 return response
         except Exception as e:
             logger.error(f"[Mailbox] Ошибка скачивания вложения {uid}/{part_index}: {e}")
@@ -2265,8 +2277,9 @@ class MailboxScheduledEditView(MailboxBaseMixin, FormView):
             return self.form_invalid(form)
 
 
+@method_decorator(xframe_options_sameorigin, name="dispatch")
 class MailboxScheduledAttachmentDownloadView(MailboxBaseMixin, View):
-    """Контроллер для безопасного скачивания файла-вложения запланированного письма."""
+    """Контроллер для безопасного скачивания или инлайн-просмотра файла-вложения запланированного письма."""
 
     def get(self, request, pk: int, att_id: int, *args, **kwargs):
         """Отдает бинарный файл вложения с проверкой прав доступа.
@@ -2277,7 +2290,7 @@ class MailboxScheduledAttachmentDownloadView(MailboxBaseMixin, View):
             att_id (int): ID файла-вложения.
 
         Returns:
-            FileResponse: Ответ с файлом для скачивания или просмотра.
+            FileResponse: Ответ с файлом для скачивания или инлайн-просмотра с X-Frame-Options: SAMEORIGIN.
 
         Raises:
             Http404: Если файл или письмо не найдены.
@@ -2290,12 +2303,21 @@ class MailboxScheduledAttachmentDownloadView(MailboxBaseMixin, View):
             if not attachment.file or not attachment.file.storage.exists(attachment.file.name):
                 raise Http404("Файл не найден на диске сервера.")
 
+            content_type = attachment.content_type
+            if not content_type or content_type == "application/octet-stream":
+                guessed_type, _ = mimetypes.guess_type(attachment.filename)
+                if guessed_type:
+                    content_type = guessed_type
+
             response = FileResponse(
                 attachment.file.open("rb"),
-                content_type=attachment.content_type or "application/octet-stream",
+                content_type=content_type or "application/octet-stream",
             )
             safe_filename = quote(attachment.filename)
-            response["Content-Disposition"] = f"inline; filename*=UTF-8''{safe_filename}"
+            inline = request.GET.get("inline") == "1"
+            disposition = "inline" if inline else "attachment"
+            response["Content-Disposition"] = f"{disposition}; filename*=UTF-8''{safe_filename}"
+            response["X-Frame-Options"] = "SAMEORIGIN"
             return response
         except Exception as e:
             logger.warning(f"[Mailbox] Ошибка отдачи вложения отложенного письма: {e}")

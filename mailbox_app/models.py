@@ -733,6 +733,73 @@ class ScheduledEmailAttachment(models.Model):
             return f"{size / 1024:.1f} КБ"
         return f"{size / (1024 * 1024):.1f} МБ"
 
+    @property
+    def security_info(self) -> dict:
+        """Возвращает метаданные безопасности и форматирования вложения.
+
+        Returns:
+            dict: Словарь с уровнем риска, иконками и разобранным именем.
+        """
+        from mailbox_app.services.attachment_security import get_attachment_security_info
+        if not hasattr(self, "_cached_sec_info"):
+            self._cached_sec_info = get_attachment_security_info(self.filename, self.content_type)
+        return self._cached_sec_info
+
+    @property
+    def name_base(self) -> str:
+        """Возвращает базовое имя файла без расширения."""
+        return self.security_info.get("name_base", self.filename)
+
+    @property
+    def ext(self) -> str:
+        """Возвращает расширение файла с точкой."""
+        return self.security_info.get("ext", "")
+
+    @property
+    def short_base(self) -> str:
+        """Возвращает укороченное базовое имя файла для 2-строчного блока."""
+        return self.security_info.get("short_base", self.filename)
+
+    @property
+    def risk_level(self) -> str:
+        """Возвращает уровень риска (high, medium, low, neutral)."""
+        return self.security_info.get("risk_level", "low")
+
+    @property
+    def risk_label(self) -> str:
+        """Возвращает текстовое наименование уровня риска."""
+        return self.security_info.get("risk_label", "Безопасный")
+
+    @property
+    def risk_tooltip(self) -> str:
+        """Возвращает подсказку с описанием уровня риска."""
+        return self.security_info.get("risk_tooltip", "")
+
+    @property
+    def risk_color_class(self) -> str:
+        """Возвращает CSS-класс цвета текста уровня риска."""
+        return self.security_info.get("risk_color_class", "text-success")
+
+    @property
+    def risk_badge_class(self) -> str:
+        """Возвращает CSS-класс бейджа уровня риска."""
+        return self.security_info.get("risk_badge_class", "badge bg-success text-white")
+
+    @property
+    def risk_icon(self) -> str:
+        """Возвращает Boxicons-класс значка щита безопасности."""
+        return self.security_info.get("risk_icon", "bx bxs-check-shield")
+
+    @property
+    def file_icon(self) -> str:
+        """Возвращает Boxicons-класс значка типа файла."""
+        return self.security_info.get("file_icon", "bx bx-file text-primary")
+
+    @property
+    def preview_type(self) -> str:
+        """Возвращает поддерживаемый режим предпросмотра."""
+        return self.security_info.get("preview_type", "unsupported")
+
     def __str__(self) -> str:
         """Строковое представление вложения.
 
