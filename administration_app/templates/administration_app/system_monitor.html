@@ -442,7 +442,7 @@
                         <header class="card-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <h5 class="card-title text-dark mb-0 fs-6 font-weight-bold d-flex align-items-center gap-2">
                                 <i class="bx bx-devices text-primary fs-5"></i>
-                                Аналитика пользовательских устройств (Экипажи на перроне vs Офис)
+                                Аналитика пользовательских устройств
                             </h5>
                             <span class="badge bg-light text-muted border font-monospace" id="device-primary-segment">
                                 {{ initial_data.device_stats.primary_segment|default:"Стационарные ПК и Мобильные устройства" }}
@@ -460,7 +460,6 @@
                                                 </div>
                                                 <div>
                                                     <strong class="text-dark d-block">Смартфоны</strong>
-                                                    <span class="small text-muted">Летный состав, техники</span>
                                                 </div>
                                             </div>
                                             <span class="fs-4 font-weight-bold text-success" id="dev-mobile-pct">{{ initial_data.device_stats.mobile_percent|default:"0" }}%</span>
@@ -469,7 +468,7 @@
                                             <div class="progress-bar bg-success" id="dev-mobile-bar" role="progressbar" style="width: {{ initial_data.device_stats.mobile_percent|default:0 }}%;"></div>
                                         </div>
                                         <div class="small text-muted mt-2 d-flex justify-content-between">
-                                            <span>Сессий / подписок:</span>
+                                            <span>Сессий:</span>
                                             <strong class="text-dark" id="dev-mobile-cnt">{{ initial_data.device_stats.mobile_count|default:"0" }}</strong>
                                         </div>
                                     </div>
@@ -485,7 +484,6 @@
                                                 </div>
                                                 <div>
                                                     <strong class="text-dark d-block">Компьютеры / Ноутбуки</strong>
-                                                    <span class="small text-muted">Офис, учебные классы</span>
                                                 </div>
                                             </div>
                                             <span class="fs-4 font-weight-bold text-primary" id="dev-desktop-pct">{{ initial_data.device_stats.desktop_percent|default:"0" }}%</span>
@@ -494,7 +492,7 @@
                                             <div class="progress-bar bg-primary" id="dev-desktop-bar" role="progressbar" style="width: {{ initial_data.device_stats.desktop_percent|default:0 }}%;"></div>
                                         </div>
                                         <div class="small text-muted mt-2 d-flex justify-content-between">
-                                            <span>Сессий / подписок:</span>
+                                            <span>Сессий:</span>
                                             <strong class="text-dark" id="dev-desktop-cnt">{{ initial_data.device_stats.desktop_count|default:"0" }}</strong>
                                         </div>
                                     </div>
@@ -510,7 +508,6 @@
                                                 </div>
                                                 <div>
                                                     <strong class="text-dark d-block">Планшеты</strong>
-                                                    <span class="small text-muted">Экипажи ВС, выездные бригады</span>
                                                 </div>
                                             </div>
                                             <span class="fs-4 font-weight-bold text-info" id="dev-tablet-pct">{{ initial_data.device_stats.tablet_percent|default:"0" }}%</span>
@@ -519,7 +516,7 @@
                                             <div class="progress-bar bg-info" id="dev-tablet-bar" role="progressbar" style="width: {{ initial_data.device_stats.tablet_percent|default:0 }}%;"></div>
                                         </div>
                                         <div class="small text-muted mt-2 d-flex justify-content-between">
-                                            <span>Сессий / подписок:</span>
+                                            <span>Сессий:</span>
                                             <strong class="text-dark" id="dev-tablet-cnt">{{ initial_data.device_stats.tablet_count|default:"0" }}</strong>
                                         </div>
                                     </div>

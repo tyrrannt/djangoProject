@@ -667,9 +667,9 @@ def get_device_usage_stats() -> Dict[str, Any]:
     tablet_pct = round((tablet_cnt / total) * 100, 1)
 
     if mobile_pct > desktop_pct:
-        primary_segment = "Мобильные устройства (летный состав / инженеры на перроне)"
+        primary_segment = "Мобильные устройства"
     else:
-        primary_segment = "Стационарные ПК (офис / учебные классы / администрация)"
+        primary_segment = "Стационарные ПК"
 
     return {
         "mobile_count": mobile_cnt,
