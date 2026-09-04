@@ -1267,10 +1267,29 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     def get_absolute_url():
         return reverse("hrdepartment_app:bpmemo_list")
 
-    def send_mail(self, title, trigger=0):
+    def send_mail(self, title: str, trigger: int = 0) -> tuple[bool, str]:
+        """Отправляет служебные почтовые уведомления по процессу согласования поездки.
+
+        В зависимости от переданного триггера выполняет:
+        - trigger=0: Уведомление об отмене служебной поездки (сотруднику, исполнителю,
+          распределителю и кадровой службе).
+        - trigger=1: Повторное уведомление командируемому сотруднику с вложением
+          служебного задания (PDF или XLSX).
+        - trigger=2: Письмо исполнителю (инициатору процесса) с вложением служебного задания.
+
+        Args:
+            title (str): Тема сообщения (используется при отмене процесса).
+            trigger (int, optional): Идентификатор действия:
+                0 — отмена служебной поездки,
+                1 — повторное уведомление командируемому сотруднику,
+                2 — письмо исполнителю. По умолчанию 0.
+
+        Returns:
+            tuple[bool, str]: Кортеж (успех_отправки, адрес_получателя_или_текст_ошибки).
+        """
         # Отмена СП или СК
         if self.cancellation and trigger == 0:
-            mail_to = self.document.person.email
+            mail_to = self.document.person.email if (self.document and self.document.person) else ""
             mail_to_copy_first = (
                 self.person_executor.email if self.person_executor else ""
             )
@@ -1285,7 +1304,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             subject_mail = title
 
             current_context = {
-                "title": self.document.title,
+                "title": self.document.title if self.document else "",
                 "order_number": str(self.order.document_number)
                 if self.order
                 else "--//--",
@@ -1327,7 +1346,6 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             second_msg.attach_alternative(html_content, "text/html")
 
             try:
-                # send_mass_mail((first_msg, second_msg), fail_silently=False)
                 first_msg.send()
             except Exception as _ex:
                 logger.debug(
@@ -1339,163 +1357,183 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 logger.debug(
                     f"Failed to send second email to {mail_to_copy_second} {mail_to_copy_third}. {_ex}"
                 )
+            return True, mail_to
+
         if trigger == 1 or trigger == 2:
             # Повторное уведомление об СП или СК
-            type_of = ["Служебная квартира", "Гостиница"]
+            if not self.process_accepted:
+                return False, "Приказ по служебной поездке еще не издан."
 
-            if self.process_accepted:
-                from openpyxl import load_workbook
+            from openpyxl import load_workbook
 
-                delta = self.document.period_for - self.document.period_from
+            delta = self.document.period_for - self.document.period_from
+            try:
+                place = [
+                    item.name
+                    for item in self.document.place_production_activity.all()
+                ]
+            except Exception as _ex:
+                place = []
+            # Получаем ссылку на файл шаблона
+            if (
+                    self.document.person.user_work_profile.job.division_affiliation.pk
+                    == 2
+            ):
+                if self.document.type_trip == "2":
+                    filepath_name = "spk.xlsx"
+                else:
+                    filepath_name = "sp.xlsx"
+            else:
+                if self.document.type_trip == "2":
+                    filepath_name = "sp2k.xlsx"
+                else:
+                    filepath_name = "sp2.xlsx"
+            filepath = pathlib.Path.joinpath(
+                pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates"),
+                filepath_name,
+            )
+            wb = load_workbook(filepath)
+            ws = wb.active
+            ws["C3"] = str(self.document.person)
+            ws["M3"] = str(self.document.person.service_number)
+            ws["C4"] = str(self.document.person.user_work_profile.job)
+            ws["C5"] = str(self.document.person.user_work_profile.divisions)
+            ws["C6"] = "Приказ № " + str(self.order.document_number)
+            ws["F6"] = self.order.document_date.strftime("%d.%m.%y")
+            ws["H6"] = "на " + ending_day(int(delta.days) + 1)
+            ws["L6"] = self.document.period_from.strftime("%d.%m.%y")
+            ws["O6"] = self.document.period_for.strftime("%d.%m.%y")
+            ws["C8"] = ", ".join(place)
+            ws["C9"] = str(self.document.purpose_trip)
+            ws["A90"] = (
+                    str(self.person_agreement.user_work_profile.job)
+                    + ", "
+                    + format_name_initials(self.person_agreement)
+            )
+
+            wb.save(
+                pathlib.Path.joinpath(
+                    pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
+                )
+            )
+            wb.close()
+            if trigger == 2:
+                mail_to = self.person_executor.email if self.person_executor else ""
+            else:
+                mail_to = self.document.person.email if (self.document and self.document.person) else ""
+
+            if not mail_to:
+                return False, "У получателя не указан адрес электронной почты в профиле."
+
+            type_trip = (
+                "поездку" if self.document.type_trip == "1" else "командировку"
+            )
+            official_memo_type = self.document.official_memo_type
+            source = str(
+                pathlib.Path.joinpath(
+                    pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
+                )
+            )
+            file_name = None
+            if official_memo_type == "1":
+                # Конвертируем xlsx в pdf (с безопасным откатом к XLSX при сбое конвертера)
+                output_dir = str(pathlib.Path.joinpath(BASE_DIR, "media"))
                 try:
-                    place = [
-                        item.name
-                        for item in self.document.place_production_activity.all()
-                    ]
-                except Exception as _ex:
-                    place = []
-                # Получаем ссылку на файл шаблона
-                if (
-                        self.document.person.user_work_profile.job.division_affiliation.pk
-                        == 2
-                ):
-                    if self.document.type_trip == "2":
-                        filepath_name = "spk.xlsx"
-                    else:
-                        filepath_name = "sp.xlsx"
-                else:
-                    if self.document.type_trip == "2":
-                        filepath_name = "sp2k.xlsx"
-                    else:
-                        filepath_name = "sp2.xlsx"
-                filepath = pathlib.Path.joinpath(
-                    pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates"),
-                    filepath_name,
-                )
-                wb = load_workbook(filepath)
-                ws = wb.active
-                ws["C3"] = str(self.document.person)
-                ws["M3"] = str(self.document.person.service_number)
-                ws["C4"] = str(self.document.person.user_work_profile.job)
-                ws["C5"] = str(self.document.person.user_work_profile.divisions)
-                ws["C6"] = "Приказ № " + str(self.order.document_number)
-                ws["F6"] = self.order.document_date.strftime("%d.%m.%y")
-                ws["H6"] = "на " + ending_day(int(delta.days) + 1)
-                ws["L6"] = self.document.period_from.strftime("%d.%m.%y")
-                ws["O6"] = self.document.period_for.strftime("%d.%m.%y")
-                ws["C8"] = ", ".join(place)
-                ws["C9"] = str(self.document.purpose_trip)
-                ws["A90"] = (
-                        str(self.person_agreement.user_work_profile.job)
-                        + ", "
-                        + format_name_initials(self.person_agreement)
-                )
-
-                wb.save(
-                    pathlib.Path.joinpath(
-                        pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
-                    )
-                )
-                wb.close()
-                if trigger == 2:
-                    mail_to = self.person_executor.email
-                else:
-                    mail_to = self.document.person.email
-                # mail_to_copy = self.person_executor.email
-                type_trip = (
-                    "поездку" if self.document.type_trip == "1" else "командировку"
-                )
-                official_memo_type = self.document.official_memo_type
-                if official_memo_type == "1":
-                    # Конвертируем xlsx в pdf
-                    # Удалить
                     from msoffice2pdf import convert
-
-                    source = str(
-                        pathlib.Path.joinpath(
-                            pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
-                        )
-                    )
-                    output_dir = str(pathlib.Path.joinpath(BASE_DIR, "media"))
                     file_name = convert(source=source, output_dir=output_dir, soft=0)
-                    subject_mail = "Направление в служебную " + type_trip
-                    type_trip_title = "Вы направляетесь в служебную " + type_trip
-                    type_trip_variant = "направлении в служебную " + type_trip
-                    type_trip_variant_second = "направление в служебную " + type_trip
-                    type_trip_extension = ""
-                else:
-                    subject_mail = (
-                            "Продление служебной "
-                            + type_trip[0:-1]
-                            + "и: с "
-                            + str(self.document.period_from.strftime("%d.%m.%Y"))
-                            + " г. по "
-                            + str(self.document.period_for.strftime("%d.%m.%Y"))
-                            + " г. "
-                            + str(self.document.document_extension.order)
+                    if not file_name or not os.path.exists(str(file_name)):
+                        file_name = None
+                except Exception as conv_err:
+                    logger.warning(
+                        f"Не удалось конвертировать {source} в PDF через msoffice2pdf: {conv_err}. "
+                        f"Будет отправлен оригинальный XLSX файл."
                     )
-                    type_trip_title = "Вам продлена служебная " + type_trip[0:-1] + "а"
-                    type_trip_variant = "продлении служебной " + type_trip[0:-1] + "и"
-                    type_trip_variant_second = (
-                            "продление служебной " + type_trip[0:-1] + "и"
-                    )
-                    type_trip_extension = "Внимание! При продлении служебной поездки или служебной командировки, новое служебное задание не высылается. Отметки и печати о выбытии и прибытии в пункты назначения проставляются в основном служебном задании."
+                    file_name = None
 
-                if self.accommodation == "1":
-                    accommodation = "Квартира"
-                else:
-                    accommodation = "Гостиница"
-                print(str(place).strip("['']"), place)
-                current_context = {
-                    "greetings": "Уважаемый"
-                    if self.document.person.gender == "male"
-                    else "Уважаемая",
-                    "person": str(self.document.person),
-                    "place": ", ".join(place),
-                    "type_trip": type_trip_title,
-                    "type_trip_variant": type_trip_variant,
-                    "type_trip_variant_second": type_trip_variant_second,
-                    "type_trip_second": "поездки"
-                    if self.document.type_trip == "1"
-                    else "командировки",
-                    "purpose_trip": str(self.document.purpose_trip),
-                    "order_number": str(self.order.document_number),
-                    "order_date": self.order.document_date.strftime("%d.%m.%Y"),
-                    "delta": str(ending_day(int(delta.days) + 1)),
-                    "period_from": self.document.period_from.strftime("%d.%m.%Y"),
-                    "period_for": self.document.period_for.strftime("%d.%m.%Y"),
-                    "accommodation": accommodation,
-                    "person_executor": format_name_initials(self.person_executor),
-                    "mail_to_copy": str(self.person_executor.email),
-                    "person_distributor": format_name_initials(self.person_distributor),
-                    "Year": str(datetime.datetime.today().year),
-                    "type_trip_extension": type_trip_extension,
-                }
-                logger.debug(f"Email string: {current_context}")
-                text_content = render_to_string(
-                    "hrdepartment_app/email_template.html", current_context
+                subject_mail = "Направление в служебную " + type_trip
+                type_trip_title = "Вы направляетесь в служебную " + type_trip
+                type_trip_variant = "направлении в служебную " + type_trip
+                type_trip_variant_second = "направление в служебную " + type_trip
+                type_trip_extension = ""
+            else:
+                subject_mail = (
+                        "Продление служебной "
+                        + type_trip[0:-1]
+                        + "и: с "
+                        + str(self.document.period_from.strftime("%d.%m.%Y"))
+                        + " г. по "
+                        + str(self.document.period_for.strftime("%d.%m.%Y"))
+                        + " г. "
+                        + str(self.document.document_extension.order)
                 )
-                html_content = render_to_string(
-                    "hrdepartment_app/email_template.html", current_context
+                type_trip_title = "Вам продлена служебная " + type_trip[0:-1] + "а"
+                type_trip_variant = "продлении служебной " + type_trip[0:-1] + "и"
+                type_trip_variant_second = (
+                        "продление служебной " + type_trip[0:-1] + "и"
                 )
+                type_trip_extension = "Внимание! При продлении служебной поездки или служебной командировки, новое служебное задание не высылается. Отметки и печати о выбытии и прибытии в пункты назначения проставляются в основном служебном задании."
 
-                msg = EmailMultiAlternatives(
-                    subject_mail,
-                    text_content,
-                    EMAIL_HOST_USER,
-                    [
-                        mail_to,
-                    ],
-                )
-                msg.attach_alternative(html_content, "text/html")
-                if self.document.official_memo_type == "1":
-                    msg.attach_file(str(file_name))
-                try:
-                    res = msg.send()
-                    self.email_send = True
-                    self.save()
-                except Exception as _ex:
-                    logger.debug(f"Failed to send email. {_ex}")
+            if self.accommodation == "1":
+                accommodation = "Квартира"
+            else:
+                accommodation = "Гостиница"
+
+            current_context = {
+                "greetings": "Уважаемый"
+                if self.document.person.gender == "male"
+                else "Уважаемая",
+                "person": str(self.document.person),
+                "place": ", ".join(place),
+                "type_trip": type_trip_title,
+                "type_trip_variant": type_trip_variant,
+                "type_trip_variant_second": type_trip_variant_second,
+                "type_trip_second": "поездки"
+                if self.document.type_trip == "1"
+                else "командировки",
+                "purpose_trip": str(self.document.purpose_trip),
+                "order_number": str(self.order.document_number),
+                "order_date": self.order.document_date.strftime("%d.%m.%Y"),
+                "delta": str(ending_day(int(delta.days) + 1)),
+                "period_from": self.document.period_from.strftime("%d.%m.%Y"),
+                "period_for": self.document.period_for.strftime("%d.%m.%Y"),
+                "accommodation": accommodation,
+                "person_executor": format_name_initials(self.person_executor),
+                "mail_to_copy": str(self.person_executor.email if self.person_executor else ""),
+                "person_distributor": format_name_initials(self.person_distributor),
+                "Year": str(datetime.datetime.today().year),
+                "type_trip_extension": type_trip_extension,
+            }
+            logger.debug(f"Email string: {current_context}")
+            text_content = render_to_string(
+                "hrdepartment_app/email_template.html", current_context
+            )
+            html_content = render_to_string(
+                "hrdepartment_app/email_template.html", current_context
+            )
+
+            msg = EmailMultiAlternatives(
+                subject_mail,
+                text_content,
+                EMAIL_HOST_USER,
+                [
+                    mail_to,
+                ],
+            )
+            msg.attach_alternative(html_content, "text/html")
+            if self.document.official_memo_type == "1":
+                attachment_file = str(file_name) if (file_name and os.path.exists(str(file_name))) else source
+                if os.path.exists(attachment_file):
+                    msg.attach_file(attachment_file)
+            try:
+                res = msg.send()
+                self.email_send = True
+                self.save(update_fields=["email_send"])
+                return True, mail_to
+            except Exception as _ex:
+                logger.error(f"Failed to send email to {mail_to}: {_ex}")
+                return False, str(_ex)
+
+        return False, "Неизвестный триггер или условия отправки не выполнены."
 
 
 def create_xlsx(instance):

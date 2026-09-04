@@ -194,6 +194,16 @@
         {% csrf_token %}
         <div class="row">
             <div class="col-12">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
+                            <i class="bx {% if message.tags == 'success' %}bx-check-circle text-success{% elif message.tags == 'error' %}bx-error-circle text-danger{% elif message.tags == 'warning' %}bx-error text-warning{% else %}bx-info-circle text-info{% endif %} me-2 fs-5 align-middle"></i>
+                            <span class="align-middle">{{ message }}</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
                 <!-- Page Header -->
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                     <div>
@@ -951,15 +961,17 @@
                                    class="btn btn-outline-danger btn-touch font-weight-semibold">
                                     <i class="bx bx-x-circle me-2"></i> Отмена
                                 </a>
-                                <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=0"
-                                   class="btn btn-outline-warning btn-touch font-weight-semibold">
-                                    <i class="bx bx-mail-send me-2"></i> Повторное уведомление
-                                </a>
-                                {% if user == object.person_executor or user.is_superuser %}
-                                    <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=1"
+                                {% if object.process_accepted %}
+                                    <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=0"
                                        class="btn btn-outline-warning btn-touch font-weight-semibold">
-                                        <i class="bx bx-mail-send me-2"></i> Письмо исполнителю
+                                        <i class="bx bx-mail-send me-2"></i> Повторное уведомление
                                     </a>
+                                    {% if user == object.person_executor or user.is_superuser %}
+                                        <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=1"
+                                           class="btn btn-outline-warning btn-touch font-weight-semibold">
+                                            <i class="bx bx-mail-send me-2"></i> Письмо исполнителю
+                                        </a>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                             {% if user.is_superuser %}
@@ -1003,6 +1015,21 @@
                     }
                 });
             }
+
+            // Всплывающие уведомления PNotify при наличии Django messages
+            {% if messages %}
+                {% for message in messages %}
+                    if (typeof PNotify !== 'undefined') {
+                        new PNotify({
+                            title: "{% if message.tags == 'success' %}Успешно{% elif message.tags == 'error' %}Ошибка{% elif message.tags == 'warning' %}Внимание{% else %}Информация{% endif %}",
+                            text: "{{ message|escapejs }}",
+                            type: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}notice{% else %}success{% endif %}",
+                            addclass: 'stack-bottomright',
+                            delay: 5000
+                        });
+                    }
+                {% endfor %}
+            {% endif %}
         });
     </script>
 {% endblock %}

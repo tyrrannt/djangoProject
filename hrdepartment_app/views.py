@@ -19,6 +19,7 @@ from io import StringIO, BytesIO
 import pandas as pd
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
@@ -1589,13 +1590,52 @@ class ApprovalOficialMemoProcessUpdate(
         return super().post(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get("send") == "0":
+        """Обрабатывает GET-запрос страницы редактирования процесса согласования.
+
+        При наличии GET-параметра 'send' выполняет отправку почтового уведомления:
+            - send=0: повторное уведомление командируемому сотруднику (trigger=1).
+            - send=1: письмо исполнителю/инициатору процесса (trigger=2).
+        После отправки уведомления формирует всплывающее уведомление (через Django messages)
+        и выполняет перенаправление на чистый URL формы во избежание повторной отправки
+        писем при перезагрузке страницы в браузере (F5).
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы (содержит pk процесса).
+
+        Returns:
+            HttpResponse: Отрендеренная страница формы либо перенаправление (redirect).
+        """
+        send_action = request.GET.get("send")
+        if send_action in ("0", "1"):
             obj_item = self.get_object()
-            obj_item.send_mail(title="Повторное уведомление", trigger=1)
-        if request.GET.get("send") == "1":
-            obj_item = self.get_object()
-            obj_item.send_mail(title="Повторное уведомление", trigger=2)
-            # return redirect('hrdepartment_app:bpmemo_update', obj_item.pk)
+            if not obj_item.process_accepted:
+                messages.warning(
+                    request,
+                    "Невозможно отправить уведомление: приказ по служебной поездке еще не издан."
+                )
+                return redirect("hrdepartment_app:bpmemo_update", obj_item.pk)
+
+            if send_action == "0":
+                success, info = obj_item.send_mail(title="Повторное уведомление", trigger=1)
+                action_name = "Повторное уведомление"
+            else:
+                success, info = obj_item.send_mail(title="Письмо исполнителю", trigger=2)
+                action_name = "Письмо исполнителю"
+
+            if success:
+                messages.success(
+                    request,
+                    f"{action_name} успешно отправлено на адрес {info}!"
+                )
+            else:
+                messages.error(
+                    request,
+                    f"Ошибка при отправке ({action_name}): {info}"
+                )
+            return redirect("hrdepartment_app:bpmemo_update", obj_item.pk)
+
         return super().get(request, *args, **kwargs)
 
     def get_success_url(self):
@@ -4269,12 +4309,34 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         return form
 
 class ProvisionsDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    """Представление для подтверждения и удаления положения организации.
+
+    Обеспечивает отображение диалоговой формы подтверждения удаления объекта
+    положения (Provisions), проверку прав доступа и последующее удаление
+    записи из базы данных с перенаправлением на реестр положений.
+
+    Attributes:
+        model (Type[Provisions]): Модель положения.
+        template_name (str): Имя шаблона подтверждения удаления.
+        success_url (str): URL для перенаправления после успешного удаления.
+        permission_required (str): Необходимое право доступа для удаления.
+    """
+
     model = Provisions
     template_name = "hrdepartment_app/provisions_confirm_delete.html"
     success_url = reverse_lazy("hrdepartment_app:provisions_list")
     permission_required = "hrdepartment_app.delete_provisions"
 
     def get_context_data(self, *, object_list=None, **kwargs):
+        """Формирует контекстные переменные для шаблона подтверждения удаления.
+
+        Args:
+            object_list: Необязательный список объектов.
+            **kwargs: Дополнительные именованные аргументы контекста.
+
+        Returns:
+            dict: Словарь контекста с сформированным заголовком страницы title и объектом положения.
+        """
         context = super().get_context_data(object_list=None, **kwargs)
         context["title"] = f"Удаление - {self.get_object()}"
         return context
