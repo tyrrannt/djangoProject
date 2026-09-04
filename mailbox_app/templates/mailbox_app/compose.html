@@ -105,56 +105,87 @@
                         <div class="mailbox-form-row mb-4">
                             <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
                                 <label class="m-0">Сообщение:</label>
-                                <!-- Выпадающее меню шаблонов ответов -->
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none py-1 px-2"
-                                            type="button" id="templatesDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 12px; border-radius: 6px;">
-                                        <i class="bx bx-bookmark font-size-14"></i>
-                                        <span>Шаблоны ответов</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <!-- Кнопка быстрой вставки официальной корпоративной подписи -->
+                                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none py-1 px-2"
+                                            id="btnInsertSignature" onclick="insertCorporateSignature()" style="font-size: 12px; border-radius: 6px;"
+                                            title="Вставить официальную подпись авиакомпании «БАРКОЛ»">
+                                        <i class="bx bx-pen text-primary font-size-14"></i>
+                                        <span>Подпись «БАРКОЛ»</span>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-1" style="min-width: 290px; max-height: 380px; overflow-y: auto; z-index: 1060; border-radius: 10px;">
-                                        <li class="dropdown-header text-uppercase text-muted fw-bold" style="font-size: 11px;">Готовые шаблоны:</li>
-                                        {% for t in mail_templates %}
-                                            <li>
-                                                <a class="dropdown-item py-2 px-3 cursor-pointer d-flex flex-column" onclick="applyTemplate({{ t.id }})">
-                                                    <span class="fw-semibold text-dark text-truncate">
-                                                        {% if t.is_global %}
-                                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">Общий</span>
-                                                        {% else %}
-                                                            <span class="badge bg-light text-secondary border me-1" style="font-size: 10px;">Личный</span>
+                                    <!-- Выпадающее меню шаблонов ответов -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none py-1 px-2"
+                                                type="button" id="templatesDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 12px; border-radius: 6px;">
+                                            <i class="bx bx-bookmark font-size-14"></i>
+                                            <span>Шаблоны ответов</span>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-1" style="min-width: 290px; max-height: 380px; overflow-y: auto; z-index: 1060; border-radius: 10px;">
+                                            <li class="dropdown-header text-uppercase text-muted fw-bold" style="font-size: 11px;">Готовые шаблоны:</li>
+                                            {% for t in mail_templates %}
+                                                <li>
+                                                    <a class="dropdown-item py-2 px-3 cursor-pointer d-flex flex-column" onclick="applyTemplate({{ t.id }})">
+                                                        <span class="fw-semibold text-dark text-truncate">
+                                                            {% if t.is_global %}
+                                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">Общий</span>
+                                                            {% else %}
+                                                                <span class="badge bg-light text-secondary border me-1" style="font-size: 10px;">Личный</span>
+                                                            {% endif %}
+                                                            {{ t.name }}
+                                                        </span>
+                                                        {% if t.subject %}
+                                                            <small class="text-muted text-truncate" style="font-size: 11px;">Тема: {{ t.subject }}</small>
                                                         {% endif %}
-                                                        {{ t.name }}
-                                                    </span>
-                                                    {% if t.subject %}
-                                                        <small class="text-muted text-truncate" style="font-size: 11px;">Тема: {{ t.subject }}</small>
-                                                    {% endif %}
+                                                    </a>
+                                                </li>
+                                            {% empty %}
+                                                <li class="px-3 py-2 text-muted small">Шаблоны пока не созданы</li>
+                                            {% endfor %}
+                                            <li><hr class="dropdown-divider my-1"></li>
+                                            <li>
+                                                <a class="dropdown-item py-2 px-3 text-primary d-flex align-items-center gap-2 cursor-pointer" onclick="openSaveTemplateModal()">
+                                                    <i class="bx bx-plus-circle font-size-16"></i> Сохранить текущее как шаблон
                                                 </a>
                                             </li>
-                                        {% empty %}
-                                            <li class="px-3 py-2 text-muted small">Шаблоны пока не созданы</li>
-                                        {% endfor %}
-                                        <li><hr class="dropdown-divider my-1"></li>
-                                        <li>
-                                            <a class="dropdown-item py-2 px-3 text-primary d-flex align-items-center gap-2 cursor-pointer" onclick="openSaveTemplateModal()">
-                                                <i class="bx bx-plus-circle font-size-16"></i> Сохранить текущее как шаблон
-                                            </a>
-                                        </li>
-                                    </ul>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                             {{ form.body_html }}
                         </div>
 
-                        <!-- Вложения файлов -->
-                        <div class="p-3 bg-light rounded border mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-1">
+                        <!-- Вложения файлов с Drag & Drop -->
+                        <div class="mail-attachments-card p-3 bg-light rounded border mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                <label class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-1 font-size-14">
                                     <i class="bx bx-paperclip text-primary font-size-18"></i> Прикрепить файлы
                                 </label>
-                                <small class="text-muted">Можно выбрать несколько файлов</small>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span id="attachmentsSummary" class="badge bg-white text-secondary border d-none font-size-11 py-1 px-2">
+                                        Файлов: <strong id="attachmentsCount">0</strong> (<span id="attachmentsTotalSize">0 КБ</span>)
+                                    </span>
+                                    <small class="text-muted font-size-12">Перетащите файлы или выберите на диске</small>
+                                </div>
                             </div>
-                            {{ form.attachments }}
-                            <div id="selectedFilesList" class="mt-2 d-flex flex-wrap gap-2"></div>
+
+                            <!-- Интерактивная зона Drag & Drop -->
+                            <div class="mail-dropzone border rounded p-4 text-center cursor-pointer transition-base" id="mailDropzone">
+                                <input type="file" name="attachments" id="id_attachments" class="d-none" multiple>
+                                <div class="dropzone-icon mb-2">
+                                    <i class="bx bx-cloud-upload text-primary" style="font-size: 38px;"></i>
+                                </div>
+                                <div class="dropzone-text">
+                                    <span class="fw-semibold text-dark font-size-14">Перетащите файлы сюда</span>
+                                    <span class="text-muted font-size-13"> или </span>
+                                    <span class="text-primary font-size-14 fw-semibold text-decoration-underline">выберите на компьютере</span>
+                                </div>
+                                <div class="text-muted small mt-1 font-size-11">
+                                    Документы (PDF, DOCX, XLSX), сканы, архивы (ZIP) и изображения любого размера
+                                </div>
+                            </div>
+
+                            <!-- Список прикрепленных файлов с бейджами и кнопкой удаления каждого файла -->
+                            <div id="selectedFilesList" class="mt-3 d-flex flex-wrap gap-2"></div>
                         </div>
 
                         <!-- Кнопки действий -->
@@ -340,6 +371,8 @@
     <script src="{% static 'admin_templates/vendor/summernote/summernote-bs4.js' %}"></script>
     <script>
         $(document).ready(function() {
+            let isFormDirty = false;
+            let isSubmitting = false;
             const isMobile = window.innerWidth <= 768;
             const summernoteToolbar = isMobile ? [
                 ['style', ['bold', 'italic', 'underline']],
@@ -437,21 +470,236 @@
                 document.getElementById('contactAutocompleteListBcc')
             );
 
-            // Предпросмотр выбранных файлов
-            const fileInput = document.getElementById('id_attachments');
-            const filesContainer = document.getElementById('selectedFilesList');
-            if (fileInput && filesContainer) {
-                fileInput.addEventListener('change', function() {
-                    filesContainer.innerHTML = '';
-                    if (this.files && this.files.length > 0) {
-                        Array.from(this.files).forEach(file => {
-                            const badge = document.createElement('span');
-                            badge.className = 'badge bg-white text-dark border p-2 d-flex align-items-center gap-1 shadow-sm';
-                            const sizeKb = (file.size / 1024).toFixed(1);
-                            badge.innerHTML = `<i class="bx bx-file text-primary"></i> ${file.name} <small class="text-muted">(${sizeKb} КБ)</small>`;
-                            filesContainer.appendChild(badge);
-                        });
+            // === Вставка корпоративной подписи авиакомпании «БАРКОЛ» ===
+            const corporateSignatureHtml = {{ corporate_signature_json|safe|default:"''" }};
+            window.insertCorporateSignature = function() {
+                if (!corporateSignatureHtml) {
+                    alert('Корпоративная подпись не настроена.');
+                    return;
+                }
+                const currentCode = $('#id_body_html').summernote('code');
+                if (currentCode.includes('barkol-email-signature') || currentCode.includes('Авиакомпания «БАРКОЛ»')) {
+                    if (!confirm('Корпоративная подпись уже присутствует в тексте письма. Вставить её еще раз?')) {
+                        return;
                     }
+                }
+                $('#id_body_html').summernote('focus');
+                $('#id_body_html').summernote('pasteHTML', '<p><br></p>' + corporateSignatureHtml);
+                isFormDirty = true;
+            };
+
+            // === Drag & Drop загрузка файлов и интерактивный список вложений ===
+            const fileInput = document.getElementById('id_attachments');
+            const dropzone = document.getElementById('mailDropzone');
+            const filesContainer = document.getElementById('selectedFilesList');
+            const summaryBadge = document.getElementById('attachmentsSummary');
+            const countElem = document.getElementById('attachmentsCount');
+            const sizeElem = document.getElementById('attachmentsTotalSize');
+
+            // Хранилище файлов через DataTransfer для накопления и поштучного удаления
+            let attachmentsDt = new DataTransfer();
+
+            function formatFileSize(bytes) {
+                if (!bytes || bytes === 0) return '0 Б';
+                if (bytes < 1024) return bytes + ' Б';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+            }
+
+            function getFileIconClass(fileName) {
+                const ext = (fileName.split('.').pop() || '').toLowerCase();
+                switch (ext) {
+                    case 'pdf':
+                        return 'bx bxs-file-pdf text-danger font-size-20';
+                    case 'doc':
+                    case 'docx':
+                    case 'odt':
+                    case 'rtf':
+                        return 'bx bxs-file-doc text-primary font-size-20';
+                    case 'xls':
+                    case 'xlsx':
+                    case 'csv':
+                    case 'ods':
+                        return 'bx bxs-file-blank text-success font-size-20';
+                    case 'ppt':
+                    case 'pptx':
+                        return 'bx bxs-file-blank text-warning font-size-20';
+                    case 'zip':
+                    case 'rar':
+                    case '7z':
+                    case 'tar':
+                    case 'gz':
+                        return 'bx bxs-file-archive text-warning font-size-20';
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                    case 'webp':
+                    case 'svg':
+                    case 'bmp':
+                        return 'bx bxs-file-image text-info font-size-20';
+                    case 'mp3':
+                    case 'wav':
+                    case 'ogg':
+                        return 'bx bxs-music text-secondary font-size-20';
+                    case 'mp4':
+                    case 'avi':
+                    case 'mkv':
+                    case 'mov':
+                        return 'bx bxs-video text-secondary font-size-20';
+                    default:
+                        return 'bx bx-file text-secondary font-size-20';
+                }
+            }
+
+            function updateAttachmentsUI() {
+                if (!filesContainer) return;
+                filesContainer.innerHTML = '';
+
+                const files = attachmentsDt.files;
+                let totalBytes = 0;
+
+                if (files.length === 0) {
+                    if (summaryBadge) summaryBadge.classList.add('d-none');
+                    return;
+                }
+
+                Array.from(files).forEach((file, index) => {
+                    totalBytes += file.size;
+
+                    const chip = document.createElement('div');
+                    chip.className = 'attachment-chip';
+                    chip.title = `${file.name} (${formatFileSize(file.size)})`;
+
+                    const icon = document.createElement('i');
+                    icon.className = getFileIconClass(file.name);
+
+                    const info = document.createElement('div');
+                    info.className = 'd-flex flex-column text-start';
+                    info.style.maxWidth = 'clamp(140px, 35vw, 240px)';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'text-truncate fw-semibold text-dark font-size-12';
+                    nameSpan.textContent = file.name;
+
+                    const sizeSpan = document.createElement('span');
+                    sizeSpan.className = 'text-muted font-size-10';
+                    sizeSpan.textContent = formatFileSize(file.size);
+
+                    info.appendChild(nameSpan);
+                    info.appendChild(sizeSpan);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'btn-close ms-1';
+                    removeBtn.setAttribute('aria-label', 'Удалить');
+                    removeBtn.title = 'Удалить файл';
+                    removeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        window.removeAttachment(index);
+                    });
+
+                    chip.appendChild(icon);
+                    chip.appendChild(info);
+                    chip.appendChild(removeBtn);
+
+                    filesContainer.appendChild(chip);
+                });
+
+                if (summaryBadge) {
+                    summaryBadge.classList.remove('d-none');
+                    if (countElem) countElem.textContent = files.length;
+                    if (sizeElem) sizeElem.textContent = formatFileSize(totalBytes);
+                }
+            }
+
+            function addFiles(newFiles) {
+                if (!newFiles || newFiles.length === 0) return;
+
+                Array.from(newFiles).forEach(file => {
+                    const isDuplicate = Array.from(attachmentsDt.files).some(
+                        existing => existing.name === file.name && existing.size === file.size && existing.lastModified === file.lastModified
+                    );
+                    if (!isDuplicate) {
+                        attachmentsDt.items.add(file);
+                    }
+                });
+
+                if (fileInput) {
+                    try {
+                        fileInput.files = attachmentsDt.files;
+                    } catch (err) {
+                        console.warn('DataTransfer files sync failed', err);
+                    }
+                }
+                isFormDirty = true;
+                updateAttachmentsUI();
+            }
+
+            window.removeAttachment = function(index) {
+                const newDt = new DataTransfer();
+                Array.from(attachmentsDt.files).forEach((file, i) => {
+                    if (i !== index) {
+                        newDt.items.add(file);
+                    }
+                });
+                attachmentsDt = newDt;
+                if (fileInput) {
+                    try {
+                        fileInput.files = attachmentsDt.files;
+                    } catch (err) {
+                        console.warn('DataTransfer files sync failed', err);
+                    }
+                }
+                isFormDirty = true;
+                updateAttachmentsUI();
+            };
+
+            if (dropzone && fileInput) {
+                // Клик по дропзоне активирует системный диалог выбора файлов
+                dropzone.addEventListener('click', function(e) {
+                    if (e.target.closest('button') || e.target.closest('.attachment-chip')) return;
+                    fileInput.click();
+                });
+
+                // Выбор файлов через стандартный диалог
+                fileInput.addEventListener('change', function() {
+                    addFiles(this.files);
+                });
+
+                // События перетаскивания (Drag & Drop)
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.add('dragover');
+                    });
+                });
+
+                ['dragleave', 'dragend'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.remove('dragover');
+                    });
+                });
+
+                dropzone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('dragover');
+
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        addFiles(e.dataTransfer.files);
+                    }
+                });
+
+                // Предотвращаем открытие файла браузером при случайном перетаскивании мимо дропзоны
+                window.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                });
+                window.addEventListener('drop', function(e) {
+                    e.preventDefault();
                 });
             }
 
@@ -622,8 +870,6 @@
             }
 
             // === Автосохранение и управление черновиками ===
-            let isFormDirty = false;
-            let isSubmitting = false;
             const draftUidInput = document.getElementById('draftUidInput');
             const draftStatusBadge = document.getElementById('draftStatusBadge');
             const draftStatusIcon = document.getElementById('draftStatusIcon');
@@ -734,6 +980,11 @@
             const composeMailForm = document.getElementById('composeMailForm');
             if (composeMailForm) {
                 composeMailForm.addEventListener('submit', function() {
+                    if (fileInput && attachmentsDt) {
+                        try {
+                            fileInput.files = attachmentsDt.files;
+                        } catch (e) {}
+                    }
                     isSubmitting = true;
                     isFormDirty = false;
                 });

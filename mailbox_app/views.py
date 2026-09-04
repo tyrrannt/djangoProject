@@ -675,12 +675,16 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         if to_param:
             initial["to"] = to_param
 
-        # Автоматическая подпись
+        # Автоматическая корпоративная подпись
+        from mailbox_app.services.mailbox_defaults import generate_corporate_signature
         signature = account.signature_html or ""
-        if signature:
-            if "<br" not in signature.lower() and "<p" not in signature.lower():
-                signature = signature.replace("\n", "<br>")
-            initial["body_html"] = f"<br><br>--<br>{signature}"
+        if not signature:
+            signature = generate_corporate_signature(self.request.user, account)
+        elif "<br" not in signature.lower() and "<p" not in signature.lower():
+            signature = signature.replace("\n", "<br>")
+
+        if not reply_uid and not forward_uid and not draft_uid:
+            initial["body_html"] = f"<p><br></p><p><br></p>{signature}"
 
         draft_uid = self.request.GET.get("draft_uid")
         if draft_uid and str(draft_uid).isdigit():
@@ -719,17 +723,17 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
                         if reply_uid:
                             initial["to"] = orig_from
                             initial["subject"] = orig_subj if orig_subj.startswith("Re:") else f"Re: {orig_subj}"
-                            initial["body_html"] = f"<br><br>{quote_block}"
+                            initial["body_html"] = f"<p><br></p>{signature}<br><br>{quote_block}"
                         elif forward_uid:
                             initial["subject"] = orig_subj if orig_subj.startswith("Fwd:") else f"Fwd: {orig_subj}"
-                            initial["body_html"] = f"<br><br>{quote_block}"
+                            initial["body_html"] = f"<p><br></p>{signature}<br><br>{quote_block}"
             except Exception as e:
                 logger.warning(f"[Mailbox] Ошибка при подготовке ответа: {e}")
 
         return initial
 
     def get_context_data(self, **kwargs):
-        """Добавляет список папок и draft_uid в контекст формы написания письма.
+        """Добавляет список папок, шаблоны и корпоративную подпись в контекст формы.
 
         Returns:
             dict: Контекст шаблона.
@@ -753,6 +757,9 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         except Exception as t_err:
             logger.debug(f"[Mailbox] Ошибка загрузки шаблонов писем: {t_err}")
 
+        from mailbox_app.services.mailbox_defaults import generate_corporate_signature
+        corp_sig = account.signature_html or generate_corporate_signature(self.request.user, account)
+
         context.update({
             "title": "КОРПОРАТИВНАЯ ПОЧТА",
             "breadcrumbs": [
@@ -766,6 +773,8 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
             "draft_uid": self.request.GET.get("draft_uid", ""),
             "mail_templates": templates,
             "mail_templates_json": json.dumps(templates),
+            "corporate_signature": corp_sig,
+            "corporate_signature_json": json.dumps(corp_sig),
         })
         return context
 
