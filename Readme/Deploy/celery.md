@@ -15,17 +15,17 @@ Description=Celery Service
 After=network.target
 
 [Service]
-Type=forking
+Type=simple
 User=your_user
 Group=your_group
 Environment="PATH=/path/to/your/virtualenv/bin"
 Environment="DJANGO_SETTINGS_MODULE=your_project.settings"
 WorkingDirectory=/path/to/your/django/project
 ExecStart=/path/to/your/virtualenv/bin/celery -A your_project worker -l info --beat
-ExecReload=/bin/kill -HUP $MAINPID
-ExecStop=/bin/kill -TERM $MAINPID
-Restart=on-failure
+Restart=always
 RestartSec=10
+TimeoutStopSec=30
+KillMode=mixed
 
 [Install]
 WantedBy=multi-user.target

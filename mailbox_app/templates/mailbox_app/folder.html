@@ -12,7 +12,7 @@
 
 {% block content %}
     <section class="content-with-menu mailbox">
-        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder">
+        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder" data-current-folder="{{ current_folder }}" data-current-type="{{ current_type }}" data-page="{{ page }}">
             <div class="inner-menu-toggle">
                 <a href="#" class="inner-menu-expand" data-open="inner-menu">
                     Папки <i class="fas fa-chevron-right"></i>
@@ -40,9 +40,9 @@
                             </button>
                             <h4 class="mailbox-page-title d-none d-md-flex align-items-center gap-2 m-0">
                                 {{ current_folder_display }}
-                                <span class="mailbox-count-badge">{{ total_count }} писем</span>
+                                <span class="mailbox-count-badge" id="mailboxHeaderTotalCount">{{ total_count }} писем</span>
                             </h4>
-                            <span class="badge bg-light text-secondary border d-md-none" style="font-size: 11px;">
+                            <span class="badge bg-light text-secondary border d-md-none" id="mailboxMobileHeaderTotalCount" style="font-size: 11px;">
                                 {{ total_count }}
                             </span>
                         </div>
@@ -379,6 +379,20 @@
                             </div>
                         </div>
                     {% endif %}
+                <!-- Интерактивное уведомление о поступивших письмах (при активной работе или поиске) -->
+                <div id="mailboxLiveNewMailAlert" class="d-none alert alert-primary alert-dismissible fade show border-0 shadow-sm mx-3 mt-2 mb-2 d-flex align-items-center justify-content-between p-2" role="alert" style="border-radius: 10px; background-color: #e0f2fe; color: #0369a1;">
+                    <div class="d-flex align-items-center gap-2 overflow-hidden">
+                        <i class="bx bx-envelope font-size-20 flex-shrink-0 text-primary"></i>
+                        <div class="text-truncate small">
+                            <strong>Новое письмо!</strong> <span id="mailboxLiveAlertSubject"></span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+                        <button type="button" class="btn btn-primary btn-sm py-1 px-3" style="font-size: 12px; border-radius: 6px;" onclick="window.location.reload();">
+                            <i class="bx bx-refresh me-1"></i> Обновить список
+                        </button>
+                        <button type="button" class="btn-close shadow-none" style="padding: 0.6rem;" onclick="document.getElementById('mailboxLiveNewMailAlert').classList.add('d-none');" aria-label="Закрыть"></button>
+                    </div>
                 </div>
 
                 <!-- Таблица списка писем с адаптивной компоновкой и кликабельными колонками -->

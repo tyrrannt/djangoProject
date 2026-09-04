@@ -1533,19 +1533,24 @@ class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
                                     "url": detail_url,
                                 }
 
-                # 3. Синхронизируем счетчик в кэше дерева папок, чтобы у папки «Входящие» не было задержки 30 минут
+                # 3. Синхронизируем счетчик в кэше дерева папок и инвалидируем кэш писем при новых поступлениях
                 cache_key_folders = f"mailbox_folders_{email_clean}"
                 cached_folders = cache.get(cache_key_folders)
                 if cached_folders and isinstance(cached_folders, list):
                     folder_updated = False
                     for f in cached_folders:
                         if f.get("root_type") == "inbox":
-                            if f.get("unseen") != unseen_count:
+                            prev_unseen = f.get("unseen", 0)
+                            if prev_unseen != unseen_count:
                                 f["unseen"] = unseen_count
                                 folder_updated = True
+                                if unseen_count > prev_unseen:
+                                    invalidate_mailbox_cache(email_clean)
                             break
                     if folder_updated:
                         cache.set(cache_key_folders, cached_folders, timeout=1800)
+                elif force_refresh:
+                    invalidate_mailbox_cache(email_clean)
 
                 elapsed_ms = round((time.perf_counter() - t_start) * 1000, 1)
                 res_data = {

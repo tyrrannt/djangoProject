@@ -16,7 +16,11 @@ from django.urls import reverse
 
 from customers_app.services.push_service import send_user_push
 from mailbox_app.models import MailAccount, Mailbox
-from mailbox_app.services.imap_service import ImapMailService, decode_str
+from mailbox_app.services.imap_service import (
+    ImapMailService,
+    decode_str,
+    invalidate_mailbox_cache,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +180,10 @@ def poll_single_mailbox(
                         logger.warning(
                             f"[MailPoller] Ошибка чтения заголовков нового письма UID={max_new_uid} для {email_clean}: {fetch_err}"
                         )
+
+            # При обнаружении новых писем инвалидируем кэш сообщений и папок
+            if new_uids:
+                invalidate_mailbox_cache(email_clean)
 
             # Сохраняем состояние поллера
             new_state = {
