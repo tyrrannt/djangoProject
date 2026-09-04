@@ -12,7 +12,7 @@
 
 {% block content %}
     <section class="content-with-menu mailbox">
-        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder" data-current-folder="{{ current_folder }}" data-current-type="{{ current_type }}" data-page="{{ page }}">
+        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder" data-current-folder="{{ current_folder }}" data-current-type="{{ current_folder_type|default:current_type }}" data-page="{{ page }}">
             <div class="inner-menu-toggle">
                 <a href="#" class="inner-menu-expand" data-open="inner-menu">
                     Папки <i class="fas fa-chevron-right"></i>
@@ -388,11 +388,12 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-                        <button type="button" class="btn btn-primary btn-sm py-1 px-3" style="font-size: 12px; border-radius: 6px;" onclick="window.location.reload();">
-                            <i class="bx bx-refresh me-1"></i> Обновить список
-                        </button>
+                        <a href="?refresh=1{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}" class="btn btn-primary btn-sm py-1 px-3 d-flex align-items-center text-nowrap text-white" style="font-size: 12px; border-radius: 6px;">
+                            <i class="bx bx-refresh me-1 font-size-16"></i> Обновить список
+                        </a>
                         <button type="button" class="btn-close shadow-none" style="padding: 0.6rem;" onclick="document.getElementById('mailboxLiveNewMailAlert').classList.add('d-none');" aria-label="Закрыть"></button>
                     </div>
+
                 </div>
 
                 <!-- Таблица списка писем с адаптивной компоновкой и кликабельными колонками -->
@@ -597,8 +598,18 @@
 
 {% block custom_script %}
     <script>
+        // Очищаем временный query-параметр refresh из адресной строки после загрузки
+        if (window.history && window.history.replaceState) {
+            const currentUrl = new URL(window.location.href);
+            if (currentUrl.searchParams.has('refresh')) {
+                currentUrl.searchParams.delete('refresh');
+                window.history.replaceState(null, '', currentUrl.pathname + (currentUrl.search ? currentUrl.search : ''));
+            }
+        }
+
         let pendingBatchAction = null;
         let pendingUids = [];
+
 
         function showWarningModal(title, text) {
             if (title) document.getElementById('warningModalTitle').innerText = title;

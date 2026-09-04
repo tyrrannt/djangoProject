@@ -181,9 +181,10 @@ def poll_single_mailbox(
                             f"[MailPoller] Ошибка чтения заголовков нового письма UID={max_new_uid} для {email_clean}: {fetch_err}"
                         )
 
-            # При обнаружении новых писем инвалидируем кэш сообщений и папок
-            if new_uids:
+            # При обнаружении новых писем или изменении счетчика инвалидируем кэш сообщений и папок
+            if new_uids or (prev_state and unseen_count != prev_state.get("unseen_count", 0)) or (prev_state is None and unseen_count > 0):
                 invalidate_mailbox_cache(email_clean)
+
 
             # Сохраняем состояние поллера
             new_state = {

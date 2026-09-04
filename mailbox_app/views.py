@@ -367,7 +367,10 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
         sort_dir = self.request.GET.get("dir", "desc").strip().lower()
         filter_by = self.request.GET.get("filter", "all").strip().lower()
         page = int(self.request.GET.get("page", 1))
-        force_refresh = bool(self.request.GET.get("refresh"))
+        cache_control = (self.request.headers.get("Cache-Control") or "").lower()
+        pragma = (self.request.headers.get("Pragma") or "").lower()
+        is_browser_reload = "no-cache" in cache_control or "max-age=0" in cache_control or "no-cache" in pragma
+        force_refresh = bool(self.request.GET.get("refresh") in ("1", "true")) or is_browser_reload
         per_page = 25
 
         folders = []
@@ -499,6 +502,7 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
             "current_folder": current_folder,
             "current_folder_display": current_folder_display,
             "current_folder_type": current_type,
+            "current_type": current_type,
             "is_junk": is_junk,
             "is_sent": is_sent,
             "is_drafts": is_drafts,
@@ -1546,24 +1550,46 @@ class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
                                     "url": detail_url,
                                 }
 
-                # 3. Синхронизируем счетчик в кэше дерева папок и инвалидируем кэш писем при новых поступлениях
+                # 3. Синхронизируем счетчик и гарантированно инвалидируем кэш писем при любых новых поступлениях
+                snapshot_key = f"mailbox_last_unread_snapshot_{email_clean}"
+                prev_snapshot = cache.get(snapshot_key) or {}
+                prev_unseen = prev_snapshot.get("unseen", 0)
+                prev_latest_uid = prev_snapshot.get("uid")
+
+                curr_latest_uid = latest_mail.get("uid") if latest_mail else None
+                has_new_incoming = (
+                    (unseen_count > prev_unseen)
+                    or (curr_latest_uid and curr_latest_uid != prev_latest_uid)
+                    or (unseen_count > 0 and not prev_snapshot)
+                    or force_refresh
+                )
+
+                if has_new_incoming:
+                    logger.info(
+                        f"[Mailbox API] Обнаружено новое входящее письмо для {email_clean} "
+                        f"(unseen: {prev_unseen} -> {unseen_count}, UID: {curr_latest_uid}). Сброс кэша."
+                    )
+                    invalidate_mailbox_cache(email_clean)
+
+                cache.set(
+                    snapshot_key,
+                    {"unseen": unseen_count, "uid": curr_latest_uid},
+                    timeout=86400,
+                )
+
                 cache_key_folders = f"mailbox_folders_{email_clean}"
                 cached_folders = cache.get(cache_key_folders)
                 if cached_folders and isinstance(cached_folders, list):
                     folder_updated = False
                     for f in cached_folders:
                         if f.get("root_type") == "inbox":
-                            prev_unseen = f.get("unseen", 0)
-                            if prev_unseen != unseen_count:
+                            if f.get("unseen") != unseen_count:
                                 f["unseen"] = unseen_count
                                 folder_updated = True
-                                if unseen_count > prev_unseen:
-                                    invalidate_mailbox_cache(email_clean)
                             break
                     if folder_updated:
                         cache.set(cache_key_folders, cached_folders, timeout=1800)
-                elif force_refresh:
-                    invalidate_mailbox_cache(email_clean)
+
 
                 elapsed_ms = round((time.perf_counter() - t_start) * 1000, 1)
                 res_data = {

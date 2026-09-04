@@ -31,7 +31,10 @@ def format_imap_date(d: date) -> str:
 
 
 def invalidate_mailbox_cache(email_addr: str) -> None:
-    """Сбрасывает кэш папок и списков писем для указанного почтового ящика.
+    """Сбрасывает кэш папок, списков писем и статуса непрочитанных для указанного почтового ящика.
+
+    Гарантирует монотонное возрастание версии кэша `mailbox_ver_{addr}` для мгновенной
+    инвалидации всех страниц писем во всех бэкендах кэширования (Redis, FileBasedCache, LocMem).
 
     Args:
         email_addr (str): Email адрес ящика.
@@ -39,11 +42,18 @@ def invalidate_mailbox_cache(email_addr: str) -> None:
     if email_addr:
         addr = email_addr.strip().lower()
         cache.delete(f"mailbox_folders_{addr}")
+        cache.delete(f"mailbox_unread_status_{addr}")
+        cache.delete(f"mailbox_last_unread_snapshot_{addr}")
         ver_key = f"mailbox_ver_{addr}"
+        new_ver = int(time.time() * 1000)
         try:
-            cache.incr(ver_key)
+            curr_ver = cache.get(ver_key)
+            if curr_ver is not None and isinstance(curr_ver, int):
+                new_ver = max(curr_ver + 1, new_ver)
         except Exception:
-            cache.set(ver_key, int(time.time()), timeout=86400 * 30)
+            pass
+        cache.set(ver_key, new_ver, timeout=86400 * 30)
+
 
 
 
@@ -639,9 +649,17 @@ class ImapMailService:
                             uids_list.reverse()
 
         total_messages = len(uids_list)
+        is_inbox_first_page = (
+            folder_name.upper() == "INBOX"
+            and page == 1
+            and not query
+            and filter_by == "all"
+            and date_range == "all"
+        )
         if total_messages == 0:
             if email_clean:
-                cache.set(cache_key, ([], 0), timeout=180)
+                msg_cache_ttl = 15 if is_inbox_first_page else 120
+                cache.set(cache_key, ([], 0), timeout=msg_cache_ttl)
             return [], 0
 
         # Пагинация по UIDs
@@ -651,8 +669,10 @@ class ImapMailService:
 
         if not page_uids:
             if email_clean:
-                cache.set(cache_key, ([], total_messages), timeout=180)
+                msg_cache_ttl = 15 if is_inbox_first_page else 120
+                cache.set(cache_key, ([], total_messages), timeout=msg_cache_ttl)
             return [], total_messages
+
 
         # 3. Высокоскоростной пакетный FETCH (все 25 писем за 1 сетевой запрос вместо 25)
         uids_ints = []
@@ -793,9 +813,11 @@ class ImapMailService:
 
         # Сохраняем результат в кэш
         if email_clean:
-            cache.set(cache_key, (messages, total_messages), timeout=180)
+            msg_cache_ttl = 30 if is_inbox_first_page else 180
+            cache.set(cache_key, (messages, total_messages), timeout=msg_cache_ttl)
 
         return messages, total_messages
+
 
     def get_message_detail(self, folder_name: str, uid: int) -> Optional[Dict[str, Any]]:
         """Загружает полное содержимое письма со всеми частями и вложениями по точному UID.
