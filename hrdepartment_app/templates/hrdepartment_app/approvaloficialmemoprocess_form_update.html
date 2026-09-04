@@ -966,12 +966,10 @@
                                        class="btn btn-outline-warning btn-touch font-weight-semibold">
                                         <i class="bx bx-mail-send me-2"></i> Повторное уведомление
                                     </a>
-                                    {% if user == object.person_executor or user.is_superuser %}
-                                        <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=1"
-                                           class="btn btn-outline-warning btn-touch font-weight-semibold">
-                                            <i class="bx bx-mail-send me-2"></i> Письмо исполнителю
-                                        </a>
-                                    {% endif %}
+                                    <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=1"
+                                       class="btn btn-outline-warning btn-touch font-weight-semibold">
+                                        <i class="bx bx-mail-send me-2"></i> Письмо исполнителю
+                                    </a>
                                 {% endif %}
                             </div>
                             {% if user.is_superuser %}
