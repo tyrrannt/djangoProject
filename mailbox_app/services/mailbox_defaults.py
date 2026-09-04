@@ -95,7 +95,6 @@ def generate_corporate_signature(user, account=None) -> str:
     - Полное имя сотрудника (ФИО);
     - Должность и наименование подразделения;
     - Официальное наименование организации (ООО «Авиакомпания «БАРКОЛ»);
-    - Контактные телефоны (внутренний, мобильный);
     - Корпоративный email и адрес официального веб-сайта.
 
     Args:
@@ -134,32 +133,21 @@ def generate_corporate_signature(user, account=None) -> str:
     if not job_title and hasattr(user, "job") and user.job:
         job_title = str(user.job).strip()
 
-    # Определение контактов
-    internal_phone = getattr(work_profile, "internal_phone", "").strip() if work_profile else ""
-    personal_phone = getattr(user, "personal_phone", "").strip() if hasattr(user, "personal_phone") else ""
+    # Определение корпоративного email
     email = ""
     if account and getattr(account, "email", None):
         email = account.email.strip()
     elif getattr(user, "email", None):
         email = user.email.strip()
 
-    contacts = []
-    if internal_phone:
-        contacts.append(f'тел. (вн.): <span style="color: #0f172a; font-weight: 500;">{internal_phone}</span>')
-    if personal_phone:
-        contacts.append(f'моб.: <a href="tel:{personal_phone}" style="color: #475569; text-decoration: none;">{personal_phone}</a>')
+    email_html = ""
     if email:
-        contacts.append(f'e-mail: <a href="mailto:{email}" style="color: #0088cc; text-decoration: none;">{email}</a>')
+        email_html = f'<div style="color: #475569; font-size: 11.5px; margin-top: 3px; line-height: 1.4;">e-mail: <a href="mailto:{email}" style="color: #0088cc; text-decoration: none;">{email}</a></div>'
 
-    contacts_html = ""
-    if contacts:
-        contacts_html = f'<div style="color: #475569; font-size: 11.5px; margin-top: 3px; line-height: 1.4;">{" &bull; ".join(contacts)}</div>'
-
-    position_display = job_title
-    if division_name and division_name.lower() not in job_title.lower():
-        position_display = f"{job_title}, {division_name}" if job_title else division_name
-
-    position_html = f'<div style="color: #475569; font-size: 12px; margin-bottom: 2px;">{position_display}</div>' if position_display else ''
+    job_html = f'<div style="color: #475569; font-size: 12px; margin-bottom: 2px;">{job_title}</div>' if job_title else ''
+    division_html = ''
+    if division_name and division_name.strip().lower() != job_title.strip().lower():
+        division_html = f'<div style="color: #64748b; font-size: 11.5px; margin-bottom: 2px;">{division_name}</div>'
 
     signature_html = f"""<div class="barkol-email-signature" style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #1e293b; line-height: 1.45; margin-top: 25px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
     <p style="margin: 0 0 10px 0; color: #475569; font-size: 13px;">С уважением,</p>
@@ -172,10 +160,11 @@ def generate_corporate_signature(user, account=None) -> str:
             </td>
             <td style="padding-left: 16px; vertical-align: middle; font-family: Arial, Helvetica, sans-serif;">
                 <div style="font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 2px;">{full_name}</div>
-                {position_html}
+                {job_html}
+                {division_html}
                 <div style="color: #0088cc; font-weight: 600; font-size: 12px; margin-bottom: 2px;">ООО «Авиакомпания «БАРКОЛ»</div>
-                {contacts_html}
-                <div style="margin-top: 4px; font-size: 11px;">
+                {email_html}
+                <div style="margin-top: 3px; font-size: 11.5px;">
                     <a href="https://barkol.ru" target="_blank" style="color: #0088cc; text-decoration: none; font-weight: 500;">www.barkol.ru</a>
                 </div>
             </td>
