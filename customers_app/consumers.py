@@ -8,28 +8,160 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 import json
 
+from django.core.cache import cache
 from django.contrib.auth.models import AnonymousUser
 from chat_app.models import Message
-from administration_app.utils import transliterate
+from administration_app.utils import transliterate, get_device_info
 from administration_app.system_monitor_service import get_system_monitor_payload
 
 from contracts_app.templatetags.custom import FIO_format
 
 
+def get_scope_user_agent(scope: dict) -> str:
+    """Извлекает строку заголовка User-Agent из ASGI scope WebSocket-подключения.
+
+    Args:
+        scope (dict): Словарь ASGI scope с метаданными WebSocket-соединения.
+
+    Returns:
+        str: Значение HTTP-заголовка User-Agent или пустая строка при отсутствии.
+    """
+    for name, value in scope.get('headers', []):
+        if name.lower() == b'user-agent':
+            try:
+                return value.decode('utf-8')
+            except UnicodeDecodeError:
+                return value.decode('latin1', errors='ignore')
+    return ''
+
+
+def _format_online_users(registry: dict) -> list:
+    """Группирует активные WebSocket-подключения по пользователям и формирует список устройств.
+
+    Обеспечивает обратную совместимость как с кортежным форматом (user[0], user[1]),
+    так и со структурированными объектами, агрегируя все клиентские устройства
+    пользователя (например, ПК и мобильный телефон) без дублирования одинаковых сессий.
+
+    Args:
+        registry (dict): Словарь активных соединений вида {channel_name: session_dict}.
+
+    Returns:
+        list: Отсортированный по ФИО список словарей с параметрами активных пользователей.
+    """
+    users_map = {}
+    for ch_name, data in registry.items():
+        uid = data.get('user_id')
+        if not uid:
+            continue
+        username = data.get('username', '')
+        if uid not in users_map:
+            users_map[uid] = {
+                # Индексы для гарантированной совместимости с legacy JS (user[0], user[1])
+                0: username,
+                1: uid,
+                'user_id': uid,
+                'username': username,
+                'devices': [],
+                'device_type': data.get('device_type', 'Компьютер / Ноутбук'),
+                'device_icon': data.get('device_icon', 'bx bx-laptop'),
+                'device_category': data.get('device_category', 'desktop'),
+                'os_name': data.get('os_name', ''),
+                'browser_name': data.get('browser_name', ''),
+            }
+
+        dev = {
+            'device_type': data.get('device_type', 'Компьютер / Ноутбук'),
+            'device_icon': data.get('device_icon', 'bx bx-laptop'),
+            'device_category': data.get('device_category', 'desktop'),
+            'os_name': data.get('os_name', ''),
+            'browser_name': data.get('browser_name', ''),
+        }
+        # Исключаем дубликаты идентичных устройств (например, 2 открытые вкладки на одном ПК)
+        if dev not in users_map[uid]['devices']:
+            users_map[uid]['devices'].append(dev)
+
+    result = list(users_map.values())
+    result.sort(key=lambda u: u.get('username', ''))
+    return result
+
+
+@sync_to_async(thread_sensitive=True)
+def add_user_connection(channel_name: str, conn_data: dict) -> list:
+    """Регистрирует активное подключение в распределенном кэше и возвращает обновленный список онлайн.
+
+    Args:
+        channel_name (str): Уникальный идентификатор канала Channels.
+        conn_data (dict): Словарь параметров сессии (user_id, username, device_info).
+
+    Returns:
+        list: Актуальный список пользователей онлайн.
+    """
+    try:
+        registry = cache.get("portal_online_users_registry") or {}
+        registry[channel_name] = conn_data
+        cache.set("portal_online_users_registry", registry, timeout=86400)
+        return _format_online_users(registry)
+    except Exception:
+        OnlineUsersConsumer._local_registry[channel_name] = conn_data
+        return _format_online_users(OnlineUsersConsumer._local_registry)
+
+
+@sync_to_async(thread_sensitive=True)
+def remove_user_connection(channel_name: str) -> list:
+    """Удаляет завершенное подключение из реестра и возвращает обновленный список онлайн.
+
+    Args:
+        channel_name (str): Уникальный идентификатор закрытого канала Channels.
+
+    Returns:
+        list: Актуальный список пользователей онлайн.
+    """
+    try:
+        registry = cache.get("portal_online_users_registry") or {}
+        registry.pop(channel_name, None)
+        cache.set("portal_online_users_registry", registry, timeout=86400)
+        return _format_online_users(registry)
+    except Exception:
+        OnlineUsersConsumer._local_registry.pop(channel_name, None)
+        return _format_online_users(OnlineUsersConsumer._local_registry)
+
+
+@sync_to_async(thread_sensitive=True)
+def get_current_online_users() -> list:
+    """Считывает текущий агрегированный список пользователей онлайн из реестра.
+
+    Returns:
+        list: Список словарей активных пользователей.
+    """
+    try:
+        registry = cache.get("portal_online_users_registry") or {}
+        if not registry and OnlineUsersConsumer._local_registry:
+            registry = OnlineUsersConsumer._local_registry
+        return _format_online_users(registry)
+    except Exception:
+        return _format_online_users(OnlineUsersConsumer._local_registry)
+
+
 class OnlineUsersConsumer(AsyncWebsocketConsumer):
     """Асинхронный потребитель WebSockets для отслеживания и трансляции списка пользователей онлайн.
 
+    Определяет устройство каждого пользователя (ПК, планшет, смартфон) через User-Agent,
+    поддерживает мультипроцессную синхронизацию сессий через распределенный кэш
+    и информирует клиентский интерфейс о составе активных пользователей.
+
     Attributes:
-        online_users (set): Множество кортежей (форматированное ФИО, primary key) активных пользователей.
+        online_users (set): Набор кортежей (username, user_id) для обратной совместимости.
+        _local_registry (dict): Локальный fallback-реестр активных каналов на уровне процесса.
     """
 
     online_users = set()
+    _local_registry = {}
 
     async def connect(self):
-        """Обрабатывает входящее WebSocket-подключение и регистрирует авторизованного пользователя.
+        """Обрабатывает входящее WebSocket-подключение, определяет тип устройства и регистрирует сессию.
 
         Raises:
-            Exception: При ошибках взаимодействия с Channel Layer.
+            Exception: При непредвиденных ошибках регистрации канала в Channel Layer.
         """
         user = self.scope.get('user')
         if not user or not user.is_authenticated:
@@ -38,30 +170,54 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
         username = FIO_format(getattr(user, 'title', '') or getattr(user, 'username', '') or str(user))
+        ua_string = get_scope_user_agent(self.scope)
+        device_info = get_device_info(ua_string)
+
+        conn_data = {
+            'user_id': user.pk,
+            'username': username,
+            'device_type': device_info.get('device_type', 'Компьютер / Ноутбук'),
+            'device_category': device_info.get('device_category', 'desktop'),
+            'device_icon': device_info.get('device_icon', 'bx bx-laptop'),
+            'os_name': device_info.get('os_name', ''),
+            'browser_name': device_info.get('browser_name', ''),
+        }
+
         self.online_users.add((username, user.pk))
+        users_list = await add_user_connection(self.channel_name, conn_data)
+
         await self.channel_layer.group_add('online_users', self.channel_name)
-        await self.send_online_users()
+        await self.send_online_users(users_list)
 
     async def disconnect(self, close_code):
-        """Обрабатывает отключение клиента и удаляет пользователя из группы онлайн.
+        """Обрабатывает отключение WebSocket-клиента и удаляет сессию из общего реестра.
 
         Args:
-            close_code (int): Код закрытия соединения.
+            close_code (int): Код закрытия WebSocket-соединения.
         """
         user = self.scope.get('user')
         if user and user.is_authenticated:
             username = FIO_format(getattr(user, 'title', '') or getattr(user, 'username', '') or str(user))
             self.online_users.discard((username, user.pk))
+            users_list = await remove_user_connection(self.channel_name)
             await self.channel_layer.group_discard('online_users', self.channel_name)
-            await self.send_online_users()
+            await self.send_online_users(users_list)
 
-    async def send_online_users(self):
-        """Отправляет актуальный список пользователей всем участникам группы online_users."""
+    async def send_online_users(self, users_list=None):
+        """Отправляет актуальный перечень пользователей всем участникам группы online_users.
+
+        Args:
+            users_list (list, optional): Предварительно сформированный список пользователей.
+                Если не передан, считывается из реестра кэша.
+        """
+        if users_list is None:
+            users_list = await get_current_online_users()
+
         await self.channel_layer.group_send(
             'online_users',
             {
                 'type': 'online_users_message',
-                'users': list(self.online_users),
+                'users': users_list,
             }
         )
 
@@ -69,14 +225,15 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
         """Принимает групповое событие со списком пользователей и отправляет JSON клиенту.
 
         Args:
-            event (dict): Словарь события с ключами 'type' и 'users'.
+            event (dict): Словарь события Channels с ключами 'type' и 'users'.
         """
         users = event['users']
-        user = self.scope['user']
+        user = self.scope.get('user')
+        is_admin = bool(user and getattr(user, 'is_superuser', False))
         await self.send(text_data=json.dumps({
             'type': 'online_users',
             'users': users,
-            'is_admin': user.is_superuser,
+            'is_admin': is_admin,
         }))
 
 

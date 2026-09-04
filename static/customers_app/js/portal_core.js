@@ -202,24 +202,95 @@
                         var usersList = document.getElementById('online-users');
                         if (!usersList) return;
                         usersList.innerHTML = '';
+
+                        var countBadge = document.getElementById('online-users-count');
+                        var userCount = data.users ? data.users.length : 0;
+                        if (countBadge) {
+                            countBadge.textContent = userCount;
+                            if (userCount > 0) {
+                                countBadge.classList.remove('d-none');
+                            } else {
+                                countBadge.classList.add('d-none');
+                            }
+                        }
+
                         if (!data.users || data.users.length === 0) {
-                            usersList.innerHTML = '<li class="text-muted fst-italic">Нет активных пользователей</li>';
+                            usersList.innerHTML = '<li class="text-muted small fst-italic py-2 text-center">Нет активных пользователей</li>';
                             return;
                         }
+
                         data.users.forEach(function (user) {
-                            var username = user[0];
-                            var userId = user[1];
+                            var username = (user && user.username) ? user.username : (user ? user[0] : '');
+                            var userId = (user && user.user_id) ? user.user_id : (user ? user[1] : '');
+                            if (!username) return;
+
+                            var devices = (user && user.devices && user.devices.length) ? user.devices : null;
+                            if (!devices) {
+                                var dType = (user && user.device_type) || (user && user[2]) || 'Компьютер / Ноутбук';
+                                var dIcon = (user && user.device_icon) || (user && user[3]) || 'bx bx-laptop';
+                                var dOs = (user && user.os_name) || (user && user[4]) || '';
+                                var dBrowser = (user && user.browser_name) || (user && user[5]) || '';
+                                devices = [{ device_type: dType, device_icon: dIcon, os_name: dOs, browser_name: dBrowser }];
+                            }
+
                             var li = document.createElement('li');
-                            var link = document.createElement('a');
-                            link.href = '#';
-                            link.className = 'd-block py-1 text-decoration-none online-user-link';
-                            link.title = 'Двойной клик для отправки сообщения';
-                            link.innerHTML = '<i class="fas fa-circle text-success me-2" style="font-size: 8px;"></i><span>' + username + '</span>';
-                            link.addEventListener('dblclick', function (e) {
+                            li.className = 'd-flex align-items-center justify-content-between py-1 px-1 online-user-item';
+
+                            // Левая колонка: индикатор сети, ФИО и иконки устройств
+                            var userCol = document.createElement('div');
+                            userCol.className = 'd-flex align-items-center text-truncate pe-1';
+                            userCol.style.minWidth = '0';
+
+                            var statusDot = document.createElement('i');
+                            statusDot.className = 'fas fa-circle text-success me-2 flex-shrink-0';
+                            statusDot.style.fontSize = '7px';
+                            statusDot.title = 'В сети';
+                            userCol.appendChild(statusDot);
+
+                            var nameSpan = document.createElement('span');
+                            nameSpan.className = 'text-truncate online-user-name';
+                            nameSpan.textContent = username;
+                            nameSpan.title = username;
+                            userCol.appendChild(nameSpan);
+
+                            // Иконки устройств с детальными подсказками
+                            var devWrap = document.createElement('span');
+                            devWrap.className = 'd-inline-flex align-items-center gap-1 ms-1 flex-shrink-0 online-user-devices';
+                            devices.forEach(function (dev) {
+                                var devTitleParts = [];
+                                if (dev.device_type) devTitleParts.push(dev.device_type);
+                                if (dev.os_name && dev.os_name !== 'Не определена') devTitleParts.push(dev.os_name);
+                                if (dev.browser_name) devTitleParts.push(dev.browser_name);
+                                var devTitle = devTitleParts.join(' • ') || 'Устройство';
+
+                                var devIcon = document.createElement('i');
+                                devIcon.className = (dev.device_icon || 'bx bx-laptop') + ' online-device-icon';
+                                devIcon.title = devTitle;
+                                devWrap.appendChild(devIcon);
+                            });
+                            userCol.appendChild(devWrap);
+                            li.appendChild(userCol);
+
+                            // Правая колонка: иконка отправки сообщения в 1 клик
+                            var msgBtn = document.createElement('button');
+                            msgBtn.type = 'button';
+                            msgBtn.className = 'btn btn-sm btn-link p-0 text-primary online-user-msg-btn flex-shrink-0 ms-1';
+                            msgBtn.title = 'Написать сообщение';
+                            msgBtn.setAttribute('aria-label', 'Написать сообщение для ' + username);
+                            msgBtn.innerHTML = '<i class="bx bx-message-rounded-dots" style="font-size: 17px;"></i>';
+                            msgBtn.addEventListener('click', function (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.openModal(username, userId);
+                            });
+                            li.appendChild(msgBtn);
+
+                            // Резервный двойной клик на строку для обратной совместимости
+                            li.addEventListener('dblclick', function (e) {
                                 e.preventDefault();
                                 window.openModal(username, userId);
                             });
-                            li.appendChild(link);
+
                             usersList.appendChild(li);
                         });
                     }
