@@ -18,7 +18,7 @@ from django.views.generic import ListView
 
 from administration_app.models import PortalProperty
 from administration_app.system_monitor_service import get_system_monitor_payload
-from administration_app.utils import get_client_ip
+from administration_app.utils import get_client_ip, get_device_info
 from contracts_app.models import Contract
 from contracts_app.views import update_contract_dates_from_comment
 
@@ -961,6 +961,7 @@ def check_my_ip(request):
         HttpResponse: HTML-страница диагностики либо JsonResponse (если format=json).
     """
     client_ip = get_client_ip(request)
+    device_info = get_device_info(request)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
     x_real_ip = request.META.get('HTTP_X_REAL_IP', '')
     remote_addr = request.META.get('REMOTE_ADDR', '')
@@ -979,16 +980,21 @@ def check_my_ip(request):
             'client_ip': client_ip,
             'is_public': is_public,
             'is_kerio_snat': is_kerio_snat,
+            'device_type': device_info['device_type'],
+            'device_category': device_info['device_category'],
+            'os_name': device_info['os_name'],
+            'browser_name': device_info['browser_name'],
             'x_forwarded_for': x_forwarded_for,
             'x_real_ip': x_real_ip,
             'remote_addr': remote_addr,
         })
 
     context = {
-        'title': 'Диагностика IP-адреса',
+        'title': 'Диагностика IP-адреса и устройства',
         'client_ip': client_ip,
         'is_public': is_public,
         'is_kerio_snat': is_kerio_snat,
+        'device_info': device_info,
         'x_forwarded_for': x_forwarded_for,
         'x_real_ip': x_real_ip,
         'remote_addr': remote_addr,

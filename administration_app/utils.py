@@ -1489,10 +1489,95 @@ def get_client_ip(request):
         """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(',')[0].strip()
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+def get_device_info(request) -> dict:
+    """Определяет тип клиентского устройства, операционную систему и веб-браузер.
+
+    Анализирует заголовок HTTP_USER_AGENT входящего запроса для классификации
+    типа устройства (смартфон, планшет или ПК/ноутбук), платформы и обозревателя.
+
+    Args:
+        request (HttpRequest): Объект входящего HTTP-запроса или строка User-Agent.
+
+    Returns:
+        dict: Словарь с характеристиками устройства:
+            - device_type (str): Человекочитаемый тип ('Смартфон', 'Планшет', 'Компьютер / Ноутбук').
+            - device_category (str): Машиночитаемая категория ('mobile', 'tablet', 'desktop', 'unknown').
+            - device_icon (str): CSS-класс иконки Boxicons.
+            - os_name (str): Название операционной системы (Windows, Android, iOS, macOS, Linux).
+            - browser_name (str): Название веб-браузера.
+            - user_agent (str): Исходная строка User-Agent.
+    """
+    ua_string = request.META.get('HTTP_USER_AGENT', '') if hasattr(request, 'META') else str(request or '')
+    ua = ua_string.lower()
+
+    # Определение типа устройства
+    if 'ipad' in ua or 'tablet' in ua or ('android' in ua and 'mobile' not in ua):
+        device_type = 'Планшет'
+        device_category = 'tablet'
+        device_icon = 'bx bx-tab'
+    elif any(k in ua for k in ['mobile', 'iphone', 'ipod', 'android', 'phone', 'harmonyos']):
+        device_type = 'Смартфон'
+        device_category = 'mobile'
+        device_icon = 'bx bx-mobile-alt'
+    elif any(k in ua for k in ['windows', 'macintosh', 'mac os', 'linux', 'cros', 'x11']):
+        device_type = 'Компьютер / Ноутбук'
+        device_category = 'desktop'
+        device_icon = 'bx bx-laptop'
+    else:
+        device_type = 'Неизвестное устройство'
+        device_category = 'unknown'
+        device_icon = 'bx bx-devices'
+
+    # Определение операционной системы
+    if 'windows nt 10.0' in ua:
+        os_name = 'Windows 10 / 11'
+    elif 'windows nt 6.3' in ua:
+        os_name = 'Windows 8.1'
+    elif 'windows nt 6.1' in ua:
+        os_name = 'Windows 7'
+    elif 'windows' in ua:
+        os_name = 'Windows'
+    elif 'iphone' in ua or 'ipad' in ua or 'ipod' in ua:
+        os_name = 'Apple iOS / iPadOS'
+    elif 'mac os' in ua or 'macintosh' in ua:
+        os_name = 'macOS'
+    elif 'android' in ua:
+        os_name = 'Android'
+    elif 'linux' in ua:
+        os_name = 'Linux'
+    else:
+        os_name = 'Не определена'
+
+    # Определение веб-браузера
+    if 'yabrowser' in ua or 'yasearch' in ua:
+        browser_name = 'Яндекс Браузер'
+    elif 'edg/' in ua or 'edge/' in ua:
+        browser_name = 'Microsoft Edge'
+    elif 'opera' in ua or 'opr/' in ua:
+        browser_name = 'Opera'
+    elif 'chrome' in ua and 'safari' in ua and 'edg' not in ua:
+        browser_name = 'Google Chrome'
+    elif 'safari' in ua and 'chrome' not in ua:
+        browser_name = 'Apple Safari'
+    elif 'firefox' in ua:
+        browser_name = 'Mozilla Firefox'
+    else:
+        browser_name = 'Браузер'
+
+    return {
+        'device_type': device_type,
+        'device_category': device_category,
+        'device_icon': device_icon,
+        'os_name': os_name,
+        'browser_name': browser_name,
+        'user_agent': ua_string,
+    }
 
 
 def process_group_year(group):

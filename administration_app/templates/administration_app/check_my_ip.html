@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-    Диагностика IP-адреса
+    Диагностика IP-адреса и устройства
 {% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@
             <header class="card-header bg-light py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
                 <h4 class="card-title text-dark mb-0 fs-5 font-weight-bold d-flex align-items-center gap-2">
                     <i class="bx bx-globe text-primary fs-4"></i>
-                    Диагностика входящего IP-адреса
+                    Диагностика входящего IP-адреса и устройства
                 </h4>
                 <a href="?format=json" target="_blank" class="btn btn-sm btn-outline-secondary">
                     <i class="bx bx-code-alt me-1"></i>JSON
@@ -39,6 +39,37 @@
                                 <i class="bx bx-info-circle me-1"></i> Частный IP адрес локальной сети ({{ client_ip }})
                             </span>
                         {% endif %}
+                    </div>
+                </div>
+
+                <!-- Блок распознанного клиентского устройства -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 bg-light border rounded-3 text-center h-100">
+                            <div class="text-muted small mb-1">
+                                <i class="{{ device_info.device_icon }} fs-3 text-primary d-block mb-1"></i>
+                                Тип устройства
+                            </div>
+                            <strong class="fs-6 text-dark">{{ device_info.device_type }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 bg-light border rounded-3 text-center h-100">
+                            <div class="text-muted small mb-1">
+                                <i class="bx bx-chip fs-3 text-info d-block mb-1"></i>
+                                Операционная система
+                            </div>
+                            <strong class="fs-6 text-dark">{{ device_info.os_name }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 bg-light border rounded-3 text-center h-100">
+                            <div class="text-muted small mb-1">
+                                <i class="bx bx-compass fs-3 text-success d-block mb-1"></i>
+                                Веб-браузер
+                            </div>
+                            <strong class="fs-6 text-dark">{{ device_info.browser_name }}</strong>
+                        </div>
                     </div>
                 </div>
 
@@ -87,6 +118,10 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td class="text-muted">Тип устройства</td>
+                                <td><i class="{{ device_info.device_icon }} me-1"></i>{{ device_info.device_type }} ({{ device_info.os_name }})</td>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">HTTP_X_FORWARDED_FOR</td>
                                 <td>{{ x_forwarded_for|default:"<em class='text-muted'>не передан</em>" }}</td>
                             </tr>
@@ -97,6 +132,10 @@
                             <tr>
                                 <td class="text-muted">REMOTE_ADDR (сокет сервера)</td>
                                 <td>{{ remote_addr|default:"<em class='text-muted'>—</em>" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">HTTP_USER_AGENT</td>
+                                <td class="text-break" style="font-size: 0.75rem;">{{ user_agent|default:"—" }}</td>
                             </tr>
                         </tbody>
                     </table>
