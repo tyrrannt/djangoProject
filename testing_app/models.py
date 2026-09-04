@@ -1231,6 +1231,7 @@ class MaterialViewLog(models.Model):
         last_viewed_at (datetime): Дата и время последнего обращения сотрудника.
         views_count (int): Общее число открытий / просмотров данным сотрудником.
         last_ip (str): IP-адрес сотрудника при последнем обращении.
+        last_device (str): Тип клиентского устройства при последнем обращении (Смартфон, Планшет, ПК).
     """
 
     class MaterialType(models.TextChoices):
@@ -1283,6 +1284,12 @@ class MaterialViewLog(models.Model):
         null=True,
         blank=True,
         verbose_name="IP-адрес"
+    )
+    last_device = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        verbose_name="Устройство"
     )
 
     class Meta:

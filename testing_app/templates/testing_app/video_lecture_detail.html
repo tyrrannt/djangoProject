@@ -115,7 +115,7 @@
                                         <th class="text-center">Обращений</th>
                                         <th>Первое обращение</th>
                                         <th>Последнее обращение</th>
-                                        <th>IP-адрес</th>
+                                        <th>Устройство и IP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -129,7 +129,25 @@
                                             <td class="text-center font-weight-bold text-danger">{{ view.views_count }}</td>
                                             <td class="small text-muted">{{ view.first_viewed_at|date:"d.m.Y H:i" }}</td>
                                             <td class="small text-muted">{{ view.last_viewed_at|date:"d.m.Y H:i" }}</td>
-                                            <td class="small text-muted font-monospace">{{ view.last_ip|default:"—" }}</td>
+                                            <td>
+                                                <div class="d-inline-flex flex-column">
+                                                    {% if view.last_device %}
+                                                        <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 mb-1">
+                                                            {% if "Смартфон" in view.last_device %}
+                                                                <i class="bx bx-mobile-alt text-success"></i>
+                                                            {% elif "Планшет" in view.last_device %}
+                                                                <i class="bx bx-tab text-info"></i>
+                                                            {% elif "Компьютер" in view.last_device or "Ноутбук" in view.last_device %}
+                                                                <i class="bx bx-laptop text-primary"></i>
+                                                            {% else %}
+                                                                <i class="bx bx-devices text-secondary"></i>
+                                                            {% endif %}
+                                                            <span>{{ view.last_device }}</span>
+                                                        </span>
+                                                    {% endif %}
+                                                    <span class="small text-muted font-monospace">{{ view.last_ip|default:"—" }}</span>
+                                                </div>
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>

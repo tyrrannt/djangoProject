@@ -142,7 +142,7 @@
                         <th class="text-center" style="width: 130px;">Обращений</th>
                         <th>Первое обращение</th>
                         <th>Последнее обращение</th>
-                        <th class="text-end">IP-адрес</th>
+                        <th class="text-end" style="min-width: 170px;">Устройство и IP</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -185,7 +185,25 @@
                             </td>
                             <td class="small text-muted">{{ log.first_viewed_at|date:"d.m.Y H:i" }}</td>
                             <td class="small text-muted">{{ log.last_viewed_at|date:"d.m.Y H:i" }}</td>
-                            <td class="text-end small text-muted font-monospace">{{ log.last_ip|default:"—" }}</td>
+                            <td class="text-end">
+                                <div class="d-inline-flex flex-column align-items-end">
+                                    {% if log.last_device %}
+                                        <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 mb-1" title="Устройство последнего визита">
+                                            {% if "Смартфон" in log.last_device %}
+                                                <i class="bx bx-mobile-alt text-success"></i>
+                                            {% elif "Планшет" in log.last_device %}
+                                                <i class="bx bx-tab text-info"></i>
+                                            {% elif "Компьютер" in log.last_device or "Ноутбук" in log.last_device %}
+                                                <i class="bx bx-laptop text-primary"></i>
+                                            {% else %}
+                                                <i class="bx bx-devices text-secondary"></i>
+                                            {% endif %}
+                                            <span>{{ log.last_device }}</span>
+                                        </span>
+                                    {% endif %}
+                                    <span class="small text-muted font-monospace">{{ log.last_ip|default:"—" }}</span>
+                                </div>
+                            </td>
                         </tr>
                     {% empty %}
                         <tr>

@@ -17,16 +17,22 @@ from openpyxl.utils import get_column_letter
 from testing_app.models import LectureMaterial, VideoLecture, MaterialViewLog
 
 
-def log_material_access(user, material, ip_address: Optional[str] = None) -> None:
+def log_material_access(
+    user,
+    material,
+    ip_address: Optional[str] = None,
+    device_type: Optional[str] = None
+) -> None:
     """Фиксирует факт обращения сотрудника к лекционному или видеоматериалу.
 
     Если сотрудник обращается к материалу впервые, создается новая запись в журнале.
-    При повторных обращениях обновляется счетчик просмотров, дата последнего визита и IP.
+    При повторных обращениях обновляется счетчик просмотров, дата последнего визита, IP и устройство.
 
     Args:
         user (settings.AUTH_USER_MODEL): Пользователь (сотрудник).
         material (Union[LectureMaterial, VideoLecture]): Объект лекции или видео.
         ip_address (Optional[str]): IP-адрес клиента (если доступен).
+        device_type (Optional[str]): Тип клиентского устройства (Смартфон, Планшет, ПК).
     """
     if not user or not user.is_authenticated:
         return
@@ -40,6 +46,7 @@ def log_material_access(user, material, ip_address: Optional[str] = None) -> Non
             "material_type": mat_type,
             "views_count": 1,
             "last_ip": ip_address,
+            "last_device": device_type or "",
         }
     elif isinstance(material, VideoLecture):
         mat_type = MaterialViewLog.MaterialType.VIDEO
@@ -48,6 +55,7 @@ def log_material_access(user, material, ip_address: Optional[str] = None) -> Non
             "material_type": mat_type,
             "views_count": 1,
             "last_ip": ip_address,
+            "last_device": device_type or "",
         }
     else:
         return
@@ -59,9 +67,17 @@ def log_material_access(user, material, ip_address: Optional[str] = None) -> Non
         )
         if not created:
             log_obj.views_count = F("views_count") + 1
-            log_obj.last_ip = ip_address or log_obj.last_ip
+            if ip_address:
+                log_obj.last_ip = ip_address
+            if device_type:
+                log_obj.last_device = device_type
             log_obj.last_viewed_at = now
-            log_obj.save(update_fields=["views_count", "last_ip", "last_viewed_at"])
+            update_fields = ["views_count", "last_viewed_at"]
+            if ip_address:
+                update_fields.append("last_ip")
+            if device_type:
+                update_fields.append("last_device")
+            log_obj.save(update_fields=update_fields)
 
 
 def get_material_dashboard_stats() -> Dict[str, Any]:
@@ -239,6 +255,7 @@ def export_material_report_excel(queryset: models.QuerySet) -> openpyxl.Workbook
         "Первое обращение",
         "Последнее обращение",
         "Всего обращений",
+        "Устройство",
         "IP-адрес",
     ]
 
@@ -273,6 +290,7 @@ def export_material_report_excel(queryset: models.QuerySet) -> openpyxl.Workbook
             first_date,
             last_date,
             item.views_count,
+            item.last_device or "—",
             item.last_ip or "—",
         ]
 
@@ -284,7 +302,7 @@ def export_material_report_excel(queryset: models.QuerySet) -> openpyxl.Workbook
             if row_idx % 2 == 0:
                 cell.fill = alt_fill
 
-            if col_idx in [1, 5, 7, 8, 10]:
+            if col_idx in [1, 5, 7, 8, 10, 11]:
                 cell.alignment = align_center
             elif col_idx == 9:
                 cell.alignment = align_right
@@ -304,7 +322,8 @@ def export_material_report_excel(queryset: models.QuerySet) -> openpyxl.Workbook
         7: 18,
         8: 18,
         9: 16,
-        10: 16,
+        10: 22,
+        11: 16,
     }
     for col_idx, width in col_widths.items():
         ws.column_dimensions[get_column_letter(col_idx)].width = width
@@ -337,6 +356,7 @@ def export_material_report_csv(queryset: models.QuerySet) -> str:
         "Первое обращение",
         "Последнее обращение",
         "Всего обращений",
+        "Устройство",
         "IP-адрес",
     ])
 
@@ -362,6 +382,7 @@ def export_material_report_csv(queryset: models.QuerySet) -> str:
             first_date,
             last_date,
             item.views_count,
+            item.last_device or "—",
             item.last_ip or "—",
         ])
 

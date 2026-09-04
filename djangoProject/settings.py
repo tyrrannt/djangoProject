@@ -127,6 +127,7 @@ TEMPLATES = [
                 "administration_app.context_processors.get_all_contracts",
                 "administration_app.context_processors.get_approval_oficial_memo_process",
                 "administration_app.context_processors.breadcrumbs",
+                "administration_app.context_processors.device_context",
                 # "administration_app.context_processors.get_qrcode",
             ],
         },

@@ -929,24 +929,56 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
 
 
 def login(request):
-    """
-    Представление аутентификации пользователя в системе.
+    """Аутентификация пользователя в корпоративном портале с защитой от брутфорса.
+
+    Проверяет учетные данные пользователя. Ограничивает количество неудачных
+    попыток входа с одного IP-адреса (максимум 5 попыток за 15 минут). При превышении
+    лимита IP-адрес временно блокируется на уровне кэша на 15 минут и формируется
+    структурированная запись в журнале для интеграции с fail2ban. При успешном входе
+    счетчик попыток для данного IP сбрасывается.
+
+    Args:
+        request: Входящий объект HTTP-запроса (HttpRequest).
+
+    Returns:
+        HttpResponse: Перенаправление в профиль / по параметру 'next' при успехе,
+        либо HTML-страница формы входа с выводом сообщений об ошибках и предупреждений.
     """
     content = {'title': 'Вход в систему'}
     next_url = request.GET.get('next', '') or request.POST.get('next', '')
     content['next'] = next_url
+    client_ip = get_client_ip(request)
+    lock_key = f"login_lock_{client_ip}"
+    attempts_key = f"login_attempts_{client_ip}"
+
     if request.method == 'POST':
         login_form = DataBaseUserLoginForm(data=request.POST)
         content['login_form'] = login_form
-        logger.info(get_client_ip(request))
+
+        # Проверка временной блокировки IP-адреса
+        if cache.get(lock_key):
+            logger.warning(
+                f"SECURITY: Blocked attempt from locked IP {client_ip} for username '{request.POST.get('username', '')}'"
+            )
+            content['errors'] = (
+                "Слишком много неудачных попыток входа с вашего IP-адреса. "
+                "Доступ временно заблокирован на 15 минут в целях безопасности."
+            )
+            return render(request, 'customers_app/login.html', content)
+
         if login_form.is_valid():
             username = login_form.cleaned_data['username']
             password = login_form.cleaned_data['password']
             user = auth.authenticate(username=username, password=password)
             portal = PortalProperty.objects.all()
+
             if user and user.is_active:
                 auth.login(request, user)
-                logger.info(f'Успешный вход. {user}')
+                # Сбрасываем счетчик неудачных попыток для IP
+                cache.delete(attempts_key)
+                cache.delete(lock_key)
+                logger.info(f"SECURITY: Successful login for user '{user.username}' from IP {client_ip}")
+
                 try:
                     portal_session = portal.first().portal_session
                 except Exception as _ex:
@@ -957,6 +989,7 @@ def login(request):
                 except Exception as _ex:
                     portal_paginator = 10
                     logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
+
                 request.session.set_expiry(portal_session)
                 request.session['portal_paginator'] = portal_paginator
                 request.session['current_month'] = int(datetime.datetime.today().month)
@@ -967,15 +1000,33 @@ def login(request):
 
                 return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))
             else:
-                content['errors'] = 'Неверный логин или пароль.'
-                logger.error(
-                    f'Ошибка авторизации: Неверные учетные данные для пользователя {username}, IP: {get_client_ip(request)}')
+                # Фиксация неудачной попытки и расчет оставшегося лимита
+                attempts = (cache.get(attempts_key) or 0) + 1
+                cache.set(attempts_key, attempts, timeout=900)  # Окно 15 минут
+                remaining = max(0, 5 - attempts)
+
+                if attempts >= 5:
+                    cache.set(lock_key, True, timeout=900)  # Блокировка на 15 минут
+                    logger.warning(
+                        f"SECURITY: Rate limit exceeded for IP {client_ip}. IP locked for 15 minutes. Failed login for username '{username}'"
+                    )
+                    content['errors'] = (
+                        "Превышено максимальное количество попыток входа (5). "
+                        "Ваш IP-адрес временно заблокирован на 15 минут."
+                    )
+                else:
+                    logger.warning(
+                        f"SECURITY: Failed login attempt {attempts}/5 from IP {client_ip} for username '{username}'"
+                    )
+                    content['errors'] = (
+                        f"Неверный логин или пароль. Осталось попыток до временной блокировки: {remaining}."
+                    )
         else:
             content['errors'] = login_form.errors
             try:
-                logger.error(f'Ошибка валидации формы при входе. Данные: {request.POST}, IP: {get_client_ip(request)}')
+                logger.warning(f"SECURITY: Login form validation error from IP {client_ip}. Data: {request.POST}")
             except Exception as _ex:
-                logger.error(f'Ошибка при логировании ошибки валидации: {_ex}')
+                logger.error(f"Ошибка при логировании ошибки валидации: {_ex}")
     else:
         content['login_form'] = DataBaseUserLoginForm()
     return render(request, 'customers_app/login.html', content)

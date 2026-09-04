@@ -9,7 +9,10 @@ from hrdepartment_app.models import (
 )
 from core import logger
 from django.urls import resolve, Resolver404
+from django.utils import timezone
 from django.utils.translation import gettext as _
+
+from administration_app.utils import get_device_info
 
 
 def breadcrumbs(request):
@@ -368,6 +371,92 @@ def get_approval_oficial_memo_process(request):
     except Exception as ex:
         logger.error(ex)
         return {"notifications": []}
+
+
+def record_device_visit(category: str) -> None:
+    """Учитывает обращение устройства заданной категории в суточных счетчиках кэша.
+
+    Используется сервисом системного мониторинга для построения аналитики
+    распределения пользовательских устройств (Смартфоны, Планшеты, ПК).
+
+    Args:
+        category (str): Категория устройства ('mobile', 'tablet', 'desktop').
+    """
+    today_str = timezone.now().strftime("%Y-%m-%d")
+    cache_key = f"device_stat_day_{today_str}_{category}"
+    try:
+        if cache.get(cache_key) is None:
+            cache.set(cache_key, 1, timeout=86400 * 7)
+        else:
+            cache.incr(cache_key)
+    except Exception:
+        pass
+
+
+def device_context(request) -> dict:
+    """Глобальный контекстный процессор для адаптации UI под тип устройства пользователя.
+
+    Предоставляет во все Django-шаблоны информацию о типе клиентского устройства,
+    операционной системе, браузере и булевы флаги (is_mobile, is_tablet, is_desktop).
+    Также выполняет учет обращений по категориям устройств в кэше для аналитики
+    в панели мониторинга сервера.
+
+    Args:
+        request: Входящий HTTP-запрос (HttpRequest).
+
+    Returns:
+        dict: Словарь с параметрами устройства:
+            - client_device (str): Название типа ('Смартфон', 'Планшет', 'Компьютер / Ноутбук')
+            - device_category (str): Категория ('mobile', 'tablet', 'desktop')
+            - device_icon (str): CSS-класс иконки Boxicons ('bx bx-mobile-alt', etc.)
+            - is_mobile (bool): True, если пользователь зашел со смартфона
+            - is_tablet (bool): True, если пользователь зашел с планшета
+            - is_desktop (bool): True, если пользователь зашел с ПК/ноутбука
+            - client_os (str): Название операционной системы
+            - client_browser (str): Название веб-браузера
+            - device_info (dict): Полный словарь параметров устройства
+    """
+    try:
+        dev_info = get_device_info(request)
+        category = dev_info.get("device_category", "desktop")
+
+        # Исключаем учет статических ресурсов, служебных путей и API-запросов
+        path = getattr(request, "path_info", "")
+        if not path.startswith(("/static/", "/media/", "/favicon.ico", "/ws/", "/monitoring/api/")):
+            session_key = f"dev_rec_{category}"
+            if hasattr(request, "session") and not request.session.get(session_key):
+                record_device_visit(category)
+                try:
+                    request.session[session_key] = True
+                except Exception:
+                    pass
+
+        return {
+            "client_device": dev_info.get("device_type", "Компьютер / Ноутбук"),
+            "device_category": category,
+            "device_icon": dev_info.get("device_icon", "bx bx-laptop"),
+            "is_mobile": category == "mobile",
+            "is_tablet": category == "tablet",
+            "is_desktop": category == "desktop",
+            "client_os": dev_info.get("os_name", "Не определена"),
+            "client_browser": dev_info.get("browser_name", "Браузер"),
+            "device_info": dev_info,
+        }
+    except Exception as ex:
+        logger.error(f"device_context error: {ex}")
+        return {
+            "client_device": "Компьютер / Ноутбук",
+            "device_category": "desktop",
+            "device_icon": "bx bx-laptop",
+            "is_mobile": False,
+            "is_tablet": False,
+            "is_desktop": True,
+            "client_os": "Не определена",
+            "client_browser": "Браузер",
+            "device_info": {},
+        }
+
+
 # скрипт до изменения
 # def get_approval_oficial_memo_process(request):
 #     notifications = []

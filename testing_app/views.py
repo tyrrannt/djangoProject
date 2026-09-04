@@ -59,7 +59,7 @@ from testing_app.services.material_service import (
     export_material_report_excel,
     export_material_report_csv,
 )
-from administration_app.utils import get_client_ip
+from administration_app.utils import get_client_ip, get_device_info
 from customers_app.models import Affiliation, Job, DataBaseUser, Division
 from testing_app.services.event_service import (
     ensure_default_groups_exist,
@@ -1199,7 +1199,8 @@ class LectureDetailView(LoginRequiredMixin, DetailView):
         response = super().get(request, *args, **kwargs)
         # Фиксируем обращение сотрудника к лекционному материалу
         ip_addr = get_client_ip(request)
-        log_material_access(request.user, self.object, ip_addr)
+        dev_info = get_device_info(request)
+        log_material_access(request.user, self.object, ip_addr, dev_info.get("device_type"))
         return response
 
     def get_context_data(self, **kwargs):
@@ -1363,7 +1364,8 @@ class VideoLectureDetailView(LoginRequiredMixin, DetailView):
         response = super().get(request, *args, **kwargs)
         # Фиксируем обращение к видеолекции
         ip_addr = get_client_ip(request)
-        log_material_access(request.user, self.object, ip_addr)
+        dev_info = get_device_info(request)
+        log_material_access(request.user, self.object, ip_addr, dev_info.get("device_type"))
         return response
 
     def get_context_data(self, **kwargs):
