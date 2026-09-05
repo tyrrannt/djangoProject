@@ -120,6 +120,7 @@ def get_attachment_security_info(filename: str, content_type: str = "") -> Dict[
         dict[str, Any]: Словарь метаданных:
             - name_base: исходное имя без расширения;
             - ext: расширение с точкой;
+            - ext_label: верхнерегистровое обозначение формата (например, PDF, DOCX, ZIP);
             - short_base: базовое имя, укороченное до 45 символов с многоточием при превышении;
             - display_name: компактное имя для вывода;
             - risk_level: 'high' | 'medium' | 'low' | 'neutral';
@@ -135,6 +136,7 @@ def get_attachment_security_info(filename: str, content_type: str = "") -> Dict[
     raw_name = filename or "attachment"
     base, ext = split_filename(raw_name)
     clean_ext = ext.lstrip(".").lower()
+    ext_label = clean_ext.upper() if clean_ext else "FILE"
 
     # Умное сокращение базового имени: если длиннее 45 символов, обрезаем и ставим '...'
     max_chars = 45
@@ -231,6 +233,7 @@ def get_attachment_security_info(filename: str, content_type: str = "") -> Dict[
     return {
         "name_base": base,
         "ext": ext,
+        "ext_label": ext_label,
         "short_base": short_base,
         "display_name": display_name,
         "risk_level": risk_level,

@@ -245,14 +245,13 @@
                                 </div>
 
                                 <!-- 3. Действия с файлом -->
-                                <div class="dropdown flex-shrink-0">
-                                    <button class="attachment-action-btn"
+                                <div class="dropdown flex-shrink-0" onclick="event.stopPropagation();">
+                                    <button class="attachment-action-btn dropdown-toggle-no-caret"
                                             type="button"
                                             id="schedAttDrop_{{ forloop.counter }}"
                                             data-bs-toggle="dropdown"
                                             data-bs-display="dynamic"
                                             data-bs-boundary="viewport"
-                                            data-bs-popper-config='{"strategy":"fixed"}'
                                             aria-expanded="false"
                                             title="Действия с файлом">
                                         <i class="bx bx-dots-vertical-rounded font-size-18"></i>
