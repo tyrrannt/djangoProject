@@ -17,10 +17,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
     {% block css %}
-        <!-- Web Fonts (Barkol Typography) -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+        <!-- Local Typography (Inter with system fallbacks) -->
+        <link rel="stylesheet" href="{% static 'unfold/fonts/inter/styles.css' %}"/>
 
         <!-- Vendor CSS -->
         <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.css' %}"/>

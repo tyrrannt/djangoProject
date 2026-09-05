@@ -31,10 +31,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'android/mipmap-xxxhdpi/ic_launcher.png' %}"/>
     <link rel="apple-touch-icon" sizes="167x167" href="{% static 'android/mipmap-xxhdpi/ic_launcher.png' %}"/>
 
-    <!-- Web Fonts (Barkol Typography: Montserrat for Headings, Inter for Body/UI) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Local Typography (Inter with system fallbacks) -->
+    <link rel="stylesheet" href="{% static 'unfold/fonts/inter/styles.css' %}"/>
 
     <!-- Vendor CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/hover/hover.css' %}"/>
