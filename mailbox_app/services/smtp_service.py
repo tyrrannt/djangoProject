@@ -3,16 +3,19 @@
 from email import encoders
 from email.header import Header
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate, getaddresses, make_msgid, parseaddr
 import logging
+import os
 import re
 import smtplib
 import ssl
 import time
 from typing import List, Optional, Tuple, Union
 
+from django.conf import settings
 from mailbox_app.services.imap_service import ImapMailService
 
 logger = logging.getLogger(__name__)
@@ -195,8 +198,31 @@ class SmtpMailService:
         if body_text:
             msg_alternative.attach(MIMEText(body_text, "plain", "utf-8"))
 
+        # Проверка и подготовка встроенного логотипа авиакомпании «БАРКОЛ» для подписи
+        has_barkol_logo = False
+        logo_cid = "barkol_logo"
+        logo_path = os.path.join(settings.BASE_DIR, "static", "logo_small.png")
+        if not os.path.exists(logo_path):
+            logo_path = os.path.join(settings.BASE_DIR, "static", "admin_templates", "img", "logo.png")
+
         if body_html:
             clean_html = body_html.strip()
+            # Проверяем наличие логотипа по ссылке на файл, классу подписи или имени компании
+            if (
+                "logo" in clean_html.lower()
+                or "barkol-email-signature" in clean_html
+                or "cid:barkol_logo" in clean_html
+                or "Авиакомпания «БАРКОЛ»" in clean_html
+            ):
+                has_barkol_logo = True
+                # Нормализуем URL логотипа в стандартный MIME cid:barkol_logo для всех почтовых клиентов (Gmail, Outlook, Yandex и др.)
+                clean_html = re.sub(
+                    r'src=["\'](?:https?://[^/]+)?/static/(?:admin_templates/img/logo|logo_small)\.png["\']',
+                    f'src="cid:{logo_cid}"',
+                    clean_html,
+                    flags=re.IGNORECASE,
+                )
+
             # Гарантируем стандартный корпоративный стиль Times New Roman, 14pt, black для всех почтовых клиентов
             if not clean_html.lower().startswith("<!doctype") and not clean_html.lower().startswith("<html"):
                 formatted_html = (
@@ -207,7 +233,28 @@ class SmtpMailService:
             else:
                 formatted_html = clean_html
             msg_alternative.attach(MIMEText(formatted_html, "html", "utf-8"))
-        msg.attach(msg_alternative)
+
+        # Формируем контейнер related для встраивания inline-изображений (CID) без внешних HTTP-зависимостей
+        if has_barkol_logo and os.path.exists(logo_path):
+            try:
+                with open(logo_path, "rb") as lf:
+                    logo_data = lf.read()
+                logo_img = MIMEImage(logo_data, _subtype="png")
+                logo_img.add_header("Content-ID", f"<{logo_cid}>")
+                logo_img.add_header("Content-Disposition", "inline", filename="logo.png")
+                logo_img.add_header("X-Attachment-Id", logo_cid)
+
+                msg_related = MIMEMultipart("related")
+                msg_related.attach(msg_alternative)
+                msg_related.attach(logo_img)
+                body_part = msg_related
+            except Exception as err:
+                logger.warning(f"[SMTP] Ошибка прикрепления inline логотипа: {err}")
+                body_part = msg_alternative
+        else:
+            body_part = msg_alternative
+
+        msg.attach(body_part)
 
         # Прикрепление файлов
         if attachments:
