@@ -3306,7 +3306,9 @@ window.theme.fn = {
 		},
 
 		build: function() {
-			this.options.wrapper.nanoScroller(this.options);
+			if (this.options.wrapper && typeof $.fn.nanoScroller === 'function') {
+				this.options.wrapper.nanoScroller(this.options);
+			}
 
 			return this;
 		}
@@ -4487,7 +4489,7 @@ window.theme.fn = {
 			}
 		},
 
-		customScroll: ( !Modernizr.overflowscrolling && !isAndroid && $.fn.nanoScroller !== 'undefined'),
+		customScroll: ( typeof Modernizr !== 'undefined' && !Modernizr.overflowscrolling && !isAndroid && typeof $.fn.nanoScroller === 'function' ),
 
 		initialize: function() {
 			this
@@ -4580,22 +4582,24 @@ window.theme.fn = {
 
 			this.sidebars.left.$nano = this.sidebars.left.$el.find( '.nano' );
 
-			if (typeof localStorage !== 'undefined') {
-				this.sidebars.left.$nano.on('update', function(e, values) {
-					localStorage.setItem('sidebar-left-position', values.position);
-				});
+			if ( this.sidebars.left.$nano.length && typeof $.fn.nanoScroller === 'function' ) {
+				if (typeof localStorage !== 'undefined') {
+					this.sidebars.left.$nano.on('update', function(e, values) {
+						localStorage.setItem('sidebar-left-position', values.position);
+					});
 
-				if (localStorage.getItem('sidebar-left-position') !== null) {
-					initialPosition = localStorage.getItem('sidebar-left-position');
-					this.sidebars.left.$el.find( '.nano-content').scrollTop(initialPosition);
+					if (localStorage.getItem('sidebar-left-position') !== null) {
+						initialPosition = localStorage.getItem('sidebar-left-position');
+						this.sidebars.left.$el.find( '.nano-content').scrollTop(initialPosition);
+					}
 				}
-			}
 
-			this.sidebars.left.$nano.nanoScroller({
-				scrollTop: initialPosition,
-				alwaysVisible: true,
-				preventPageScrolling: $html.hasClass( 'fixed' )
-			});
+				this.sidebars.left.$nano.nanoScroller({
+					scrollTop: initialPosition,
+					alwaysVisible: true,
+					preventPageScrolling: $html.hasClass( 'fixed' )
+				});
+			}
 
 			return this;
 		},
@@ -4719,10 +4723,12 @@ window.theme.fn = {
 			if ( this.customScroll ) {
 				this.sidebars.right.$nano = this.sidebars.right.$el.find( '.nano' );
 
-				this.sidebars.right.$nano.nanoScroller({
-					alwaysVisible: true,
-					preventPageScrolling: true
-				});
+				if ( this.sidebars.right.$nano.length && typeof $.fn.nanoScroller === 'function' ) {
+					this.sidebars.right.$nano.nanoScroller({
+						alwaysVisible: true,
+						preventPageScrolling: true
+					});
+				}
 			}
 
 			return this;
@@ -4799,10 +4805,12 @@ window.theme.fn = {
 
 			this.sidebars.menu.$nano = this.sidebars.menu.$el.find( '.nano' );
 
-			this.sidebars.menu.$nano.nanoScroller({
-				alwaysVisible: true,
-				preventPageScrolling: true
-			});
+			if ( this.sidebars.menu.$nano.length && typeof $.fn.nanoScroller === 'function' ) {
+				this.sidebars.menu.$nano.nanoScroller({
+					alwaysVisible: true,
+					preventPageScrolling: true
+				});
+			}
 
 			return this;
 		},
@@ -5141,10 +5149,13 @@ window.theme.fn = {
 		},
 
 		buildFolder: function() {
-			this.$wrapper.find('.mailbox-email-list .nano').nanoScroller({
-				alwaysVisible: true,
-				preventPageScrolling: true
-			});
+			var $nano = this.$wrapper.find('.mailbox-email-list .nano');
+			if ($nano.length && typeof $.fn.nanoScroller === 'function') {
+				$nano.nanoScroller({
+					alwaysVisible: true,
+					preventPageScrolling: true
+				});
+			}
 		},
 
 		buildEmail: function() {
@@ -5156,21 +5167,24 @@ window.theme.fn = {
 		},
 
 		buildComposer: function() {
-			this.$wrapper.find( '#compose-field' ).summernote({
-				height: 250,
-				toolbar: [
-					['style', ['style']],
-					['font', ['bold', 'italic', 'underline', 'clear']],
-					['fontname', ['fontname']],
-					['color', ['color']],
-					['para', ['ul', 'ol', 'paragraph']],
-					['height', ['height']],
-					['table', ['table']],
-					['insert', ['link', 'picture', 'video']],
-					['view', ['fullscreen']],
-					['help', ['help']]
-				]
-			});
+			var $composeField = this.$wrapper.find( '#compose-field' );
+			if ($composeField.length && typeof $composeField.summernote === 'function') {
+				$composeField.summernote({
+					height: 250,
+					toolbar: [
+						['style', ['style']],
+						['font', ['bold', 'italic', 'underline', 'clear']],
+						['fontname', ['fontname']],
+						['color', ['color']],
+						['para', ['ul', 'ol', 'paragraph']],
+						['height', ['height']],
+						['table', ['table']],
+						['insert', ['link', 'picture', 'video']],
+						['view', ['fullscreen']],
+						['help', ['help']]
+					]
+				});
+			}
 		},
 
 		eventsCompose: function() {
