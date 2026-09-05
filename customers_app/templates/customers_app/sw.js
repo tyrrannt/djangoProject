@@ -4,7 +4,7 @@
    Версия: barkol-pwa-v1.0.0
    ========================================================================== */
 
-const CACHE_NAME = 'barkol-pwa-v1.0.0';
+const CACHE_NAME = 'barkol-pwa-v1.0.1';
 const OFFLINE_URL = '/offline/';
 
 // Критические статические ресурсы для офлайн-старта и мгновенного кэширования
@@ -44,14 +44,24 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const request = event.request;
 
-    // Не перехватываем non-GET запросы (POST, PUT, DELETE) и обращения к админке/WebSocket
+    // 1. Не перехватываем non-GET запросы (POST, PUT, DELETE)
     if (request.method !== 'GET') {
         return;
     }
 
     const url = new URL(request.url);
 
-    // 1. НАВИГАЦИОННЫЕ ЗАПРОСЫ (HTML страницы): Стратегия Network First -> Fallback Offline
+    // 2. Не перехватываем сторонние/кросс-доменные запросы (шрифты Контур, внешние CDN, плагины)
+    if (url.origin !== self.location.origin) {
+        return;
+    }
+
+    // 3. Не перехватываем WebSocket (/ws/) и специальные streaming/admin API
+    if (url.pathname.startsWith('/ws/')) {
+        return;
+    }
+
+    // 4. НАВИГАЦИОННЫЕ ЗАПРОСЫ (HTML страницы): Стратегия Network First -> Fallback Offline
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
@@ -64,13 +74,18 @@ self.addEventListener('fetch', (event) => {
                     if (cachedResponse) {
                         return cachedResponse;
                     }
-                    return cache.match(OFFLINE_URL);
+                    const offlineResponse = await cache.match(OFFLINE_URL);
+                    return offlineResponse || new Response('<html><body><h2>Офлайн режим</h2><p>Соединение с сервером отсутствует.</p></body></html>', {
+                        status: 503,
+                        statusText: 'Service Unavailable',
+                        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                    });
                 })
         );
         return;
     }
 
-    // 2. СТАТИЧЕСКИЕ РЕСУРСЫ (/static/): Стратегия Stale-While-Revalidate
+    // 5. СТАТИЧЕСКИЕ РЕСУРСЫ (/static/): Стратегия Stale-While-Revalidate
     if (url.pathname.startsWith('/static/')) {
         event.respondWith(
             caches.match(request).then((cachedResponse) => {
@@ -90,9 +105,15 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Остальные запросы — по умолчанию через сеть
+    // 6. Остальные запросы того же origin — сетевой запрос с кэш-фоллбэком
     event.respondWith(
-        fetch(request).catch(() => caches.match(request))
+        fetch(request).catch(async () => {
+            const cached = await caches.match(request);
+            if (cached) {
+                return cached;
+            }
+            return new Response(null, { status: 504, statusText: 'Gateway Timeout' });
+        })
     );
 });
 
