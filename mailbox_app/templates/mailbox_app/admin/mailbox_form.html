@@ -8,7 +8,7 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-lite.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'django_ckeditor_5/dist/styles.css' %}" />
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}" />
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}" />
     <style>
@@ -327,25 +327,9 @@
     </section>
 
     <!-- Скрипты управления формой -->
-    <script src="{% static 'admin_templates/vendor/summernote/summernote-lite.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/summernote/lang/summernote-ru-RU.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script>
         $(document).ready(function() {
-            // Инициализация Summernote для подписи
-            $('.summernote-signature').summernote({
-                height: 120,
-                placeholder: 'Введите подпись подразделения / сотрудника...',
-                lang: 'ru-RU',
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'clear']],
-                    ['font', ['color']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link']],
-                    ['view', ['codeview']]
-                ]
-            });
-
             // Инициализация Select2 для сотрудников
             $('.select2-users').select2({
                 placeholder: "Выберите сотрудников с доступом...",

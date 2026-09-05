@@ -61,6 +61,11 @@
             <link rel="stylesheet" href="{% static 'admin_templates/vendor/fullcalendar/fullcalendar.css' %}"/>
         {% endif %}
     {% endwith %}
+    {% with ck_list="mailbox_app,customers_app,hrdepartment_app,library_app"|split:"," %}
+        {% if request.resolver_match.app_name in ck_list %}
+            <link rel="stylesheet" href="{% static 'django_ckeditor_5/dist/styles.css' %}"/>
+        {% endif %}
+    {% endwith %}
 
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}"/>
@@ -216,6 +221,18 @@
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/nprogress/nprogress.js' %}"></script>
+
+    <!-- HTMX: реактивная загрузка HTML-фрагментов и глобальная конфигурация -->
+    <script src="{% static 'admin_templates/vendor/htmx/htmx.min.js' %}"></script>
+    <script src="{% static_version 'customers_app/js/htmx_config.js' %}"></script>
+
+    <!-- CKEditor 5: WYSIWYG редактор для почты и документов -->
+    {% with ck_list="mailbox_app,customers_app,hrdepartment_app,library_app"|split:"," %}
+        {% if request.resolver_match.app_name in ck_list %}
+            <script src="{% static 'django_ckeditor_5/dist/bundle.js' %}"></script>
+        {% endif %}
+    {% endwith %}
 
     <!-- Пользовательские скрипты страницы -->
     {% block custom_script %}
@@ -238,6 +255,7 @@
 
     <!-- Фоновые уведомления о новых письмах корпоративной почты (Web Notifications & Badges) -->
     <script src="{% static_version 'customers_app/js/mailbox_notifications.js' %}"></script>
+    <script src="{% static_version 'customers_app/js/mailbox_actions.js' %}"></script>
 
 
 

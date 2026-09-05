@@ -70,6 +70,12 @@ from mailbox_app.services.imap_service import (
 )
 from mailbox_app.services.mailbox_defaults import get_domain_defaults
 from mailbox_app.services.smtp_service import SmtpMailService
+from mailbox_app.services.htmx_utils import (
+    HtmxResponseMixin,
+    is_htmx_request,
+    render_htmx,
+    htmx_redirect,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -343,16 +349,29 @@ class MailboxAdminAccessMixin(MailboxBaseMixin, UserPassesTestMixin):
         return redirect("mailbox_app:index")
 
 
-class MailboxFolderView(MailboxBaseMixin, TemplateView):
-    """Представление для отображения списка писем выбранной папки."""
+class MailboxFolderView(HtmxResponseMixin, MailboxBaseMixin, TemplateView):
+    """Представление для отображения списка писем выбранной папки.
+
+    Поддерживает двухрежимный рендеринг: при HTMX-запросах возвращает только
+    частичный шаблон `_folder_content.html` для подмены в `#mailboxMainContent`,
+    а при прямых обращениях / F5 — полноценную страницу `folder.html`.
+
+    Attributes:
+        template_name (str): Путь к полному шаблону страницы.
+        partial_template_name (str): Путь к HTMX-фрагменту таблицы и тулбара папки.
+    """
 
     template_name = "mailbox_app/folder.html"
+    partial_template_name = "mailbox_app/partials/_folder_content.html"
 
-    def get_context_data(self, **kwargs):
-        """Формирует контекст данных для списка писем и дерева папок.
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Формирует контекст данных для списка писем, дерева папок, фильтрации и пагинации.
+
+        Args:
+            **kwargs: Дополнительные параметры маршрутизации.
 
         Returns:
-            dict: Контекст шаблона.
+            Dict[str, Any]: Контекст для рендеринга шаблона папки.
         """
         context = super().get_context_data(**kwargs)
         account = self.get_account()
@@ -534,24 +553,35 @@ class MailboxFolderView(MailboxBaseMixin, TemplateView):
         return context
 
 
-class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
-    """Представление для детального просмотра письма."""
+class MailboxEmailDetailView(HtmxResponseMixin, MailboxBaseMixin, TemplateView):
+    """Представление для детального просмотра электронного письма.
+
+    Поддерживает двухрежимный рендеринг: при HTMX-запросах возвращает только
+    частичный фрагмент `_email_detail_content.html` для подмены в `#mailboxMainContent`,
+    а при прямых обращениях / F5 — полноценную страницу `email_detail.html`.
+
+    Attributes:
+        template_name (str): Путь к полному шаблону страницы.
+        partial_template_name (str): Путь к HTMX-фрагменту просмотра письма.
+    """
 
     template_name = "mailbox_app/email_detail.html"
+    partial_template_name = "mailbox_app/partials/_email_detail_content.html"
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Обрабатывает GET-запрос детального просмотра письма.
 
         Если письмо открывается из папки 'Черновики' (Drafts), перенаправляет
-        пользователя на страницу редактирования черновика в композере compose.
+        пользователя на страницу редактирования черновика в композере compose
+        с поддержкой как обычного редиректа, так и HTMX-редиректа.
 
         Args:
-            request: Объект HTTP-запроса.
-            *args: Дополнительные позиционные аргументы.
-            **kwargs: Именованные параметры маршрута (folder, uid).
+            request (HttpRequest): Объект входящего HTTP-запроса Django.
+            *args (Any): Дополнительные позиционные аргументы.
+            **kwargs (Any): Именованные параметры маршрута (folder, uid).
 
         Returns:
-            HttpResponse: Редирект в форму написания письма или отрендеренная страница.
+            HttpResponse: Редирект в форму написания письма или отрендеренная страница/partial.
         """
         folder_name = self.kwargs.get("folder", "INBOX")
         uid = int(self.kwargs.get("uid"))
@@ -559,7 +589,10 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
 
         # Быстрая проверка по имени папки черновиков
         if any(s in fn_lower for s in ("draft", "черновик")):
-            return redirect(f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}")
+            draft_url = f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}"
+            if is_htmx_request(request):
+                return htmx_redirect(draft_url)
+            return redirect(draft_url)
 
         account = self.get_account()
         try:
@@ -568,18 +601,27 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
                 for f in folders:
                     if f.get("raw_name") == folder_name:
                         if f.get("type") == "drafts" or f.get("root_type") == "drafts":
-                            return redirect(f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}")
+                            draft_url = f"{reverse('mailbox_app:compose')}?draft_uid={uid}&folder={quote(folder_name)}"
+                            if is_htmx_request(request):
+                                return htmx_redirect(draft_url)
+                            return redirect(draft_url)
                         break
         except Exception:
             pass
 
         return super().get(request, *args, **kwargs)
 
-    def get_context_data(self, **kwargs):
-        """Загружает полное содержимое письма с сервера IMAP.
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Загружает полное содержимое письма с сервера IMAP и формирует контекст.
+
+        Args:
+            **kwargs (Any): Дополнительные аргументы контекста.
 
         Returns:
-            dict: Контекст с данными письма.
+            Dict[str, Any]: Контекст с данными письма, реквизитами отправителя и вложениями.
+
+        Raises:
+            Http404: Если письмо с указанным UID не найдено на сервере IMAP.
         """
         context = super().get_context_data(**kwargs)
         account = self.get_account()
@@ -656,17 +698,29 @@ class MailboxEmailDetailView(MailboxBaseMixin, TemplateView):
         return context
 
 
-class MailboxComposeView(MailboxBaseMixin, FormView):
-    """Представление для написания и отправки письма."""
+class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
+    """Представление для создания, ответа, пересылки и отправки электронных писем.
+
+    Поддерживает двухрежимный рендеринг: при HTMX-запросах возвращает частичный
+    шаблон `_compose_content.html` для подмены в `#mailboxMainContent`,
+    а при прямом переходе / F5 — полноценную страницу `compose.html`.
+    Интегрирован с CKEditor 5 и системой автосохранения черновиков.
+
+    Attributes:
+        template_name (str): Путь к полному шаблону страницы.
+        partial_template_name (str): Путь к HTMX-фрагменту формы написания письма.
+        form_class (Type[MailComposeForm]): Класс формы написания письма.
+    """
 
     template_name = "mailbox_app/compose.html"
+    partial_template_name = "mailbox_app/partials/_compose_content.html"
     form_class = MailComposeForm
 
-    def get_initial(self):
-        """Предзаполняет поля формы при ответе (Reply) или пересылке (Forward).
+    def get_initial(self) -> Dict[str, Any]:
+        """Предзаполняет поля формы при обычном создании, ответе (Reply), пересылке (Forward) или редактировании черновика.
 
         Returns:
-            dict: Начальные значения формы.
+            Dict[str, Any]: Словарь с начальными значениями полей формы.
         """
         initial = super().get_initial()
         account = self.get_account()
@@ -740,11 +794,14 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
 
         return initial
 
-    def get_context_data(self, **kwargs):
-        """Добавляет список папок, шаблоны и корпоративную подпись в контекст формы.
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Формирует контекст страницы написания письма (список папок, шаблоны, корпоративная подпись).
+
+        Args:
+            **kwargs (Any): Дополнительные именованные параметры контекста.
 
         Returns:
-            dict: Контекст шаблона.
+            Dict[str, Any]: Словарь с данными для шаблона.
         """
         context = super().get_context_data(**kwargs)
         account = self.get_account()
@@ -786,14 +843,14 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
         })
         return context
 
-    def form_valid(self, form):
-        """Обрабатывает отправку письма сразу через SMTP или планирует отправку по расписанию.
+    def form_valid(self, form: MailComposeForm) -> HttpResponse:
+        """Обрабатывает отправку письма сразу через SMTP или планирует отложенную отправку.
 
         Args:
-            form (MailComposeForm): Валидированная форма.
+            form (MailComposeForm): Валидированный экземпляр формы.
 
         Returns:
-            HttpResponse: Редирект на список писем с сообщением об успехе.
+            HttpResponse: Редирект на список писем с сообщением об успехе (с поддержкой HTMX-редиректа).
         """
         account = self.get_account()
         to_raw = form.cleaned_data["to"]
@@ -834,6 +891,9 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
                     self.request,
                     f"Письмо «{subject}» успешно запланировано к отправке на {scheduled_at:%d.%m.%Y %H:%M} (МСК)!",
                 )
+                target_url = reverse("mailbox_app:scheduled_list")
+                if is_htmx_request(self.request):
+                    return htmx_redirect(target_url)
                 return redirect("mailbox_app:scheduled_list")
             except Exception as e:
                 logger.error(f"[Mailbox] Ошибка создания отложенного письма: {e}", exc_info=True)
@@ -892,6 +952,9 @@ class MailboxComposeView(MailboxBaseMixin, FormView):
 
             invalidate_mailbox_cache(account.email)
             messages.success(self.request, f"Письмо «{subject}» успешно отправлено!")
+            target_url = reverse("mailbox_app:folder", kwargs={"folder": "INBOX"})
+            if is_htmx_request(self.request):
+                return htmx_redirect(target_url)
             return redirect("mailbox_app:folder", folder="INBOX")
         except Exception as e:
             logger.error(f"[Mailbox] Ошибка отправки письма: {e}")
@@ -1211,10 +1274,11 @@ class MailboxDownloadAttachmentsZipView(MailboxBaseMixin, View):
             return redirect("mailbox_app:email_detail", folder=folder, uid=uid)
 
 
-class MailboxContactsListView(MailboxBaseMixin, ListView):
+class MailboxContactsListView(HtmxResponseMixin, MailboxBaseMixin, ListView):
     """Представление реестра персональной адресной книги сотрудника."""
 
     template_name = "mailbox_app/contacts_list.html"
+    partial_template_name = "mailbox_app/partials/_contacts_list_content.html"
     context_object_name = "contacts"
     paginate_by = 30
 
@@ -1287,6 +1351,8 @@ class MailboxContactCreateOrUpdateView(MailboxBaseMixin, View):
 
         msg_text = f"Контакт «{contact.name}» успешно сохранен!"
         messages.success(request, msg_text)
+        if is_htmx_request(request):
+            return htmx_redirect(reverse("mailbox_app:contacts_list"))
         return redirect("mailbox_app:contacts_list")
 
 
@@ -1299,6 +1365,8 @@ class MailboxContactDeleteView(MailboxBaseMixin, View):
         contact_name = contact.name or contact.email
         contact.delete()
         messages.success(request, f"Контакт «{contact_name}» успешно удален из адресной книги.")
+        if is_htmx_request(request):
+            return htmx_redirect(reverse("mailbox_app:contacts_list"))
         return redirect("mailbox_app:contacts_list")
 
 
@@ -1617,28 +1685,42 @@ class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
             })
 
 
-class MailboxSettingsView(MailboxBaseMixin, FormView):
-    """Представление для редактирования настроек почты и подписи пользователя."""
+class MailboxSettingsView(HtmxResponseMixin, MailboxBaseMixin, FormView):
+    """Представление для редактирования настроек почты и подписи пользователя.
+
+    Поддерживает двухрежимный рендеринг: при HTMX-запросах возвращает частичный
+    шаблон `_settings_content.html` для бесшовной подмены в `#mailboxMainContent`,
+    а при прямом заходе — полную страницу `settings.html`.
+
+    Attributes:
+        template_name (str): Путь к полному шаблону страницы.
+        partial_template_name (str): Путь к HTMX-фрагменту настроек.
+        form_class (Type[MailAccountSettingsForm]): Класс формы настроек аккаунта.
+    """
 
     template_name = "mailbox_app/settings.html"
+    partial_template_name = "mailbox_app/partials/_settings_content.html"
     form_class = MailAccountSettingsForm
 
-    def get_form_kwargs(self):
+    def get_form_kwargs(self) -> Dict[str, Any]:
         """Передает текущий инстанс MailAccount и права администратора почты в форму.
 
         Returns:
-            dict: Параметры формы.
+            Dict[str, Any]: Словарь аргументов для инициализации формы.
         """
         kwargs = super().get_form_kwargs()
         kwargs["instance"] = self.get_account()
         kwargs["is_superuser"] = is_mailbox_admin(self.request.user)
         return kwargs
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
         """Формирует контекст данных для страницы настроек почты.
 
+        Args:
+            **kwargs (Any): Дополнительные аргументы контекста.
+
         Returns:
-            dict: Контекст шаблона с учетной записью и списком папок.
+            Dict[str, Any]: Контекст шаблона с учетной записью и списком папок.
         """
         context = super().get_context_data(**kwargs)
         account = self.get_account()
@@ -1661,15 +1743,21 @@ class MailboxSettingsView(MailboxBaseMixin, FormView):
         })
         return context
 
-    def form_valid(self, form):
+    def form_valid(self, form: MailAccountSettingsForm) -> HttpResponse:
         """Сохраняет обновленные настройки почты.
 
+        Args:
+            form (MailAccountSettingsForm): Валидированная форма настроек.
+
         Returns:
-            HttpResponse: Редирект с уведомлением.
+            HttpResponse: Редирект на страницу настроек с уведомлением (поддерживает HTMX-редирект).
         """
         form.save()
         invalidate_mailbox_cache(self.get_account().email)
         messages.success(self.request, "Настройки почтового ящика успешно сохранены!")
+        target_url = reverse("mailbox_app:settings")
+        if is_htmx_request(self.request):
+            return htmx_redirect(target_url)
         return redirect("mailbox_app:settings")
 
 
@@ -1967,10 +2055,11 @@ class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
         return context
 
 
-class MailboxScheduledListView(MailboxBaseMixin, ListView):
+class MailboxScheduledListView(HtmxResponseMixin, MailboxBaseMixin, ListView):
     """Представление для просмотра и управления письмами, запланированными к отправке."""
 
     template_name = "mailbox_app/scheduled_list.html"
+    partial_template_name = "mailbox_app/partials/_scheduled_list_content.html"
     context_object_name = "scheduled_emails"
     paginate_by = 25
 
@@ -2166,11 +2255,12 @@ class MailboxScheduledActionAPIView(MailboxBaseMixin, View):
             return JsonResponse({"success": False, "error": str(err)}, status=400)
 
 
-class MailboxScheduledDetailView(MailboxBaseMixin, DetailView):
+class MailboxScheduledDetailView(HtmxResponseMixin, MailboxBaseMixin, DetailView):
     """Представление для детального просмотра параметров и содержимого отложенного письма."""
 
     model = ScheduledEmail
     template_name = "mailbox_app/scheduled_detail.html"
+    partial_template_name = "mailbox_app/partials/_scheduled_detail_content.html"
     context_object_name = "scheduled_email"
     pk_url_kwarg = "pk"
 
@@ -2230,11 +2320,12 @@ class MailboxScheduledDetailView(MailboxBaseMixin, DetailView):
         return context
 
 
-class MailboxScheduledEditView(MailboxBaseMixin, FormView):
+class MailboxScheduledEditView(HtmxResponseMixin, MailboxBaseMixin, FormView):
     """Представление для редактирования параметров и текста запланированного письма."""
 
     form_class = ScheduledEmailEditForm
     template_name = "mailbox_app/scheduled_edit.html"
+    partial_template_name = "mailbox_app/partials/_scheduled_edit_content.html"
 
     def dispatch(self, request, *args, **kwargs):
         """Проверяет права доступа и допустимость редактирования письма.
@@ -2251,6 +2342,9 @@ class MailboxScheduledEditView(MailboxBaseMixin, FormView):
                 request,
                 f"Письмо в статусе «{self.scheduled_email.get_status_display()}» нельзя редактировать.",
             )
+            target_url = reverse("mailbox_app:scheduled_detail", kwargs={"pk": self.scheduled_email.id})
+            if is_htmx_request(request):
+                return htmx_redirect(target_url)
             return redirect("mailbox_app:scheduled_detail", pk=self.scheduled_email.id)
         return super().dispatch(request, *args, **kwargs)
 
@@ -2374,6 +2468,9 @@ class MailboxScheduledEditView(MailboxBaseMixin, FormView):
                 try:
                     send_single_scheduled_email(updated_email.id)
                     messages.success(self.request, "Письмо успешно отправлено адресатам!")
+                    target_url = reverse("mailbox_app:scheduled_list")
+                    if is_htmx_request(self.request):
+                        return htmx_redirect(target_url)
                     return redirect("mailbox_app:scheduled_list")
                 except Exception as e:
                     from mailbox_app.tasks import send_scheduled_email_task
@@ -2381,12 +2478,18 @@ class MailboxScheduledEditView(MailboxBaseMixin, FormView):
                     logger.warning(f"[Mailbox] Ошибка немедленной отправки: {e}, ставим в очередь Celery")
                     send_scheduled_email_task.delay(updated_email.id)
                     messages.info(self.request, "Письмо сохранено и поставлено в очередь отправки Celery.")
+                    target_url = reverse("mailbox_app:scheduled_detail", kwargs={"pk": updated_email.id})
+                    if is_htmx_request(self.request):
+                        return htmx_redirect(target_url)
                     return redirect("mailbox_app:scheduled_detail", pk=updated_email.id)
 
             messages.success(
                 self.request,
                 f"Запланированное письмо успешно обновлено! Отправка запланирована на {scheduled_at:%d.%m.%Y %H:%M} (МСК).",
             )
+            target_url = reverse("mailbox_app:scheduled_detail", kwargs={"pk": updated_email.id})
+            if is_htmx_request(self.request):
+                return htmx_redirect(target_url)
             return redirect("mailbox_app:scheduled_detail", pk=updated_email.id)
 
         except Exception as err:

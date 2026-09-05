@@ -7,6 +7,10 @@
         <nav class="mailbox-tabs-scroll" id="mailboxTabsScroll" aria-label="Почтовые ящики">
             {% for mb in available_mailboxes %}
                 <a href="{% url 'mailbox_app:folder' folder='INBOX' %}?mailbox={{ mb.id }}"
+                   hx-get="{% url 'mailbox_app:folder' folder='INBOX' %}?mailbox={{ mb.id }}"
+                   hx-target="#mailboxMainContent"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
                    class="mailbox-tab-item {% if mb.is_current %}active{% endif %}"
                    title="{{ mb.name }} ({{ mb.email }})">
                     <div class="mailbox-tab-icon">

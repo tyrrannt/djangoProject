@@ -8,7 +8,7 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/summernote/summernote-lite.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'django_ckeditor_5/dist/styles.css' %}" />
 {% endblock %}
 
 {% block content %}
@@ -23,1069 +23,33 @@
             <!-- Боковое меню папок -->
             {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
 
-            <!-- Форма написания письма -->
-            <div class="inner-body mailbox-compose">
-                <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
-                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
-
-                <div class="mailbox-compose-container">
-                    <header class="mailbox-compose-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
-                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
-                                <i class="bx bx-folder-open font-size-18"></i>
-                            </button>
-                            <h4 class="mailbox-page-title m-0 fw-bold text-dark font-size-17">
-                                <i class="bx bx-edit text-primary d-none d-sm-inline"></i> <span>Новое сообщение</span>
-                            </h4>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <!-- Индикатор статуса черновика -->
-                            <div id="draftStatusBadge" class="text-muted small d-none align-items-center gap-1 font-size-12 me-1">
-                                <i class="bx bx-check-circle text-success font-size-15" id="draftStatusIcon"></i>
-                                <span id="draftStatusText">Черновик сохранен</span>
-                            </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm" id="btnManualSaveDraft" title="Сохранить в папку «Черновики»">
-                                <i class="bx bx-save font-size-16"></i> <span class="d-none d-sm-inline">Сохранить черновик</span>
-                            </button>
-                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm" id="btnCancelCompose">
-                                <i class="bx bx-x font-size-16"></i> <span class="d-none d-sm-inline">Отмена</span>
-                            </a>
-                        </div>
-                    </header>
-
-                    {% if form.errors %}
-                        <div class="alert alert-danger mb-4" role="alert">
-                            <i class="bx bx-error-circle me-2"></i> Пожалуйста, проверьте правильность заполнения полей: {{ form.errors }}
-                        </div>
-                    {% endif %}
-
-                    <form method="post" enctype="multipart/form-data" id="composeMailForm">
-                        {% csrf_token %}
-                        {{ form.send_mode }}
-                        {{ form.scheduled_at }}
-                        <input type="hidden" name="draft_uid" id="draftUidInput" value="{{ draft_uid|default:'' }}">
-
-                        <!-- Поле Кому -->
-                        <div class="mailbox-form-row position-relative">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label for="mailRecipientInput" class="m-0">
-                                    Кому: <span class="text-danger">*</span>
-                                </label>
-                                <div class="mailbox-toggle-links">
-                                    <a onclick="toggleField('ccRow')">+ Копия</a> &nbsp;|&nbsp; 
-                                    <a onclick="toggleField('bccRow')">+ Скрытая копия</a>
-                                </div>
-                            </div>
-                            {{ form.to }}
-                            <div id="contactAutocompleteList" class="contact-autocomplete-box"></div>
-                        </div>
-
-                        <!-- Поле Копия -->
-                        <div class="mailbox-form-row position-relative" id="ccRow" style="{% if not form.cc.value %}display: none;{% endif %}">
-                            <label>Копия:</label>
-                            {{ form.cc }}
-                            <div id="contactAutocompleteListCc" class="contact-autocomplete-box"></div>
-                        </div>
-
-                        <!-- Поле Скрытая копия -->
-                        <div class="mailbox-form-row position-relative" id="bccRow" style="{% if not form.bcc.value %}display: none;{% endif %}">
-                            <label>Скрытая копия:</label>
-                            {{ form.bcc }}
-                            <div id="contactAutocompleteListBcc" class="contact-autocomplete-box"></div>
-                        </div>
-
-                        <!-- Поле Тема -->
-                        <div class="mailbox-form-row">
-                            <label>Тема:</label>
-                            {{ form.subject }}
-                        </div>
-
-                        <!-- Поле Текст сообщения -->
-                        <div class="mailbox-form-row mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
-                                <label class="m-0">Сообщение:</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <!-- Кнопка быстрой вставки официальной корпоративной подписи -->
-                                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none py-1 px-2"
-                                            id="btnInsertSignature" onclick="insertCorporateSignature()" style="font-size: 12px; border-radius: 6px;"
-                                            title="Вставить официальную подпись авиакомпании «БАРКОЛ»">
-                                        <i class="bx bx-pen text-primary font-size-14"></i>
-                                        <span>Подпись «БАРКОЛ»</span>
-                                    </button>
-                                    <!-- Выпадающее меню шаблонов ответов -->
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none py-1 px-2"
-                                                type="button" id="templatesDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 12px; border-radius: 6px;">
-                                            <i class="bx bx-bookmark font-size-14"></i>
-                                            <span>Шаблоны ответов</span>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-1" style="min-width: 290px; max-height: 380px; overflow-y: auto; z-index: 1060; border-radius: 10px;">
-                                            <li class="dropdown-header text-uppercase text-muted fw-bold" style="font-size: 11px;">Готовые шаблоны:</li>
-                                            {% for t in mail_templates %}
-                                                <li>
-                                                    <a class="dropdown-item py-2 px-3 cursor-pointer d-flex flex-column" onclick="applyTemplate({{ t.id }})">
-                                                        <span class="fw-semibold text-dark text-truncate">
-                                                            {% if t.is_global %}
-                                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">Общий</span>
-                                                            {% else %}
-                                                                <span class="badge bg-light text-secondary border me-1" style="font-size: 10px;">Личный</span>
-                                                            {% endif %}
-                                                            {{ t.name }}
-                                                        </span>
-                                                        {% if t.subject %}
-                                                            <small class="text-muted text-truncate" style="font-size: 11px;">Тема: {{ t.subject }}</small>
-                                                        {% endif %}
-                                                    </a>
-                                                </li>
-                                            {% empty %}
-                                                <li class="px-3 py-2 text-muted small">Шаблоны пока не созданы</li>
-                                            {% endfor %}
-                                            <li><hr class="dropdown-divider my-1"></li>
-                                            <li>
-                                                <a class="dropdown-item py-2 px-3 text-primary d-flex align-items-center gap-2 cursor-pointer" onclick="openSaveTemplateModal()">
-                                                    <i class="bx bx-plus-circle font-size-16"></i> Сохранить текущее как шаблон
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                            {{ form.body_html }}
-                        </div>
-
-                        <!-- Вложения файлов с Drag & Drop -->
-                        <div class="mail-attachments-card p-3 bg-light rounded border mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                                <label class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-1 font-size-14">
-                                    <i class="bx bx-paperclip text-primary font-size-18"></i> Прикрепить файлы
-                                </label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span id="attachmentsSummary" class="badge bg-white text-secondary border d-none font-size-11 py-1 px-2">
-                                        Файлов: <strong id="attachmentsCount">0</strong> (<span id="attachmentsTotalSize">0 КБ</span>)
-                                    </span>
-                                    <small class="text-muted font-size-12">Перетащите файлы или выберите на диске</small>
-                                </div>
-                            </div>
-
-                            <!-- Интерактивная зона Drag & Drop -->
-                            <div class="mail-dropzone border rounded p-4 text-center cursor-pointer transition-base" id="mailDropzone">
-                                <input type="file" name="attachments" id="id_attachments" class="d-none" multiple>
-                                <div class="dropzone-icon mb-2">
-                                    <i class="bx bx-cloud-upload text-primary" style="font-size: 38px;"></i>
-                                </div>
-                                <div class="dropzone-text">
-                                    <span class="fw-semibold text-dark font-size-14">Перетащите файлы сюда</span>
-                                    <span class="text-muted font-size-13"> или </span>
-                                    <span class="text-primary font-size-14 fw-semibold text-decoration-underline">выберите на компьютере</span>
-                                </div>
-                                <div class="text-muted small mt-1 font-size-11">
-                                    Документы (PDF, DOCX, XLSX), сканы, архивы (ZIP) и изображения любого размера
-                                </div>
-                            </div>
-
-                            <!-- Список прикрепленных файлов с бейджами и кнопкой удаления каждого файла -->
-                            <div id="selectedFilesList" class="mt-3 d-flex flex-wrap gap-2"></div>
-                        </div>
-
-                        <!-- Кнопки действий -->
-                        <div class="d-flex justify-content-between align-items-center pt-3 border-top gap-3 flex-wrap mt-4">
-                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px;">
-                                <i class="bx bx-arrow-back font-size-16"></i> <span>Отмена</span>
-                            </a>
-
-                            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
-                                <!-- Индикатор запланированного времени -->
-                                <div id="scheduledNoticeBadge" class="d-none align-items-center gap-2 shadow-sm" style="border-radius: 20px;">
-                                    <i class="bx bx-time-five font-size-16" style="color: #d97706;"></i>
-                                    <span>Отправка: <strong id="scheduledNoticeTime"></strong> (МСК)</span>
-                                    <button type="button" class="btn-close ms-1" style="font-size: 9px;" id="btnResetScheduled" title="Сбросить на обычную отправку" aria-label="Сбросить"></button>
-                                </div>
-
-                                <!-- Сплит-кнопка отправки письма (Gmail / Outlook style) -->
-                                <div class="btn-group shadow-sm" id="sendBtnGroup" style="border-radius: 8px;">
-                                    <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2" id="sendMailBtn" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">
-                                        <i class="bx bx-paper-plane font-size-18" id="sendBtnIcon"></i> <span id="sendBtnText">Отправить</span>
-                                    </button>
-                                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split px-3" id="sendBtnDropdownToggle" data-bs-toggle="dropdown" aria-expanded="false" title="Варианты отправки" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px; border-left: 1px solid rgba(255,255,255,0.25);">
-                                        <span class="visually-hidden">Варианты отправки</span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-1" style="border-radius: 10px; min-width: 270px; z-index: 1050; box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;">
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3" href="#" id="menuSendNow">
-                                                <div class="schedule-preset-icon bg-primary bg-opacity-15 text-primary" style="background-color: #eff6ff; color: #0088cc; width: 34px; height: 34px; border-radius: 6px;">
-                                                    <i class="bx bx-paper-plane font-size-18"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="font-weight-semibold font-size-13 text-dark">Отправить сейчас</div>
-                                                    <small class="text-muted font-size-11">Мгновенная отправка через SMTP</small>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider my-1"></li>
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3" href="#" id="menuOpenScheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleSendModal">
-                                                <div class="schedule-preset-icon bg-warning bg-opacity-15 text-warning" style="background-color: #fef3c7; color: #d97706; width: 34px; height: 34px; border-radius: 6px;">
-                                                    <i class="bx bx-time-five font-size-18"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="font-weight-semibold font-size-13 text-dark">Запланировать отправку</div>
-                                                    <small class="text-muted font-size-11">Выбрать дату и время (МСК)</small>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            <!-- Основная область написания письма (HTMX target) -->
+            {% include 'mailbox_app/partials/_compose_content.html' %}
         </div>
     </section>
-
-    <!-- Модальное окно планирования отправки письма -->
-    <div class="modal fade" id="scheduleSendModal" tabindex="-1" aria-labelledby="scheduleSendModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
-            <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
-                <div class="modal-header bg-light py-3 px-4 border-bottom">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #fffbeb; color: #d97706;">
-                            <i class="bx bx-time-five font-size-20"></i>
-                        </div>
-                        <div>
-                            <h5 class="modal-title font-weight-bold text-dark m-0 font-size-16" id="scheduleSendModalLabel">Запланировать отправку</h5>
-                            <small class="text-muted font-size-12">Московское время (UTC+3)</small>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <p class="text-muted small mb-2 font-size-12">Выберите быстрый вариант отправки в 1 клик:</p>
-
-                    <!-- Быстрые варианты в 1 клик -->
-                    <div class="d-flex flex-column gap-2 mb-3">
-                        <button type="button" class="schedule-preset-card schedule-preset-btn" data-preset="tomorrow_morning">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="schedule-preset-icon" style="background-color: #fef3c7; color: #d97706;">
-                                    <i class="bx bx-sun"></i>
-                                </div>
-                                <span class="font-weight-semibold font-size-13 text-dark">Завтра утром (09:00)</span>
-                            </div>
-                            <span class="badge bg-light text-muted border font-size-11" id="presetTomorrowMorningText"></span>
-                        </button>
-
-                        <button type="button" class="schedule-preset-card schedule-preset-btn" data-preset="tomorrow_afternoon">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="schedule-preset-icon" style="background-color: #eff6ff; color: #0088cc;">
-                                    <i class="bx bx-coffee"></i>
-                                </div>
-                                <span class="font-weight-semibold font-size-13 text-dark">Завтра днем (14:00)</span>
-                            </div>
-                            <span class="badge bg-light text-muted border font-size-11" id="presetTomorrowAfternoonText"></span>
-                        </button>
-
-                        <button type="button" class="schedule-preset-card schedule-preset-btn" data-preset="next_monday">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="schedule-preset-icon" style="background-color: #ecfdf5; color: #059669;">
-                                    <i class="bx bx-briefcase"></i>
-                                </div>
-                                <span class="font-weight-semibold font-size-13 text-dark">В понедельник утром (09:00)</span>
-                            </div>
-                            <span class="badge bg-light text-muted border font-size-11" id="presetNextMondayText"></span>
-                        </button>
-                    </div>
-
-                    <div class="d-flex align-items-center my-3">
-                        <hr class="flex-grow-1 m-0">
-                        <span class="px-2 text-muted small text-uppercase" style="font-size: 11px;">или точная дата</span>
-                        <hr class="flex-grow-1 m-0">
-                    </div>
-
-                    <!-- Выбор точной даты и времени -->
-                    <div class="mb-2">
-                        <label for="customScheduleDateTime" class="form-label font-weight-semibold text-dark font-size-13 d-flex align-items-center gap-1">
-                            <i class="bx bx-calendar text-primary"></i> Указать дату и время отправки:
-                        </label>
-                        <input type="datetime-local" class="form-control" id="customScheduleDateTime" style="font-size: 14px; border-radius: 6px; padding: 8px 12px;">
-                        <div class="invalid-feedback" id="scheduleDateError">Время отправки должно быть позже текущего момента.</div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between border-top">
-                    <button type="button" class="btn btn-outline-secondary px-3 py-1 font-size-13" data-bs-dismiss="modal" style="border-radius: 6px;">Отмена</button>
-                    <button type="button" class="btn btn-primary font-weight-semibold px-4 py-1 font-size-13 shadow-sm d-flex align-items-center gap-1" id="btnConfirmSchedule" style="border-radius: 6px;">
-                        <i class="bx bx-check font-size-16"></i> Выбрать это время
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно сохранения шаблона -->
-    <div class="modal fade" id="saveTemplateModal" tabindex="-1" aria-labelledby="saveTemplateModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
-                <div class="modal-header bg-light py-3 px-4 border-bottom">
-                    <h5 class="modal-title font-weight-semibold text-dark d-flex align-items-center gap-2" id="saveTemplateModalLabel">
-                        <i class="bx bx-bookmark-plus text-primary font-size-22"></i> Сохранить как шаблон
-                    </h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label for="templateNameInput" class="form-label font-weight-semibold text-dark font-size-13">
-                            Название шаблона <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" id="templateNameInput" placeholder="Например: Согласование акта" style="font-size: 14px; border-radius: 6px;">
-                    </div>
-                    <div class="mb-3">
-                        <label for="templateSubjectInput" class="form-label font-weight-semibold text-dark font-size-13">
-                            Тема письма по умолчанию
-                        </label>
-                        <input type="text" class="form-control" id="templateSubjectInput" placeholder="Необязательно, подставится в тему письма" style="font-size: 14px; border-radius: 6px;">
-                    </div>
-                    {% if can_manage_mailboxes %}
-                        <div class="form-check form-switch mb-2">
-                            <input class="form-check-input cursor-pointer" type="checkbox" id="templateIsGlobalInput">
-                            <label class="form-check-label font-weight-semibold text-dark font-size-13 cursor-pointer" for="templateIsGlobalInput">
-                                Сделать общекорпоративным (доступен всем сотрудникам)
-                            </label>
-                        </div>
-                    {% endif %}
-                    <div class="small text-muted">
-                        В качестве текста шаблона будет сохранен текущий текст из редактора сообщения.
-                    </div>
-                </div>
-                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between border-top">
-                    <button type="button" class="btn btn-outline-secondary px-3 py-1 font-size-13" data-bs-dismiss="modal" style="border-radius: 6px;">Отмена</button>
-                    <button type="button" class="btn btn-primary font-weight-semibold px-4 py-1 font-size-13 shadow-sm d-flex align-items-center gap-1" id="btnSubmitSaveTemplate" onclick="submitSaveTemplate()" style="border-radius: 6px;">
-                        <i class="bx bx-check font-size-16"></i> Сохранить шаблон
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 {% endblock %}
 
 {% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/summernote/summernote-lite.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/summernote/lang/summernote-ru-RU.min.js' %}"></script>
+    <script src="{% static 'django_ckeditor_5/dist/bundle.js' %}"></script>
     <script>
-        $(document).ready(function() {
-            let isFormDirty = false;
-            let isSubmitting = false;
-            const isMobile = window.innerWidth <= 768;
-            const customAlignButtons = {
-                alignLeft: function(context) {
-                    const ui = $.summernote.ui;
-                    return ui.button({
-                        contents: '<i class="note-icon-align-left"></i>',
-                        tooltip: 'По левому краю (Ctrl+Shift+L)',
-                        click: function() { context.invoke('editor.justifyLeft'); }
-                    }).render();
-                },
-                alignCenter: function(context) {
-                    const ui = $.summernote.ui;
-                    return ui.button({
-                        contents: '<i class="note-icon-align-center"></i>',
-                        tooltip: 'По центру (Ctrl+Shift+E)',
-                        click: function() { context.invoke('editor.justifyCenter'); }
-                    }).render();
-                },
-                alignRight: function(context) {
-                    const ui = $.summernote.ui;
-                    return ui.button({
-                        contents: '<i class="note-icon-align-right"></i>',
-                        tooltip: 'По правому краю (Ctrl+Shift+R)',
-                        click: function() { context.invoke('editor.justifyRight'); }
-                    }).render();
-                },
-                alignJustify: function(context) {
-                    const ui = $.summernote.ui;
-                    return ui.button({
-                        contents: '<i class="note-icon-align-justify"></i>',
-                        tooltip: 'По ширине (Ctrl+Shift+J)',
-                        click: function() { context.invoke('editor.justifyFull'); }
-                    }).render();
-                }
-            };
+        let isFormDirty = false;
+        let isSubmitting = false;
+        let autoSaveDraftTimer = null;
 
-            const summernoteToolbar = isMobile ? [
-                ['style', ['style']],
-                ['fontname', ['fontname']],
-                ['fontsize', ['fontsize']],
-                ['font', ['bold', 'italic', 'underline', 'clear']],
-                ['color', ['color']],
-                ['align', ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify']],
-                ['para', ['ul', 'ol']],
-                ['table', ['table']],
-                ['insert', ['link', 'hr']]
-            ] : [
-                ['style', ['style']],
-                ['fontname', ['fontname']],
-                ['fontsize', ['fontsize']],
-                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
-                ['color', ['color']],
-                ['align', ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['table', ['table']],
-                ['insert', ['link', 'hr']],
-                ['view', ['fullscreen', 'codeview']]
-            ];
-
-            const availableFonts = [
-                'Times New Roman',
-                'Arial',
-                'Arial Black',
-                'Calibri',
-                'Comic Sans MS',
-                'Courier New',
-                'Georgia',
-                'Impact',
-                'Tahoma',
-                'Trebuchet MS',
-                'Verdana'
-            ];
-
-            // Инициализация Summernote с поддержкой русского языка и дефолтного стиля Times New Roman 14
-            $('#id_body_html').summernote({
-                height: isMobile ? 220 : 340,
-                minHeight: 180,
-                placeholder: 'Введите текст письма...',
-                lang: 'ru-RU',
-                toolbar: summernoteToolbar,
-                buttons: customAlignButtons,
-                fontNames: availableFonts,
-                fontNamesIgnoreCheck: availableFonts,
-                fontSizes: ['8', '9', '10', '11', '12', '13', '14', '16', '18', '20', '24', '28', '36', '48', '64', '72'],
-                callbacks: {
-                    onInit: function() {
-                        const $editor = $('#id_body_html').next('.note-editor');
-                        const $editable = $editor.find('.note-editable');
-                        $editable.css({
-                            'font-family': "'Times New Roman', Times, serif",
-                            'font-size': '14pt',
-                            'color': '#000000',
-                            'line-height': '1.5'
-                        });
-                        const $fontname = $editor.find('.note-current-fontname');
-                        if ($fontname.length && (!$fontname.text().trim() || $fontname.text().trim() === '..')) {
-                            $fontname.text('Times New Roman').css('font-family', "'Times New Roman', Times, serif");
-                        }
-                        const $fontsize = $editor.find('.note-current-fontsize');
-                        if ($fontsize.length && (!$fontsize.text().trim() || $fontsize.text().trim() === '..')) {
-                            $fontsize.text('14');
-                        }
+        /**
+         * Находит активный экземпляр CKEditor 5 для поля тела сообщения.
+         */
+        function getBodyEditor() {
+            if (window.editors && Array.isArray(window.editors)) {
+                for (let i = window.editors.length - 1; i >= 0; i--) {
+                    const ed = window.editors[i];
+                    if (ed.sourceElement && ed.sourceElement.id === 'id_body_html') {
+                        return ed;
                     }
                 }
-            });
-
-            // Функция привязки автодополнения контактов
-            function attachContactAutocomplete(inputElem, boxElem) {
-                if (!inputElem || !boxElem) return;
-
-                let debounceTimer;
-                inputElem.addEventListener('input', function() {
-                    clearTimeout(debounceTimer);
-                    const val = this.value;
-                    const lastToken = val.split(',').pop().trim();
-
-                    if (lastToken.length < 2) {
-                        boxElem.style.display = 'none';
-                        return;
-                    }
-
-                    debounceTimer = setTimeout(() => {
-                        fetch(`{% url 'mailbox_app:api_contacts' %}?q=${encodeURIComponent(lastToken)}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                boxElem.innerHTML = '';
-                                if (data.results && data.results.length > 0) {
-                                    data.results.forEach(contact => {
-                                        const item = document.createElement('div');
-                                        item.className = 'contact-autocomplete-item';
-                                        item.innerHTML = `
-                                            <div class="font-weight-semibold text-dark font-size-14">${contact.name}</div>
-                                            <div class="text-muted font-size-12 d-flex justify-content-between">
-                                                <span>${contact.email}</span>
-                                                <span class="badge bg-light text-muted">${contact.job || ''}</span>
-                                            </div>
-                                        `;
-                                        item.onclick = function() {
-                                            const tokens = inputElem.value.split(',');
-                                            tokens.pop();
-                                            tokens.push(`"${contact.name}" <${contact.email}>`);
-                                            inputElem.value = tokens.join(', ').replace(/^,\s*/, '') + ', ';
-                                            boxElem.style.display = 'none';
-                                            inputElem.focus();
-                                        };
-                                        boxElem.appendChild(item);
-                                    });
-                                    boxElem.style.display = 'block';
-                                } else {
-                                    boxElem.style.display = 'none';
-                                }
-                            })
-                            .catch(() => {
-                                boxElem.style.display = 'none';
-                            });
-                    }, 250);
-                });
-
-                document.addEventListener('click', function(e) {
-                    if (!inputElem.contains(e.target) && !boxElem.contains(e.target)) {
-                        boxElem.style.display = 'none';
-                    }
-                });
             }
-
-            // Подключение автодополнения ко всем полям адресатов
-            attachContactAutocomplete(
-                document.getElementById('mailRecipientInput'),
-                document.getElementById('contactAutocompleteList')
-            );
-            attachContactAutocomplete(
-                document.getElementById('id_cc'),
-                document.getElementById('contactAutocompleteListCc')
-            );
-            attachContactAutocomplete(
-                document.getElementById('id_bcc'),
-                document.getElementById('contactAutocompleteListBcc')
-            );
-
-            // === Вставка корпоративной подписи авиакомпании «БАРКОЛ» ===
-            const corporateSignatureHtml = {{ corporate_signature_json|safe|default:"''" }};
-            window.insertCorporateSignature = function() {
-                if (!corporateSignatureHtml) {
-                    alert('Корпоративная подпись не настроена.');
-                    return;
-                }
-                const currentCode = $('#id_body_html').summernote('code');
-                if (currentCode.includes('barkol-email-signature') || currentCode.includes('Авиакомпания «БАРКОЛ»')) {
-                    if (!confirm('Корпоративная подпись уже присутствует в тексте письма. Вставить её еще раз?')) {
-                        return;
-                    }
-                }
-                $('#id_body_html').summernote('focus');
-                $('#id_body_html').summernote('pasteHTML', '<p style="font-family: \'Times New Roman\', Times, serif; font-size: 14pt; color: #000000; line-height: 1.5;"><br></p>' + corporateSignatureHtml);
-                isFormDirty = true;
-            };
-
-            // === Drag & Drop загрузка файлов и интерактивный список вложений ===
-            const fileInput = document.getElementById('id_attachments');
-            const dropzone = document.getElementById('mailDropzone');
-            const filesContainer = document.getElementById('selectedFilesList');
-            const summaryBadge = document.getElementById('attachmentsSummary');
-            const countElem = document.getElementById('attachmentsCount');
-            const sizeElem = document.getElementById('attachmentsTotalSize');
-
-            // Хранилище файлов через DataTransfer для накопления и поштучного удаления
-            let attachmentsDt = new DataTransfer();
-
-            function formatFileSize(bytes) {
-                if (!bytes || bytes === 0) return '0 Б';
-                if (bytes < 1024) return bytes + ' Б';
-                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
-                return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
-            }
-
-            function getFileIconClass(fileName) {
-                const ext = (fileName.split('.').pop() || '').toLowerCase();
-                switch (ext) {
-                    case 'pdf':
-                        return 'bx bxs-file-pdf text-danger font-size-20';
-                    case 'doc':
-                    case 'docx':
-                    case 'odt':
-                    case 'rtf':
-                        return 'bx bxs-file-doc text-primary font-size-20';
-                    case 'xls':
-                    case 'xlsx':
-                    case 'csv':
-                    case 'ods':
-                        return 'bx bxs-file-blank text-success font-size-20';
-                    case 'ppt':
-                    case 'pptx':
-                        return 'bx bxs-file-blank text-warning font-size-20';
-                    case 'zip':
-                    case 'rar':
-                    case '7z':
-                    case 'tar':
-                    case 'gz':
-                        return 'bx bxs-file-archive text-warning font-size-20';
-                    case 'png':
-                    case 'jpg':
-                    case 'jpeg':
-                    case 'gif':
-                    case 'webp':
-                    case 'svg':
-                    case 'bmp':
-                        return 'bx bxs-file-image text-info font-size-20';
-                    case 'mp3':
-                    case 'wav':
-                    case 'ogg':
-                        return 'bx bxs-music text-secondary font-size-20';
-                    case 'mp4':
-                    case 'avi':
-                    case 'mkv':
-                    case 'mov':
-                        return 'bx bxs-video text-secondary font-size-20';
-                    default:
-                        return 'bx bx-file text-secondary font-size-20';
-                }
-            }
-
-            function updateAttachmentsUI() {
-                if (!filesContainer) return;
-                filesContainer.innerHTML = '';
-
-                const files = attachmentsDt.files;
-                let totalBytes = 0;
-
-                if (files.length === 0) {
-                    if (summaryBadge) summaryBadge.classList.add('d-none');
-                    return;
-                }
-
-                Array.from(files).forEach((file, index) => {
-                    totalBytes += file.size;
-
-                    const chip = document.createElement('div');
-                    chip.className = 'attachment-chip';
-                    chip.title = `${file.name} (${formatFileSize(file.size)})`;
-
-                    const icon = document.createElement('i');
-                    icon.className = getFileIconClass(file.name);
-
-                    const info = document.createElement('div');
-                    info.className = 'd-flex flex-column text-start';
-                    info.style.maxWidth = 'clamp(140px, 35vw, 240px)';
-
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'text-truncate fw-semibold text-dark font-size-12';
-                    nameSpan.textContent = file.name;
-
-                    const sizeSpan = document.createElement('span');
-                    sizeSpan.className = 'text-muted font-size-10';
-                    sizeSpan.textContent = formatFileSize(file.size);
-
-                    info.appendChild(nameSpan);
-                    info.appendChild(sizeSpan);
-
-                    const removeBtn = document.createElement('button');
-                    removeBtn.type = 'button';
-                    removeBtn.className = 'btn-close ms-1';
-                    removeBtn.setAttribute('aria-label', 'Удалить');
-                    removeBtn.title = 'Удалить файл';
-                    removeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        window.removeAttachment(index);
-                    });
-
-                    chip.appendChild(icon);
-                    chip.appendChild(info);
-                    chip.appendChild(removeBtn);
-
-                    filesContainer.appendChild(chip);
-                });
-
-                if (summaryBadge) {
-                    summaryBadge.classList.remove('d-none');
-                    if (countElem) countElem.textContent = files.length;
-                    if (sizeElem) sizeElem.textContent = formatFileSize(totalBytes);
-                }
-            }
-
-            function addFiles(newFiles) {
-                if (!newFiles || newFiles.length === 0) return;
-
-                Array.from(newFiles).forEach(file => {
-                    const isDuplicate = Array.from(attachmentsDt.files).some(
-                        existing => existing.name === file.name && existing.size === file.size && existing.lastModified === file.lastModified
-                    );
-                    if (!isDuplicate) {
-                        attachmentsDt.items.add(file);
-                    }
-                });
-
-                if (fileInput) {
-                    try {
-                        fileInput.files = attachmentsDt.files;
-                    } catch (err) {
-                        console.warn('DataTransfer files sync failed', err);
-                    }
-                }
-                isFormDirty = true;
-                updateAttachmentsUI();
-            }
-
-            window.removeAttachment = function(index) {
-                const newDt = new DataTransfer();
-                Array.from(attachmentsDt.files).forEach((file, i) => {
-                    if (i !== index) {
-                        newDt.items.add(file);
-                    }
-                });
-                attachmentsDt = newDt;
-                if (fileInput) {
-                    try {
-                        fileInput.files = attachmentsDt.files;
-                    } catch (err) {
-                        console.warn('DataTransfer files sync failed', err);
-                    }
-                }
-                isFormDirty = true;
-                updateAttachmentsUI();
-            };
-
-            if (dropzone && fileInput) {
-                // Клик по дропзоне активирует системный диалог выбора файлов
-                dropzone.addEventListener('click', function(e) {
-                    if (e.target.closest('button') || e.target.closest('.attachment-chip')) return;
-                    fileInput.click();
-                });
-
-                // Выбор файлов через стандартный диалог
-                fileInput.addEventListener('change', function() {
-                    addFiles(this.files);
-                });
-
-                // События перетаскивания (Drag & Drop)
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    dropzone.addEventListener(eventName, function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        dropzone.classList.add('dragover');
-                    });
-                });
-
-                ['dragleave', 'dragend'].forEach(eventName => {
-                    dropzone.addEventListener(eventName, function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        dropzone.classList.remove('dragover');
-                    });
-                });
-
-                dropzone.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropzone.classList.remove('dragover');
-
-                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        addFiles(e.dataTransfer.files);
-                    }
-                });
-
-                // Предотвращаем открытие файла браузером при случайном перетаскивании мимо дропзоны
-                window.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                });
-                window.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                });
-            }
-
-            // === Логика отправки писем по расписанию ===
-            const sendModeInput = document.getElementById('mailSendMode');
-            const scheduledAtInput = document.getElementById('mailScheduledAtInput');
-            const scheduledNoticeBadge = document.getElementById('scheduledNoticeBadge');
-            const scheduledNoticeTime = document.getElementById('scheduledNoticeTime');
-            const btnResetScheduled = document.getElementById('btnResetScheduled');
-            const sendMailBtn = document.getElementById('sendMailBtn');
-            const sendBtnText = document.getElementById('sendBtnText');
-            const sendBtnIcon = document.getElementById('sendBtnIcon');
-            const customScheduleDateTime = document.getElementById('customScheduleDateTime');
-            const btnConfirmSchedule = document.getElementById('btnConfirmSchedule');
-            const scheduleDateError = document.getElementById('scheduleDateError');
-
-            // Расчет дат для пресетов
-            function getPresetDates() {
-                const now = new Date();
-                
-                // Завтра 09:00
-                const tomorrowMorning = new Date(now);
-                tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
-                tomorrowMorning.setHours(9, 0, 0, 0);
-
-                // Завтра 14:00
-                const tomorrowAfternoon = new Date(now);
-                tomorrowAfternoon.setDate(tomorrowAfternoon.getDate() + 1);
-                tomorrowAfternoon.setHours(14, 0, 0, 0);
-
-                // Следующий понедельник 09:00
-                const nextMonday = new Date(now);
-                const dayOfWeek = nextMonday.getDay();
-                let daysUntilMonday = (1 - dayOfWeek + 7) % 7;
-                if (daysUntilMonday === 0) daysUntilMonday = 7;
-                nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
-                nextMonday.setHours(9, 0, 0, 0);
-
-                return { tomorrowMorning, tomorrowAfternoon, nextMonday };
-            }
-
-            function formatDateDisplay(d) {
-                const day = String(d.getDate()).padStart(2, '0');
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const year = d.getFullYear();
-                const hours = String(d.getHours()).padStart(2, '0');
-                const mins = String(d.getMinutes()).padStart(2, '0');
-                return `${day}.${month}.${year} ${hours}:${mins}`;
-            }
-
-            function formatDateIsoLocal(d) {
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                const hours = String(d.getHours()).padStart(2, '0');
-                const mins = String(d.getMinutes()).padStart(2, '0');
-                return `${year}-${month}-${day}T${hours}:${mins}`;
-            }
-
-            // Заполнение подсказок на кнопках пресетов
-            const presets = getPresetDates();
-            const textTomorrowMorning = document.getElementById('presetTomorrowMorningText');
-            const textTomorrowAfternoon = document.getElementById('presetTomorrowAfternoonText');
-            const textNextMonday = document.getElementById('presetNextMondayText');
-            if (textTomorrowMorning) textTomorrowMorning.textContent = formatDateDisplay(presets.tomorrowMorning);
-            if (textTomorrowAfternoon) textTomorrowAfternoon.textContent = formatDateDisplay(presets.tomorrowAfternoon);
-            if (textNextMonday) textNextMonday.textContent = formatDateDisplay(presets.nextMonday);
-
-            // Минимальное время для кастомного инпута
-            if (customScheduleDateTime) {
-                const minTime = new Date(Date.now() + 5 * 60 * 1000);
-                customScheduleDateTime.min = formatDateIsoLocal(minTime);
-                customScheduleDateTime.value = formatDateIsoLocal(presets.tomorrowMorning);
-            }
-
-            // Функция применения запланированного времени
-            function applyScheduledTime(targetDate) {
-                if (targetDate <= new Date()) {
-                    if (scheduleDateError) scheduleDateError.style.display = 'block';
-                    if (customScheduleDateTime) customScheduleDateTime.classList.add('is-invalid');
-                    return false;
-                }
-
-                if (scheduleDateError) scheduleDateError.style.display = 'none';
-                if (customScheduleDateTime) customScheduleDateTime.classList.remove('is-invalid');
-
-                sendModeInput.value = 'scheduled';
-                scheduledAtInput.value = formatDateIsoLocal(targetDate);
-                scheduledNoticeTime.textContent = formatDateDisplay(targetDate);
-
-                scheduledNoticeBadge.classList.remove('d-none');
-                scheduledNoticeBadge.classList.add('d-flex');
-                sendBtnText.textContent = 'Запланировать';
-                sendBtnIcon.className = 'bx bx-time-five font-size-18';
-                sendMailBtn.classList.remove('btn-primary');
-                sendMailBtn.classList.add('btn-schedule-active');
-                const dropdownToggle = document.getElementById('sendBtnDropdownToggle');
-                if (dropdownToggle) {
-                    dropdownToggle.classList.remove('btn-primary');
-                    dropdownToggle.classList.add('btn-schedule-active');
-                }
-
-                // Закрываем модальное окно
-                const modalElem = document.getElementById('scheduleSendModal');
-                const modalInstance = bootstrap.Modal.getInstance(modalElem);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-                return true;
-            }
-
-            // Функция сброса на обычную мгновенную отправку
-            function resetToImmediateSend() {
-                sendModeInput.value = 'now';
-                scheduledAtInput.value = '';
-                scheduledNoticeBadge.classList.add('d-none');
-                scheduledNoticeBadge.classList.remove('d-flex');
-                sendBtnText.textContent = 'Отправить';
-                sendBtnIcon.className = 'bx bx-paper-plane font-size-18';
-                sendMailBtn.classList.add('btn-primary');
-                sendMailBtn.classList.remove('btn-schedule-active');
-                const dropdownToggle = document.getElementById('sendBtnDropdownToggle');
-                if (dropdownToggle) {
-                    dropdownToggle.classList.add('btn-primary');
-                    dropdownToggle.classList.remove('btn-schedule-active');
-                }
-            }
-
-            // Клик по быстрым пресетам
-            document.querySelectorAll('.schedule-preset-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const presetType = this.getAttribute('data-preset');
-                    const curPresets = getPresetDates();
-                    if (presetType === 'tomorrow_morning') applyScheduledTime(curPresets.tomorrowMorning);
-                    else if (presetType === 'tomorrow_afternoon') applyScheduledTime(curPresets.tomorrowAfternoon);
-                    else if (presetType === 'next_monday') applyScheduledTime(curPresets.nextMonday);
-                });
-            });
-
-            // Клик по кнопке "Выбрать это время"
-            if (btnConfirmSchedule && customScheduleDateTime) {
-                btnConfirmSchedule.addEventListener('click', function() {
-                    if (!customScheduleDateTime.value) {
-                        scheduleDateError.style.display = 'block';
-                        customScheduleDateTime.classList.add('is-invalid');
-                        return;
-                    }
-                    const chosen = new Date(customScheduleDateTime.value);
-                    applyScheduledTime(chosen);
-                });
-            }
-
-            // Клик "Отправить сейчас" в выпадающем меню
-            const menuSendNow = document.getElementById('menuSendNow');
-            if (menuSendNow) {
-                menuSendNow.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    resetToImmediateSend();
-                    sendMailBtn.click();
-                });
-            }
-
-            // Сброс запланированного времени
-            if (btnResetScheduled) {
-                btnResetScheduled.addEventListener('click', function() {
-                    resetToImmediateSend();
-                });
-            }
-
-            // === Автосохранение и управление черновиками ===
-            const draftUidInput = document.getElementById('draftUidInput');
-            const draftStatusBadge = document.getElementById('draftStatusBadge');
-            const draftStatusIcon = document.getElementById('draftStatusIcon');
-            const draftStatusText = document.getElementById('draftStatusText');
-            const btnManualSaveDraft = document.getElementById('btnManualSaveDraft');
-            const recipientInput = document.getElementById('mailRecipientInput');
-            const ccInput = document.getElementById('id_cc');
-            const bccInput = document.getElementById('id_bcc');
-            const subjectInput = document.getElementById('id_subject');
-
-            function markDirty() {
-                isFormDirty = true;
-            }
-
-            if (recipientInput) recipientInput.addEventListener('input', markDirty);
-            if (ccInput) ccInput.addEventListener('input', markDirty);
-            if (bccInput) bccInput.addEventListener('input', markDirty);
-            if (subjectInput) subjectInput.addEventListener('input', markDirty);
-
-            $('#id_body_html').on('summernote.change', function() {
-                isFormDirty = true;
-            });
-
-            function saveDraft(isManual = false) {
-                if (isSubmitting) return;
-
-                const toVal = recipientInput ? recipientInput.value.trim() : '';
-                const ccVal = ccInput ? ccInput.value.trim() : '';
-                const bccVal = bccInput ? bccInput.value.trim() : '';
-                const subjVal = subjectInput ? subjectInput.value.trim() : '';
-                const bodyVal = $('#id_body_html').summernote('code');
-                const plainBody = $('<div>').html(bodyVal).text().trim();
-
-                if (!toVal && !subjVal && !plainBody) {
-                    if (isManual) alert('Форма пуста — нечего сохранять в черновики.');
-                    return;
-                }
-
-                if (draftStatusBadge && draftStatusText && draftStatusIcon) {
-                    draftStatusBadge.classList.remove('d-none');
-                    draftStatusBadge.classList.add('d-flex');
-                    draftStatusIcon.className = 'spinner-border spinner-border-sm text-primary font-size-10';
-                    draftStatusText.textContent = 'Сохранение...';
-                }
-
-                fetch("{% url 'mailbox_app:api_save_draft' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({
-                        to: toVal,
-                        cc: ccVal,
-                        bcc: bccVal,
-                        subject: subjVal,
-                        body_html: bodyVal,
-                        draft_uid: draftUidInput ? draftUidInput.value : ''
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        if (data.draft_uid && draftUidInput) {
-                            draftUidInput.value = data.draft_uid;
-                        }
-                        isFormDirty = false;
-                        if (draftStatusBadge && draftStatusText && draftStatusIcon) {
-                            draftStatusIcon.className = 'bx bx-check-circle text-success font-size-15';
-                            draftStatusText.textContent = 'Черновик сохранен в ' + (data.saved_at || '');
-                        }
-                        if (isManual && btnManualSaveDraft) {
-                            btnManualSaveDraft.classList.add('btn-success');
-                            btnManualSaveDraft.classList.remove('btn-outline-secondary');
-                            setTimeout(() => {
-                                btnManualSaveDraft.classList.remove('btn-success');
-                                btnManualSaveDraft.classList.add('btn-outline-secondary');
-                            }, 1500);
-                        }
-                    } else {
-                        if (draftStatusText) draftStatusText.textContent = 'Ошибка автосохранения';
-                    }
-                })
-                .catch(err => {
-                    if (draftStatusText) draftStatusText.textContent = 'Сбой сети';
-                });
-            }
-
-            if (btnManualSaveDraft) {
-                btnManualSaveDraft.addEventListener('click', function() {
-                    saveDraft(true);
-                });
-            }
-
-            setInterval(function() {
-                if (isFormDirty && !isSubmitting) {
-                    saveDraft(false);
-                }
-            }, 30000);
-
-            window.addEventListener('beforeunload', function(e) {
-                if (isFormDirty && !isSubmitting) {
-                    e.preventDefault();
-                    e.returnValue = '';
-                }
-            });
-
-            const composeMailForm = document.getElementById('composeMailForm');
-            if (composeMailForm) {
-                composeMailForm.addEventListener('submit', function() {
-                    if (fileInput && attachmentsDt) {
-                        try {
-                            fileInput.files = attachmentsDt.files;
-                        } catch (e) {}
-                    }
-                    isSubmitting = true;
-                    isFormDirty = false;
-                });
-            }
-
-            const btnCancelCompose = document.getElementById('btnCancelCompose');
-            if (btnCancelCompose) {
-                btnCancelCompose.addEventListener('click', function(e) {
-                    if (isFormDirty) {
-                        if (!confirm('У вас есть несохраненные изменения. Закрыть форму?')) {
-                            e.preventDefault();
-                        } else {
-                            isFormDirty = false;
-                        }
-                    }
-                });
-            }
-        });
+            return null;
+        }
 
         function toggleField(rowId) {
             const row = document.getElementById(rowId);
@@ -1098,6 +62,33 @@
             }
         }
 
+        // === Вставка корпоративной подписи авиакомпании «БАРКОЛ» ===
+        const corporateSignatureHtml = {{ corporate_signature_json|safe|default:"''" }};
+        function insertCorporateSignature() {
+            if (!corporateSignatureHtml) {
+                alert('Корпоративная подпись не настроена.');
+                return;
+            }
+            const editor = getBodyEditor();
+            if (editor) {
+                const currentData = editor.getData();
+                if (currentData.includes('barkol-email-signature') || currentData.includes('Авиакомпания «БАРКОЛ»')) {
+                    if (!confirm('Корпоративная подпись уже присутствует в тексте письма. Вставить её еще раз?')) {
+                        return;
+                    }
+                }
+                const viewFragment = editor.data.processor.toView('<p><br></p>' + corporateSignatureHtml);
+                const modelFragment = editor.data.toModel(viewFragment);
+                editor.model.insertContent(modelFragment);
+                editor.editing.view.focus();
+            } else {
+                const el = document.getElementById('id_body_html');
+                if (el) el.value += '\n\n' + corporateSignatureHtml;
+            }
+            isFormDirty = true;
+        }
+
+        // === Шаблоны ответов ===
         const mailTemplates = {{ mail_templates_json|safe|default:"[]" }};
 
         function applyTemplate(id) {
@@ -1109,11 +100,20 @@
                 subjectInput.value = tmpl.subject;
             }
 
-            const currentContent = $('#id_body_html').summernote('code');
-            if (!currentContent || currentContent === '<p><br></p>' || currentContent.trim() === '') {
-                $('#id_body_html').summernote('code', tmpl.body_html);
+            const editor = getBodyEditor();
+            if (editor) {
+                const currentData = editor.getData().trim();
+                if (!currentData || currentData === '<p>&nbsp;</p>' || currentData === '<p></p>') {
+                    editor.setData(tmpl.body_html);
+                } else {
+                    const viewFragment = editor.data.processor.toView('<p><br></p>' + tmpl.body_html);
+                    const modelFragment = editor.data.toModel(viewFragment);
+                    editor.model.insertContent(modelFragment);
+                }
+                editor.editing.view.focus();
             } else {
-                $('#id_body_html').summernote('pasteHTML', tmpl.body_html + '<br>');
+                const el = document.getElementById('id_body_html');
+                if (el) el.value += '\n' + tmpl.body_html;
             }
             isFormDirty = true;
         }
@@ -1145,8 +145,11 @@
             const isGlobalInput = document.getElementById('templateIsGlobalInput');
             const isGlobal = isGlobalInput ? isGlobalInput.checked : false;
 
-            const bodyHtml = $('#id_body_html').summernote('code');
-            if (!bodyHtml || bodyHtml === '<p><br></p>' || bodyHtml.trim() === '') {
+            const editor = getBodyEditor();
+            const bodyHtml = editor ? editor.getData() : (document.getElementById('id_body_html')?.value || '');
+            const plainBody = bodyHtml.replace(/<[^>]*>/g, '').trim();
+
+            if (!plainBody) {
                 alert('Текст письма пуст. Напишите текст сообщения для создания шаблона.');
                 return;
             }
@@ -1179,7 +182,14 @@
                         const modal = bootstrap.Modal.getInstance(modalEl);
                         if (modal) modal.hide();
                     }
-                    window.location.reload();
+                    if (typeof PNotify !== 'undefined') {
+                        new PNotify({
+                            title: 'Шаблоны ответов',
+                            text: 'Шаблон «' + name + '» успешно сохранен!',
+                            type: 'success',
+                            delay: 2500
+                        });
+                    }
                 } else {
                     alert('Ошибка при сохранении шаблона: ' + (data.error || 'Неизвестная ошибка'));
                     if (btn) {
@@ -1197,5 +207,418 @@
                 }
             });
         }
+
+        // === Автосохранение и управление черновиками ===
+        function saveDraftManual() {
+            saveDraft(true);
+        }
+
+        function saveDraft(isManual = false) {
+            if (isSubmitting) return;
+
+            const recipientInput = document.getElementById('mailRecipientInput');
+            const ccInput = document.getElementById('id_cc');
+            const bccInput = document.getElementById('id_bcc');
+            const subjectInput = document.getElementById('id_subject');
+            const draftUidInput = document.getElementById('draftUidInput');
+            const draftStatusBadge = document.getElementById('draftStatusBadge');
+            const draftStatusIcon = document.getElementById('draftStatusIcon');
+            const draftStatusText = document.getElementById('draftStatusText');
+
+            const toVal = recipientInput ? recipientInput.value.trim() : '';
+            const ccVal = ccInput ? ccInput.value.trim() : '';
+            const bccVal = bccInput ? bccInput.value.trim() : '';
+            const subjVal = subjectInput ? subjectInput.value.trim() : '';
+
+            const editor = getBodyEditor();
+            const bodyVal = editor ? editor.getData() : (document.getElementById('id_body_html')?.value || '');
+            const plainBody = bodyVal.replace(/<[^>]*>/g, '').trim();
+
+            if (!toVal && !subjVal && !plainBody) {
+                if (isManual) alert('Форма пуста — нечего сохранять в черновики.');
+                return;
+            }
+
+            if (draftStatusBadge && draftStatusText && draftStatusIcon) {
+                draftStatusBadge.classList.remove('d-none');
+                draftStatusBadge.classList.add('d-flex');
+                draftStatusIcon.className = 'spinner-border spinner-border-sm text-primary font-size-10';
+                draftStatusText.textContent = 'Сохранение...';
+            }
+
+            fetch("{% url 'mailbox_app:api_save_draft' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    to: toVal,
+                    cc: ccVal,
+                    bcc: bccVal,
+                    subject: subjVal,
+                    body_html: bodyVal,
+                    draft_uid: draftUidInput ? draftUidInput.value : ''
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.draft_uid && draftUidInput) {
+                        draftUidInput.value = data.draft_uid;
+                    }
+                    isFormDirty = false;
+                    if (draftStatusBadge && draftStatusText && draftStatusIcon) {
+                        draftStatusIcon.className = 'bx bx-check-circle text-success font-size-15';
+                        draftStatusText.textContent = 'Черновик сохранен в ' + (data.saved_at || '');
+                    }
+                    if (isManual) {
+                        const btn = document.getElementById('btnManualSaveDraft');
+                        if (btn) {
+                            btn.classList.add('btn-success');
+                            btn.classList.remove('btn-outline-secondary');
+                            setTimeout(() => {
+                                btn.classList.remove('btn-success');
+                                btn.classList.add('btn-outline-secondary');
+                            }, 1500);
+                        }
+                    }
+                } else {
+                    if (draftStatusText) draftStatusText.textContent = 'Ошибка автосохранения';
+                }
+            })
+            .catch(err => {
+                if (draftStatusText) draftStatusText.textContent = 'Сбой сети';
+            });
+        }
+
+        // === Планирование отправки ===
+        function selectSendNow() {
+            resetToImmediateSend();
+            const form = document.getElementById('composeMailForm');
+            if (form) form.submit();
+        }
+
+        function resetToImmediateSend() {
+            const sendMode = document.getElementById('mailSendMode');
+            const schedInput = document.getElementById('mailScheduledAtInput');
+            const badge = document.getElementById('scheduledNoticeBadge');
+            const btnText = document.getElementById('sendBtnText');
+            const btnIcon = document.getElementById('sendBtnIcon');
+            const btn = document.getElementById('sendMailBtn');
+
+            if (sendMode) sendMode.value = 'now';
+            if (schedInput) schedInput.value = '';
+            if (badge) badge.classList.add('d-none');
+            if (btnText) btnText.textContent = 'Отправить';
+            if (btnIcon) btnIcon.className = 'bx bx-paper-plane font-size-18';
+            if (btn) {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-primary');
+            }
+        }
+
+        function applyPresetSchedule(preset) {
+            const now = new Date();
+            let targetDate = new Date();
+
+            if (preset === 'tomorrow_morning') {
+                targetDate.setDate(now.getDate() + 1);
+                targetDate.setHours(9, 0, 0, 0);
+            } else if (preset === 'next_monday') {
+                const day = now.getDay();
+                const daysUntilMonday = (day === 0) ? 1 : (8 - day);
+                targetDate.setDate(now.getDate() + daysUntilMonday);
+                targetDate.setHours(9, 0, 0, 0);
+            } else if (preset === 'in_2_hours') {
+                targetDate = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+            }
+
+            setScheduledTarget(targetDate);
+        }
+
+        function applyCustomSchedule() {
+            const customInput = document.getElementById('customScheduledDatetime');
+            if (!customInput || !customInput.value) {
+                alert('Пожалуйста, выберите дату и время');
+                return;
+            }
+            const targetDate = new Date(customInput.value);
+            if (targetDate <= new Date()) {
+                alert('Выбранное время должно быть в будущем');
+                return;
+            }
+            setScheduledTarget(targetDate);
+        }
+
+        function setScheduledTarget(dateObj) {
+            const sendMode = document.getElementById('mailSendMode');
+            const schedInput = document.getElementById('mailScheduledAtInput');
+            const badge = document.getElementById('scheduledNoticeBadge');
+            const noticeTime = document.getElementById('scheduledNoticeTime');
+            const btnText = document.getElementById('sendBtnText');
+            const btnIcon = document.getElementById('sendBtnIcon');
+            const btn = document.getElementById('sendMailBtn');
+
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+            const formattedIso = `${year}-${month}-${day}T${hours}:${minutes}`;
+            const formattedDisplay = `${day}.${month}.${year} в ${hours}:${minutes}`;
+
+            if (sendMode) sendMode.value = 'scheduled';
+            if (schedInput) schedInput.value = formattedIso;
+            if (noticeTime) noticeTime.textContent = formattedDisplay;
+            if (badge) {
+                badge.classList.remove('d-none');
+                badge.classList.add('d-inline-flex');
+            }
+            if (btnText) btnText.textContent = 'Запланировать';
+            if (btnIcon) btnIcon.className = 'bx bx-time-five font-size-18';
+            if (btn) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-warning');
+            }
+
+            const modalEl = document.getElementById('scheduleSendModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+        }
+
+        // === Drag & Drop и файловый менеджер вложений ===
+        let attachmentsDt = new DataTransfer();
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 Б';
+            if (bytes < 1024) return bytes + ' Б';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+        }
+
+        function getFileIconClass(fileName) {
+            const ext = (fileName.split('.').pop() || '').toLowerCase();
+            switch (ext) {
+                case 'pdf': return 'bx bxs-file-pdf text-danger font-size-20';
+                case 'doc': case 'docx': case 'odt': case 'rtf': return 'bx bxs-file-doc text-primary font-size-20';
+                case 'xls': case 'xlsx': case 'csv': return 'bx bxs-spreadsheet text-success font-size-20';
+                case 'zip': case 'rar': case '7z': case 'tar': case 'gz': return 'bx bxs-file-archive text-warning font-size-20';
+                case 'jpg': case 'jpeg': case 'png': case 'gif': case 'webp': return 'bx bxs-file-image text-info font-size-20';
+                default: return 'bx bxs-file text-secondary font-size-20';
+            }
+        }
+
+        function renderAttachmentsList() {
+            const container = document.getElementById('selectedFilesList');
+            const summary = document.getElementById('attachmentsSummary');
+            const countElem = document.getElementById('attachmentsCount');
+            const sizeElem = document.getElementById('attachmentsTotalSize');
+            const fileInput = document.getElementById('id_attachments');
+
+            if (!container) return;
+            container.innerHTML = '';
+
+            const files = attachmentsDt.files;
+            let totalBytes = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                totalBytes += file.size;
+
+                const item = document.createElement('div');
+                item.className = 'd-inline-flex align-items-center gap-2 bg-white border rounded px-2 py-1 shadow-sm';
+                item.style.fontSize = '12px';
+                item.innerHTML = `
+                    <i class="${getFileIconClass(file.name)}"></i>
+                    <span class="text-truncate text-dark font-weight-semibold" style="max-width: 200px;" title="${file.name}">${file.name}</span>
+                    <span class="text-muted">(${formatFileSize(file.size)})</span>
+                    <button type="button" class="btn-close ms-1 font-size-10" style="width: 8px; height: 8px;" onclick="removeAttachmentFile(${i})" title="Удалить файл" aria-label="Удалить"></button>
+                `;
+                container.appendChild(item);
+            }
+
+            if (fileInput) {
+                try {
+                    fileInput.files = attachmentsDt.files;
+                } catch (e) {}
+            }
+
+            if (files.length > 0) {
+                if (summary) summary.classList.remove('d-none');
+                if (countElem) countElem.textContent = files.length;
+                if (sizeElem) sizeElem.textContent = formatFileSize(totalBytes);
+            } else {
+                if (summary) summary.classList.add('d-none');
+            }
+        }
+
+        window.removeAttachmentFile = function(index) {
+            const newDt = new DataTransfer();
+            const files = attachmentsDt.files;
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    newDt.items.add(files[i]);
+                }
+            }
+            attachmentsDt = newDt;
+            renderAttachmentsList();
+            isFormDirty = true;
+        };
+
+        function addFilesToAttachments(newFiles) {
+            if (!newFiles || newFiles.length === 0) return;
+            for (let i = 0; i < newFiles.length; i++) {
+                attachmentsDt.items.add(newFiles[i]);
+            }
+            renderAttachmentsList();
+            isFormDirty = true;
+        }
+
+        // === Автодополнение контактов ===
+        function attachContactAutocomplete(inputElem, boxElem) {
+            if (!inputElem || !boxElem) return;
+
+            let debounceTimer;
+            inputElem.addEventListener('input', function() {
+                isFormDirty = true;
+                clearTimeout(debounceTimer);
+                const val = this.value;
+                const lastToken = val.split(',').pop().trim();
+
+                if (lastToken.length < 2) {
+                    boxElem.style.display = 'none';
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    fetch(`{% url 'mailbox_app:api_contacts' %}?q=${encodeURIComponent(lastToken)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            boxElem.innerHTML = '';
+                            if (data.results && data.results.length > 0) {
+                                data.results.forEach(contact => {
+                                    const item = document.createElement('div');
+                                    item.className = 'contact-autocomplete-item py-2 px-3 border-bottom cursor-pointer';
+                                    item.innerHTML = `
+                                        <div class="font-weight-semibold text-dark font-size-13">${contact.name}</div>
+                                        <div class="text-muted font-size-11 d-flex justify-content-between">
+                                            <span>${contact.email}</span>
+                                            <span class="badge bg-light text-secondary border">${contact.job || ''}</span>
+                                        </div>
+                                    `;
+                                    item.onclick = function() {
+                                        const tokens = inputElem.value.split(',');
+                                        tokens.pop();
+                                        tokens.push(`"${contact.name}" <${contact.email}>`);
+                                        inputElem.value = tokens.join(', ').replace(/^,\s*/, '') + ', ';
+                                        boxElem.style.display = 'none';
+                                        inputElem.focus();
+                                    };
+                                    boxElem.appendChild(item);
+                                });
+                                boxElem.style.display = 'block';
+                            } else {
+                                boxElem.style.display = 'none';
+                            }
+                        })
+                        .catch(() => {
+                            boxElem.style.display = 'none';
+                        });
+                }, 250);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!inputElem.contains(e.target) && !boxElem.contains(e.target)) {
+                    boxElem.style.display = 'none';
+                }
+            });
+        }
+
+        function initComposeFormHandlers() {
+            const recipientInput = document.getElementById('mailRecipientInput');
+            const ccInput = document.getElementById('id_cc');
+            const bccInput = document.getElementById('id_bcc');
+            const subjectInput = document.getElementById('id_subject');
+            const fileInput = document.getElementById('id_attachments');
+            const dropzone = document.getElementById('mailDropzone');
+            const composeMailForm = document.getElementById('composeMailForm');
+
+            attachContactAutocomplete(recipientInput, document.getElementById('contactAutocompleteList'));
+            attachContactAutocomplete(ccInput, document.getElementById('contactAutocompleteListCc'));
+            attachContactAutocomplete(bccInput, document.getElementById('contactAutocompleteListBcc'));
+
+            if (subjectInput) {
+                subjectInput.addEventListener('input', () => { isFormDirty = true; });
+            }
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function() {
+                    addFilesToAttachments(this.files);
+                });
+            }
+
+            if (dropzone) {
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.add('border-primary', 'bg-white');
+                    }, false);
+                });
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.remove('border-primary', 'bg-white');
+                    }, false);
+                });
+                dropzone.addEventListener('drop', (e) => {
+                    if (e.dataTransfer && e.dataTransfer.files) {
+                        addFilesToAttachments(e.dataTransfer.files);
+                    }
+                }, false);
+            }
+
+            if (composeMailForm) {
+                composeMailForm.addEventListener('submit', function() {
+                    if (fileInput && attachmentsDt) {
+                        try {
+                            fileInput.files = attachmentsDt.files;
+                        } catch (e) {}
+                    }
+                    isSubmitting = true;
+                    isFormDirty = false;
+                });
+            }
+
+            if (!autoSaveDraftTimer) {
+                autoSaveDraftTimer = setInterval(function() {
+                    if (isFormDirty && !isSubmitting) {
+                        saveDraft(false);
+                    }
+                }, 30000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initComposeFormHandlers();
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.id === 'mailboxMainContent') {
+                initComposeFormHandlers();
+            }
+        });
+
+        window.addEventListener('beforeunload', function(e) {
+            if (isFormDirty && !isSubmitting) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
     </script>
 {% endblock %}

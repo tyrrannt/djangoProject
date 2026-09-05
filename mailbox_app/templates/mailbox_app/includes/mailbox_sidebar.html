@@ -7,7 +7,12 @@
         <div class="nano-content">
             <div class="mailbox-sidebar-container">
                 <!-- Кнопка Написать письмо -->
-                <a href="{% url 'mailbox_app:compose' %}" class="mailbox-compose-btn mb-3">
+                <a href="{% url 'mailbox_app:compose' %}"
+                   hx-get="{% url 'mailbox_app:compose' %}"
+                   hx-target="#mailboxMainContent"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   class="mailbox-compose-btn mb-3">
                     <i class="bx bx-edit font-size-18"></i> Написать письмо
                 </a>
 
@@ -29,6 +34,10 @@
                     {% for f in folders %}
                         <li class="{% if f.level > 0 %}mailbox-subfolder-li{% endif %}">
                             <a href="{% url 'mailbox_app:folder' f.raw_name %}"
+                               hx-get="{% url 'mailbox_app:folder' f.raw_name %}"
+                               hx-target="#mailboxMainContent"
+                               hx-swap="outerHTML"
+                               hx-push-url="true"
                                class="mailbox-folder-link {% if current_folder == f.raw_name %}active{% endif %}"
                                style="{% if f.level > 0 %}padding-left: calc(14px + {{ f.level }} * 18px) !important; font-size: 12.5px;{% endif %}"
                                title="{{ f.full_path_display }}"
@@ -41,7 +50,7 @@
                                     <i class="{{ f.icon }}"></i>
                                     <span class="text-truncate">{{ f.display_name }}</span>
                                 </span>
-                                <span class="mailbox-folder-badge {% if not f.unseen or f.unseen <= 0 %}d-none{% endif %}" data-folder-badge="{{ f.root_type|default:f.raw_name|lower }}">
+                                <span class="mailbox-folder-badge {% if not f.unseen or f.unseen <= 0 %}d-none{% endif %}" data-folder-badge="{{ f.root_type|default:f.raw_name|lower }}" id="folderBadge_{{ f.raw_name|slugify }}">
                                     {{ f.unseen }}
                                 </span>
                             </a>
@@ -53,8 +62,13 @@
                     <!-- Раздел запланированных к отправке писем -->
                     <li class="mt-2 pt-2 border-top">
                         <a href="{% url 'mailbox_app:scheduled_list' %}"
+                           hx-get="{% url 'mailbox_app:scheduled_list' %}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
                            class="mailbox-folder-link {% if current_folder == 'scheduled' %}active{% endif %}"
-                           title="Письма, запланированные к отправке по расписанию">
+                           title="Письма, запланированные к отправке по расписанию"
+                           data-folder-name="scheduled">
                             <span class="text-truncate d-flex align-items-center">
                                 <i class="bx bx-time-five" style="color: #d97706; font-size: 16px;"></i>
                                 <span class="text-truncate ms-1">Запланированные</span>
@@ -65,11 +79,18 @@
                                 </span>
                             {% endif %}
                         </a>
+                    </li>
+
                     <!-- Персональная адресная книга -->
                     <li>
                         <a href="{% url 'mailbox_app:contacts_list' %}"
+                           hx-get="{% url 'mailbox_app:contacts_list' %}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
                            class="mailbox-folder-link {% if current_folder == 'contacts' %}active{% endif %}"
-                           title="Адресная книга и сохраненные контакты">
+                           title="Адресная книга и сохраненные контакты"
+                           data-folder-name="contacts">
                             <span class="d-flex align-items-center gap-2 text-truncate">
                                 <i class="bx bx-book-content font-size-18 text-primary"></i>
                                 <span class="text-truncate ms-1">Адресная книга</span>
@@ -127,7 +148,14 @@
     </div>
     <div class="offcanvas-body p-3">
         <!-- Кнопка Написать письмо -->
-        <a href="{% url 'mailbox_app:compose' %}" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2 mb-3 shadow-sm" style="border-radius: 8px; font-weight: 600;">
+        <a href="{% url 'mailbox_app:compose' %}"
+           hx-get="{% url 'mailbox_app:compose' %}"
+           hx-target="#mailboxMainContent"
+           hx-swap="outerHTML"
+           hx-push-url="true"
+           data-bs-dismiss="offcanvas"
+           class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2 mb-3 shadow-sm"
+           style="border-radius: 8px; font-weight: 600;">
             <i class="bx bx-edit font-size-18"></i> Написать письмо
         </a>
 
@@ -136,6 +164,11 @@
         <div class="list-group list-group-flush border rounded-3 overflow-hidden mb-4">
             {% for f in folders %}
                 <a href="{% url 'mailbox_app:folder' f.raw_name %}"
+                   hx-get="{% url 'mailbox_app:folder' f.raw_name %}"
+                   hx-target="#mailboxMainContent"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   data-bs-dismiss="offcanvas"
                    class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if current_folder == f.raw_name %}active fw-bold{% endif %}"
                    style="{% if f.level > 0 %}padding-left: calc(0.75rem + {{ f.level }} * 18px) !important; font-size: 13px;{% if current_folder != f.raw_name %}background-color: #f8fafc;{% endif %}{% endif %}"
                    title="{{ f.full_path_display }}"
@@ -158,8 +191,14 @@
 
             <!-- Запланированные письма на мобильном -->
             <a href="{% url 'mailbox_app:scheduled_list' %}"
+               hx-get="{% url 'mailbox_app:scheduled_list' %}"
+               hx-target="#mailboxMainContent"
+               hx-swap="outerHTML"
+               hx-push-url="true"
+               data-bs-dismiss="offcanvas"
                class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 border-top {% if current_folder == 'scheduled' %}active fw-bold{% endif %}"
-               title="Запланированные письма">
+               title="Запланированные письма"
+               data-folder-name="scheduled">
                 <span class="d-flex align-items-center gap-2 text-truncate">
                     <i class="bx bx-time-five font-size-18 {% if current_folder == 'scheduled' %}text-white{% else %}text-warning{% endif %}"></i>
                     <span class="text-truncate">Запланированные</span>
@@ -173,8 +212,14 @@
 
             <!-- Адресная книга на мобильном -->
             <a href="{% url 'mailbox_app:contacts_list' %}"
+               hx-get="{% url 'mailbox_app:contacts_list' %}"
+               hx-target="#mailboxMainContent"
+               hx-swap="outerHTML"
+               hx-push-url="true"
+               data-bs-dismiss="offcanvas"
                class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 border-top {% if current_folder == 'contacts' %}active fw-bold{% endif %}"
-               title="Адресная книга">
+               title="Адресная книга"
+               data-folder-name="contacts">
                 <span class="d-flex align-items-center gap-2 text-truncate">
                     <i class="bx bx-book-content font-size-18 {% if current_folder == 'contacts' %}text-white{% else %}text-primary{% endif %}"></i>
                     <span class="text-truncate">Адресная книга</span>

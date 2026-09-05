@@ -2,6 +2,7 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django_ckeditor_5.widgets import CKEditor5Widget
 from mailbox_app.models import MailAccount, Mailbox, MailContact, MailPrintSettings, MailTemplate
 from mailbox_app.services.mailbox_defaults import DEFAULT_DOMAIN, get_domain_defaults
 
@@ -77,12 +78,9 @@ class MailComposeForm(forms.Form):
     body_html = forms.CharField(
         label="Текст сообщения",
         required=False,
-        widget=forms.Textarea(
-            attrs={
-                "class": "form-control summernote",
-                "rows": 12,
-                "placeholder": "Текст сообщения...",
-            }
+        widget=CKEditor5Widget(
+            attrs={"class": "django_ckeditor_5"},
+            config_name="mailbox",
         ),
     )
     attachments = MultipleFileField(
@@ -186,12 +184,9 @@ class ScheduledEmailEditForm(forms.Form):
     body_html = forms.CharField(
         label="Текст сообщения",
         required=False,
-        widget=forms.Textarea(
-            attrs={
-                "class": "form-control summernote",
-                "rows": 12,
-                "placeholder": "Текст сообщения...",
-            }
+        widget=CKEditor5Widget(
+            attrs={"class": "django_ckeditor_5"},
+            config_name="mailbox",
         ),
     )
     scheduled_at = forms.DateTimeField(
@@ -283,7 +278,10 @@ class MailAccountSettingsForm(forms.ModelForm):
             "imap_port": forms.NumberInput(attrs={"class": "form-control"}),
             "smtp_host": forms.TextInput(attrs={"class": "form-control"}),
             "smtp_port": forms.NumberInput(attrs={"class": "form-control"}),
-            "signature_html": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+            "signature_html": CKEditor5Widget(
+                attrs={"class": "django_ckeditor_5"},
+                config_name="mailbox",
+            ),
         }
 
     def __init__(self, *args, is_superuser: bool = False, **kwargs):
@@ -402,7 +400,10 @@ class MailboxAdminForm(forms.ModelForm):
             "smtp_security": forms.Select(attrs={"class": "form-select", "id": "id_smtp_security"}),
             "smtp_username": forms.TextInput(attrs={"class": "form-control", "id": "id_smtp_username", "placeholder": "hr@barkol.ru"}),
             "display_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Отдел кадров ООО 'Баркол'"}),
-            "signature_html": forms.Textarea(attrs={"class": "form-control summernote-signature", "rows": 4}),
+            "signature_html": CKEditor5Widget(
+                attrs={"class": "django_ckeditor_5"},
+                config_name="mailbox",
+            ),
             "users": forms.SelectMultiple(attrs={"class": "form-select select2-users", "style": "width: 100%; min-height: 180px;"}),
         }
 

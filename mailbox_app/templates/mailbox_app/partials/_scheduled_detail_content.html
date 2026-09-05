@@ -1,0 +1,418 @@
+{% load static %}
+{% load static_version %}
+
+<!-- Содержимое запланированного письма (HTMX Target) -->
+<div class="inner-body mailbox-email" id="mailboxMainContent" data-mailbox-view="scheduled-detail" data-current-folder="scheduled">
+    <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
+    {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
+    <div class="mailbox-detail-container">
+        <!-- Панель действий -->
+        <div class="mailbox-detail-toolbar d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 bg-white border-bottom">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <!-- Кнопка вызова Drawer папок на мобильных -->
+                <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                        data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                    <i class="bx bx-folder"></i>
+                </button>
+
+                <a href="{% url 'mailbox_app:scheduled_list' %}"
+                   hx-get="{% url 'mailbox_app:scheduled_list' %}"
+                   hx-target="#mailboxMainContent"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                    <i class="bx bx-arrow-back font-size-16"></i> <span class="d-none d-sm-inline">К запланированным</span>
+                </a>
+
+                {% if can_edit %}
+                    <a href="{% url 'mailbox_app:scheduled_edit' scheduled_email.id %}"
+                       hx-get="{% url 'mailbox_app:scheduled_edit' scheduled_email.id %}"
+                       hx-target="#mailboxMainContent"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
+                       class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm font-weight-medium">
+                        <i class="bx bx-edit font-size-16"></i> <span>Редактировать письмо</span>
+                    </a>
+                {% endif %}
+
+                {% if can_send_now %}
+                    <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-none"
+                            onclick="executeMailAction('send_now', {{ scheduled_email.id }})">
+                        <i class="bx bx-send font-size-16"></i> <span>Отправить сейчас</span>
+                    </button>
+                {% endif %}
+
+                {% if can_edit %}
+                    <button type="button" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 text-dark shadow-none"
+                            onclick="openRescheduleModal({{ scheduled_email.id }}, '{{ scheduled_email.to_display|escapejs }}', '{{ scheduled_email.subject|default:"(Без темы)"|escapejs }}', '{{ scheduled_email.scheduled_at|date:'Y-m-d\TH:i' }}')">
+                        <i class="bx bx-calendar-edit font-size-16 text-warning"></i> <span class="d-none d-sm-inline">Перенести время</span>
+                    </button>
+                {% endif %}
+
+                <!-- Кнопка печати -->
+                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" onclick="window.print()" title="Распечатать официальную версию письма">
+                    <i class="bx bx-printer font-size-16"></i> <span class="d-none d-sm-inline">Печать</span>
+                </button>
+            </div>
+
+            <div>
+                {% if can_cancel %}
+                    <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none"
+                            onclick="executeMailAction('cancel', {{ scheduled_email.id }})" title="Отменить запланированную отправку">
+                        <i class="bx bx-x-circle font-size-16"></i> <span class="d-none d-sm-inline">Отменить отправку</span>
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none"
+                            onclick="executeMailAction('delete', {{ scheduled_email.id }})" title="Удалить запись">
+                        <i class="bx bx-trash font-size-16"></i> <span class="d-none d-sm-inline">Удалить</span>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Информационный статусный баннер -->
+        {% if scheduled_email.status == 'pending' %}
+            <div class="alert alert-warning border d-flex align-items-center justify-content-between p-3 my-3 rounded-3 shadow-sm flex-wrap gap-2" style="background-color: #fffbeb; border-color: #fde68a !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #fef3c7; color: #d97706;">
+                        <i class="bx bx-time-five font-size-22"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark font-size-14">
+                            Отправка запланирована на <span class="text-primary">{{ scheduled_email.scheduled_at|date:"d E Y в H:i" }} (МСК)</span>
+                        </div>
+                        <div class="small text-muted">Письмо находится в очереди и будет отправлено автоматически фоновой службой. Вы можете изменить текст или адресатов до момента отправки.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'mailbox_app:scheduled_edit' scheduled_email.id %}"
+                       hx-get="{% url 'mailbox_app:scheduled_edit' scheduled_email.id %}"
+                       hx-target="#mailboxMainContent"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
+                       class="btn btn-warning btn-sm fw-semibold shadow-sm" style="background: #d97706; border-color: #b45309; color: #fff;">
+                        <i class="bx bx-edit me-1"></i> Редактировать
+                    </a>
+                </div>
+            </div>
+        {% elif scheduled_email.status == 'processing' %}
+            <div class="alert alert-info border d-flex align-items-center p-3 my-3 rounded-3 shadow-sm gap-3">
+                <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true" style="width: 24px; height: 24px;"></span>
+                <div>
+                    <div class="fw-bold text-dark">Письмо отправляется...</div>
+                    <div class="small text-muted">Воркер Celery в данный момент передает сообщение на SMTP-сервер.</div>
+                </div>
+            </div>
+        {% elif scheduled_email.status == 'sent' %}
+            <div class="alert alert-success border d-flex align-items-center p-3 my-3 rounded-3 shadow-sm gap-3" style="background-color: #ecfdf5; border-color: #a7f3d0 !important;">
+                <i class="bx bx-check-double text-success font-size-28"></i>
+                <div>
+                    <div class="fw-bold text-dark font-size-14">Письмо успешно отправлено адресатам!</div>
+                    <div class="small text-muted">Дата и время фактической отправки: {{ scheduled_email.sent_at|date:"d E Y, H:i" }} (МСК). Копия сохранена в папке «Отправленные» почтового ящика.</div>
+                </div>
+            </div>
+        {% elif scheduled_email.status == 'failed' %}
+            <div class="alert alert-danger border d-flex align-items-center justify-content-between p-3 my-3 rounded-3 shadow-sm flex-wrap gap-2" style="background-color: #fef2f2; border-color: #fecaca !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bx bx-error-circle text-danger font-size-28 flex-shrink-0"></i>
+                    <div>
+                        <div class="fw-bold text-dark font-size-14">Ошибка при отправке письма</div>
+                        <div class="small text-danger">{{ scheduled_email.last_error|default:"Не удалось подключиться к серверу SMTP." }}</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'mailbox_app:scheduled_edit' scheduled_email.id %}"
+                       hx-get="{% url 'mailbox_app:scheduled_edit' scheduled_email.id %}"
+                       hx-target="#mailboxMainContent"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
+                       class="btn btn-outline-danger btn-sm fw-semibold">
+                        <i class="bx bx-edit me-1"></i> Исправить и повторить
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm fw-semibold" onclick="executeMailAction('send_now', {{ scheduled_email.id }})">
+                        <i class="bx bx-refresh me-1"></i> Повторить сейчас
+                    </button>
+                </div>
+            </div>
+        {% elif scheduled_email.status == 'cancelled' %}
+            <div class="alert alert-secondary border d-flex align-items-center p-3 my-3 rounded-3 shadow-sm gap-3">
+                <i class="bx bx-x-circle text-muted font-size-28"></i>
+                <div>
+                    <div class="fw-bold text-dark">Отправка письма отменена</div>
+                    <div class="small text-muted">Письмо было снято с отправки и останется в архиве запланированных писем.</div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Официальный служебный бланк для печати (виден только при печати) -->
+        <div class="print-official-header d-none">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                <div>
+                    <div class="h5 fw-bold text-uppercase mb-1" style="color: #0088cc; letter-spacing: 0.5px;">АВИАПРЕДПРИЯТИЕ «БАРКОЛ»</div>
+                    <div class="text-muted small">Корпоративная система электронной почты (Запланированное отправление)</div>
+                </div>
+                <div class="text-end text-muted small">
+                    <div class="fw-semibold text-dark">Служебная печатная копия сообщения</div>
+                    <div>Дата печати: {% now "d.m.Y H:i" %} (МСК)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Тема письма -->
+        <h3 class="mailbox-detail-subject mt-2">{{ scheduled_email.subject|default:"(Без темы)" }}</h3>
+
+        <!-- Карточка получателей и отправителя -->
+        <div class="mailbox-sender-box mb-4 p-3 bg-light rounded-3 border">
+            <div class="mailbox-avatar bg-primary text-white font-weight-bold">
+                {{ scheduled_email.to_display|first|upper }}
+            </div>
+            <div class="mailbox-sender-info">
+                <div class="mailbox-sender-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="mailbox-sender-name font-weight-bold text-dark font-size-15">
+                        Кому: {{ scheduled_email.to_display }}
+                    </span>
+                    <span class="mailbox-sender-date text-muted font-size-12">
+                        <i class="bx bx-calendar me-1"></i> Создано: {{ scheduled_email.created_at|date:"d.m.Y H:i" }}
+                    </span>
+                </div>
+                <div class="mailbox-sender-meta font-size-13 mt-1 text-muted">
+                    <div><b>Получатели:</b> {{ scheduled_email.to_recipients }}</div>
+                    {% if scheduled_email.cc_recipients %}
+                        <div><b>Копия:</b> {{ scheduled_email.cc_recipients }}</div>
+                    {% endif %}
+                    {% if scheduled_email.bcc_recipients %}
+                        <div><b>Скрытая копия:</b> {{ scheduled_email.bcc_recipients }}</div>
+                    {% endif %}
+                    <div><b>Ящик отправителя:</b> {{ scheduled_email.account.email }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Тело сообщения -->
+        <div class="mailbox-message-content p-4 bg-white border rounded-3 mb-4 shadow-sm" style="min-height: 200px;">
+            {% if scheduled_email.body_html %}
+                <div class="email-html-wrapper">
+                    {{ scheduled_email.body_html|safe }}
+                </div>
+            {% elif scheduled_email.body_text %}
+                <div style="white-space: pre-wrap; font-family: inherit;">{{ scheduled_email.body_text }}</div>
+            {% else %}
+                <div class="text-muted fst-italic py-3">
+                    <i class="bx bx-info-circle me-1"></i> Письмо не содержит текста
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Прикрепленные файлы -->
+        {% if scheduled_email.attachments.all %}
+            <div class="mailbox-attachments-box p-3 bg-light border rounded-3 mb-4">
+                <h5 class="font-weight-semibold text-dark mb-3 d-flex align-items-center gap-2 font-size-15">
+                    <i class="bx bx-paperclip text-primary font-size-18"></i> Прикрепленные файлы ({{ scheduled_email.attachments.count }})
+                </h5>
+                <div class="row g-3">
+                    {% for att in scheduled_email.attachments.all %}
+                        <div class="col-lg-4 col-md-6 col-12">
+                            <div class="mailbox-attachment-card">
+                                <!-- 1. Иконка типа файла с отметкой уровня риска безопасности -->
+                                <div class="attachment-icon-wrapper" title="Тип: {{ att.ext|upper|default:'Файл' }}">
+                                    <i class="{{ att.file_icon }} font-size-22"></i>
+                                    <span class="attachment-risk-indicator"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="top"
+                                          title="{{ att.risk_tooltip }}">
+                                        <i class="{{ att.risk_icon }} {{ att.risk_color_class }}" style="font-size: 13px;"></i>
+                                    </span>
+                                </div>
+
+                                <!-- 2. Наименование файла -->
+                                <div class="attachment-file-body">
+                                    <div class="attachment-name-box"
+                                         title="{{ att.filename }}"
+                                         onclick="openAttachmentPreview('{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
+                                        <span class="attachment-name-base">{{ att.short_base }}</span><span class="attachment-name-ext">{{ att.ext }}</span>
+                                    </div>
+                                    <div class="attachment-sub-meta">
+                                        <span class="text-muted">{{ att.file_size_human }}</span>
+                                        <span class="badge {{ att.risk_badge_class }}" data-bs-toggle="tooltip" title="{{ att.risk_tooltip }}">
+                                            {{ att.risk_label }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Действия с файлом -->
+                                <div class="dropdown flex-shrink-0">
+                                    <button class="attachment-action-btn"
+                                            type="button"
+                                            id="schedAttDrop_{{ forloop.counter }}"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                            title="Действия с файлом">
+                                        <i class="bx bx-dots-vertical-rounded font-size-18"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" aria-labelledby="schedAttDrop_{{ forloop.counter }}" style="min-width: 175px;">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                               href="javascript:void(0);"
+                                               onclick="openAttachmentPreview('{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
+                                                <i class="bx bx-show text-primary font-size-16"></i>
+                                                <span>Просмотр</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                               href="{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}"
+                                               download="{{ att.filename }}">
+                                                <i class="bx bx-download text-success font-size-16"></i>
+                                                <span>Скачать</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                               href="{% url 'mailbox_app:scheduled_attachment_download' scheduled_email.id att.id %}?inline=1"
+                                               target="_blank">
+                                                <i class="bx bx-window-open text-secondary font-size-16"></i>
+                                                <span>В новой вкладке</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Модальное окно изменения времени отправки (Reschedule) -->
+    <div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-light py-3 px-4 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #fffbeb; color: #d97706;">
+                            <i class="bx bx-calendar-edit font-size-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title font-weight-bold text-dark m-0 font-size-16" id="rescheduleModalLabel">Изменить время отправки</h5>
+                            <small class="text-muted font-size-12">Московское время (UTC+3)</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="rescheduleMailId" value="{{ scheduled_email.id }}">
+
+                    <p class="text-muted small mb-2 font-size-12">Быстрый выбор времени в 1 клик:</p>
+
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <button type="button" class="schedule-preset-card modal-reschedule-preset" data-preset="tomorrow_morning">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #fef3c7; color: #d97706;">
+                                    <i class="bx bx-sun"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">Завтра утром (09:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="detailPresetTomorrowMorning"></span>
+                        </button>
+
+                        <button type="button" class="schedule-preset-card modal-reschedule-preset" data-preset="tomorrow_afternoon">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #eff6ff; color: #0088cc;">
+                                    <i class="bx bx-coffee"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">Завтра днем (14:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="detailPresetTomorrowAfternoon"></span>
+                        </button>
+
+                        <button type="button" class="schedule-preset-card modal-reschedule-preset" data-preset="next_monday">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #ecfdf5; color: #059669;">
+                                    <i class="bx bx-briefcase"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">В понедельник утром (09:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="detailPresetNextMonday"></span>
+                        </button>
+                    </div>
+
+                    <div class="d-flex align-items-center my-3">
+                        <hr class="flex-grow-1 m-0">
+                        <span class="px-2 text-muted small text-uppercase" style="font-size: 11px;">или точная дата</span>
+                        <hr class="flex-grow-1 m-0">
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="newScheduleDateTime" class="form-label font-weight-semibold text-dark font-size-13 d-flex align-items-center gap-1">
+                            <i class="bx bx-calendar text-primary"></i> Указать дату и время отправки:
+                        </label>
+                        <input type="datetime-local" class="form-control" id="newScheduleDateTime" style="font-size: 14px; border-radius: 6px; padding: 8px 12px;">
+                        <div class="invalid-feedback" id="rescheduleErrorMsg">Время отправки должно быть позже текущего момента.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between border-top">
+                    <button type="button" class="btn btn-outline-secondary px-3 py-1 font-size-13" data-bs-dismiss="modal" style="border-radius: 6px;">Отмена</button>
+                    <button type="button" class="btn btn-primary font-weight-semibold px-4 py-1 font-size-13 shadow-sm d-flex align-items-center gap-1" id="btnSubmitReschedule" style="border-radius: 6px;">
+                        <i class="bx bx-check font-size-16"></i> Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно предпросмотра документов и вложений -->
+    <div class="modal fade" id="previewAttachmentModal" tabindex="-1" aria-labelledby="previewAttachmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden; height: 86vh;">
+                <div class="modal-header bg-light py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                        <i class="bx bx-file text-primary font-size-22" id="previewFileIcon"></i>
+                        <h6 class="modal-title font-weight-semibold text-dark m-0 text-truncate" id="previewFileName">Предпросмотр документа</h6>
+                        <span id="previewRiskBadge" class="badge ms-2 font-size-11"></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm font-size-12">
+                            <i class="bx bx-download"></i> <span>Скачать</span>
+                        </a>
+                        <a href="#" id="previewExternalBtn" target="_blank" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none font-size-12" title="Открыть в отдельной вкладке">
+                            <i class="bx bx-window-open"></i> <span class="d-none d-sm-inline">В новой вкладке</span>
+                        </a>
+                        <button type="button" class="btn-close shadow-none ms-1" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-0 d-flex align-items-center justify-content-center bg-dark position-relative" style="height: calc(86vh - 54px); overflow: hidden;">
+                    <div id="previewLoader" class="text-white text-center position-absolute" style="z-index: 10;">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Загрузка документа...
+                    </div>
+                    <!-- 1. PDF / IFRAME -->
+                    <iframe id="previewIframe" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                    <!-- 2. Изображение -->
+                    <img id="previewImg" src="" alt="Предпросмотр" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;" />
+                    <!-- 3. Текст / Код / Логи -->
+                    <div id="previewTextContainer" class="w-100 h-100 p-3 bg-white text-dark overflow-auto" style="display: none; font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word;"></div>
+                    <!-- 4. Аудио / Видео -->
+                    <div id="previewMediaContainer" class="p-4 text-center w-100" style="display: none;">
+                        <video id="previewVideo" controls class="rounded shadow" style="max-width: 90%; max-height: 70vh; display: none;"></video>
+                        <audio id="previewAudio" controls style="display: none; width: 80%; max-width: 500px;"></audio>
+                    </div>
+                    <!-- 5. Информационная карточка для файлов без прямого рендеринга -->
+                    <div id="previewInfoCard" class="p-4 text-center bg-white rounded-3 shadow-sm mx-auto my-auto" style="max-width: 520px; display: none;">
+                        <div class="mb-3">
+                            <i id="previewInfoIcon" class="bx bx-file font-size-48 text-primary"></i>
+                        </div>
+                        <h5 class="font-weight-bold text-dark mb-2" id="previewInfoName"></h5>
+                        <p class="text-muted small mb-3" id="previewInfoDesc">Файлы данного формата не могут быть отображены прямо в окне браузера. Вы можете скачать файл на устройство.</p>
+                        <div id="previewRiskAlert" class="alert d-none text-start small mb-3 py-2 px-3"></div>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="#" id="previewInfoDownloadBtn" class="btn btn-primary px-4 py-2 font-weight-semibold d-inline-flex align-items-center gap-2 shadow-sm">
+                                <i class="bx bx-download font-size-18"></i> <span>Скачать файл</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

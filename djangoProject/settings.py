@@ -321,6 +321,72 @@ CKEDITOR_5_CONFIGS = {
             'startIndex': 'true',
             'reversed': 'true',
         }
+    },
+    'mailbox': {
+        'toolbar': [
+            'heading', '|',
+            'fontFamily', 'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+            'bold', 'italic', 'underline', 'strikethrough', 'removeFormat', '|',
+            'alignment', '|',
+            'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+            'link', 'insertTable', 'blockQuote', 'horizontalLine', '|',
+            'sourceEditing'
+        ],
+        'fontFamily': {
+            'options': [
+                'default',
+                'Times New Roman, Times, serif',
+                'Arial, Helvetica, sans-serif',
+                'Calibri, sans-serif',
+                'Courier New, Courier, monospace',
+                'Georgia, serif',
+                'Tahoma, Geneva, sans-serif',
+                'Verdana, Geneva, sans-serif'
+            ],
+            'supportAllValues': True
+        },
+        'fontSize': {
+            'options': [
+                10, 11, 12, 13, 14, 'default', 16, 18, 20, 24, 28, 36
+            ],
+            'supportAllValues': True
+        },
+        'alignment': {
+            'options': ['left', 'center', 'right', 'justify']
+        },
+        'table': {
+            'contentToolbar': [
+                'tableColumn', 'tableRow', 'mergeTableCells',
+                'tableProperties', 'tableCellProperties'
+            ],
+            'tableProperties': {
+                'borderColors': customColorPalette,
+                'backgroundColors': customColorPalette
+            },
+            'tableCellProperties': {
+                'borderColors': customColorPalette,
+                'backgroundColors': customColorPalette
+            }
+        },
+        'heading': {
+            'options': [
+                {'model': 'paragraph', 'title': 'Обычный текст', 'class': 'ck-heading_paragraph'},
+                {'model': 'heading1', 'view': 'h1', 'title': 'Заголовок 1', 'class': 'ck-heading_heading1'},
+                {'model': 'heading2', 'view': 'h2', 'title': 'Заголовок 2', 'class': 'ck-heading_heading2'},
+                {'model': 'heading3', 'view': 'h3', 'title': 'Заголовок 3', 'class': 'ck-heading_heading3'}
+            ]
+        },
+        'htmlSupport': {
+            'allow': [
+                {
+                    'name': '/.*/',
+                    'attributes': True,
+                    'classes': True,
+                    'styles': True
+                }
+            ]
+        },
+        'extraPlugins': ['GeneralHtmlSupport', 'SourceEditing'],
     }
 }
 

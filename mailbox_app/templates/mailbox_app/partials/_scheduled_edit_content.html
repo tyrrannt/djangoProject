@@ -1,0 +1,261 @@
+{% load static %}
+{% load static_version %}
+
+<!-- Основное тело редактора запланированного письма (HTMX Target) -->
+<div class="inner-body mailbox-compose" id="mailboxMainContent" data-mailbox-view="scheduled-edit" data-current-folder="scheduled">
+    <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
+    {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
+    <div class="mailbox-compose-container">
+        <header class="mailbox-compose-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                        data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                    <i class="bx bx-folder"></i>
+                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #fffbeb; color: #d97706;">
+                        <i class="bx bx-edit font-size-18"></i>
+                    </div>
+                    <div>
+                        <h4 class="mailbox-title m-0 fw-bold text-dark font-size-17">Редактирование запланированного письма</h4>
+                        <small class="text-muted font-size-12">Отправка запланирована на: <strong id="headerScheduledTime">{{ scheduled_email.scheduled_at|date:"d.m.Y H:i" }} (МСК)</strong></small>
+                    </div>
+                </div>
+            </div>
+            <a href="{% url 'mailbox_app:scheduled_detail' scheduled_email.id %}"
+               hx-get="{% url 'mailbox_app:scheduled_detail' scheduled_email.id %}"
+               hx-target="#mailboxMainContent"
+               hx-swap="outerHTML"
+               hx-push-url="true"
+               class="btn btn-outline-secondary btn-sm px-3" style="border-radius: 6px;">
+                <i class="bx bx-arrow-back me-1"></i> Отмена
+            </a>
+        </header>
+
+        <form method="post" enctype="multipart/form-data" id="editScheduledMailForm" class="p-4 bg-white"
+              hx-post="{% url 'mailbox_app:scheduled_edit' scheduled_email.id %}"
+              hx-target="#mailboxMainContent"
+              hx-swap="outerHTML"
+              hx-encoding="multipart/form-data">
+            {% csrf_token %}
+            {{ form.send_mode }}
+            {{ form.scheduled_at }}
+
+            <!-- Поле Кому -->
+            <div class="mailbox-form-row position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="mailRecipientInput" class="m-0 font-weight-semibold text-dark">
+                        Кому: <span class="text-danger">*</span>
+                    </label>
+                    <div class="mailbox-toggle-links">
+                        <a onclick="toggleField('ccRow')" class="text-primary text-decoration-none small cursor-pointer">+ Копия</a> &nbsp;|&nbsp; 
+                        <a onclick="toggleField('bccRow')" class="text-primary text-decoration-none small cursor-pointer">+ Скрытая копия</a>
+                    </div>
+                </div>
+                {{ form.to }}
+                <div id="contactAutocompleteList" class="contact-autocomplete-box"></div>
+                {% if form.to.errors %}
+                    <div class="text-danger small mt-1">{{ form.to.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Поле Копия -->
+            <div class="mailbox-form-row position-relative" id="ccRow" style="{% if not form.cc.value %}display: none;{% endif %}">
+                <label class="font-weight-semibold text-dark">Копия:</label>
+                {{ form.cc }}
+                <div id="contactAutocompleteListCc" class="contact-autocomplete-box"></div>
+            </div>
+
+            <!-- Поле Скрытая копия -->
+            <div class="mailbox-form-row position-relative" id="bccRow" style="{% if not form.bcc.value %}display: none;{% endif %}">
+                <label class="font-weight-semibold text-dark">Скрытая копия:</label>
+                {{ form.bcc }}
+                <div id="contactAutocompleteListBcc" class="contact-autocomplete-box"></div>
+            </div>
+
+            <!-- Поле Тема -->
+            <div class="mailbox-form-row">
+                <label class="font-weight-semibold text-dark">Тема:</label>
+                {{ form.subject }}
+            </div>
+
+            <!-- Поле Текст сообщения (CKEditor 5) -->
+            <div class="mailbox-form-row mb-4">
+                <label class="font-weight-semibold text-dark mb-1">Сообщение:</label>
+                <div class="mailbox-editor-wrapper">
+                    {{ form.body_html }}
+                </div>
+            </div>
+
+            <!-- Уже прикрепленные файлы письма -->
+            {% if existing_attachments %}
+                <div class="p-3 bg-light rounded-3 border mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-1 font-size-14">
+                            <i class="bx bx-paperclip text-primary font-size-18"></i> Текущие вложения письма ({{ existing_attachments.count }})
+                        </label>
+                        <small class="text-muted font-size-12">Отметьте галочкой для удаления</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for att in existing_attachments %}
+                            <div class="badge bg-white text-dark border p-2 d-flex align-items-center gap-2 shadow-sm font-size-13" style="border-radius: 6px;">
+                                <i class="bx bx-file text-primary font-size-16"></i>
+                                <span class="text-truncate" style="max-width: 200px;" title="{{ att.filename }}">{{ att.filename }}</span>
+                                <small class="text-muted">({{ att.file_size_human }})</small>
+                                <div class="form-check m-0 ms-1 d-flex align-items-center">
+                                    <input class="form-check-input text-danger shadow-none" type="checkbox" name="delete_attachment_ids" value="{{ att.id }}" id="att_del_{{ att.id }}">
+                                    <label class="form-check-label text-danger small ms-1 cursor-pointer" for="att_del_{{ att.id }}" title="Удалить при сохранении">
+                                        Удалить
+                                    </label>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Прикрепление новых файлов -->
+            <div class="p-3 bg-light rounded-3 border mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-1 font-size-14">
+                        <i class="bx bx-plus-circle text-success font-size-18"></i> Добавить новые файлы
+                    </label>
+                    <small class="text-muted font-size-12">Можно выбрать несколько файлов</small>
+                </div>
+                {{ form.attachments }}
+                <div id="selectedFilesList" class="mt-2 d-flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Нижняя панель действий со сплит-кнопкой -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top gap-3 flex-wrap mt-4">
+                <a href="{% url 'mailbox_app:scheduled_detail' scheduled_email.id %}"
+                   hx-get="{% url 'mailbox_app:scheduled_detail' scheduled_email.id %}"
+                   hx-target="#mailboxMainContent"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px;">
+                    <i class="bx bx-arrow-back font-size-16"></i> <span>Отмена</span>
+                </a>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                    <!-- Индикатор запланированного времени -->
+                    <div id="scheduledNoticeBadge" class="d-flex align-items-center gap-2 shadow-sm p-2 px-3 bg-light border" style="border-radius: 20px; font-size: 13px;">
+                        <i class="bx bx-time-five font-size-16" style="color: #d97706;"></i>
+                        <span>Отправка: <strong id="scheduledNoticeTime">{{ scheduled_email.scheduled_at|date:"d.m.Y H:i" }}</strong> (МСК)</span>
+                    </div>
+
+                    <!-- Сплит-кнопка сохранения/отправки -->
+                    <div class="btn-group shadow-sm" id="sendBtnGroup" style="border-radius: 8px;">
+                        <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2" id="saveEditBtn" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">
+                            <i class="bx bx-check-double font-size-18" id="sendBtnIcon"></i> <span id="sendBtnText">Сохранить изменения</span>
+                        </button>
+                        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split px-3" id="editBtnDropdownToggle" data-bs-toggle="dropdown" aria-expanded="false" title="Дополнительные действия" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px; border-left: 1px solid rgba(255,255,255,0.25);">
+                            <span class="visually-hidden">Варианты</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-1" style="border-radius: 10px; min-width: 270px; z-index: 1050; box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3" href="#" id="menuSaveAndSendNow">
+                                    <div class="schedule-preset-icon" style="background-color: #eff6ff; color: #0088cc; width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bx bx-paper-plane font-size-18"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-weight-semibold font-size-13 text-dark">Сохранить и отправить сейчас</div>
+                                        <small class="text-muted font-size-11">Мгновенная отправка адресатам</small>
+                                    </div>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3" href="#" id="menuOpenScheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleSendModal">
+                                    <div class="schedule-preset-icon" style="background-color: #fef3c7; color: #d97706; width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bx bx-time-five font-size-18"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-weight-semibold font-size-13 text-dark">Изменить дату и время</div>
+                                        <small class="text-muted font-size-11">Выбрать другое время отправки</small>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Модальное окно выбора времени отправки -->
+    <div class="modal fade" id="scheduleSendModal" tabindex="-1" aria-labelledby="scheduleSendModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-light py-3 px-4 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #fffbeb; color: #d97706;">
+                            <i class="bx bx-time-five font-size-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title font-weight-bold text-dark m-0 font-size-16" id="scheduleSendModalLabel">Изменить время отправки</h5>
+                            <small class="text-muted font-size-12">Московское время (UTC+3)</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-2 font-size-12">Быстрый выбор времени в 1 клик:</p>
+
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <button type="button" class="schedule-preset-card schedule-preset-btn modal-reschedule-preset" data-preset="tomorrow_morning">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #fef3c7; color: #d97706;">
+                                    <i class="bx bx-sun"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">Завтра утром (09:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="editPresetTomorrowMorning"></span>
+                        </button>
+
+                        <button type="button" class="schedule-preset-card schedule-preset-btn modal-reschedule-preset" data-preset="tomorrow_afternoon">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #eff6ff; color: #0088cc;">
+                                    <i class="bx bx-coffee"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">Завтра днем (14:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="editPresetTomorrowAfternoon"></span>
+                        </button>
+
+                        <button type="button" class="schedule-preset-card schedule-preset-btn modal-reschedule-preset" data-preset="next_monday">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="schedule-preset-icon" style="background-color: #ecfdf5; color: #059669;">
+                                    <i class="bx bx-briefcase"></i>
+                                </div>
+                                <span class="font-weight-semibold font-size-13 text-dark">В понедельник утром (09:00)</span>
+                            </div>
+                            <span class="badge bg-light text-muted border font-size-11" id="editPresetNextMonday"></span>
+                        </button>
+                    </div>
+
+                    <div class="d-flex align-items-center my-3">
+                        <hr class="flex-grow-1 m-0">
+                        <span class="px-2 text-muted small text-uppercase" style="font-size: 11px;">или точная дата</span>
+                        <hr class="flex-grow-1 m-0">
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="customEditScheduleDateTime" class="form-label font-weight-semibold text-dark font-size-13 d-flex align-items-center gap-1">
+                            <i class="bx bx-calendar text-primary"></i> Новая дата и время отправки:
+                        </label>
+                        <input type="datetime-local" class="form-control" id="customEditScheduleDateTime" style="font-size: 14px; border-radius: 6px; padding: 8px 12px;">
+                        <div class="invalid-feedback" id="editScheduleDateError">Время отправки должно быть позже текущего момента.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between border-top">
+                    <button type="button" class="btn btn-outline-secondary px-3 py-1 font-size-13" data-bs-dismiss="modal" style="border-radius: 6px;">Отмена</button>
+                    <button type="button" class="btn btn-primary font-weight-semibold px-4 py-1 font-size-13 shadow-sm d-flex align-items-center gap-1" id="btnConfirmEditSchedule" style="border-radius: 6px;">
+                        <i class="bx bx-check font-size-16"></i> Применить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -22,409 +22,10 @@
             <!-- Боковое меню папок -->
             {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
 
-            <!-- Содержимое письма -->
-            <div class="inner-body mailbox-email">
-                <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
-                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
-
-                <div class="mailbox-detail-container">
-                    <!-- Панель действий (Thunderbird Mobile Detail Toolbar) -->
-                    <div class="mailbox-detail-toolbar">
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <!-- Кнопка вызова Drawer папок на мобильных -->
-                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
-                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
-                                <i class="bx bx-folder"></i>
-                            </button>
-
-                            <a href="{% url 'mailbox_app:folder' current_folder %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                                <i class="bx bx-arrow-back font-size-16"></i> <span class="d-none d-sm-inline">Назад к папке</span>
-                            </a>
-                            {% if is_junk %}
-                                <button type="button" class="btn btn-success btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="markCurrentAsNotSpam()" title="Переместить во «Входящие» и обучить спам-фильтр">
-                                    <i class="bx bx-check-shield font-size-16"></i> <span>Это не спам</span>
-                                </button>
-                            {% endif %}
-                            <a href="{% url 'mailbox_app:compose' %}?reply_uid={{ email.uid }}&folder={{ current_folder }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
-                                <i class="bx bx-reply font-size-16"></i> <span>Ответить</span>
-                            </a>
-                            <a href="{% url 'mailbox_app:compose' %}?forward_uid={{ email.uid }}&folder={{ current_folder }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                                <i class="bx bx-share font-size-16"></i> <span class="d-none d-sm-inline">Переслать</span>
-                            </a>
-
-                            <!-- Перемещение в другую папку -->
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1 shadow-none" data-bs-toggle="dropdown" aria-expanded="false" title="Переместить письмо в другую папку">
-                                    <i class="bx bx-folder font-size-16"></i> <span class="d-none d-sm-inline">Переместить</span>
-                                </button>
-                                <ul class="dropdown-menu shadow border-0 py-2 mt-1" style="border-radius: 10px; min-width: 220px; max-height: 320px; overflow-y: auto; z-index: 1050;">
-                                    <li class="dropdown-header text-uppercase text-muted" style="font-size: 11px;">Выберите папку:</li>
-                                    {% for f in folders %}
-                                        {% if f.raw_name != current_folder %}
-                                            <li>
-                                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 cursor-pointer" onclick="moveCurrentEmail('{{ f.raw_name|escapejs }}')">
-                                                    <i class="{{ f.icon }} font-size-16 text-muted"></i>
-                                                    <span class="text-truncate">{{ f.full_path_display|default:f.display_name }}</span>
-                                                </a>
-                                            </li>
-                                        {% endif %}
-                                    {% endfor %}
-                                </ul>
-                            </div>
-
-                            <!-- Кнопка официального бланка / печати -->
-                            <a href="{% url 'mailbox_app:print_letterhead' current_folder email.uid %}" target="_blank"
-                               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none" title="Открыть и распечатать официальный служебный бланк письма">
-                                <i class="bx bx-printer font-size-16 text-primary"></i> <span class="d-none d-sm-inline">Официальный бланк</span>
-                            </a>
-                        </div>
-
-                        <div>
-                            <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-none" onclick="deleteCurrentEmail()" title="Удалить письмо">
-                                <i class="bx bx-trash font-size-16"></i> <span class="d-none d-sm-inline">Удалить</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {% if is_junk %}
-                        <!-- Предупреждающий баннер спама -->
-                        <div class="alert alert-warning d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border flex-wrap gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bx bx-shield-quarter text-warning font-size-24 flex-shrink-0"></i>
-                                <div>
-                                    <strong class="text-dark">Это письмо находится в папке «Спам».</strong>
-                                    <div class="small text-muted">Если письмо попало сюда по ошибке, нажмите «Это не спам», чтобы переместить его во «Входящие» и обучить фильтр.</div>
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-success d-flex align-items-center gap-1 flex-shrink-0" onclick="markCurrentAsNotSpam()">
-                                <i class="bx bx-check-shield"></i> <span>Это не спам</span>
-                            </button>
-                        </div>
-                    {% endif %}
-
-                    <!-- Официальный служебный бланк для печати (виден только при печати) -->
-                    <div class="print-official-header d-none">
-                        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                            <div>
-                                <div class="h5 fw-bold text-uppercase mb-1" style="color: #0088cc; letter-spacing: 0.5px;">АВИАПРЕДПРИЯТИЕ «БАРКОЛ»</div>
-                                <div class="text-muted small">Корпоративная система электронной почты</div>
-                            </div>
-                            <div class="text-end text-muted small">
-                                <div class="fw-semibold text-dark">Служебная печатная копия сообщения</div>
-                                <div>Дата печати: {% now "d.m.Y H:i" %} (МСК)</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Тема письма -->
-                    <h3 class="mailbox-detail-subject">{{ email.subject|default:"(Без темы)" }}</h3>
-
-                    <!-- Карточка отправителя / получателя -->
-                    <div class="mailbox-sender-box">
-                        <div class="mailbox-avatar">
-                            {% if show_recipient and email.to_raw %}
-                                {{ email.to_raw|first|upper }}
-                            {% else %}
-                                {{ email.from_name|default:"?"|first|upper }}
-                            {% endif %}
-                        </div>
-                        <div class="mailbox-sender-info">
-                            <div class="mailbox-sender-header">
-                                <span class="mailbox-sender-name">
-                                    {% if show_recipient and email.to_raw %}
-                                        Кому: {{ email.to_raw }}
-                                    {% else %}
-                                        {{ email.from_name|default:"Без отправителя" }}
-                                    {% endif %}
-                                </span>
-                                <span class="mailbox-sender-date">
-                                    {% if email.date %}
-                                        <i class="bx bx-time-five me-1"></i>{{ email.date|date:"d E Y, H:i" }}
-                                    {% else %}
-                                        {{ email.date_raw }}
-                                    {% endif %}
-                                </span>
-                            </div>
-                            <div class="mailbox-sender-meta">
-                                {% if show_recipient %}
-                                    {% if email.to_raw %}<div><b>Кому:</b> {{ email.to_raw }}</div>{% endif %}
-                                    <div class="d-flex align-items-center flex-wrap gap-1">
-                                        <b>От:</b> &lt;{{ email.from_email }}&gt;
-                                        {% if email.from_email %}
-                                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}?q={{ email.from_email|urlencode }}&scope=headers"
-                                               class="badge bg-light text-primary border text-decoration-none ms-1 px-2 py-1 align-middle"
-                                               title="Найти все письма с {{ email.from_name|default:email.from_email }}">
-                                                <i class="bx bx-search-alt align-middle me-1"></i>Все письма автора
-                                            </a>
-                                        {% endif %}
-                                    </div>
-                                {% else %}
-                                    <div class="d-flex align-items-center flex-wrap gap-1">
-                                        <b>От:</b> &lt;{{ email.from_email }}&gt;
-                                        {% if email.from_email %}
-                                            <!-- Поиск всей переписки с автором в 1 клик -->
-                                            <a href="{% url 'mailbox_app:folder' 'INBOX' %}?q={{ email.from_email|urlencode }}&scope=headers"
-                                               class="badge bg-light text-primary border text-decoration-none ms-1 px-2 py-1 align-middle"
-                                               title="Найти всю переписку с {{ email.from_name|default:email.from_email }}">
-                                                <i class="bx bx-search-alt align-middle me-1"></i>Все письма автора
-                                            </a>
-
-                                            <!-- Быстрое добавление в контакты -->
-                                            {% if not is_in_contacts %}
-                                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 ms-1 align-middle font-size-12 d-inline-flex align-items-center gap-1 shadow-none"
-                                                        id="btnAddSenderToContacts" onclick="addContactQuick('{{ email.from_name|escapejs }}', '{{ email.from_email|escapejs }}')"
-                                                        title="Сохранить отправителя в персональную адресную книгу">
-                                                    <i class="bx bx-user-plus font-size-13"></i> В контакты
-                                                </button>
-                                                <span id="contactAddedBadge" class="badge bg-success-subtle text-success border border-success-subtle ms-1 d-none py-1 px-2 align-middle">
-                                                    <i class="bx bx-check me-1"></i>В контактах
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-light text-success border ms-1 py-1 px-2 align-middle" title="Контакт уже сохранен в адресной книге">
-                                                    <i class="bx bx-check me-1"></i>В контактах
-                                                </span>
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                    {% if email.to_raw %}<div><b>Кому:</b> {{ email.to_raw }}</div>{% endif %}
-                                {% endif %}
-                                {% if email.cc_raw %}<div><b>Копия:</b> {{ email.cc_raw }}</div>{% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Тело сообщения -->
-                    <div class="mailbox-message-content">
-                        {% if email.body_html %}
-                            <div class="email-html-wrapper">
-                                {{ email.body_html|safe }}
-                            </div>
-                        {% elif email.body_text %}
-                            <div style="white-space: pre-wrap; font-family: inherit;">{{ email.body_text }}</div>
-                        {% else %}
-                            <div class="text-muted fst-italic py-3">
-                                <i class="bx bx-info-circle me-1"></i> Сообщение не содержит текста
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Вложенные файлы -->
-                    {% if email.attachments %}
-                        <div class="mailbox-attachments-box">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                                <h5 class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-2">
-                                    <i class="bx bx-paperclip text-primary font-size-18"></i> Вложенные файлы ({{ email.attachments|length }})
-                                </h5>
-                                {% if email.attachments|length > 1 %}
-                                    <a href="{% url 'mailbox_app:download_all_attachments_zip' current_folder email.uid %}"
-                                       class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-none"
-                                       title="Скачать все файлы вложения единым ZIP-архивом">
-                                        <i class="bx bx-archive-in font-size-16"></i>
-                                        <span>Скачать все архивом (.zip)</span>
-                                    </a>
-                                {% endif %}
-                            </div>
-                            <div class="row g-3">
-                                {% for att in email.attachments %}
-                                    <div class="col-lg-4 col-md-6 col-12">
-                                        <div class="mailbox-attachment-card">
-                                            <!-- 1. Иконка типа файла с отметкой уровня риска безопасности -->
-                                            <div class="attachment-icon-wrapper" title="Тип: {{ att.ext|upper|default:'Файл' }}">
-                                                <i class="{{ att.file_icon }} font-size-22"></i>
-                                                <span class="attachment-risk-indicator"
-                                                      data-bs-toggle="tooltip"
-                                                      data-bs-placement="top"
-                                                      title="{{ att.risk_tooltip }}">
-                                                    <i class="{{ att.risk_icon }} {{ att.risk_color_class }}" style="font-size: 13px;"></i>
-                                                </span>
-                                            </div>
-
-                                            <!-- 2. Наименование файла (до 2 строк, троеточие в конце базы, обязательное расширение) -->
-                                            <div class="attachment-file-body">
-                                                <div class="attachment-name-box"
-                                                     title="{{ att.filename }}"
-                                                     onclick="openAttachmentPreview('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
-                                                    <span class="attachment-name-base">{{ att.short_base }}</span><span class="attachment-name-ext">{{ att.ext }}</span>
-                                                </div>
-                                                <div class="attachment-sub-meta">
-                                                    <span class="text-muted">{{ att.size_human }}</span>
-                                                    <span class="badge {{ att.risk_badge_class }}" data-bs-toggle="tooltip" title="{{ att.risk_tooltip }}">
-                                                        {{ att.risk_label }}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <!-- 3. Действия с файлом (выпадающее меню по кнопке с троеточием) -->
-                                            <div class="dropdown flex-shrink-0">
-                                                <button class="attachment-action-btn"
-                                                        type="button"
-                                                        id="attDrop_{{ forloop.counter }}"
-                                                        data-bs-toggle="dropdown"
-                                                        aria-expanded="false"
-                                                        title="Действия с файлом">
-                                                    <i class="bx bx-dots-vertical-rounded font-size-18"></i>
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" aria-labelledby="attDrop_{{ forloop.counter }}" style="min-width: 175px;">
-                                                    <li>
-                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
-                                                           href="javascript:void(0);"
-                                                           onclick="openAttachmentPreview('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
-                                                            <i class="bx bx-show text-primary font-size-16"></i>
-                                                            <span>Просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
-                                                           href="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}"
-                                                           download="{{ att.filename }}">
-                                                            <i class="bx bx-download text-success font-size-16"></i>
-                                                            <span>Скачать</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
-                                                           href="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1"
-                                                           target="_blank">
-                                                            <i class="bx bx-window-open text-secondary font-size-16"></i>
-                                                            <span>В новой вкладке</span>
-                                                        </a>
-                                                    </li>
-                                                    <li><hr class="dropdown-divider my-1"></li>
-                                                    <li>
-                                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
-                                                           href="javascript:void(0);"
-                                                           onclick="copyAttachmentLink('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}')">
-                                                            <i class="bx bx-copy text-muted font-size-16"></i>
-                                                            <span>Копировать ссылку</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-
-                            <!-- Предпросмотр прикрепленных изображений -->
-                            <div class="row g-3 mt-2">
-                                {% for att in email.attachments %}
-                                    {% if att.is_image %}
-                                        <div class="col-md-6 col-lg-4">
-                                            <div class="border rounded p-2 bg-white text-center shadow-sm">
-                                                <a href="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1" target="_blank" title="Нажмите для открытия в полном размере">
-                                                    <img src="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1"
-                                                         class="img-fluid rounded"
-                                                         style="max-height: 220px; object-fit: contain;"
-                                                         alt="{{ att.filename }}"
-                                                         loading="lazy" />
-                                                </a>
-                                                <div class="mt-2 small text-truncate text-dark font-weight-semibold">{{ att.filename }}</div>
-                                                <div class="text-muted" style="font-size: 11px;">{{ att.size_human }}</div>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
+            <!-- Основная область просмотра письма (HTMX target) -->
+            {% include 'mailbox_app/partials/_email_detail_content.html' %}
         </div>
     </section>
-
-    <!-- Модальное окно подтверждения удаления письма -->
-    <div class="modal fade" id="deleteSingleMailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-                <div class="modal-body p-4 text-center">
-                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 68px; height: 68px; background: rgba(220, 53, 69, 0.12); color: #dc3545;">
-                        <i class="bx bx-trash" style="font-size: 34px;"></i>
-                    </div>
-                    <h5 class="font-weight-bold text-dark mb-2">Переместить письмо в корзину?</h5>
-                    <p class="text-muted small mb-4">Письмо будет удалено из текущей папки и перемещено в «Корзина».</p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
-                            Отмена
-                        </button>
-                        <button type="button" class="btn btn-danger px-4 py-2 font-weight-semibold d-flex align-items-center gap-1 shadow-sm" id="confirmDeleteSingleBtn">
-                            <i class="bx bx-trash font-size-18"></i> <span>Удалить</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Модальное окно предупреждения / ошибки -->
-    <div class="modal fade" id="warningMailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-                <div class="modal-body p-4 text-center">
-                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 60px; height: 60px; background: rgba(255, 193, 7, 0.15); color: #e0a800;">
-                        <i class="bx bx-error" style="font-size: 32px;"></i>
-                    </div>
-                    <h5 class="font-weight-bold text-dark mb-2" id="warningModalTitle">Ошибка</h5>
-                    <p class="text-muted small mb-4" id="warningModalDesc">Не удалось выполнить действие.</p>
-                    <button type="button" class="btn btn-primary px-4 py-2 font-weight-semibold" data-bs-dismiss="modal">
-                        Понятно
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно предпросмотра документов и вложений -->
-    <div class="modal fade" id="previewAttachmentModal" tabindex="-1" aria-labelledby="previewAttachmentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden; height: 86vh;">
-                <div class="modal-header bg-light py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2 text-truncate me-2">
-                        <i class="bx bx-file text-primary font-size-22" id="previewFileIcon"></i>
-                        <h6 class="modal-title font-weight-semibold text-dark m-0 text-truncate" id="previewFileName">Предпросмотр документа</h6>
-                        <span id="previewRiskBadge" class="badge ms-2 font-size-11"></span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                        <a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm font-size-12">
-                            <i class="bx bx-download"></i> <span>Скачать</span>
-                        </a>
-                        <a href="#" id="previewExternalBtn" target="_blank" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-none font-size-12" title="Открыть в отдельной вкладке">
-                            <i class="bx bx-window-open"></i> <span class="d-none d-sm-inline">В новой вкладке</span>
-                        </a>
-                        <button type="button" class="btn-close shadow-none ms-1" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                    </div>
-                </div>
-                <div class="modal-body p-0 d-flex align-items-center justify-content-center bg-dark position-relative" style="height: calc(86vh - 54px); overflow: hidden;">
-                    <div id="previewLoader" class="text-white text-center position-absolute" style="z-index: 10;">
-                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Загрузка документа...
-                    </div>
-                    <!-- 1. PDF / IFRAME -->
-                    <iframe id="previewIframe" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
-                    <!-- 2. Изображение -->
-                    <img id="previewImg" src="" alt="Предпросмотр" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;" />
-                    <!-- 3. Текст / Код / Логи -->
-                    <div id="previewTextContainer" class="w-100 h-100 p-3 bg-white text-dark overflow-auto" style="display: none; font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word;"></div>
-                    <!-- 4. Аудио / Видео -->
-                    <div id="previewMediaContainer" class="p-4 text-center w-100" style="display: none;">
-                        <video id="previewVideo" controls class="rounded shadow" style="max-width: 90%; max-height: 70vh; display: none;"></video>
-                        <audio id="previewAudio" controls style="display: none; width: 80%; max-width: 500px;"></audio>
-                    </div>
-                    <!-- 5. Информационная карточка для файлов без прямого рендеринга (Word, Excel, Архивы, Исполняемые файлы) -->
-                    <div id="previewInfoCard" class="p-4 text-center bg-white rounded-3 shadow-sm mx-auto my-auto" style="max-width: 520px; display: none;">
-                        <div class="mb-3">
-                            <i id="previewInfoIcon" class="bx bx-file font-size-48 text-primary"></i>
-                        </div>
-                        <h5 class="font-weight-bold text-dark mb-2" id="previewInfoName"></h5>
-                        <p class="text-muted small mb-3" id="previewInfoDesc">Файлы данного формата не могут быть безопасно отображены прямо в окне браузера без конвертации. Вы можете скачать файл на устройство.</p>
-                        <div id="previewRiskAlert" class="alert d-none text-start small mb-3 py-2 px-3"></div>
-                        <div class="d-flex justify-content-center gap-2">
-                            <a href="#" id="previewInfoDownloadBtn" class="btn btn-primary px-4 py-2 font-weight-semibold d-inline-flex align-items-center gap-2 shadow-sm">
-                                <i class="bx bx-download font-size-18"></i> <span>Скачать файл</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 {% endblock %}
 
 {% block custom_script %}
@@ -631,6 +232,8 @@
 
         function moveCurrentEmail(targetFolder) {
             if (!targetFolder) return;
+            const contentEl = document.getElementById('mailboxMainContent');
+            const currentFolder = contentEl ? contentEl.getAttribute('data-current-folder') : '{{ current_folder }}';
 
             fetch("{% url 'mailbox_app:api_action' %}", {
                 method: 'POST',
@@ -640,7 +243,7 @@
                 },
                 body: JSON.stringify({
                     action: 'move',
-                    folder: '{{ current_folder }}',
+                    folder: currentFolder,
                     target_folder: targetFolder,
                     uids: [{{ email.uid }}]
                 })
@@ -648,7 +251,12 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'ok' || data.success) {
-                    window.location.href = "{% url 'mailbox_app:folder' current_folder %}";
+                    const folderUrl = "{% url 'mailbox_app:folder' current_folder %}";
+                    if (typeof htmx !== 'undefined') {
+                        htmx.ajax('GET', folderUrl, {target: '#mailboxMainContent', swap: 'outerHTML', pushUrl: true});
+                    } else {
+                        window.location.href = folderUrl;
+                    }
                 } else {
                     showWarningModal('Ошибка перемещения', data.error || 'Не удалось переместить письмо');
                 }
@@ -660,8 +268,14 @@
         }
 
         function showWarningModal(title, text) {
-            if (title) document.getElementById('warningModalTitle').innerText = title;
-            if (text) document.getElementById('warningModalDesc').innerText = text;
+            if (title) {
+                const titleEl = document.getElementById('warningModalTitle');
+                if (titleEl) titleEl.innerText = title;
+            }
+            if (text) {
+                const descEl = document.getElementById('warningModalDesc');
+                if (descEl) descEl.innerText = text;
+            }
             const modalEl = document.getElementById('warningMailModal');
             if (modalEl) {
                 const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -677,40 +291,54 @@
             }
         }
 
-        const confirmBtn = document.getElementById('confirmDeleteSingleBtn');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', function() {
-                this.disabled = true;
-                fetch("{% url 'mailbox_app:api_action' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({
-                        action: 'delete',
-                        folder: '{{ current_folder }}',
-                        uids: [{{ email.uid }}]
-                    })
+        function executeDeleteCurrentEmail() {
+            const confirmBtn = document.getElementById('confirmDeleteSingleBtn');
+            if (confirmBtn) confirmBtn.disabled = true;
+            const contentEl = document.getElementById('mailboxMainContent');
+            const currentFolder = contentEl ? contentEl.getAttribute('data-current-folder') : '{{ current_folder }}';
+
+            fetch("{% url 'mailbox_app:api_action' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: 'delete',
+                    folder: currentFolder,
+                    uids: [{{ email.uid }}]
                 })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'ok' || data.success) {
-                        window.location.href = "{% url 'mailbox_app:folder' current_folder %}";
+            })
+            .then(res => res.json())
+            .then(data => {
+                const modalEl = document.getElementById('deleteSingleMailModal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }
+                if (data.status === 'ok' || data.success) {
+                    const folderUrl = "{% url 'mailbox_app:folder' current_folder %}";
+                    if (typeof htmx !== 'undefined') {
+                        htmx.ajax('GET', folderUrl, {target: '#mailboxMainContent', swap: 'outerHTML', pushUrl: true});
                     } else {
-                        showWarningModal('Ошибка', data.error || 'Неизвестная ошибка при удалении');
-                        confirmBtn.disabled = false;
+                        window.location.href = folderUrl;
                     }
-                })
-                .catch(err => {
-                    console.error(err);
-                    showWarningModal('Ошибка связи', 'Сетевая ошибка при удалении письма');
-                    confirmBtn.disabled = false;
-                });
+                } else {
+                    showWarningModal('Ошибка', data.error || 'Неизвестная ошибка при удалении');
+                    if (confirmBtn) confirmBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showWarningModal('Ошибка связи', 'Сетевая ошибка при удалении письма');
+                if (confirmBtn) confirmBtn.disabled = false;
             });
         }
 
         function markCurrentAsNotSpam() {
+            const contentEl = document.getElementById('mailboxMainContent');
+            const currentFolder = contentEl ? contentEl.getAttribute('data-current-folder') : '{{ current_folder }}';
+
             fetch("{% url 'mailbox_app:api_action' %}", {
                 method: 'POST',
                 headers: {
@@ -719,14 +347,19 @@
                 },
                 body: JSON.stringify({
                     action: 'not_spam',
-                    folder: '{{ current_folder }}',
+                    folder: currentFolder,
                     uids: [{{ email.uid }}]
                 })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'ok' || data.success) {
-                    window.location.href = "{% url 'mailbox_app:folder' 'INBOX' %}";
+                    const inboxUrl = "{% url 'mailbox_app:folder' 'INBOX' %}";
+                    if (typeof htmx !== 'undefined') {
+                        htmx.ajax('GET', inboxUrl, {target: '#mailboxMainContent', swap: 'outerHTML', pushUrl: true});
+                    } else {
+                        window.location.href = inboxUrl;
+                    }
                 } else {
                     showWarningModal('Ошибка', data.error || 'Не удалось переместить письмо из спама');
                 }
@@ -782,6 +415,16 @@
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+        });
+
+        // Также инициализируем тултипы при подгрузке через HTMX
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.id === 'mailboxMainContent') {
+                const tooltips = [].slice.call(evt.detail.target.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltips.map(function(el) {
+                    return new bootstrap.Tooltip(el);
+                });
+            }
         });
     </script>
 {% endblock %}
