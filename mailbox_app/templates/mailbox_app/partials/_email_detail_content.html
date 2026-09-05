@@ -233,26 +233,30 @@
                     {% for att in email.attachments %}
                         <div class="col-lg-4 col-md-6 col-12">
                             <div class="mailbox-attachment-card">
-                                <!-- 1. Иконка типа файла с отметкой уровня риска безопасности -->
-                                <div class="attachment-icon-wrapper" title="Тип: {{ att.ext|upper|default:'Файл' }}">
-                                    <i class="{{ att.file_icon }} font-size-22"></i>
+                                <!-- 1. Иконка типа файла с расширением под ней и отметкой безопасности -->
+                                <div class="attachment-icon-wrapper"
+                                     title="Тип: {{ att.ext_label|default:att.ext|cut:'.'|upper|default:'Файл' }}"
+                                     onclick="openAttachmentPreview('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
+                                    <i class="{{ att.file_icon }} attachment-file-icon"></i>
+                                    <span class="attachment-ext-tag">{{ att.ext_label|default:att.ext|cut:"."|upper|default:"FILE" }}</span>
                                     <span class="attachment-risk-indicator"
                                           data-bs-toggle="tooltip"
                                           data-bs-placement="top"
-                                          title="{{ att.risk_tooltip }}">
-                                        <i class="{{ att.risk_icon }} {{ att.risk_color_class }}" style="font-size: 13px;"></i>
+                                          title="{{ att.risk_tooltip }}"
+                                          onclick="event.stopPropagation();">
+                                        <i class="{{ att.risk_icon }} {{ att.risk_color_class }}"></i>
                                     </span>
                                 </div>
 
-                                <!-- 2. Наименование файла (до 2 строк, троеточие в конце базы, обязательное расширение) -->
+                                <!-- 2. Наименование файла и метаданные -->
                                 <div class="attachment-file-body">
-                                    <div class="attachment-name-box"
+                                    <div class="attachment-filename-wrap"
                                          title="{{ att.filename }}"
                                          onclick="openAttachmentPreview('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
-                                        <span class="attachment-name-base">{{ att.short_base }}</span><span class="attachment-name-ext">{{ att.ext }}</span>
+                                        <span class="attachment-filename">{{ att.filename }}</span>
                                     </div>
                                     <div class="attachment-sub-meta">
-                                        <span class="text-muted">{{ att.size_human }}</span>
+                                        <span class="attachment-size">{{ att.size_human }}</span>
                                         <span class="badge {{ att.risk_badge_class }}" data-bs-toggle="tooltip" title="{{ att.risk_tooltip }}">
                                             {{ att.risk_label }}
                                         </span>
@@ -265,20 +269,23 @@
                                             type="button"
                                             id="attDrop_{{ forloop.counter }}"
                                             data-bs-toggle="dropdown"
+                                            data-bs-display="dynamic"
+                                            data-bs-boundary="viewport"
+                                            data-bs-popper-config='{"strategy":"fixed"}'
                                             aria-expanded="false"
                                             title="Действия с файлом">
                                         <i class="bx bx-dots-vertical-rounded font-size-18"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" aria-labelledby="attDrop_{{ forloop.counter }}" style="min-width: 175px;">
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" aria-labelledby="attDrop_{{ forloop.counter }}" style="min-width: 175px; border-radius: 8px; font-size: 13px; z-index: 1075;">
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13 cursor-pointer"
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 cursor-pointer"
                                                onclick="openAttachmentPreview('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1', '{{ att.filename|escapejs }}', '{{ att.preview_type }}', '{{ att.risk_level }}', '{{ att.risk_tooltip|escapejs }}')">
                                                 <i class="bx bx-show text-primary font-size-16"></i>
                                                 <span>Просмотр</span>
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2"
                                                href="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}"
                                                download="{{ att.filename }}">
                                                 <i class="bx bx-download text-success font-size-16"></i>
@@ -286,7 +293,7 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13"
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2"
                                                href="{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}?inline=1"
                                                target="_blank">
                                                 <i class="bx bx-window-open text-secondary font-size-16"></i>
@@ -295,7 +302,7 @@
                                         </li>
                                         <li><hr class="dropdown-divider my-1"></li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 font-size-13 cursor-pointer"
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 cursor-pointer"
                                                onclick="copyAttachmentLink('{% url 'mailbox_app:download_attachment' current_folder email.uid att.part_index %}')">
                                                 <i class="bx bx-copy text-muted font-size-16"></i>
                                                 <span>Копировать ссылку</span>

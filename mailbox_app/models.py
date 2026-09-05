@@ -756,6 +756,11 @@ class ScheduledEmailAttachment(models.Model):
         return self.security_info.get("ext", "")
 
     @property
+    def ext_label(self) -> str:
+        """Возвращает краткое обозначение формата файла (например, PDF, DOCX, ZIP)."""
+        return self.security_info.get("ext_label", self.ext.lstrip(".").upper() or "FILE")
+
+    @property
     def short_base(self) -> str:
         """Возвращает укороченное базовое имя файла для 2-строчного блока."""
         return self.security_info.get("short_base", self.filename)
