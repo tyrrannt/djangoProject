@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 from . import api_views
 from . import webauthn_views
+from . import cades_views
 from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
     BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
     BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView, \
@@ -44,6 +45,12 @@ urlpatterns = [
     path('api/passkey/list/', webauthn_views.webauthn_passkey_list, name='passkey_list'),
     path('api/passkey/<int:pk>/delete/', webauthn_views.webauthn_passkey_delete, name='passkey_delete'),
     path('api/passkey/<int:pk>/rename/', webauthn_views.webauthn_passkey_rename, name='passkey_rename'),
+    # CAdES / ЭЦП (КриптоПро / Рутокен / ГОСТ) Endpoints
+    path('api/cert/login/challenge/', cades_views.cades_login_challenge, name='cades_login_challenge'),
+    path('api/cert/login/verify/', cades_views.cades_login_verify, name='cades_login_verify'),
+    path('api/cert/list/', cades_views.cades_cert_list, name='cades_cert_list'),
+    path('api/cert/register/verify/', cades_views.cades_cert_register, name='cades_cert_register'),
+    path('api/cert/<int:pk>/delete/', cades_views.cades_cert_delete, name='cades_cert_delete'),
     path("", views.index, name="index"),
     path("login/", views.login, name="login"),
     path("logout/", views.logout, name="logout"),

@@ -1,0 +1,349 @@
+{% load static %}
+{% load static_version %}
+
+<!-- ==========================================================================
+     МОДАЛЬНОЕ ОКНО: УПРАВЛЕНИЕ СЕРТИФИКАТАМИ ЭЦП (КЭП / ГОСТ / КРИПТОПРО)
+     ========================================================================== -->
+<style>
+    /* Гарантированное отображение модального окна поверх backdrop и фиксация z-index */
+    #certificateModal {
+        z-index: 1060 !important;
+    }
+    #certificateModal .modal-dialog {
+        max-width: 850px;
+    }
+    @media (max-width: 768px) {
+        #certificateModal .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+        #certificateModal .modal-body {
+            padding: 1rem !important;
+        }
+        .cert-mobile-sub {
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+    }
+</style>
+
+<div class="modal fade" id="certificateModal" tabindex="-1" aria-labelledby="certificateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-certificate fs-4 me-2"></i>
+                    <div>
+                        <h5 class="modal-title font-weight-bold m-0" id="certificateModalLabel">
+                            Сертификаты ЭЦП (КЭП / ГОСТ / КриптоПро)
+                        </h5>
+                        <small class="opacity-75">Привязка квалифицированных сертификатов для беспарольного входа</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+
+            <div class="modal-body p-3 p-md-4">
+                <!-- Оповещения и статусы -->
+                <div id="certModalAlert" style="display: none;"></div>
+
+                <!-- Карточка привязки нового сертификата с токена / ПК -->
+                <div class="card border bg-light shadow-none mb-4">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="row align-items-center g-3">
+                            <div class="col-12 col-md-6">
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <i class="bx bx-plus-circle text-primary me-1"></i> Привязать новый сертификат
+                                </h6>
+                                <p class="text-muted small mb-0">
+                                    Выберите ключ с подключенного Рутокен/JaCarta или из реестра Windows/macOS/Linux.
+                                </p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="d-flex gap-1">
+                                        <select class="form-select form-select-sm" id="modalCadesCertSelect">
+                                            <option value="" selected disabled>Опрос плагина КриптоПро...</option>
+                                        </select>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="modalCadesRefreshBtn" title="Обновить сертификаты">
+                                            <i class="fas fa-sync-alt" id="modalCadesRefreshIcon"></i>
+                                        </button>
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm" id="modalCadesCertName"
+                                           placeholder="Название (напр., КЭП ФНС Рутокен)">
+                                    <button type="button" class="btn btn-primary btn-touch fw-bold shadow-sm d-flex align-items-center justify-content-center" id="btnRegisterCert">
+                                        <i class="fas fa-link me-2" id="btnRegisterCertIcon"></i>
+                                        <span id="btnRegisterCertText">Привязать сертификат к профилю</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Список привязанных сертификатов -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-dark m-0">
+                        <i class="bx bx-shield-alt-2 text-primary me-1"></i> Ваши привязанные сертификаты ЭЦП
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshServerCerts" title="Обновить список">
+                        <i class="fas fa-sync-alt" id="refreshServerCertsIcon"></i>
+                    </button>
+                </div>
+
+                <div class="table-responsive border rounded bg-white">
+                    <table class="table table-hover align-middle mb-0" id="serverCertsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3 py-2 small fw-bold text-muted">СЕРТИФИКАТ / ВЛАДЕЛЕЦ</th>
+                                <th class="py-2 small fw-bold text-muted d-none d-md-table-cell">СНИЛС / ИНН</th>
+                                <th class="py-2 small fw-bold text-muted d-none d-sm-table-cell">СРОК ДЕЙСТВИЯ</th>
+                                <th class="text-end pe-3 py-2 small fw-bold text-muted">ДЕЙСТВИЯ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serverCertsTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    Загрузка списка сертификатов...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Информационная плашка безопасности -->
+                <div class="alert alert-info border-0 bg-info-subtle text-info-emphasis d-flex align-items-start p-3 mt-4 mb-0 rounded" role="alert">
+                    <i class="fas fa-shield-alt fs-5 me-3 mt-1 flex-shrink-0 text-info"></i>
+                    <div class="small">
+                        <strong>Юридическая безопасность ГОСТ:</strong> Закрытый ключ сертификата никогда не покидает ваш защищенный ключевой носитель (Рутокен, JaCarta). На сервере сохраняются только метаданные открытого сертификата для подтверждения вашей личности.
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light p-3">
+                <button type="button" class="btn btn-secondary px-4 fw-semibold btn-touch" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static_version 'customers_app/js/cadesplugin_api.js' %}"></script>
+<script src="{% static_version 'customers_app/js/cades_client.js' %}"></script>
+<script>
+    (function () {
+        'use strict';
+
+        function relocateCertModalToBody() {
+            var modalEl = document.getElementById('certificateModal');
+            if (modalEl && modalEl.parentNode && modalEl.parentNode !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            return modalEl;
+        }
+
+        // Немедленное перемещение в body
+        relocateCertModalToBody();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = relocateCertModalToBody();
+            if (!modalEl) return;
+
+            var alertContainer = document.getElementById('certModalAlert');
+            var tableBody = document.getElementById('serverCertsTableBody');
+            var localSelect = document.getElementById('modalCadesCertSelect');
+            var nameInput = document.getElementById('modalCadesCertName');
+            var btnRegister = document.getElementById('btnRegisterCert');
+            var btnRegisterIcon = document.getElementById('btnRegisterCertIcon');
+            var btnRegisterText = document.getElementById('btnRegisterCertText');
+            var btnRefreshLocal = document.getElementById('modalCadesRefreshBtn');
+            var refreshLocalIcon = document.getElementById('modalCadesRefreshIcon');
+            var btnRefreshServer = document.getElementById('btnRefreshServerCerts');
+            var refreshServerIcon = document.getElementById('refreshServerCertsIcon');
+
+            var localCerts = [];
+
+            function showModalAlert(message, type) {
+                type = type || 'danger';
+                alertContainer.innerHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show p-3 mb-3" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle fs-5 me-2 flex-shrink-0"></i>
+                            <div class="small">${message}</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                    </div>
+                `;
+                alertContainer.style.display = 'block';
+            }
+
+            // 1. Загрузка сертификатов с ПК пользователя через плагин
+            async function loadLocalCertificates() {
+                if (refreshLocalIcon) refreshLocalIcon.classList.add('fa-spin');
+                localSelect.innerHTML = '<option value="" selected disabled>Опрос плагина КриптоПро...</option>';
+                btnRegister.disabled = true;
+
+                try {
+                    var installed = await BarkolCades.isPluginInstalled();
+                    if (!installed) {
+                        localSelect.innerHTML = '<option value="" selected disabled>Плагин КриптоПро не обнаружен</option>';
+                        return;
+                    }
+
+                    localCerts = await BarkolCades.getPersonalCertificates();
+
+                    if (!localCerts || localCerts.length === 0) {
+                        localSelect.innerHTML = '<option value="" selected disabled>Личные сертификаты не найдены</option>';
+                        return;
+                    }
+
+                    var html = '<option value="" disabled selected>— Выберите сертификат —</option>';
+                    localCerts.forEach(function (c, idx) {
+                        var expBadge = c.isExpired ? ' (ИСТЕК)' : '';
+                        html += `<option value="${c.thumbprint}" ${idx === 0 && !c.isExpired ? 'selected' : ''}>${c.cn} — до ${c.validToFormatted}${expBadge}</option>`;
+                    });
+                    localSelect.innerHTML = html;
+                    btnRegister.disabled = false;
+                } catch (e) {
+                    localSelect.innerHTML = `<option value="" selected disabled>Ошибка плагина: ${e.message}</option>`;
+                } finally {
+                    if (refreshLocalIcon) refreshLocalIcon.classList.remove('fa-spin');
+                }
+            }
+
+            // 2. Загрузка привязанных сертификатов с сервера
+            async function loadServerCertificates() {
+                if (refreshServerIcon) refreshServerIcon.classList.add('fa-spin');
+                try {
+                    var res = await BarkolCades.loadServerCertificatesList();
+                    if (res && res.success) {
+                        renderServerCertificates(res.certificates || []);
+                    } else {
+                        tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-danger">Не удалось загрузить список сертификатов</td></tr>`;
+                    }
+                } catch (err) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-danger">${err.message}</td></tr>`;
+                } finally {
+                    if (refreshServerIcon) refreshServerIcon.classList.remove('fa-spin');
+                }
+            }
+
+            function renderServerCertificates(list) {
+                if (!list || list.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <i class="bx bx-info-circle fs-4 d-block mb-1 text-muted"></i>
+                                У вас пока нет привязанных сертификатов ЭЦП.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                var html = '';
+                list.forEach(function (c) {
+                    var expBadge = c.is_expired ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1 small">Истек</span>` : `<span class="badge bg-success-subtle text-success border border-success-subtle ms-1 small">Действует</span>`;
+                    html += `
+                        <tr>
+                            <td class="ps-3 py-2 py-md-3">
+                                <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
+                                    <i class="fas fa-certificate text-primary me-1"></i>
+                                    <span>${c.name}</span>
+                                    ${expBadge}
+                                </div>
+                                <div class="small text-muted">${c.cn}</div>
+                                <div class="d-md-none cert-mobile-sub mt-1">
+                                    <div>СНИЛС: ${c.snils || '—'} | ИНН: ${c.inn || '—'}</div>
+                                    <div>До: ${c.valid_to}</div>
+                                </div>
+                            </td>
+                            <td class="py-3 small text-muted d-none d-md-table-cell">
+                                <div>СНИЛС: ${c.snils || '—'}</div>
+                                <div>ИНН: ${c.inn || '—'}</div>
+                            </td>
+                            <td class="py-3 small text-muted d-none d-sm-table-cell">
+                                <div>до ${c.valid_to}</div>
+                                <div class="text-secondary small">с ${c.valid_from}</div>
+                            </td>
+                            <td class="text-end pe-3 py-2 py-md-3">
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-cert btn-touch" data-id="${c.id}" title="Отозвать сертификат" aria-label="Отозвать сертификат" style="min-width: 38px; min-height: 38px;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tableBody.innerHTML = html;
+
+                // Обработчики удаления
+                tableBody.querySelectorAll('.btn-delete-cert').forEach(function (btn) {
+                    btn.addEventListener('click', async function () {
+                        var id = this.getAttribute('data-id');
+                        if (!confirm('Вы уверены, что хотите отозвать данный сертификат ЭЦП? Вход по нему будет заблокирован.')) {
+                            return;
+                        }
+                        try {
+                            var delRes = await BarkolCades.deleteCertificate(id);
+                            if (delRes.success) {
+                                showModalAlert(delRes.message || 'Сертификат успешно удален.', 'success');
+                                loadServerCertificates();
+                            } else {
+                                showModalAlert(delRes.error || 'Ошибка удаления.', 'danger');
+                            }
+                        } catch (e) {
+                            showModalAlert(e.message, 'danger');
+                        }
+                    });
+                });
+            }
+
+            // Открытие модального окна
+            modalEl.addEventListener('show.bs.modal', function () {
+                relocateCertModalToBody();
+                alertContainer.style.display = 'none';
+                loadLocalCertificates();
+                loadServerCertificates();
+            });
+
+            if (btnRefreshLocal) btnRefreshLocal.addEventListener('click', loadLocalCertificates);
+            if (btnRefreshServer) btnRefreshServer.addEventListener('click', loadServerCertificates);
+
+            // Привязка сертификата
+            if (btnRegister) {
+                btnRegister.addEventListener('click', async function () {
+                    var thumbprint = localSelect.value;
+                    var customName = nameInput ? nameInput.value.trim() : '';
+
+                    if (!thumbprint) {
+                        showModalAlert('Пожалуйста, выберите сертификат из списка.', 'warning');
+                        return;
+                    }
+
+                    btnRegister.disabled = true;
+                    btnRegisterIcon.className = 'fas fa-spinner fa-spin me-2';
+                    btnRegisterText.textContent = 'Привязка сертификата...';
+                    alertContainer.style.display = 'none';
+
+                    try {
+                        var res = await BarkolCades.registerCertificate(thumbprint, customName);
+                        if (res && res.success) {
+                            showModalAlert(res.message || 'Сертификат успешно привязан!', 'success');
+                            if (nameInput) nameInput.value = '';
+                            loadServerCertificates();
+                        } else {
+                            showModalAlert(res.error || 'Ошибка привязки сертификата.', 'danger');
+                        }
+                    } catch (err) {
+                        showModalAlert(err.message, 'danger');
+                    } finally {
+                        btnRegister.disabled = false;
+                        btnRegisterIcon.className = 'fas fa-link me-2';
+                        btnRegisterText.textContent = 'Привязать сертификат к профилю';
+                    }
+                });
+            }
+        });
+    })();
+</script>

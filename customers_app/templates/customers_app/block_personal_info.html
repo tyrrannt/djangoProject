@@ -110,6 +110,9 @@
             <button type="button" class="btn btn-outline-primary btn-touch font-weight-semibold" data-bs-toggle="modal" data-bs-target="#passkeyModal">
                 <i class="fas fa-fingerprint me-2 text-primary"></i> Вход по Face ID / Пальцу
             </button>
+            <button type="button" class="btn btn-outline-info btn-touch font-weight-semibold" data-bs-toggle="modal" data-bs-target="#certificateModal">
+                <i class="fas fa-certificate me-2 text-info"></i> Сертификаты ЭЦП (ГОСТ)
+            </button>
         {% endif %}
         <a href="{% url 'customers_app:staff' user.pk %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
             <i class="bx bx-user-circle me-2"></i> Подробная анкета
@@ -122,4 +125,5 @@
 
 {% if request.user == object or request.user.pk == object.pk or request.user == user or request.user.pk == user.pk %}
     {% include 'customers_app/modal_passkeys.html' %}
+    {% include 'customers_app/modal_certificates.html' %}
 {% endif %}

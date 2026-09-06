@@ -1737,3 +1737,139 @@ class UserPasskey(models.Model):
         """
         return f"{self.name} ({self.user.username})"
 
+
+class UserCertificate(models.Model):
+    """Модель хранения открытых ключей и квалифицированных сертификатов ЭЦП (КЭП / ГОСТ / КриптоПро / Рутокен).
+
+    Используется для беспарольной аутентификации сотрудников по электронной цифровой подписи
+    (ГОСТ Р 34.10-2012 / RSA), юридически значимого подтверждения действий и проверки полномочий.
+
+    Attributes:
+        user (ForeignKey): Пользователь портала, которому принадлежит сертификат.
+        name (CharField): Пользовательское название сертификата (например, 'КЭП ФНС Рутокен ЭЦП 3.0').
+        thumbprint (CharField): SHA-1 отпечаток сертификата в шестнадцатеричном формате (в верхнем регистре).
+        serial_number (CharField): Серийный номер сертификата.
+        subject_name (TextField): Полная строка реквизитов владельца сертификата (DN).
+        issuer_name (TextField): Полная строка реквизитов удостоверяющего центра (УЦ / DN).
+        snils (CharField): Страховой номер индивидуального лицевого счета (СНИЛС, 11 цифр).
+        inn (CharField): Идентификационный номер налогоплательщика (ИНН физлица/ИП, 12 цифр).
+        cn (CharField): Общее имя владельца (Common Name / ФИО).
+        valid_from (DateTimeField): Дата и время начала действия сертификата.
+        valid_to (DateTimeField): Дата и время окончания действия сертификата.
+        certificate_data (TextField): Тело открытого сертификата X.509 в формате Base64 / DER.
+        is_active (BooleanField): Флаг активности сертификата (разрешен ли вход по данному сертификату).
+        created_at (DateTimeField): Дата и время привязки сертификата к учетной записи.
+        last_used_at (DateTimeField): Дата и время последней успешной аутентификации.
+    """
+
+    class Meta:
+        verbose_name = "Сертификат ЭЦП (КЭП / ГОСТ)"
+        verbose_name_plural = "Сертификаты ЭЦП (КЭП / ГОСТ)"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["thumbprint"]),
+            models.Index(fields=["snils"]),
+            models.Index(fields=["inn"]),
+            models.Index(fields=["user", "-last_used_at"]),
+        ]
+
+    user = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.CASCADE,
+        related_name="certificates",
+        verbose_name="Пользователь",
+    )
+    name = models.CharField(
+        verbose_name="Название сертификата",
+        max_length=200,
+        default="Сертификат ЭЦП",
+        help_text="Например: Рутокен ЭЦП 3.0 (Иванов И.И.), КЭП ФНС",
+    )
+    thumbprint = models.CharField(
+        verbose_name="Отпечаток SHA-1 (Thumbprint)",
+        max_length=64,
+        unique=True,
+        db_index=True,
+    )
+    serial_number = models.CharField(
+        verbose_name="Серийный номер",
+        max_length=128,
+        blank=True,
+        default="",
+    )
+    subject_name = models.TextField(
+        verbose_name="Субъект (Владелец)",
+        help_text="Полная строка DN субъекта сертификата",
+    )
+    issuer_name = models.TextField(
+        verbose_name="Издатель (Удостоверяющий центр)",
+        help_text="Полная строка DN издателя сертификата",
+    )
+    snils = models.CharField(
+        verbose_name="СНИЛС владельца",
+        max_length=20,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    inn = models.CharField(
+        verbose_name="ИНН владельца",
+        max_length=20,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    cn = models.CharField(
+        verbose_name="ФИО владельца (Common Name)",
+        max_length=255,
+        blank=True,
+        default="",
+    )
+    valid_from = models.DateTimeField(
+        verbose_name="Действителен с",
+        null=True,
+        blank=True,
+    )
+    valid_to = models.DateTimeField(
+        verbose_name="Действителен по",
+        null=True,
+        blank=True,
+    )
+    certificate_data = models.TextField(
+        verbose_name="Данные сертификата (Base64)",
+        blank=True,
+        default="",
+    )
+    is_active = models.BooleanField(
+        verbose_name="Активен для входа",
+        default=True,
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата привязки",
+        auto_now_add=True,
+    )
+    last_used_at = models.DateTimeField(
+        verbose_name="Последнее использование",
+        null=True,
+        blank=True,
+    )
+
+    def is_expired(self) -> bool:
+        """Проверяет, истек ли срок действия сертификата.
+
+        Returns:
+            bool: True если срок действия истек, иначе False.
+        """
+        if not self.valid_to:
+            return False
+        return timezone.now() > self.valid_to
+
+    def __str__(self):
+        """Строковое представление сертификата ЭЦП.
+
+        Returns:
+            str: Название, ФИО и логин пользователя.
+        """
+        owner = self.cn or self.user.get_full_name() or self.user.username
+        return f"{self.name} — {owner} ({self.thumbprint[:10]}...)"
+

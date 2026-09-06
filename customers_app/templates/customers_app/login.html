@@ -3,26 +3,81 @@
 {% load static_version %}
 
 {% block title %}
-    {{ title|default:"Вход в систему" }}
+    {{ title|default:"Вход в систему" }} // КОРПОРАТИВНЫЙ ПОРТАЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    /* ==========================================================================
+       СТИЛИ ОКНА АВТОРИЗАЦИИ С 3 ВКЛАДКАМИ (БАРКОЛ ДИЗАЙН-СИСТЕМА)
+       ========================================================================== */
+    .auth-card {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 43, 73, 0.08);
+        box-shadow: 0 10px 30px -5px rgba(0, 43, 73, 0.12) !important;
+        background: #ffffff;
+    }
+
+    /* Настройка классических вкладок авторизации (Porto Tabs) */
+    .tabs.tabs-primary .nav-tabs.nav-justified .nav-link {
+        font-weight: 600;
+        font-size: 13.5px;
+        padding: 11px 8px;
+        color: #475569;
+        transition: all 0.2s ease;
+    }
+
+    .tabs.tabs-primary .nav-tabs.nav-justified .nav-link.active,
+    .tabs.tabs-primary .nav-tabs.nav-justified li.active .nav-link {
+        color: #002b49;
+        font-weight: 700;
+    }
+
+    .tabs.tabs-primary .tab-content {
+        background: #ffffff;
+        box-shadow: none;
+    }
+
+    .btn-touch {
+        min-height: 46px;
+        font-weight: 600;
+    }
+
+    .cert-info-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+    }
+
+    @media (max-width: 576px) {
+        .tabs.tabs-primary .nav-tabs.nav-justified .nav-link {
+            font-size: 12px;
+            padding: 8px 4px;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="card auth-card shadow-sm border-0">
-    <div class="card-body p-4 p-md-5">
+    <div class="card-body p-3 p-sm-4 p-md-5">
+        <!-- Шапка окна авторизации -->
         <div class="text-center mb-4">
             <div class="auth-icon-wrapper mb-2">
-                <i class="bx bx-user-circle text-primary" style="font-size: 42px;"></i>
+                <i class="bx bx-shield-quarter text-primary" style="font-size: 40px;"></i>
             </div>
             <h2 class="auth-title fw-bold m-0" style="color: var(--barkol-navy); font-size: 1.35rem;">
                 Вход в систему
             </h2>
-            <p class="text-muted small mt-1 mb-0">Корпоративный портал авиакомпании</p>
+            <p class="text-muted small mt-1 mb-0">Корпоративный портал ООО АК «БАРКОЛ»</p>
         </div>
 
-        <!-- Контейнер для динамических алертов Passkey / Ошибок -->
-        <div id="passkeyAlertContainer" style="display: none;"></div>
+        <!-- Контейнер для динамических алертов и статусов -->
+        <div id="authAlertContainer" style="display: none;"></div>
 
-        <!-- Вывод системных ошибок валидации -->
+        <!-- Системные ошибки формы Django -->
         {% if login_form.non_field_errors or errors or login_form.errors %}
             <div class="alert alert-danger alert-dismissible fade show p-3 mb-4" role="alert">
                 <div class="d-flex align-items-center">
@@ -55,100 +110,223 @@
             </div>
         {% endif %}
 
-        <!-- Быстрый вход по биометрии (Face ID / Touch ID / Passkey) -->
-        <div id="passkeySection" class="mb-3" style="display: none;">
-            <button type="button" class="btn btn-outline-primary btn-lg w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center py-2" id="passkeyLoginBtn">
-                <i class="fas fa-fingerprint me-2 text-primary fs-5" id="passkeyBtnIcon"></i>
-                <span id="passkeyBtnText">Войти по Face ID / Отпечатку</span>
-            </button>
-            <div class="d-flex align-items-center my-3">
-                <hr class="flex-grow-1 my-0 opacity-25">
-                <span class="px-2 text-muted small">или по логину и паролю</span>
-                <hr class="flex-grow-1 my-0 opacity-25">
+        <!-- ============================================================
+             3 ВКЛАДКИ МЕТОДОВ ВХОДА (ПАРОЛЬ / БИОМЕТРИЯ / ЭЦП)
+             ============================================================ -->
+        <div class="tabs tabs-primary">
+            <ul class="nav nav-tabs nav-justified" id="authMethodTabs">
+                <li class="nav-item active">
+                    <a class="nav-link active text-center" data-bs-target="#tab-password" href="#tab-password" data-bs-toggle="tab" id="tab-password-btn">
+                        <i class="bx bx-key me-1"></i> Пароль
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-center" data-bs-target="#tab-passkey" href="#tab-passkey" data-bs-toggle="tab" id="tab-passkey-btn">
+                        <i class="fas fa-fingerprint me-1"></i> Биометрия
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-center" data-bs-target="#tab-cades" href="#tab-cades" data-bs-toggle="tab" id="tab-cades-btn">
+                        <i class="fas fa-certificate me-1"></i> ЭЦП
+                    </a>
+                </li>
+            </ul>
+
+            <div class="tab-content p-3 pt-4 border border-top-0 rounded-bottom" id="authMethodTabContent">
+                <!-- ============================================================
+                     ВКЛАДКА 1: КЛАССИЧЕСКИЙ ВХОД ПО ЛОГИНУ И ПАРОЛЮ (ПО УМОЛЧАНИЮ)
+                     ============================================================ -->
+                <div class="tab-pane active" id="tab-password">
+                <form action="{% url 'customers_app:login' %}" method="post" id="loginForm" novalidate>
+                    {% csrf_token %}
+                    {% if next %}
+                        <input type="hidden" name="next" value="{{ next }}" id="id_next_url"/>
+                    {% endif %}
+
+                    <!-- Поле: Логин -->
+                    <div class="form-group mb-3">
+                        <label for="id_username" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Логин:</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bx bx-user text-muted"></i></span>
+                            <input name="username" id="id_username" type="text"
+                                   class="form-control border-start-0 ps-0 {% if login_form.username.errors %}is-invalid{% endif %}"
+                                   placeholder="Ваш логин"
+                                   value="{{ login_form.username.value|default:'' }}"
+                                   autocomplete="username webauthn"
+                                   autofocus
+                                   required/>
+                        </div>
+                        {% for err in login_form.username.errors %}
+                            <div class="text-danger small mt-1">{{ err }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Поле: Пароль -->
+                    <div class="form-group mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="id_password" class="form-label fw-semibold mb-0" style="color: var(--barkol-navy); font-size: 13px;">Пароль:</label>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bx bx-lock-alt text-muted"></i></span>
+                            <input name="password" id="id_password" type="password"
+                                   class="form-control border-start-0 border-end-0 px-0 {% if login_form.password.errors %}is-invalid{% endif %}"
+                                   placeholder="Ваш пароль"
+                                   autocomplete="current-password"
+                                   required/>
+                            <button type="button" class="btn btn-outline-secondary input-group-text bg-light border-start-0" id="togglePasswordBtn"
+                                    title="Показать / скрыть пароль" aria-label="Показать или скрыть пароль">
+                                <i class="far fa-eye text-muted" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+                        {% for err in login_form.password.errors %}
+                            <div class="text-danger small mt-1">{{ err }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Опция: Запомнить меня -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remember_me" id="rememberMe" checked>
+                            <label class="form-check-label small text-muted user-select-none" for="rememberMe">
+                                Запомнить меня на этом устройстве
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Кнопка входа -->
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg w-100 btn-touch fw-bold shadow-sm d-flex align-items-center justify-content-center" id="submitBtn">
+                            <i class="fas fa-sign-in-alt me-2"></i> Войти в систему
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ============================================================
+                 ВКЛАДКА 2: БИОМЕТРИЯ PASSKEYS (FACE ID / TOUCH ID / ОТПЕЧАТОК)
+                 ============================================================ -->
+            <div class="tab-pane fade" id="tab-passkey" role="tabpanel" aria-labelledby="tab-passkey-btn">
+                <div class="text-center py-3">
+                    <div class="mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle" style="width: 72px; height: 72px;">
+                            <i class="fas fa-fingerprint fa-2x"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Вход по биометрии</h5>
+                    <p class="text-muted small mb-4">
+                        Используйте Face ID, Touch ID или сканер отпечатка пальца на смартфоне или ПК для быстрого входа без ввода пароля.
+                    </p>
+
+                    <!-- Опциональное поле логина -->
+                    <div class="form-group mb-3 text-start">
+                        <label for="id_passkey_username" class="form-label fw-semibold small" style="color: var(--barkol-navy);">Логин (необязательно):</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bx bx-user text-muted"></i></span>
+                            <input id="id_passkey_username" type="text" class="form-control border-start-0 ps-0" placeholder="Оставьте пустым для автопоиска ключа">
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-lg w-100 btn-touch fw-bold shadow-sm d-flex align-items-center justify-content-center mb-3" id="passkeyLoginBtn">
+                        <i class="fas fa-fingerprint me-2 fs-5" id="passkeyBtnIcon"></i>
+                        <span id="passkeyBtnText">Сканировать Face ID / Палец</span>
+                    </button>
+
+                    <div class="alert alert-light border small text-muted text-start mb-0">
+                        <i class="fas fa-info-circle text-info me-1"></i>
+                        Для первого входа по биометрии предварительно войдите по логину/паролю и привяжите устройство в разделе <strong>«Личный кабинет»</strong>.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 ВКЛАДКА 3: ЭЛЕКТРОННАЯ ПОДПИСЬ (ЭЦП / КЭП / ГОСТ / РУТОКЕН)
+                 ============================================================ -->
+            <div class="tab-pane fade" id="tab-cades" role="tabpanel" aria-labelledby="tab-cades-btn">
+                <div class="py-2">
+                    <div class="text-center mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-info-subtle text-info rounded-circle mb-2" style="width: 60px; height: 60px;">
+                            <i class="fas fa-certificate fa-2x"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">Вход по сертификату ЭЦП</h5>
+                        <p class="text-muted small mb-0">
+                            Квалифицированная электронная подпись (КриптоПро CSP, Рутокен, JaCarta)
+                        </p>
+                    </div>
+
+                    <!-- Блок статуса плагина КриптоПро -->
+                    <div id="cadesPluginNotice" style="display: none;"></div>
+
+                    <!-- Блок выбора сертификата -->
+                    <div id="cadesCertSection">
+                        <div class="form-group mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="cadesCertSelect" class="form-label fw-semibold small m-0" style="color: var(--barkol-navy);">
+                                    Выберите сертификат:
+                                </label>
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 small" id="cadesRefreshBtn" title="Обновить список сертификатов">
+                                    <i class="fas fa-sync-alt me-1" id="cadesRefreshIcon"></i>Обновить
+                                </button>
+                            </div>
+                            <select class="form-select" id="cadesCertSelect">
+                                <option value="" selected disabled>Поиск сертификатов в хранилище...</option>
+                            </select>
+                        </div>
+
+                        <!-- Карточка с реквизитами выбранного сертификата -->
+                        <div id="selectedCertInfo" class="cert-info-box mb-3" style="display: none;">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-id-card text-primary fs-5 me-2 mt-1 flex-shrink-0"></i>
+                                <div class="small w-100">
+                                    <div class="fw-bold text-dark" id="certInfoName">—</div>
+                                    <div class="text-muted mt-1" id="certInfoOrg">—</div>
+                                    <div class="d-flex justify-content-between flex-wrap gap-1 mt-1 text-muted">
+                                        <span id="certInfoSnils">СНИЛС: —</span>
+                                        <span id="certInfoValidTo" class="fw-semibold">Действует до: —</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопка входа по ЭЦП -->
+                        <button type="button" class="btn btn-primary btn-lg w-100 btn-touch fw-bold shadow-sm d-flex align-items-center justify-content-center mb-3" id="cadesLoginBtn" disabled>
+                            <i class="fas fa-shield-alt me-2 fs-5" id="cadesBtnIcon"></i>
+                            <span id="cadesBtnText">Войти по ЭЦП</span>
+                        </button>
+                    </div>
+
+                    <div class="alert alert-light border small text-muted text-start mb-0">
+                        <i class="fas fa-shield-alt text-success me-1"></i>
+                        Поддерживаются квалифицированные сертификаты <strong>ГОСТ Р 34.10-2012</strong> на токенах или в системном реестре.
+                    </div>
+                </div>
             </div>
         </div>
 
-        <form action="{% url 'customers_app:login' %}" method="post" id="loginForm" novalidate>
-            {% csrf_token %}
-            {% if next %}
-                <input type="hidden" name="next" value="{{ next }}" id="id_next_url"/>
-            {% endif %}
+        <!-- Разделитель и справочная информация -->
+        <hr class="my-4 opacity-25">
 
-            <!-- Поле: Логин -->
-            <div class="form-group mb-3">
-                <label for="id_username" class="form-label fw-semibold" style="color: var(--barkol-navy); font-size: 13px;">Логин:</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bx bx-user text-muted"></i></span>
-                    <input name="username" id="id_username" type="text"
-                           class="form-control border-start-0 ps-0 {% if login_form.username.errors %}is-invalid{% endif %}"
-                           placeholder="Ваш логин"
-                           value="{{ login_form.username.value|default:'' }}"
-                           autocomplete="username webauthn"
-                           autofocus
-                           required/>
-                </div>
-                {% for err in login_form.username.errors %}
-                    <div class="text-danger small mt-1">{{ err }}</div>
-                {% endfor %}
-            </div>
-
-            <!-- Поле: Пароль -->
-            <div class="form-group mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label for="id_password" class="form-label fw-semibold mb-0" style="color: var(--barkol-navy); font-size: 13px;">Пароль:</label>
-                </div>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bx bx-lock-alt text-muted"></i></span>
-                    <input name="password" id="id_password" type="password"
-                           class="form-control border-start-0 border-end-0 px-0 {% if login_form.password.errors %}is-invalid{% endif %}"
-                           placeholder="Ваш пароль"
-                           autocomplete="current-password"
-                           required/>
-                    <button type="button" class="btn btn-outline-secondary input-group-text bg-light border-start-0" id="togglePasswordBtn"
-                            title="Показать / скрыть пароль" aria-label="Показать или скрыть пароль">
-                        <i class="far fa-eye text-muted" id="togglePasswordIcon"></i>
-                    </button>
-                </div>
-                {% for err in login_form.password.errors %}
-                    <div class="text-danger small mt-1">{{ err }}</div>
-                {% endfor %}
-            </div>
-
-            <!-- Опция: Запомнить меня (Длительная сессия 30 дней) -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="remember_me" id="rememberMe" checked>
-                    <label class="form-check-label small text-muted user-select-none" for="rememberMe">
-                        Запомнить меня на этом устройстве
-                    </label>
-                </div>
-            </div>
-
-            <!-- Кнопка входа -->
-            <div class="mb-3">
-                <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center py-2" id="submitBtn">
-                    <i class="fas fa-sign-in-alt me-2"></i> Войти в систему
-                </button>
-            </div>
-
-            <!-- Разделитель и справочная информация -->
-            <hr class="my-4 opacity-25">
-
-            <div class="text-center">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle me-1 text-info"></i> При проблемах со входом обратитесь в отдел ИТ
-                </small>
-            </div>
-        </form>
+        <div class="text-center">
+            <small class="text-muted">
+                <i class="fas fa-headset me-1 text-info"></i> Техническая поддержка: отдел ИТ ООО АК «БАРКОЛ»
+            </small>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block custom_script %}
+<!-- Скрипты биометрии WebAuthn и ЭЦП CAdES -->
 <script src="{% static_version 'customers_app/js/webauthn_client.js' %}"></script>
+<script src="{% static_version 'customers_app/js/cadesplugin_api.js' %}"></script>
+<script src="{% static_version 'customers_app/js/cades_client.js' %}"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        'use strict';
+
+        // -------------------------------------------------------------
         // 1. Показать / скрыть пароль
+        // -------------------------------------------------------------
         var toggleBtn = document.getElementById('togglePasswordBtn');
         var passwordInput = document.getElementById('id_password');
         var toggleIcon = document.getElementById('togglePasswordIcon');
@@ -162,13 +340,8 @@
             });
         }
 
-        // 2. Инициализация кнопки Passkeys / WebAuthn
-        var passkeySection = document.getElementById('passkeySection');
-        var passkeyLoginBtn = document.getElementById('passkeyLoginBtn');
-        var passkeyBtnText = document.getElementById('passkeyBtnText');
-        var passkeyBtnIcon = document.getElementById('passkeyBtnIcon');
-        var alertContainer = document.getElementById('passkeyAlertContainer');
-        var usernameInput = document.getElementById('id_username');
+        // Общий контейнер алертов
+        var alertContainer = document.getElementById('authAlertContainer');
         var nextInput = document.getElementById('id_next_url');
         var nextUrl = nextInput ? nextInput.value : '';
 
@@ -186,13 +359,20 @@
             alertContainer.style.display = 'block';
         }
 
-        if (window.BarkolPasskey && BarkolPasskey.isWebAuthnSupported()) {
-            passkeySection.style.display = 'block';
+        // -------------------------------------------------------------
+        // 2. Логика вкладки БИОМЕТРИЯ (Passkeys / WebAuthn)
+        // -------------------------------------------------------------
+        var passkeyLoginBtn = document.getElementById('passkeyLoginBtn');
+        var passkeyBtnText = document.getElementById('passkeyBtnText');
+        var passkeyBtnIcon = document.getElementById('passkeyBtnIcon');
+        var passkeyUsernameInput = document.getElementById('id_passkey_username');
+        var standardUsernameInput = document.getElementById('id_username');
 
+        if (passkeyLoginBtn && window.BarkolPasskey) {
             passkeyLoginBtn.addEventListener('click', async function () {
-                var username = usernameInput ? usernameInput.value.trim() : '';
-                
-                // Индикация загрузки
+                var username = (passkeyUsernameInput && passkeyUsernameInput.value.trim()) ||
+                               (standardUsernameInput && standardUsernameInput.value.trim()) || '';
+
                 passkeyLoginBtn.disabled = true;
                 passkeyBtnIcon.className = 'fas fa-spinner fa-spin me-2 fs-5';
                 passkeyBtnText.textContent = 'Считывание биометрии...';
@@ -206,18 +386,169 @@
                         window.location.href = result.redirect_url || '/';
                     } else {
                         showAlert(result.error || 'Ошибка входа по биометрии.');
-                        resetBtn();
+                        resetPasskeyBtn();
                     }
                 } catch (err) {
                     showAlert(err.message || 'Не удалось выполнить вход по биометрии.');
-                    resetBtn();
+                    resetPasskeyBtn();
                 }
             });
 
-            function resetBtn() {
+            function resetPasskeyBtn() {
                 passkeyLoginBtn.disabled = false;
-                passkeyBtnIcon.className = 'fas fa-fingerprint me-2 text-primary fs-5';
-                passkeyBtnText.textContent = 'Войти по Face ID / Отпечатку';
+                passkeyBtnIcon.className = 'fas fa-fingerprint me-2 fs-5';
+                passkeyBtnText.textContent = 'Сканировать Face ID / Палец';
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 3. Логика вкладки ЭЦП (КриптоПро / CAdES / Рутокен)
+        // -------------------------------------------------------------
+        var cadesSelect = document.getElementById('cadesCertSelect');
+        var cadesLoginBtn = document.getElementById('cadesLoginBtn');
+        var cadesBtnIcon = document.getElementById('cadesBtnIcon');
+        var cadesBtnText = document.getElementById('cadesBtnText');
+        var cadesRefreshBtn = document.getElementById('cadesRefreshBtn');
+        var cadesRefreshIcon = document.getElementById('cadesRefreshIcon');
+        var cadesPluginNotice = document.getElementById('cadesPluginNotice');
+        var selectedCertInfo = document.getElementById('selectedCertInfo');
+        var certInfoName = document.getElementById('certInfoName');
+        var certInfoOrg = document.getElementById('certInfoOrg');
+        var certInfoSnils = document.getElementById('certInfoSnils');
+        var certInfoValidTo = document.getElementById('certInfoValidTo');
+
+        var availableCerts = [];
+
+        async function initCadesTab() {
+            if (cadesRefreshIcon) cadesRefreshIcon.classList.add('fa-spin');
+            cadesPluginNotice.style.display = 'none';
+            cadesLoginBtn.disabled = true;
+            cadesSelect.innerHTML = '<option value="" selected disabled>Поиск сертификатов в хранилище...</option>';
+
+            try {
+                var installed = await BarkolCades.isPluginInstalled();
+                if (!installed) {
+                    cadesPluginNotice.innerHTML = `
+                        <div class="alert alert-warning border p-3 mb-3" role="alert">
+                            <div class="fw-bold mb-1"><i class="fas fa-exclamation-triangle me-1"></i> Плагин КриптоПро не обнаружен</div>
+                            <div class="small mb-2">Для входа по ЭЦП требуется установленный <strong>КриптоПро CSP</strong> и расширение браузера <strong>КриптоПро ЭЦП Browser plug-in</strong>.</div>
+                            <a href="https://cryptopro.ru/products/cades/plugin" target="_blank" class="btn btn-sm btn-outline-dark fw-bold">
+                                <i class="fas fa-download me-1"></i> Скачать плагин КриптоПро
+                            </a>
+                        </div>
+                    `;
+                    cadesPluginNotice.style.display = 'block';
+                    cadesSelect.innerHTML = '<option value="" selected disabled>Плагин КриптоПро не обнаружен</option>';
+                    return;
+                }
+
+                availableCerts = await BarkolCades.getPersonalCertificates();
+
+                if (!availableCerts || availableCerts.length === 0) {
+                    cadesSelect.innerHTML = '<option value="" selected disabled>Действующие сертификаты с закрытым ключом не найдены</option>';
+                    cadesPluginNotice.innerHTML = `
+                        <div class="alert alert-info border p-3 mb-3 small" role="alert">
+                            <i class="fas fa-info-circle me-1"></i> В персональном хранилище сертификатов и на подключенных USB-токенах (Рутокен/JaCarta) не найдено личных ключей ЭЦП.
+                        </div>
+                    `;
+                    cadesPluginNotice.style.display = 'block';
+                    selectedCertInfo.style.display = 'none';
+                    return;
+                }
+
+                var optionsHtml = '<option value="" disabled selected>— Выберите сертификат для входа —</option>';
+                availableCerts.forEach(function (c, idx) {
+                    var expBadge = c.isExpired ? ' (ИСТЕК)' : '';
+                    var orgStr = c.organization ? ` [${c.organization}]` : '';
+                    optionsHtml += `<option value="${c.thumbprint}" ${idx === 0 && !c.isExpired ? 'selected' : ''}>${c.cn}${orgStr} — до ${c.validToFormatted}${expBadge}</option>`;
+                });
+
+                cadesSelect.innerHTML = optionsHtml;
+                updateSelectedCertInfo();
+            } catch (err) {
+                cadesPluginNotice.innerHTML = `
+                    <div class="alert alert-danger border p-3 mb-3 small" role="alert">
+                        <i class="fas fa-exclamation-circle me-1"></i> ${err.message || 'Ошибка опроса плагина ЭЦП.'}
+                    </div>
+                `;
+                cadesPluginNotice.style.display = 'block';
+                cadesSelect.innerHTML = '<option value="" selected disabled>Ошибка загрузки</option>';
+            } finally {
+                if (cadesRefreshIcon) cadesRefreshIcon.classList.remove('fa-spin');
+            }
+        }
+
+        function updateSelectedCertInfo() {
+            var selectedTp = cadesSelect.value;
+            var cert = availableCerts.find(function (c) { return c.thumbprint === selectedTp; });
+
+            if (cert) {
+                certInfoName.textContent = cert.cn || 'Владелец не указан';
+                certInfoOrg.textContent = (cert.title ? cert.title + ', ' : '') + (cert.organization || 'Организация не указана');
+                certInfoSnils.textContent = cert.snils ? `СНИЛС: ${cert.snils}` : (cert.inn ? `ИНН: ${cert.inn}` : 'СНИЛС: не указан');
+                certInfoValidTo.textContent = `Действует до: ${cert.validToFormatted}`;
+                certInfoValidTo.className = cert.isExpired ? 'fw-semibold text-danger' : 'fw-semibold text-success';
+
+                selectedCertInfo.style.display = 'block';
+                cadesLoginBtn.disabled = cert.isExpired;
+            } else {
+                selectedCertInfo.style.display = 'none';
+                cadesLoginBtn.disabled = true;
+            }
+        }
+
+        if (cadesSelect) {
+            cadesSelect.addEventListener('change', updateSelectedCertInfo);
+        }
+
+        if (cadesRefreshBtn) {
+            cadesRefreshBtn.addEventListener('click', initCadesTab);
+        }
+
+        // Загрузка сертификатов при переключении на вкладку ЭЦП
+        var cadesTabBtn = document.getElementById('tab-cades-btn');
+        if (cadesTabBtn) {
+            cadesTabBtn.addEventListener('shown.bs.tab', function () {
+                if (availableCerts.length === 0) {
+                    initCadesTab();
+                }
+            });
+        }
+
+        // Вход по ЭЦП
+        if (cadesLoginBtn) {
+            cadesLoginBtn.addEventListener('click', async function () {
+                var thumbprint = cadesSelect.value;
+                if (!thumbprint) {
+                    showAlert('Пожалуйста, выберите сертификат ЭЦП из списка.');
+                    return;
+                }
+
+                cadesLoginBtn.disabled = true;
+                cadesBtnIcon.className = 'fas fa-spinner fa-spin me-2 fs-5';
+                cadesBtnText.textContent = 'Формирование подписи ГОСТ...';
+                alertContainer.style.display = 'none';
+
+                try {
+                    var res = await BarkolCades.loginWithCertificate(thumbprint, nextUrl);
+                    if (res && res.success) {
+                        cadesBtnIcon.className = 'fas fa-check-circle me-2 text-success fs-5';
+                        cadesBtnText.textContent = 'Успешно! Вход в систему...';
+                        window.location.href = res.redirect_url || '/';
+                    } else {
+                        showAlert(res.error || 'Ошибка проверки электронной подписи.');
+                        resetCadesBtn();
+                    }
+                } catch (e) {
+                    showAlert(e.message || 'Не удалось выполнить вход по ЭЦП.');
+                    resetCadesBtn();
+                }
+            });
+
+            function resetCadesBtn() {
+                cadesLoginBtn.disabled = false;
+                cadesBtnIcon.className = 'fas fa-shield-alt me-2 fs-5';
+                cadesBtnText.textContent = 'Войти по ЭЦП';
             }
         }
     });

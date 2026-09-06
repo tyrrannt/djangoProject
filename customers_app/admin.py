@@ -37,7 +37,7 @@ from .models import (
     CounteragentDocuments,
     UserStats,
     Apartments, ApartmentBooking, BiometricConsent, ConsentType,
-    PushSubscription, UserPasskey,
+    PushSubscription, UserPasskey, UserCertificate,
 )
 from unfold.admin import ModelAdmin, TabularInline
 
@@ -765,3 +765,13 @@ class UserPasskeyAdmin(ModelAdmin):
     search_fields = ("name", "user__username", "user__last_name", "user__first_name", "credential_id", "user_agent")
     list_filter = ("device_type", "created_at", "last_used_at")
     readonly_fields = ("credential_id", "public_key", "aaguid", "sign_count", "created_at", "last_used_at", "user_agent")
+
+
+@admin.register(UserCertificate)
+class UserCertificateAdmin(ModelAdmin):
+    """Административная панель для управления квалифицированными сертификатами ЭЦП (КЭП / ГОСТ / КриптоПро)."""
+
+    list_display = ("name", "cn", "user", "snils", "inn", "is_active", "valid_to", "created_at", "last_used_at")
+    search_fields = ("name", "cn", "user__username", "user__last_name", "user__first_name", "snils", "inn", "thumbprint", "serial_number", "subject_name")
+    list_filter = ("is_active", "valid_to", "created_at", "last_used_at")
+    readonly_fields = ("thumbprint", "serial_number", "subject_name", "issuer_name", "snils", "inn", "cn", "valid_from", "valid_to", "certificate_data", "created_at", "last_used_at")
