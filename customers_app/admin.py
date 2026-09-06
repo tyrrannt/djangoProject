@@ -37,7 +37,7 @@ from .models import (
     CounteragentDocuments,
     UserStats,
     Apartments, ApartmentBooking, BiometricConsent, ConsentType,
-    PushSubscription,
+    PushSubscription, UserPasskey,
 )
 from unfold.admin import ModelAdmin, TabularInline
 
@@ -755,3 +755,13 @@ class PushSubscriptionAdmin(ModelAdmin):
         return obj.user_agent[:60] if obj.user_agent else "—"
 
     device_info.short_description = "Устройство"
+
+
+@admin.register(UserPasskey)
+class UserPasskeyAdmin(ModelAdmin):
+    """Административная панель для управления криптографическими ключами доступа Passkey (Face ID / Биометрия)."""
+
+    list_display = ("name", "user", "device_type", "sign_count", "created_at", "last_used_at")
+    search_fields = ("name", "user__username", "user__last_name", "user__first_name", "credential_id", "user_agent")
+    list_filter = ("device_type", "created_at", "last_used_at")
+    readonly_fields = ("credential_id", "public_key", "aaguid", "sign_count", "created_at", "last_used_at", "user_agent")

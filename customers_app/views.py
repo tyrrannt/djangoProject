@@ -1008,7 +1008,17 @@ def login(request):
                     portal_paginator = 10
                     logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
 
-                request.session.set_expiry(portal_session)
+                remember_me = request.POST.get('remember_me')
+                user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+                is_mobile = any(m in user_agent for m in ['mobile', 'android', 'iphone', 'ipad'])
+
+                if remember_me or is_mobile:
+                    # Длительная сессия для мобильных устройств и доверенных сессий (30 дней)
+                    session_expiry = 60 * 60 * 24 * 30
+                else:
+                    session_expiry = portal_session
+
+                request.session.set_expiry(session_expiry)
                 request.session['portal_paginator'] = portal_paginator
                 request.session['current_month'] = int(datetime.datetime.today().month)
                 request.session['current_year'] = int(datetime.datetime.today().year)

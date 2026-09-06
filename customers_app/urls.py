@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
 from . import api_views
+from . import webauthn_views
 from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
     BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
     BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView, \
@@ -35,6 +36,14 @@ urlpatterns = [
     path('api/push/subscribe/', api_views.PushSubscriptionAPIView.as_view(), name='api_push_subscribe'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # Passkeys / WebAuthn Endpoints
+    path('api/passkey/register/options/', webauthn_views.webauthn_register_options, name='passkey_register_options'),
+    path('api/passkey/register/verify/', webauthn_views.webauthn_register_verify, name='passkey_register_verify'),
+    path('api/passkey/login/options/', webauthn_views.webauthn_login_options, name='passkey_login_options'),
+    path('api/passkey/login/verify/', webauthn_views.webauthn_login_verify, name='passkey_login_verify'),
+    path('api/passkey/list/', webauthn_views.webauthn_passkey_list, name='passkey_list'),
+    path('api/passkey/<int:pk>/delete/', webauthn_views.webauthn_passkey_delete, name='passkey_delete'),
+    path('api/passkey/<int:pk>/rename/', webauthn_views.webauthn_passkey_rename, name='passkey_rename'),
     path("", views.index, name="index"),
     path("login/", views.login, name="login"),
     path("logout/", views.logout, name="logout"),

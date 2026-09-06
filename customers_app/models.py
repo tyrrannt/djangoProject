@@ -1642,3 +1642,98 @@ class PushSubscription(models.Model):
         """
         return f"{self.user} ({self.endpoint[:40]}...)"
 
+
+class UserPasskey(models.Model):
+    """Модель хранения криптографических учетных данных Passkey / WebAuthn для беспарольного входа (Face ID, Touch ID, биометрия).
+
+    Attributes:
+        user (ForeignKey): Пользователь портала, к которому привязаны учетные данные.
+        name (CharField): Пользовательское название устройства (например, 'iPhone 15 (Safari)', 'Xiaomi (Chrome)').
+        credential_id (CharField): Уникальный идентификатор открытого ключа WebAuthn (в формате Base64URL).
+        public_key (TextField): Открытый ключ учетных данных в формате SubjectPublicKeyInfo PEM.
+        sign_count (BigIntegerField): Счетчик использования подписей для защиты от атак повторного воспроизведения (replay attack).
+        aaguid (CharField): Идентификатор типа аутентификатора (AAGUID).
+        device_type (CharField): Тип аутентификатора ('platform' для Face ID / Touch ID, 'cross-platform' для аппаратных ключей).
+        transports (CharField): Поддерживаемые транспорты (internal, usb, nfc, ble, hybrid).
+        user_agent (CharField): Сведения о браузере и операционной системе при регистрации.
+        created_at (DateTimeField): Дата и время привязки устройства.
+        last_used_at (DateTimeField): Дата и время последней успешной аутентификации.
+    """
+
+    class Meta:
+        verbose_name = "Ключ доступа (Passkey / Биометрия)"
+        verbose_name_plural = "Ключи доступа (Passkeys / Биометрия)"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["credential_id"]),
+            models.Index(fields=["user", "-last_used_at"]),
+        ]
+
+    user = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.CASCADE,
+        related_name="passkeys",
+        verbose_name="Пользователь",
+    )
+    name = models.CharField(
+        verbose_name="Название устройства",
+        max_length=100,
+        default="Мобильное устройство",
+        help_text="Например: iPhone (Safari), Samsung (Chrome)",
+    )
+    credential_id = models.CharField(
+        verbose_name="Идентификатор учетных данных (Credential ID)",
+        max_length=512,
+        unique=True,
+        db_index=True,
+    )
+    public_key = models.TextField(
+        verbose_name="Публичный ключ (PEM)",
+        help_text="Экспортированный публичный ключ в формате SubjectPublicKeyInfo PEM",
+    )
+    sign_count = models.BigIntegerField(
+        verbose_name="Счетчик подписей",
+        default=0,
+    )
+    aaguid = models.CharField(
+        verbose_name="AAGUID аутентификатора",
+        max_length=64,
+        blank=True,
+        default="",
+    )
+    device_type = models.CharField(
+        verbose_name="Тип устройства",
+        max_length=64,
+        blank=True,
+        default="platform",
+    )
+    transports = models.CharField(
+        verbose_name="Транспорты",
+        max_length=255,
+        blank=True,
+        default="",
+    )
+    user_agent = models.CharField(
+        verbose_name="User-Agent браузера",
+        max_length=512,
+        blank=True,
+        default="",
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата регистрации",
+        auto_now_add=True,
+    )
+    last_used_at = models.DateTimeField(
+        verbose_name="Последнее использование",
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        """Строковое представление ключа доступа Passkey.
+
+        Returns:
+            str: Название устройства и логин пользователя.
+        """
+        return f"{self.name} ({self.user.username})"
+

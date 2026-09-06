@@ -1,5 +1,6 @@
 {% extends 'customers_app/base.html' %}
 {% load static %}
+{% load static_version %}
 
 {% block title %}
     {{ title|default:"Вход в систему" }}
@@ -18,43 +19,59 @@
             <p class="text-muted small mt-1 mb-0">Корпоративный портал авиакомпании</p>
         </div>
 
+        <!-- Контейнер для динамических алертов Passkey / Ошибок -->
+        <div id="passkeyAlertContainer" style="display: none;"></div>
+
+        <!-- Вывод системных ошибок валидации -->
+        {% if login_form.non_field_errors or errors or login_form.errors %}
+            <div class="alert alert-danger alert-dismissible fade show p-3 mb-4" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-circle fs-5 me-2 text-danger flex-shrink-0"></i>
+                    <div class="small">
+                        {% if login_form.non_field_errors %}
+                            {% for error in login_form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        {% elif errors %}
+                            {% if errors.items %}
+                                {% for field, error_list in errors.items %}
+                                    {% for err in error_list %}
+                                        <div>{{ err }}</div>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% else %}
+                                <div>{{ errors }}</div>
+                            {% endif %}
+                        {% elif login_form.errors %}
+                            {% for field in login_form %}
+                                {% for error in field.errors %}
+                                    <div><strong>{{ field.label }}:</strong> {{ error }}</div>
+                                {% endfor %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+            </div>
+        {% endif %}
+
+        <!-- Быстрый вход по биометрии (Face ID / Touch ID / Passkey) -->
+        <div id="passkeySection" class="mb-3" style="display: none;">
+            <button type="button" class="btn btn-outline-primary btn-lg w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center py-2" id="passkeyLoginBtn">
+                <i class="fas fa-fingerprint me-2 text-primary fs-5" id="passkeyBtnIcon"></i>
+                <span id="passkeyBtnText">Войти по Face ID / Отпечатку</span>
+            </button>
+            <div class="d-flex align-items-center my-3">
+                <hr class="flex-grow-1 my-0 opacity-25">
+                <span class="px-2 text-muted small">или по логину и паролю</span>
+                <hr class="flex-grow-1 my-0 opacity-25">
+            </div>
+        </div>
+
         <form action="{% url 'customers_app:login' %}" method="post" id="loginForm" novalidate>
             {% csrf_token %}
             {% if next %}
-                <input type="hidden" name="next" value="{{ next }}"/>
-            {% endif %}
-
-            <!-- Вывод системных ошибок валидации -->
-            {% if login_form.non_field_errors or errors or login_form.errors %}
-                <div class="alert alert-danger alert-dismissible fade show p-3 mb-4" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-exclamation-circle fs-5 me-2 text-danger flex-shrink-0"></i>
-                        <div class="small">
-                            {% if login_form.non_field_errors %}
-                                {% for error in login_form.non_field_errors %}
-                                    <div>{{ error }}</div>
-                                {% endfor %}
-                            {% elif errors %}
-                                {% if errors.items %}
-                                    {% for field, error_list in errors.items %}
-                                        {% for err in error_list %}
-                                            <div>{{ err }}</div>
-                                        {% endfor %}
-                                    {% endfor %}
-                                {% else %}
-                                    <div>{{ errors }}</div>
-                                {% endif %}
-                            {% elif login_form.errors %}
-                                {% for field in login_form %}
-                                    {% for error in field.errors %}
-                                        <div><strong>{{ field.label }}:</strong> {{ error }}</div>
-                                    {% endfor %}
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
-                </div>
+                <input type="hidden" name="next" value="{{ next }}" id="id_next_url"/>
             {% endif %}
 
             <!-- Поле: Логин -->
@@ -66,7 +83,7 @@
                            class="form-control border-start-0 ps-0 {% if login_form.username.errors %}is-invalid{% endif %}"
                            placeholder="Ваш логин"
                            value="{{ login_form.username.value|default:'' }}"
-                           autocomplete="username"
+                           autocomplete="username webauthn"
                            autofocus
                            required/>
                 </div>
@@ -76,7 +93,7 @@
             </div>
 
             <!-- Поле: Пароль -->
-            <div class="form-group mb-4">
+            <div class="form-group mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <label for="id_password" class="form-label fw-semibold mb-0" style="color: var(--barkol-navy); font-size: 13px;">Пароль:</label>
                 </div>
@@ -95,6 +112,16 @@
                 {% for err in login_form.password.errors %}
                     <div class="text-danger small mt-1">{{ err }}</div>
                 {% endfor %}
+            </div>
+
+            <!-- Опция: Запомнить меня (Длительная сессия 30 дней) -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="remember_me" id="rememberMe" checked>
+                    <label class="form-check-label small text-muted user-select-none" for="rememberMe">
+                        Запомнить меня на этом устройстве
+                    </label>
+                </div>
             </div>
 
             <!-- Кнопка входа -->
@@ -118,8 +145,10 @@
 {% endblock %}
 
 {% block custom_script %}
+<script src="{% static_version 'customers_app/js/webauthn_client.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // 1. Показать / скрыть пароль
         var toggleBtn = document.getElementById('togglePasswordBtn');
         var passwordInput = document.getElementById('id_password');
         var toggleIcon = document.getElementById('togglePasswordIcon');
@@ -131,6 +160,65 @@
                 toggleIcon.classList.toggle('fa-eye', !isPassword);
                 toggleIcon.classList.toggle('fa-eye-slash', isPassword);
             });
+        }
+
+        // 2. Инициализация кнопки Passkeys / WebAuthn
+        var passkeySection = document.getElementById('passkeySection');
+        var passkeyLoginBtn = document.getElementById('passkeyLoginBtn');
+        var passkeyBtnText = document.getElementById('passkeyBtnText');
+        var passkeyBtnIcon = document.getElementById('passkeyBtnIcon');
+        var alertContainer = document.getElementById('passkeyAlertContainer');
+        var usernameInput = document.getElementById('id_username');
+        var nextInput = document.getElementById('id_next_url');
+        var nextUrl = nextInput ? nextInput.value : '';
+
+        function showAlert(message, type) {
+            type = type || 'danger';
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show p-3 mb-3" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle fs-5 me-2 flex-shrink-0"></i>
+                        <div class="small">${message}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                </div>
+            `;
+            alertContainer.style.display = 'block';
+        }
+
+        if (window.BarkolPasskey && BarkolPasskey.isWebAuthnSupported()) {
+            passkeySection.style.display = 'block';
+
+            passkeyLoginBtn.addEventListener('click', async function () {
+                var username = usernameInput ? usernameInput.value.trim() : '';
+                
+                // Индикация загрузки
+                passkeyLoginBtn.disabled = true;
+                passkeyBtnIcon.className = 'fas fa-spinner fa-spin me-2 fs-5';
+                passkeyBtnText.textContent = 'Считывание биометрии...';
+                alertContainer.style.display = 'none';
+
+                try {
+                    var result = await BarkolPasskey.loginWithPasskey(username, nextUrl);
+                    if (result && result.success) {
+                        passkeyBtnIcon.className = 'fas fa-check-circle me-2 text-success fs-5';
+                        passkeyBtnText.textContent = 'Успешно! Вход в систему...';
+                        window.location.href = result.redirect_url || '/';
+                    } else {
+                        showAlert(result.error || 'Ошибка входа по биометрии.');
+                        resetBtn();
+                    }
+                } catch (err) {
+                    showAlert(err.message || 'Не удалось выполнить вход по биометрии.');
+                    resetBtn();
+                }
+            });
+
+            function resetBtn() {
+                passkeyLoginBtn.disabled = false;
+                passkeyBtnIcon.className = 'fas fa-fingerprint me-2 text-primary fs-5';
+                passkeyBtnText.textContent = 'Войти по Face ID / Отпечатку';
+            }
         }
     });
 </script>
