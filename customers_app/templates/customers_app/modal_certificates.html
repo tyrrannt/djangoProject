@@ -184,9 +184,59 @@
                 btnRegister.disabled = true;
 
                 try {
-                    var installed = await BarkolCades.isPluginInstalled();
-                    if (!installed) {
-                        localSelect.innerHTML = '<option value="" selected disabled>Плагин КриптоПро не обнаружен</option>';
+                    var status = await BarkolCades.checkPluginStatus();
+                    if (!status.success) {
+                        localSelect.innerHTML = '<option value="" selected disabled>Плагин КриптоПро не готов к работе</option>';
+                        if (status.code === 'UNTRUSTED_SITE') {
+                            showModalAlert(`
+                                <div class="fw-bold mb-1"><i class="fas fa-shield-alt text-warning me-1"></i> Адрес сайта не добавлен в Доверенные узлы КриптоПро</div>
+                                <div class="small mb-2">Плагин безопасности КриптоПро блокирует доступ к сайту, пока его адрес не разрешен в настройках.</div>
+                                <div class="p-2 bg-white rounded border mb-2 small text-break font-monospace">
+                                    <strong>${status.origin}</strong>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${status.origin}').then(() => alert('Адрес скопирован! Вставьте его в Настройки КриптоПро -> Доверенные узлы'));">
+                                        <i class="fas fa-copy me-1"></i> Скопировать адрес
+                                    </button>
+                                    <a href="${status.settingsUrl}" target="_blank" class="btn btn-sm btn-outline-dark fw-bold">
+                                        <i class="fas fa-cog me-1"></i> Настройки плагина
+                                    </a>
+                                </div>
+                                <div class="small text-muted">В настройках плагина перейдите в <em>«Доверенные узлы»</em>, добавьте адрес сайта и нажмите <em>«Сохранить»</em>.</div>
+                            `, 'warning');
+                        } else if (status.code === 'NO_EXTENSION') {
+                            showModalAlert(`
+                                <div class="fw-bold mb-1"><i class="fas fa-puzzle-piece text-warning me-1"></i> Не найдено расширение браузера КриптоПро</div>
+                                <div class="small mb-2">Установите и включите расширение <strong>CryptoPro Extension</strong>:</div>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <a href="${status.chromeStoreUrl}" target="_blank" class="btn btn-sm btn-primary fw-bold">
+                                        <i class="fab fa-chrome me-1"></i> Для Chrome / Edge / Яндекс
+                                    </a>
+                                    <a href="https://www.cryptopro.ru/sites/default/files/products/cades/extensions/firefox_cryptopro_extension_latest.xpi" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fab fa-firefox-browser me-1"></i> Для Firefox
+                                    </a>
+                                </div>
+                            `, 'warning');
+                        } else {
+                            showModalAlert(`
+                                <div class="fw-bold mb-1"><i class="fas fa-exclamation-triangle text-warning me-1"></i> ${status.message || 'Плагин КриптоПро не обнаружен'}</div>
+                                <div class="small mb-2">Для работы с сертификатами ЭЦП на вашем компьютере должны быть установлены:</div>
+                                <ul class="small mb-2 ps-3">
+                                    <li>Программа <strong>КриптоПро CSP</strong> (версия 4.0 или 5.0);</li>
+                                    <li>Пакет <strong>КриптоПро ЭЦП Browser plug-in</strong> (cadesplugin);</li>
+                                    <li>Включенное расширение <strong>CryptoPro Extension</strong> в браузере;</li>
+                                    <li>Текущий адрес сайта добавлен в «Доверенные узлы» плагина.</li>
+                                </ul>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <a href="${status.pluginDownloadUrl}" target="_blank" class="btn btn-sm btn-outline-dark fw-bold">
+                                        <i class="fas fa-download me-1"></i> Скачать плагин КриптоПро
+                                    </a>
+                                    <a href="${status.demoUrl}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Проверить на демо-странице
+                                    </a>
+                                </div>
+                            `, 'warning');
+                        }
                         return;
                     }
 
@@ -194,18 +244,26 @@
 
                     if (!localCerts || localCerts.length === 0) {
                         localSelect.innerHTML = '<option value="" selected disabled>Личные сертификаты не найдены</option>';
+                        showModalAlert(`
+                            <div class="small">
+                                <i class="fas fa-info-circle text-info me-1"></i> В хранилище «Личные» и на подключенных смарт-картах (Рутокен/JaCarta) не найдено сертификатов с установленным закрытым ключом. Подключите токен к USB-порту или установите личный сертификат через «КриптоПро CSP -> Сервис -> Установить личный сертификат».
+                            </div>
+                        `, 'info');
                         return;
                     }
 
                     var html = '<option value="" disabled selected>— Выберите сертификат —</option>';
                     localCerts.forEach(function (c, idx) {
                         var expBadge = c.isExpired ? ' (ИСТЕК)' : '';
-                        html += `<option value="${c.thumbprint}" ${idx === 0 && !c.isExpired ? 'selected' : ''}>${c.cn} — до ${c.validToFormatted}${expBadge}</option>`;
+                        var orgStr = c.organization ? ` [${c.organization}]` : '';
+                        html += `<option value="${c.thumbprint}" ${idx === 0 && !c.isExpired ? 'selected' : ''}>${c.cn}${orgStr} — до ${c.validToFormatted}${expBadge}</option>`;
                     });
                     localSelect.innerHTML = html;
                     btnRegister.disabled = false;
                 } catch (e) {
-                    localSelect.innerHTML = `<option value="" selected disabled>Ошибка плагина: ${e.message}</option>`;
+                    localSelect.innerHTML = `<option value="" selected disabled>Ошибка плагина</option>`;
+                    var errDesc = BarkolCades.getHumanReadableErrorMessage(e);
+                    showModalAlert(errDesc, 'danger');
                 } finally {
                     if (refreshLocalIcon) refreshLocalIcon.classList.remove('fa-spin');
                 }

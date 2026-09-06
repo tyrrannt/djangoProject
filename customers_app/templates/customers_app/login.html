@@ -426,19 +426,64 @@
             cadesSelect.innerHTML = '<option value="" selected disabled>Поиск сертификатов в хранилище...</option>';
 
             try {
-                var installed = await BarkolCades.isPluginInstalled();
-                if (!installed) {
-                    cadesPluginNotice.innerHTML = `
-                        <div class="alert alert-warning border p-3 mb-3" role="alert">
-                            <div class="fw-bold mb-1"><i class="fas fa-exclamation-triangle me-1"></i> Плагин КриптоПро не обнаружен</div>
-                            <div class="small mb-2">Для входа по ЭЦП требуется установленный <strong>КриптоПро CSP</strong> и расширение браузера <strong>КриптоПро ЭЦП Browser plug-in</strong>.</div>
-                            <a href="https://cryptopro.ru/products/cades/plugin" target="_blank" class="btn btn-sm btn-outline-dark fw-bold">
-                                <i class="fas fa-download me-1"></i> Скачать плагин КриптоПро
-                            </a>
-                        </div>
-                    `;
+                var status = await BarkolCades.checkPluginStatus();
+                if (!status.success) {
+                    if (status.code === 'UNTRUSTED_SITE') {
+                        cadesPluginNotice.innerHTML = `
+                            <div class="alert alert-warning border p-3 mb-3" role="alert">
+                                <div class="fw-bold mb-1"><i class="fas fa-shield-alt text-warning me-1"></i> Адрес сайта не добавлен в Доверенные узлы КриптоПро</div>
+                                <div class="small mb-2">
+                                    Плагин безопасности КриптоПро блокирует доступ к сайту, пока его адрес не разрешен в настройках.
+                                </div>
+                                <div class="p-2 bg-white rounded border mb-2 small text-break font-monospace">
+                                    <strong>${status.origin}</strong>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${status.origin}').then(() => alert('Адрес скопирован! Вставьте его в Настройки КриптоПро -> Доверенные узлы'));">
+                                        <i class="fas fa-copy me-1"></i> Скопировать адрес сайта
+                                    </button>
+                                    <a href="${status.settingsUrl}" target="_blank" class="btn btn-sm btn-outline-dark fw-bold">
+                                        <i class="fas fa-cog me-1"></i> Открыть Настройки плагина
+                                    </a>
+                                </div>
+                                <div class="small text-muted">
+                                    <strong>Инструкция:</strong> откройте настройки плагина, перейдите на вкладку <em>«Доверенные узлы»</em>, добавьте скопированный адрес сайта, нажмите <em>«Сохранить»</em> и обновите эту страницу.
+                                </div>
+                            </div>
+                        `;
+                    } else if (status.code === 'NO_EXTENSION') {
+                        cadesPluginNotice.innerHTML = `
+                            <div class="alert alert-warning border p-3 mb-3" role="alert">
+                                <div class="fw-bold mb-1"><i class="fas fa-puzzle-piece text-warning me-1"></i> Не найдено расширение браузера КриптоПро</div>
+                                <div class="small mb-2">Установите и включите официальное расширение <strong>CryptoPro Extension</strong> в вашем браузере:</div>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <a href="${status.chromeStoreUrl}" target="_blank" class="btn btn-sm btn-primary fw-bold">
+                                        <i class="fab fa-chrome me-1"></i> Установить для Chrome / Edge / Яндекс
+                                    </a>
+                                    <a href="https://www.cryptopro.ru/sites/default/files/products/cades/extensions/firefox_cryptopro_extension_latest.xpi" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fab fa-firefox-browser me-1"></i> Для Firefox
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        cadesPluginNotice.innerHTML = `
+                            <div class="alert alert-warning border p-3 mb-3" role="alert">
+                                <div class="fw-bold mb-1"><i class="fas fa-exclamation-triangle text-warning me-1"></i> ${status.message || 'Плагин КриптоПро не обнаружен'}</div>
+                                <div class="small mb-2">Для работы с ЭЦП на вашем компьютере должны быть установлены программа <strong>КриптоПро CSP</strong> (v4.0/5.0) и системный модуль <strong>КриптоПро ЭЦП Browser plug-in</strong>.</div>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <a href="${status.pluginDownloadUrl}" target="_blank" class="btn btn-sm btn-outline-dark fw-bold">
+                                        <i class="fas fa-download me-1"></i> Скачать плагин КриптоПро
+                                    </a>
+                                    <a href="${status.demoUrl}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Проверить на демо-странице
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }
                     cadesPluginNotice.style.display = 'block';
-                    cadesSelect.innerHTML = '<option value="" selected disabled>Плагин КриптоПро не обнаружен</option>';
+                    cadesSelect.innerHTML = '<option value="" selected disabled>Плагин КриптоПро не готов к работе</option>';
                     return;
                 }
 
@@ -448,7 +493,11 @@
                     cadesSelect.innerHTML = '<option value="" selected disabled>Действующие сертификаты с закрытым ключом не найдены</option>';
                     cadesPluginNotice.innerHTML = `
                         <div class="alert alert-info border p-3 mb-3 small" role="alert">
-                            <i class="fas fa-info-circle me-1"></i> В персональном хранилище сертификатов и на подключенных USB-токенах (Рутокен/JaCarta) не найдено личных ключей ЭЦП.
+                            <div class="fw-bold mb-1"><i class="fas fa-info-circle me-1"></i> Плагин загружен, но личные сертификаты не найдены</div>
+                            <div>В хранилище «Личные» и на подключенных USB-токенах (Рутокен/JaCarta) не найдено сертификатов с установленным закрытым ключом.</div>
+                            <div class="mt-2 text-muted">
+                                <strong>Рекомендация:</strong> подключите USB-токен к компьютеру (убедитесь, что индикатор горит) или установите сертификат через <em>«КриптоПро CSP -> Сервис -> Просмотреть сертификаты в контейнере -> Установить»</em>.
+                            </div>
                         </div>
                     `;
                     cadesPluginNotice.style.display = 'block';
@@ -466,9 +515,10 @@
                 cadesSelect.innerHTML = optionsHtml;
                 updateSelectedCertInfo();
             } catch (err) {
+                var errDesc = BarkolCades.getHumanReadableErrorMessage(err);
                 cadesPluginNotice.innerHTML = `
                     <div class="alert alert-danger border p-3 mb-3 small" role="alert">
-                        <i class="fas fa-exclamation-circle me-1"></i> ${err.message || 'Ошибка опроса плагина ЭЦП.'}
+                        <i class="fas fa-exclamation-circle me-1"></i> ${errDesc}
                     </div>
                 `;
                 cadesPluginNotice.style.display = 'block';
