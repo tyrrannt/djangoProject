@@ -4,6 +4,39 @@
 <!-- ==========================================================================
      МОДАЛЬНОЕ ОКНО: УПРАВЛЕНИЕ КЛЮЧАМИ ДОСТУПА PASSKEYS (FACE ID / TOUCH ID)
      ========================================================================== -->
+<style>
+    /* Гарантированное отображение модального окна поверх backdrop и фиксация z-index */
+    #passkeyModal {
+        z-index: 1060 !important;
+    }
+    .modal-backdrop {
+        z-index: 1050 !important;
+    }
+    #passkeyModal .modal-dialog {
+        max-width: 800px;
+    }
+    @media (max-width: 768px) {
+        #passkeyModal .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+        #passkeyModal .modal-body {
+            padding: 1rem !important;
+        }
+        #newPasskeyName {
+            font-size: 16px !important; /* Предотвращает нежелательное авто-масштабирование в iOS Safari */
+            min-height: 44px;
+        }
+        #btnRegisterPasskey {
+            min-height: 48px;
+        }
+        .passkey-mobile-sub {
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+    }
+</style>
+
 <div class="modal fade" id="passkeyModal" tabindex="-1" aria-labelledby="passkeyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
@@ -38,7 +71,7 @@
                             </div>
                             <div class="col-12 col-md-5">
                                 <div class="d-flex flex-column gap-2">
-                                    <input type="text" class="form-control form-control-sm" id="newPasskeyName"
+                                    <input type="text" class="form-control" id="newPasskeyName"
                                            placeholder="Название (напр., Мой iPhone)">
                                     <button type="button" class="btn btn-primary btn-touch fw-bold shadow-sm d-flex align-items-center justify-content-center" id="btnRegisterPasskey">
                                         <i class="fas fa-plus-circle me-2" id="btnRegisterIcon"></i>
@@ -55,7 +88,7 @@
                     <h6 class="fw-bold text-dark m-0">
                         <i class="bx bx-devices text-primary me-1"></i> Ваши привязанные устройства
                     </h6>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshPasskeys" title="Обновить список">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshPasskeys" title="Обновить список" aria-label="Обновить список устройств">
                         <i class="fas fa-sync-alt" id="refreshPasskeysIcon"></i>
                     </button>
                 </div>
@@ -65,8 +98,8 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-3 py-2 small fw-bold text-muted">УСТРОЙСТВО</th>
-                                <th class="py-2 small fw-bold text-muted">ДАТА ПРИВЯЗКИ</th>
-                                <th class="py-2 small fw-bold text-muted">ПОСЛЕДНИЙ ВХОД</th>
+                                <th class="py-2 small fw-bold text-muted d-none d-md-table-cell">ДАТА ПРИВЯЗКИ</th>
+                                <th class="py-2 small fw-bold text-muted d-none d-sm-table-cell">ПОСЛЕДНИЙ ВХОД</th>
                                 <th class="text-end pe-3 py-2 small fw-bold text-muted">ДЕЙСТВИЯ</th>
                             </tr>
                         </thead>
@@ -91,7 +124,7 @@
             </div>
 
             <div class="modal-footer bg-light p-3">
-                <button type="button" class="btn btn-secondary px-4 fw-semibold" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary px-4 fw-semibold btn-touch" data-bs-dismiss="modal">Закрыть</button>
             </div>
         </div>
     </div>
@@ -99,145 +132,165 @@
 
 <script src="{% static_version 'customers_app/js/webauthn_client.js' %}"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var modalEl = document.getElementById('passkeyModal');
-        if (!modalEl) return;
+    (function () {
+        'use strict';
 
-        var alertContainer = document.getElementById('passkeyModalAlert');
-        var tableBody = document.getElementById('passkeysTableBody');
-        var btnRegister = document.getElementById('btnRegisterPasskey');
-        var btnRegisterIcon = document.getElementById('btnRegisterIcon');
-        var btnRegisterText = document.getElementById('btnRegisterText');
-        var nameInput = document.getElementById('newPasskeyName');
-        var btnRefresh = document.getElementById('btnRefreshPasskeys');
-        var refreshIcon = document.getElementById('refreshPasskeysIcon');
+        function relocateModalToBody() {
+            var modalEl = document.getElementById('passkeyModal');
+            if (modalEl && modalEl.parentNode && modalEl.parentNode !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            return modalEl;
+        }
 
-        function showModalAlert(message, type) {
-            type = type || 'danger';
-            alertContainer.innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show p-3 mb-3" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-info-circle fs-5 me-2 flex-shrink-0"></i>
-                        <div class="small">${message}</div>
+        // Немедленное перемещение в body при разборе скрипта
+        relocateModalToBody();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = relocateModalToBody();
+            if (!modalEl) return;
+
+            var alertContainer = document.getElementById('passkeyModalAlert');
+            var tableBody = document.getElementById('passkeysTableBody');
+            var btnRegister = document.getElementById('btnRegisterPasskey');
+            var btnRegisterIcon = document.getElementById('btnRegisterIcon');
+            var btnRegisterText = document.getElementById('btnRegisterText');
+            var nameInput = document.getElementById('newPasskeyName');
+            var btnRefresh = document.getElementById('btnRefreshPasskeys');
+            var refreshIcon = document.getElementById('refreshPasskeysIcon');
+
+            function showModalAlert(message, type) {
+                type = type || 'danger';
+                alertContainer.innerHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show p-3 mb-3" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle fs-5 me-2 flex-shrink-0"></i>
+                            <div class="small">${message}</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
-                </div>
-            `;
-            alertContainer.style.display = 'block';
-        }
-
-        async function loadPasskeys() {
-            if (refreshIcon) refreshIcon.classList.add('fa-spin');
-            try {
-                var res = await BarkolPasskey.loadPasskeysList();
-                if (res && res.success) {
-                    renderPasskeys(res.passkeys || []);
-                } else {
-                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-danger">Не удалось загрузить устройства</td></tr>`;
-                }
-            } catch (err) {
-                tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-danger">${err.message}</td></tr>`;
-            } finally {
-                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
-            }
-        }
-
-        function renderPasskeys(list) {
-            if (!list || list.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center py-4 text-muted">
-                            <i class="bx bx-info-circle fs-4 d-block mb-1 text-muted"></i>
-                            У вас пока нет привязанных устройств для биометрического входа.
-                        </td>
-                    </tr>
                 `;
-                return;
+                alertContainer.style.display = 'block';
             }
 
-            var html = '';
-            list.forEach(function (pk) {
-                var badgeCurrent = pk.is_current ? `<span class="badge bg-success-subtle text-success border border-success-subtle ms-2 small">Это устройство</span>` : '';
-                html += `
-                    <tr>
-                        <td class="ps-3 py-3">
-                            <div class="fw-bold text-dark d-flex align-items-center">
-                                <i class="fas fa-mobile-alt text-primary me-2"></i>
-                                <span>${pk.name}</span>
-                                ${badgeCurrent}
-                            </div>
-                        </td>
-                        <td class="py-3 small text-muted">${pk.created_at}</td>
-                        <td class="py-3 small text-muted">${pk.last_used_at}</td>
-                        <td class="text-end pe-3 py-3">
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-passkey" data-id="${pk.id}" title="Отозвать ключ">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tableBody.innerHTML = html;
-
-            // Привязка обработчиков удаления
-            tableBody.querySelectorAll('.btn-delete-passkey').forEach(function (btn) {
-                btn.addEventListener('click', async function () {
-                    var id = this.getAttribute('data-id');
-                    if (!confirm('Вы уверены, что хотите удалить этот биометрический ключ? Для входа с него снова потребуется вводить логин и пароль.')) {
-                        return;
-                    }
-                    try {
-                        var delRes = await BarkolPasskey.deletePasskey(id);
-                        if (delRes.success) {
-                            showModalAlert(delRes.message || 'Ключ успешно удален.', 'success');
-                            loadPasskeys();
-                        } else {
-                            showModalAlert(delRes.error || 'Ошибка удаления.', 'danger');
-                        }
-                    } catch (e) {
-                        showModalAlert(e.message, 'danger');
-                    }
-                });
-            });
-        }
-
-        // Загрузка при открытии модального окна
-        modalEl.addEventListener('show.bs.modal', function () {
-            alertContainer.style.display = 'none';
-            loadPasskeys();
-        });
-
-        if (btnRefresh) {
-            btnRefresh.addEventListener('click', loadPasskeys);
-        }
-
-        // Регистрация Passkey
-        if (btnRegister) {
-            btnRegister.addEventListener('click', async function () {
-                var deviceName = nameInput ? nameInput.value.trim() : '';
-                btnRegister.disabled = true;
-                btnRegisterIcon.className = 'fas fa-spinner fa-spin me-2';
-                btnRegisterText.textContent = 'Ожидание биометрии...';
-                alertContainer.style.display = 'none';
-
+            async function loadPasskeys() {
+                if (refreshIcon) refreshIcon.classList.add('fa-spin');
                 try {
-                    var res = await BarkolPasskey.registerPasskey(deviceName);
+                    var res = await BarkolPasskey.loadPasskeysList();
                     if (res && res.success) {
-                        showModalAlert(res.message || 'Биометрический ключ успешно зарегистрирован!', 'success');
-                        if (nameInput) nameInput.value = '';
-                        loadPasskeys();
+                        renderPasskeys(res.passkeys || []);
                     } else {
-                        showModalAlert(res.error || 'Ошибка регистрации ключа.', 'danger');
+                        tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-danger">Не удалось загрузить устройства</td></tr>`;
                     }
                 } catch (err) {
-                    showModalAlert(err.message, 'danger');
+                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-danger">${err.message}</td></tr>`;
                 } finally {
-                    btnRegister.disabled = false;
-                    btnRegisterIcon.className = 'fas fa-plus-circle me-2';
-                    btnRegisterText.textContent = 'Привязать Face ID / Палец';
+                    if (refreshIcon) refreshIcon.classList.remove('fa-spin');
                 }
+            }
+
+            function renderPasskeys(list) {
+                if (!list || list.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <i class="bx bx-info-circle fs-4 d-block mb-1 text-muted"></i>
+                                У вас пока нет привязанных устройств для биометрического входа.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                var html = '';
+                list.forEach(function (pk) {
+                    var badgeCurrent = pk.is_current ? `<span class="badge bg-success-subtle text-success border border-success-subtle ms-1 small">Это устройство</span>` : '';
+                    html += `
+                        <tr>
+                            <td class="ps-3 py-2 py-md-3">
+                                <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
+                                    <i class="fas fa-mobile-alt text-primary me-1"></i>
+                                    <span>${pk.name}</span>
+                                    ${badgeCurrent}
+                                </div>
+                                <div class="d-md-none passkey-mobile-sub mt-1">
+                                    <div><i class="bx bx-calendar me-1"></i>Привязан: ${pk.created_at}</div>
+                                    ${pk.last_used_at && pk.last_used_at !== '—' ? `<div><i class="bx bx-log-in me-1"></i>Вход: ${pk.last_used_at}</div>` : ''}
+                                </div>
+                            </td>
+                            <td class="py-3 small text-muted d-none d-md-table-cell">${pk.created_at}</td>
+                            <td class="py-3 small text-muted d-none d-sm-table-cell">${pk.last_used_at}</td>
+                            <td class="text-end pe-3 py-2 py-md-3">
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-passkey btn-touch" data-id="${pk.id}" title="Отозвать ключ" aria-label="Отозвать ключ" style="min-width: 38px; min-height: 38px;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tableBody.innerHTML = html;
+
+                // Привязка обработчиков удаления
+                tableBody.querySelectorAll('.btn-delete-passkey').forEach(function (btn) {
+                    btn.addEventListener('click', async function () {
+                        var id = this.getAttribute('data-id');
+                        if (!confirm('Вы уверены, что хотите удалить этот биометрический ключ? Для входа с него снова потребуется вводить логин и пароль.')) {
+                            return;
+                        }
+                        try {
+                            var delRes = await BarkolPasskey.deletePasskey(id);
+                            if (delRes.success) {
+                                showModalAlert(delRes.message || 'Ключ успешно удален.', 'success');
+                                loadPasskeys();
+                            } else {
+                                showModalAlert(delRes.error || 'Ошибка удаления.', 'danger');
+                            }
+                        } catch (e) {
+                            showModalAlert(e.message, 'danger');
+                        }
+                    });
+                });
+            }
+
+            // Загрузка при открытии модального окна и повторная страховка z-index
+            modalEl.addEventListener('show.bs.modal', function () {
+                relocateModalToBody();
+                alertContainer.style.display = 'none';
+                loadPasskeys();
             });
-        }
-    });
+
+            if (btnRefresh) {
+                btnRefresh.addEventListener('click', loadPasskeys);
+            }
+
+            // Регистрация Passkey
+            if (btnRegister) {
+                btnRegister.addEventListener('click', async function () {
+                    var deviceName = nameInput ? nameInput.value.trim() : '';
+                    btnRegister.disabled = true;
+                    btnRegisterIcon.className = 'fas fa-spinner fa-spin me-2';
+                    btnRegisterText.textContent = 'Ожидание биометрии...';
+                    alertContainer.style.display = 'none';
+
+                    try {
+                        var res = await BarkolPasskey.registerPasskey(deviceName);
+                        if (res && res.success) {
+                            showModalAlert(res.message || 'Биометрический ключ успешно зарегистрирован!', 'success');
+                            if (nameInput) nameInput.value = '';
+                            loadPasskeys();
+                        } else {
+                            showModalAlert(res.error || 'Ошибка регистрации ключа.', 'danger');
+                        }
+                    } catch (err) {
+                        showModalAlert(err.message, 'danger');
+                    } finally {
+                        btnRegister.disabled = false;
+                        btnRegisterIcon.className = 'fas fa-plus-circle me-2';
+                        btnRegisterText.textContent = 'Привязать Face ID / Палец';
+                    }
+                });
+            }
+        });
+    })();
 </script>
