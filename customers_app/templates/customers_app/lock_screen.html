@@ -76,6 +76,7 @@
         <div class="card-body p-4 p-md-5 text-center">
             <form action="{% url 'customers_app:lock_screen' %}" method="post" id="lockScreenForm">
                 {% csrf_token %}
+                <input type="text" name="username" value="{{ request.user.username }}" autocomplete="username" style="display:none;" aria-hidden="true" tabindex="-1">
 
                 <!-- User Picture and Status -->
                 <div class="user-avatar-wrapper">

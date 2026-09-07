@@ -524,6 +524,7 @@
                     <div id="calculation" class="tab-pane" role="tabpanel">
                         <!-- Форма фильтрации -->
                         <form class="filter-box" onsubmit="filter_date(); return false;" autocomplete="off">
+                            <input type="text" name="username" value="{{ user.username }}" autocomplete="username" style="display:none;" aria-hidden="true" tabindex="-1">
                             <div class="row g-2 g-md-3 align-items-end">
                                 <div class="col-12 col-sm-6 col-lg-3">
                                     <label class="form-label fw-semibold text-dark small" for="id_filter_month">Месяц:</label>

@@ -37,6 +37,7 @@
                 <div class="card-body p-4">
                     <form action="{% url 'customers_app:passphrase_update' object.pk %}" method="post" prefix="main" enctype="multipart/form-data">
                         {% csrf_token %}
+                        <input type="text" name="username" value="{{ object.username }}" autocomplete="username" style="display:none;" aria-hidden="true" tabindex="-1">
 
                         {% if form.errors %}
                             <div class="alert alert-danger mb-4">
