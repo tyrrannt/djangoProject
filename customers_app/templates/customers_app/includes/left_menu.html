@@ -38,12 +38,38 @@
                         </li>
                     {% endif %}
 
-                    <!-- Календарь задач -->
-                    <li>
-                        <a class="nav-link" href="{% url 'tasks_app:task-list' %}">
-                            <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                            <span>Календарь задач</span>
+                    <!-- Задачи и поручения -->
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-task" aria-hidden="true"></i>
+                            <span>Задачи и поручения</span>
                         </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'tasks_app:task-dashboard' %}">
+                                    <i class="bx bx-tachometer me-1" aria-hidden="true"></i>
+                                    <span>Дашборд поручений</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'tasks_app:task-kanban' %}">
+                                    <i class="bx bx-columns me-1" aria-hidden="true"></i>
+                                    <span>Канбан-доска</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'tasks_app:task-list' %}">
+                                    <i class="fa-regular fa-calendar-days me-1" aria-hidden="true"></i>
+                                    <span>Календарь задач</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'tasks_app:task-discipline-report' %}">
+                                    <i class="bx bx-bar-chart-square me-1" aria-hidden="true"></i>
+                                    <span>Отчет по дисциплине</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
                     <!-- Корпоративная почта -->

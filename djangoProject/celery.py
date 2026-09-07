@@ -74,6 +74,14 @@ app.conf.beat_schedule = {
         'task': 'mailbox_app.tasks.poll_mailboxes_unread_task',
         'schedule': crontab(minute='*/1'),
     },
+    'tasks_check_deadlines': {
+        'task': 'tasks_app.tasks.check_task_deadlines_task',
+        'schedule': crontab(minute='*/15'),
+    },
+    'tasks_create_recurring': {
+        'task': 'tasks_app.tasks.create_recurring_tasks_task',
+        'schedule': crontab(minute='*/30'),
+    },
 
 
     # 'sync_finance_directories': {
