@@ -523,10 +523,10 @@
                          ============================================ -->
                     <div id="calculation" class="tab-pane" role="tabpanel">
                         <!-- Форма фильтрации -->
-                        <div class="filter-box">
+                        <form class="filter-box" onsubmit="filter_date(); return false;" autocomplete="off">
                             <div class="row g-2 g-md-3 align-items-end">
                                 <div class="col-12 col-sm-6 col-lg-3">
-                                    <label class="form-label fw-semibold text-dark small">Месяц:</label>
+                                    <label class="form-label fw-semibold text-dark small" for="id_filter_month">Месяц:</label>
                                     <select class="form-select" name="filter_month" id="id_filter_month">
                                         {% for key, value in month_dict.items %}
                                             <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
@@ -536,7 +536,7 @@
                                     </select>
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-3">
-                                    <label class="form-label fw-semibold text-dark small">Год:</label>
+                                    <label class="form-label fw-semibold text-dark small" for="id_filter_year">Год:</label>
                                     <select class="form-select" name="filter_year" id="id_filter_year">
                                         {% for key, value in year_dict.items %}
                                             <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
@@ -546,16 +546,16 @@
                                     </select>
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-3">
-                                    <label class="form-label fw-semibold text-dark small">Пароль (опционально):</label>
-                                    <input class="form-control" type="password" id="id_pxmx" placeholder="Введите пароль">
+                                    <label class="form-label fw-semibold text-dark small" for="id_pxmx">Пароль (опционально):</label>
+                                    <input class="form-control" type="password" id="id_pxmx" name="pxmx" autocomplete="current-password" placeholder="Введите пароль">
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-3">
-                                    <button class="btn btn-primary btn-touch w-100 font-weight-semibold" onclick="filter_date()">
+                                    <button type="submit" class="btn btn-primary btn-touch w-100 font-weight-semibold">
                                         <i class='bx bxs-file-find me-2'></i> Сформировать
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </form>
 
                         <!-- Результаты: Начисления -->
                         <div class="mt-3">

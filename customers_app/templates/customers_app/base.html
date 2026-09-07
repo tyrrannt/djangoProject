@@ -3,6 +3,29 @@
 {% load static_version %}
 <html class="fixed" lang="ru">
 <head>
+    <!-- Passive Event Listeners Optimization -->
+    <script>
+        (function () {
+            var passiveEvents = ['touchstart', 'touchmove', 'wheel', 'mousewheel'];
+            var origAddEventListener = EventTarget.prototype.addEventListener;
+            EventTarget.prototype.addEventListener = function (type, listener, options) {
+                var opts = options;
+                if (passiveEvents.indexOf(type) !== -1) {
+                    if (typeof options === 'boolean') {
+                        opts = { capture: options, passive: true };
+                    } else if (typeof options === 'object' && options !== null) {
+                        if (options.passive === undefined) {
+                            opts = Object.assign({}, options, { passive: true });
+                        }
+                    } else if (options === undefined) {
+                        opts = { passive: true };
+                    }
+                }
+                return origAddEventListener.call(this, type, listener, opts);
+            };
+        })();
+    </script>
+
     <!-- Basic -->
     <meta charset="UTF-8">
     <title>КОРПОРАТИВНЫЙ ПОРТАЛ // {% block title %}{% endblock %}</title>
