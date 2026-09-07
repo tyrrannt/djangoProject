@@ -419,8 +419,10 @@ class Task(models.Model):
         Returns:
             Optional[rrule]: Сконфигурированный объект правила повторения или None.
         """
-        if self.repeat == 'none' or not self.start_date:
+        if self.repeat == 'none':
             return None
+
+        start_dt = self.start_date or self.created_at or timezone.now()
 
         freq_map = {
             'daily': DAILY,
@@ -451,19 +453,19 @@ class Task(models.Model):
             except (ValueError, json.JSONDecodeError, TypeError, IndexError):
                 byweekday = None
 
-        if freq == WEEKLY and self.repeat == 'weekly' and not byweekday and self.start_date:
-            byweekday = [self.start_date.weekday()]
+        if freq == WEEKLY and self.repeat == 'weekly' and not byweekday and start_dt:
+            byweekday = [start_dt.weekday()]
 
         try:
             return rrule(
                 freq=freq,
                 interval=interval,
-                dtstart=self.start_date,
+                dtstart=start_dt,
                 until=self.repeat_end_date if self.repeat_end_date else None,
                 byweekday=byweekday if byweekday else None
             )
         except (ValueError, TypeError) as exc:
-            logger.error(f"Error creating rrule for task {self.id}: {exc}")
+            logger.error("Error creating rrule for task %s: %s", self.id, exc)
             return None
 
     def get_next_occurrence(self) -> Tuple[Optional[timezone.datetime], Optional[timezone.datetime]]:
@@ -472,7 +474,7 @@ class Task(models.Model):
         Returns:
             Tuple[Optional[datetime], Optional[datetime]]: Кортеж (next_start, next_end).
         """
-        if self.repeat == 'none' or not self.start_date:
+        if self.repeat == 'none':
             return None, None
 
         if self.repeat_end_date and self.repeat_end_date < timezone.now():
@@ -482,13 +484,23 @@ class Task(models.Model):
         if not rule:
             return None, None
 
+        start_dt = self.start_date or self.created_at or timezone.now()
         after_date = timezone.now()
-        next_start = rule.after(after_date, inc=False)
+        if timezone.is_aware(start_dt) and timezone.is_naive(after_date):
+            after_date = timezone.make_aware(after_date)
+        elif timezone.is_naive(start_dt) and timezone.is_aware(after_date):
+            after_date = timezone.make_naive(after_date)
+
+        try:
+            next_start = rule.after(after_date, inc=False)
+        except TypeError:
+            next_start = None
+
         if not next_start:
             return None, None
 
         next_end = None
-        if self.end_date and self.start_date:
+        if self.end_date and self.start_date and self.end_date > self.start_date:
             duration = self.end_date - self.start_date
             next_end = next_start + duration
 

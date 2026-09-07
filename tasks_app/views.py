@@ -516,9 +516,6 @@ class TaskListView(LoginRequiredMixin, ListView):
                 'className': f'fc-event-{task.priority} status-{task.status}',
             }
 
-            if task.end_date:
-                event_data['end'] = task.end_date.isoformat()
-
             if task.repeat != 'none':
                 freq_map = {
                     'daily': 'daily',
@@ -529,9 +526,10 @@ class TaskListView(LoginRequiredMixin, ListView):
                     'custom': 'daily',
                 }
                 freq = freq_map.get(task.repeat, 'daily')
+                dtstart_dt = task.start_date or task.created_at or timezone.now()
                 rrule_obj = {
                     'freq': freq,
-                    'dtstart': task.start_date.isoformat(),
+                    'dtstart': dtstart_dt.isoformat(),
                     'interval': task.repeat_interval or 1,
                 }
                 if task.repeat == 'workdays':
@@ -553,16 +551,24 @@ class TaskListView(LoginRequiredMixin, ListView):
                             rrule_obj['byweekday'] = byweekday
                     except Exception:
                         pass
-                elif freq == 'weekly' and task.start_date:
+                elif freq == 'weekly' and dtstart_dt:
                     days_map = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
-                    rrule_obj['byweekday'] = [days_map[task.start_date.weekday()]]
+                    rrule_obj['byweekday'] = [days_map[dtstart_dt.weekday()]]
 
                 if task.repeat_end_date:
                     rrule_obj['until'] = task.repeat_end_date.isoformat()
 
                 event_data['rrule'] = rrule_obj
+
+                if task.start_date and task.end_date and task.end_date > task.start_date:
+                    diff = task.end_date - task.start_date
+                    total_sec = int(diff.total_seconds())
+                    hours = total_sec // 3600
+                    mins = (total_sec % 3600) // 60
+                    event_data['duration'] = f"{hours:02d}:{mins:02d}"
             else:
-                event_data['start'] = task.start_date.isoformat()
+                if task.start_date:
+                    event_data['start'] = task.start_date.isoformat()
                 if task.end_date:
                     event_data['end'] = task.end_date.isoformat()
 
@@ -593,20 +599,11 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         if not form.instance.responsible_id:
             form.instance.responsible = self.request.user
 
-        repeat_days = form.cleaned_data.get('repeat_days')
-        if repeat_days:
-            if isinstance(repeat_days, list):
-                form.instance.repeat_days = ','.join(str(day) for day in repeat_days if day is not None)
-            else:
-                form.instance.repeat_days = str(repeat_days)
-        else:
-            form.instance.repeat_days = None
-
-        response = super().form_valid(form)
+        self.object = form.save()
 
         # Логируем создание в аудит
         TaskHistory.log(
-            task=form.instance,
+            task=self.object,
             user=self.request.user,
             action=TaskHistory.ActionType.CREATED,
             comment="Задача создана"
@@ -615,15 +612,15 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         files = self.request.FILES.getlist('files')
         for file in files:
             TaskFile.objects.create(
-                task=form.instance,
+                task=self.object,
                 uploaded_by=self.request.user,
                 file=file,
                 original_filename=file.name,
                 file_size=file.size
             )
 
-        messages.success(self.request, f"Поручение «{form.instance.title}» успешно создано.")
-        return response
+        messages.success(self.request, f"Поручение «{self.object.title}» успешно создано.")
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class TaskUpdateView(LoginRequiredMixin, UpdateView):
@@ -644,24 +641,12 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         return obj
 
     def form_valid(self, form: TaskForm) -> HttpResponse:
-        task = form.save(commit=False)
-
-        repeat_days = form.cleaned_data.get('repeat_days')
-        if repeat_days:
-            if isinstance(repeat_days, list):
-                task.repeat_days = ','.join(str(day) for day in repeat_days if day is not None)
-            else:
-                task.repeat_days = str(repeat_days)
-        else:
-            task.repeat_days = None
-
-        task.save()
-        form.save_m2m()
+        self.object = form.save()
 
         files = self.request.FILES.getlist('files')
         for file in files:
             TaskFile.objects.create(
-                task=task,
+                task=self.object,
                 uploaded_by=self.request.user,
                 file=file,
                 original_filename=file.name,
@@ -669,7 +654,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             )
 
         TaskHistory.log(
-            task=task,
+            task=self.object,
             user=self.request.user,
             action=TaskHistory.ActionType.STATUS_CHANGED,
             comment="Параметры задачи обновлены"

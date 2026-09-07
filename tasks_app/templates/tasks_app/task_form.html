@@ -38,15 +38,40 @@
             background: #ffffff;
             margin-bottom: 8px;
         }
-        .form-section-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #1e293b;
-            padding-bottom: 8px;
-            margin-bottom: 16px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
+        .weekday-toggle-item {
+            position: relative;
+        }
+        .weekday-checkbox {
+            position: absolute;
+            clip: rect(0, 0, 0, 0);
+            pointer-events: none;
+            opacity: 0;
+        }
+        .weekday-label {
+            min-width: 46px;
+            height: 42px;
+            display: inline-flex;
             align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease-in-out;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+        }
+        .weekday-label:hover {
+            background-color: #f1f5f9;
+            border-color: #0088cc;
+            color: #0088cc;
+        }
+        .weekday-checkbox:checked + .weekday-label {
+            background-color: #0088cc !important;
+            border-color: #0088cc !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 6px rgba(0, 136, 204, 0.35);
         }
     </style>
 {% endblock %}

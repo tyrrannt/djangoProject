@@ -545,6 +545,9 @@
                             eventData.start = '{{ task.start|escapejs }}';
                             {% if task.end %}eventData.end = '{{ task.end|escapejs }}';{% endif %}
                         {% endif %}
+                        {% if task.duration %}
+                            eventData.duration = '{{ task.duration|escapejs }}';
+                        {% endif %}
                         {% if task.rrule %}
                             eventData.rrule = {{ task.rrule|safe }};
                         {% endif %}

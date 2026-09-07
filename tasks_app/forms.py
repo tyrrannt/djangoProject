@@ -107,17 +107,42 @@ class TaskForm(forms.ModelForm):
         end = cleaned_data.get('end_date')
         repeat = cleaned_data.get('repeat', 'none')
         repeat_days = cleaned_data.get('repeat_days')
+        repeat_interval = cleaned_data.get('repeat_interval')
 
         if start and end and end < start:
             self.add_error('end_date', 'Срок завершения (дедлайн) не может быть раньше даты начала.')
 
-        # Автоматическая обработка дней недели
+        # Если задано повторение, но не указано время начала — подставляем текущее время
+        if repeat != 'none' and not start:
+            start = timezone.now()
+            cleaned_data['start_date'] = start
+
+        # Гарантируем минимальный интервал повторения 1
+        if not repeat_interval or repeat_interval < 1:
+            cleaned_data['repeat_interval'] = 1
+
+        # Формирование строкового представления дней недели (например "0,1,2,3,4")
         if repeat == 'workdays':
-            cleaned_data['repeat_days'] = ['0', '1', '2', '3', '4']
+            cleaned_data['repeat_days'] = '0,1,2,3,4'
         elif repeat == 'weekly':
-            if not repeat_days and start:
-                cleaned_data['repeat_days'] = [str(start.weekday())]
-        elif repeat in ('none', 'daily', 'monthly', 'yearly') and not repeat_days:
+            if repeat_days:
+                if isinstance(repeat_days, list):
+                    cleaned_data['repeat_days'] = ','.join(str(d) for d in repeat_days if str(d).strip().isdigit())
+                else:
+                    cleaned_data['repeat_days'] = str(repeat_days)
+            elif start:
+                cleaned_data['repeat_days'] = str(start.weekday())
+            else:
+                cleaned_data['repeat_days'] = '0'
+        elif repeat == 'custom':
+            if repeat_days:
+                if isinstance(repeat_days, list):
+                    cleaned_data['repeat_days'] = ','.join(str(d) for d in repeat_days if str(d).strip().isdigit())
+                else:
+                    cleaned_data['repeat_days'] = str(repeat_days)
+            else:
+                cleaned_data['repeat_days'] = None
+        else:
             cleaned_data['repeat_days'] = None
 
         if repeat == 'none':
@@ -126,6 +151,30 @@ class TaskForm(forms.ModelForm):
             cleaned_data['repeat_days'] = None
 
         return cleaned_data
+
+    def save(self, commit: bool = True) -> Task:
+        """Сохраняет задачу с корректной строковой сериализацией параметров повторения.
+
+        Args:
+            commit (bool): Флаг немедленного сохранения в базу данных.
+
+        Returns:
+            Task: Сохраненный объект задачи.
+        """
+        task = super().save(commit=False)
+        task.repeat = self.cleaned_data.get('repeat', 'none')
+        task.repeat_interval = self.cleaned_data.get('repeat_interval') or 1
+        task.repeat_days = self.cleaned_data.get('repeat_days')
+        task.repeat_end_date = self.cleaned_data.get('repeat_end_date')
+
+        if task.repeat == 'none':
+            task.repeat_days = None
+            task.repeat_end_date = None
+
+        if commit:
+            task.save()
+            self.save_m2m()
+        return task
 
 
 class SubTaskForm(forms.ModelForm):
