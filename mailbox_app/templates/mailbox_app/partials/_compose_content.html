@@ -210,9 +210,11 @@
                     </div>
                 </div>
 
+                <!-- Скрытый нативный input для файлов (расположен вне кликабельной зоны dropzone) -->
+                <input type="file" name="attachments" id="id_attachments" class="d-none" multiple>
+
                 <!-- Интерактивная зона Drag & Drop -->
-                <div class="mail-dropzone border rounded p-4 text-center cursor-pointer transition-base" id="mailDropzone" onclick="document.getElementById('id_attachments').click()">
-                    <input type="file" name="attachments" id="id_attachments" class="d-none" multiple>
+                <div class="mail-dropzone border rounded p-4 text-center cursor-pointer transition-base" id="mailDropzone" role="button" tabindex="0">
                     <div class="dropzone-icon mb-2">
                         <i class="bx bx-cloud-upload text-primary" style="font-size: 38px;"></i>
                     </div>
