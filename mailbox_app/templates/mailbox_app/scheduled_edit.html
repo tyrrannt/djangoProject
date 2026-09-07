@@ -29,16 +29,4 @@
 {% endblock %}
 
 {% block custom_script %}
-    <script>
-        function toggleField(rowId) {
-            const row = document.getElementById(rowId);
-            if (row) {
-                row.style.display = row.style.display === 'none' ? 'block' : 'none';
-                if (row.style.display === 'block') {
-                    const input = row.querySelector('input');
-                    if (input) input.focus();
-                }
-            }
-        }
-    </script>
 {% endblock %}

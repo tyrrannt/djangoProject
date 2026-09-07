@@ -7,7 +7,11 @@
     {% include 'mailbox_app/includes/mailbox_tabs.html' %}
 
     <div class="mailbox-compose-container">
-        <form method="post" action="{% url 'mailbox_app:compose' %}" enctype="multipart/form-data" id="composeMailForm">
+        <form method="post" action="{% url 'mailbox_app:compose' %}" enctype="multipart/form-data" id="composeMailForm"
+              data-api-contacts="{% url 'mailbox_app:api_contacts' %}"
+              data-api-drafts="{% url 'mailbox_app:api_save_draft' %}"
+              data-api-templates="{% url 'mailbox_app:api_templates' %}"
+              data-corporate-signature="{{ corporate_signature_json|default:"''"|escape }}">
             {% csrf_token %}
             {{ form.send_mode }}
             {{ form.scheduled_at }}
@@ -155,7 +159,12 @@
                                 <li class="dropdown-header text-uppercase text-muted fw-bold" style="font-size: 11px;">Готовые шаблоны:</li>
                                 {% for t in mail_templates %}
                                     <li>
-                                        <a class="dropdown-item py-2 px-3 cursor-pointer d-flex flex-column" onclick="applyTemplate({{ t.id }})">
+                                        <a class="dropdown-item py-2 px-3 cursor-pointer d-flex flex-column template-item-btn"
+                                           onclick="applyTemplate({{ t.id }})"
+                                           data-template-id="{{ t.id }}"
+                                           data-template-name="{{ t.name|escape }}"
+                                           data-template-subject="{{ t.subject|escape }}"
+                                           data-template-body="{{ t.body_html|escape }}">
                                             <span class="fw-semibold text-dark text-truncate">
                                                 {% if t.is_global %}
                                                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 10px;">Общий</span>

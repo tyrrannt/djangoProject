@@ -1151,25 +1151,68 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
 
 
 class MailboxContactsAPIView(LoginRequiredMixin, View):
-    """API для поиска контактов сотрудников и внешних адресатов (автодополнение)."""
+    """API эндпоинт для быстрого поиска контактов (автодополнение адресатов письма).
+
+    Осуществляет поиск по:
+    1. Отдельно подключенным и корпоративным почтовым ящикам (`Mailbox`);
+    2. Базе активных сотрудников компании (`DataBaseUser` и `MailAccount`);
+    3. Персональной адресной книге пользователя (`MailContact`).
+    """
 
     def get(self, request):
-        """Возвращает список подходящих контактов из базы сотрудников и адресной книги.
+        """Возвращает JSON-список подходящих контактов с дедупликацией по email.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса, содержащий query-параметр 'q'.
 
         Returns:
-            JsonResponse: Список контактов с id, text, email, title.
+            JsonResponse: JSON-ответ со словарем `{'results': [...]}`.
         """
+        from django.db.models import Q
+        from mailbox_app.models import Mailbox, MailContact
+
         q = request.GET.get("q", "").strip()
         results = []
         seen_emails = set()
+        q_variants = list(dict.fromkeys([q, q.lower(), q.upper(), q.capitalize(), q.title()])) if q else []
 
-        # 1. Поиск по сотрудникам компании
+        # 1. Поиск по отдельно подключенным и корпоративным почтовым ящикам (Mailbox)
+        mailboxes_qs = Mailbox.objects.filter(is_active=True)
+        if q:
+            mb_filter = Q()
+            for v in q_variants:
+                mb_filter |= (
+                    Q(name__icontains=v)
+                    | Q(email__icontains=v)
+                    | Q(display_name__icontains=v)
+                    | Q(description__icontains=v)
+                )
+            mailboxes_qs = mailboxes_qs.filter(mb_filter)
+
+        for mb in mailboxes_qs[:25]:
+            mb_email = (mb.email or "").strip()
+            if not mb_email or mb_email.lower() in seen_emails:
+                continue
+
+            seen_emails.add(mb_email.lower())
+            mb_name = (mb.name or mb.display_name or mb_email).strip()
+            job_desc = "Корпоративный ящик"
+            if mb.description:
+                job_desc = f"Ящик: {mb.description[:35]}"
+
+            results.append({
+                "id": mb_email,
+                "email": mb_email,
+                "name": mb_name,
+                "job": job_desc,
+                "text": f"{mb_name} <{mb_email}>" if mb_name else mb_email,
+            })
+
+        # 2. Поиск по сотрудникам компании и их персональным почтовым ящикам
         users_qs = DataBaseUser.objects.filter(is_active=True).select_related(
-            "user_work_profile", "user_work_profile__job"
+            "user_work_profile", "user_work_profile__job", "mail_account"
         )
         if q:
-            from django.db.models import Q
-            q_variants = list(dict.fromkeys([q, q.lower(), q.upper(), q.capitalize(), q.title()]))
             user_filter = Q()
             for v in q_variants:
                 user_filter |= (
@@ -1178,11 +1221,15 @@ class MailboxContactsAPIView(LoginRequiredMixin, View):
                     | Q(surname__icontains=v)
                     | Q(email__icontains=v)
                     | Q(username__icontains=v)
+                    | Q(mail_account__email__icontains=v)
+                    | Q(mail_account__display_name__icontains=v)
                 )
             users_qs = users_qs.filter(user_filter)
 
-        for u in users_qs[:30]:
+        for u in users_qs[:35]:
             user_email = (u.email or "").strip()
+            if not user_email and hasattr(u, "mail_account") and u.mail_account and u.mail_account.email:
+                user_email = u.mail_account.email.strip()
             if not user_email and "@" in u.username:
                 user_email = u.username.strip()
             if not user_email or user_email.lower() in seen_emails:
@@ -1204,13 +1251,10 @@ class MailboxContactsAPIView(LoginRequiredMixin, View):
                 "text": f"{full_name} <{user_email}>" if full_name else user_email,
             })
 
-        # 2. Поиск по персональной адресной книге (MailContact)
+        # 3. Поиск по персональной адресной книге (MailContact)
         if request.user.is_authenticated:
-            from django.db.models import Q
-            from mailbox_app.models import MailContact
             contacts_qs = MailContact.objects.filter(user=request.user)
             if q:
-                q_variants = list(dict.fromkeys([q, q.lower(), q.upper(), q.capitalize(), q.title()]))
                 contact_filter = Q()
                 for v in q_variants:
                     contact_filter |= (
