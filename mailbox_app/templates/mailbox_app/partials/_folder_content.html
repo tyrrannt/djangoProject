@@ -686,4 +686,182 @@
             </div>
         </div>
     {% endif %}
+
+    <!-- Модальное окно подтверждения удаления / действий -->
+    <div class="modal fade" id="deleteMailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-body p-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" id="deleteModalIconBox" style="width: 68px; height: 68px; background: rgba(220, 53, 69, 0.12); color: #dc3545;">
+                        <i class="bx bx-trash" id="deleteModalIcon" style="font-size: 34px;"></i>
+                    </div>
+                    <h5 class="font-weight-bold text-dark mb-2" id="deleteModalTitle">Удалить выбранные письма?</h5>
+                    <p class="text-muted small mb-4" id="deleteModalDesc">Выбранные письма будут перемещены в папку «Корзина».</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
+                            Отмена
+                        </button>
+                        <button type="button" class="btn btn-danger px-4 py-2 font-weight-semibold d-flex align-items-center gap-1 shadow-sm" id="confirmDeleteActionBtn">
+                            <i class="bx bx-trash font-size-18" id="confirmActionIcon"></i> <span id="confirmDeleteBtnText">Удалить</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно предупреждения (когда ничего не выбрано) -->
+    <div class="modal fade" id="warningMailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-body p-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 60px; height: 60px; background: rgba(255, 193, 7, 0.15); color: #e0a800;">
+                        <i class="bx bx-error" style="font-size: 32px;"></i>
+                    </div>
+                    <h5 class="font-weight-bold text-dark mb-2" id="warningModalTitle">Выберите письма</h5>
+                    <p class="text-muted small mb-4" id="warningModalDesc">Пожалуйста, отметьте хотя бы одно письмо из списка для выполнения этого действия.</p>
+                    <button type="button" class="btn btn-primary px-4 py-2 font-weight-semibold" data-bs-dismiss="modal">
+                        Понятно
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мобильная шторка сортировки писем (Thunderbird Mobile Bottom Sheet) -->
+    <div class="modal fade mobile-bottom-sheet d-md-none" id="mobileMailSortModal" tabindex="-1" aria-labelledby="mobileMailSortModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-bottom m-0">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px 20px 0 0; background: #ffffff;">
+                <div class="bottom-sheet-handle mx-auto my-2" style="width: 40px; height: 5px; background: #cbd5e1; border-radius: 3px;"></div>
+                <div class="modal-header border-bottom py-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-sort-alt-2 fs-5 text-primary"></i>
+                        <h6 class="modal-title fw-bold text-dark m-0" id="mobileMailSortModalLabel">Сортировка сообщений</h6>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-3" style="max-height: 75vh; overflow-y: auto;">
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По дате получения</div>
+                    <div class="list-group list-group-flush rounded-3 border mb-3 overflow-hidden">
+                        <a href="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=date&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-calendar-event font-size-18 {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>Сначала новые</span>
+                            </span>
+                            {% if sort_by == 'date' and sort_dir == 'desc' or not sort_by %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=date&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'date' and sort_dir == 'asc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-calendar-event font-size-18 {% if sort_by == 'date' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>Сначала старые</span>
+                            </span>
+                            {% if sort_by == 'date' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                    </div>
+
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">{% if show_recipient %}По получателю и теме{% else %}По автору и теме{% endif %}</div>
+                    <div class="list-group list-group-flush rounded-3 border mb-3 overflow-hidden">
+                        <a href="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=from&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'asc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>{% if show_recipient %}По получателю (А → Я){% else %}По автору (А → Я){% endif %}</span>
+                            </span>
+                            {% if sort_by == 'from' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=from&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'from' and sort_dir == 'desc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-user font-size-18 {% if sort_by == 'from' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>{% if show_recipient %}По получателю (Я → А){% else %}По автору (Я → А){% endif %}</span>
+                            </span>
+                            {% if sort_by == 'from' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=subject&dir=asc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'subject' and sort_dir == 'asc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-message-square-detail font-size-18 {% if sort_by == 'subject' and sort_dir == 'asc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По теме (А → Я)</span>
+                            </span>
+                            {% if sort_by == 'subject' and sort_dir == 'asc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=subject&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'subject' and sort_dir == 'desc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-message-square-detail font-size-18 {% if sort_by == 'subject' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По теме (Я → А)</span>
+                            </span>
+                            {% if sort_by == 'subject' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                    </div>
+
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.5px;">По размеру и статусу</div>
+                    <div class="list-group list-group-flush rounded-3 border overflow-hidden">
+                        <a href="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=size&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'size' and sort_dir == 'desc' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-archive font-size-18 {% if sort_by == 'size' and sort_dir == 'desc' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>По размеру (убывание)</span>
+                            </span>
+                            {% if sort_by == 'size' and sort_dir == 'desc' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=flagged&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'flagged' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bxs-star font-size-18 {% if sort_by == 'flagged' %}text-white{% else %}text-warning{% endif %}"></i>
+                                <span>Сначала важные (со звездочкой)</span>
+                            </span>
+                            {% if sort_by == 'flagged' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                        <a href="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-get="?sort=unread&dir=desc{% if filter_by %}&filter={{ filter_by }}{% endif %}{{ filter_query_params }}"
+                           hx-target="#mailboxMainContent"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2 px-3 {% if sort_by == 'unread' %}active fw-bold{% endif %}">
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bx bx-envelope font-size-18 {% if sort_by == 'unread' %}text-white{% else %}text-primary{% endif %}"></i>
+                                <span>Сначала непрочитанные</span>
+                            </span>
+                            {% if sort_by == 'unread' %}<i class="bx bx-check fs-5"></i>{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

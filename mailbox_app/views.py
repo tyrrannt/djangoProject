@@ -1063,14 +1063,28 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
     def post(self, request):
         """Выполняет операцию над одним или несколькими письмами.
 
+        Поддерживает как групповые операции ('mark_seen', 'mark_unseen', 'delete', 'move', 'not_spam'),
+        так и операции над всей папкой ('mark_all_seen') и отдельными флагами ('toggle_flag').
+        Автоматически сбрасывает кэш списка сообщений и дерева папок.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса с параметрами действия в формате JSON или POST.
+
         Returns:
-            JsonResponse: Результат выполнения действия.
+            JsonResponse: JSON-ответ со статусом операции (success, processed, action) или описанием ошибки.
         """
-        account = self.get_account()
         try:
             data = json.loads(request.body)
         except Exception:
             data = request.POST
+
+        mailbox_id = data.get("mailbox")
+        if mailbox_id:
+            request.session["active_mailbox_id"] = str(mailbox_id)
+
+        account = self.get_account()
+        if not account or not account.email:
+            return JsonResponse({"success": False, "error": "Почтовый ящик не настроен или нет доступа"}, status=400)
 
         action = data.get("action")
         folder = data.get("folder", "INBOX")
@@ -1081,6 +1095,7 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
             try:
                 with self.get_imap_service(account) as imap_svc:
                     count = imap_svc.mark_all_read(folder)
+                    invalidate_mailbox_cache(account.email)
                     return JsonResponse({"success": True, "processed": count, "action": action})
             except Exception as e:
                 logger.error(f"[Mailbox] Ошибка mark_all_seen для папки {folder}: {e}")
@@ -1097,7 +1112,11 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
         success_count = 0
         try:
             with self.get_imap_service(account) as imap_svc:
-                if action in ("mark_seen", "mark_unseen", "toggle_flag", "delete", "move"):
+                if action == "toggle_flag":
+                    for uid in uids:
+                        if imap_svc.toggle_flag(folder, uid):
+                            success_count += 1
+                elif action in ("mark_seen", "mark_unseen", "delete", "move"):
                     if imap_svc.batch_action(folder, uids, action, target_folder):
                         success_count = len(uids)
                 elif action in ("not_spam", "unmark_spam"):
@@ -1119,6 +1138,8 @@ class MailboxActionAPIView(MailboxBaseMixin, View):
                                     )
                                 except Exception as c_err:
                                     logger.debug(f"[Mailbox] Ошибка сохранения контакта в whitelist: {c_err}")
+
+                invalidate_mailbox_cache(account.email)
 
             return JsonResponse({"success": True, "processed": success_count, "action": action})
         except Exception as e:

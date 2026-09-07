@@ -2,7 +2,7 @@
 {% load static_version %}
 
 <!-- Основная область просмотра письма (HTMX Target) -->
-<div class="inner-body mailbox-email" id="mailboxMainContent" data-mailbox-view="email" data-current-folder="{{ current_folder }}">
+<div class="inner-body mailbox-email" id="mailboxMainContent" data-mailbox-view="email" data-current-folder="{{ current_folder }}" data-email-uid="{{ email.uid }}">
     <!-- Полоса вкладок корпоративных почтовых ящиков (Thunderbird Style) -->
     {% include 'mailbox_app/includes/mailbox_tabs.html' %}
 
