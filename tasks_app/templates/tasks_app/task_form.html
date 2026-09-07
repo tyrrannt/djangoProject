@@ -24,7 +24,7 @@
             transition: all 0.2s ease;
             cursor: pointer;
             border: 2px dashed #cbd5e1 !important;
-            border-radius: 8px;
+            border-radius: 10px;
             background-color: #f8fafc;
         }
         .dropzone-area:hover {
@@ -38,40 +38,113 @@
             background: #ffffff;
             margin-bottom: 8px;
         }
-        .weekday-toggle-item {
+
+        /* Modern Recurrence Panel Styles */
+        .recurrence-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        .recurrence-card:hover {
+            border-color: #cbd5e1;
+        }
+        .weekday-pill-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        @media (max-width: 576px) {
+            .weekday-pill-grid {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 4px;
+            }
+        }
+        .weekday-pill-item {
             position: relative;
+            margin: 0;
+            cursor: pointer;
+            user-select: none;
         }
-        .weekday-checkbox {
+        .weekday-hidden-checkbox {
             position: absolute;
-            clip: rect(0, 0, 0, 0);
-            pointer-events: none;
             opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
         }
-        .weekday-label {
-            min-width: 46px;
-            height: 42px;
+        .weekday-pill-btn {
+            min-width: 48px;
+            height: 44px;
+            padding: 0 12px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
+            font-weight: 600;
             cursor: pointer;
-            user-select: none;
             transition: all 0.15s ease-in-out;
             background-color: #ffffff;
-            border: 1px solid #cbd5e1;
+            border: 1.5px solid #cbd5e1;
             color: #334155;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
-        .weekday-label:hover {
+        @media (max-width: 576px) {
+            .weekday-pill-btn {
+                min-width: unset;
+                width: 100%;
+                padding: 0;
+                font-size: 0.85rem;
+            }
+        }
+        .weekday-pill-btn:hover {
             background-color: #f1f5f9;
             border-color: #0088cc;
             color: #0088cc;
+            transform: translateY(-1px);
         }
-        .weekday-checkbox:checked + .weekday-label {
+        .weekday-hidden-checkbox:checked + .weekday-pill-btn {
             background-color: #0088cc !important;
             border-color: #0088cc !important;
             color: #ffffff !important;
-            box-shadow: 0 2px 6px rgba(0, 136, 204, 0.35);
+            box-shadow: 0 3px 8px rgba(0, 136, 204, 0.35) !important;
+            font-weight: 700;
+        }
+        .weekday-hidden-checkbox:checked + .weekday-pill-btn:hover {
+            background-color: #0077b5 !important;
+            border-color: #0077b5 !important;
+        }
+        .badge-preset {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.82rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            font-weight: 600;
+        }
+        .badge-preset:hover {
+            background-color: #e0f2fe;
+            border-color: #0284c7;
+            color: #0284c7;
+            transform: translateY(-1px);
+        }
+        .badge-preset-danger:hover {
+            background-color: #fee2e2;
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+        .recurrence-preview-card {
+            border-left: 4px solid #0088cc !important;
+            background: #f0f9ff !important;
+            border: 1px solid #bae6fd;
+            border-radius: 10px;
         }
     </style>
 {% endblock %}
@@ -240,84 +313,91 @@
                             <div class="form-section-title">
                                 <i class="bx bx-sync text-primary me-2"></i>4. Настройка периодичности и повторения (RRULE)
                             </div>
-                            <div class="row g-3">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label font-weight-bold text-dark" for="{{ form.repeat.id_for_label }}">
-                                        {{ form.repeat.label }}
-                                    </label>
-                                    {{ form.repeat|add_class:"form-control form-control-modern" }}
-                                    {% if form.repeat.errors %}
-                                        <div class="text-danger small mt-1">{{ form.repeat.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-12 col-md-4" id="recurrenceIntervalBox">
-                                    <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_interval.id_for_label }}">
-                                        {{ form.repeat_interval.label }} <span id="repeatIntervalUnitLabel" class="text-muted fw-normal"></span>
-                                    </label>
-                                    <div class="input-group">
-                                        <button type="button" class="btn btn-outline-secondary border px-3" id="btnIntervalMinus"><i class="bx bx-minus"></i></button>
-                                        {{ form.repeat_interval }}
-                                        <button type="button" class="btn btn-outline-secondary border px-3" id="btnIntervalPlus"><i class="bx bx-plus"></i></button>
+                            <div class="recurrence-card shadow-xs">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label font-weight-bold text-dark" for="{{ form.repeat.id_for_label }}">
+                                            <i class="bx bx-repeat text-primary me-1"></i>{{ form.repeat.label }}
+                                        </label>
+                                        {{ form.repeat|add_class:"form-control form-control-modern" }}
+                                        {% if form.repeat.errors %}
+                                            <div class="text-danger small mt-1">{{ form.repeat.errors.0 }}</div>
+                                        {% endif %}
                                     </div>
-                                    {% if form.repeat_interval.errors %}
-                                        <div class="text-danger small mt-1">{{ form.repeat_interval.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-12 col-md-4" id="recurrenceEndDateBox">
-                                    <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_end_date.id_for_label }}">
-                                        {{ form.repeat_end_date.label }}
-                                    </label>
-                                    {{ form.repeat_end_date|add_class:"form-control form-control-modern" }}
-                                    <div class="form-text small text-muted">Оставьте пустым для бессрочного повторения</div>
-                                    {% if form.repeat_end_date.errors %}
-                                        <div class="text-danger small mt-1">{{ form.repeat_end_date.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Weekday Selection Box -->
-                            <div class="mt-3 p-3 bg-light rounded-3 border" id="recurrenceWeekdaysBox" style="display: none;">
-                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
-                                    <label class="form-label font-weight-bold text-dark mb-0">
-                                        <i class="bx bx-calendar-check text-primary me-1"></i>Дни недели повторения:
-                                    </label>
-                                    <div class="d-flex flex-wrap gap-1">
-                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" id="presetWorkdays">Пн–Пт (Рабочие)</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" id="presetMonWedFri">Пн, Ср, Пт</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" id="presetTueThu">Вт, Чт</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" id="presetWeekends">Сб, Вс (Выходные)</button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 fw-semibold" id="presetAllDays">Все дни</button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 fw-semibold" id="presetClearDays">Сбросить</button>
+                                    <div class="col-12 col-sm-6 col-md-4" id="recurrenceIntervalBox">
+                                        <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_interval.id_for_label }}">
+                                            <i class="bx bx-timer text-primary me-1"></i>{{ form.repeat_interval.label }} <span id="repeatIntervalUnitLabel" class="badge bg-primary-subtle text-primary fw-semibold ms-1"></span>
+                                        </label>
+                                        <div class="input-group">
+                                            <button type="button" class="btn btn-outline-secondary border px-3" id="btnIntervalMinus" aria-label="Уменьшить интервал"><i class="bx bx-minus"></i></button>
+                                            {{ form.repeat_interval }}
+                                            <button type="button" class="btn btn-outline-secondary border px-3" id="btnIntervalPlus" aria-label="Увеличить интервал"><i class="bx bx-plus"></i></button>
+                                        </div>
+                                        {% if form.repeat_interval.errors %}
+                                            <div class="text-danger small mt-1">{{ form.repeat_interval.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4" id="recurrenceEndDateBox">
+                                        <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_end_date.id_for_label }}">
+                                            <i class="bx bx-calendar-x text-primary me-1"></i>{{ form.repeat_end_date.label }}
+                                        </label>
+                                        {{ form.repeat_end_date|add_class:"form-control form-control-modern" }}
+                                        <div class="form-text small text-muted">Бессрочно, если не заполнено</div>
+                                        {% if form.repeat_end_date.errors %}
+                                            <div class="text-danger small mt-1">{{ form.repeat_end_date.errors.0 }}</div>
+                                        {% endif %}
                                     </div>
                                 </div>
 
-                                <!-- Hidden Checkboxes & Visible Interactive Buttons -->
-                                <div class="d-flex flex-wrap gap-2 pt-1" id="weekdayButtonsContainer">
-                                    {% for choice_val, choice_label in form.fields.repeat_days.choices %}
-                                        <input type="checkbox"
-                                               name="repeat_days"
-                                               value="{{ choice_val }}"
-                                               id="weekday_opt_{{ choice_val }}"
-                                               class="d-none weekday-hidden-input"
-                                               {% if form.initial.repeat_days and choice_val in form.initial.repeat_days %}checked{% elif form.repeat_days.value and choice_val in form.repeat_days.value %}checked{% endif %}>
-                                        <button type="button"
-                                                class="weekday-btn"
-                                                id="weekday_btn_{{ choice_val }}"
-                                                data-day="{{ choice_val }}">
-                                            {{ choice_label }}
-                                        </button>
-                                    {% endfor %}
-                                </div>
-                                {% if form.repeat_days.errors %}
-                                    <div class="text-danger small mt-2">{{ form.repeat_days.errors.0 }}</div>
-                                {% endif %}
-                            </div>
+                                <!-- Weekday Selection Box -->
+                                <div class="mt-3 pt-3 border-top" id="recurrenceWeekdaysBox" style="display: none;">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+                                        <label class="form-label font-weight-bold text-dark mb-0">
+                                            <i class="bx bx-calendar-week text-primary me-1"></i>Дни недели повторения:
+                                        </label>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="badge-preset" id="presetWorkdays">Пн–Пт (Рабочие)</button>
+                                            <button type="button" class="badge-preset" id="presetMonWedFri">Пн, Ср, Пт</button>
+                                            <button type="button" class="badge-preset" id="presetTueThu">Вт, Чт</button>
+                                            <button type="button" class="badge-preset" id="presetWeekends">Сб, Вс (Выходные)</button>
+                                            <button type="button" class="badge-preset" id="presetAllDays">Все дни</button>
+                                            <button type="button" class="badge-preset badge-preset-danger" id="presetClearDays">Сбросить</button>
+                                        </div>
+                                    </div>
 
-                            <!-- Live Preview Alert -->
-                            <div class="alert alert-info py-2 px-3 mt-3 d-flex align-items-center mb-0" id="recurrencePreviewBox" style="display: none;">
-                                <i class="bx bx-info-circle fs-4 me-2 text-info flex-shrink-0"></i>
-                                <div class="small">
-                                    <strong>Расписание:</strong> <span id="recurrencePreviewText">Без повторения</span>
+                                    <!-- 7-Day Interactive Pill Selector -->
+                                    <div class="weekday-pill-grid pt-1" id="weekdayPillsContainer">
+                                        {% for choice_val, choice_label in form.fields.repeat_days.choices %}
+                                            <label class="weekday-pill-item" for="weekday_opt_{{ choice_val }}">
+                                                <input type="checkbox"
+                                                       name="repeat_days"
+                                                       value="{{ choice_val }}"
+                                                       id="weekday_opt_{{ choice_val }}"
+                                                       class="weekday-hidden-checkbox"
+                                                       {% if form.initial.repeat_days and choice_val in form.initial.repeat_days %}checked{% elif form.repeat_days.value and choice_val in form.repeat_days.value %}checked{% endif %}>
+                                                <span class="weekday-pill-btn" id="weekday_btn_{{ choice_val }}" data-day="{{ choice_val }}">
+                                                    {{ choice_label }}
+                                                </span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                    {% if form.repeat_days.errors %}
+                                        <div class="text-danger small mt-2">{{ form.repeat_days.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Live Schedule Preview Card -->
+                                <div class="recurrence-preview-card p-3 mt-3 d-flex align-items-center" id="recurrencePreviewBox" style="display: none;">
+                                    <div class="me-3 flex-shrink-0">
+                                        <i class="bx bx-calendar-check fs-2 text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="text-muted small text-uppercase fw-bold mb-1">
+                                            <span class="badge bg-primary text-white me-1">Расписание</span>
+                                            <span>Сформированный график события</span>
+                                        </div>
+                                        <div class="fw-bold text-dark fs-6" id="recurrencePreviewText">Без повторения</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -327,11 +407,11 @@
                             <div class="form-section-title">
                                 <i class="bx bx-paperclip text-primary me-2"></i>5. Прикрепление файлов
                             </div>
-                            <div class="dropzone-area p-4 text-center mb-3" onclick="document.getElementById('id_files').click();">
+                            <input type="file" name="files" id="id_files" multiple class="d-none">
+                            <div class="dropzone-area p-4 text-center mb-3" id="dropzoneArea" role="button" tabindex="0">
                                 <i class="bx bx-cloud-upload text-primary" style="font-size: 3rem;"></i>
                                 <h6 class="font-weight-bold text-dark mt-2 mb-1">Нажмите для выбора файлов или перетащите документы</h6>
                                 <p class="text-muted small mb-0">Поддерживаются PDF, DOCX, XLSX, изображения и архивы (до 20 МБ)</p>
-                                <input type="file" name="files" id="id_files" multiple class="d-none" onchange="document.getElementById('selectedFilesCount').textContent = 'Выбрано файлов: ' + this.files.length;">
                                 <div id="selectedFilesCount" class="text-success small fw-bold mt-2"></div>
                             </div>
                         </div>
@@ -387,41 +467,18 @@
                     };
                 }
 
-                // Синхронизация визуального вида кнопок дней недели с hidden checkbox
-                function syncWeekdayButtons() {
-                    document.querySelectorAll('.weekday-hidden-input').forEach(function(cb) {
-                        const btn = document.getElementById('weekday_btn_' + cb.value);
-                        if (btn) {
-                            if (cb.checked) {
-                                btn.classList.add('active');
-                            } else {
-                                btn.classList.remove('active');
-                            }
-                        }
+                // Клик / изменение чекбоксов дней недели
+                document.querySelectorAll('.weekday-hidden-checkbox').forEach(function(cb) {
+                    cb.addEventListener('change', function() {
+                        updateRecurrenceUI();
                     });
-                }
-
-                // Клик по кнопке конкретного дня недели
-                document.querySelectorAll('.weekday-btn').forEach(function(btn) {
-                    btn.onclick = function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const dayVal = this.getAttribute('data-day');
-                        const cb = document.getElementById('weekday_opt_' + dayVal);
-                        if (cb) {
-                            cb.checked = !cb.checked;
-                            syncWeekdayButtons();
-                            updateRecurrenceUI();
-                        }
-                    };
                 });
 
-                // Пресеты
+                // Пресеты установки дней
                 function setWeekdays(selectedVals) {
-                    document.querySelectorAll('.weekday-hidden-input').forEach(function(cb) {
+                    document.querySelectorAll('.weekday-hidden-checkbox').forEach(function(cb) {
                         cb.checked = selectedVals.includes(cb.value);
                     });
-                    syncWeekdayButtons();
                     updateRecurrenceUI();
                 }
 
@@ -443,7 +500,7 @@
                 const pc = document.getElementById('presetClearDays');
                 if (pc) pc.onclick = function(e) { e.preventDefault(); setWeekdays([]); };
 
-                function updateRecurrenceUI() {
+                function updateRecurrenceUI(skipWeekdaySync) {
                     if (!repeatSelect) return;
                     const repeat = repeatSelect.value;
                     const interval = parseInt(intervalInput ? intervalInput.value : 1) || 1;
@@ -462,29 +519,37 @@
                     if (previewBox) previewBox.style.display = 'flex';
 
                     if (repeat === 'daily') {
-                        if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N дн.)';
+                        if (intervalUnitLabel) intervalUnitLabel.textContent = interval === 1 ? 'дней' : 'дн.';
                         if (weekdaysBox) weekdaysBox.style.display = 'none';
                     } else if (repeat === 'workdays') {
-                        if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждый рабочий день)';
+                        if (intervalUnitLabel) intervalUnitLabel.textContent = 'рабочие дни';
                         if (weekdaysBox) weekdaysBox.style.display = 'block';
-                        // При выборе рабочих дней подсвечиваем Пн-Пт
-                        setWeekdays(['0', '1', '2', '3', '4']);
+                        if (!skipWeekdaySync) {
+                            // Гарантируем отметку Пн-Пт если ничего не выбрано
+                            const checkedCount = document.querySelectorAll('.weekday-hidden-checkbox:checked').length;
+                            if (checkedCount === 0) {
+                                ['0', '1', '2', '3', '4'].forEach(function(val) {
+                                    const cb = document.getElementById('weekday_opt_' + val);
+                                    if (cb) cb.checked = true;
+                                });
+                            }
+                        }
                     } else if (repeat === 'weekly') {
-                        if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N нед.)';
+                        if (intervalUnitLabel) intervalUnitLabel.textContent = interval === 1 ? 'нед.' : (interval < 5 ? 'нед.' : 'нед.');
                         if (weekdaysBox) weekdaysBox.style.display = 'block';
                     } else if (repeat === 'monthly') {
-                        if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N мес.)';
+                        if (intervalUnitLabel) intervalUnitLabel.textContent = interval === 1 ? 'мес.' : (interval < 5 ? 'мес.' : 'мес.');
                         if (weekdaysBox) weekdaysBox.style.display = 'none';
                     } else if (repeat === 'yearly') {
-                        if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N лет)';
+                        if (intervalUnitLabel) intervalUnitLabel.textContent = interval === 1 ? 'г.' : (interval < 5 ? 'г.' : 'лет');
                         if (weekdaysBox) weekdaysBox.style.display = 'none';
                     } else if (repeat === 'custom') {
-                        if (intervalUnitLabel) intervalUnitLabel.textContent = '(интервал в днях)';
+                        if (intervalUnitLabel) intervalUnitLabel.textContent = 'интервал (дн.)';
                         if (weekdaysBox) weekdaysBox.style.display = 'block';
                     }
 
                     const daysMap = { '0': 'Пн', '1': 'Вт', '2': 'Ср', '3': 'Чт', '4': 'Пт', '5': 'Сб', '6': 'Вс' };
-                    const checkedInputs = Array.from(document.querySelectorAll('.weekday-hidden-input')).filter(function(cb) { return cb.checked; });
+                    const checkedInputs = Array.from(document.querySelectorAll('.weekday-hidden-checkbox')).filter(function(cb) { return cb.checked; });
                     const selectedDays = checkedInputs.map(function(cb) { return cb.value; });
                     const daysStr = selectedDays.map(function(v) { return daysMap[v]; }).join(', ');
 
@@ -494,14 +559,17 @@
                     } else if (repeat === 'workdays') {
                         text = 'Поручение создается каждый рабочий день (с понедельника по пятницу)';
                     } else if (repeat === 'weekly') {
-                        const prefix = interval === 1 ? 'каждую неделю' : ('каждые ' + interval + ' нед.');
+                        const prefix = interval === 1 ? 'Еженедельно' : ('Каждые ' + interval + ' нед.');
                         if (daysStr) {
-                            text = 'Поручение создается ' + prefix + ' в дни: ' + daysStr;
+                            text = prefix + ' (по дням: ' + daysStr + ')';
                         } else {
-                            text = 'Поручение создается ' + prefix;
+                            text = prefix;
                         }
                     } else if (repeat === 'monthly') {
-                        text = interval === 1 ? 'Поручение создается ежемесячно' : ('Поручение создается каждые ' + interval + ' мес.');
+                        if (interval === 1) text = 'Поручение создается ежемесячно';
+                        else if (interval === 3) text = 'Ежеквартально (каждые 3 месяца)';
+                        else if (interval === 6) text = 'Раз в полгода (каждые 6 месяцев)';
+                        else text = 'Поручение создается каждые ' + interval + ' мес.';
                     } else if (repeat === 'yearly') {
                         text = interval === 1 ? 'Поручение создается каждый год' : ('Поручение создается каждые ' + interval + ' лет');
                     } else if (repeat === 'custom') {
@@ -515,7 +583,7 @@
                                 const day = String(d.getDate()).padStart(2, '0');
                                 const month = String(d.getMonth() + 1).padStart(2, '0');
                                 const year = d.getFullYear();
-                                text += ' (до ' + day + '.' + month + '.' + year + ')';
+                                text += ' — до ' + day + '.' + month + '.' + year;
                             }
                         } catch(e){}
                     }
@@ -525,31 +593,50 @@
 
                 // Слушатели нативные и jQuery/Select2
                 if (repeatSelect) {
-                    repeatSelect.addEventListener('change', updateRecurrenceUI);
+                    repeatSelect.addEventListener('change', function() { updateRecurrenceUI(); });
                 }
                 if (intervalInput) {
-                    intervalInput.addEventListener('input', updateRecurrenceUI);
-                    intervalInput.addEventListener('change', updateRecurrenceUI);
+                    intervalInput.addEventListener('input', function() { updateRecurrenceUI(); });
+                    intervalInput.addEventListener('change', function() { updateRecurrenceUI(); });
                 }
                 if (endDateInput) {
-                    endDateInput.addEventListener('change', updateRecurrenceUI);
+                    endDateInput.addEventListener('change', function() { updateRecurrenceUI(); });
                 }
                 if (startDateInput) {
-                    startDateInput.addEventListener('change', updateRecurrenceUI);
+                    startDateInput.addEventListener('change', function() { updateRecurrenceUI(); });
                 }
 
                 if (window.jQuery) {
                     $(repeatSelect).on('change select2:select select2:unselect select2:change', function() {
                         updateRecurrenceUI();
                     });
-                    $(intervalInput).on('input change', updateRecurrenceUI);
-                    $(endDateInput).on('change', updateRecurrenceUI);
-                    $(startDateInput).on('change', updateRecurrenceUI);
+                    $(intervalInput).on('input change', function() { updateRecurrenceUI(); });
+                    $(endDateInput).on('change', function() { updateRecurrenceUI(); });
+                    $(startDateInput).on('change', function() { updateRecurrenceUI(); });
                 }
 
-                // Инициализация при первой загрузке
-                syncWeekdayButtons();
-                updateRecurrenceUI();
+                // Безопасное подключение Dropzone для загрузки файлов (без всплытия событий)
+                const dropzoneArea = document.getElementById('dropzoneArea');
+                const fileInput = document.getElementById('id_files');
+                if (dropzoneArea && fileInput) {
+                    dropzoneArea.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+                    fileInput.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                    fileInput.addEventListener('change', function() {
+                        const countEl = document.getElementById('selectedFilesCount');
+                        if (countEl) {
+                            countEl.textContent = this.files.length > 0 ? ('Выбрано файлов: ' + this.files.length) : '';
+                        }
+                    });
+                }
+
+                // Первичная инициализация состояния
+                updateRecurrenceUI(true);
             }
 
             if (document.readyState === 'loading') {

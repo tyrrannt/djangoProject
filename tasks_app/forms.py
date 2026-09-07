@@ -84,17 +84,22 @@ class TaskForm(forms.ModelForm):
                 make_custom_field(self.fields[field_name])
 
         # Предзаполнение repeat_days из сохраненной строки/JSON
-        if self.instance and self.instance.pk and self.instance.repeat_days:
-            if self.instance.repeat_days not in ('', '[]', 'null', 'None'):
+        if self.instance and self.instance.pk:
+            if self.instance.repeat_days and self.instance.repeat_days not in ('', '[]', 'null', 'None'):
                 try:
                     if self.instance.repeat_days.startswith('['):
                         self.initial['repeat_days'] = [str(x) for x in json.loads(self.instance.repeat_days)]
                     else:
                         self.initial['repeat_days'] = [
-                            d.strip() for d in self.instance.repeat_days.split(',') if d.strip()
+                            d.strip() for d in self.instance.repeat_days.split(',')
+                            if d.strip() and d.strip().isdigit()
                         ]
                 except (ValueError, json.JSONDecodeError):
                     self.initial['repeat_days'] = []
+            elif self.instance.repeat == 'workdays':
+                self.initial['repeat_days'] = ['0', '1', '2', '3', '4']
+            elif self.instance.repeat == 'weekly' and self.instance.start_date:
+                self.initial['repeat_days'] = [str(self.instance.start_date.weekday())]
 
     def clean(self) -> Dict[str, Any]:
         """Выполняет кросс-полевую валидацию дат и параметров повторения.
@@ -124,26 +129,22 @@ class TaskForm(forms.ModelForm):
         # Формирование строкового представления дней недели (например "0,1,2,3,4")
         if repeat == 'workdays':
             cleaned_data['repeat_days'] = '0,1,2,3,4'
-        elif repeat == 'weekly':
+        elif repeat in ('weekly', 'custom'):
             if repeat_days:
                 if isinstance(repeat_days, list):
-                    cleaned_data['repeat_days'] = ','.join(str(d) for d in repeat_days if str(d).strip().isdigit())
+                    cleaned_data['repeat_days'] = ','.join(sorted(str(d) for d in repeat_days if str(d).strip().isdigit()))
                 else:
                     cleaned_data['repeat_days'] = str(repeat_days)
-            elif start:
+            elif repeat == 'weekly' and start:
                 cleaned_data['repeat_days'] = str(start.weekday())
-            else:
-                cleaned_data['repeat_days'] = '0'
-        elif repeat == 'custom':
-            if repeat_days:
-                if isinstance(repeat_days, list):
-                    cleaned_data['repeat_days'] = ','.join(str(d) for d in repeat_days if str(d).strip().isdigit())
-                else:
-                    cleaned_data['repeat_days'] = str(repeat_days)
             else:
                 cleaned_data['repeat_days'] = None
         else:
             cleaned_data['repeat_days'] = None
+
+        # Если задана дата окончания задачи на другую дату и не задан repeat_end_date, синхронизируем
+        if repeat != 'none' and end and start and end.date() > start.date() and not cleaned_data.get('repeat_end_date'):
+            cleaned_data['repeat_end_date'] = end
 
         if repeat == 'none':
             cleaned_data['repeat_interval'] = 1

@@ -20,7 +20,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Count, Q, QuerySet
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -508,6 +508,9 @@ class TaskListView(LoginRequiredMixin, ListView):
             if not task.start_date:
                 continue
 
+            local_start = timezone.localtime(task.start_date) if timezone.is_aware(task.start_date) else task.start_date
+            local_end = timezone.localtime(task.end_date) if (task.end_date and timezone.is_aware(task.end_date)) else task.end_date
+
             event_data = {
                 'id': str(task.id),
                 'title': get_task_title_with_icon(self, task),
@@ -525,19 +528,25 @@ class TaskListView(LoginRequiredMixin, ListView):
                     'yearly': 'yearly',
                     'custom': 'daily',
                 }
-                freq = freq_map.get(task.repeat, 'daily')
-                dtstart_dt = task.start_date or task.created_at or timezone.now()
+                freq = freq_map.get(task.repeat, 'weekly')
+                interval = task.repeat_interval or 1
+
+                # Форматируем dtstart без смещения часового пояса, чтобы FullCalendar и rrule.js
+                # размещали событие в точное локальное время на каждом дне повторения
+                dtstart_str = local_start.strftime('%Y-%m-%dT%H:%M:%S')
+
                 rrule_obj = {
                     'freq': freq,
-                    'dtstart': dtstart_dt.isoformat(),
-                    'interval': task.repeat_interval or 1,
+                    'dtstart': dtstart_str,
+                    'interval': interval,
                 }
+                days_map = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
+
                 if task.repeat == 'workdays':
                     rrule_obj['interval'] = 1
                     rrule_obj['byweekday'] = ['mo', 'tu', 'we', 'th', 'fr']
                 elif task.repeat_days and task.repeat_days not in ('', '[]', 'null', 'None'):
                     try:
-                        days_map = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
                         if task.repeat_days.startswith('['):
                             days_list = json.loads(task.repeat_days)
                             byweekday = [days_map[int(d)] for d in days_list if d is not None and 0 <= int(d) <= 6]
@@ -549,32 +558,52 @@ class TaskListView(LoginRequiredMixin, ListView):
                             ]
                         if byweekday:
                             rrule_obj['byweekday'] = byweekday
-                    except Exception:
-                        pass
-                elif freq == 'weekly' and dtstart_dt:
-                    days_map = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
-                    rrule_obj['byweekday'] = [days_map[dtstart_dt.weekday()]]
+                    except Exception as err:
+                        logger.warning("Error parsing repeat_days for task #%s: %s", task.id, err)
+                elif freq == 'weekly' and local_start:
+                    rrule_obj['byweekday'] = [days_map[local_start.weekday()]]
 
-                if task.repeat_end_date:
-                    rrule_obj['until'] = task.repeat_end_date.isoformat()
+                until_date = task.repeat_end_date
+                if not until_date and task.end_date and task.start_date and task.end_date.date() > task.start_date.date():
+                    until_date = task.end_date
+
+                if until_date:
+                    local_until = timezone.localtime(until_date) if timezone.is_aware(until_date) else until_date
+                    rrule_obj['until'] = local_until.strftime('%Y-%m-%dT%H:%M:%S')
 
                 event_data['rrule'] = rrule_obj
 
-                if task.start_date and task.end_date and task.end_date > task.start_date:
-                    diff = task.end_date - task.start_date
-                    total_sec = int(diff.total_seconds())
-                    hours = total_sec // 3600
-                    mins = (total_sec % 3600) // 60
-                    event_data['duration'] = f"{hours:02d}:{mins:02d}"
+                # Для повторяющихся событий длительность одного экземпляра строго ограничивается рамками дня
+                if local_start and local_end and local_end > local_start:
+                    if local_end.date() == local_start.date():
+                        diff = local_end - local_start
+                        total_sec = int(diff.total_seconds())
+                        hours = total_sec // 3600
+                        mins = (total_sec % 3600) // 60
+                        event_data['duration'] = f"{hours:02d}:{mins:02d}"
+                    else:
+                        # Если дата окончания на другой день (дедлайн цикла), берем дневной тайм-слот
+                        start_sec = local_start.hour * 3600 + local_start.minute * 60
+                        end_sec = local_end.hour * 3600 + local_end.minute * 60
+                        if end_sec > start_sec:
+                            diff_sec = end_sec - start_sec
+                            hours = diff_sec // 3600
+                            mins = (diff_sec % 3600) // 60
+                            event_data['duration'] = f"{hours:02d}:{mins:02d}"
+                        else:
+                            event_data['duration'] = "01:00"
+                else:
+                    event_data['duration'] = "01:00"
             else:
-                if task.start_date:
-                    event_data['start'] = task.start_date.isoformat()
-                if task.end_date:
-                    event_data['end'] = task.end_date.isoformat()
+                if local_start:
+                    event_data['start'] = local_start.strftime('%Y-%m-%dT%H:%M:%S')
+                if local_end:
+                    event_data['end'] = local_end.strftime('%Y-%m-%dT%H:%M:%S')
 
             calendar_events.append(event_data)
 
         context['repeat_tasks'] = calendar_events
+        context['calendar_events_json'] = json.dumps(calendar_events)
         return context
 
 
@@ -632,15 +661,39 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('tasks_app:task-list')
 
     def get_queryset(self) -> QuerySet:
+        """Возвращает QuerySet задач, автором которых является текущий пользователь.
+
+        Returns:
+            QuerySet: Задачи текущего пользователя.
+        """
         return Task.objects.filter(user=self.request.user)
 
     def get_object(self, queryset: QuerySet = None) -> Task:
+        """Получает объект задачи и проверяет права доступа на редактирование.
+
+        Args:
+            queryset (QuerySet, optional): Кастомный набор записей. Defaults to None.
+
+        Returns:
+            Task: Объект задачи.
+
+        Raises:
+            PermissionDenied: Если у пользователя нет прав на редактирование задачи.
+        """
         obj = super().get_object(queryset)
         if not can_edit_task(self.request.user, obj):
             raise PermissionDenied("Вы не можете редактировать чужие задачи.")
         return obj
 
     def form_valid(self, form: TaskForm) -> HttpResponse:
+        """Сохраняет обновленные параметры задачи, прикрепляет новые файлы и логирует аудит.
+
+        Args:
+            form (TaskForm): Валидированная форма задачи.
+
+        Returns:
+            HttpResponseRedirect: Редирект на список задач.
+        """
         self.object = form.save()
 
         files = self.request.FILES.getlist('files')
@@ -660,8 +713,8 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             comment="Параметры задачи обновлены"
         )
 
-        messages.success(self.request, f"Задача «{task.title}» успешно обновлена.")
-        return super().form_valid(form)
+        messages.success(self.request, f"Задача «{self.object.title}» успешно обновлена.")
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
@@ -672,6 +725,11 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('tasks_app:task-list')
 
     def get_queryset(self) -> QuerySet:
+        """Возвращает QuerySet задач, созданных текущим пользователем.
+
+        Returns:
+            QuerySet: Задачи текущего пользователя.
+        """
         return Task.objects.filter(user=self.request.user)
 
 
@@ -687,6 +745,11 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     template_name = 'tasks_app/task_detail.html'
 
     def get_queryset(self) -> QuerySet:
+        """Формирует QuerySet задач с оптимизацией связей для участников.
+
+        Returns:
+            QuerySet: Задачи, доступные текущему пользователю.
+        """
         user = self.request.user
         return Task.objects.filter(
             Q(user=user) | Q(responsible=user) | Q(assignees=user) | Q(observers=user) | Q(shared_with=user)
@@ -695,6 +758,14 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
         )
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Формирует контекст детальной страницы задачи с правами действий и формами.
+
+        Args:
+            **kwargs: Дополнительные именованные параметры.
+
+        Returns:
+            Dict[str, Any]: Словарь контекста детального просмотра задачи.
+        """
         context = super().get_context_data(**kwargs)
         task = self.object
         user = self.request.user
@@ -771,11 +842,24 @@ class TaskStatusUpdateView(LoginRequiredMixin, UpdateView):
     fields = ['completed']
 
     def get_queryset(self) -> QuerySet:
+        """Возвращает QuerySet задач, доступных текущему пользователю.
+
+        Returns:
+            QuerySet: Задачи, в которых пользователь является автором, ответственным или исполнителем.
+        """
         return Task.objects.filter(
             Q(user=self.request.user) | Q(responsible=self.request.user) | Q(assignees=self.request.user)
         )
 
     def form_valid(self, form: Any) -> JsonResponse:
+        """Обновляет статус выполнения задачи и возвращает JSON-ответ.
+
+        Args:
+            form (Any): Валидированная форма задачи.
+
+        Returns:
+            JsonResponse: Результат обновления статуса.
+        """
         task = form.save(commit=False)
         if task.completed:
             task.status = TaskStatus.COMPLETED
@@ -792,10 +876,28 @@ class TaskStatusUpdateView(LoginRequiredMixin, UpdateView):
         })
 
     def form_invalid(self, form: Any) -> JsonResponse:
+        """Обрабатывает невалидные данные формы и возвращает ошибку 400.
+
+        Args:
+            form (Any): Невалидная форма.
+
+        Returns:
+            JsonResponse: Сообщение об ошибке.
+        """
         return JsonResponse({'status': 'error', 'error': 'Ошибка при обновлении статуса'}, status=400)
 
     @method_decorator(require_POST)
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        """Ограничивает вызовы только методом POST.
+
+        Args:
+            request (HttpRequest): Объект запроса.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Результат обработки запроса.
+        """
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -899,6 +1001,11 @@ class TaskDashboardView(LoginRequiredMixin, ListView):
     context_object_name = 'tasks'
 
     def get_queryset(self) -> QuerySet:
+        """Формирует QuerySet задач для сводного дашборда с фильтрацией по подразделению.
+
+        Returns:
+            QuerySet: Задачи, доступные текущему пользователю.
+        """
         user = self.request.user
         base_qs = Task.objects.filter(
             Q(user=user) | Q(responsible=user) | Q(assignees=user) | Q(observers=user) | Q(shared_with=user)
@@ -915,6 +1022,14 @@ class TaskDashboardView(LoginRequiredMixin, ListView):
         return base_qs
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Формирует контекст дашборда: KPI-метрики, срочные задачи, активность и нагрузку.
+
+        Args:
+            **kwargs: Дополнительные именованные параметры.
+
+        Returns:
+            Dict[str, Any]: Словарь контекста сводного дашборда.
+        """
         context = super().get_context_data(**kwargs)
         user = self.request.user
         all_tasks = self.get_queryset().select_related('user', 'responsible', 'category').prefetch_related('subtasks')
@@ -983,6 +1098,11 @@ class TaskKanbanView(LoginRequiredMixin, ListView):
     context_object_name = 'tasks'
 
     def get_queryset(self) -> QuerySet:
+        """Формирует QuerySet задач для канбан-доски с фильтрацией по категориям, приоритетам и вкладкам.
+
+        Returns:
+            QuerySet: Набор задач с оптимизацией связей.
+        """
         user = self.request.user
         base_qs = Task.objects.filter(
             Q(user=user) | Q(responsible=user) | Q(assignees=user) | Q(observers=user) | Q(shared_with=user)
@@ -1017,6 +1137,14 @@ class TaskKanbanView(LoginRequiredMixin, ListView):
         )
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Распределяет задачи по колонкам канбан-доски и подготавливает фильтры.
+
+        Args:
+            **kwargs: Дополнительные именованные параметры.
+
+        Returns:
+            Dict[str, Any]: Контекст со списками задач по колонкам.
+        """
         context = super().get_context_data(**kwargs)
         tasks = list(self.get_queryset())
 

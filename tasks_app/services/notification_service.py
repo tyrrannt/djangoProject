@@ -327,13 +327,17 @@ class NotificationService:
     def process_recurring_tasks(cls) -> int:
         """Сканирует повторяющиеся задачи и создает следующие экземпляры по правилам RRULE.
 
+        Создает дискретные разовые задачи (repeat='none') при завершении предыдущего этапа
+        или наступлении срока следующего повторения, предотвращая каскадное дублирование правил.
+
         Returns:
             int: Количество созданных новых задач.
         """
         created_count = 0
         now = timezone.now()
+        near_window = now + timedelta(hours=2)
 
-        # Находим задачи с повторением, которые завершены ИЛИ у которых наступило время следующего запуска
+        # Находим задачи с активным правилом повторения
         recurring_candidates = Task.objects.exclude(
             repeat='none'
         ).filter(
@@ -341,8 +345,14 @@ class NotificationService:
         ).distinct()
 
         for parent_task in recurring_candidates:
-            next_start, _ = parent_task.get_next_occurrence()
+            next_start, next_end = parent_task.get_next_occurrence()
             if not next_start:
+                continue
+
+            # Создаем следующий экземпляр, если предыдущая задача уже завершена
+            # ИЛИ если время следующего повторения наступает прямо сейчас (в окне 2 часов)
+            should_create = (parent_task.status == TaskStatus.COMPLETED) or (next_start <= near_window)
+            if not should_create:
                 continue
 
             # Проверяем, не была ли уже создана задача на это время
@@ -353,13 +363,13 @@ class NotificationService:
             ).exists()
 
             if not already_created:
-                new_task = parent_task.create_next_task()
+                new_task = parent_task.create_next_task(as_discrete_task=True)
                 if new_task:
                     TaskHistory.log(
                         task=new_task,
                         user=None,
                         action=TaskHistory.ActionType.CREATED,
-                        comment=f"Автоматически создана периодическая задача от исходной #{parent_task.id}"
+                        comment=f"Автоматически создана периодическая задача от исходного правила #{parent_task.id}"
                     )
                     # Уведомляем ответственного о новом периодическом поручении
                     if new_task.responsible_id:

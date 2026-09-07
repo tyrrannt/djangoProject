@@ -387,7 +387,7 @@ class Task(models.Model):
                 rule_text = 'Ежеквартально (каждые 3 мес.)'
             elif interval == 6:
                 rule_text = 'Раз в полгода (каждые 6 мес.)'
-            elif interval in (2, 4):
+            elif interval in (2, 3, 4):
                 rule_text = f'Каждые {interval} месяца'
             else:
                 rule_text = f'Каждые {interval} месяцев'
@@ -406,7 +406,8 @@ class Task(models.Model):
             rule_text = self.get_repeat_display()
 
         if self.repeat_end_date:
-            rule_text += f" (до {self.repeat_end_date.strftime('%d.%m.%Y')})"
+            local_end_dt = timezone.localtime(self.repeat_end_date) if timezone.is_aware(self.repeat_end_date) else self.repeat_end_date
+            rule_text += f" (до {local_end_dt.strftime('%d.%m.%Y')})"
 
         return rule_text
 
@@ -423,6 +424,8 @@ class Task(models.Model):
             return None
 
         start_dt = self.start_date or self.created_at or timezone.now()
+        if timezone.is_aware(start_dt):
+            start_dt = timezone.localtime(start_dt)
 
         freq_map = {
             'daily': DAILY,
@@ -456,20 +459,33 @@ class Task(models.Model):
         if freq == WEEKLY and self.repeat == 'weekly' and not byweekday and start_dt:
             byweekday = [start_dt.weekday()]
 
+        until_dt = self.repeat_end_date
+        if not until_dt and self.end_date and self.start_date and (self.end_date.date() > self.start_date.date()):
+            until_dt = self.end_date
+
+        if until_dt and timezone.is_aware(until_dt):
+            until_dt = timezone.localtime(until_dt)
+
         try:
             return rrule(
                 freq=freq,
                 interval=interval,
                 dtstart=start_dt,
-                until=self.repeat_end_date if self.repeat_end_date else None,
+                until=until_dt,
                 byweekday=byweekday if byweekday else None
             )
         except (ValueError, TypeError) as exc:
             logger.error("Error creating rrule for task %s: %s", self.id, exc)
             return None
 
-    def get_next_occurrence(self) -> Tuple[Optional[timezone.datetime], Optional[timezone.datetime]]:
+    def get_next_occurrence(
+        self,
+        from_date: Optional[timezone.datetime] = None
+    ) -> Tuple[Optional[timezone.datetime], Optional[timezone.datetime]]:
         """Возвращает даты следующего повторения события (start, end).
+
+        Args:
+            from_date (Optional[datetime]): Опорная дата для поиска следующего события (по умолчанию текущее время).
 
         Returns:
             Tuple[Optional[datetime], Optional[datetime]]: Кортеж (next_start, next_end).
@@ -477,7 +493,11 @@ class Task(models.Model):
         if self.repeat == 'none':
             return None, None
 
-        if self.repeat_end_date and self.repeat_end_date < timezone.now():
+        ref_date = from_date or timezone.now()
+        effective_until = self.repeat_end_date or (
+            self.end_date if (self.end_date and self.start_date and self.end_date.date() > self.start_date.date()) else None
+        )
+        if effective_until and effective_until < ref_date:
             return None, None
 
         rule = self.get_rrule()
@@ -485,7 +505,7 @@ class Task(models.Model):
             return None, None
 
         start_dt = self.start_date or self.created_at or timezone.now()
-        after_date = timezone.now()
+        after_date = ref_date
         if timezone.is_aware(start_dt) and timezone.is_naive(after_date):
             after_date = timezone.make_aware(after_date)
         elif timezone.is_naive(start_dt) and timezone.is_aware(after_date):
@@ -493,7 +513,7 @@ class Task(models.Model):
 
         try:
             next_start = rule.after(after_date, inc=False)
-        except TypeError:
+        except (TypeError, ValueError):
             next_start = None
 
         if not next_start:
@@ -501,16 +521,33 @@ class Task(models.Model):
 
         next_end = None
         if self.end_date and self.start_date and self.end_date > self.start_date:
-            duration = self.end_date - self.start_date
-            next_end = next_start + duration
+            if self.end_date.date() == self.start_date.date():
+                duration = self.end_date - self.start_date
+                next_end = next_start + duration
+            else:
+                # Если дата завершения была на другой день (дедлайн цикла), сохраняем дневной интервал времени
+                if self.end_date.time() > self.start_date.time():
+                    time_diff = timezone.timedelta(
+                        hours=self.end_date.hour - self.start_date.hour,
+                        minutes=self.end_date.minute - self.start_date.minute
+                    )
+                    next_end = next_start + time_diff
+                else:
+                    next_end = next_start + timezone.timedelta(hours=1)
+        elif self.start_date:
+            next_end = next_start + timezone.timedelta(hours=1)
 
         return next_start, next_end
 
-    def create_next_task(self) -> Optional['Task']:
+    def create_next_task(self, as_discrete_task: bool = True) -> Optional['Task']:
         """Создает в БД следующий экземпляр задачи на основе RRULE с сохранением чек-листа подзадач.
 
         Клонирует основные реквизиты, ответственных, наблюдателей, а также
         пункты чек-листа (SubTask) в начальном незавершенном статусе.
+
+        Args:
+            as_discrete_task (bool): Создавать ли разовую задачу для конкретного срока исполнения
+                (repeat='none', предотвращая экспоненциальное дублирование правил повторения).
 
         Returns:
             Optional[Task]: Созданный объект задачи или None в случае окончания цикла повторений.
@@ -528,10 +565,10 @@ class Task(models.Model):
             end_date=next_end,
             priority=self.priority,
             category=self.category,
-            repeat=self.repeat,
-            repeat_interval=self.repeat_interval,
-            repeat_days=self.repeat_days,
-            repeat_end_date=self.repeat_end_date,
+            repeat='none' if as_discrete_task else self.repeat,
+            repeat_interval=1 if as_discrete_task else self.repeat_interval,
+            repeat_days=None if as_discrete_task else self.repeat_days,
+            repeat_end_date=None if as_discrete_task else self.repeat_end_date,
             requires_eds=self.requires_eds,
             status=TaskStatus.NEW
         )

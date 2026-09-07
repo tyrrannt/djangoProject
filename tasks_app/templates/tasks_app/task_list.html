@@ -532,30 +532,11 @@
                 if (!calendarEl) return;
 
                 var calendarEvents = [];
-                {% for task in repeat_tasks %}
-                    try {
-                        var eventData = {
-                            id: '{{ task.id|escapejs }}',
-                            title: '{{ task.title|escapejs }}',
-                            url: '{{ task.url|escapejs }}',
-                            color: '{{ task.color|escapejs }}',
-                            className: 'fc-event-{{ task.color|escapejs }}'
-                        };
-                        {% if task.start %}
-                            eventData.start = '{{ task.start|escapejs }}';
-                            {% if task.end %}eventData.end = '{{ task.end|escapejs }}';{% endif %}
-                        {% endif %}
-                        {% if task.duration %}
-                            eventData.duration = '{{ task.duration|escapejs }}';
-                        {% endif %}
-                        {% if task.rrule %}
-                            eventData.rrule = {{ task.rrule|safe }};
-                        {% endif %}
-                        calendarEvents.push(eventData);
-                    } catch (e) {
-                        console.error('Error parsing event:', e);
-                    }
-                {% endfor %}
+                try {
+                    calendarEvents = {{ calendar_events_json|default:"[]"|safe }};
+                } catch (e) {
+                    console.error('Error parsing calendar events JSON:', e);
+                }
 
                 calendarInstance = new FullCalendar.Calendar(calendarEl, {
                     themeSystem: 'bootstrap',
