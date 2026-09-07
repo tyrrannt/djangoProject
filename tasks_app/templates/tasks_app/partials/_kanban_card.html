@@ -1,0 +1,71 @@
+<div class="kanban-card shadow-sm" draggable="true" data-task-id="{{ task.id }}" data-status="{{ task.status }}">
+    <!-- Card Header: Priority & Category -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-{{ task.priority }} py-0 px-2" style="font-size: 0.7rem;">
+            {{ task.get_priority_display }}
+        </span>
+        <span class="text-muted font-monospace" style="font-size: 0.72rem;">#{{ task.id }}</span>
+    </div>
+
+    <!-- Title -->
+    <h6 class="fw-bold mb-2">
+        <a href="{{ task.get_absolute_url }}" class="text-dark text-decoration-none text-break d-block">
+            {{ task.title }}
+        </a>
+    </h6>
+
+    <!-- Category -->
+    {% if task.category %}
+        <div class="mb-2">
+            <span class="badge bg-light text-dark border" style="font-size: 0.68rem;">
+                <i class="bx bx-folder me-1 text-warning"></i>{{ task.category.name }}
+            </span>
+        </div>
+    {% endif %}
+
+    <!-- Subtasks Progress Bar -->
+    {% if task.subtasks.exists %}
+        <div class="mb-2">
+            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.68rem;">
+                <span class="text-muted"><i class="bx bx-check-square me-1"></i>Чек-лист</span>
+                <span class="fw-bold text-dark">{{ task.progress_percent }}%</span>
+            </div>
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ task.progress_percent }}%;"></div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Card Footer -->
+    <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top" style="font-size: 0.75rem;">
+        <!-- Responsible User -->
+        <div class="d-flex align-items-center text-truncate me-2" title="Ответственный: {{ task.responsible.get_full_name|default:task.responsible.username }}">
+            <i class="bx bx-user-check text-primary me-1"></i>
+            <span class="text-muted text-truncate" style="max-width: 100px;">
+                {{ task.responsible.get_full_name|default:task.responsible.username|default:"—" }}
+            </span>
+        </div>
+
+        <!-- Meta Icons: Deadline, Files, Comments -->
+        <div class="d-flex align-items-center gap-2">
+            {% if task.end_date %}
+                <span class="{% if task.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}" title="Дедлайн: {{ task.end_date|date:'d.m.Y H:i' }}">
+                    <i class="bx {% if task.is_overdue %}bx-alarm-exclamation{% else %}bx-calendar{% endif %}"></i>
+                    {{ task.end_date|date:"d.m" }}
+                </span>
+            {% endif %}
+
+            {% if task.files.exists %}
+                <span class="text-muted" title="Вложений: {{ task.files.count }}">
+                    <i class="bx bx-paperclip"></i>{{ task.files.count }}
+                </span>
+            {% endif %}
+
+            {% if task.comments.exists %}
+                <span class="text-muted" title="Комментариев: {{ task.comments.count }}">
+                    <i class="bx bx-message-rounded"></i>{{ task.comments.count }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
