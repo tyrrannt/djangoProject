@@ -8,7 +8,6 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
-    <link rel="stylesheet" href="{% static 'django_ckeditor_5/dist/styles.css' %}" />
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}" />
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}" />
     <style>
@@ -51,7 +50,7 @@
 
 {% block content %}
     <section class="content-with-menu mailbox">
-        <div class="content-with-menu-container" data-mailbox data-mailbox-view="folder">
+        <div class="content-with-menu-container" data-mailbox-view="folder">
             <div class="inner-menu-toggle">
                 <a href="#" class="inner-menu-expand" data-open="inner-menu">
                     Папки <i class="fas fa-chevron-right"></i>

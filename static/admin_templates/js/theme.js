@@ -5199,6 +5199,10 @@ window.theme.fn = {
 			$innerBody		= $( '.inner-body' );
 
 			var adjustComposeSize = function() {
+				if (!$composer.length) {
+					return;
+				}
+
 				var composerHeight,
 					composerTop,
 					contentBodyPaddingBottom,

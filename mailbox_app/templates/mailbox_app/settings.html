@@ -8,12 +8,11 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
-    <link rel="stylesheet" href="{% static 'django_ckeditor_5/dist/styles.css' %}" />
 {% endblock %}
 
 {% block content %}
     <section class="content-with-menu mailbox">
-        <div class="content-with-menu-container" data-mailbox data-mailbox-view="settings">
+        <div class="content-with-menu-container" data-mailbox-view="settings">
             <div class="inner-menu-toggle">
                 <a href="#" class="inner-menu-expand" data-open="inner-menu">
                     Папки <i class="fas fa-chevron-right"></i>
@@ -30,5 +29,4 @@
 {% endblock %}
 
 {% block custom_script %}
-    <script src="{% static 'django_ckeditor_5/dist/bundle.js' %}"></script>
 {% endblock %}

@@ -714,7 +714,9 @@
 		$('[data-mailbox]').each(function() {
 			var $this = $( this );
 
-			$this.themeMailbox();
+			if (typeof $this.themeMailbox === 'function') {
+				$this.themeMailbox();
+			}
 		});
 	});
 

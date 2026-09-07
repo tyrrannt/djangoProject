@@ -1,6 +1,7 @@
 <!doctype html>
 {% load i18n %}
 {% load static %}
+{% load static_version %}
 {% load custom %}
 
 <html class="fixed" lang="ru">
@@ -61,13 +62,13 @@
     {% endwith %}
     {% with ck_list="mailbox_app,customers_app,hrdepartment_app,library_app"|split:"," %}
         {% if request.resolver_match.app_name in ck_list %}
-            <link rel="stylesheet" href="{% static 'django_ckeditor_5/dist/styles.css' %}"/>
+            <link rel="stylesheet" href="{% static_version 'django_ckeditor_5/dist/styles.css' %}"/>
         {% endif %}
     {% endwith %}
 
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
+    <link rel="stylesheet" href="{% static_version 'admin_templates/css/theme.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/css/skins/default.css' %}"/>
     <link rel="stylesheet" href="{% static_version 'admin_templates/css/custom.css' %}"/>
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mobile_app.css' %}"/>
@@ -228,7 +229,7 @@
     <!-- CKEditor 5: WYSIWYG редактор для почты и документов -->
     {% with ck_list="mailbox_app,customers_app,hrdepartment_app,library_app"|split:"," %}
         {% if request.resolver_match.app_name in ck_list %}
-            <script src="{% static 'django_ckeditor_5/dist/bundle.js' %}"></script>
+            <script src="{% static_version 'django_ckeditor_5/dist/bundle.js' %}"></script>
         {% endif %}
     {% endwith %}
 
@@ -237,9 +238,9 @@
     {% endblock %}
 
     <!-- Инициализация темы Porto Admin -->
-    <script src="{% static 'admin_templates/js/theme.js' %}"></script>
+    <script src="{% static_version 'admin_templates/js/theme.js' %}"></script>
     <script src="{% static_version 'admin_templates/js/custom.js' %}"></script>
-    <script src="{% static 'admin_templates/js/theme.init.js' %}"></script>
+    <script src="{% static_version 'admin_templates/js/theme.init.js' %}"></script>
     <script id="myAdminSpinnerScript" src="{% static 'admin_templates/js/examples/examples.loading.overlay.js' %}"></script>
 
     <!-- Ядро клиентских скриптов портала (WebSockets, NanoScroller, QR-код, защита от зависания) -->
