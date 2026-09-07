@@ -326,6 +326,7 @@ class MailboxBaseMixin(LoginRequiredMixin):
         context.setdefault("folders", folders)
         context.setdefault("current_folder", "INBOX")
         context.setdefault("scheduled_count", self.get_scheduled_count())
+        context["is_htmx"] = is_htmx_request(self.request)
         return context
 
 
@@ -636,6 +637,8 @@ class MailboxEmailDetailView(HtmxResponseMixin, MailboxBaseMixin, TemplateView):
             with self.get_imap_service(account) as imap_svc:
                 email_data = imap_svc.get_message_detail(folder_name, uid)
                 folders = imap_svc.get_folders(force_refresh=True)
+                if account and getattr(account, "email", None):
+                    invalidate_mailbox_cache(account.email)
         except Exception as e:
             logger.error(f"[Mailbox] Ошибка загрузки письма {uid}: {e}")
             error_message = str(e)
@@ -1671,7 +1674,7 @@ class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
                 if cached_folders and isinstance(cached_folders, list):
                     folder_updated = False
                     for f in cached_folders:
-                        if f.get("root_type") == "inbox":
+                        if (f.get("type") == "inbox" and f.get("level") == 0) or f.get("raw_name", "").upper() == "INBOX":
                             if f.get("unseen") != unseen_count:
                                 f["unseen"] = unseen_count
                                 folder_updated = True

@@ -137,3 +137,16 @@ class HtmxResponseMixin:
         if is_htmx_request(self.request) and self.partial_template_name:
             return [self.partial_template_name]
         return super().get_template_names()
+
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Дополняет контекст рендеринга флагом `is_htmx`.
+
+        Args:
+            **kwargs (Any): Дополнительные параметры контекста.
+
+        Returns:
+            Dict[str, Any]: Словарь контекста с добавленным флагом `is_htmx`.
+        """
+        context = super().get_context_data(**kwargs) if hasattr(super(), "get_context_data") else {}
+        context["is_htmx"] = is_htmx_request(self.request)
+        return context

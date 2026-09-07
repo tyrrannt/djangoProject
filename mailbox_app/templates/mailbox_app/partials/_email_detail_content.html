@@ -433,3 +433,15 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Мгновенное оповещение фонового сервиса об открытии письма для актуализации счетчиков непрочитанных
+    if (typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('mailbox_poller_recheck'));
+    }
+</script>
+
+{% if is_htmx %}
+    <!-- Out-of-Band обновление боковой панели папок и мобильной шторки при HTMX-запросах -->
+    {% include 'mailbox_app/includes/mailbox_sidebar.html' with is_oob=True %}
+{% endif %}

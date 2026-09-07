@@ -865,3 +865,8 @@
         </div>
     </div>
 </div>
+
+{% if is_htmx %}
+    <!-- Out-of-Band обновление боковой панели папок и мобильной шторки при HTMX-запросах -->
+    {% include 'mailbox_app/includes/mailbox_sidebar.html' with is_oob=True %}
+{% endif %}

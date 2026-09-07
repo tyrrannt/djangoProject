@@ -2,7 +2,7 @@
 {% load static_version %}
 
 <!-- Десктопная боковая панель папок (скрыта на мобильных <=768px) -->
-<menu id="content-menu" class="inner-menu d-none d-md-block" role="menu">
+<menu id="content-menu" class="inner-menu d-none d-md-block" role="menu"{% if is_oob %} hx-swap-oob="true"{% endif %}>
     <div class="nano">
         <div class="nano-content">
             <div class="mailbox-sidebar-container">
@@ -50,7 +50,7 @@
                                     <i class="{{ f.icon }}"></i>
                                     <span class="text-truncate">{{ f.display_name }}</span>
                                 </span>
-                                <span class="mailbox-folder-badge {% if not f.unseen or f.unseen <= 0 %}d-none{% endif %}" data-folder-badge="{{ f.root_type|default:f.raw_name|lower }}" id="folderBadge_{{ f.raw_name|slugify }}">
+                                <span class="mailbox-folder-badge {% if not f.unseen or f.unseen <= 0 %}d-none{% endif %}" data-folder-badge="{% if f.type == 'inbox' and f.level == 0 %}inbox{% else %}{{ f.raw_name }}{% endif %}" id="folderBadge_{{ f.raw_name|slugify }}">
                                     {{ f.unseen }}
                                 </span>
                             </a>
@@ -116,7 +116,12 @@
                             <i class="bx bx-printer font-size-18"></i> Бланк печати
                         </a>
                     {% endif %}
-                    <a href="{% url 'mailbox_app:settings' %}" class="mailbox-settings-link">
+                    <a href="{% url 'mailbox_app:settings' %}"
+                       hx-get="{% url 'mailbox_app:settings' %}"
+                       hx-target="#mailboxMainContent"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
+                       class="mailbox-settings-link">
                         <i class="bx bx-cog font-size-18"></i> Настройки и подпись
                     </a>
                     {% if can_manage_mailboxes %}
@@ -131,7 +136,7 @@
 </menu>
 
 <!-- Мобильная шторка папок (Thunderbird Mobile Slide-out Drawer) для экранов <=768px -->
-<div class="offcanvas offcanvas-start mailbox-mobile-drawer d-md-none" tabindex="-1" id="mailboxMobileDrawer" aria-labelledby="mailboxMobileDrawerLabel">
+<div class="offcanvas offcanvas-start mailbox-mobile-drawer d-md-none" tabindex="-1" id="mailboxMobileDrawer" aria-labelledby="mailboxMobileDrawerLabel"{% if is_oob %} hx-swap-oob="true"{% endif %}>
     <div class="offcanvas-header bg-light border-bottom py-3 px-3">
         <div class="d-flex align-items-center gap-2">
             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; font-size: 18px;">
@@ -181,7 +186,7 @@
                         <i class="{{ f.icon }} font-size-18 {% if current_folder == f.raw_name %}text-white{% else %}text-primary{% endif %}"></i>
                         <span class="text-truncate">{{ f.display_name }}</span>
                     </span>
-                    <span class="badge {% if current_folder == f.raw_name %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill {% if not f.unseen or f.unseen <= 0 %}d-none{% endif %}" data-mobile-folder-badge="{{ f.root_type|default:f.raw_name|lower }}">
+                    <span class="badge {% if current_folder == f.raw_name %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill {% if not f.unseen or f.unseen <= 0 %}d-none{% endif %}" data-mobile-folder-badge="{% if f.type == 'inbox' and f.level == 0 %}inbox{% else %}{{ f.raw_name }}{% endif %}">
                         {{ f.unseen }}
                     </span>
                 </a>
@@ -241,7 +246,14 @@
                     <i class="bx bx-printer font-size-18"></i> Бланк печати
                 </a>
             {% endif %}
-            <a href="{% url 'mailbox_app:settings' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px;">
+            <a href="{% url 'mailbox_app:settings' %}"
+               hx-get="{% url 'mailbox_app:settings' %}"
+               hx-target="#mailboxMainContent"
+               hx-swap="outerHTML"
+               hx-push-url="true"
+               data-bs-dismiss="offcanvas"
+               class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+               style="border-radius: 8px;">
                 <i class="bx bx-cog font-size-18"></i> Настройки и подпись
             </a>
             {% if can_manage_mailboxes %}
