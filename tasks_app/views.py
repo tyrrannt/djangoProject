@@ -522,9 +522,11 @@ class TaskListView(LoginRequiredMixin, ListView):
             if task.repeat != 'none':
                 freq_map = {
                     'daily': 'daily',
+                    'workdays': 'weekly',
                     'weekly': 'weekly',
                     'monthly': 'monthly',
                     'yearly': 'yearly',
+                    'custom': 'daily',
                 }
                 freq = freq_map.get(task.repeat, 'daily')
                 rrule_obj = {
@@ -532,20 +534,28 @@ class TaskListView(LoginRequiredMixin, ListView):
                     'dtstart': task.start_date.isoformat(),
                     'interval': task.repeat_interval or 1,
                 }
-                if task.repeat_days and task.repeat_days not in ('', '[]', 'null', 'None'):
+                if task.repeat == 'workdays':
+                    rrule_obj['interval'] = 1
+                    rrule_obj['byweekday'] = ['mo', 'tu', 'we', 'th', 'fr']
+                elif task.repeat_days and task.repeat_days not in ('', '[]', 'null', 'None'):
                     try:
                         days_map = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
                         if task.repeat_days.startswith('['):
                             days_list = json.loads(task.repeat_days)
-                            byweekday = [days_map[int(d)] for d in days_list if d is not None]
+                            byweekday = [days_map[int(d)] for d in days_list if d is not None and 0 <= int(d) <= 6]
                         else:
                             byweekday = [
-                                days_map[int(day.strip())] for day in task.repeat_days.split(',') if day.strip()
+                                days_map[int(day.strip())]
+                                for day in task.repeat_days.split(',')
+                                if day.strip() and 0 <= int(day.strip()) <= 6
                             ]
                         if byweekday:
                             rrule_obj['byweekday'] = byweekday
                     except Exception:
                         pass
+                elif freq == 'weekly' and task.start_date:
+                    days_map = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
+                    rrule_obj['byweekday'] = [days_map[task.start_date.weekday()]]
 
                 if task.repeat_end_date:
                     rrule_obj['until'] = task.repeat_end_date.isoformat()

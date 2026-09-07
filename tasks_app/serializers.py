@@ -124,6 +124,7 @@ class TaskSerializer(serializers.ModelSerializer):
     is_overdue = serializers.BooleanField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    repeat_rule_display = serializers.CharField(source='get_repeat_rule_display', read_only=True)
 
     class Meta:
         model = Task
@@ -132,9 +133,11 @@ class TaskSerializer(serializers.ModelSerializer):
             'observers', 'observers_ids', 'shared_with', 'shared_with_ids', 'title', 'description',
             'status', 'status_display', 'completed', 'priority', 'priority_display',
             'category', 'category_id', 'start_date', 'end_date', 'accepted_at', 'submitted_review_at',
-            'completed_at', 'requires_eds', 'progress_percent', 'is_overdue', 'repeat', 'files', 'subtasks', 'created_at'
+            'completed_at', 'requires_eds', 'progress_percent', 'is_overdue',
+            'repeat', 'repeat_interval', 'repeat_days', 'repeat_end_date', 'repeat_rule_display',
+            'files', 'subtasks', 'created_at'
         ]
-        read_only_fields = ['user', 'created_at', 'updated_at', 'completed_at']
+        read_only_fields = ['user', 'created_at', 'updated_at', 'completed_at', 'repeat_rule_display']
 
     def create(self, validated_data):
         assignees = validated_data.pop('assignees', [])

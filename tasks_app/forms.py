@@ -19,19 +19,22 @@ class TaskForm(forms.ModelForm):
     """Основная форма создания и редактирования задачи / поручения.
 
     Предоставляет поля для настройки сроков, приоритета, категории,
-    назначения ответственного и соисполнителей, а также параметров повторения.
+    назначения ответственного и соисполнителей, а также параметров повторения (RRULE).
     """
 
+    WEEKDAY_CHOICES = [
+        ('0', 'Пн'),
+        ('1', 'Вт'),
+        ('2', 'Ср'),
+        ('3', 'Чт'),
+        ('4', 'Пт'),
+        ('5', 'Сб'),
+        ('6', 'Вс'),
+    ]
+
     repeat_days = forms.MultipleChoiceField(
-        choices=[
-            ('0', 'Понедельник'),
-            ('1', 'Вторник'),
-            ('2', 'Среда'),
-            ('3', 'Четверг'),
-            ('4', 'Пятница'),
-            ('5', 'Суббота'),
-            ('6', 'Воскресенье'),
-        ],
+        choices=WEEKDAY_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Дни недели для повторения"
     )
@@ -46,6 +49,7 @@ class TaskForm(forms.ModelForm):
             'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'repeat_end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'repeat_interval': forms.NumberInput(attrs={'min': 1, 'class': 'form-control form-control-modern'}),
             'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Введите подробное описание задачи...'}),
             'responsible': forms.Select(attrs={'class': 'form-control select2'}),
             'assignees': forms.SelectMultiple(attrs={'class': 'form-control select2', 'multiple': 'multiple'}),
@@ -76,14 +80,15 @@ class TaskForm(forms.ModelForm):
         self.fields['shared_with'].label = "Общий доступ (шаринг)"
 
         for field_name in self.fields:
-            make_custom_field(self.fields[field_name])
+            if field_name != 'repeat_days':
+                make_custom_field(self.fields[field_name])
 
         # Предзаполнение repeat_days из сохраненной строки/JSON
         if self.instance and self.instance.pk and self.instance.repeat_days:
             if self.instance.repeat_days not in ('', '[]', 'null', 'None'):
                 try:
                     if self.instance.repeat_days.startswith('['):
-                        self.initial['repeat_days'] = json.loads(self.instance.repeat_days)
+                        self.initial['repeat_days'] = [str(x) for x in json.loads(self.instance.repeat_days)]
                     else:
                         self.initial['repeat_days'] = [
                             d.strip() for d in self.instance.repeat_days.split(',') if d.strip()
@@ -100,12 +105,24 @@ class TaskForm(forms.ModelForm):
         cleaned_data = super().clean()
         start = cleaned_data.get('start_date')
         end = cleaned_data.get('end_date')
+        repeat = cleaned_data.get('repeat', 'none')
+        repeat_days = cleaned_data.get('repeat_days')
 
         if start and end and end < start:
             self.add_error('end_date', 'Срок завершения (дедлайн) не может быть раньше даты начала.')
 
-        repeat_days = cleaned_data.get('repeat_days')
-        if repeat_days in ('[]', [], ''):
+        # Автоматическая обработка дней недели
+        if repeat == 'workdays':
+            cleaned_data['repeat_days'] = ['0', '1', '2', '3', '4']
+        elif repeat == 'weekly':
+            if not repeat_days and start:
+                cleaned_data['repeat_days'] = [str(start.weekday())]
+        elif repeat in ('none', 'daily', 'monthly', 'yearly') and not repeat_days:
+            cleaned_data['repeat_days'] = None
+
+        if repeat == 'none':
+            cleaned_data['repeat_interval'] = 1
+            cleaned_data['repeat_end_date'] = None
             cleaned_data['repeat_days'] = None
 
         return cleaned_data

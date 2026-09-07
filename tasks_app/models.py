@@ -147,12 +147,13 @@ class Task(models.Model):
     ]
 
     REPEAT_CHOICES = [
-        ('none', 'Нет'),
+        ('none', 'Нет (разовая)'),
         ('daily', 'Ежедневно'),
-        ('weekly', 'Еженедельно'),
+        ('workdays', 'По рабочим дням (Пн-Пт)'),
+        ('weekly', 'Еженедельно / По дням недели'),
         ('monthly', 'Ежемесячно'),
         ('yearly', 'Ежегодно'),
-        ('custom', 'Пользовательский интервал'),
+        ('custom', 'Пользовательский интервал (дней)'),
     ]
 
     # Роли и участники
@@ -239,7 +240,7 @@ class Task(models.Model):
 
     # Повторяемость (RRULE)
     repeat = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=REPEAT_CHOICES,
         default='none',
         verbose_name='Повторяемость'
@@ -324,8 +325,96 @@ class Task(models.Model):
             return False
         return self.end_date < timezone.now()
 
+    @property
+    def get_repeat_rule_display(self) -> str:
+        """Возвращает подробное человекопонятное описание правила повторения задачи на русском языке.
+
+        Формирует читаемое представление интервала, выбранных дней недели и даты окончания.
+
+        Returns:
+            str: Текстовое описание периодичности (например, «Каждые 2 нед. (Вт, Чт) до 31.12.2026»).
+        """
+        if self.repeat == 'none':
+            return 'Без повторения'
+
+        days_short = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+        interval = self.repeat_interval or 1
+
+        selected_days_str = ''
+        if self.repeat_days and self.repeat_days not in ('', '[]', 'null', 'None'):
+            try:
+                if self.repeat_days.startswith('['):
+                    days_list = json.loads(self.repeat_days)
+                    selected_indices = [int(d) for d in days_list if d is not None and 0 <= int(d) <= 6]
+                else:
+                    selected_indices = [
+                        int(d.strip()) for d in self.repeat_days.split(',')
+                        if d.strip() and 0 <= int(d.strip()) <= 6
+                    ]
+                selected_indices = sorted(list(set(selected_indices)))
+                if selected_indices == [0, 1, 2, 3, 4]:
+                    selected_days_str = 'рабочие дни'
+                elif selected_indices == [5, 6]:
+                    selected_days_str = 'выходные'
+                elif len(selected_indices) == 7:
+                    selected_days_str = 'ежедневно'
+                elif selected_indices:
+                    selected_days_str = ', '.join(days_short[i] for i in selected_indices)
+            except Exception:
+                selected_days_str = ''
+
+        rule_text = ''
+        if self.repeat == 'daily':
+            rule_text = 'Ежедневно' if interval == 1 else f'Каждые {interval} дн.'
+        elif self.repeat == 'workdays':
+            rule_text = 'По рабочим дням (Пн–Пт)'
+        elif self.repeat == 'weekly':
+            if interval == 1:
+                prefix = 'Еженедельно'
+            elif interval in (2, 3, 4):
+                prefix = f'Каждые {interval} недели'
+            else:
+                prefix = f'Каждые {interval} недель'
+
+            if selected_days_str and selected_days_str not in ('ежедневно',):
+                rule_text = f'{prefix} ({selected_days_str})'
+            else:
+                rule_text = prefix
+        elif self.repeat == 'monthly':
+            if interval == 1:
+                rule_text = 'Ежемесячно'
+            elif interval == 3:
+                rule_text = 'Ежеквартально (каждые 3 мес.)'
+            elif interval == 6:
+                rule_text = 'Раз в полгода (каждые 6 мес.)'
+            elif interval in (2, 4):
+                rule_text = f'Каждые {interval} месяца'
+            else:
+                rule_text = f'Каждые {interval} месяцев'
+        elif self.repeat == 'yearly':
+            if interval == 1:
+                rule_text = 'Ежегодно'
+            elif interval in (2, 3, 4):
+                rule_text = f'Каждые {interval} года'
+            else:
+                rule_text = f'Каждые {interval} лет'
+        elif self.repeat == 'custom':
+            rule_text = f'Каждые {interval} дн.'
+            if selected_days_str:
+                rule_text += f' ({selected_days_str})'
+        else:
+            rule_text = self.get_repeat_display()
+
+        if self.repeat_end_date:
+            rule_text += f" (до {self.repeat_end_date.strftime('%d.%m.%Y')})"
+
+        return rule_text
+
     def get_rrule(self) -> Optional[rrule]:
-        """Возвращает объект dateutil.rrule для повторяющейся задачи.
+        """Возвращает сконфигурированный объект dateutil.rrule для повторяющейся задачи.
+
+        Поддерживает ежедневные, еженедельные (с интервалом и днями недели),
+        рабочие дни (Пн-Пт), ежемесячные и ежегодные интервалы повторения.
 
         Returns:
             Optional[rrule]: Сконфигурированный объект правила повторения или None.
@@ -335,30 +424,43 @@ class Task(models.Model):
 
         freq_map = {
             'daily': DAILY,
+            'workdays': WEEKLY,
             'weekly': WEEKLY,
             'monthly': MONTHLY,
             'yearly': YEARLY,
+            'custom': DAILY,
         }
         freq = freq_map.get(self.repeat, WEEKLY)
+        interval = self.repeat_interval or 1
 
         byweekday = None
-        if self.repeat_days and self.repeat_days not in ('', '[]', 'null', 'None'):
+        if self.repeat == 'workdays':
+            byweekday = [0, 1, 2, 3, 4]  # Пн-Пт
+            interval = 1
+        elif self.repeat_days and self.repeat_days not in ('', '[]', 'null', 'None'):
             try:
                 if self.repeat_days.startswith('['):
                     days_list = json.loads(self.repeat_days)
-                    byweekday = [int(day) for day in days_list if day is not None]
+                    byweekday = [int(day) for day in days_list if day is not None and 0 <= int(day) <= 6]
                 else:
-                    byweekday = [int(day.strip()) for day in self.repeat_days.split(',') if day.strip()]
-            except (ValueError, json.JSONDecodeError, TypeError):
+                    byweekday = [
+                        int(day.strip())
+                        for day in self.repeat_days.split(',')
+                        if day.strip() and 0 <= int(day.strip()) <= 6
+                    ]
+            except (ValueError, json.JSONDecodeError, TypeError, IndexError):
                 byweekday = None
+
+        if freq == WEEKLY and self.repeat == 'weekly' and not byweekday and self.start_date:
+            byweekday = [self.start_date.weekday()]
 
         try:
             return rrule(
                 freq=freq,
-                interval=self.repeat_interval or 1,
+                interval=interval,
                 dtstart=self.start_date,
                 until=self.repeat_end_date if self.repeat_end_date else None,
-                byweekday=byweekday
+                byweekday=byweekday if byweekday else None
             )
         except (ValueError, TypeError) as exc:
             logger.error(f"Error creating rrule for task {self.id}: {exc}")
@@ -393,10 +495,13 @@ class Task(models.Model):
         return next_start, next_end
 
     def create_next_task(self) -> Optional['Task']:
-        """Создает в БД следующий экземпляр задачи на основе RRULE.
+        """Создает в БД следующий экземпляр задачи на основе RRULE с сохранением чек-листа подзадач.
+
+        Клонирует основные реквизиты, ответственных, наблюдателей, а также
+        пункты чек-листа (SubTask) в начальном незавершенном статусе.
 
         Returns:
-            Optional[Task]: Созданный объект задачи или None.
+            Optional[Task]: Созданный объект задачи или None в случае окончания цикла повторений.
         """
         next_start, next_end = self.get_next_occurrence()
         if not next_start:
@@ -422,6 +527,21 @@ class Task(models.Model):
         next_task.assignees.set(self.assignees.all())
         next_task.observers.set(self.observers.all())
         next_task.shared_with.set(self.shared_with.all())
+
+        # Клонируем пункты чек-листа в сброшенном состоянии
+        subtasks_to_create = []
+        for subtask in self.subtasks.all().order_by('order', 'id'):
+            subtasks_to_create.append(
+                SubTask(
+                    task=next_task,
+                    title=subtask.title,
+                    is_completed=False,
+                    assigned_to=subtask.assigned_to,
+                    order=subtask.order
+                )
+            )
+        if subtasks_to_create:
+            SubTask.objects.bulk_create(subtasks_to_create)
 
         return next_task
 

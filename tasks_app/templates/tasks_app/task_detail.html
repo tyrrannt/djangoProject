@@ -280,8 +280,8 @@
                                         <div class="attr-label">Периодичность повторения</div>
                                         <div>
                                             {% if task.repeat != 'none' %}
-                                                <span class="badge bg-info-subtle text-info-emphasis border">
-                                                    <i class="bx bx-repeat me-1"></i>{{ task.get_repeat_display }} (каждые {{ task.repeat_interval }})
+                                                <span class="badge bg-info-subtle text-info-emphasis border fs-6">
+                                                    <i class="bx bx-repeat me-1 text-primary"></i>{{ task.get_repeat_rule_display }}
                                                 </span>
                                             {% else %}
                                                 <span class="text-muted">Не повторяется</span>

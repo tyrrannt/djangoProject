@@ -55,6 +55,12 @@
                 </span>
             {% endif %}
 
+            {% if task.repeat != 'none' %}
+                <span class="text-primary" title="Повторение: {{ task.get_repeat_rule_display }}">
+                    <i class="bx bx-repeat"></i>
+                </span>
+            {% endif %}
+
             {% if task.files.exists %}
                 <span class="text-muted" title="Вложений: {{ task.files.count }}">
                     <i class="bx bx-paperclip"></i>{{ task.files.count }}

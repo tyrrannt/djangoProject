@@ -213,7 +213,7 @@
                         <!-- Section 4: Recurrence -->
                         <div class="mb-4">
                             <div class="form-section-title">
-                                <i class="bx bx-sync text-primary me-2"></i>4. Настройка повторения (RRULE)
+                                <i class="bx bx-sync text-primary me-2"></i>4. Настройка периодичности и повторения (RRULE)
                             </div>
                             <div class="row g-3">
                                 <div class="col-12 col-md-4">
@@ -221,18 +221,76 @@
                                         {{ form.repeat.label }}
                                     </label>
                                     {{ form.repeat|add_class:"form-control form-control-modern" }}
+                                    {% if form.repeat.errors %}
+                                        <div class="text-danger small mt-1">{{ form.repeat.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-md-4" id="recurrenceIntervalBox">
                                     <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_interval.id_for_label }}">
-                                        {{ form.repeat_interval.label }}
+                                        {{ form.repeat_interval.label }} <span id="repeatIntervalUnitLabel" class="text-muted fw-normal"></span>
                                     </label>
-                                    {{ form.repeat_interval|add_class:"form-control form-control-modern" }}
+                                    <div class="input-group">
+                                        <button type="button" class="btn btn-outline-secondary border" id="btnIntervalMinus"><i class="bx bx-minus"></i></button>
+                                        {{ form.repeat_interval }}
+                                        <button type="button" class="btn btn-outline-secondary border" id="btnIntervalPlus"><i class="bx bx-plus"></i></button>
+                                    </div>
+                                    {% if form.repeat_interval.errors %}
+                                        <div class="text-danger small mt-1">{{ form.repeat_interval.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-md-4" id="recurrenceEndDateBox">
                                     <label class="form-label font-weight-bold text-dark" for="{{ form.repeat_end_date.id_for_label }}">
                                         {{ form.repeat_end_date.label }}
                                     </label>
                                     {{ form.repeat_end_date|add_class:"form-control form-control-modern" }}
+                                    <div class="form-text small text-muted">Оставьте пустым для бессрочного повторения</div>
+                                    {% if form.repeat_end_date.errors %}
+                                        <div class="text-danger small mt-1">{{ form.repeat_end_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Weekday Selection Box -->
+                            <div class="mt-3 p-3 bg-light rounded-3 border" id="recurrenceWeekdaysBox" style="display: none;">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+                                    <label class="form-label font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-calendar-check text-primary me-1"></i>Дни недели повторения:
+                                    </label>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2" id="presetWorkdays">Пн–Пт (Рабочие)</button>
+                                        <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2" id="presetMonWedFri">Пн, Ср, Пт</button>
+                                        <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2" id="presetTueThu">Вт, Чт</button>
+                                        <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2" id="presetWeekends">Сб, Вс (Выходные)</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" id="presetAllDays">Все дни</button>
+                                        <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2" id="presetClearDays">Сбросить</button>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2 pt-1" id="weekdayButtonsContainer">
+                                    {% for choice_val, choice_label in form.fields.repeat_days.choices %}
+                                        <div class="weekday-toggle-item">
+                                            <input type="checkbox"
+                                                   name="repeat_days"
+                                                   value="{{ choice_val }}"
+                                                   id="weekday_opt_{{ choice_val }}"
+                                                   class="btn-check weekday-checkbox"
+                                                   {% if form.initial.repeat_days and choice_val in form.initial.repeat_days %}checked{% elif form.repeat_days.value and choice_val in form.repeat_days.value %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary weekday-label px-3 py-2 fw-bold" for="weekday_opt_{{ choice_val }}">
+                                                {{ choice_label }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.repeat_days.errors %}
+                                    <div class="text-danger small mt-2">{{ form.repeat_days.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Live Preview Alert -->
+                            <div class="alert alert-info py-2 px-3 mt-3 d-flex align-items-center mb-0" id="recurrencePreviewBox" style="display: none;">
+                                <i class="bx bx-info-circle fs-4 me-2 text-info"></i>
+                                <div class="small">
+                                    <strong>Расписание:</strong> <span id="recurrencePreviewText">Без повторения</span>
                                 </div>
                             </div>
                         </div>
@@ -265,4 +323,143 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const repeatSelect = document.getElementById('id_repeat');
+            const intervalInput = document.getElementById('id_repeat_interval');
+            const endDateInput = document.getElementById('id_repeat_end_date');
+            const intervalBox = document.getElementById('recurrenceIntervalBox');
+            const endDateBox = document.getElementById('recurrenceEndDateBox');
+            const weekdaysBox = document.getElementById('recurrenceWeekdaysBox');
+            const previewBox = document.getElementById('recurrencePreviewBox');
+            const previewText = document.getElementById('recurrencePreviewText');
+            const intervalUnitLabel = document.getElementById('repeatIntervalUnitLabel');
+            const startDateInput = document.getElementById('id_start_date');
+
+            const minusBtn = document.getElementById('btnIntervalMinus');
+            const plusBtn = document.getElementById('btnIntervalPlus');
+
+            if (minusBtn && intervalInput) {
+                minusBtn.addEventListener('click', function() {
+                    let val = parseInt(intervalInput.value) || 1;
+                    if (val > 1) {
+                        intervalInput.value = val - 1;
+                        updateRecurrenceUI();
+                    }
+                });
+            }
+            if (plusBtn && intervalInput) {
+                plusBtn.addEventListener('click', function() {
+                    let val = parseInt(intervalInput.value) || 1;
+                    intervalInput.value = val + 1;
+                    updateRecurrenceUI();
+                });
+            }
+
+            const weekdayCheckboxes = document.querySelectorAll('.weekday-checkbox');
+
+            function setWeekdays(selectedVals) {
+                weekdayCheckboxes.forEach(cb => {
+                    cb.checked = selectedVals.includes(cb.value);
+                });
+                updateRecurrenceUI();
+            }
+
+            document.getElementById('presetWorkdays')?.addEventListener('click', () => setWeekdays(['0', '1', '2', '3', '4']));
+            document.getElementById('presetMonWedFri')?.addEventListener('click', () => setWeekdays(['0', '2', '4']));
+            document.getElementById('presetTueThu')?.addEventListener('click', () => setWeekdays(['1', '3']));
+            document.getElementById('presetWeekends')?.addEventListener('click', () => setWeekdays(['5', '6']));
+            document.getElementById('presetAllDays')?.addEventListener('click', () => setWeekdays(['0', '1', '2', '3', '4', '5', '6']));
+            document.getElementById('presetClearDays')?.addEventListener('click', () => setWeekdays([]));
+
+            weekdayCheckboxes.forEach(cb => {
+                cb.addEventListener('change', updateRecurrenceUI);
+            });
+
+            if (repeatSelect) repeatSelect.addEventListener('change', updateRecurrenceUI);
+            if (intervalInput) intervalInput.addEventListener('input', updateRecurrenceUI);
+            if (endDateInput) endDateInput.addEventListener('change', updateRecurrenceUI);
+            if (startDateInput) startDateInput.addEventListener('change', updateRecurrenceUI);
+
+            function updateRecurrenceUI() {
+                if (!repeatSelect) return;
+                const repeat = repeatSelect.value;
+                const interval = parseInt(intervalInput?.value) || 1;
+                const endDate = endDateInput?.value;
+
+                if (repeat === 'none') {
+                    if (intervalBox) intervalBox.style.display = 'none';
+                    if (endDateBox) endDateBox.style.display = 'none';
+                    if (weekdaysBox) weekdaysBox.style.display = 'none';
+                    if (previewBox) previewBox.style.display = 'none';
+                    return;
+                }
+
+                if (intervalBox) intervalBox.style.display = 'block';
+                if (endDateBox) endDateBox.style.display = 'block';
+                if (previewBox) previewBox.style.display = 'flex';
+
+                if (repeat === 'daily') {
+                    if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N дн.)';
+                    if (weekdaysBox) weekdaysBox.style.display = 'none';
+                } else if (repeat === 'workdays') {
+                    if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждый рабочий день)';
+                    if (weekdaysBox) weekdaysBox.style.display = 'none';
+                } else if (repeat === 'weekly') {
+                    if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N нед.)';
+                    if (weekdaysBox) weekdaysBox.style.display = 'block';
+                } else if (repeat === 'monthly') {
+                    if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N мес.)';
+                    if (weekdaysBox) weekdaysBox.style.display = 'none';
+                } else if (repeat === 'yearly') {
+                    if (intervalUnitLabel) intervalUnitLabel.textContent = '(каждые N лет)';
+                    if (weekdaysBox) weekdaysBox.style.display = 'none';
+                } else if (repeat === 'custom') {
+                    if (intervalUnitLabel) intervalUnitLabel.textContent = '(интервал в днях)';
+                    if (weekdaysBox) weekdaysBox.style.display = 'block';
+                }
+
+                const daysMap = { '0': 'Пн', '1': 'Вт', '2': 'Ср', '3': 'Чт', '4': 'Пт', '5': 'Сб', '6': 'Вс' };
+                const selectedDays = Array.from(weekdayCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+                let daysStr = selectedDays.map(v => daysMap[v]).join(', ');
+
+                let text = '';
+                if (repeat === 'daily') {
+                    text = interval === 1 ? 'Поручение создается каждый день' : `Поручение создается каждые ${interval} дн.`;
+                } else if (repeat === 'workdays') {
+                    text = 'Поручение создается каждый рабочий день (с понедельника по пятницу)';
+                } else if (repeat === 'weekly') {
+                    const prefix = interval === 1 ? 'каждую неделю' : `каждые ${interval} нед.`;
+                    if (daysStr) {
+                        text = `Поручение создается ${prefix} в дни: ${daysStr}`;
+                    } else {
+                        text = `Поручение создается ${prefix}`;
+                    }
+                } else if (repeat === 'monthly') {
+                    text = interval === 1 ? 'Поручение создается ежемесячно' : `Поручение создается каждые ${interval} мес.`;
+                } else if (repeat === 'yearly') {
+                    text = interval === 1 ? 'Поручение создается каждый год' : `Поручение создается каждые ${interval} лет`;
+                } else if (repeat === 'custom') {
+                    text = `Поручение создается каждые ${interval} дн.` + (daysStr ? ` (дни: ${daysStr})` : '');
+                }
+
+                if (endDate) {
+                    try {
+                        const d = new Date(endDate);
+                        if (!isNaN(d.getTime())) {
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const year = d.getFullYear();
+                            text += ` (до ${day}.${month}.${year})`;
+                        }
+                    } catch(e){}
+                }
+
+                if (previewText) previewText.textContent = text;
+            }
+
+            updateRecurrenceUI();
+        });
+    </script>
 {% endblock %}
