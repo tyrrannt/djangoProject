@@ -1,9 +1,12 @@
 # views.py
 import calendar
 import io
+import logging
 import os
 import pathlib
 from time import strptime
+
+logger = logging.getLogger(__name__)
 
 import openpyxl
 from django.conf import settings
@@ -5314,40 +5317,55 @@ class GetTeamMembersView(View):
         date_str = request.POST.get("date")
         place_id = request.POST.get("place_id")
 
+        logger.info("[GetTeamMembersView] POST received date_str=%r, place_id=%r", date_str, place_id)
+
         if not date_str or not place_id:
             return JsonResponse([], safe=False)
 
         target_date = None
-        for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
+        clean_date_str = date_str.replace("г.", "").replace("г", "").strip() if date_str else ""
+        for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%Y.%m.%d", "%d-%m-%Y"):
             try:
-                target_date = datetime.datetime.strptime(date_str.strip(), fmt).date()
+                target_date = datetime.strptime(clean_date_str, fmt).date()
                 break
             except (ValueError, TypeError, AttributeError):
                 continue
 
-        if not target_date:
-            return JsonResponse([], safe=False)
+        # Формируем условие поиска по МПД (поддерживаем ID и имя)
+        place_filter = Q(place_id=place_id)
+        if str(place_id).isdigit():
+            place_filter |= Q(place__id=int(place_id))
+        else:
+            place_filter |= Q(place__name__icontains=place_id)
 
-        # 1. Сначала ищем приказ, действующий на указанную дату смены
-        teams = CreatingTeam.objects.filter(
-            Q(place_id=place_id) &
-            Q(cancellation=False) &
-            (Q(date_start__lte=target_date) | Q(date_start__isnull=True)) &
-            (Q(date_end__gte=target_date) | Q(date_end__isnull=True))
-        ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")
+        teams = CreatingTeam.objects.none()
+
+        if target_date:
+            # 1. Поиск приказа, действующего строго на указанную дату смены
+            teams = CreatingTeam.objects.filter(
+                place_filter &
+                Q(cancellation=False) &
+                (Q(date_start__lte=target_date) | Q(date_start__isnull=True)) &
+                (Q(date_end__gte=target_date) | Q(date_end__isnull=True))
+            ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")
 
         # 2. Если на точную дату приказ не найден, берем последний актуальный приказ по данному МПД
         if not teams.exists():
             teams = CreatingTeam.objects.filter(
-                place_id=place_id,
-                cancellation=False,
+                place_filter & Q(cancellation=False)
+            ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")[:1]
+
+        # 3. Fallback: если приказ все еще не найден, проверяем без фильтра cancellation
+        if not teams.exists():
+            teams = CreatingTeam.objects.filter(
+                place_filter
             ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")[:1]
 
         members_dict = {}
         for t in teams:
-            if t.senior_brigade and t.senior_brigade.is_active:
+            if t.senior_brigade:
                 members_dict[t.senior_brigade.pk] = t.senior_brigade
-            for m in t.team_brigade.filter(is_active=True):
+            for m in t.team_brigade.all():
                 members_dict[m.pk] = m
 
         data = []
@@ -5359,6 +5377,8 @@ class GetTeamMembersView(View):
                 "person_name": str(m),
                 "person_fio": format_name_initials(person_title) if person_title else str(m),
             })
+
+        logger.info("[GetTeamMembersView] Returning %d members for place_id=%r (teams_found=%d)", len(data), place_id, teams.count() if hasattr(teams, 'count') else len(teams))
         return JsonResponse(data, safe=False)
 
 

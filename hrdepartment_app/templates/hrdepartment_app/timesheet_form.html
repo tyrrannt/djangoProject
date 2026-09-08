@@ -355,6 +355,7 @@
                 $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Загрузка...');
 
                 var formattedDate = convertDateFormat(date);
+                console.log("[fill-from-team] Sending date:", date, "->", formattedDate, "place_id:", place_id);
 
                 $.ajax({
                     url: "{% url 'hrdepartment_app:get_team_members' %}",
@@ -368,6 +369,7 @@
                     success: function (raw) {
                         $btn.prop('disabled', false).html('<i class="bx bx-group me-1"></i> Заполнить состав бригады');
                         var data = safeParseArray(raw);
+                        console.log("[fill-from-team] Received members:", data);
 
                         if (data.length === 0) {
                             showAlert("За указанную дату на данном МПД действующий приказ о создании бригады не найден.", "warning");
