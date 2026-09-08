@@ -73,20 +73,20 @@
             {% include 'tasks_app/partials/_task_header_nav.html' with active_view='discipline' header_title='Отчет по исполнительской дисциплине' header_subtitle='Анализ своевременности закрытия поручений, контроль просрочек и рейтинг подразделений компании' header_icon='bx bx-bar-chart-alt-2' %}
 
             <!-- Filter Card -->
-            <div class="card card-modern shadow-sm border-0 mb-4 bg-light">
-                <div class="card-body p-3">
-                    <form method="get" class="row g-3 align-items-end" id="disciplineFilterForm">
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <label for="filter_date_from" class="form-label small fw-bold text-dark mb-1">Период с:</label>
-                            <input type="date" name="date_from" id="filter_date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}">
+            <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3 bg-light">
+                <div class="card-body p-2 p-md-3">
+                    <form method="get" class="row g-1.5 g-md-2 align-items-end" id="disciplineFilterForm">
+                        <div class="col-6 col-md-3">
+                            <label for="filter_date_from" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Период с:</label>
+                            <input type="date" name="date_from" id="filter_date_from" class="form-control form-control-modern" value="{{ date_from|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="filter_date_to" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Период по:</label>
+                            <input type="date" name="date_to" id="filter_date_to" class="form-control form-control-modern" value="{{ date_to|date:'Y-m-d' }}">
                         </div>
                         <div class="col-12 col-sm-6 col-md-3">
-                            <label for="filter_date_to" class="form-label small fw-bold text-dark mb-1">Период по:</label>
-                            <input type="date" name="date_to" id="filter_date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}">
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <label for="filter_division" class="form-label small fw-bold text-dark mb-1">Подразделение:</label>
-                            <select name="division" id="filter_division" class="form-control">
+                            <label for="filter_division" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Подразделение:</label>
+                            <select name="division" id="filter_division" class="form-control form-control-modern">
                                 <option value="">-- Все подразделения --</option>
                                 {% for div in divisions %}
                                     <option value="{{ div.id }}" {% if selected_division_id == div.id %}selected{% endif %}>{{ div.name }}</option>
@@ -94,26 +94,26 @@
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-md-3">
-                            <label for="filter_employee" class="form-label small fw-bold text-dark mb-1">Сотрудник:</label>
-                            <select name="employee" id="filter_employee" class="form-control">
+                            <label for="filter_employee" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Сотрудник:</label>
+                            <select name="employee" id="filter_employee" class="form-control form-control-modern">
                                 <option value="">-- Все сотрудники --</option>
                                 {% for u in all_active_users %}
                                     <option value="{{ u.id }}" {% if selected_employee_id == u.id %}selected{% endif %}>{{ u.title|default:u.get_full_name|default:u.username }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2">
-                            <div class="d-flex gap-2">
+                        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-1.5 pt-1">
+                            <div class="d-flex gap-1">
                                 <button type="submit" class="btn btn-primary btn-touch">
-                                    <i class="bx bx-filter-alt me-1"></i> Применить фильтр
+                                    <i class="bx bx-filter-alt me-1"></i> Применить
                                 </button>
-                                <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch">
-                                    <i class="bx bx-reset me-1"></i> Сбросить
+                                <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch px-2" title="Сбросить">
+                                    <i class="bx bx-reset"></i>
                                 </a>
                             </div>
                             <div>
                                 <a href="{% url 'tasks_app:task-discipline-export-excel' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&division={{ selected_division_id|default:'' }}&employee={{ selected_employee_id|default:'' }}" class="btn btn-success btn-touch font-weight-bold">
-                                    <i class="bx bx-file me-1"></i> Экспорт в Excel (.xlsx)
+                                    <i class="bx bx-file me-1"></i> Экспорт в Excel
                                 </a>
                             </div>
                         </div>
@@ -122,119 +122,119 @@
             </div>
 
             <!-- KPI Cards Grid -->
-            <div class="row g-3 mb-4">
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">Всего задач за период</span>
-                            <div class="kpi-icon-box bg-primary-subtle text-primary">
+            <div class="row g-1.5 g-md-2 mb-2 mb-md-3">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Всего за период</span>
+                            <div class="kpi-icon-box bg-primary-subtle text-primary" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-task"></i>
                             </div>
                         </div>
-                        <div class="kpi-num text-dark">{{ total_count }}</div>
-                        <div class="text-muted small mt-1">Все поставленные поручения</div>
+                        <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ total_count }}</div>
+                        <div class="text-muted small mt-0.5 d-none d-sm-block">Все поставленные поручения</div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">Выполнено в срок</span>
-                            <div class="kpi-icon-box bg-success-subtle text-success">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">В срок</span>
+                            <div class="kpi-icon-box bg-success-subtle text-success" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-check-double"></i>
                             </div>
                         </div>
-                        <div class="kpi-num text-success">{{ completed_on_time_count }}</div>
-                        <div class="text-muted small mt-1">Без нарушения дедлайна</div>
+                        <div class="kpi-num text-success" style="font-size: 1.35rem;">{{ completed_on_time_count }}</div>
+                        <div class="text-muted small mt-0.5 d-none d-sm-block">Без нарушения дедлайна</div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">С нарушением срока</span>
-                            <div class="kpi-icon-box bg-warning-subtle text-warning">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">С опозданием</span>
+                            <div class="kpi-icon-box bg-warning-subtle text-warning" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-alarm-exclamation"></i>
                             </div>
                         </div>
-                        <div class="kpi-num text-warning">{{ completed_overdue_count }}</div>
-                        <div class="text-muted small mt-1">Закрыты с опозданием</div>
+                        <div class="kpi-num text-warning" style="font-size: 1.35rem;">{{ completed_overdue_count }}</div>
+                        <div class="text-muted small mt-0.5 d-none d-sm-block">Закрыты с опозданием</div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">Текущие просрочки</span>
-                            <div class="kpi-icon-box bg-danger-subtle text-danger">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Просрочено</span>
+                            <div class="kpi-icon-box bg-danger-subtle text-danger" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-error-alt"></i>
                             </div>
                         </div>
-                        <div class="kpi-num text-danger">{{ active_overdue_count }}</div>
-                        <div class="text-muted small mt-1">В работе с истекшим сроком</div>
+                        <div class="kpi-num text-danger" style="font-size: 1.35rem;">{{ active_overdue_count }}</div>
+                        <div class="text-muted small mt-0.5 d-none d-sm-block">В работе с истекшим сроком</div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">Индекс дисциплины</span>
-                            <div class="kpi-icon-box bg-info-subtle text-info">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Индекс дисциплины</span>
+                            <div class="kpi-icon-box bg-info-subtle text-info" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-target-lock"></i>
                             </div>
                         </div>
-                        <div class="kpi-num {% if discipline_rate >= 90 %}text-success{% elif discipline_rate >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                        <div class="kpi-num {% if discipline_rate >= 90 %}text-success{% elif discipline_rate >= 70 %}text-warning{% else %}text-danger{% endif %}" style="font-size: 1.35rem;">
                             {{ discipline_rate }}%
                         </div>
-                        <div class="progress progress-slim mt-2">
+                        <div class="progress progress-slim mt-1">
                             <div class="progress-bar {% if discipline_rate >= 90 %}bg-success{% elif discipline_rate >= 70 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ discipline_rate }}%"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">В процессе работы</span>
-                            <div class="kpi-icon-box bg-secondary-subtle text-secondary">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">В процессе</span>
+                            <div class="kpi-icon-box bg-secondary-subtle text-secondary" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-time-five"></i>
                             </div>
                         </div>
-                        <div class="kpi-num text-dark">{{ in_progress_count }}</div>
-                        <div class="text-muted small mt-1">Исполняются по графику</div>
+                        <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ in_progress_count }}</div>
+                        <div class="text-muted small mt-0.5 d-none d-sm-block">Исполняются по графику</div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">Подписано с ЭЦП</span>
-                            <div class="kpi-icon-box bg-primary-subtle text-primary">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">С ЭЦП</span>
+                            <div class="kpi-icon-box bg-primary-subtle text-primary" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-certification"></i>
                             </div>
                         </div>
-                        <div class="kpi-num text-primary">{{ eds_signed_count }}</div>
-                        <div class="text-muted small mt-1">Квалифицированная подпись</div>
+                        <div class="kpi-num text-primary" style="font-size: 1.35rem;">{{ eds_signed_count }}</div>
+                        <div class="text-muted small mt-0.5 d-none d-sm-block">Квалифицированная подпись</div>
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="text-muted small fw-bold text-uppercase">Среднее время закрытия</span>
-                            <div class="kpi-icon-box bg-light text-dark">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Ср. время закрытия</span>
+                            <div class="kpi-icon-box bg-light text-dark" style="width: 32px; height: 32px; font-size: 1.1rem;">
                                 <i class="bx bx-timer"></i>
                             </div>
                         </div>
-                        <div class="kpi-num text-dark">{{ avg_completion_days }} дн.</div>
-                        <div class="text-muted small mt-1">Длительность исполнения</div>
+                        <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ avg_completion_days }} дн.</div>
+                        <div class="text-muted small mt-0.5 d-none d-sm-block">Длительность исполнения</div>
                     </div>
                 </div>
             </div>
 
             <!-- Tabbed Analytical Tables -->
-            <div class="card card-modern shadow-sm border-0 mb-4">
-                <div class="card-header bg-light border-0 py-3">
+            <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                <div class="card-header bg-light border-0 py-2 px-3">
                     <ul class="nav nav-tabs card-header-tabs" id="reportTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active font-weight-bold" id="divisions-tab" data-bs-toggle="tab" data-bs-target="#divisions" type="button" role="tab">
@@ -256,7 +256,7 @@
                 <div class="card-body p-0">
                     <div class="tab-content" id="reportTabsContent">
                         <!-- Tab 1: Divisions Breakdown -->
-                        <div class="tab-pane fade show active p-3" id="divisions" role="tabpanel">
+                        <div class="tab-pane fade show active p-2 p-md-3" id="divisions" role="tabpanel">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover table-custom align-middle mb-0">
                                     <thead>

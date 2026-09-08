@@ -112,21 +112,21 @@
             {% include 'tasks_app/partials/_task_header_nav.html' with active_view='kanban' header_title='Канбан-доска задач и поручений' header_subtitle='Визуализация потока работ по стадиям Workflow с поддержкой Drag & Drop' header_icon='bx bx-columns' %}
 
             <!-- Filters Bar -->
-            <div class="card card-modern shadow-sm border-0 mb-4">
-                <div class="card-body p-3">
+            <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                <div class="card-body p-2 p-md-3">
                     <form method="get" class="m-0">
-                        <div class="row g-2 align-items-center">
+                        <div class="row g-1.5 g-md-2 align-items-center">
                             <div class="col-12 col-md-3">
                                 <select name="division" class="form-control form-control-modern">
                                     <option value="">Все подразделения</option>
                                     {% for div in divisions %}
                                         <option value="{{ div.id }}" {% if selected_division == div.id|stringformat:"s" %}selected{% endif %}>
-                                            {{ div.name }}
+                                             {{ div.name }}
                                         </option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-12 col-md-2">
+                            <div class="col-6 col-md-2">
                                 <select name="category" class="form-control form-control-modern">
                                     <option value="">Все категории</option>
                                     {% for category in categories %}
@@ -136,7 +136,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-12 col-md-2">
+                            <div class="col-6 col-md-2">
                                 <select name="priority" class="form-control form-control-modern">
                                     <option value="">Все приоритеты</option>
                                     {% for code, name in priorities %}
@@ -146,18 +146,18 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-12 col-md-2">
+                            <div class="col-6 col-md-2">
                                 <select name="tab" class="form-control form-control-modern">
                                     <option value="all" {% if request.GET.tab == 'all' or not request.GET.tab %}selected{% endif %}>Все поручения</option>
                                     <option value="assigned" {% if request.GET.tab == 'assigned' %}selected{% endif %}>Мне поручено</option>
                                     <option value="my" {% if request.GET.tab == 'my' %}selected{% endif %}>Я автор</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-3 d-flex gap-2">
+                            <div class="col-6 col-md-3 d-flex gap-1">
                                 <button type="submit" class="btn btn-primary btn-touch w-100">
                                     <i class="bx bx-filter me-1"></i> Применить
                                 </button>
-                                <a href="{% url 'tasks_app:task-kanban' %}" class="btn btn-outline-secondary btn-touch" title="Сбросить">
+                                <a href="{% url 'tasks_app:task-kanban' %}" class="btn btn-outline-secondary btn-touch px-2" title="Сбросить">
                                     <i class="bx bx-reset"></i>
                                 </a>
                             </div>

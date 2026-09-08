@@ -2,12 +2,12 @@
 
 <div class="task-header-wrapper">
     <div class="task-header-info">
-        <h3 class="font-weight-bold text-dark mb-1 d-flex align-items-center flex-wrap">
-            <i class="{{ header_icon|default:'bx bx-task' }} text-primary me-2"></i>
+        <h4 class="task-page-title mb-0 font-weight-bold text-dark d-flex align-items-center">
+            <i class="{{ header_icon|default:'bx bx-task' }} text-primary me-2 flex-shrink-0"></i>
             <span>{{ header_title }}</span>
-        </h3>
+        </h4>
         {% if header_subtitle %}
-            <p class="text-muted small mb-0">{{ header_subtitle }}</p>
+            <p class="text-muted small mb-0 d-none d-md-block">{{ header_subtitle }}</p>
         {% endif %}
     </div>
     <div class="task-view-switcher-group">

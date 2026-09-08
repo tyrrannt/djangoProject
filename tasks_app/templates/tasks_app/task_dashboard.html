@@ -54,11 +54,11 @@
             {% include 'tasks_app/partials/_task_header_nav.html' with active_view='dashboard' header_title='Дашборд поручений и задач' header_subtitle='Аналитика, матрица загрузки сотрудников и оперативный контроль дедлайнов' header_icon='bx bx-tachometer' %}
 
             <!-- Division Quick Filter -->
-            <div class="card card-modern shadow-sm border-0 mb-4 bg-light">
+            <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3 bg-light">
                 <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <form method="get" class="d-flex align-items-center gap-2 flex-grow-1" id="dashDivisionFilter">
                         <span class="small fw-bold text-dark text-nowrap"><i class="bx bx-filter-alt me-1"></i>Подразделение:</span>
-                        <select name="division" class="form-control form-control-sm" style="max-width: 320px;" onchange="document.getElementById('dashDivisionFilter').submit();">
+                        <select name="division" class="form-control form-control-sm form-control-modern" style="max-width: 320px;" onchange="document.getElementById('dashDivisionFilter').submit();">
                             <option value="">-- Все подразделения --</option>
                             {% for div in divisions %}
                                 <option value="{{ div.id }}" {% if selected_division == div.id|stringformat:"s" %}selected{% endif %}>{{ div.name }}</option>
@@ -77,55 +77,55 @@
             </div>
 
             <!-- Top Metric Cards -->
-            <div class="row g-3 mb-4">
+            <div class="row g-2 mb-2 mb-md-3">
                 <div class="col-6 col-md-3">
                     <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-primary">
-                        <div class="card-body p-3">
+                        <div class="card-body p-2 p-md-3">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted small text-uppercase fw-bold">Всего задач</div>
-                                    <h3 class="fw-bold text-dark mb-0 mt-1">{{ total_tasks }}</h3>
+                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Всего задач</div>
+                                    <h4 class="fw-bold text-dark mb-0 mt-0.5">{{ total_tasks }}</h4>
                                 </div>
-                                <i class="bx bx-task fs-1 text-primary-subtle"></i>
+                                <i class="bx bx-task fs-2 text-primary-subtle d-none d-sm-block"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-info">
-                        <div class="card-body p-3">
+                        <div class="card-body p-2 p-md-3">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted small text-uppercase fw-bold">В работе</div>
-                                    <h3 class="fw-bold text-info-contrast mb-0 mt-1">{{ in_progress_count }}</h3>
+                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">В работе</div>
+                                    <h4 class="fw-bold text-info-contrast mb-0 mt-0.5">{{ in_progress_count }}</h4>
                                 </div>
-                                <i class="bx bx-loader-circle fs-1 text-info-subtle"></i>
+                                <i class="bx bx-loader-circle fs-2 text-info-subtle d-none d-sm-block"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-warning">
-                        <div class="card-body p-3">
+                        <div class="card-body p-2 p-md-3">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted small text-uppercase fw-bold">На проверке</div>
-                                    <h3 class="fw-bold text-warning-contrast mb-0 mt-1">{{ on_review_count }}</h3>
+                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">На проверке</div>
+                                    <h4 class="fw-bold text-warning-contrast mb-0 mt-0.5">{{ on_review_count }}</h4>
                                 </div>
-                                <i class="bx bx-search-alt fs-1 text-warning-subtle"></i>
+                                <i class="bx bx-search-alt fs-2 text-warning-subtle d-none d-sm-block"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-danger">
-                        <div class="card-body p-3">
+                        <div class="card-body p-2 p-md-3">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted small text-uppercase fw-bold">Просрочено</div>
-                                    <h3 class="fw-bold text-danger-contrast mb-0 mt-1">{{ overdue_count }}</h3>
+                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Просрочено</div>
+                                    <h4 class="fw-bold text-danger-contrast mb-0 mt-0.5">{{ overdue_count }}</h4>
                                 </div>
-                                <i class="bx bx-alarm-exclamation fs-1 text-danger-subtle"></i>
+                                <i class="bx bx-alarm-exclamation fs-2 text-danger-subtle d-none d-sm-block"></i>
                             </div>
                         </div>
                     </div>
@@ -133,13 +133,13 @@
             </div>
 
             <!-- Main Dashboard Body -->
-            <div class="row g-4">
+            <div class="row g-2 g-md-3">
                 <!-- Left Column: Urgent Deadlines & My Tasks -->
                 <div class="col-12 col-xl-7">
                     <!-- Urgent & Overdue Card -->
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                    <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                        <header class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.95rem;">
                                 <i class="bx bx-time-five text-danger me-2"></i>Ближайшие дедлайны и просрочки
                             </h5>
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small">Контроль сроков</span>
@@ -193,8 +193,8 @@
                     </div>
 
                     <!-- My Tasks vs Assigned Tasks Tabs -->
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <header class="card-header bg-light py-2">
+                    <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                        <header class="card-header bg-light py-2 px-3">
                             <ul class="nav nav-tabs card-header-tabs" role="tablist">
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link active font-weight-bold text-dark" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned-pane" type="button" role="tab">
@@ -208,7 +208,7 @@
                                 </li>
                             </ul>
                         </header>
-                        <div class="card-body p-3">
+                        <div class="card-body p-2 p-md-3">
                             <div class="tab-content">
                                 <div class="tab-pane fade show active" id="assigned-pane" role="tabpanel">
                                     <div class="list-group list-group-flush">
@@ -248,9 +248,9 @@
                 <!-- Right Column: Employee Workload & Activity Stream -->
                 <div class="col-12 col-xl-5">
                     <!-- Employee Workload Matrix -->
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                    <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                        <header class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.95rem;">
                                 <i class="bx bx-group text-primary me-2"></i>Загрузка сотрудников
                             </h5>
                             <span class="badge bg-light text-muted border small">Матрица задач</span>
@@ -298,9 +298,9 @@
                     </div>
 
                     <!-- Recent Activity / History Feed -->
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <header class="card-header bg-light py-3">
-                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                    <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                        <header class="card-header bg-light py-2 px-3">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.95rem;">
                                 <i class="bx bx-pulse text-primary me-2"></i>Последняя активность (Аудит)
                             </h5>
                         </header>

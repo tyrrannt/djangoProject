@@ -102,13 +102,13 @@
             {% include 'tasks_app/partials/_task_header_nav.html' with active_view='calendar' header_title='Календарь задач и поручений' header_subtitle='Планирование, контроль исполнения и распределение задач' header_icon='bx bx-calendar-event' %}
 
             <!-- Stats KPI Cards Row -->
-            <div class="row g-3 mb-4">
+            <div class="row g-1.5 g-md-2 mb-2 mb-md-3">
                 <div class="col-6 col-md-4 col-xl">
                     <a href="?tab=all" class="text-decoration-none">
                         <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'all' or not request.GET.tab %}border-start border-4 border-primary{% endif %}">
-                            <div class="card-body p-3">
-                                <div class="text-muted small text-uppercase fw-bold">Всего задач</div>
-                                <h4 class="fw-bold text-dark mb-0 mt-1">{{ total_count }}</h4>
+                            <div class="card-body p-2 p-md-3">
+                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Всего задач</div>
+                                <h4 class="fw-bold text-dark mb-0 mt-0.5">{{ total_count }}</h4>
                             </div>
                         </div>
                     </a>
@@ -116,9 +116,9 @@
                 <div class="col-6 col-md-4 col-xl">
                     <a href="?tab=my" class="text-decoration-none">
                         <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'my' %}border-start border-4 border-info{% endif %}">
-                            <div class="card-body p-3">
-                                <div class="text-muted small text-uppercase fw-bold">Я автор</div>
-                                <h4 class="fw-bold text-info-contrast mb-0 mt-1">{{ my_created_count }}</h4>
+                            <div class="card-body p-2 p-md-3">
+                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Я автор</div>
+                                <h4 class="fw-bold text-info-contrast mb-0 mt-0.5">{{ my_created_count }}</h4>
                             </div>
                         </div>
                     </a>
@@ -126,9 +126,9 @@
                 <div class="col-6 col-md-4 col-xl">
                     <a href="?tab=assigned" class="text-decoration-none">
                         <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'assigned' %}border-start border-4 border-primary{% endif %}">
-                            <div class="card-body p-3">
-                                <div class="text-muted small text-uppercase fw-bold">Мне поручено</div>
-                                <h4 class="fw-bold text-primary mb-0 mt-1">{{ assigned_count }}</h4>
+                            <div class="card-body p-2 p-md-3">
+                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Мне поручено</div>
+                                <h4 class="fw-bold text-primary mb-0 mt-0.5">{{ assigned_count }}</h4>
                             </div>
                         </div>
                     </a>
@@ -136,19 +136,19 @@
                 <div class="col-6 col-md-4 col-xl">
                     <a href="?tab=review" class="text-decoration-none">
                         <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'review' %}border-start border-4 border-warning{% endif %}">
-                            <div class="card-body p-3">
-                                <div class="text-muted small text-uppercase fw-bold">На проверке</div>
-                                <h4 class="fw-bold text-warning-contrast mb-0 mt-1">{{ on_review_count }}</h4>
+                            <div class="card-body p-2 p-md-3">
+                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">На проверке</div>
+                                <h4 class="fw-bold text-warning-contrast mb-0 mt-0.5">{{ on_review_count }}</h4>
                             </div>
                         </div>
                     </a>
                 </div>
-                <div class="col-6 col-md-4 col-xl">
+                <div class="col-12 col-md-4 col-xl">
                     <a href="?tab=overdue" class="text-decoration-none">
                         <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'overdue' %}border-start border-4 border-danger{% endif %}">
-                            <div class="card-body p-3">
-                                <div class="text-muted small text-uppercase fw-bold">Просрочено</div>
-                                <h4 class="fw-bold text-danger mb-0 mt-1">{{ overdue_count }}</h4>
+                            <div class="card-body p-2 p-md-3">
+                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Просрочено</div>
+                                <h4 class="fw-bold text-danger mb-0 mt-0.5">{{ overdue_count }}</h4>
                             </div>
                         </div>
                     </a>
@@ -156,76 +156,81 @@
             </div>
 
             <!-- Filters Card -->
-            <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
-                    <h5 class="card-title text-dark mb-0 font-weight-bold">
-                        <i class="bx bx-filter-alt text-primary me-2"></i>Фильтры отображения
+            <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                <header class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.92rem;">
+                        <i class="bx bx-filter-alt text-primary me-1"></i>Фильтры отображения
                     </h5>
+                    <button class="btn btn-sm btn-outline-primary d-md-none py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#calendarFiltersCollapse" aria-expanded="false" aria-controls="calendarFiltersCollapse">
+                        <i class="bx bx-slider me-1"></i>Параметры
+                    </button>
                 </header>
-                <div class="card-body p-3">
-                    <form method="get" class="m-0">
-                        <input type="hidden" name="tab" value="{{ request.GET.tab|default:'all' }}">
-                        <div class="row g-3">
-                            <div class="col-12 col-md-3">
-                                <label for="division" class="form-label font-weight-bold text-dark small">Подразделение</label>
-                                <select name="division" id="division" class="form-control form-control-modern">
-                                    <option value="">Все подразделения</option>
-                                    {% for div in divisions %}
-                                        <option value="{{ div.id }}" {% if selected_division == div.id|stringformat:"s" %}selected{% endif %}>
-                                            {{ div.name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
+                <div class="collapse d-md-block" id="calendarFiltersCollapse">
+                    <div class="card-body p-2 p-md-3">
+                        <form method="get" class="m-0">
+                            <input type="hidden" name="tab" value="{{ request.GET.tab|default:'all' }}">
+                            <div class="row g-1.5 g-md-2">
+                                <div class="col-12 col-md-3">
+                                    <label for="division" class="form-label font-weight-bold text-dark mb-0.5" style="font-size: 0.75rem;">Подразделение</label>
+                                    <select name="division" id="division" class="form-control form-control-modern">
+                                        <option value="">Все подразделения</option>
+                                        {% for div in divisions %}
+                                            <option value="{{ div.id }}" {% if selected_division == div.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ div.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label for="category" class="form-label font-weight-bold text-dark mb-0.5" style="font-size: 0.75rem;">Категория</label>
+                                    <select name="category" id="category" class="form-control form-control-modern">
+                                        <option value="">Все категории</option>
+                                        {% for category in categories %}
+                                            <option value="{{ category.name }}" {% if category.name == request.GET.category %}selected{% endif %}>
+                                                {{ category.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="priority" class="form-label font-weight-bold text-dark mb-0.5" style="font-size: 0.75rem;">Приоритет</label>
+                                    <select name="priority" id="priority" class="form-control form-control-modern">
+                                        <option value="">Все приоритеты</option>
+                                        {% for code, name in priorities %}
+                                            <option value="{{ code }}" {% if code == request.GET.priority %}selected{% endif %}>
+                                                {{ name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="status" class="form-label font-weight-bold text-dark mb-0.5" style="font-size: 0.75rem;">Статус</label>
+                                    <select name="status" id="status" class="form-control form-control-modern">
+                                        <option value="">Все статусы</option>
+                                        {% for code, name in statuses %}
+                                            <option value="{{ code }}" {% if code == request.GET.status %}selected{% endif %}>
+                                                {{ name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2 d-flex align-items-end gap-1">
+                                    <button type="submit" class="btn btn-primary btn-touch w-100 font-weight-bold">
+                                        <i class="bx bx-check me-1"></i> Применить
+                                    </button>
+                                </div>
                             </div>
-                            <div class="col-12 col-md-3">
-                                <label for="category" class="form-label font-weight-bold text-dark small">Категория</label>
-                                <select name="category" id="category" class="form-control form-control-modern">
-                                    <option value="">Все категории</option>
-                                    {% for category in categories %}
-                                        <option value="{{ category.name }}" {% if category.name == request.GET.category %}selected{% endif %}>
-                                            {{ category.name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-2">
-                                <label for="priority" class="form-label font-weight-bold text-dark small">Приоритет</label>
-                                <select name="priority" id="priority" class="form-control form-control-modern">
-                                    <option value="">Все приоритеты</option>
-                                    {% for code, name in priorities %}
-                                        <option value="{{ code }}" {% if code == request.GET.priority %}selected{% endif %}>
-                                            {{ name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-2">
-                                <label for="status" class="form-label font-weight-bold text-dark small">Статус Workflow</label>
-                                <select name="status" id="status" class="form-control form-control-modern">
-                                    <option value="">Все статусы</option>
-                                    {% for code, name in statuses %}
-                                        <option value="{{ code }}" {% if code == request.GET.status %}selected{% endif %}>
-                                            {{ name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary btn-touch w-100 font-weight-bold">
-                                    <i class="bx bx-check me-1"></i> Применить
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
 
             <!-- Calendar & Sidebar Grid -->
-            <div class="row g-4">
+            <div class="row g-2 g-md-3">
                 <!-- Main Calendar -->
                 <div class="col-12 col-xl-9">
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <div class="card-body p-4">
+                    <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
+                        <div class="card-body p-2 p-md-3">
                             <div id="calendar" class="calendar-container"></div>
                         </div>
                     </div>
