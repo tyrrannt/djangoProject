@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load static_version %}
 {% load custom %}
 {% load widget_tweaks %}
 
@@ -8,7 +9,7 @@
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
+    <link rel="stylesheet" href="{% static_version 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;
@@ -250,8 +251,8 @@
                     </div>
                 </div>
 
-                <!-- Sidebar Palette -->
-                <div class="col-12 col-xl-3">
+                <!-- Sidebar Palette (Desktop only) -->
+                <div class="col-12 col-xl-3 d-none d-xl-block">
                     <div class="card card-modern shadow-sm border-0 mb-4">
                         <header class="card-header bg-light py-3">
                             <h5 class="card-title text-dark mb-0 font-weight-bold">
@@ -548,20 +549,44 @@
                     console.error('Error parsing calendar events JSON:', e);
                 }
 
+                var isMobile = window.innerWidth <= 768;
+
                 calendarInstance = new FullCalendar.Calendar(calendarEl, {
                     themeSystem: 'bootstrap',
                     locale: 'ru',
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
+                    initialView: isMobile ? 'listMonth' : 'dayGridMonth',
+                    headerToolbar: isMobile ? {
+                        left: 'prev,today,next',
+                        center: 'title',
+                        right: 'listMonth,dayGridMonth,timeGridDay'
+                    } : {
                         left: 'prev,next today',
                         center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,timeGridDay'
+                        right: 'dayGridMonth,dayGridWeek,timeGridDay,listMonth'
                     },
                     buttonText: {
                         today: 'Сегодня',
-                        month: 'Месяц',
+                        month: isMobile ? 'Сетка' : 'Месяц',
                         week: 'Неделя',
-                        day: 'День'
+                        day: 'День',
+                        list: 'Список',
+                        listMonth: 'Список'
+                    },
+                    views: {
+                        listMonth: {
+                            buttonText: 'Список',
+                            noEventsContent: 'Нет запланированных задач на этот период'
+                        },
+                        dayGridMonth: {
+                            buttonText: isMobile ? 'Сетка' : 'Месяц',
+                            dayMaxEvents: isMobile ? 2 : 4
+                        },
+                        dayGridWeek: {
+                            buttonText: 'Неделя'
+                        },
+                        timeGridDay: {
+                            buttonText: 'День'
+                        }
                     },
                     editable: true,
                     droppable: true,
@@ -615,6 +640,12 @@
                         }
                     },
                     eventContent: function (info) {
+                        if (info.view && info.view.type && info.view.type.indexOf('list') !== -1) {
+                            var span = document.createElement('span');
+                            span.className = 'fw-bold text-dark';
+                            span.innerHTML = info.event.title;
+                            return {domNodes: [span]};
+                        }
                         var div = document.createElement('div');
                         div.className = 'fc-event-title';
                         div.style.whiteSpace = 'normal';
