@@ -634,17 +634,24 @@
                         new bootstrap.Modal(document.getElementById('eventTitleModal')).show();
                     },
                     eventClick: function (info) {
-                        if (info.event.url) {
+                        if (info.event && info.event.url) {
                             window.location.href = info.event.url;
-                            info.jsEvent.preventDefault();
+                            if (info.jsEvent) {
+                                info.jsEvent.preventDefault();
+                                info.jsEvent.stopPropagation();
+                            }
+                            return false;
                         }
                     },
                     eventContent: function (info) {
                         if (info.view && info.view.type && info.view.type.indexOf('list') !== -1) {
-                            var span = document.createElement('span');
-                            span.className = 'fw-bold text-dark';
-                            span.innerHTML = info.event.title;
-                            return {domNodes: [span]};
+                            var a = document.createElement('a');
+                            if (info.event.url) {
+                                a.href = info.event.url;
+                            }
+                            a.className = 'fw-bold text-dark text-decoration-none';
+                            a.innerHTML = info.event.title;
+                            return {domNodes: [a]};
                         }
                         var div = document.createElement('div');
                         div.className = 'fc-event-title';
