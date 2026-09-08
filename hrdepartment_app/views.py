@@ -5328,21 +5328,20 @@ class GetTeamMembersView(View):
         if not target_date:
             return JsonResponse([], safe=False)
 
+        # 1. Сначала ищем приказ, действующий на указанную дату смены
         teams = CreatingTeam.objects.filter(
-            place_id=place_id,
-            date_start__lte=target_date,
-            date_end__gte=target_date,
-            agreed=True,
-            cancellation=False,
-        ).prefetch_related("team_brigade", "senior_brigade")
+            Q(place_id=place_id) &
+            Q(cancellation=False) &
+            (Q(date_start__lte=target_date) | Q(date_start__isnull=True)) &
+            (Q(date_end__gte=target_date) | Q(date_end__isnull=True))
+        ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")
 
+        # 2. Если на точную дату приказ не найден, берем последний актуальный приказ по данному МПД
         if not teams.exists():
             teams = CreatingTeam.objects.filter(
                 place_id=place_id,
-                date_start__lte=target_date,
-                date_end__gte=target_date,
                 cancellation=False,
-            ).prefetch_related("team_brigade", "senior_brigade")
+            ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")[:1]
 
         members_dict = {}
         for t in teams:
