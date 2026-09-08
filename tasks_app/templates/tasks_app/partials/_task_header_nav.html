@@ -1,13 +1,20 @@
 {% load static %}
 
 <div class="task-header-wrapper">
-    <div class="task-header-info">
-        <h4 class="task-page-title mb-0 font-weight-bold text-dark d-flex align-items-center">
-            <i class="{{ header_icon|default:'bx bx-task' }} text-primary me-2 flex-shrink-0"></i>
-            <span>{{ header_title }}</span>
-        </h4>
-        {% if header_subtitle %}
-            <p class="text-muted small mb-0 d-none d-md-block">{{ header_subtitle }}</p>
+    <div class="task-header-main-row">
+        <div class="task-header-info">
+            <h4 class="task-page-title mb-0 font-weight-bold text-dark d-flex align-items-center">
+                <i class="{{ header_icon|default:'bx bx-task' }} text-primary me-1.5 flex-shrink-0"></i>
+                <span class="text-truncate">{{ header_title }}</span>
+            </h4>
+            {% if header_subtitle %}
+                <p class="text-muted small mb-0 d-none d-md-block">{{ header_subtitle }}</p>
+            {% endif %}
+        </div>
+        {% if show_create_btn|default:True %}
+            <a href="{% url 'tasks_app:task-create' %}" class="btn btn-primary task-create-btn d-md-none" title="Создать новое поручение">
+                <i class="bx bx-plus me-1"></i><span>Поручение</span>
+            </a>
         {% endif %}
     </div>
     <div class="task-view-switcher-group">
@@ -38,7 +45,7 @@
             </a>
         </div>
         {% if show_create_btn|default:True %}
-            <a href="{% url 'tasks_app:task-create' %}" class="btn btn-primary task-create-btn">
+            <a href="{% url 'tasks_app:task-create' %}" class="btn btn-primary task-create-btn d-none d-md-inline-flex" title="Создать новое поручение">
                 <i class="bx bx-plus me-1"></i>
                 <span>Создать поручение</span>
             </a>

@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load static_version %}
 {% load custom %}
 {% load widget_tweaks %}
 
@@ -8,7 +9,7 @@
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
+    <link rel="stylesheet" href="{% static_version 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;

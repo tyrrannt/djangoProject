@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load static_version %}
 {% load custom %}
 
 {% block title %}
@@ -7,7 +8,7 @@
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
+    <link rel="stylesheet" href="{% static_version 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;
@@ -72,52 +73,62 @@
             <!-- Header with Responsive Switcher -->
             {% include 'tasks_app/partials/_task_header_nav.html' with active_view='discipline' header_title='Отчет по исполнительской дисциплине' header_subtitle='Анализ своевременности закрытия поручений, контроль просрочек и рейтинг подразделений компании' header_icon='bx bx-bar-chart-alt-2' %}
 
-            <!-- Filter Card -->
-            <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3 bg-light">
-                <div class="card-body p-2 p-md-3">
-                    <form method="get" class="row g-1.5 g-md-2 align-items-end" id="disciplineFilterForm">
-                        <div class="col-6 col-md-3">
-                            <label for="filter_date_from" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Период с:</label>
-                            <input type="date" name="date_from" id="filter_date_from" class="form-control form-control-modern" value="{{ date_from|date:'Y-m-d' }}">
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <label for="filter_date_to" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Период по:</label>
-                            <input type="date" name="date_to" id="filter_date_to" class="form-control form-control-modern" value="{{ date_to|date:'Y-m-d' }}">
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <label for="filter_division" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Подразделение:</label>
-                            <select name="division" id="filter_division" class="form-control form-control-modern">
-                                <option value="">-- Все подразделения --</option>
-                                {% for div in divisions %}
-                                    <option value="{{ div.id }}" {% if selected_division_id == div.id %}selected{% endif %}>{{ div.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <label for="filter_employee" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Сотрудник:</label>
-                            <select name="employee" id="filter_employee" class="form-control form-control-modern">
-                                <option value="">-- Все сотрудники --</option>
-                                {% for u in all_active_users %}
-                                    <option value="{{ u.id }}" {% if selected_employee_id == u.id %}selected{% endif %}>{{ u.title|default:u.get_full_name|default:u.username }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-1.5 pt-1">
-                            <div class="d-flex gap-1">
-                                <button type="submit" class="btn btn-primary btn-touch">
-                                    <i class="bx bx-filter-alt me-1"></i> Применить
-                                </button>
-                                <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch px-2" title="Сбросить">
-                                    <i class="bx bx-reset"></i>
-                                </a>
+            <!-- Filter Card (Collapsible on mobile) -->
+            <div class="card card-modern shadow-sm border-0 mb-2 bg-light">
+                <header class="card-header bg-light py-1.5 px-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.88rem;">
+                        <i class="bx bx-filter-alt text-primary me-1"></i>Параметры и фильтры отчета
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary d-md-none py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#disciplineFiltersCollapse" aria-expanded="false" aria-controls="disciplineFiltersCollapse">
+                        <i class="bx bx-slider me-1"></i>Параметры
+                    </button>
+                </header>
+                <div class="collapse d-md-block" id="disciplineFiltersCollapse">
+                    <div class="card-body p-2 p-md-3">
+                        <form method="get" class="row g-1.5 g-md-2 align-items-end" id="disciplineFilterForm">
+                            <div class="col-6 col-md-3">
+                                <label for="filter_date_from" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Период с:</label>
+                                <input type="date" name="date_from" id="filter_date_from" class="form-control form-control-modern" value="{{ date_from|date:'Y-m-d' }}">
                             </div>
-                            <div>
-                                <a href="{% url 'tasks_app:task-discipline-export-excel' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&division={{ selected_division_id|default:'' }}&employee={{ selected_employee_id|default:'' }}" class="btn btn-success btn-touch font-weight-bold">
-                                    <i class="bx bx-file me-1"></i> Экспорт в Excel
-                                </a>
+                            <div class="col-6 col-md-3">
+                                <label for="filter_date_to" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Период по:</label>
+                                <input type="date" name="date_to" id="filter_date_to" class="form-control form-control-modern" value="{{ date_to|date:'Y-m-d' }}">
                             </div>
-                        </div>
-                    </form>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label for="filter_division" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Подразделение:</label>
+                                <select name="division" id="filter_division" class="form-control form-control-modern">
+                                    <option value="">-- Все подразделения --</option>
+                                    {% for div in divisions %}
+                                        <option value="{{ div.id }}" {% if selected_division_id == div.id %}selected{% endif %}>{{ div.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label for="filter_employee" class="form-label small fw-bold text-dark mb-0.5" style="font-size: 0.75rem;">Сотрудник:</label>
+                                <select name="employee" id="filter_employee" class="form-control form-control-modern">
+                                    <option value="">-- Все сотрудники --</option>
+                                    {% for u in all_active_users %}
+                                        <option value="{{ u.id }}" {% if selected_employee_id == u.id %}selected{% endif %}>{{ u.title|default:u.get_full_name|default:u.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-1.5 pt-1">
+                                <div class="d-flex gap-1">
+                                    <button type="submit" class="btn btn-primary btn-touch">
+                                        <i class="bx bx-filter-alt me-1"></i> Применить
+                                    </button>
+                                    <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch px-2" title="Сбросить">
+                                        <i class="bx bx-reset"></i>
+                                    </a>
+                                </div>
+                                <div>
+                                    <a href="{% url 'tasks_app:task-discipline-export-excel' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&division={{ selected_division_id|default:'' }}&employee={{ selected_employee_id|default:'' }}" class="btn btn-success btn-touch font-weight-bold">
+                                        <i class="bx bx-file me-1"></i> Экспорт в Excel
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
 

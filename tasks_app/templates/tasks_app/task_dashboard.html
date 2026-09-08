@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load static_version %}
 {% load custom %}
 
 {% block title %}
@@ -7,7 +8,7 @@
 {% endblock %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
+    <link rel="stylesheet" href="{% static_version 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;
@@ -57,8 +58,8 @@
             <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3 bg-light">
                 <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <form method="get" class="d-flex align-items-center gap-2 flex-grow-1" id="dashDivisionFilter">
-                        <span class="small fw-bold text-dark text-nowrap"><i class="bx bx-filter-alt me-1"></i>Подразделение:</span>
-                        <select name="division" class="form-control form-control-sm form-control-modern" style="max-width: 320px;" onchange="document.getElementById('dashDivisionFilter').submit();">
+                        <span class="small fw-bold text-dark text-nowrap"><i class="bx bx-filter-alt me-1"></i><span class="d-none d-sm-inline">Подразделение:</span></span>
+                        <select name="division" class="form-control form-control-sm form-control-modern flex-grow-1" style="max-width: 320px;" onchange="document.getElementById('dashDivisionFilter').submit();">
                             <option value="">-- Все подразделения --</option>
                             {% for div in divisions %}
                                 <option value="{{ div.id }}" {% if selected_division == div.id|stringformat:"s" %}selected{% endif %}>{{ div.name }}</option>
@@ -70,7 +71,7 @@
                             </a>
                         {% endif %}
                     </form>
-                    <a href="{% url 'tasks_app:task-discipline-report' %}{% if selected_division %}?division={{ selected_division }}{% endif %}" class="btn btn-sm btn-outline-primary fw-bold text-nowrap">
+                    <a href="{% url 'tasks_app:task-discipline-report' %}{% if selected_division %}?division={{ selected_division }}{% endif %}" class="btn btn-sm btn-outline-primary fw-bold text-nowrap d-none d-md-inline-flex">
                         <i class="bx bx-line-chart me-1"></i> Полный отчет по дисциплине &rarr;
                     </a>
                 </div>
