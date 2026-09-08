@@ -24,8 +24,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'full_name', 'email']
 
     def get_full_name(self, obj: DataBaseUser) -> str:
-        """Возвращает полное имя пользователя."""
-        return obj.get_full_name() or getattr(obj, 'title', obj.username)
+        """Возвращает полное имя пользователя (ФИО из поля title)."""
+        return getattr(obj, 'title', None) or obj.get_full_name() or obj.username
 
 
 class CategorySerializer(serializers.ModelSerializer):

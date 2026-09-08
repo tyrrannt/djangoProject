@@ -501,7 +501,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         context['statuses'] = TaskStatus.choices
         context['divisions'] = Division.objects.all().order_by('name')
         context['selected_division'] = self.request.GET.get('division', '')
-        context['users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name').exclude(is_superuser=True)
+        context['users'] = DataBaseUser.objects.filter(is_active=True).exclude(is_superuser=True).order_by('title')
 
         calendar_events = []
         for task in context['tasks']:
@@ -782,7 +782,7 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
         context['comment_form'] = TaskCommentForm()
         context['delegation_form'] = TaskDelegationForm()
         context['now'] = timezone.now()
-        context['all_active_users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name')
+        context['all_active_users'] = DataBaseUser.objects.filter(is_active=True).exclude(is_superuser=True).order_by('title')
 
         return context
 
@@ -1157,7 +1157,7 @@ class TaskKanbanView(LoginRequiredMixin, ListView):
         context['priorities'] = Task.PRIORITY_CHOICES
         context['divisions'] = Division.objects.all().order_by('name')
         context['selected_division'] = self.request.GET.get('division', '')
-        context['users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name').exclude(is_superuser=True)
+        context['users'] = DataBaseUser.objects.filter(is_active=True).exclude(is_superuser=True).order_by('title')
         context['now'] = timezone.now()
 
         return context
@@ -1211,7 +1211,7 @@ class TaskDisciplineReportView(LoginRequiredMixin, ListView):
 
         context.update(report_data)
         context['divisions'] = Division.objects.all().order_by('name')
-        context['all_active_users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name').exclude(is_superuser=True)
+        context['all_active_users'] = DataBaseUser.objects.filter(is_active=True).exclude(is_superuser=True).order_by('title')
         return context
 
 

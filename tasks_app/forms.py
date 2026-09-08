@@ -66,13 +66,16 @@ class TaskForm(forms.ModelForm):
         """
         super().__init__(*args, **kwargs)
 
-        active_users = DataBaseUser.objects.filter(is_active=True).order_by('last_name', 'first_name')
+        active_users = DataBaseUser.objects.filter(is_active=True).order_by('title')
         self.fields['category'].queryset = Category.objects.all()
         self.fields['responsible'].queryset = active_users
         self.fields['responsible'].required = False
         self.fields['assignees'].queryset = active_users
         self.fields['observers'].queryset = active_users
         self.fields['shared_with'].queryset = active_users
+
+        for fld_name in ('responsible', 'assignees', 'observers', 'shared_with'):
+            self.fields[fld_name].label_from_instance = lambda obj: obj.title or obj.get_full_name() or obj.username
 
         self.fields['responsible'].label = "Главный ответственный"
         self.fields['assignees'].label = "Соисполнители"
@@ -200,7 +203,8 @@ class SubTaskForm(forms.ModelForm):
             **kwargs: Именованные аргументы.
         """
         super().__init__(*args, **kwargs)
-        self.fields['assigned_to'].queryset = DataBaseUser.objects.filter(is_active=True).order_by('last_name')
+        self.fields['assigned_to'].queryset = DataBaseUser.objects.filter(is_active=True).order_by('title')
+        self.fields['assigned_to'].label_from_instance = lambda obj: obj.title or obj.get_full_name() or obj.username
         self.fields['assigned_to'].required = False
         for field in self.fields:
             make_custom_field(self.fields[field])
@@ -262,6 +266,7 @@ class TaskDelegationForm(forms.Form):
             **kwargs: Именованные аргументы.
         """
         super().__init__(*args, **kwargs)
-        self.fields['assigned_to'].queryset = DataBaseUser.objects.filter(is_active=True).order_by('last_name')
+        self.fields['assigned_to'].queryset = DataBaseUser.objects.filter(is_active=True).order_by('title')
+        self.fields['assigned_to'].label_from_instance = lambda obj: obj.title or obj.get_full_name() or obj.username
         for field in self.fields:
             make_custom_field(self.fields[field])

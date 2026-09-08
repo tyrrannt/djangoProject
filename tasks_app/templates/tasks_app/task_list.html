@@ -74,6 +74,22 @@
         .calendar-container {
             min-height: 650px;
         }
+        /* Гарантированное отображение модальных окон календаря поверх backdrop */
+        #eventTitleModal,
+        #notificationModal {
+            z-index: 10550 !important;
+        }
+        @media (max-width: 768px) {
+            #eventTitleModal .modal-dialog,
+            #notificationModal .modal-dialog {
+                margin: 0.75rem auto;
+                max-width: calc(100% - 1.5rem);
+            }
+            #eventTitleModal input,
+            #eventTitleModal select {
+                font-size: 16px !important;
+            }
+        }
     </style>
 {% endblock %}
 
@@ -283,7 +299,7 @@
                                 </label>
                                 <select name="shared_with" id="shared_with" class="form-control" multiple="multiple" data-plugin-multiselect data-plugin-options='{ "maxHeight": 200, "enableCaseInsensitiveFiltering": true }'>
                                     {% for user in users %}
-                                        <option value="{{ user.id }}">{{ user.title|FIO_format }}</option>
+                                        <option value="{{ user.id }}">{{ user.title|default:user.get_full_name|default:user.username }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -687,7 +703,18 @@
                 });
             }
 
+            function relocateModalsToBody() {
+                ['eventTitleModal', 'notificationModal'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el && el.parentNode && el.parentNode !== document.body) {
+                        document.body.appendChild(el);
+                    }
+                });
+            }
+            relocateModalsToBody();
+
             $(document).ready(function () {
+                relocateModalsToBody();
                 initCalendar();
                 initCalendarDragNDrop();
                 initSaveEventButton();
@@ -695,6 +722,7 @@
                 var modalElement = document.getElementById('eventTitleModal');
                 if (modalElement) {
                     modalElement.addEventListener('show.bs.modal', function () {
+                        relocateModalsToBody();
                         var now = new Date();
                         var dateInput = document.getElementById('eventDate');
                         var timeInput = document.getElementById('eventTime');

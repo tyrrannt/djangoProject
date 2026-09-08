@@ -190,7 +190,7 @@
                                                     <span class="badge bg-{{ task.priority }} py-0 px-1" style="font-size: 0.68rem;">{{ task.get_priority_display }}</span>
                                                 </td>
                                                 <td class="small">
-                                                    {{ task.responsible.get_full_name|default:task.responsible.username|default:"—" }}
+                                                    {{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username|default:"—" }}
                                                 </td>
                                                 <td>
                                                     <div class="font-monospace small {% if task.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">
@@ -241,7 +241,7 @@
                                             <a href="{{ task.get_absolute_url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-1 border-0 border-bottom">
                                                 <div>
                                                     <strong class="text-dark d-block">{{ task.title }}</strong>
-                                                    <small class="text-muted">Поставил: {{ task.user.get_full_name|default:task.user.username }} &bull; Срок: {{ task.end_date|date:"d.m.Y"|default:"—" }}</small>
+                                                    <small class="text-muted">Поставил: {{ task.user.title|default:task.user.get_full_name|default:task.user.username }} &bull; Срок: {{ task.end_date|date:"d.m.Y"|default:"—" }}</small>
                                                 </div>
                                                 <span class="badge bg-light text-dark border">{{ task.get_status_display }}</span>
                                             </a>
@@ -256,7 +256,7 @@
                                             <a href="{{ task.get_absolute_url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-1 border-0 border-bottom">
                                                 <div>
                                                     <strong class="text-dark d-block">{{ task.title }}</strong>
-                                                    <small class="text-muted">Ответственный: {{ task.responsible.get_full_name|default:task.responsible.username|default:"—" }} &bull; Срок: {{ task.end_date|date:"d.m.Y"|default:"—" }}</small>
+                                                    <small class="text-muted">Ответственный: {{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username|default:"—" }} &bull; Срок: {{ task.end_date|date:"d.m.Y"|default:"—" }}</small>
                                                 </div>
                                                 <span class="badge bg-light text-dark border">{{ task.get_status_display }}</span>
                                             </a>
@@ -295,7 +295,7 @@
                                         {% for row in employee_workload %}
                                             <tr>
                                                 <td>
-                                                    <strong class="text-dark">{{ row.employee.get_full_name|default:row.employee.username }}</strong>
+                                                    <strong class="text-dark">{{ row.employee.title|default:row.employee.get_full_name|default:row.employee.username }}</strong>
                                                 </td>
                                                 <td class="text-center">
                                                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ row.in_progress }}</span>
@@ -342,7 +342,7 @@
                                         </div>
                                         <div class="text-muted small">
                                             <span class="badge bg-light text-dark border py-0 px-1">{{ record.get_action_display }}</span>
-                                            {% if record.user %}<strong>{{ record.user.get_full_name|default:record.user.username }}</strong>{% endif %}
+                                            {% if record.user %}<strong>{{ record.user.title|default:record.user.get_full_name|default:record.user.username }}</strong>{% endif %}
                                             {% if record.comment %}— {{ record.comment|truncatechars:45 }}{% endif %}
                                         </div>
                                     </div>

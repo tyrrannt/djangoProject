@@ -232,7 +232,7 @@ class ReportService:
 
                     employee_map[emp_id] = {
                         'user': resp,
-                        'full_name': resp.get_full_name() or resp.username,
+                        'full_name': getattr(resp, 'title', None) or resp.get_full_name() or resp.username,
                         'job_title': job_title,
                         'division_name': div_name,
                         'total': 0,
@@ -549,8 +549,8 @@ class ReportService:
             is_even = (idx % 2 == 0)
             row_fill = fill_zebra if is_even else None
 
-            author_name = t.user.get_full_name() if t.user else '—'
-            resp_name = t.responsible.get_full_name() if t.responsible else '—'
+            author_name = getattr(t.user, 'title', None) or (t.user.get_full_name() if t.user else '—')
+            resp_name = getattr(t.responsible, 'title', None) or (t.responsible.get_full_name() if t.responsible else '—')
             end_date_str = t.end_date.strftime('%d.%m.%Y %H:%M') if t.end_date else '—'
             comp_date_str = t.completed_at.strftime('%d.%m.%Y %H:%M') if t.completed_at else '—'
             eds_str = "Да (КЭП)" if item['has_eds'] else ("Требуется" if t.requires_eds else "Нет")

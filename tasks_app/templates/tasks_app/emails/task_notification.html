@@ -83,13 +83,13 @@
                                     <td width="50%" style="padding: 8px 12px 8px 0; border-bottom: 1px solid #e2e8f0;">
                                         <div style="font-size: 11px; color: #5a6e7c; text-transform: uppercase; margin-bottom: 2px;">Постановщик</div>
                                         <div style="font-size: 14px; font-weight: 600; color: #1e2f3c;">
-                                            {{ task.user.get_full_name|default:task.user.username }}
+                                            {{ task.user.title|default:task.user.get_full_name|default:task.user.username }}
                                         </div>
                                     </td>
                                     <td width="50%" style="padding: 8px 0 8px 12px; border-bottom: 1px solid #e2e8f0;">
                                         <div style="font-size: 11px; color: #5a6e7c; text-transform: uppercase; margin-bottom: 2px;">Ответственный</div>
                                         <div style="font-size: 14px; font-weight: 600; color: #1e2f3c;">
-                                            {{ task.responsible.get_full_name|default:task.responsible.username|default:"—" }}
+                                            {{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username|default:"—" }}
                                         </div>
                                     </td>
                                 </tr>

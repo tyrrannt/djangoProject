@@ -88,6 +88,24 @@
             border-radius: 8px;
             padding: 12px 16px;
         }
+        /* Гарантированное отображение модальных окон поверх backdrop */
+        #delegateModal,
+        #edsSignModal {
+            z-index: 10550 !important;
+        }
+        @media (max-width: 768px) {
+            #delegateModal .modal-dialog,
+            #edsSignModal .modal-dialog {
+                margin: 0.75rem auto;
+                max-width: calc(100% - 1.5rem);
+            }
+            #delegateModal select,
+            #delegateModal textarea,
+            #edsSignModal select,
+            #edsSignModal textarea {
+                font-size: 16px !important;
+            }
+        }
     </style>
 {% endblock %}
 
@@ -125,8 +143,8 @@
                         <i class="bx bx-task text-primary me-2"></i>{{ task.title }}
                     </h3>
                     <p class="text-muted small mb-0">
-                        Поручение № {{ task.pk }} &bull; Постановщик: <strong class="text-dark">{{ task.user.get_full_name|default:task.user.username }}</strong>
-                        &bull; Ответственный: <strong class="text-dark">{{ task.responsible.get_full_name|default:task.responsible.username|default:"Не назначен" }}</strong>
+                        Поручение № {{ task.pk }} &bull; Постановщик: <strong class="text-dark">{{ task.user.title|default:task.user.get_full_name|default:task.user.username }}</strong>
+                        &bull; Ответственный: <strong class="text-dark">{{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username|default:"Не назначен" }}</strong>
                     </p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
@@ -211,7 +229,7 @@
                             <div>
                                 <h6 class="fw-bold text-success mb-0">Приемка подтверждена квалифицированной ЭЦП</h6>
                                 <div class="text-muted small">
-                                    Подписал: <strong>{{ task.eds_signed_by.get_full_name|default:task.eds_signed_by.username }}</strong>
+                                    Подписал: <strong>{{ task.eds_signed_by.title|default:task.eds_signed_by.get_full_name|default:task.eds_signed_by.username }}</strong>
                                     &bull; Время подписания: <strong>{{ task.eds_signed_at|date:"d.m.Y H:i:s" }}</strong>
                                 </div>
                             </div>
@@ -321,7 +339,7 @@
                                             </label>
                                             {% if subtask.assigned_to %}
                                                 <span class="badge bg-light text-muted border ms-2 small">
-                                                    <i class="bx bx-user me-1"></i>{{ subtask.assigned_to.get_full_name|default:subtask.assigned_to.username }}
+                                                    <i class="bx bx-user me-1"></i>{{ subtask.assigned_to.title|default:subtask.assigned_to.get_full_name|default:subtask.assigned_to.username }}
                                                 </span>
                                             {% endif %}
                                         </div>
@@ -364,7 +382,7 @@
                                         </div>
                                         <div class="flex-grow-1">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <strong class="text-dark small">{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                                                <strong class="text-dark small">{{ comment.author.title|default:comment.author.get_full_name|default:comment.author.username }}</strong>
                                                 <span class="text-muted small">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
                                             </div>
                                             <div class="text-secondary small">{{ comment.text|linebreaksbr }}</div>
@@ -404,7 +422,7 @@
                                             <span class="text-muted small">{{ record.created_at|date:"d.m.Y H:i:s" }}</span>
                                         </div>
                                         <div class="text-muted small">
-                                            {% if record.user %}<strong>{{ record.user.get_full_name|default:record.user.username }}</strong>:{% else %}Система:{% endif %}
+                                            {% if record.user %}<strong>{{ record.user.title|default:record.user.get_full_name|default:record.user.username }}</strong>:{% else %}Система:{% endif %}
                                             {{ record.comment }}
                                         </div>
                                     </div>
@@ -431,7 +449,7 @@
                                 <div class="attr-label">Постановщик (Автор)</div>
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bx bx-user-pin text-primary fs-5"></i>
-                                    <strong>{{ task.user.get_full_name|default:task.user.username }}</strong>
+                                    <strong>{{ task.user.title|default:task.user.get_full_name|default:task.user.username }}</strong>
                                 </div>
                             </div>
 
@@ -440,7 +458,7 @@
                                 <div class="attr-label">Главный ответственный</div>
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bx bx-user-check text-success fs-5"></i>
-                                    <strong>{{ task.responsible.get_full_name|default:task.responsible.username|default:"Не назначен" }}</strong>
+                                    <strong>{{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username|default:"Не назначен" }}</strong>
                                 </div>
                             </div>
 
@@ -449,7 +467,7 @@
                                 <div class="attr-label">Соисполнители</div>
                                 {% for user in task.assignees.all %}
                                     <div class="badge bg-light text-dark border p-2 mb-1 me-1">
-                                        <i class="bx bx-user me-1"></i>{{ user.get_full_name|default:user.username }}
+                                        <i class="bx bx-user me-1"></i>{{ user.title|default:user.get_full_name|default:user.username }}
                                     </div>
                                 {% empty %}
                                     <span class="text-muted small">Не назначены</span>
@@ -461,7 +479,7 @@
                                 <div class="attr-label">Наблюдатели (Контроль)</div>
                                 {% for user in task.observers.all %}
                                     <div class="badge bg-light text-muted border p-2 mb-1 me-1">
-                                        <i class="bx bx-show me-1"></i>{{ user.get_full_name|default:user.username }}
+                                        <i class="bx bx-show me-1"></i>{{ user.title|default:user.get_full_name|default:user.username }}
                                     </div>
                                 {% empty %}
                                     <span class="text-muted small">Нет наблюдателей</span>
@@ -548,7 +566,7 @@
                             <select name="assigned_to" id="delegate_assigned_to" class="form-control" required>
                                 <option value="">-- Выберите сотрудника --</option>
                                 {% for u in all_active_users %}
-                                    <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
+                                    <option value="{{ u.id }}">{{ u.title|default:u.get_full_name|default:u.username }}</option>
                                 {% endfor %}
                             </select>
                         </div>

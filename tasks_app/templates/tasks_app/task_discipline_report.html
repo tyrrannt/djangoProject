@@ -121,7 +121,7 @@
                             <select name="employee" id="filter_employee" class="form-control">
                                 <option value="">-- Все сотрудники --</option>
                                 {% for u in all_active_users %}
-                                    <option value="{{ u.id }}" {% if selected_employee_id == u.id %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                                    <option value="{{ u.id }}" {% if selected_employee_id == u.id %}selected{% endif %}>{{ u.title|default:u.get_full_name|default:u.username }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -419,8 +419,8 @@
                                                         <div class="small text-muted">{{ item.task.category.name }}</div>
                                                     {% endif %}
                                                 </td>
-                                                <td class="small">{{ item.task.user.get_full_name|default:item.task.user.username }}</td>
-                                                <td class="small fw-bold text-dark">{{ item.task.responsible.get_full_name|default:item.task.responsible.username|default:"Не назначен" }}</td>
+                                                <td class="small">{{ item.task.user.title|default:item.task.user.get_full_name|default:item.task.user.username }}</td>
+                                                <td class="small fw-bold text-dark">{{ item.task.responsible.title|default:item.task.responsible.get_full_name|default:item.task.responsible.username|default:"Не назначен" }}</td>
                                                 <td class="text-center">
                                                     <span class="badge bg-{{ item.task.priority }}">{{ item.task.get_priority_display }}</span>
                                                 </td>

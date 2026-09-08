@@ -39,10 +39,10 @@
     <!-- Card Footer -->
     <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top" style="font-size: 0.75rem;">
         <!-- Responsible User -->
-        <div class="d-flex align-items-center text-truncate me-2" title="Ответственный: {{ task.responsible.get_full_name|default:task.responsible.username }}">
+        <div class="d-flex align-items-center text-truncate me-2" title="Ответственный: {{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username }}">
             <i class="bx bx-user-check text-primary me-1"></i>
             <span class="text-muted text-truncate" style="max-width: 100px;">
-                {{ task.responsible.get_full_name|default:task.responsible.username|default:"—" }}
+                {{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username|default:"—" }}
             </span>
         </div>
 

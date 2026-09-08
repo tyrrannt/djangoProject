@@ -40,7 +40,7 @@
                             <div class="small text-muted mb-1">Задача:</div>
                             <div class="fw-bold text-dark fs-6">{{ object.title }}</div>
                             {% if object.user %}
-                                <div class="small text-muted mt-1">Автор: {{ object.user.get_full_name|default:object.user.username }}</div>
+                                <div class="small text-muted mt-1">Автор: {{ object.user.title|default:object.user.get_full_name|default:object.user.username }}</div>
                             {% endif %}
                         </div>
                     {% endif %}
