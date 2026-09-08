@@ -90,7 +90,7 @@
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script>
         $(document).ready(function () {
-            // Инициализация существующих select2
+            // Инициализация select2 элементов
             function initSelect2(context) {
                 $(context).find('select[data-plugin-selectTwo]').each(function () {
                     $(this).select2({
@@ -101,43 +101,62 @@
             }
             initSelect2(document);
 
-            // Функция конвертации формата даты в YYYY-MM-DD
+            // Функция безопасного приведения формата даты в YYYY-MM-DD
             function convertDateFormat(dateStr) {
                 if (!dateStr) return '';
                 dateStr = dateStr.trim();
-                let parts = dateStr.split('.');
+                var parts = dateStr.split('.');
                 if (parts.length === 3) {
-                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    return parts[2] + '-' + parts[1] + '-' + parts[0];
                 }
                 return dateStr;
             }
 
-            // Показ уведомлений AJAX
+            // Показ всплывающего алерта
             function showAlert(message, type) {
-                var icon = type === 'success' ? 'bx-check-circle' : (type === 'warning' ? 'bx-error' : 'bx-info-circle');
-                var alertHtml = `
-                    <div class="alert alert-${type} alert-dismissible fade show shadow-sm border-0 mb-3" role="alert">
-                        <i class="bx ${icon} me-2"></i> ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
+                var icon = (type === 'success') ? 'bx-check-circle' : ((type === 'warning') ? 'bx-error' : 'bx-info-circle');
+                var alertHtml = '<div class="alert alert-' + type + ' alert-dismissible fade show shadow-sm border-0 mb-3" role="alert">' +
+                    '<i class="bx ' + icon + ' me-2"></i> ' + message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                    '</div>';
                 $('#ajax-alerts-container').html(alertHtml);
                 $('html, body').animate({
                     scrollTop: $("#ajax-alerts-container").offset().top - 100
                 }, 300);
             }
 
-            // Обновление карт-нарядов при смене МПД
+            // Безопасное извлечение массива из AJAX-ответа
+            function safeParseArray(data) {
+                if (typeof data === 'string') {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        return [];
+                    }
+                }
+                if (Array.isArray(data)) {
+                    return data;
+                }
+                if (data && typeof data === 'object') {
+                    if (Array.isArray(data.data)) return data.data;
+                    if (Array.isArray(data.results)) return data.results;
+                }
+                return [];
+            }
+
+            // Обновление доступных карт-нарядов при смене МПД
             function updateOutfitCards(placeId) {
                 if (!placeId) return;
                 $.ajax({
                     url: "{% url 'hrdepartment_app:filter_outfit_cards' %}",
                     type: "POST",
+                    dataType: "json",
                     data: {
                         'time_sheets_place': placeId,
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
-                    success: function (data) {
+                    success: function (raw) {
+                        var data = safeParseArray(raw);
                         $('select[id^="id_report_cards-"][id$="-outfit_card"]').each(function () {
                             var outfitCardSelect = $(this);
                             var selectedVals = outfitCardSelect.val() || [];
@@ -167,7 +186,6 @@
                 var newRowHtml = templateHtml.replace(/__prefix__/g, formNum);
                 var $newRow = $(newRowHtml);
 
-                // Копируем опции карт-нарядов из первой доступной строки, если они есть
                 var sampleOutfitSelect = $('select[id^="id_report_cards-"][id$="-outfit_card"]').first();
                 if (sampleOutfitSelect.length && sampleOutfitSelect.children().length > 0) {
                     var $newOutfitSelect = $newRow.find('select[name$="-outfit_card"]');
@@ -180,7 +198,6 @@
                 $('#id_reportcard_set tbody').append($newRow);
                 totalForms.val(formNum + 1);
 
-                // Заполняем переданные значения
                 if (employeeId) {
                     $newRow.find('select[name$="-employee"]').val(employeeId);
                 }
@@ -219,16 +236,13 @@
                 var $deleteCheckbox = $row.find('input[name$="-DELETE"]');
 
                 if ($idInput.length && $idInput.val()) {
-                    // Строка уже сохранена в БД -> ставим DELETE и скрываем
                     $deleteCheckbox.prop('checked', true);
                     $row.hide();
                 } else {
-                    // Новая строка -> проверяем, не единственная ли она
                     var visibleRows = $('#id_reportcard_set tbody tr:visible').length;
                     if (visibleRows > 1) {
                         $row.remove();
                     } else {
-                        // Если единственная, просто очищаем поля
                         $row.find('input, select').not('[type="hidden"]').val('').trigger('change');
                     }
                 }
@@ -246,7 +260,7 @@
                 return existing;
             }
 
-            // Проверка первой строки на пустоту (для повторного использования)
+            // Поиск пустой строки для повторного использования
             function getReusableEmptyRow() {
                 var firstRow = $('#id_reportcard_set tbody tr:visible').first();
                 if (firstRow.length) {
@@ -259,7 +273,7 @@
                 return null;
             }
 
-            // Заполнение из отметок СКУД (DataBaseUserEvent)
+            // 1. Заполнение из отметок СКУД (DataBaseUserEvent)
             $('#fill-from-events').click(function () {
                 var date = $('#id_date').val();
                 var place_id = $('#id_time_sheets_place').val();
@@ -277,15 +291,17 @@
                 $.ajax({
                     url: "{% url 'hrdepartment_app:get_user_events' %}",
                     type: "POST",
+                    dataType: "json",
                     data: {
                         'date': formattedDate,
                         'place_id': place_id,
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
-                    success: function (data) {
+                    success: function (raw) {
                         $btn.prop('disabled', false).html('<i class="bx bx-import me-1"></i> Заполнить из отметок СКУД');
+                        var data = safeParseArray(raw);
 
-                        if (!data || data.length === 0) {
+                        if (data.length === 0) {
                             showAlert("За указанную дату на данном МПД отметки сотрудников не найдены.", "warning");
                             return;
                         }
@@ -313,19 +329,19 @@
                         });
 
                         if (addedCount > 0) {
-                            showAlert(`Успешно добавлено ${addedCount} сотр. из отметок СКУД. Укажите время работы и сохраните табель.`, "success");
+                            showAlert("Успешно добавлено " + addedCount + " сотр. из отметок СКУД. Укажите время работы и сохраните табель.", "success");
                         } else {
                             showAlert("Все сотрудники из отметок СКУД уже присутствуют в табеле.", "info");
                         }
                     },
                     error: function () {
                         $btn.prop('disabled', false).html('<i class="bx bx-import me-1"></i> Заполнить из отметок СКУД');
-                        showAlert("Произошла ошибка при загрузке отметок СКУД.", "danger");
+                        showAlert("Произошла ошибка при загрузке отметок СКУД. Проверьте соединение или перезапустите веб-сервер.", "danger");
                     }
                 });
             });
 
-            // Заполнение состава бригады из приказа CreatingTeam
+            // 2. Заполнение состава бригады из приказа CreatingTeam
             $('#fill-from-team').click(function () {
                 var date = $('#id_date').val();
                 var place_id = $('#id_time_sheets_place').val();
@@ -343,15 +359,17 @@
                 $.ajax({
                     url: "{% url 'hrdepartment_app:get_team_members' %}",
                     type: "POST",
+                    dataType: "json",
                     data: {
                         'date': formattedDate,
                         'place_id': place_id,
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
-                    success: function (data) {
+                    success: function (raw) {
                         $btn.prop('disabled', false).html('<i class="bx bx-group me-1"></i> Заполнить состав бригады');
+                        var data = safeParseArray(raw);
 
-                        if (!data || data.length === 0) {
+                        if (data.length === 0) {
                             showAlert("За указанную дату на данном МПД действующий приказ о создании бригады не найден.", "warning");
                             return;
                         }
@@ -375,14 +393,14 @@
                         });
 
                         if (addedCount > 0) {
-                            showAlert(`Успешно добавлено ${addedCount} сотр. из состава бригады по приказу.`, "success");
+                            showAlert("Успешно добавлено " + addedCount + " сотр. из состава бригады по приказу.", "success");
                         } else {
                             showAlert("Все сотрудники из состава бригады уже добавлены в табель.", "info");
                         }
                     },
                     error: function () {
                         $btn.prop('disabled', false).html('<i class="bx bx-group me-1"></i> Заполнить состав бригады');
-                        showAlert("Произошла ошибка при загрузке состава бригады.", "danger");
+                        showAlert("Произошла ошибка при загрузке состава бригады. Проверьте соединение или перезапустите веб-сервер.", "danger");
                     }
                 });
             });
@@ -510,7 +528,7 @@
                             <h5 class="card-title text-dark mb-0 font-weight-bold">
                                 <i class="bx bx-list-check text-primary me-2"></i>Строки учета рабочего времени
                             </h5>
-                            <small class="text-muted">Для сохранения черновика время можно оставить пустым. Для утверждения время обязательно (Начало < Окончание).</small>
+                            <small class="text-muted">Для сохранения черновика время можно оставить пустым. Для утверждения время обязательно (Начало &lt; Окончание).</small>
                         </div>
                         <button type="button" class="btn btn-sm btn-primary btn-touch font-weight-bold" id="add-reportcard">
                             <i class="bx bx-plus me-1"></i> Добавить строку

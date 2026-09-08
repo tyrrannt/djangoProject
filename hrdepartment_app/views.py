@@ -5320,9 +5320,9 @@ class GetTeamMembersView(View):
         target_date = None
         for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
             try:
-                target_date = datetime.datetime.strptime(date_str, fmt).date()
+                target_date = datetime.datetime.strptime(date_str.strip(), fmt).date()
                 break
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, AttributeError):
                 continue
 
         if not target_date:
@@ -5335,6 +5335,14 @@ class GetTeamMembersView(View):
             agreed=True,
             cancellation=False,
         ).prefetch_related("team_brigade", "senior_brigade")
+
+        if not teams.exists():
+            teams = CreatingTeam.objects.filter(
+                place_id=place_id,
+                date_start__lte=target_date,
+                date_end__gte=target_date,
+                cancellation=False,
+            ).prefetch_related("team_brigade", "senior_brigade")
 
         members_dict = {}
         for t in teams:
