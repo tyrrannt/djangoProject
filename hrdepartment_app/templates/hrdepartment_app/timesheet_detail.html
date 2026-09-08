@@ -76,11 +76,20 @@
         <div class="col-12">
             <div class="card card-modern shadow-sm border-0 mb-4">
                 <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <div>
-                        <h4 class="card-title font-weight-bold text-dark mb-1">
-                            <i class="bx bx-time text-primary me-2"></i>Табель учета рабочего времени от {{ object.date|date:"d.m.Y" }}
-                        </h4>
-                        <p class="card-subtitle text-muted mb-0">Старший бригады: <strong>{{ object.employee|FIO_format }}</strong> &bull; МПД: <strong>{{ object.time_sheets_place }}</strong></p>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-time text-primary me-2"></i>Табель учета рабочего времени от {{ object.date|date:"d.m.Y" }}
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Старший бригады: <strong>{{ object.employee|FIO_format }}</strong> &bull; МПД: <strong>{{ object.time_sheets_place }}</strong></p>
+                        </div>
+                        <div>
+                            {% if object.is_draft %}
+                                <span class="badge bg-warning text-dark px-3 py-2 fs-6"><i class="bx bx-edit-alt me-1"></i>Черновик</span>
+                            {% else %}
+                                <span class="badge bg-success text-white px-3 py-2 fs-6"><i class="bx bx-check-shield me-1"></i>Утвержден</span>
+                            {% endif %}
+                        </div>
                     </div>
                     <div>
                         <a href="{% url 'hrdepartment_app:timesheet_list' %}" class="btn btn-outline-secondary btn-touch">
@@ -91,22 +100,34 @@
 
                 <div class="card-body p-4">
                     <div class="row g-3 mb-4">
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <div class="attr-box">
                                 <div class="attr-label">Дата табеля</div>
                                 <div class="attr-value">{{ object.date|date:"d.m.Y" }}</div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <div class="attr-box">
                                 <div class="attr-label">Старший бригады</div>
                                 <div class="attr-value text-primary">{{ object.employee|FIO_format }}</div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <div class="attr-box">
                                 <div class="attr-label">Место деятельности (МПД)</div>
                                 <div class="attr-value">{{ object.time_sheets_place }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="attr-box">
+                                <div class="attr-label">Статус</div>
+                                <div class="attr-value">
+                                    {% if object.is_draft %}
+                                        <span class="text-warning font-weight-bold">Черновик</span>
+                                    {% else %}
+                                        <span class="text-success font-weight-bold">Утвержден</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                         {% if object.notes %}
@@ -126,11 +147,14 @@
                         <table class="table table-bordered table-striped table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 140px;">Дата</th>
+                                    <th style="width: 120px;">Дата</th>
                                     <th>Сотрудник</th>
-                                    <th style="width: 140px;">Время прихода</th>
-                                    <th style="width: 140px;">Время ухода</th>
+                                    <th style="width: 110px;">Приход</th>
+                                    <th style="width: 110px;">Уход</th>
+                                    <th style="width: 100px;">Обед (мин)</th>
+                                    <th style="width: 110px;">Летные часы</th>
                                     <th>Карты-наряда</th>
+                                    <th>Дополнительные работы</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -140,6 +164,8 @@
                                         <td class="font-weight-semibold">{{ report_card.employee }}</td>
                                         <td>{{ report_card.start_time|default:"—" }}</td>
                                         <td>{{ report_card.end_time|default:"—" }}</td>
+                                        <td>{{ report_card.lunch_time|default:"—" }}</td>
+                                        <td>{{ report_card.flight_hours|default:"—" }}</td>
                                         <td>
                                             {% for oc in report_card.outfit_card.all %}
                                                 <span class="badge bg-light text-dark border me-1">{{ oc }}</span>
@@ -147,10 +173,11 @@
                                                 <span class="text-muted">—</span>
                                             {% endfor %}
                                         </td>
+                                        <td>{{ report_card.additional_work|default:"—" }}</td>
                                     </tr>
                                 {% empty %}
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-3">Записи отсутствуют</td>
+                                        <td colspan="8" class="text-center text-muted py-3">Записи отсутствуют</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

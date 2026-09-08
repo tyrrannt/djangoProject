@@ -21,7 +21,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
     ApprovalOficialMemoProcessDetail, management_dashboard, export_trips_csv, BriefingsList, BriefingsAdd, \
     BriefingsDetail, BriefingsUpdate, OperationalList, OperationalAdd, OperationalDetail, OperationalUpdate, \
-    GetUserEventsView, BriefingsDelete, DataBaseUserEventList, DataBaseUserEventAdd, DataBaseUserEventDetail, \
+    GetUserEventsView, GetTeamMembersView, BriefingsDelete, DataBaseUserEventList, DataBaseUserEventAdd, DataBaseUserEventDetail, \
     DataBaseUserEventUpdate, DataBaseUserEventDelete, BusinessProcessRoutesList, BusinessProcessRoutesAdd, \
     BusinessProcessRoutesUpdate, LaborProtectionList, LaborProtectionAdd, LaborProtectionDetail, LaborProtectionDelete, \
     LaborProtectionUpdate, LaborProtectionInstructionsDelete, LaborProtectionInstructionsUpdate, \
@@ -136,6 +136,7 @@ urlpatterns = [
     path('expenses/<int:pk>/update/', expenses_update, name='expenses_update'),
     path('timesheet/add/', TimeSheetCreateView.as_view(), name='timesheet_add'),
     path('timesheet/get-user-events/', GetUserEventsView.as_view(), name='get_user_events'),
+    path('timesheet/get-team-members/', GetTeamMembersView.as_view(), name='get_team_members'),
     path('timesheet/<int:pk>/', TimeSheetDetailView.as_view(), name='timesheet'),
     path('timesheet/<int:pk>/update/', TimeSheetUpdateView.as_view(), name='timesheet_update'),
     path('timesheet/<int:pk>/delete/', TimeSheetDeleteView.as_view(), name='timesheet_delete'),

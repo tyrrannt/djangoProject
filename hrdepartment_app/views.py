@@ -5175,6 +5175,12 @@ def expenses_update(request, *args, **kwargs):
 #         return super().form_invalid(form)
 
 class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """Создает новый табель учета рабочего времени на МПД.
+
+    Поддерживает сохранение в режиме черновика (мягкая валидация) и утверждение смены
+    (строгая проверка времени работы и автоматическое подтверждение отметок DataBaseUserEvent).
+    """
+
     model = TimeSheet
     form_class = TimeSheetForm
     permission_required = "hrdepartment_app.create_timesheet"
@@ -5186,159 +5192,265 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
                 self.request.POST)
         else:
             data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)()
-        data['all_employee'] = DataBaseUser.objects.all().exclude(is_active=False)
+        data['all_employee'] = DataBaseUser.objects.filter(is_active=True).order_by('title', 'username')
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         reportcard_formset = context['reportcard_formset']
-        if reportcard_formset.is_valid():
-            self.object = form.save()
-            reportcard_formset.instance = self.object
-            self.save_formset(reportcard_formset)
-            return super().form_valid(form)
-        else:
-            print(reportcard_formset.errors)
+        action = self.request.POST.get('form_action', 'save_draft')
+        is_approve = (action == 'approve')
+
+        if not reportcard_formset.is_valid():
             return self.form_invalid(form)
 
+        # Валидация при утверждении табеля: проверяем обязательность и корректность времени
+        if is_approve:
+            has_errors = False
+            has_employees = False
+            for r_form in reportcard_formset:
+                if r_form.cleaned_data.get('DELETE'):
+                    continue
+                emp = r_form.cleaned_data.get('employee')
+                if emp:
+                    has_employees = True
+                    st = r_form.cleaned_data.get('start_time')
+                    et = r_form.cleaned_data.get('end_time')
+                    if not st:
+                        r_form.add_error('start_time', 'Укажите время прихода')
+                        has_errors = True
+                    if not et:
+                        r_form.add_error('end_time', 'Укажите время ухода')
+                        has_errors = True
+                    if st and et and st >= et:
+                        r_form.add_error('end_time', 'Время окончания должно быть позже начала')
+                        has_errors = True
+
+            if not has_employees:
+                form.add_error(None, 'Для утверждения табеля добавьте хотя бы одного сотрудника.')
+                has_errors = True
+
+            if has_errors:
+                return self.form_invalid(form)
+
+            form.instance.is_draft = False
+        else:
+            form.instance.is_draft = True
+
+        self.object = form.save()
+        reportcard_formset.instance = self.object
+        self.save_formset(reportcard_formset)
+
+        if is_approve:
+            # Подтверждаем отметки сотрудников, включенных в табель
+            included_user_ids = [
+                r_form.cleaned_data['employee'].pk
+                for r_form in reportcard_formset
+                if r_form.cleaned_data.get('employee') and not r_form.cleaned_data.get('DELETE')
+            ]
+            if included_user_ids:
+                DataBaseUserEvent.objects.filter(
+                    date_marks=self.object.date,
+                    place=self.object.time_sheets_place,
+                    person_id__in=included_user_ids,
+                ).update(checked=True)
+            messages.success(self.request, "Табель успешно утвержден. Отметки сотрудников подтверждены.")
+        else:
+            messages.info(self.request, "Табель сохранен как черновик.")
+
+        return super().form_valid(form)
+
     def save_formset(self, formset):
-        """
-        Переопределение метода save_formset:
-            Метод save_formset переопределяется для внесения изменений в поле custom_field модели ReportCard.
-            В этом примере поле sign_report_card устанавливается в значение True, но вы можете заменить его на любое
-            другое значение или логику.
-        Сохранение формсета:
-            В методе form_valid после проверки валидности формсета, вызывается метод save_formset для сохранения
-            формсета с внесенными изменениями.
-        Сохранение связанных объектов:
-            Метод save_m2m вызывается для сохранения связанных объектов, если они есть.
-        Примечания:
-            Убедитесь, что 'поле' существует в модели ReportCard.
-            Вы можете изменить логику установки значения поля custom_field в зависимости от ваших требований.
-            Этот подход позволяет внести изменения в поле модели, которое не присутствует в форме, но имеется в
-            самой модели.
-        """
+        """Сохраняет строки табеля с привязкой параметров МПД и типа записи."""
         instances = formset.save(commit=False)
         for instance in instances:
-            # Внесите изменения в поле, которое не присутствует в форме
-            print(instance)
             instance.report_card_day = self.object.date
             instance.sign_report_card = True
-            instance.record_type = "13"
+            if not instance.record_type:
+                instance.record_type = "13"
             instance.save()
-            instance.place_report_card.set([self.object.time_sheets_place.pk, ])
-        formset.save_m2m()  # Сохраняем связанные объекты, если есть
-
-    # def get_context_data(self, **kwargs):
-    #     data = super().get_context_data(**kwargs)
-    #     if self.request.POST:
-    #         data['report_cards'] = ReportCardFormSet(self.request.POST, self.request.FILES)
-    #     else:
-    #         data['report_cards'] = ReportCardFormSet()
-    #     return data
-    #
-    # def form_valid(self, form):
-    #     context = self.get_context_data()
-    #     report_cards = context['report_cards']
-    #     self.object = form.save()
-    #     if report_cards.is_valid():
-    #         instances = report_cards.save(commit=False)
-    #         for instance in instances:
-    #             instance.timesheet = self.object
-    #             instance.report_card_day = self.object.date
-    #             instance.save()
-    #     else:
-    #         print(report_cards.errors)
-    #     return super().form_valid(form)
-    # def form_valid(self, form):
-    #     context = self.get_context_data()
-    #     reportcard_formset = context['report_cards']
-    #     self.object = form.save()
-    #     if reportcard_formset.is_valid():
-    #         self.object = form.save()
-    #         reportcard_formset.instance = self.object
-    #         reportcard_formset.report_card_day = self.object.date
-    #         reportcard_formset.save()
-    #         return super().form_valid(form)
-    #     else:
-    #         return self.form_invalid(form)
+            if self.object.time_sheets_place:
+                instance.place_report_card.set([self.object.time_sheets_place.pk])
+        for deleted_obj in formset.deleted_objects:
+            deleted_obj.delete()
+        formset.save_m2m()
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GetUserEventsView(View):
+    """Возвращает список отметок сотрудников на МПД за указанную дату."""
+
     def post(self, request, *args, **kwargs):
-        date = request.POST.get("date")
+        date_str = request.POST.get("date")
         place_id = request.POST.get("place_id")
 
-        events = DataBaseUserEvent.objects.filter(date_marks=date, place_id=place_id, checked=True)
+        if not date_str or not place_id:
+            return JsonResponse([], safe=False)
+
+        events = (
+            DataBaseUserEvent.objects.filter(date_marks=date_str, place_id=place_id)
+            .select_related("person", "place")
+            .order_by("person__title")
+        )
         data = []
         for e in events:
+            person_title = getattr(e.person, "title", "") or getattr(e.person, "username", "")
             data.append({
-                'person_id': e.person_id,
-                'person_name': str(e.person),
-                # можно добавить другие поля по необходимости
+                "person_id": e.person_id,
+                "user_id": e.person_id,
+                "person_name": str(e.person),
+                "person_fio": format_name_initials(person_title) if person_title else str(e.person),
+                "road": e.road,
+                "checked": e.checked,
             })
-        print(data)
+        return JsonResponse(data, safe=False)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GetTeamMembersView(View):
+    """Возвращает список сотрудников действующей бригады на данном МПД из приказов CreatingTeam."""
+
+    def post(self, request, *args, **kwargs):
+        date_str = request.POST.get("date")
+        place_id = request.POST.get("place_id")
+
+        if not date_str or not place_id:
+            return JsonResponse([], safe=False)
+
+        target_date = None
+        for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
+            try:
+                target_date = datetime.datetime.strptime(date_str, fmt).date()
+                break
+            except (ValueError, TypeError):
+                continue
+
+        if not target_date:
+            return JsonResponse([], safe=False)
+
+        teams = CreatingTeam.objects.filter(
+            place_id=place_id,
+            date_start__lte=target_date,
+            date_end__gte=target_date,
+            agreed=True,
+            cancellation=False,
+        ).prefetch_related("team_brigade", "senior_brigade")
+
+        members_dict = {}
+        for t in teams:
+            if t.senior_brigade and t.senior_brigade.is_active:
+                members_dict[t.senior_brigade.pk] = t.senior_brigade
+            for m in t.team_brigade.filter(is_active=True):
+                members_dict[m.pk] = m
+
+        data = []
+        for m in sorted(members_dict.values(), key=lambda u: getattr(u, "title", "") or str(u)):
+            person_title = getattr(m, "title", "") or getattr(m, "username", "")
+            data.append({
+                "person_id": m.pk,
+                "user_id": m.pk,
+                "person_name": str(m),
+                "person_fio": format_name_initials(person_title) if person_title else str(m),
+            })
         return JsonResponse(data, safe=False)
 
 
 class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """Редактирует существующий табель учета рабочего времени на МПД."""
+
     model = TimeSheet
-    form_class = TimeSheetForm  # Используем созданную форму
+    form_class = TimeSheetForm
     permission_required = "hrdepartment_app.change_timesheet"
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(
                 self.request.POST, instance=self.object)
         else:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(
                 instance=self.object)
-        data['all_employee'] = DataBaseUser.objects.filter(
-            user_work_profile__job__division_affiliation__name="Инженерный состав")
+        data['all_employee'] = DataBaseUser.objects.filter(is_active=True).order_by('title', 'username')
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         reportcard_formset = context['reportcard_formset']
-        if reportcard_formset.is_valid():
-            self.object = form.save()
-            reportcard_formset.instance = self.object
-            self.save_formset(reportcard_formset)
-            return super().form_valid(form)
-        else:
+        action = self.request.POST.get('form_action', 'save_draft')
+        is_approve = (action == 'approve')
+
+        if not reportcard_formset.is_valid():
             return self.form_invalid(form)
 
+        # Валидация при утверждении табеля
+        if is_approve:
+            has_errors = False
+            has_employees = False
+            for r_form in reportcard_formset:
+                if r_form.cleaned_data.get('DELETE'):
+                    continue
+                emp = r_form.cleaned_data.get('employee')
+                if emp:
+                    has_employees = True
+                    st = r_form.cleaned_data.get('start_time')
+                    et = r_form.cleaned_data.get('end_time')
+                    if not st:
+                        r_form.add_error('start_time', 'Укажите время прихода')
+                        has_errors = True
+                    if not et:
+                        r_form.add_error('end_time', 'Укажите время ухода')
+                        has_errors = True
+                    if st and et and st >= et:
+                        r_form.add_error('end_time', 'Время окончания должно быть позже начала')
+                        has_errors = True
+
+            if not has_employees:
+                form.add_error(None, 'Для утверждения табеля добавьте хотя бы одного сотрудника.')
+                has_errors = True
+
+            if has_errors:
+                return self.form_invalid(form)
+
+            form.instance.is_draft = False
+        else:
+            form.instance.is_draft = True
+
+        self.object = form.save()
+        reportcard_formset.instance = self.object
+        self.save_formset(reportcard_formset)
+
+        if is_approve:
+            included_user_ids = [
+                r_form.cleaned_data['employee'].pk
+                for r_form in reportcard_formset
+                if r_form.cleaned_data.get('employee') and not r_form.cleaned_data.get('DELETE')
+            ]
+            if included_user_ids:
+                DataBaseUserEvent.objects.filter(
+                    date_marks=self.object.date,
+                    place=self.object.time_sheets_place,
+                    person_id__in=included_user_ids,
+                ).update(checked=True)
+            messages.success(self.request, "Табель успешно утвержден. Отметки сотрудников подтверждены.")
+        else:
+            messages.info(self.request, "Табель сохранен как черновик.")
+
+        return super().form_valid(form)
+
     def save_formset(self, formset):
-        """
-        Переопределение метода save_formset:
-            Метод save_formset переопределяется для внесения изменений в поле custom_field модели ReportCard.
-            В этом примере поле sign_report_card устанавливается в значение True, но вы можете заменить его на любое
-            другое значение или логику.
-        Сохранение формсета:
-            В методе form_valid после проверки валидности формсета, вызывается метод save_formset для сохранения
-            формсета с внесенными изменениями.
-        Сохранение связанных объектов:
-            Метод save_m2m вызывается для сохранения связанных объектов, если они есть.
-        Примечания:
-            Убедитесь, что 'поле' существует в модели ReportCard.
-            Вы можете изменить логику установки значения поля custom_field в зависимости от ваших требований.
-            Этот подход позволяет внести изменения в поле модели, которое не присутствует в форме, но имеется в
-            самой модели.
-        """
+        """Сохраняет строки табеля с привязкой параметров МПД и типа записи."""
         instances = formset.save(commit=False)
         for instance in instances:
-            # Внесите изменения в поле, которое не присутствует в форме
-            print(instance)
             instance.report_card_day = self.object.date
             instance.sign_report_card = True
-            instance.place_report_card.set([self.object.time_sheets_place.pk, ])
+            if not instance.record_type:
+                instance.record_type = "13"
             instance.save()
-        formset.save_m2m()  # Сохраняем связанные объекты, если есть
-
-    def form_invalid(self, form):
-        return super(TimeSheetUpdateView, self).form_invalid(form)
+            if self.object.time_sheets_place:
+                instance.place_report_card.set([self.object.time_sheets_place.pk])
+        for deleted_obj in formset.deleted_objects:
+            deleted_obj.delete()
+        formset.save_m2m()
 
 
 @require_POST

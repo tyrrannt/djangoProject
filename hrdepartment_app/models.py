@@ -2588,6 +2588,7 @@ class TimeSheet(models.Model):
         PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="time_sheets_place")
     notes = models.TextField(verbose_name="Примечания", blank=True)
+    is_draft = models.BooleanField(verbose_name="Черновик", default=True)
 
     class Meta:
         verbose_name = "Табель учета рабочего времени"
@@ -2595,30 +2596,33 @@ class TimeSheet(models.Model):
         ordering = ("-date",)
 
     def __str__(self):
-        return f"Табель от {self.date} для {self.employee}"
+        status_str = " (Черновик)" if self.is_draft else ""
+        return f"Табель от {self.date} для {self.employee}{status_str}"
 
     def get_absolute_url(self):
         return reverse('hrdepartment_app:timesheet', kwargs={'pk': self.pk})
 
     def get_data(self):
-        """
-        Получает данные из экземпляра ReportCard.
+        """Получает данные из экземпляра TimeSheet для табличного вывода.
 
-        :return: словарь, содержащий следующие данные:
-            - "pk": первичный ключ экземпляра ReportCard.
-            - "employee": форматированные инициалы имени сотрудника.
-            - "report_card_day": день табеля в формате "ДД.ММ.ГГГГ"
-            - "start_time": время начала в формате "ЧЧ:ММ"
-            - "end_time": время окончания в формате "ЧЧ:ММ"
-            - "reason_adjustment": причина корректировки.
-            - "record_type": отображение типа записи.
+        Returns:
+            dict: Словарь с параметрами табеля (pk, date, employee, time_sheets_place, notes, is_draft, status).
         """
+        emp_name = "—"
+        if self.employee:
+            title = getattr(self.employee, "title", "") or getattr(self.employee, "username", "")
+            emp_name = format_name_initials(title) if title else str(self.employee)
+
+        place_name = self.time_sheets_place.name if self.time_sheets_place else "—"
+
         return {
             "pk": self.pk,
-            "date": f"{self.date:%d.%m.%Y} г.",  # .strftime(''),
-            "employee": format_name_initials(self.employee.title),
-            "time_sheets_place": self.time_sheets_place.name,
-            "notes": self.notes,
+            "date": f"{self.date:%d.%m.%Y} г." if self.date else "—",
+            "employee": emp_name,
+            "time_sheets_place": place_name,
+            "notes": self.notes or "",
+            "is_draft": self.is_draft,
+            "status": "Черновик" if self.is_draft else "Утвержден",
         }
 
 

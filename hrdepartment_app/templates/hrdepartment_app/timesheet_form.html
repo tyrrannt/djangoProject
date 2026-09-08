@@ -5,10 +5,12 @@
 {% load widget_tweaks %}
 
 {% block title %}
-    {% if object %}Редактирование табеля{% else %}Создание табеля{% endif %} // Отдел кадров
+    {% if object %}Редактирование табеля №{{ object.pk }}{% else %}Создание табеля учета рабочего времени{% endif %} // Отдел кадров
 {% endblock %}
 
 {% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <style>
         :root {
             --touch-target-size: 42px;
@@ -30,98 +32,247 @@
         .mobile-only {
             display: none;
         }
-        @media (max-width: 767px) {
+        .form-control-modern {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.45rem 0.65rem;
+            font-size: 0.9rem;
+        }
+        .form-control-modern:focus {
+            border-color: #0088cc;
+            box-shadow: 0 0 0 0.2rem rgba(0, 136, 204, 0.15);
+        }
+        .table-timesheet th {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
+        .table-timesheet td {
+            vertical-align: middle;
+            padding: 0.5rem 0.4rem;
+        }
+        .row-deleted {
+            opacity: 0.4;
+            text-decoration: line-through;
+            background-color: #fff3f3 !important;
+        }
+        @media (max-width: 991px) {
             .mobile-only {
                 display: inline-block;
-                font-weight: bold;
-                margin-right: 6px;
+                font-weight: 600;
+                font-size: 0.8rem;
+                color: #6c757d;
+                margin-bottom: 2px;
             }
             .desktop-only {
                 display: none;
+            }
+            .table-timesheet td {
+                display: block;
+                width: 100% !important;
+                padding: 0.35rem 0.5rem;
+            }
+            .table-timesheet tr {
+                display: block;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                margin-bottom: 1rem;
+                padding: 0.5rem;
+                background: #fff;
             }
         }
     </style>
 {% endblock %}
 
-{% block custom_script %}
-{% endblock %}
-
 {% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
-    <script>
-        $(function () {
-            $('#add-reportcard').click(function () {
-                var totalForms = $('#id_report_cards-TOTAL_FORMS');
-                var getItem = document.getElementById('id_report_cards-TOTAL_FORMS').value - 1;
-                var formNum = totalForms.val();
-                totalForms.val(parseInt(formNum) + 1);
-
-                var newForm = $('#id_reportcard_set tbody tr:last').clone();
-
-                newForm.find('input, select').each(function () {
-                    var name = $(this).attr('name').replace(getItem.toString(), formNum);
-                    var id = 'id_' + name;
-                    $(this).attr({'name': name, 'id': id, 'data-select2-id': id}).val('').removeAttr('checked');
-                });
-
-                newForm.find('label').each(function () {
-                    var newFor = $(this).attr('for').replace(getItem.toString(), formNum);
-                    $(this).attr('for', newFor);
-                });
-
-                newForm.appendTo('#id_reportcard_set tbody');
-            });
-        });
-    </script>
-
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script>
         $(document).ready(function () {
-            $('#id_time_sheets_place').change(function () {
-                var time_sheets_place_id = $(this).val();
+            // Инициализация существующих select2
+            function initSelect2(context) {
+                $(context).find('select[data-plugin-selectTwo]').each(function () {
+                    $(this).select2({
+                        theme: 'bootstrap',
+                        width: '100%'
+                    });
+                });
+            }
+            initSelect2(document);
+
+            // Функция конвертации формата даты в YYYY-MM-DD
+            function convertDateFormat(dateStr) {
+                if (!dateStr) return '';
+                dateStr = dateStr.trim();
+                let parts = dateStr.split('.');
+                if (parts.length === 3) {
+                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+                return dateStr;
+            }
+
+            // Показ уведомлений AJAX
+            function showAlert(message, type) {
+                var icon = type === 'success' ? 'bx-check-circle' : (type === 'warning' ? 'bx-error' : 'bx-info-circle');
+                var alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show shadow-sm border-0 mb-3" role="alert">
+                        <i class="bx ${icon} me-2"></i> ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                $('#ajax-alerts-container').html(alertHtml);
+                $('html, body').animate({
+                    scrollTop: $("#ajax-alerts-container").offset().top - 100
+                }, 300);
+            }
+
+            // Обновление карт-нарядов при смене МПД
+            function updateOutfitCards(placeId) {
+                if (!placeId) return;
                 $.ajax({
                     url: "{% url 'hrdepartment_app:filter_outfit_cards' %}",
                     type: "POST",
                     data: {
-                        'time_sheets_place': time_sheets_place_id,
+                        'time_sheets_place': placeId,
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function (data) {
                         $('select[id^="id_report_cards-"][id$="-outfit_card"]').each(function () {
-                            var outfit_card_select = $(this);
-                            outfit_card_select.empty();
-                            $.each(data, function (index, outfit_card) {
-                                outfit_card_select.append($('<option>', {
-                                    value: outfit_card.id,
-                                    text: outfit_card.name
+                            var outfitCardSelect = $(this);
+                            var selectedVals = outfitCardSelect.val() || [];
+                            outfitCardSelect.empty();
+                            $.each(data, function (index, card) {
+                                outfitCardSelect.append($('<option>', {
+                                    value: card.id,
+                                    text: card.name
                                 }));
                             });
+                            outfitCardSelect.val(selectedVals).trigger('change');
                         });
                     }
                 });
-            });
-        });
-    </script>
+            }
 
-    <script>
-        $(document).ready(function () {
-            $('#fill-from-events').click(function () {
-                function convertDateFormat(dateStr) {
-                    let parts = dateStr.split('.');
-                    if (parts.length === 3) {
-                        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    }
-                    return dateStr;
+            $('#id_time_sheets_place').change(function () {
+                updateOutfitCards($(this).val());
+            });
+
+            // Функция добавления новой строки в табель
+            function addReportCardRow(employeeId, startTime, endTime, lunchTime, flightHours, outfitCardId, additionalWork) {
+                var totalForms = $('#id_report_cards-TOTAL_FORMS');
+                var formNum = parseInt(totalForms.val(), 10);
+
+                var templateHtml = $('#empty-row-template').html();
+                var newRowHtml = templateHtml.replace(/__prefix__/g, formNum);
+                var $newRow = $(newRowHtml);
+
+                // Копируем опции карт-нарядов из первой доступной строки, если они есть
+                var sampleOutfitSelect = $('select[id^="id_report_cards-"][id$="-outfit_card"]').first();
+                if (sampleOutfitSelect.length && sampleOutfitSelect.children().length > 0) {
+                    var $newOutfitSelect = $newRow.find('select[name$="-outfit_card"]');
+                    $newOutfitSelect.empty();
+                    sampleOutfitSelect.children().each(function() {
+                        $newOutfitSelect.append($(this).clone());
+                    });
                 }
 
-                let date = $('#id_date').val();
-                let place_id = $('#id_time_sheets_place').val();
+                $('#id_reportcard_set tbody').append($newRow);
+                totalForms.val(formNum + 1);
+
+                // Заполняем переданные значения
+                if (employeeId) {
+                    $newRow.find('select[name$="-employee"]').val(employeeId);
+                }
+                if (startTime) {
+                    $newRow.find('input[name$="-start_time"]').val(startTime);
+                }
+                if (endTime) {
+                    $newRow.find('input[name$="-end_time"]').val(endTime);
+                }
+                if (lunchTime !== undefined && lunchTime !== null) {
+                    $newRow.find('input[name$="-lunch_time"]').val(lunchTime);
+                }
+                if (flightHours) {
+                    $newRow.find('input[name$="-flight_hours"]').val(flightHours);
+                }
+                if (outfitCardId) {
+                    $newRow.find('select[name$="-outfit_card"]').val(outfitCardId);
+                }
+                if (additionalWork) {
+                    $newRow.find('input[name$="-additional_work"]').val(additionalWork);
+                }
+
+                initSelect2($newRow);
+                return $newRow;
+            }
+
+            // Кнопка ручного добавления строки
+            $('#add-reportcard').click(function () {
+                addReportCardRow('', '', '', 0, '', '', '');
+            });
+
+            // Удаление строки табеля
+            $(document).on('click', '.delete-row-btn', function () {
+                var $row = $(this).closest('tr');
+                var $idInput = $row.find('input[name$="-id"]');
+                var $deleteCheckbox = $row.find('input[name$="-DELETE"]');
+
+                if ($idInput.length && $idInput.val()) {
+                    // Строка уже сохранена в БД -> ставим DELETE и скрываем
+                    $deleteCheckbox.prop('checked', true);
+                    $row.hide();
+                } else {
+                    // Новая строка -> проверяем, не единственная ли она
+                    var visibleRows = $('#id_reportcard_set tbody tr:visible').length;
+                    if (visibleRows > 1) {
+                        $row.remove();
+                    } else {
+                        // Если единственная, просто очищаем поля
+                        $row.find('input, select').not('[type="hidden"]').val('').trigger('change');
+                    }
+                }
+            });
+
+            // Список существующих ID сотрудников в таблице
+            function getExistingEmployeeIds() {
+                var existing = [];
+                $('#id_reportcard_set tbody tr:visible').each(function () {
+                    var empVal = $(this).find('select[name$="-employee"]').val();
+                    if (empVal) {
+                        existing.push(empVal.toString());
+                    }
+                });
+                return existing;
+            }
+
+            // Проверка первой строки на пустоту (для повторного использования)
+            function getReusableEmptyRow() {
+                var firstRow = $('#id_reportcard_set tbody tr:visible').first();
+                if (firstRow.length) {
+                    var empVal = firstRow.find('select[name$="-employee"]').val();
+                    var idVal = firstRow.find('input[name$="-id"]').val();
+                    if (!empVal && !idVal) {
+                        return firstRow;
+                    }
+                }
+                return null;
+            }
+
+            // Заполнение из отметок СКУД (DataBaseUserEvent)
+            $('#fill-from-events').click(function () {
+                var date = $('#id_date').val();
+                var place_id = $('#id_time_sheets_place').val();
 
                 if (!date || !place_id) {
-                    alert("Сначала выберите дату и МПД.");
+                    showAlert("Пожалуйста, сначала укажите дату смены и выберите МПД.", "warning");
                     return;
                 }
 
-                let formattedDate = convertDateFormat(date);
+                var $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Загрузка...');
+
+                var formattedDate = convertDateFormat(date);
 
                 $.ajax({
                     url: "{% url 'hrdepartment_app:get_user_events' %}",
@@ -132,43 +283,106 @@
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function (data) {
-                        let totalForms = $('#id_report_cards-TOTAL_FORMS');
-                        let currentFormCount = parseInt(totalForms.val(), 10);
+                        $btn.prop('disabled', false).html('<i class="bx bx-import me-1"></i> Заполнить из отметок СКУД');
 
-                        data.forEach((event, index) => {
-                            let rowIndex = currentFormCount + index;
-                            let newRow = $('#id_reportcard_set tbody tr:first').clone();
+                        if (!data || data.length === 0) {
+                            showAlert("За указанную дату на данном МПД отметки сотрудников не найдены.", "warning");
+                            return;
+                        }
 
-                            newRow.find('input, select').each(function () {
-                                let name = $(this).attr('name');
-                                if (name) {
-                                    let newName = name.replace(/-\d+-/, `-${rowIndex}-`);
-                                    let newId = 'id_' + newName;
-                                    $(this).attr({'name': newName, 'id': newId}).val('').removeAttr('checked');
+                        var existingIds = getExistingEmployeeIds();
+                        var addedCount = 0;
+
+                        data.forEach(function (event) {
+                            var personId = (event.person_id || event.user_id).toString();
+                            if (existingIds.indexOf(personId) === -1) {
+                                var reusableRow = (addedCount === 0) ? getReusableEmptyRow() : null;
+                                var addWork = event.road ? "В пути" : "";
+
+                                if (reusableRow) {
+                                    reusableRow.find('select[name$="-employee"]').val(personId).trigger('change');
+                                    if (addWork) {
+                                        reusableRow.find('input[name$="-additional_work"]').val(addWork);
+                                    }
+                                } else {
+                                    addReportCardRow(personId, '', '', 0, '', '', addWork);
                                 }
-                            });
-
-                            let employeeSelect = newRow.find(`select[name="report_cards-${rowIndex}-employee"]`);
-                            employeeSelect.empty();
-                            $('#all-employees option').each(function () {
-                                employeeSelect.append($(this).clone());
-                            });
-
-                            employeeSelect.val(event.user_id);
-                            newRow.find(`input[name="report_cards-${rowIndex}-start_time"]`).val(event.start_time);
-                            newRow.find(`input[name="report_cards-${rowIndex}-end_time"]`).val(event.end_time);
-                            newRow.find(`input[name="report_cards-${rowIndex}-lunch_time"]`).val(event.lunch_time);
-                            newRow.find(`input[name="report_cards-${rowIndex}-flight_hours"]`).val(event.flight_hours);
-                            newRow.find(`select[name="report_cards-${rowIndex}-outfit_card"]`).val(event.outfit_card);
-                            newRow.find(`input[name="report_cards-${rowIndex}-additional_work"]`).val(event.additional_work);
-
-                            $('#id_reportcard_set tbody').append(newRow);
+                                existingIds.push(personId);
+                                addedCount++;
+                            }
                         });
 
-                        totalForms.val(currentFormCount + data.length);
+                        if (addedCount > 0) {
+                            showAlert(`Успешно добавлено ${addedCount} сотр. из отметок СКУД. Укажите время работы и сохраните табель.`, "success");
+                        } else {
+                            showAlert("Все сотрудники из отметок СКУД уже присутствуют в табеле.", "info");
+                        }
                     },
                     error: function () {
-                        alert("Ошибка при получении данных.");
+                        $btn.prop('disabled', false).html('<i class="bx bx-import me-1"></i> Заполнить из отметок СКУД');
+                        showAlert("Произошла ошибка при загрузке отметок СКУД.", "danger");
+                    }
+                });
+            });
+
+            // Заполнение состава бригады из приказа CreatingTeam
+            $('#fill-from-team').click(function () {
+                var date = $('#id_date').val();
+                var place_id = $('#id_time_sheets_place').val();
+
+                if (!date || !place_id) {
+                    showAlert("Пожалуйста, сначала укажите дату смены и выберите МПД.", "warning");
+                    return;
+                }
+
+                var $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Загрузка...');
+
+                var formattedDate = convertDateFormat(date);
+
+                $.ajax({
+                    url: "{% url 'hrdepartment_app:get_team_members' %}",
+                    type: "POST",
+                    data: {
+                        'date': formattedDate,
+                        'place_id': place_id,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function (data) {
+                        $btn.prop('disabled', false).html('<i class="bx bx-group me-1"></i> Заполнить состав бригады');
+
+                        if (!data || data.length === 0) {
+                            showAlert("За указанную дату на данном МПД действующий приказ о создании бригады не найден.", "warning");
+                            return;
+                        }
+
+                        var existingIds = getExistingEmployeeIds();
+                        var addedCount = 0;
+
+                        data.forEach(function (member) {
+                            var personId = (member.person_id || member.user_id).toString();
+                            if (existingIds.indexOf(personId) === -1) {
+                                var reusableRow = (addedCount === 0) ? getReusableEmptyRow() : null;
+
+                                if (reusableRow) {
+                                    reusableRow.find('select[name$="-employee"]').val(personId).trigger('change');
+                                } else {
+                                    addReportCardRow(personId, '', '', 0, '', '', '');
+                                }
+                                existingIds.push(personId);
+                                addedCount++;
+                            }
+                        });
+
+                        if (addedCount > 0) {
+                            showAlert(`Успешно добавлено ${addedCount} сотр. из состава бригады по приказу.`, "success");
+                        } else {
+                            showAlert("Все сотрудники из состава бригады уже добавлены в табель.", "info");
+                        }
+                    },
+                    error: function () {
+                        $btn.prop('disabled', false).html('<i class="bx bx-group me-1"></i> Заполнить состав бригады');
+                        showAlert("Произошла ошибка при загрузке состава бригады.", "danger");
                     }
                 });
             });
@@ -184,9 +398,25 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                 <div>
                     <h3 class="font-weight-bold text-dark mb-1">
-                        <i class="bx bx-calendar-check text-primary me-2"></i>{% if object %}Редактирование табеля учета рабочего времени{% else %}Создание табеля учета рабочего времени{% endif %}
+                        <i class="bx bx-calendar-check text-primary me-2"></i>
+                        {% if object %}
+                            Редактирование табеля учета рабочего времени №{{ object.pk }}
+                        {% else %}
+                            Создание табеля учета рабочего времени
+                        {% endif %}
                     </h3>
-                    <p class="text-muted small mb-0">Учет рабочего времени, явок, выходов на смену и летных часов</p>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <p class="text-muted small mb-0">Учет рабочего времени, явок, выходов на смену и летных часов на МПД</p>
+                        {% if object %}
+                            {% if object.is_draft %}
+                                <span class="badge bg-warning text-dark px-2 py-1"><i class="bx bx-edit me-1"></i>Черновик</span>
+                            {% else %}
+                                <span class="badge bg-success px-2 py-1"><i class="bx bx-check-circle me-1"></i>Утвержден</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-light text-muted border px-2 py-1"><i class="bx bx-file-blank me-1"></i>Новый табель</span>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{% url 'hrdepartment_app:timesheet_list' %}" class="btn btn-outline-secondary btn-touch">
@@ -195,12 +425,30 @@
                 </div>
             </div>
 
-            <form method="post" novalidate class="ecommerce-form">
+            <!-- Контейнер для динамических алертов AJAX -->
+            <div id="ajax-alerts-container"></div>
+
+            <form method="post" novalidate class="ecommerce-form" id="timesheet-main-form">
                 {% csrf_token %}
 
                 {% if form.errors or reportcard_formset.errors %}
                     <div class="alert alert-danger shadow-sm border-0 mb-4">
-                        <i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте ошибки в форме.
+                        <h6 class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Обнаружены ошибки при валидации:</h6>
+                        {% if form.non_field_errors %}
+                            <ul class="mb-1">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        {% if reportcard_formset.non_form_errors %}
+                            <ul class="mb-1">
+                                {% for error in reportcard_formset.non_form_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <small class="text-muted">Проверьте корректность заполнения полей и времени работы сотрудников.</small>
                     </div>
                 {% endif %}
 
@@ -216,24 +464,40 @@
                             <div class="col-12 col-md-4">
                                 <label for="id_date" class="form-label font-weight-bold text-dark">Дата смены <span class="text-danger">*</span></label>
                                 {{ form.date|add_class:"form-control form-control-modern" }}
+                                {% if form.date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.date.errors.0 }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="id_employee" class="form-label font-weight-bold text-dark">Старший бригады <span class="text-danger">*</span></label>
                                 {{ form.employee|add_class:"form-control form-control-modern" }}
+                                {% if form.employee.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.employee.errors.0 }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="id_time_sheets_place" class="form-label font-weight-bold text-dark">Место производства деятельности (МПД) <span class="text-danger">*</span></label>
                                 {{ form.time_sheets_place|add_class:"form-control form-control-modern" }}
+                                {% if form.time_sheets_place.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.time_sheets_place.errors.0 }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12">
                                 <label for="id_notes" class="form-label font-weight-bold text-dark">Примечание</label>
                                 {{ form.notes|add_class:"form-control form-control-modern" }}
+                                {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                                {% endif %}
                             </div>
                         </div>
 
-                        <div class="mt-3">
-                            <button type="button" class="btn btn-outline-primary btn-touch" id="fill-from-events">
+                        <!-- Быстрые действия автозаполнения -->
+                        <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-primary btn-touch font-weight-semibold" id="fill-from-events">
                                 <i class="bx bx-import me-1"></i> Заполнить из отметок СКУД
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-touch font-weight-semibold" id="fill-from-team">
+                                <i class="bx bx-group me-1"></i> Заполнить состав бригады
                             </button>
                         </div>
                     </div>
@@ -241,67 +505,96 @@
 
                 <!-- Reportcards Formset Card -->
                 <div class="card card-modern shadow-sm border-0 mb-4">
-                    <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-                        <h5 class="card-title text-dark mb-0 font-weight-bold">
-                            <i class="bx bx-list-check text-primary me-2"></i>Строки учета рабочего времени
-                        </h5>
+                    <header class="card-header bg-light py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="bx bx-list-check text-primary me-2"></i>Строки учета рабочего времени
+                            </h5>
+                            <small class="text-muted">Для сохранения черновика время можно оставить пустым. Для утверждения время обязательно (Начало < Окончание).</small>
+                        </div>
                         <button type="button" class="btn btn-sm btn-primary btn-touch font-weight-bold" id="add-reportcard">
                             <i class="bx bx-plus me-1"></i> Добавить строку
                         </button>
                     </header>
-                    <div class="card-body p-4">
+                    <div class="card-body p-3 p-md-4">
                         {{ reportcard_formset.management_form }}
 
-                        <select id="all-employees" style="display: none">
-                            {% for item in all_employee.iterator %}
-                                <option value="{{ item.pk }}">{{ item }}</option>
-                            {% endfor %}
-                        </select>
-
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-3" id="id_reportcard_set">
+                            <table class="table table-hover align-middle mb-3 table-timesheet" id="id_reportcard_set">
                                 <thead class="table-light">
                                     <tr class="desktop-only">
-                                        <th style="width: 25%;">ФИО сотрудника</th>
+                                        <th style="width: 24%;">Сотрудник <span class="text-danger">*</span></th>
                                         <th style="width: 10%;">Приход</th>
                                         <th style="width: 10%;">Уход</th>
-                                        <th style="width: 10%;">Обед (мин.)</th>
-                                        <th style="width: 10%;">Летные часы</th>
-                                        <th style="width: 15%;">Карта-наряд</th>
-                                        <th style="width: 20%;">Дополнительные работы</th>
+                                        <th style="width: 9%;">Обед (мин.)</th>
+                                        <th style="width: 9%;">Летные часы</th>
+                                        <th style="width: 16%;">Карта-наряд</th>
+                                        <th style="width: 18%;">Доп. работы</th>
+                                        <th style="width: 4%;" class="text-center"><i class="bx bx-trash text-muted"></i></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for form in reportcard_formset %}
-                                        <tr>
+                                        <tr class="reportcard-row {% if form.DELETE.value %}d-none{% endif %}">
                                             <td>
                                                 <label for="{{ form.employee.id_for_label }}" class="mobile-only">Сотрудник:</label>
                                                 {{ form.employee|add_class:"form-control form-control-modern" }}
+                                                {% if form.employee.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.employee.errors.0 }}</div>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <label for="{{ form.start_time.id_for_label }}" class="mobile-only">Приход:</label>
                                                 {{ form.start_time|add_class:"form-control form-control-modern" }}
+                                                {% if form.start_time.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.start_time.errors.0 }}</div>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <label for="{{ form.end_time.id_for_label }}" class="mobile-only">Уход:</label>
                                                 {{ form.end_time|add_class:"form-control form-control-modern" }}
+                                                {% if form.end_time.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.end_time.errors.0 }}</div>
+                                                {% endif %}
                                             </td>
                                             <td>
-                                                <label for="{{ form.lunch_time.id_for_label }}" class="mobile-only">Обед:</label>
+                                                <label for="{{ form.lunch_time.id_for_label }}" class="mobile-only">Обед (мин):</label>
                                                 {{ form.lunch_time|add_class:"form-control form-control-modern" }}
+                                                {% if form.lunch_time.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.lunch_time.errors.0 }}</div>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <label for="{{ form.flight_hours.id_for_label }}" class="mobile-only">Летные часы:</label>
                                                 {{ form.flight_hours|add_class:"form-control form-control-modern" }}
+                                                {% if form.flight_hours.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.flight_hours.errors.0 }}</div>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <label for="{{ form.outfit_card.id_for_label }}" class="mobile-only">Карта-наряд:</label>
                                                 {{ form.outfit_card|add_class:"form-control form-control-modern" }}
+                                                {% if form.outfit_card.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.outfit_card.errors.0 }}</div>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <label for="{{ form.additional_work.id_for_label }}" class="mobile-only">Доп. работы:</label>
                                                 {{ form.additional_work|add_class:"form-control form-control-modern" }}
+                                                {% if form.additional_work.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.additional_work.errors.0 }}</div>
+                                                {% endif %}
                                                 {{ form.id }}
+                                                {% if form.DELETE %}
+                                                    <div style="display: none;">
+                                                        {{ form.DELETE }}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn p-1 px-2" title="Удалить строку">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -310,18 +603,18 @@
                         </div>
                     </div>
 
-                    <!-- Панель кнопок строго в футере карточки -->
+                    <!-- Панель кнопок сохранения в футере карточки -->
                     <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <button type="submit" class="btn btn-success btn-touch font-weight-semibold" data-loading-text="Сохранение...">
-                                    <i class="bx bx-save text-4 me-2"></i> Сохранить табель
+                                <button type="submit" name="form_action" value="save_draft" class="btn btn-warning text-dark btn-touch font-weight-semibold shadow-sm">
+                                    <i class="bx bx-file text-4 me-2"></i> Сохранить как черновик
+                                </button>
+                                <button type="submit" name="form_action" value="approve" class="btn btn-success btn-touch font-weight-semibold shadow-sm">
+                                    <i class="bx bx-check-double text-4 me-2"></i> Утвердить табель
                                 </button>
                                 <a href="{% url 'hrdepartment_app:timesheet_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
                                     <i class="bx bx-x text-4 me-2"></i> Отмена
-                                </a>
-                                <a href="{% url 'hrdepartment_app:timesheet_list' %}" class="btn btn-outline-dark btn-touch font-weight-semibold">
-                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
                                 </a>
                             </div>
                             {% if object and user.is_superuser %}
@@ -337,5 +630,52 @@
             </form>
         </div>
     </div>
+
+    <!-- Шаблон пустой строки для динамического добавления -->
+    <template id="empty-row-template">
+        <tr class="reportcard-row">
+            <td>
+                <label class="mobile-only">Сотрудник:</label>
+                <select name="report_cards-__prefix__-employee" id="id_report_cards-__prefix__-employee" class="form-control form-control-modern">
+                    <option value="">---------</option>
+                    {% for item in all_employee %}
+                        <option value="{{ item.pk }}">{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <label class="mobile-only">Приход:</label>
+                <input type="time" name="report_cards-__prefix__-start_time" id="id_report_cards-__prefix__-start_time" class="form-control form-control-modern">
+            </td>
+            <td>
+                <label class="mobile-only">Уход:</label>
+                <input type="time" name="report_cards-__prefix__-end_time" id="id_report_cards-__prefix__-end_time" class="form-control form-control-modern">
+            </td>
+            <td>
+                <label class="mobile-only">Обед (мин):</label>
+                <input type="number" name="report_cards-__prefix__-lunch_time" id="id_report_cards-__prefix__-lunch_time" class="form-control form-control-modern" value="0">
+            </td>
+            <td>
+                <label class="mobile-only">Летные часы:</label>
+                <input type="number" step="any" name="report_cards-__prefix__-flight_hours" id="id_report_cards-__prefix__-flight_hours" class="form-control form-control-modern">
+            </td>
+            <td>
+                <label class="mobile-only">Карта-наряд:</label>
+                <select name="report_cards-__prefix__-outfit_card" id="id_report_cards-__prefix__-outfit_card" class="form-select form-control-modern" multiple="multiple">
+                </select>
+            </td>
+            <td>
+                <label class="mobile-only">Доп. работы:</label>
+                <input type="text" name="report_cards-__prefix__-additional_work" id="id_report_cards-__prefix__-additional_work" class="form-control form-control-modern">
+                <input type="hidden" name="report_cards-__prefix__-id" id="id_report_cards-__prefix__-id">
+                <input type="checkbox" name="report_cards-__prefix__-DELETE" id="id_report_cards-__prefix__-DELETE" style="display: none;">
+            </td>
+            <td class="text-center align-middle">
+                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn p-1 px-2" title="Удалить строку">
+                    <i class="bx bx-trash"></i>
+                </button>
+            </td>
+        </tr>
+    </template>
     <!-- end: page -->
 {% endblock %}

@@ -1818,60 +1818,48 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
 
 class TimeSheetForm(forms.ModelForm):
     employee = forms.ModelChoiceField(
-        widget=forms.Select(attrs={"class": "form-control form-control-modern",
-                                   "data-plugin-selectTwo": True, }),
-        queryset=DataBaseUser.objects.filter(is_active=True),
-        label="Сотрудник")
+        widget=forms.Select(attrs={"class": "form-control form-control-modern", "data-plugin-selectTwo": True}),
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by('title', 'username'),
+        label="Ответственный (Старший бригады)")
+
+    time_sheets_place = forms.ModelChoiceField(
+        widget=forms.Select(attrs={"class": "form-control form-control-modern", "data-plugin-selectTwo": True}),
+        queryset=PlaceProductionActivity.objects.filter(use_team_orders=True),
+        label="Место производства деятельности (МПД)")
 
     class Meta:
         model = TimeSheet
-        fields = ['date', 'employee', 'time_sheets_place', 'notes']
-        # widgets = {
-        #     'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
-        #                                    "data-plugin-datepicker": True,
-        #                                    "type": "date",
-        #                                    "data-date-language": "ru",
-        #                                    "todayBtn": True,
-        #                                    "clearBtn": True,
-        #                                    "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}', }),
-        #     'employee': forms.Select(attrs={"class": "form-control form-control-modern",
-        #                                     "data-plugin-selectTwo": True, }),
-        #     'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
-        #     'time_sheets_place': forms.Select(attrs={"class": "form-control form-control-modern",
-        #                                              "data-plugin-selectTwo": True, }),
-        # }
+        fields = ['date', 'employee', 'time_sheets_place', 'notes', 'is_draft']
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
+        """Инициализирует форму табеля с кастомными атрибутами."""
         super(TimeSheetForm, self).__init__(*args, **kwargs)
-
         for field in self.fields:
             make_custom_field(self.fields[field])
 
 
 class ReportCardForm(forms.ModelForm):
     outfit_card = forms.ModelMultipleChoiceField(
-        queryset=OutfitCard.objects.none(),
+        queryset=OutfitCard.objects.all(),
         widget=forms.SelectMultiple(attrs={"class": "form-select", "data-plugin-selectTwo": True, "multiple": True}),
         required=False,
         label="Карта-наряд"
     )
     employee = forms.ModelChoiceField(
         widget=forms.Select(attrs={"class": "form-control form-control-modern"}),
-        queryset=DataBaseUser.objects.filter(is_active=True),
-        label="Сотрудник")
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by('title', 'username'),
+        required=True,
+        label="Сотрудник"
+    )
 
     start_time = forms.TimeField(
-        required=True,
+        required=False,
         widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
         label="Время начала"
     )
 
     end_time = forms.TimeField(
-        required=True,
+        required=False,
         widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
         label="Время окончания"
     )
