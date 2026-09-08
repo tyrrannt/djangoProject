@@ -138,6 +138,7 @@
                     return data;
                 }
                 if (data && typeof data === 'object') {
+                    if (Array.isArray(data.members)) return data.members;
                     if (Array.isArray(data.data)) return data.data;
                     if (Array.isArray(data.results)) return data.results;
                 }
@@ -368,10 +369,30 @@
                     },
                     success: function (raw) {
                         $btn.prop('disabled', false).html('<i class="bx bx-group me-1"></i> Заполнить состав бригады');
-                        var data = safeParseArray(raw);
-                        console.log("[fill-from-team] Received members:", data);
 
-                        if (data.length === 0) {
+                        // Автозаполнение старшего бригады в шапке формы
+                        var seniorId = null;
+                        if (raw && typeof raw === 'object' && raw.senior_id) {
+                            seniorId = raw.senior_id;
+                        } else if (typeof raw === 'string') {
+                            try {
+                                var parsed = JSON.parse(raw);
+                                if (parsed && parsed.senior_id) seniorId = parsed.senior_id;
+                            } catch (e) {}
+                        }
+
+                        if (seniorId) {
+                            var $seniorSelect = $('#id_employee');
+                            $seniorSelect.val(seniorId).trigger('change');
+                            if ($seniorSelect.data('select2')) {
+                                $seniorSelect.trigger('change.select2');
+                            }
+                        }
+
+                        var data = safeParseArray(raw);
+                        console.log("[fill-from-team] Received seniorId:", seniorId, "members:", data);
+
+                        if (data.length === 0 && !seniorId) {
                             showAlert("За указанную дату на данном МПД действующий приказ о создании бригады не найден.", "warning");
                             return;
                         }
@@ -394,8 +415,13 @@
                             }
                         });
 
-                        if (addedCount > 0) {
-                            showAlert("Успешно добавлено " + addedCount + " сотр. из состава бригады по приказу.", "success");
+                        if (addedCount > 0 || seniorId) {
+                            var msg = "Успешно загружен состав бригады по приказу (добавлено сотрудников: " + addedCount;
+                            if (seniorId) {
+                                msg += ", старший бригады установлен в параметрах смены";
+                            }
+                            msg += ").";
+                            showAlert(msg, "success");
                         } else {
                             showAlert("Все сотрудники из состава бригады уже добавлены в табель.", "info");
                         }

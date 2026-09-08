@@ -5361,8 +5361,13 @@ class GetTeamMembersView(View):
                 place_filter
             ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")[:1]
 
+        senior_id = None
+        senior_name = ""
         members_dict = {}
         for t in teams:
+            if t.senior_brigade and not senior_id:
+                senior_id = t.senior_brigade.pk
+                senior_name = str(t.senior_brigade)
             if t.senior_brigade:
                 members_dict[t.senior_brigade.pk] = t.senior_brigade
             for m in t.team_brigade.all():
@@ -5378,8 +5383,20 @@ class GetTeamMembersView(View):
                 "person_fio": format_name_initials(person_title) if person_title else str(m),
             })
 
-        logger.info("[GetTeamMembersView] Returning %d members for place_id=%r (teams_found=%d)", len(data), place_id, teams.count() if hasattr(teams, 'count') else len(teams))
-        return JsonResponse(data, safe=False)
+        response_data = {
+            "senior_id": senior_id,
+            "senior_name": senior_name,
+            "members": data,
+        }
+
+        logger.info(
+            "[GetTeamMembersView] Returning senior_id=%r, %d members for place_id=%r (teams_found=%d)",
+            senior_id,
+            len(data),
+            place_id,
+            teams.count() if hasattr(teams, "count") else len(teams),
+        )
+        return JsonResponse(response_data, safe=False)
 
 
 class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
