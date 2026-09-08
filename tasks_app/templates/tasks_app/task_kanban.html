@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block custom_css %}
+    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;
@@ -25,12 +26,13 @@
             overflow-x: auto;
             padding-bottom: 1.5rem;
             min-height: 75vh;
+            -webkit-overflow-scrolling: touch;
         }
         .kanban-column {
             flex: 1 0 300px;
             max-width: 360px;
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 10px;
             display: flex;
             flex-direction: column;
@@ -75,24 +77,30 @@
             cursor: grabbing;
         }
         .col-header-new {
-            border-color: #0dcaf0;
-            background: #f0fdf4;
+            border-color: #0284c7;
+            background: #f0f9ff;
             color: #0369a1;
         }
         .col-header-in-progress {
-            border-color: #0d6efd;
+            border-color: #2563eb;
             background: #eff6ff;
             color: #1d4ed8;
         }
         .col-header-on-review {
-            border-color: #ffc107;
+            border-color: #eab308;
             background: #fefce8;
-            color: #a16207;
+            color: #854d0e;
         }
         .col-header-completed {
-            border-color: #198754;
+            border-color: #16a34a;
             background: #f0fdf4;
-            color: #15803d;
+            color: #166534;
+        }
+        @media (max-width: 768px) {
+            .kanban-column {
+                flex: 0 0 84vw;
+                max-width: 84vw;
+            }
         }
     </style>
 {% endblock %}
@@ -100,34 +108,8 @@
 {% block content %}
     <div class="row">
         <div class="col-12">
-            <!-- Header with View Switcher -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                <div>
-                    <h3 class="font-weight-bold text-dark mb-1">
-                        <i class="bx bx-columns text-primary me-2"></i>Канбан-доска задач и поручений
-                    </h3>
-                    <p class="text-muted small mb-0">Визуализация потока работ по стадиям Workflow с поддержкой Drag & Drop</p>
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="btn-group" role="group">
-                        <a href="{% url 'tasks_app:task-dashboard' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-tachometer me-1"></i> Дашборд
-                        </a>
-                        <a href="{% url 'tasks_app:task-kanban' %}" class="btn btn-primary btn-touch active">
-                            <i class="bx bx-columns me-1"></i> Канбан
-                        </a>
-                        <a href="{% url 'tasks_app:task-list' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-calendar me-1"></i> Календарь
-                        </a>
-                        <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-bar-chart-square me-1"></i> Дисциплина
-                        </a>
-                    </div>
-                    <a href="{% url 'tasks_app:task-create' %}" class="btn btn-primary btn-touch font-weight-bold">
-                        <i class="bx bx-plus me-1"></i> Создать поручение
-                    </a>
-                </div>
-            </div>
+            <!-- Header with Responsive Switcher -->
+            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='kanban' header_title='Канбан-доска задач и поручений' header_subtitle='Визуализация потока работ по стадиям Workflow с поддержкой Drag & Drop' header_icon='bx bx-columns' %}
 
             <!-- Filters Bar -->
             <div class="card card-modern shadow-sm border-0 mb-4">

@@ -1,0 +1,47 @@
+{% load static %}
+
+<div class="task-header-wrapper">
+    <div class="task-header-info">
+        <h3 class="font-weight-bold text-dark mb-1 d-flex align-items-center flex-wrap">
+            <i class="{{ header_icon|default:'bx bx-task' }} text-primary me-2"></i>
+            <span>{{ header_title }}</span>
+        </h3>
+        {% if header_subtitle %}
+            <p class="text-muted small mb-0">{{ header_subtitle }}</p>
+        {% endif %}
+    </div>
+    <div class="task-view-switcher-group">
+        <div class="task-segmented-nav" role="navigation" aria-label="Переключение представлений задач">
+            <a href="{% url 'tasks_app:task-dashboard' %}"
+               class="nav-item-btn {% if active_view == 'dashboard' %}active{% endif %}"
+               title="Дашборд аналитики и метрик">
+                <i class="bx bx-tachometer"></i>
+                <span>Дашборд</span>
+            </a>
+            <a href="{% url 'tasks_app:task-kanban' %}"
+               class="nav-item-btn {% if active_view == 'kanban' %}active{% endif %}"
+               title="Канбан-доска Workflow">
+                <i class="bx bx-columns"></i>
+                <span>Канбан</span>
+            </a>
+            <a href="{% url 'tasks_app:task-list' %}"
+               class="nav-item-btn {% if active_view == 'calendar' or active_view == 'list' %}active{% endif %}"
+               title="Календарь задач и событий">
+                <i class="bx bx-calendar"></i>
+                <span>Календарь</span>
+            </a>
+            <a href="{% url 'tasks_app:task-discipline-report' %}"
+               class="nav-item-btn {% if active_view == 'discipline' %}active{% endif %}"
+               title="Отчет по исполнительской дисциплине">
+                <i class="bx bx-bar-chart-square"></i>
+                <span>Дисциплина</span>
+            </a>
+        </div>
+        {% if show_create_btn|default:True %}
+            <a href="{% url 'tasks_app:task-create' %}" class="btn btn-primary task-create-btn">
+                <i class="bx bx-plus me-1"></i>
+                <span>Создать поручение</span>
+            </a>
+        {% endif %}
+    </div>
+</div>

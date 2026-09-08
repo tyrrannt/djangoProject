@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block custom_css %}
+    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;
@@ -21,7 +22,7 @@
         }
         .kpi-card {
             border-radius: 10px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             background: #ffffff;
             padding: 16px;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -45,7 +46,7 @@
             line-height: 1.2;
         }
         .table-custom th {
-            background-color: #1a3a5c;
+            background-color: #002b49;
             color: #ffffff;
             font-size: 0.82rem;
             text-transform: uppercase;
@@ -56,6 +57,7 @@
         .table-custom td {
             vertical-align: middle;
             font-size: 0.88rem;
+            color: #1e293b;
         }
         .progress-slim {
             height: 6px;
@@ -67,33 +69,8 @@
 {% block content %}
     <div class="row">
         <div class="col-12">
-            <!-- Header & 4-way Navigation Switcher -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                <div>
-                    <h3 class="font-weight-bold text-dark mb-1">
-                        <i class="bx bx-bar-chart-alt-2 text-primary me-2"></i>Отчет по исполнительской дисциплине
-                    </h3>
-                    <p class="text-muted small mb-0">
-                        Анализ своевременности закрытия поручений, контроль просрочек и рейтинг подразделений компании
-                    </p>
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="btn-group" role="group" aria-label="Вид отображения">
-                        <a href="{% url 'tasks_app:task-dashboard' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-tachometer me-1"></i> Дашборд
-                        </a>
-                        <a href="{% url 'tasks_app:task-kanban' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-columns me-1"></i> Канбан
-                        </a>
-                        <a href="{% url 'tasks_app:task-list' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-calendar me-1"></i> Календарь
-                        </a>
-                        <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-primary btn-touch active">
-                            <i class="bx bx-bar-chart-square me-1"></i> Дисциплина
-                        </a>
-                    </div>
-                </div>
-            </div>
+            <!-- Header with Responsive Switcher -->
+            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='discipline' header_title='Отчет по исполнительской дисциплине' header_subtitle='Анализ своевременности закрытия поручений, контроль просрочек и рейтинг подразделений компании' header_icon='bx bx-bar-chart-alt-2' %}
 
             <!-- Filter Card -->
             <div class="card card-modern shadow-sm border-0 mb-4 bg-light">

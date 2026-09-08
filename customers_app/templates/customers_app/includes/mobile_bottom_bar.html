@@ -27,7 +27,17 @@
         <span>Главная</span>
     </a>
 
-    <!-- 2. Корпоративная почта (Доступно всем сотрудникам) -->
+    <!-- 2. Задачи / Канбан-доска задач и поручений (Доступно всем) -->
+    <a href="{% url 'tasks_app:task-kanban' %}"
+       class="mobile-nav-item {% if 'task' in request.path or request.resolver_match.app_name == 'tasks_app' %}active{% endif %}"
+       aria-label="Канбан-доска задач и поручений"
+       title="Канбан-доска задач и поручений"
+       id="mobileNavTasks">
+        <i class="bx bx-task"></i>
+        <span>Задачи</span>
+    </a>
+
+    <!-- 3. Корпоративная почта (Доступно всем сотрудникам) -->
     <a href="{% url 'mailbox_app:index' %}"
        class="mobile-nav-item {% if 'mail' in request.path %}active{% endif %}"
        aria-label="Корпоративная почта"
@@ -201,14 +211,14 @@
                     </div>
                 </a>
 
-                <!-- 4. Календарь задач (Доступно всем) -->
-                <a href="{% url 'tasks_app:task-list' %}" class="quick-action-btn">
+                <!-- 4. Канбан-доска задач и поручений (Доступно всем) -->
+                <a href="{% url 'tasks_app:task-kanban' %}" class="quick-action-btn">
                     <div class="quick-action-icon bg-warning text-dark">
-                        <i class="bx bx-calendar-event"></i>
+                        <i class="bx bx-task"></i>
                     </div>
                     <div>
-                        <div class="fw-bold">Календарь задач</div>
-                        <small class="text-muted font-weight-normal">Запланировать задачу или событие</small>
+                        <div class="fw-bold">Канбан-доска задач</div>
+                        <small class="text-muted font-weight-normal">Задачи, поручения и контроль статусов</small>
                     </div>
                 </a>
 
@@ -282,6 +292,17 @@
                     <div>
                         <div>Мой профиль</div>
                         <small class="text-muted font-weight-normal">Персональная страница сотрудника</small>
+                    </div>
+                </a>
+
+                <!-- Задачи и поручения -->
+                <a href="{% url 'tasks_app:task-kanban' %}" class="quick-action-btn mb-2">
+                    <div class="quick-action-icon bg-warning text-dark">
+                        <i class="bx bx-task"></i>
+                    </div>
+                    <div>
+                        <div>Задачи и поручения</div>
+                        <small class="text-muted font-weight-normal">Канбан-доска, дашборд и дисциплина</small>
                     </div>
                 </a>
 

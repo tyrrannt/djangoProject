@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block custom_css %}
+    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;
@@ -49,34 +50,8 @@
 {% block content %}
     <div class="row">
         <div class="col-12">
-            <!-- Header with View Switcher -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                <div>
-                    <h3 class="font-weight-bold text-dark mb-1">
-                        <i class="bx bx-tachometer text-primary me-2"></i>Дашборд поручений и задач
-                    </h3>
-                    <p class="text-muted small mb-0">Аналитика, матрица загрузки сотрудников и оперативный контроль дедлайнов</p>
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="btn-group" role="group">
-                        <a href="{% url 'tasks_app:task-dashboard' %}" class="btn btn-primary btn-touch active">
-                            <i class="bx bx-tachometer me-1"></i> Дашборд
-                        </a>
-                        <a href="{% url 'tasks_app:task-kanban' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-columns me-1"></i> Канбан
-                        </a>
-                        <a href="{% url 'tasks_app:task-list' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-calendar me-1"></i> Календарь
-                        </a>
-                        <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-bar-chart-square me-1"></i> Дисциплина
-                        </a>
-                    </div>
-                    <a href="{% url 'tasks_app:task-create' %}" class="btn btn-primary btn-touch font-weight-bold">
-                        <i class="bx bx-plus me-1"></i> Создать поручение
-                    </a>
-                </div>
-            </div>
+            <!-- Header with Responsive Switcher -->
+            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='dashboard' header_title='Дашборд поручений и задач' header_subtitle='Аналитика, матрица загрузки сотрудников и оперативный контроль дедлайнов' header_icon='bx bx-tachometer' %}
 
             <!-- Division Quick Filter -->
             <div class="card card-modern shadow-sm border-0 mb-4 bg-light">
@@ -122,7 +97,7 @@
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
                                     <div class="text-muted small text-uppercase fw-bold">В работе</div>
-                                    <h3 class="fw-bold text-info mb-0 mt-1">{{ in_progress_count }}</h3>
+                                    <h3 class="fw-bold text-info-contrast mb-0 mt-1">{{ in_progress_count }}</h3>
                                 </div>
                                 <i class="bx bx-loader-circle fs-1 text-info-subtle"></i>
                             </div>
@@ -135,7 +110,7 @@
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
                                     <div class="text-muted small text-uppercase fw-bold">На проверке</div>
-                                    <h3 class="fw-bold text-warning mb-0 mt-1">{{ on_review_count }}</h3>
+                                    <h3 class="fw-bold text-warning-contrast mb-0 mt-1">{{ on_review_count }}</h3>
                                 </div>
                                 <i class="bx bx-search-alt fs-1 text-warning-subtle"></i>
                             </div>
@@ -148,7 +123,7 @@
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
                                     <div class="text-muted small text-uppercase fw-bold">Просрочено</div>
-                                    <h3 class="fw-bold text-danger mb-0 mt-1">{{ overdue_count }}</h3>
+                                    <h3 class="fw-bold text-danger-contrast mb-0 mt-1">{{ overdue_count }}</h3>
                                 </div>
                                 <i class="bx bx-alarm-exclamation fs-1 text-danger-subtle"></i>
                             </div>

@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block custom_css %}
+    <link rel="stylesheet" href="{% static 'tasks_app/css/tasks_responsive.css' %}">
     <style>
         :root {
             --touch-target-size: 44px;
@@ -123,14 +124,14 @@
                 {% endfor %}
             {% endif %}
 
-            <!-- Header -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="badge bg-{{ task.priority }} px-2 py-1 fs-7">
+            <!-- Header with Responsive Switcher & Edit Button -->
+            <div class="task-header-wrapper">
+                <div class="task-header-info">
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                        <span class="badge bg-{{ task.priority }} {% if task.priority == 'warning' or task.priority == 'info' %}text-dark{% else %}text-white{% endif %} px-2 py-1 fs-7">
                             <i class="bx bx-flag me-1"></i>{{ task.get_priority_display }}
                         </span>
-                        <span class="badge {% if task.status == 'completed' %}bg-success{% elif task.is_overdue %}bg-danger{% elif task.status == 'on_review' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} px-2 py-1 fs-7">
+                        <span class="badge {% if task.status == 'completed' %}bg-success text-white{% elif task.is_overdue %}bg-danger text-white{% elif task.status == 'on_review' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} px-2 py-1 fs-7">
                             <i class="bx {% if task.status == 'completed' %}bx-check-circle{% elif task.is_overdue %}bx-alarm-exclamation{% elif task.status == 'on_review' %}bx-search-alt{% else %}bx-time{% endif %} me-1"></i>{{ task.get_status_display }}
                         </span>
                         {% if task.requires_eds %}
@@ -139,7 +140,7 @@
                             </span>
                         {% endif %}
                     </div>
-                    <h3 class="font-weight-bold text-dark mb-1">
+                    <h3 class="font-weight-bold text-dark mb-1 d-flex align-items-center flex-wrap">
                         <i class="bx bx-task text-primary me-2"></i>{{ task.title }}
                     </h3>
                     <p class="text-muted small mb-0">
@@ -147,24 +148,29 @@
                         &bull; Ответственный: <strong class="text-dark">{{ task.responsible.title|default:task.responsible.get_full_name|default:task.responsible.username|default:"Не назначен" }}</strong>
                     </p>
                 </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="btn-group" role="group">
-                        <a href="{% url 'tasks_app:task-dashboard' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-tachometer me-1"></i> Дашборд
+                <div class="task-view-switcher-group">
+                    <div class="task-segmented-nav" role="navigation" aria-label="Переключение видов задач">
+                        <a href="{% url 'tasks_app:task-dashboard' %}" class="nav-item-btn" title="Дашборд">
+                            <i class="bx bx-tachometer"></i>
+                            <span>Дашборд</span>
                         </a>
-                        <a href="{% url 'tasks_app:task-kanban' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-columns me-1"></i> Канбан
+                        <a href="{% url 'tasks_app:task-kanban' %}" class="nav-item-btn" title="Канбан">
+                            <i class="bx bx-columns"></i>
+                            <span>Канбан</span>
                         </a>
-                        <a href="{% url 'tasks_app:task-list' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-calendar me-1"></i> Календарь
+                        <a href="{% url 'tasks_app:task-list' %}" class="nav-item-btn" title="Календарь">
+                            <i class="bx bx-calendar"></i>
+                            <span>Календарь</span>
                         </a>
-                        <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch">
-                            <i class="bx bx-bar-chart-square me-1"></i> Дисциплина
+                        <a href="{% url 'tasks_app:task-discipline-report' %}" class="nav-item-btn" title="Дисциплина">
+                            <i class="bx bx-bar-chart-square"></i>
+                            <span>Дисциплина</span>
                         </a>
                     </div>
                     {% if can_edit %}
-                        <a href="{% url 'tasks_app:task-update' task.pk %}" class="btn btn-primary btn-touch">
-                            <i class="bx bx-edit me-1"></i> Редактировать
+                        <a href="{% url 'tasks_app:task-update' task.pk %}" class="btn btn-primary task-create-btn">
+                            <i class="bx bx-edit me-1"></i>
+                            <span>Редактировать</span>
                         </a>
                     {% endif %}
                 </div>
