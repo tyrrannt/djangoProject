@@ -1440,3 +1440,43 @@ def ssl_cert_demo_api(request):
     demo_data = ssl_services.generate_demo_ssl_bundle()
     return JsonResponse({"success": True, "data": demo_data})
 
+
+@login_required
+def web_terminal_view(request):
+    """Отображает интерактивный веб-терминал для прямого управления сервером.
+
+    Предоставляет авторизованному суперадминистратору полноэкранную консоль bash
+    на базе xterm.js с двунаправленной передачей команд через WebSocket (PTY).
+    Доступ строго ограничен пользователями с флагом is_superuser=True.
+
+    Args:
+        request (HttpRequest): HTTP-запрос от пользователя.
+
+    Returns:
+        HttpResponse: Срендеренная страница administration_app/web_terminal.html с контекстом.
+
+    Raises:
+        PermissionDenied: Если у пользователя отсутствует флаг суперпользователя.
+    """
+    if not request.user.is_superuser:
+        logger.warning(
+            f"[WebTerminal] Попытка несанкционированного доступа к веб-терминалу: "
+            f"user={request.user.username} (ID: {request.user.pk})"
+        )
+        raise PermissionDenied("Доступ к веб-терминалу управления сервером разрешен исключительно суперпользователям.")
+
+    import socket
+    import platform
+    server_info = {
+        'hostname': socket.gethostname(),
+        'os': platform.system(),
+        'release': platform.release(),
+        'machine': platform.machine(),
+    }
+
+    return render(request, 'administration_app/web_terminal.html', {
+        'title': 'Веб-терминал управления сервером',
+        'server_info': server_info,
+    })
+
+

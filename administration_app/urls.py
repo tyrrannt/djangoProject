@@ -22,4 +22,5 @@ urlpatterns = [
     path('ssl-converter/inspect/', views.ssl_cert_inspect_api, name='ssl_cert_inspect_api'),
     path('ssl-converter/demo/', views.ssl_cert_demo_api, name='ssl_cert_demo_api'),
     path('my-ip/', views.check_my_ip, name='check_my_ip'),
+    path('terminal/', views.web_terminal_view, name='web_terminal'),
 ]
