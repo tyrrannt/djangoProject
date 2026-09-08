@@ -99,70 +99,84 @@
     <div class="row">
         <div class="col-12">
             <!-- Header with Responsive Switcher -->
-            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='calendar' header_title='Календарь задач и поручений' header_subtitle='Планирование, контроль исполнения и распределение задач' header_icon='bx bx-calendar-event' %}
+            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='calendar' header_title='Календарь задач и поручений' header_title_mobile='Календарь задач' header_subtitle='Планирование, контроль исполнения и распределение задач' header_icon='bx bx-calendar-event' %}
 
-            <!-- Stats KPI Cards Row -->
-            <div class="row g-1.5 g-md-2 mb-2 mb-md-3">
-                <div class="col-6 col-md-4 col-xl">
-                    <a href="?tab=all" class="text-decoration-none">
-                        <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'all' or not request.GET.tab %}border-start border-4 border-primary{% endif %}">
-                            <div class="card-body p-2 p-md-3">
-                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Всего задач</div>
-                                <h4 class="fw-bold text-dark mb-0 mt-0.5">{{ total_count }}</h4>
+            <!-- Stats KPI Cards Row (Collapsible Accordion on mobile) -->
+            <div class="card card-modern shadow-sm border-0 mb-2">
+                <header class="card-header bg-light py-1.5 px-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.88rem;">
+                        <i class="bx bx-pie-chart-alt-2 text-primary me-2"></i><span class="d-none d-sm-inline">Сводные показатели задач</span><span class="d-sm-none">Сводка задач</span>
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary d-md-none py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#calendarKpiCollapse" aria-expanded="false" aria-controls="calendarKpiCollapse">
+                        <i class="bx bx-show me-1.5"></i>Сводка
+                    </button>
+                </header>
+                <div class="collapse d-md-block" id="calendarKpiCollapse">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="row g-1.5 g-md-2">
+                            <div class="col-6 col-md-4 col-xl">
+                                <a href="?tab=all" class="text-decoration-none">
+                                    <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'all' or not request.GET.tab %}border-start border-4 border-primary{% endif %}">
+                                        <div class="card-body p-2 p-md-3">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Всего задач</div>
+                                            <h4 class="fw-bold text-dark mb-0 mt-0.5">{{ total_count }}</h4>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-4 col-xl">
+                                <a href="?tab=my" class="text-decoration-none">
+                                    <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'my' %}border-start border-4 border-info{% endif %}">
+                                        <div class="card-body p-2 p-md-3">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Я автор</div>
+                                            <h4 class="fw-bold text-info-contrast mb-0 mt-0.5">{{ my_created_count }}</h4>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-4 col-xl">
+                                <a href="?tab=assigned" class="text-decoration-none">
+                                    <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'assigned' %}border-start border-4 border-primary{% endif %}">
+                                        <div class="card-body p-2 p-md-3">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Мне поручено</div>
+                                            <h4 class="fw-bold text-primary mb-0 mt-0.5">{{ assigned_count }}</h4>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-4 col-xl">
+                                <a href="?tab=review" class="text-decoration-none">
+                                    <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'review' %}border-start border-4 border-warning{% endif %}">
+                                        <div class="card-body p-2 p-md-3">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">На проверке</div>
+                                            <h4 class="fw-bold text-warning-contrast mb-0 mt-0.5">{{ on_review_count }}</h4>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12 col-md-4 col-xl">
+                                <a href="?tab=overdue" class="text-decoration-none">
+                                    <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'overdue' %}border-start border-4 border-danger{% endif %}">
+                                        <div class="card-body p-2 p-md-3">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Просрочено</div>
+                                            <h4 class="fw-bold text-danger mb-0 mt-0.5">{{ overdue_count }}</h4>
+                                        </div>
+                                    </div>
+                                </a>
                             </div>
                         </div>
-                    </a>
-                </div>
-                <div class="col-6 col-md-4 col-xl">
-                    <a href="?tab=my" class="text-decoration-none">
-                        <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'my' %}border-start border-4 border-info{% endif %}">
-                            <div class="card-body p-2 p-md-3">
-                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Я автор</div>
-                                <h4 class="fw-bold text-info-contrast mb-0 mt-0.5">{{ my_created_count }}</h4>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-6 col-md-4 col-xl">
-                    <a href="?tab=assigned" class="text-decoration-none">
-                        <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'assigned' %}border-start border-4 border-primary{% endif %}">
-                            <div class="card-body p-2 p-md-3">
-                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Мне поручено</div>
-                                <h4 class="fw-bold text-primary mb-0 mt-0.5">{{ assigned_count }}</h4>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-6 col-md-4 col-xl">
-                    <a href="?tab=review" class="text-decoration-none">
-                        <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'review' %}border-start border-4 border-warning{% endif %}">
-                            <div class="card-body p-2 p-md-3">
-                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">На проверке</div>
-                                <h4 class="fw-bold text-warning-contrast mb-0 mt-0.5">{{ on_review_count }}</h4>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-12 col-md-4 col-xl">
-                    <a href="?tab=overdue" class="text-decoration-none">
-                        <div class="card card-modern shadow-sm border-0 h-100 {% if request.GET.tab == 'overdue' %}border-start border-4 border-danger{% endif %}">
-                            <div class="card-body p-2 p-md-3">
-                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Просрочено</div>
-                                <h4 class="fw-bold text-danger mb-0 mt-0.5">{{ overdue_count }}</h4>
-                            </div>
-                        </div>
-                    </a>
+                    </div>
                 </div>
             </div>
 
             <!-- Filters Card -->
             <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3">
-                <header class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
-                    <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.92rem;">
-                        <i class="bx bx-filter-alt text-primary me-1"></i>Фильтры отображения
+                <header class="card-header bg-light py-1.5 px-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.88rem;">
+                        <i class="bx bx-filter-alt text-primary me-2"></i><span class="d-none d-sm-inline">Фильтры отображения</span><span class="d-sm-none">Фильтры</span>
                     </h5>
                     <button class="btn btn-sm btn-outline-primary d-md-none py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#calendarFiltersCollapse" aria-expanded="false" aria-controls="calendarFiltersCollapse">
-                        <i class="bx bx-slider me-1"></i>Параметры
+                        <i class="bx bx-slider me-1.5"></i>Параметры
                     </button>
                 </header>
                 <div class="collapse d-md-block" id="calendarFiltersCollapse">

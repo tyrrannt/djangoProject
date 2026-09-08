@@ -71,16 +71,16 @@
     <div class="row">
         <div class="col-12">
             <!-- Header with Responsive Switcher -->
-            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='discipline' header_title='Отчет по исполнительской дисциплине' header_subtitle='Анализ своевременности закрытия поручений, контроль просрочек и рейтинг подразделений компании' header_icon='bx bx-bar-chart-alt-2' %}
+            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='discipline' header_title='Отчет по исполнительской дисциплине' header_title_mobile='Отчет по дисциплине' header_subtitle='Анализ своевременности закрытия поручений, контроль просрочек и рейтинг подразделений компании' header_icon='bx bx-bar-chart-alt-2' %}
 
             <!-- Filter Card (Collapsible on mobile) -->
             <div class="card card-modern shadow-sm border-0 mb-2 bg-light">
                 <header class="card-header bg-light py-1.5 px-3 d-flex justify-content-between align-items-center">
                     <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.88rem;">
-                        <i class="bx bx-filter-alt text-primary me-1"></i>Параметры и фильтры отчета
+                        <i class="bx bx-filter-alt text-primary me-2"></i><span class="d-none d-sm-inline">Параметры и фильтры отчета</span><span class="d-sm-none">Фильтры отчета</span>
                     </h5>
                     <button class="btn btn-sm btn-outline-primary d-md-none py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#disciplineFiltersCollapse" aria-expanded="false" aria-controls="disciplineFiltersCollapse">
-                        <i class="bx bx-slider me-1"></i>Параметры
+                        <i class="bx bx-slider me-1.5"></i>Параметры
                     </button>
                 </header>
                 <div class="collapse d-md-block" id="disciplineFiltersCollapse">
@@ -115,7 +115,7 @@
                             <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-1.5 pt-1">
                                 <div class="d-flex gap-1">
                                     <button type="submit" class="btn btn-primary btn-touch">
-                                        <i class="bx bx-filter-alt me-1"></i> Применить
+                                        <i class="bx bx-filter-alt me-1.5"></i> Применить
                                     </button>
                                     <a href="{% url 'tasks_app:task-discipline-report' %}" class="btn btn-outline-secondary btn-touch px-2" title="Сбросить">
                                         <i class="bx bx-reset"></i>
@@ -123,7 +123,7 @@
                                 </div>
                                 <div>
                                     <a href="{% url 'tasks_app:task-discipline-export-excel' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&division={{ selected_division_id|default:'' }}&employee={{ selected_employee_id|default:'' }}" class="btn btn-success btn-touch font-weight-bold">
-                                        <i class="bx bx-file me-1"></i> Экспорт в Excel
+                                        <i class="bx bx-file me-1.5"></i> Экспорт в Excel
                                     </a>
                                 </div>
                             </div>
@@ -132,113 +132,127 @@
                 </div>
             </div>
 
-            <!-- KPI Cards Grid -->
-            <div class="row g-1.5 g-md-2 mb-2 mb-md-3">
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Всего за период</span>
-                            <div class="kpi-icon-box bg-primary-subtle text-primary" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-task"></i>
+            <!-- KPI Cards Summary (Collapsible Accordion on mobile) -->
+            <div class="card card-modern shadow-sm border-0 mb-2">
+                <header class="card-header bg-light py-1.5 px-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.88rem;">
+                        <i class="bx bx-pie-chart-alt-2 text-primary me-2"></i><span class="d-none d-sm-inline">Сводные показатели за период</span><span class="d-sm-none">Показатели (KPI)</span>
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary d-md-none py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#disciplineKpiCollapse" aria-expanded="false" aria-controls="disciplineKpiCollapse">
+                        <i class="bx bx-show me-1.5"></i>Показатели
+                    </button>
+                </header>
+                <div class="collapse d-md-block" id="disciplineKpiCollapse">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="row g-1.5 g-md-2">
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Всего за период</span>
+                                        <div class="kpi-icon-box bg-primary-subtle text-primary" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-task"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ total_count }}</div>
+                                    <div class="text-muted small mt-0.5 d-none d-sm-block">Все поставленные поручения</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ total_count }}</div>
-                        <div class="text-muted small mt-0.5 d-none d-sm-block">Все поставленные поручения</div>
-                    </div>
-                </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">В срок</span>
-                            <div class="kpi-icon-box bg-success-subtle text-success" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-check-double"></i>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">В срок</span>
+                                        <div class="kpi-icon-box bg-success-subtle text-success" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-check-double"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num text-success" style="font-size: 1.35rem;">{{ completed_on_time_count }}</div>
+                                    <div class="text-muted small mt-0.5 d-none d-sm-block">Без нарушения дедлайна</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-num text-success" style="font-size: 1.35rem;">{{ completed_on_time_count }}</div>
-                        <div class="text-muted small mt-0.5 d-none d-sm-block">Без нарушения дедлайна</div>
-                    </div>
-                </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">С опозданием</span>
-                            <div class="kpi-icon-box bg-warning-subtle text-warning" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-alarm-exclamation"></i>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">С опозданием</span>
+                                        <div class="kpi-icon-box bg-warning-subtle text-warning" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-alarm-exclamation"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num text-warning" style="font-size: 1.35rem;">{{ completed_overdue_count }}</div>
+                                    <div class="text-muted small mt-0.5 d-none d-sm-block">Закрыты с опозданием</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-num text-warning" style="font-size: 1.35rem;">{{ completed_overdue_count }}</div>
-                        <div class="text-muted small mt-0.5 d-none d-sm-block">Закрыты с опозданием</div>
-                    </div>
-                </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Просрочено</span>
-                            <div class="kpi-icon-box bg-danger-subtle text-danger" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-error-alt"></i>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Просрочено</span>
+                                        <div class="kpi-icon-box bg-danger-subtle text-danger" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-error-alt"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num text-danger" style="font-size: 1.35rem;">{{ active_overdue_count }}</div>
+                                    <div class="text-muted small mt-0.5 d-none d-sm-block">В работе с истекшим сроком</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-num text-danger" style="font-size: 1.35rem;">{{ active_overdue_count }}</div>
-                        <div class="text-muted small mt-0.5 d-none d-sm-block">В работе с истекшим сроком</div>
-                    </div>
-                </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Индекс дисциплины</span>
-                            <div class="kpi-icon-box bg-info-subtle text-info" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-target-lock"></i>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Индекс дисциплины</span>
+                                        <div class="kpi-icon-box bg-info-subtle text-info" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-target-lock"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num {% if discipline_rate >= 90 %}text-success{% elif discipline_rate >= 70 %}text-warning{% else %}text-danger{% endif %}" style="font-size: 1.35rem;">
+                                        {{ discipline_rate }}%
+                                    </div>
+                                    <div class="progress progress-slim mt-1">
+                                        <div class="progress-bar {% if discipline_rate >= 90 %}bg-success{% elif discipline_rate >= 70 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ discipline_rate }}%"></div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-num {% if discipline_rate >= 90 %}text-success{% elif discipline_rate >= 70 %}text-warning{% else %}text-danger{% endif %}" style="font-size: 1.35rem;">
-                            {{ discipline_rate }}%
-                        </div>
-                        <div class="progress progress-slim mt-1">
-                            <div class="progress-bar {% if discipline_rate >= 90 %}bg-success{% elif discipline_rate >= 70 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ discipline_rate }}%"></div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">В процессе</span>
-                            <div class="kpi-icon-box bg-secondary-subtle text-secondary" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-time-five"></i>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">В процессе</span>
+                                        <div class="kpi-icon-box bg-secondary-subtle text-secondary" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-time-five"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ in_progress_count }}</div>
+                                    <div class="text-muted small mt-0.5 d-none d-sm-block">Исполняются по графику</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ in_progress_count }}</div>
-                        <div class="text-muted small mt-0.5 d-none d-sm-block">Исполняются по графику</div>
-                    </div>
-                </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">С ЭЦП</span>
-                            <div class="kpi-icon-box bg-primary-subtle text-primary" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-certification"></i>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">С ЭЦП</span>
+                                        <div class="kpi-icon-box bg-primary-subtle text-primary" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-certification"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num text-primary" style="font-size: 1.35rem;">{{ eds_signed_count }}</div>
+                                    <div class="text-muted small mt-0.5 d-none d-sm-block">Квалифицированная подпись</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-num text-primary" style="font-size: 1.35rem;">{{ eds_signed_count }}</div>
-                        <div class="text-muted small mt-0.5 d-none d-sm-block">Квалифицированная подпись</div>
-                    </div>
-                </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Ср. время закрытия</span>
-                            <div class="kpi-icon-box bg-light text-dark" style="width: 32px; height: 32px; font-size: 1.1rem;">
-                                <i class="bx bx-timer"></i>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="kpi-card shadow-sm h-100 p-2 p-md-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Ср. время закрытия</span>
+                                        <div class="kpi-icon-box bg-light text-dark" style="width: 32px; height: 32px; font-size: 1.1rem;">
+                                            <i class="bx bx-timer"></i>
+                                        </div>
+                                    </div>
+                                    <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ avg_completion_days }} дн.</div>
+                                    <div class="text-muted small mt-0.5 d-none d-sm-block">Длительность исполнения</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="kpi-num text-dark" style="font-size: 1.35rem;">{{ avg_completion_days }} дн.</div>
-                        <div class="text-muted small mt-0.5 d-none d-sm-block">Длительность исполнения</div>
                     </div>
                 </div>
             </div>
@@ -249,17 +263,17 @@
                     <ul class="nav nav-tabs card-header-tabs" id="reportTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active font-weight-bold" id="divisions-tab" data-bs-toggle="tab" data-bs-target="#divisions" type="button" role="tab">
-                                <i class="bx bx-building me-1"></i> По подразделениям ({{ division_stats|length }})
+                                <i class="bx bx-building me-1.5"></i><span class="d-none d-sm-inline">По подразделениям</span><span class="d-sm-none">Отделы</span> ({{ division_stats|length }})
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link font-weight-bold" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees" type="button" role="tab">
-                                <i class="bx bx-user-check me-1"></i> Рейтинг сотрудников ({{ employee_stats|length }})
+                                <i class="bx bx-user-check me-1.5"></i><span class="d-none d-sm-inline">Рейтинг сотрудников</span><span class="d-sm-none">Сотрудники</span> ({{ employee_stats|length }})
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link font-weight-bold" id="registry-tab" data-bs-toggle="tab" data-bs-target="#registry" type="button" role="tab">
-                                <i class="bx bx-list-ul me-1"></i> Реестр поручений ({{ detailed_tasks|length }})
+                                <i class="bx bx-list-ul me-1.5"></i><span class="d-none d-sm-inline">Реестр поручений</span><span class="d-sm-none">Реестр</span> ({{ detailed_tasks|length }})
                             </button>
                         </li>
                     </ul>

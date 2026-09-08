@@ -52,13 +52,13 @@
     <div class="row">
         <div class="col-12">
             <!-- Header with Responsive Switcher -->
-            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='dashboard' header_title='Дашборд поручений и задач' header_subtitle='Аналитика, матрица загрузки сотрудников и оперативный контроль дедлайнов' header_icon='bx bx-tachometer' %}
+            {% include 'tasks_app/partials/_task_header_nav.html' with active_view='dashboard' header_title='Дашборд поручений и задач' header_title_mobile='Дашборд задач' header_subtitle='Аналитика, матрица загрузки сотрудников и оперативный контроль дедлайнов' header_icon='bx bx-tachometer' %}
 
             <!-- Division Quick Filter -->
-            <div class="card card-modern shadow-sm border-0 mb-2 mb-md-3 bg-light">
+            <div class="card card-modern shadow-sm border-0 mb-2 bg-light">
                 <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <form method="get" class="d-flex align-items-center gap-2 flex-grow-1" id="dashDivisionFilter">
-                        <span class="small fw-bold text-dark text-nowrap"><i class="bx bx-filter-alt me-1"></i><span class="d-none d-sm-inline">Подразделение:</span></span>
+                        <span class="small fw-bold text-dark text-nowrap"><i class="bx bx-filter-alt me-2"></i><span class="d-none d-sm-inline">Подразделение:</span></span>
                         <select name="division" class="form-control form-control-sm form-control-modern flex-grow-1" style="max-width: 320px;" onchange="document.getElementById('dashDivisionFilter').submit();">
                             <option value="">-- Все подразделения --</option>
                             {% for div in divisions %}
@@ -72,61 +72,75 @@
                         {% endif %}
                     </form>
                     <a href="{% url 'tasks_app:task-discipline-report' %}{% if selected_division %}?division={{ selected_division }}{% endif %}" class="btn btn-sm btn-outline-primary fw-bold text-nowrap d-none d-md-inline-flex">
-                        <i class="bx bx-line-chart me-1"></i> Полный отчет по дисциплине &rarr;
+                        <i class="bx bx-line-chart me-1.5"></i> Полный отчет по дисциплине &rarr;
                     </a>
                 </div>
             </div>
 
-            <!-- Top Metric Cards -->
-            <div class="row g-2 mb-2 mb-md-3">
-                <div class="col-6 col-md-3">
-                    <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-primary">
-                        <div class="card-body p-2 p-md-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Всего задач</div>
-                                    <h4 class="fw-bold text-dark mb-0 mt-0.5">{{ total_tasks }}</h4>
+            <!-- Top Metric Cards (Collapsible Accordion on mobile) -->
+            <div class="card card-modern shadow-sm border-0 mb-2">
+                <header class="card-header bg-light py-1.5 px-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold" style="font-size: 0.88rem;">
+                        <i class="bx bx-bar-chart-alt-2 text-primary me-2"></i><span class="d-none d-sm-inline">Ключевые метрики поручений</span><span class="d-sm-none">Метрики задач</span>
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary d-md-none py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#dashboardKpiCollapse" aria-expanded="false" aria-controls="dashboardKpiCollapse">
+                        <i class="bx bx-show me-1.5"></i>Метрики
+                    </button>
+                </header>
+                <div class="collapse d-md-block" id="dashboardKpiCollapse">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-primary">
+                                    <div class="card-body p-2 p-md-3">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Всего задач</div>
+                                                <h4 class="fw-bold text-dark mb-0 mt-0.5">{{ total_tasks }}</h4>
+                                            </div>
+                                            <i class="bx bx-task fs-2 text-primary-subtle d-none d-sm-block"></i>
+                                        </div>
+                                    </div>
                                 </div>
-                                <i class="bx bx-task fs-2 text-primary-subtle d-none d-sm-block"></i>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-info">
-                        <div class="card-body p-2 p-md-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">В работе</div>
-                                    <h4 class="fw-bold text-info-contrast mb-0 mt-0.5">{{ in_progress_count }}</h4>
+                            <div class="col-6 col-md-3">
+                                <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-info">
+                                    <div class="card-body p-2 p-md-3">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">В работе</div>
+                                                <h4 class="fw-bold text-info-contrast mb-0 mt-0.5">{{ in_progress_count }}</h4>
+                                            </div>
+                                            <i class="bx bx-loader-circle fs-2 text-info-subtle d-none d-sm-block"></i>
+                                        </div>
+                                    </div>
                                 </div>
-                                <i class="bx bx-loader-circle fs-2 text-info-subtle d-none d-sm-block"></i>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-warning">
-                        <div class="card-body p-2 p-md-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">На проверке</div>
-                                    <h4 class="fw-bold text-warning-contrast mb-0 mt-0.5">{{ on_review_count }}</h4>
+                            <div class="col-6 col-md-3">
+                                <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-warning">
+                                    <div class="card-body p-2 p-md-3">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">На проверке</div>
+                                                <h4 class="fw-bold text-warning-contrast mb-0 mt-0.5">{{ on_review_count }}</h4>
+                                            </div>
+                                            <i class="bx bx-search-alt fs-2 text-warning-subtle d-none d-sm-block"></i>
+                                        </div>
+                                    </div>
                                 </div>
-                                <i class="bx bx-search-alt fs-2 text-warning-subtle d-none d-sm-block"></i>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-danger">
-                        <div class="card-body p-2 p-md-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Просрочено</div>
-                                    <h4 class="fw-bold text-danger-contrast mb-0 mt-0.5">{{ overdue_count }}</h4>
+                            <div class="col-6 col-md-3">
+                                <div class="card card-modern stat-card shadow-sm border-0 border-start border-4 border-danger">
+                                    <div class="card-body p-2 p-md-3">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem;">Просрочено</div>
+                                                <h4 class="fw-bold text-danger-contrast mb-0 mt-0.5">{{ overdue_count }}</h4>
+                                            </div>
+                                            <i class="bx bx-alarm-exclamation fs-2 text-danger-subtle d-none d-sm-block"></i>
+                                        </div>
+                                    </div>
                                 </div>
-                                <i class="bx bx-alarm-exclamation fs-2 text-danger-subtle d-none d-sm-block"></i>
                             </div>
                         </div>
                     </div>
