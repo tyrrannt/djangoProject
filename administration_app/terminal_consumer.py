@@ -17,8 +17,29 @@ import subprocess
 import termios
 from typing import Optional
 
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from core import logger
+
+
+@database_sync_to_async
+def _verify_superuser_access(user) -> tuple[bool, str]:
+    """Асинхронно и потокобезопасно валидирует статус суперадминистратора в БД.
+
+    Args:
+        user: Объект пользователя Django из ASGI scope.
+
+    Returns:
+        tuple[bool, str]: Кортеж (is_superuser, username).
+    """
+    if not user:
+        return False, "AnonymousUser"
+    is_auth = getattr(user, "is_authenticated", False)
+    if not is_auth:
+        return False, str(user)
+    is_super = bool(getattr(user, "is_superuser", False))
+    username = getattr(user, "username", str(user))
+    return is_super, username
 
 
 class WebTerminalConsumer(AsyncWebsocketConsumer):
@@ -49,10 +70,13 @@ class WebTerminalConsumer(AsyncWebsocketConsumer):
             None.
         """
         user = self.scope.get('user')
-        if not user or not user.is_authenticated or not user.is_superuser:
+        client_ip = self.scope.get('client', ['unknown'])[0]
+        is_super, username = await _verify_superuser_access(user)
+
+        if not is_super:
             logger.warning(
-                f"[WebTerminal] Попытка несанкционированного подключения к терминалу: user={user}, "
-                f"ip={self.scope.get('client', ['unknown'])[0]}"
+                f"[WebTerminal] Попытка несанкционированного подключения к терминалу: user={username}, "
+                f"ip={client_ip}"
             )
             await self.close(code=4003)
             return
@@ -74,9 +98,21 @@ class WebTerminalConsumer(AsyncWebsocketConsumer):
             env["COLORTERM"] = "truecolor"
             env["LANG"] = "ru_RU.UTF-8"
             env["LC_ALL"] = "ru_RU.UTF-8"
-            working_dir = env.get("HOME", "/home/agy")
-            if not os.path.isdir(working_dir):
-                working_dir = "/root" if os.path.isdir("/root") else "/"
+
+            # Определяем стартовую рабочую директорию
+            working_dir = "/"
+            for candidate_dir in [
+                os.environ.get("HOME", ""),
+                "/home/proxmox/djangoProject",
+                "/home/agy/djangoProject",
+                "/home/proxmox",
+                "/home/agy",
+                os.getcwd(),
+                "/root",
+            ]:
+                if candidate_dir and os.path.isdir(candidate_dir):
+                    working_dir = candidate_dir
+                    break
 
             # Запускаем интерактивную оболочку bash в собственной группе процессов
             proc = subprocess.Popen(
@@ -95,14 +131,28 @@ class WebTerminalConsumer(AsyncWebsocketConsumer):
             # Регистрируем callback для неблокирующего чтения вывода из master_fd
             self.loop.add_reader(self.master_fd, self._pty_read_callback)
             logger.info(
-                f"[WebTerminal] Успешно запущена сессия терминала для суперпользователя '{user.username}' "
-                f"(PID: {self.pid}, CWD: {working_dir})"
+                f"[WebTerminal] Успешно запущена сессия терминала для суперпользователя '{username}' "
+                f"(PID: {self.pid}, CWD: {working_dir}, IP: {client_ip})"
             )
 
         except Exception as ex:
             logger.error(f"[WebTerminal] Критическая ошибка запуска PTY сессии: {ex}", exc_info=True)
-            await self.send(text_data=f"\r\n\x1b[31;1m[ОШИБКА] Не удалось инициализировать PTY: {ex}\x1b[0m\r\n")
+            try:
+                await self.send(text_data=f"\r\n\x1b[31;1m[ОШИБКА] Не удалось инициализировать PTY: {ex}\x1b[0m\r\n")
+            except Exception:
+                pass
             await self.close()
+
+    async def _async_send_output(self, text: str) -> None:
+        """Безопасно пересылает текстовые данные в открытый WebSocket сокет.
+
+        Args:
+            text (str): Текстовый вывод от псевдотерминала.
+        """
+        try:
+            await self.send(text_data=text)
+        except Exception as e:
+            logger.debug(f"[WebTerminal] Сокет закрыт при отправке данных: {e}")
 
     def _pty_read_callback(self) -> None:
         """Callback-функция для чтения данных из PTY и пересылки в WebSocket клиент.
@@ -119,20 +169,24 @@ class WebTerminalConsumer(AsyncWebsocketConsumer):
             data = os.read(self.master_fd, 8192)
             if data:
                 text = data.decode("utf-8", errors="replace")
-                asyncio.create_task(self.send(text_data=text))
+                if self.loop and not self.loop.is_closed():
+                    self.loop.create_task(self._async_send_output(text))
             else:
                 # EOF: дочерний процесс завершил работу (например, по команде exit / Ctrl+D)
                 self._cleanup()
-                asyncio.create_task(self.close())
+                if self.loop and not self.loop.is_closed():
+                    self.loop.create_task(self.close())
         except (BlockingIOError, InterruptedError):
             pass
         except OSError:
             self._cleanup()
-            asyncio.create_task(self.close())
+            if self.loop and not self.loop.is_closed():
+                self.loop.create_task(self.close())
         except Exception as e:
             logger.error(f"[WebTerminal] Ошибка чтения из master_fd: {e}")
             self._cleanup()
-            asyncio.create_task(self.close())
+            if self.loop and not self.loop.is_closed():
+                self.loop.create_task(self.close())
 
     async def receive(self, text_data: Optional[str] = None, bytes_data: Optional[bytes] = None) -> None:
         """Принимает команды, ввод с клавиатуры и управляющие сигналы от клиента xterm.js.
