@@ -188,9 +188,11 @@
             box-sizing: border-box;
         }
 
-        /* Стили календаря FullCalendar */
+        /* ============================================
+           СТИЛИ КАЛЕНДАРЯ FULLCALENDAR (ПЛАНИРОВЩИК)
+        ============================================ */
         .calendar-container {
-            min-height: 520px;
+            min-height: 540px;
             width: 100%;
             max-width: 100%;
             overflow-x: hidden;
@@ -209,30 +211,175 @@
             overflow-x: hidden !important;
         }
 
+        .fc .fc-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 0.85rem !important;
+        }
+        .fc .fc-toolbar-title {
+            font-size: 1.15rem !important;
+            font-weight: 700 !important;
+            color: #002b49 !important;
+        }
+        .fc .fc-button {
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            padding: 6px 12px !important;
+            background-color: #f1f5f9 !important;
+            color: #334155 !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: none !important;
+            transition: all 0.15s ease-in-out !important;
+        }
+        .fc .fc-button:hover {
+            background-color: #e2e8f0 !important;
+            color: #002b49 !important;
+            border-color: #94a3b8 !important;
+        }
+        .fc .fc-button-primary:not(:disabled).fc-button-active,
+        .fc .fc-button-primary:not(:disabled):active {
+            background-color: #002b49 !important;
+            border-color: #002b49 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 4px rgba(0, 43, 73, 0.25) !important;
+        }
+
+        /* Стили режима «Список» FullCalendar (List View) */
+        .fc .fc-list {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+            background-color: #ffffff !important;
+        }
+        .fc .fc-list-table {
+            border-collapse: collapse !important;
+        }
+        .fc .fc-list-day-cushion {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            padding: 7px 12px !important;
+            font-weight: 700 !important;
+            font-size: 0.84rem !important;
+            border-top: 1px solid #e2e8f0 !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        .fc .fc-list-day-text {
+            color: #002b49 !important;
+            text-decoration: none !important;
+            font-weight: 700 !important;
+        }
+        .fc .fc-list-day-side-text {
+            color: #64748b !important;
+            text-decoration: none !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+        }
+        .fc .fc-list-event {
+            background-color: #ffffff !important;
+            cursor: pointer !important;
+            transition: background-color 0.15s ease !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+        }
+        .fc .fc-list-event:hover td {
+            background-color: #f8fafc !important;
+        }
+        .fc .fc-list-event-time {
+            font-weight: 600 !important;
+            font-size: 0.82rem !important;
+            color: #475569 !important;
+            padding: 9px 8px !important;
+            white-space: nowrap !important;
+        }
+        .fc .fc-list-event-title {
+            font-size: 0.88rem !important;
+            font-weight: 600 !important;
+            color: #0f172a !important;
+            padding: 9px 12px !important;
+        }
+        .fc .fc-list-event-graphic {
+            padding: 9px 8px !important;
+        }
+        .fc .fc-list-event-dot {
+            border-width: 4px !important;
+            border-radius: 50% !important;
+        }
+        .fc .fc-list-empty {
+            padding: 32px 16px !important;
+            text-align: center !important;
+            color: #64748b !important;
+            font-size: 0.92rem !important;
+            background-color: #f8fafc !important;
+        }
+
         @media (max-width: 768px) {
             .nav-tabs-responsive .nav-link {
                 padding: 8px 10px;
                 font-size: 0.8rem;
             }
             .calendar-container {
-                min-height: 420px;
+                min-height: 400px !important;
             }
             .fc .fc-toolbar {
+                display: flex !important;
                 flex-direction: column !important;
                 align-items: stretch !important;
                 gap: 6px !important;
+                margin-bottom: 0.5rem !important;
             }
             .fc .fc-toolbar-chunk {
                 display: flex !important;
-                justify-content: center !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 100% !important;
             }
             .fc .fc-toolbar-title {
-                font-size: 1.05rem !important;
-                text-align: center;
+                font-size: 0.95rem !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+                flex-grow: 1 !important;
             }
             .fc .fc-button {
-                padding: 5px 8px !important;
-                font-size: 0.775rem !important;
+                font-size: 0.76rem !important;
+                padding: 4px 8px !important;
+                min-height: 32px !important;
+                border-radius: 5px !important;
+            }
+            .fc .fc-button-group {
+                display: inline-flex !important;
+                width: 100% !important;
+            }
+            .fc .fc-button-group .fc-button {
+                flex: 1 1 auto !important;
+                text-align: center !important;
+            }
+            .fc .fc-list-day-cushion {
+                background-color: #f1f5f9 !important;
+                padding: 6px 10px !important;
+                font-size: 0.82rem !important;
+                border-top: 1px solid #e2e8f0 !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+            }
+            .fc .fc-list-day-text {
+                color: #002b49 !important;
+                font-weight: 700 !important;
+            }
+            .fc .fc-list-day-side-text {
+                color: #64748b !important;
+                font-weight: 600 !important;
+            }
+            .fc .fc-list-event-title {
+                font-size: 0.84rem !important;
+                padding: 8px 10px !important;
+                color: #0f172a !important;
+            }
+            .fc .fc-list-event-time {
+                font-size: 0.78rem !important;
+                padding: 8px 6px !important;
+                color: #475569 !important;
             }
             .fc-daygrid-day-number {
                 font-size: 0.75rem !important;
@@ -375,6 +522,19 @@
                          ВКЛАДКА 1: ПЛАНИРОВЩИК СОБЫТИЙ
                          ============================================ -->
                     <div id="tasks" class="tab-pane active" role="tabpanel">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                            <h5 class="font-weight-bold text-dark mb-0">
+                                <i class="fas fa-calendar-alt me-2 text-primary"></i>Планировщик задач и событий
+                            </h5>
+                            <div class="d-flex align-items-center gap-2 w-100 w-sm-auto justify-content-end">
+                                <button type="button" class="btn btn-primary btn-touch btn-sm font-weight-semibold" data-bs-toggle="modal" data-bs-target="#eventTitleModal">
+                                    <i class="bx bx-plus-circle me-1"></i> Добавить событие
+                                </button>
+                                <a href="{% url 'tasks_app:task-list' %}" class="btn btn-outline-primary btn-touch btn-sm font-weight-semibold">
+                                    <i class="bx bx-calendar-event me-1"></i> Все задачи
+                                </a>
+                            </div>
+                        </div>
                         <div class="calendar-container">
                             <div id="calendar"></div>
                         </div>
@@ -717,6 +877,16 @@
                         <label for="eventDuration" class="form-label fw-semibold text-dark small">Длительность (часы)</label>
                         <input type="number" class="form-control" id="eventDuration" value="1" min="0.5" step="0.5">
                     </div>
+                    {% if users %}
+                    <div class="mb-3">
+                        <label for="shared_with" class="form-label fw-semibold text-dark small">Участники (опционально)</label>
+                        <select class="form-select" id="shared_with" name="shared_with" multiple size="3">
+                            {% for u in users %}
+                                <option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary btn-touch" data-bs-dismiss="modal">
@@ -895,20 +1065,44 @@
                     }
                 {% endfor %}
 
+                var isMobile = window.innerWidth <= 768;
+
                 calendarInstance = new FullCalendar.Calendar(calendarEl, {
                     themeSystem: 'bootstrap',
                     locale: 'ru',
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
+                    initialView: isMobile ? 'listMonth' : 'dayGridMonth',
+                    headerToolbar: isMobile ? {
+                        left: 'prev,today,next',
+                        center: 'title',
+                        right: 'listMonth,dayGridMonth,timeGridDay'
+                    } : {
                         left: 'prev,next today',
                         center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,timeGridDay'
+                        right: 'dayGridMonth,dayGridWeek,timeGridDay,listMonth'
                     },
                     buttonText: {
                         today: 'Сегодня',
-                        month: 'Месяц',
+                        month: isMobile ? 'Сетка' : 'Месяц',
                         week: 'Неделя',
-                        day: 'День'
+                        day: 'День',
+                        list: 'Список',
+                        listMonth: 'Список'
+                    },
+                    views: {
+                        listMonth: {
+                            buttonText: 'Список',
+                            noEventsContent: 'Нет запланированных событий на этот период'
+                        },
+                        dayGridMonth: {
+                            buttonText: isMobile ? 'Сетка' : 'Месяц',
+                            dayMaxEvents: isMobile ? 2 : 4
+                        },
+                        dayGridWeek: {
+                            buttonText: 'Неделя'
+                        },
+                        timeGridDay: {
+                            buttonText: 'День'
+                        }
                     },
                     editable: true,
                     droppable: true,
@@ -926,6 +1120,31 @@
                     slotMinTime: '08:00:00',
                     slotMaxTime: '20:00:00',
                     events: calendarEvents,
+                    dateClick: function (info) {
+                        var startDate = new Date(info.date);
+                        var now = new Date();
+                        if (formatDate(info.date) === formatDate(now)) {
+                            startDate.setHours(now.getHours());
+                            startDate.setMinutes(now.getMinutes());
+                        } else {
+                            startDate.setHours(9, 0, 0);
+                        }
+                        var titleEl = document.getElementById('eventTitle');
+                        var priorityEl = document.getElementById('eventPriority');
+                        var dateEl = document.getElementById('eventDate');
+                        var timeEl = document.getElementById('eventTime');
+                        var durEl = document.getElementById('eventDuration');
+                        if (titleEl) titleEl.value = '';
+                        if (priorityEl) priorityEl.value = 'primary';
+                        if (dateEl) dateEl.value = formatDate(startDate);
+                        if (timeEl) timeEl.value = formatTime(startDate);
+                        if (durEl) durEl.value = '1';
+                        var modalEl = document.getElementById('eventTitleModal');
+                        if (modalEl) {
+                            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                            modal.show();
+                        }
+                    },
                     drop: function (info) {
                         pendingDropInfo = info;
                         var draggedEl = info.draggedEl;
@@ -948,20 +1167,42 @@
                         } else {
                             startDate.setHours(9, 0, 0);
                         }
-                        document.getElementById('eventTitle').value = pendingEventData ? (pendingEventData.title || '') : '';
-                        document.getElementById('eventPriority').value = pendingEventData ? (pendingEventData.priority || 'primary') : 'primary';
-                        document.getElementById('eventDate').value = formatDate(startDate);
-                        document.getElementById('eventTime').value = formatTime(startDate);
-                        document.getElementById('eventDuration').value = '1';
-                        new bootstrap.Modal(document.getElementById('eventTitleModal')).show();
+                        var titleEl = document.getElementById('eventTitle');
+                        var priorityEl = document.getElementById('eventPriority');
+                        var dateEl = document.getElementById('eventDate');
+                        var timeEl = document.getElementById('eventTime');
+                        var durEl = document.getElementById('eventDuration');
+                        if (titleEl) titleEl.value = pendingEventData ? (pendingEventData.title || '') : '';
+                        if (priorityEl) priorityEl.value = pendingEventData ? (pendingEventData.priority || 'primary') : 'primary';
+                        if (dateEl) dateEl.value = formatDate(startDate);
+                        if (timeEl) timeEl.value = formatTime(startDate);
+                        if (durEl) durEl.value = '1';
+                        var modalEl = document.getElementById('eventTitleModal');
+                        if (modalEl) {
+                            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                            modal.show();
+                        }
                     },
                     eventClick: function (info) {
-                        if (info.event.url) {
+                        if (info.event && info.event.url) {
                             window.location.href = info.event.url;
-                            info.jsEvent.preventDefault();
+                            if (info.jsEvent) {
+                                info.jsEvent.preventDefault();
+                                info.jsEvent.stopPropagation();
+                            }
+                            return false;
                         }
                     },
                     eventContent: function (info) {
+                        if (info.view && info.view.type && info.view.type.indexOf('list') !== -1) {
+                            var a = document.createElement('a');
+                            if (info.event.url) {
+                                a.href = info.event.url;
+                            }
+                            a.className = 'fw-bold text-dark text-decoration-none';
+                            a.innerHTML = info.event.title;
+                            return {domNodes: [a]};
+                        }
                         var div = document.createElement('div');
                         div.className = 'fc-event-title';
                         div.style.whiteSpace = 'normal';
@@ -1034,7 +1275,15 @@
                         pendingDropInfo ? pendingDropInfo.draggedEl : null
                     );
 
-                    bootstrap.Modal.getInstance(document.getElementById('eventTitleModal')).hide();
+                    var modalEl = document.getElementById('eventTitleModal');
+                    if (modalEl) {
+                        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        } else {
+                            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                        }
+                    }
                     title.value = '';
                     selectedDate.value = '';
                     selectedTime.value = '';
@@ -1063,7 +1312,9 @@
                 // Перерисовка календаря при переключении на его вкладку
                 $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
                     if (e.target.getAttribute('data-bs-target') === '#tasks' && calendarInstance) {
-                        calendarInstance.updateSize();
+                        setTimeout(function () {
+                            calendarInstance.updateSize();
+                        }, 50);
                     }
                 });
             });
