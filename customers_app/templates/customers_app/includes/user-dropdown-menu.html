@@ -8,7 +8,7 @@
      ============================================ -->
 <div id="userbox" class="userbox">
     <!-- 1. Десктоп и планшеты: кнопка выпадающего меню сверху -->
-    <a href="#" class="d-none d-md-flex align-items-center text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
+    <a href="#" class="d-none d-md-flex align-items-center text-decoration-none" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
         <figure class="profile-picture">
             <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ user.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                  alt="{{ user.username }}"
@@ -136,25 +136,37 @@
     </div>
 </div>
 
-
-
 <style>
     /* ============================================
        СТИЛИ ВЫПАДАЮЩЕГО МЕНЮ ПОЛЬЗОВАТЕЛЯ (ДЕСКТОП)
        ============================================ */
+    .userbox {
+        position: relative;
+    }
+
     .userbox .dropdown-menu {
-        min-width: 260px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        border: none;
-        margin-top: 0.5rem;
+        position: absolute !important;
+        top: 100% !important;
+        right: 0 !important;
+        left: auto !important;
+        transform: none !important;
+        margin-top: 8px !important;
+        padding: 8px 0 0 0 !important;
+        min-width: 260px !important;
+        width: auto !important;
+        box-sizing: border-box !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid #e2e8f0 !important;
+        background-color: #ffffff !important;
+        z-index: 1050 !important;
         animation: fadeInDown 0.2s ease-out;
     }
 
     @keyframes fadeInDown {
         from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateY(-8px);
         }
         to {
             opacity: 1;
@@ -167,45 +179,51 @@
         display: flex;
         align-items: center;
         transition: all 0.2s ease;
-        color: #333;
+        color: #1e293b;
         font-size: 0.9rem;
+        text-decoration: none;
     }
 
     .userbox .dropdown-menu li a:hover {
-        background-color: #f8f9fa;
-        padding-left: 1.5rem;
-        color: #0d6efd;
+        background-color: #f1f5f9;
+        padding-left: 1.4rem;
+        color: #0088cc;
     }
 
     .userbox .dropdown-menu li a i {
         font-size: 1.2rem;
         width: 1.5rem;
-        color: #6c757d;
+        color: #64748b;
         transition: all 0.2s ease;
     }
 
     .userbox .dropdown-menu li a:hover i {
-        color: #0d6efd;
-        transform: scale(1.05);
+        color: #0088cc;
+        transform: scale(1.08);
+    }
+
+    .userbox .dropdown-menu li a.text-danger {
+        color: #dc2626 !important;
     }
 
     .userbox .dropdown-menu li a.text-danger:hover {
-        background-color: #f8d7da;
+        background-color: #fef2f2;
+        color: #b91c1c !important;
     }
 
     .userbox .dropdown-menu li a.text-danger:hover i {
-        color: #dc3545;
+        color: #b91c1c !important;
     }
 
     .userbox .dropdown-menu .divider {
         height: 1px;
         margin: 0.4rem 0;
-        background: #e9ecef;
+        background: #e2e8f0;
     }
 
     .dropdown-header {
         padding: 0.75rem 1rem;
-        background-color: #f8f9fa;
+        background-color: #f8fafc;
     }
 
     .userbox .dropdown-menu .badge {
@@ -214,8 +232,11 @@
     }
 
     .dropdown-footer {
-        border-top: 1px solid #e9ecef;
-        font-size: 0.7rem;
+        border-top: 1px solid #e2e8f0;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        font-size: 0.75rem;
+        background-color: #f8fafc !important;
     }
 
     .custom-caret {
@@ -224,7 +245,8 @@
         margin-left: 0.5rem;
     }
 
-    .userbox.show .custom-caret {
+    .userbox.show .custom-caret,
+    .userbox > a.show .custom-caret {
         transform: rotate(180deg);
     }
 </style>
@@ -245,7 +267,10 @@
             const dropdownMenu = document.querySelector('.userbox .dropdown-menu');
             if (userbox && dropdownMenu) {
                 if (!userbox.contains(event.target) && dropdownMenu.classList.contains('show')) {
-                    bootstrap.Dropdown.getInstance(document.querySelector('[data-bs-toggle="dropdown"]'))?.hide();
+                    const dropdownTrigger = document.querySelector('.userbox [data-bs-toggle="dropdown"]');
+                    if (dropdownTrigger) {
+                        bootstrap.Dropdown.getInstance(dropdownTrigger)?.hide();
+                    }
                 }
             }
         });
