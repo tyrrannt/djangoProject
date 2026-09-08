@@ -348,8 +348,10 @@
                         <button type="button" class="quick-cmd-btn" data-cmd="docker ps">docker</button>
                         <button type="button" class="quick-cmd-btn" data-cmd="uptime">uptime</button>
                         <button type="button" class="quick-cmd-btn" data-cmd="cd /home/proxmox/djangoProject">cd проект</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="git pull origin master">Обновление проекта</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="git pull origin master">Git update</button>
                         <button type="button" class="quick-cmd-btn" data-cmd="pkill gunicorn">Рестарт Gunicorn</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="pkill -f daphne">Рестарт Daphne</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="pkill gunicorn; pkill -f daphne">Рестарт всего</button>
                     </div>
 
                     <div class="text-muted small d-none d-lg-block">
