@@ -279,11 +279,26 @@ class MedicalExaminationUpdate(PermissionRequiredMixin, LoginRequiredMixin, Upda
 
 
 class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """Представление реестра служебных записок на служебные поездки.
+
+    Предоставляет серверную пагинацию, поиск и фильтрацию для DataTables
+    с разграничением прав доступа по подразделениям и правам согласования.
+    """
+
     model = OfficialMemo
     permission_required = "hrdepartment_app.view_officialmemo"
 
     def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос на отображение реестра или отдачу JSON для DataTables.
 
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: JsonResponse для AJAX DataTables или стандартный HTML-ответ.
+        """
         query = Q()
         if not request.user.is_superuser or not request.user.is_staff:
             if request.user.user_work_profile.job.division_affiliation.pk != 1:
@@ -292,17 +307,28 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
             if not request.user.user_work_profile.job.right_to_approval:
                 query &= Q(person__pk=request.user.pk)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            search_list = ['type_trip', 'person__title',
-                           'person__user_work_profile__job__name', 'place_production_activity__name',
-                           'purpose_trip__title',
-                           'period_from', 'period_for', 'accommodation',
-                           'order__document_number', 'comments', 'period_from',
-                           ]
+            search_list = [
+                'type_trip',
+                'person__title',
+                'person__user_work_profile__job__name',
+                'place_production_activity__name',
+                'purpose_trip__title',
+                'period_from',
+                'period_for',
+                'accommodation',
+                'order__document_number',
+                'comments',
+            ]
             context = ajax_search(request, self, search_list, OfficialMemo, query)
             return JsonResponse(context, safe=False)
         return super(OfficialMemoList, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
+        """Возвращает отфильтрованный QuerySet служебных записок с учетом прав пользователя.
+
+        Returns:
+            QuerySet: Записи служебных записок.
+        """
         qs = super(OfficialMemoList, self).get_queryset().order_by("pk")
         if not self.request.user.is_superuser:
             user_division = DataBaseUser.objects.get(
@@ -318,6 +344,15 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
+        """Формирует контекст данных для рендеринга шаблона списка служебных записок.
+
+        Args:
+            object_list: Опциональный список объектов.
+            **kwargs: Именованные аргументы контекста.
+
+        Returns:
+            dict: Словарь контекста шаблона с заголовком страницы.
+        """
         context = super(OfficialMemoList, self).get_context_data(**kwargs)
         context["title"] = f"Служебные записки"
         return context
