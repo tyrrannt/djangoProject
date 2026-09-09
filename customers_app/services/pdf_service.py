@@ -10,6 +10,7 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from PIL import Image as PILImage
 from django.conf import settings
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -98,8 +99,9 @@ def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
     elements: List[Any] = []
     styles = getSampleStyleSheet()
 
-    font_normal = "DejaVuSans" if pdfmetrics.getRegisteredFont("DejaVuSans") else "Helvetica"
-    font_bold = "DejaVuSans-Bold" if pdfmetrics.getRegisteredFont("DejaVuSans-Bold") else "Helvetica-Bold"
+    registered_fonts = set(pdfmetrics.getRegisteredFontNames())
+    font_normal = "DejaVuSans" if "DejaVuSans" in registered_fonts else "Helvetica"
+    font_bold = "DejaVuSans-Bold" if "DejaVuSans-Bold" in registered_fonts else "Helvetica-Bold"
 
     # Стили текста
     header_company_style = ParagraphStyle(
@@ -245,17 +247,24 @@ def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
     header_table_data = []
     if os.path.exists(logo_path):
         try:
-            # Масштабируем логотип: ширина ~120pt, высота ~26pt
-            logo_img = Image(logo_path, width=120, height=26)
+            # Вычисляем точные пропорции изображения с сохранением соотношения сторон (Aspect Ratio)
+            with PILImage.open(logo_path) as p_img:
+                orig_w, orig_h = p_img.size
+            max_logo_w = 140.0
+            max_logo_h = 36.0
+            scale = min(max_logo_w / orig_w, max_logo_h / orig_h)
+            logo_w = orig_w * scale
+            logo_h = orig_h * scale
+            logo_img = Image(logo_path, width=logo_w, height=logo_h)
             header_table_data.append([logo_img, header_right])
         except Exception:
-            logo_p = Paragraph("<b>БАРКОЛ</b>", header_company_style)
+            logo_p = Paragraph("<b>ООО Авиакомпания «БАРКОЛ»</b>", header_company_style)
             header_table_data.append([logo_p, header_right])
     else:
         logo_p = Paragraph("<b>ООО Авиакомпания «БАРКОЛ»</b>", header_company_style)
         header_table_data.append([logo_p, header_right])
 
-    header_table = Table(header_table_data, colWidths=[200, 347])
+    header_table = Table(header_table_data, colWidths=[150, 397])
     header_table.setStyle(
         TableStyle(
             [
@@ -318,7 +327,7 @@ def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
         [
             Paragraph("ФИО работника:", label_style),
             Paragraph(f"<b>{user_fio}</b>", val_style),
-            Paragraph("Табельный номер / Логин:", label_style),
+            Paragraph("Логин:", label_style),
             Paragraph(f"<b>{user.username}</b>", val_code_style),
         ],
         [
@@ -368,7 +377,7 @@ def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
             Paragraph("Адрес портала (URL):", label_style),
             Paragraph("<b>https://corp.barkol.ru/</b>", val_code_style),
             Paragraph("Назначение:", label_style),
-            Paragraph("Личный кабинет, служебные записки, расчетные листки, телефонный справочник", val_style),
+            Paragraph("Личный кабинет, локально-нормативные акты, служебные записки, расчетные листки, корпоративная почта, календарь, задачи", val_style),
         ],
         [
             Paragraph("Логин для входа:", label_style),

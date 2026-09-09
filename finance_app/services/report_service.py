@@ -483,10 +483,14 @@ class ReportService:
         styles = getSampleStyleSheet()
 
         # Добавим свои стили с использованием зарегистрированного шрифта DejaVuSans
+        registered_fonts = set(pdfmetrics.getRegisteredFontNames())
+        font_normal = "DejaVuSans" if "DejaVuSans" in registered_fonts else "Helvetica"
+        font_bold = "DejaVuSans-Bold" if "DejaVuSans-Bold" in registered_fonts else "Helvetica-Bold"
+
         title_style = ParagraphStyle(
             name="ReportTitle",
             parent=styles["Heading1"],
-            fontName="DejaVuSans-Bold" if pdfmetrics.getRegisteredFont("DejaVuSans-Bold") else "Helvetica-Bold",
+            fontName=font_bold,
             fontSize=16,
             textColor="black",
             alignment=0, # Слева
@@ -496,7 +500,7 @@ class ReportService:
         cell_style = ParagraphStyle(
             name="ReportCell",
             parent=styles["Normal"],
-            fontName="DejaVuSans" if pdfmetrics.getRegisteredFont("DejaVuSans") else "Helvetica",
+            fontName=font_normal,
             fontSize=8,
             leading=10
         )
@@ -504,7 +508,7 @@ class ReportService:
         cell_bold_style = ParagraphStyle(
             name="ReportCellBold",
             parent=cell_style,
-            fontName="DejaVuSans-Bold" if pdfmetrics.getRegisteredFont("DejaVuSans-Bold") else "Helvetica-Bold"
+            fontName=font_bold
         )
 
         elements.append(Paragraph(data["title"], title_style))
