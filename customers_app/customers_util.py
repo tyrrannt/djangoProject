@@ -20,6 +20,7 @@ from customers_app.models import (
     IdentityDocuments,
     Citizenships,
 )
+from customers_app.services.pdf_service import generate_employee_credentials_pdf
 
 from core import logger
 

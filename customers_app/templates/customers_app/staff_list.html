@@ -320,9 +320,23 @@
                     </div>
 
                     <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="id_quick_change_password" name="change_password" checked>
+                        <label class="form-check-label fw-semibold" for="id_quick_change_password">
+                            Изменить пароль учетной записи / почты
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="id_quick_sync_1c" name="sync_1c" checked>
                         <label class="form-check-label fw-semibold" for="id_quick_sync_1c">
                             Мгновенно записать в 1С (ЗУП) через OData
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="id_quick_generate_pdf" name="generate_pdf">
+                        <label class="form-check-label fw-semibold" for="id_quick_generate_pdf">
+                            <i class="bx bx-printer me-1 text-primary"></i> Сформировать данные для печати (PDF)
                         </label>
                     </div>
 
@@ -555,7 +569,20 @@
         document.getElementById('quickModalUserId').value = pk;
         document.getElementById('quickModalEmployeeName').textContent = fullName || 'Сотрудник';
         document.getElementById('id_quick_corporate_email').value = '';
-        document.getElementById('id_quick_corporate_password').value = password || '';
+        
+        const passInput = document.getElementById('id_quick_corporate_password');
+        const changePassSwitch = document.getElementById('id_quick_change_password');
+        const genPdfSwitch = document.getElementById('id_quick_generate_pdf');
+        const btnGenPass = document.getElementById('btnQuickGeneratePassword');
+
+        if (changePassSwitch) changePassSwitch.checked = true;
+        if (genPdfSwitch) genPdfSwitch.checked = false;
+        if (passInput) {
+            passInput.value = password || '';
+            passInput.disabled = false;
+        }
+        if (btnGenPass) btnGenPass.disabled = false;
+
         document.getElementById('quickEmailModalAlert').classList.add('d-none');
 
         // Авто-подсказка email
@@ -573,6 +600,17 @@
     };
 
     document.addEventListener('DOMContentLoaded', function() {
+        const changePassSwitch = document.getElementById('id_quick_change_password');
+        const passInput = document.getElementById('id_quick_corporate_password');
+        const btnGenPass = document.getElementById('btnQuickGeneratePassword');
+
+        if (changePassSwitch && passInput) {
+            changePassSwitch.addEventListener('change', function() {
+                passInput.disabled = !this.checked;
+                if (btnGenPass) btnGenPass.disabled = !this.checked;
+            });
+        }
+
         const btnSuggest = document.getElementById('btnQuickSuggestEmail');
         if (btnSuggest) {
             btnSuggest.addEventListener('click', function() {
@@ -586,7 +624,6 @@
             });
         }
 
-        const btnGenPass = document.getElementById('btnQuickGeneratePassword');
         if (btnGenPass) {
             btnGenPass.addEventListener('click', function() {
                 const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
@@ -596,7 +633,6 @@
                 for (let i = 0; i < 10; i++) {
                     pass += chars[array[i] % chars.length];
                 }
-                const passInput = document.getElementById('id_quick_corporate_password');
                 passInput.value = pass;
                 passInput.setAttribute('type', 'text');
             });
@@ -626,7 +662,9 @@
                 const pk = document.getElementById('quickModalUserId').value;
                 const email = document.getElementById('id_quick_corporate_email').value.trim();
                 const password = document.getElementById('id_quick_corporate_password').value.trim();
+                const changePassword = changePassSwitch ? changePassSwitch.checked : true;
                 const sync1c = document.getElementById('id_quick_sync_1c').checked;
+                const generatePdf = document.getElementById('id_quick_generate_pdf').checked;
                 const sendNotification = document.getElementById('id_quick_send_notification').checked;
                 const alertBox = document.getElementById('quickEmailModalAlert');
                 const submitBtn = document.getElementById('btnQuickSubmitSetEmail');
@@ -654,7 +692,9 @@
                     body: JSON.stringify({
                         email: email,
                         password: password,
+                        change_password: changePassword,
                         sync_1c: sync1c,
+                        generate_pdf: generatePdf,
                         send_notification: sendNotification
                     })
                 })
@@ -668,6 +708,11 @@
                         alertBox.className = 'alert alert-success mt-3 mb-0 py-2 small';
                         alertBox.innerHTML = '<i class="bx bx-check-circle me-1"></i> ' + result.data.message;
                         alertBox.classList.remove('d-none');
+
+                        // Если запрошено формирование PDF — открываем памятку в новой вкладке
+                        if (result.data.pdf_url) {
+                            window.open(result.data.pdf_url, '_blank');
+                        }
 
                         // Перезагружаем DataTables
                         if ($.fn.DataTable.isDataTable('#datatable-ecommerce-list')) {

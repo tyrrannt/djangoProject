@@ -56,6 +56,7 @@ from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
 
 from customers_app.serializers import DataBaseUserSerializer
+from customers_app.services.pdf_service import generate_employee_credentials_pdf
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
     get_norm_time_at_custom_day, PlaceProductionActivity
 from hrdepartment_app.tasks import send_email_single_notification
@@ -1602,13 +1603,15 @@ class AssignCorporateEmailView(LoginRequiredMixin, View):
             request (HttpRequest): Объект HTTP-запроса с параметрами:
                 - email (str): Назначаемый корпоративный email (например, 'ivanov@barkol.ru').
                 - password (str, optional): Пароль к корпоративной почте/порталу.
+                - change_password (bool/str, optional): Флаг изменения пароля учетной записи (по умолчанию True).
                 - sync_1c (bool/str, optional): Флаг отправки в 1С (по умолчанию True).
+                - generate_pdf (bool/str, optional): Флаг генерации печатной формы PDF (по умолчанию False).
                 - send_notification (bool/str, optional): Флаг отправки письма с учетными данными.
             pk (int): Первичный ключ сотрудника (DataBaseUser.pk).
 
         Returns:
             JsonResponse: JSON-ответ со статусом операции, детальным сообщением и флагами синхронизации:
-                - Успех (200): {'status': 'success', 'message': str, 'email': str, '1c_synced': bool}
+                - Успех (200): {'status': 'success', 'message': str, 'email': str, '1c_synced': bool, 'pdf_url': Optional[str]}
                 - Ошибка (400/403/404/500): {'status': 'error', 'message': str}
         """
         if not self._has_permission(request):
@@ -1639,7 +1642,19 @@ class AssignCorporateEmailView(LoginRequiredMixin, View):
 
         email = str(payload.get("email", "")).strip().lower()
         work_password = str(payload.get("password", "")).strip()
+        change_password = str(payload.get("change_password", "true")).lower() in [
+            "true",
+            "1",
+            "yes",
+            "on",
+        ]
         sync_1c = str(payload.get("sync_1c", "true")).lower() in ["true", "1", "yes", "on"]
+        generate_pdf = str(payload.get("generate_pdf", "false")).lower() in [
+            "true",
+            "1",
+            "yes",
+            "on",
+        ]
         send_notification = str(payload.get("send_notification", "false")).lower() in [
             "true",
             "1",
@@ -1683,8 +1698,8 @@ class AssignCorporateEmailView(LoginRequiredMixin, View):
         user_obj.email = email
         update_fields = ["email"]
 
-        # 3. Обновление рабочего пароля (если передан)
-        if work_password:
+        # 3. Обновление рабочего пароля (если переключатель активен и пароль передан)
+        if change_password and work_password:
             user_obj.set_password(work_password)
             if hasattr(user_obj, "user_work_profile") and user_obj.user_work_profile:
                 user_obj.user_work_profile.work_email_password = work_password
@@ -1693,7 +1708,7 @@ class AssignCorporateEmailView(LoginRequiredMixin, View):
         user_obj.save(update_fields=update_fields)
 
         # 4. Отправка уведомления на почту (если запрошено)
-        if send_notification and email and work_password:
+        if send_notification and email and work_password and change_password:
             try:
                 send_email_single_notification.delay(user_obj.pk)
                 logger.info(
@@ -1712,6 +1727,10 @@ class AssignCorporateEmailView(LoginRequiredMixin, View):
         else:
             final_message = f"Корпоративная почта {email} успешно сохранена на портале."
 
+        pdf_url = ""
+        if generate_pdf:
+            pdf_url = reverse("customers_app:generate_employee_file", args=[user_obj.pk])
+
         return JsonResponse(
             {
                 "status": "success",
@@ -1719,6 +1738,7 @@ class AssignCorporateEmailView(LoginRequiredMixin, View):
                 "email": email,
                 "1c_synced": sync_1c_success,
                 "1c_detail": sync_1c_message,
+                "pdf_url": pdf_url,
             }
         )
 
@@ -2266,38 +2286,51 @@ def generate_config_file(request):
     return response
 
 
-def generate_employee_file(request, pk):
+@login_required
+def generate_employee_file(request, pk: int) -> HttpResponse:
+    """Формирует и отдает официальную памятку сотрудника с учетными данными в формате PDF.
+
+    Генерирует структурированный документ формата A4 с реквизитами доступа к
+    корпоративному порталу, корпоративной почте, параметрами подключения
+    почтовых клиентов (IMAP/SMTP) и правилами безопасности.
+
+    Args:
+        request (HttpRequest): Объект входящего HTTP-запроса.
+        pk (int): Первичный ключ сотрудника (DataBaseUser.pk).
+
+    Returns:
+        HttpResponse: HTTP-ответ с содержимым PDF ('application/pdf') для просмотра и печати.
+
+    Raises:
+        Http404: Если пользователь с указанным pk не найден.
+        PermissionDenied: Если у текущего пользователя нет прав на просмотр учетных данных.
+    """
     db_user = get_object_or_404(DataBaseUser, pk=pk)
 
-    # Создаем текстовый файл
-    file_content = ""
-    file_content += "\n" + "=" * 50 + "\n\n"
-    file_content += f"ФИО работника: {db_user.title}\n"
-    file_content += f"Должность: {db_user.user_work_profile.job.name}\n"
-    file_content += "\n" + "=" * 50 + "\n\n"
-    file_content += f"Корпоративный сайт\n"
-    file_content += f"URL корпоративного сайта: https://corp.barkol.ru/\n"
-    file_content += f"Логин для корпоративного сайта: {db_user.username}\n"
-    file_content += f"Пароль для корпоративного сайта: {db_user.user_work_profile.work_email_password}\n"
-    file_content += "\n" + "=" * 50 + "\n\n"
-    file_content += f"Электронная почта\n"
-    file_content += f"URL для доступа к электронной почте: https://ms.barkol.ru/\n"
-    file_content += f"Логин для электронной почты: {db_user.email}\n"
-    file_content += f"Пароль для электронной почты: {db_user.user_work_profile.work_email_password}\n"
-    file_content += "\n" + "=" * 50 + "\n\n"
-    file_content += f"Параметры для ручной настройки почтовых клиентов\n"
-    file_content += f"Входящий сервер (IMAP): imap.barkol.ru\n"
-    file_content += f"Порт входящего сервера: 993\n"
-    file_content += f"Защита соединения: SSL/TLS\n"
-    file_content += f"Исходящий сервер (SMTP): sm.barkol.ru\n"
-    file_content += f"Порт исходящего сервера: 465\n"
-    file_content += f"Защита соединения: SSL/TLS\n"
-    file_content += "\n" + "=" * 50 + "\n\n"
+    # Проверка прав доступа: суперпользователь, сотрудники группы password/ИТ или просмотр собственной памятки
+    is_allowed = (
+        request.user.is_superuser
+        or request.user.is_staff
+        or request.user.pk == db_user.pk
+        or request.user.groups.filter(
+            name__in=["password", "Администраторы почты", "ИТ", "IT"]
+        ).exists()
+    )
+    if not is_allowed:
+        raise PermissionDenied("У вас нет прав для просмотра учетных данных сотрудника.")
 
-    # Возвращаем файл как HTTP-ответ
-    response = HttpResponse(file_content, content_type='text/plain')
-    response['Content-Disposition'] = f'attachment; filename="{db_user.username}_credentials.txt"'
-    return response
+    try:
+        pdf_bytes = generate_employee_credentials_pdf(db_user)
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{db_user.username}_credentials.pdf"'
+        return response
+    except Exception as e:
+        logger.error(f"Ошибка при генерации PDF памятки сотрудника {db_user.username}: {e}")
+        return HttpResponse(
+            f"Ошибка при формировании PDF документа: {e}",
+            status=500,
+            content_type="text/plain; charset=utf-8",
+        )
 
 
 @login_required

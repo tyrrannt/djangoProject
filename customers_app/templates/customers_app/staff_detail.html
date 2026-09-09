@@ -407,6 +407,7 @@
                 </div>
                 <div class="col-12 col-md-auto">
                     <a href="{% url 'customers_app:generate_employee_file' object.pk %}"
+                       target="_blank"
                        class="btn btn-outline-info btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
                         <i class="bx bx-printer text-4 me-2"></i> Данные для печати
                     </a>
@@ -515,9 +516,23 @@
                     </div>
 
                     <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="id_change_password" name="change_password" checked>
+                        <label class="form-check-label fw-semibold" for="id_change_password">
+                            Изменить пароль учетной записи / почты
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="id_sync_1c" name="sync_1c" checked>
                         <label class="form-check-label fw-semibold" for="id_sync_1c">
                             Мгновенно записать в 1С (ЗУП) через OData
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="id_generate_pdf" name="generate_pdf">
+                        <label class="form-check-label fw-semibold" for="id_generate_pdf">
+                            <i class="bx bx-printer me-1 text-primary"></i> Сформировать данные для печати (PDF)
                         </label>
                     </div>
 
@@ -549,6 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const emailInput = document.getElementById('id_corporate_email');
     const passwordInput = document.getElementById('id_corporate_password');
+    const changePassSwitch = document.getElementById('id_change_password');
     const btnSuggest = document.getElementById('btnSuggestEmail');
     const btnGeneratePass = document.getElementById('btnGeneratePassword');
     const submitBtn = document.getElementById('btnSubmitSetEmail');
@@ -557,6 +573,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const alertBox = document.getElementById('emailModalAlert');
     const lastName = "{{ object.last_name|default:'' }}";
     const firstName = "{{ object.first_name|default:'' }}";
+
+    if (changePassSwitch && passwordInput) {
+        changePassSwitch.addEventListener('change', function() {
+            passwordInput.disabled = !this.checked;
+            if (btnGeneratePass) btnGeneratePass.disabled = !this.checked;
+        });
+    }
 
     function transliterateRuToEn(text) {
         const map = {
@@ -597,7 +620,9 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
+        const changePassword = changePassSwitch ? changePassSwitch.checked : true;
         const sync1c = document.getElementById('id_sync_1c').checked;
+        const generatePdf = document.getElementById('id_generate_pdf').checked;
         const sendNotification = document.getElementById('id_send_notification').checked;
 
         if (!email) {
@@ -621,7 +646,9 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({
                 email: email,
                 password: password,
+                change_password: changePassword,
                 sync_1c: sync1c,
+                generate_pdf: generatePdf,
                 send_notification: sendNotification
             })
         })
@@ -636,13 +663,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertBox.innerHTML = '<i class="bx bx-check-circle me-1"></i> ' + result.data.message;
                 alertBox.classList.remove('d-none');
 
+                // Если запрошено формирование PDF — открываем памятку в новой вкладке
+                if (result.data.pdf_url) {
+                    window.open(result.data.pdf_url, '_blank');
+                }
+
                 // Обновляем отображение email на странице
                 const mainEmailInput = document.getElementById('id_email');
                 if (mainEmailInput) {
                     mainEmailInput.value = result.data.email;
                 }
                 const workPassInput = document.getElementById('id_work_email_password');
-                if (workPassInput && password) {
+                if (workPassInput && changePassword && password) {
                     workPassInput.value = password;
                 }
                 const openBtn = document.getElementById('btnOpenSetEmailModal');
