@@ -84,6 +84,7 @@ urlpatterns = [
     path("staff/", views.StaffListView.as_view(), name="staff_list"),
     path("staff/<int:pk>/", views.StaffDetail.as_view(), name="staff"),
     path("staff/<int:pk>/update/", views.StaffUpdate.as_view(), name="staff_update"),
+    path("staff/<int:pk>/set-email/", views.AssignCorporateEmailView.as_view(), name="staff_set_corporate_email"),
     path("divisions/", views.DivisionsList.as_view(), name="divisions_list"),
     path("divisions/add/", views.DivisionsAdd.as_view(), name="divisions_add"),
     path("divisions/<int:pk>/", views.DivisionsDetail.as_view(), name="divisions"),

@@ -269,6 +269,84 @@
         </div>
     </div>
 </div>
+
+{% if user|has_group:"password" or user.is_superuser or user|has_group:"Администраторы почты" or user|has_group:"ИТ" or user|has_group:"IT" %}
+<!-- Модальное окно быстрого назначения корпоративной почты из таблицы -->
+<div class="modal fade" id="quickSetEmailModal" tabindex="-1" aria-labelledby="quickSetEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title d-flex align-items-center text-white" id="quickSetEmailModalLabel">
+                    <i class="bx bx-envelope me-2 fs-4"></i> Назначение корпоративной почты
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="quickSetEmailForm">
+                {% csrf_token %}
+                <input type="hidden" id="quickModalUserId" value="">
+                <div class="modal-body p-4">
+                    <div class="mb-3 text-center pb-2 border-bottom">
+                        <span class="text-muted small d-block">Сотрудник</span>
+                        <strong class="fs-5 text-dark" id="quickModalEmployeeName">—</strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_quick_corporate_email" class="form-label fw-semibold">
+                            Корпоративный Email <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bx bx-at"></i></span>
+                            <input type="email" class="form-control" id="id_quick_corporate_email" name="email"
+                                   placeholder="name@barkol.ru" required>
+                            <button type="button" class="btn btn-outline-secondary" id="btnQuickSuggestEmail" title="Предложить email по ФИО">
+                                <i class="bx bx-magic-wand"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_quick_corporate_password" class="form-label fw-semibold">Пароль учетной записи / почты</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bx bx-key"></i></span>
+                            <input type="password" class="form-control" id="id_quick_corporate_password" name="password"
+                                   placeholder="Введите пароль или сгенерируйте">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="id_quick_corporate_password" title="Показать/скрыть">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnQuickGeneratePassword" title="Сгенерировать">
+                                <i class="bx bx-refresh"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="id_quick_sync_1c" name="sync_1c" checked>
+                        <label class="form-check-label fw-semibold" for="id_quick_sync_1c">
+                            Мгновенно записать в 1С (ЗУП) через OData
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="id_quick_send_notification" name="send_notification">
+                        <label class="form-check-label" for="id_quick_send_notification">
+                            Отправить письмо с учетными данными сотруднику
+                        </label>
+                    </div>
+
+                    <div id="quickEmailModalAlert" class="alert d-none mt-3 mb-0 py-2 small" role="alert"></div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="btnQuickSubmitSetEmail">
+                        <span class="spinner-border spinner-border-sm me-1 d-none" id="quickSubmitSpinner" role="status" aria-hidden="true"></span>
+                        <i class="bx bx-save me-1" id="quickSubmitIcon"></i> Сохранить и передать в 1С
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block custom_script %}
@@ -349,7 +427,19 @@
                 {"data": "division"},
                 {"data": "job"},
                 {"data": "phone"},
-                {"data": "email"},
+                {
+                    "data": "email",
+                    "render": function(data, type, row) {
+                        if (data && data.trim() !== '') {
+                            return '<a href="mailto:' + data + '" class="text-primary text-decoration-none" onclick="event.stopPropagation();"><i class="bx bx-envelope me-1"></i>' + data + '</a>';
+                        }
+                        {% if user|has_group:"password" or user.is_superuser or user|has_group:"Администраторы почты" or user|has_group:"ИТ" or user|has_group:"IT" %}
+                            return '<button type="button" class="btn btn-xs btn-outline-primary py-0 px-2" onclick="event.stopPropagation(); window.openQuickEmailModal(' + row.pk + ', \'' + (row.person || '').replace(/'/g, "\\'") + '\', \'' + (row.password || '') + '\');" title="Назначить корпоративную почту и синхронизировать с 1С"><i class="bx bx-plus"></i> Назначить</button>';
+                        {% else %}
+                            return '<span class="text-muted">—</span>';
+                        {% endif %}
+                    }
+                },
                 {% if user|has_group:"password" %}
                     {
                         "data": "password",
@@ -442,6 +532,169 @@
         }).on('mouseleave', 'tr', function() {
             $(this).removeClass('bg-light');
         });
+    });
+
+    // ============================================
+    // ФУНКЦИИ МОДАЛЬНОГО ОКНА НАЗНАЧЕНИЯ ПОЧТЫ И 1С
+    // ============================================
+    function transliterateRuToEn(text) {
+        const map = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'i', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+            'ы': 'y', 'э': 'e', 'ю': 'yu', 'я': 'ya', 'ъ': '', 'ь': '', ' ': '.', '-': '-'
+        };
+        return text.toLowerCase().split('').map(c => map[c] !== undefined ? map[c] : (/[a-z0-9]/.test(c) ? c : '')).join('');
+    }
+
+    window.openQuickEmailModal = function(pk, fullName, password) {
+        const modalEl = document.getElementById('quickSetEmailModal');
+        if (!modalEl) return;
+
+        document.getElementById('quickModalUserId').value = pk;
+        document.getElementById('quickModalEmployeeName').textContent = fullName || 'Сотрудник';
+        document.getElementById('id_quick_corporate_email').value = '';
+        document.getElementById('id_quick_corporate_password').value = password || '';
+        document.getElementById('quickEmailModalAlert').classList.add('d-none');
+
+        // Авто-подсказка email
+        if (fullName) {
+            const parts = fullName.trim().split(/\s+/);
+            if (parts.length >= 1) {
+                const enLast = transliterateRuToEn(parts[0]);
+                const enFirst = parts.length > 1 ? transliterateRuToEn(parts[1].charAt(0)) : '';
+                document.getElementById('id_quick_corporate_email').value = (enFirst ? enFirst + '.' : '') + enLast + '@barkol.ru';
+            }
+        }
+
+        const modalInst = new bootstrap.Modal(modalEl);
+        modalInst.show();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnSuggest = document.getElementById('btnQuickSuggestEmail');
+        if (btnSuggest) {
+            btnSuggest.addEventListener('click', function() {
+                const name = document.getElementById('quickModalEmployeeName').textContent;
+                if (name && name !== '—') {
+                    const parts = name.trim().split(/\s+/);
+                    const enLast = transliterateRuToEn(parts[0]);
+                    const enFirst = parts.length > 1 ? transliterateRuToEn(parts[1].charAt(0)) : '';
+                    document.getElementById('id_quick_corporate_email').value = (enFirst ? enFirst + '.' : '') + enLast + '@barkol.ru';
+                }
+            });
+        }
+
+        const btnGenPass = document.getElementById('btnQuickGeneratePassword');
+        if (btnGenPass) {
+            btnGenPass.addEventListener('click', function() {
+                const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+                let pass = '';
+                const array = new Uint32Array(10);
+                window.crypto.getRandomValues(array);
+                for (let i = 0; i < 10; i++) {
+                    pass += chars[array[i] % chars.length];
+                }
+                const passInput = document.getElementById('id_quick_corporate_password');
+                passInput.value = pass;
+                passInput.setAttribute('type', 'text');
+            });
+        }
+
+        // Переключатель видимости пароля
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function () {
+                const targetId = this.dataset.target;
+                const input = document.getElementById(targetId);
+                if (input) {
+                    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                    input.setAttribute('type', type);
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('fa-eye');
+                        icon.classList.toggle('fa-eye-slash');
+                    }
+                }
+            });
+        });
+
+        const quickForm = document.getElementById('quickSetEmailForm');
+        if (quickForm) {
+            quickForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const pk = document.getElementById('quickModalUserId').value;
+                const email = document.getElementById('id_quick_corporate_email').value.trim();
+                const password = document.getElementById('id_quick_corporate_password').value.trim();
+                const sync1c = document.getElementById('id_quick_sync_1c').checked;
+                const sendNotification = document.getElementById('id_quick_send_notification').checked;
+                const alertBox = document.getElementById('quickEmailModalAlert');
+                const submitBtn = document.getElementById('btnQuickSubmitSetEmail');
+                const submitSpinner = document.getElementById('quickSubmitSpinner');
+                const submitIcon = document.getElementById('quickSubmitIcon');
+
+                if (!email) {
+                    alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
+                    alertBox.textContent = 'Пожалуйста, укажите адрес электронной почты.';
+                    alertBox.classList.remove('d-none');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitSpinner.classList.remove('d-none');
+                submitIcon.classList.add('d-none');
+                alertBox.classList.add('d-none');
+
+                fetch('/users/staff/' + pk + '/set-email/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('#quickSetEmailForm [name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        sync_1c: sync1c,
+                        send_notification: sendNotification
+                    })
+                })
+                .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, data: data })))
+                .then(result => {
+                    submitBtn.disabled = false;
+                    submitSpinner.classList.add('d-none');
+                    submitIcon.classList.remove('d-none');
+
+                    if (result.ok && result.data.status === 'success') {
+                        alertBox.className = 'alert alert-success mt-3 mb-0 py-2 small';
+                        alertBox.innerHTML = '<i class="bx bx-check-circle me-1"></i> ' + result.data.message;
+                        alertBox.classList.remove('d-none');
+
+                        // Перезагружаем DataTables
+                        if ($.fn.DataTable.isDataTable('#datatable-ecommerce-list')) {
+                            $('#datatable-ecommerce-list').DataTable().ajax.reload(null, false);
+                        }
+
+                        setTimeout(() => {
+                            const modalEl = document.getElementById('quickSetEmailModal');
+                            const modalInst = bootstrap.Modal.getInstance(modalEl);
+                            if (modalInst) modalInst.hide();
+                        }, 1800);
+                    } else {
+                        alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
+                        alertBox.innerHTML = '<i class="bx bx-error-circle me-1"></i> ' + (result.data.message || 'Произошла ошибка при сохранении.');
+                        alertBox.classList.remove('d-none');
+                    }
+                })
+                .catch(err => {
+                    submitBtn.disabled = false;
+                    submitSpinner.classList.add('d-none');
+                    submitIcon.classList.remove('d-none');
+                    alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
+                    alertBox.innerHTML = '<i class="bx bx-error-circle me-1"></i> Ошибка сети: ' + err.message;
+                    alertBox.classList.remove('d-none');
+                });
+            });
+        }
     });
 </script>
 {% endblock %}

@@ -13,7 +13,7 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 from urllib.parse import urljoin
 
 import pandas as pd
@@ -355,6 +355,131 @@ def get_jsons_data_filter(
         logger.debug(f"{_ex}")
         return {"value": ""}
     return json.loads(response.text)
+
+
+def update_1c_physical_person_email(
+    person_ref_key: str,
+    email: str,
+    base_index: int = 0,
+) -> Tuple[bool, str]:
+    """Обновляет или добавляет адрес электронной почты физического лица в 1С через OData.
+
+    Выполняет чтение текущей контактной информации физического лица (Catalog_ФизическиеЛица),
+    корректирует/добавляет строку типа 'АдресЭлектроннойПочты' без удаления других контактных
+    данных (телефонов, адресов) и отправляет обновленный массив в 1С методом PATCH.
+
+    Args:
+        person_ref_key (str): Уникальный идентификатор (GUID) физического лица в 1С (person_ref_key).
+        email (str): Назначаемый адрес корпоративной электронной почты.
+        base_index (int, optional): Индекс информационной базы 1С (0 - ЗУП, 1 - Бухгалтерия).
+            Defaults to 0.
+
+    Returns:
+        Tuple[bool, str]: Кортеж из двух элементов:
+            - bool: True в случае успешной записи в 1С, False при ошибке.
+            - str: Сообщение о результате операции или текст возникшей ошибки.
+
+    Raises:
+        None: Все исключения перехватываются и возвращаются в виде статуса ошибки.
+
+    Example:
+        >>> success, msg = update_1c_physical_person_email("72095052-970f-11e3-84fb-00e05301b4e4", "ivanov@barkol.ru")
+        >>> print(success, msg)
+        (True, "Email 'ivanov@barkol.ru' успешно записан в 1С")
+    """
+    if not person_ref_key or person_ref_key in ["", "00000000-0000-0000-0000-000000000000"]:
+        return False, "У пользователя не указан GUID физического лица в 1С (person_ref_key отсутствует)."
+
+    if not email or "@" not in email:
+        return False, f"Некорректный формат адреса электронной почты: '{email}'."
+
+    base = [
+        "72095052-970f-11e3-84fb-00e05301b4e4",
+        "59e20093-970f-11e3-84fb-00e05301b4e4",
+    ]
+    auth_credentials = (
+        (config("HRM_LOGIN"), config("HRM_PASS"))
+        if base_index == 0
+        else (config("ACC_LOGIN"), config("ACC_PASS"))
+    )
+
+    get_url = (
+        f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/"
+        f"Catalog_ФизическиеЛица(guid'{person_ref_key}')?$format=application/json;odata=nometadata"
+    )
+
+    try:
+        response = requests.get(get_url, auth=auth_credentials, timeout=12)
+        if response.status_code != 200:
+            err_msg = f"1С вернула статус {response.status_code} при чтении данных физлица: {response.text[:200]}"
+            logger.error(err_msg)
+            return False, err_msg
+
+        data = response.json()
+        contact_info_list: List[Dict[str, Any]] = data.get("КонтактнаяИнформация", [])
+
+        # Проверяем наличие существующего контакта с типом 'АдресЭлектроннойПочты'
+        email_found = False
+        server_domain = email.split("@")[-1] if "@" in email else "barkol.ru"
+
+        for contact in contact_info_list:
+            if contact.get("Тип") == "АдресЭлектроннойПочты":
+                contact["АдресЭП"] = email
+                contact["Представление"] = email
+                if "ДоменноеИмяСервера" in contact:
+                    contact["ДоменноеИмяСервера"] = server_domain
+                if "Значение" in contact:
+                    contact["Значение"] = email
+                email_found = True
+                break
+
+        if not email_found:
+            # Если записи email не было, формируем новую строку в табличной части
+            new_contact: Dict[str, Any] = {
+                "LineNumber": str(len(contact_info_list) + 1),
+                "Тип": "АдресЭлектроннойПочты",
+                "АдресЭП": email,
+                "Представление": email,
+                "ДоменноеИмяСервера": server_domain,
+            }
+            contact_info_list.append(new_contact)
+
+        # Отправляем обновленную коллекцию контактов в 1С
+        patch_payload = {
+            "КонтактнаяИнформация": contact_info_list
+        }
+        patch_url = (
+            f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/"
+            f"Catalog_ФизическиеЛица(guid'{person_ref_key}')?$format=application/json;odata=nometadata"
+        )
+        patch_resp = requests.patch(
+            patch_url,
+            auth=auth_credentials,
+            json=patch_payload,
+            timeout=15,
+            headers={"Content-Type": "application/json"}
+        )
+
+        if patch_resp.status_code in [200, 204]:
+            logger.info(f"Email {email} успешно записан в 1С для физлица {person_ref_key}")
+            return True, f"Email '{email}' успешно записан в 1С"
+        else:
+            err_details = patch_resp.text[:300]
+            logger.warning(f"Ошибка записи email в 1С (статус {patch_resp.status_code}): {err_details}")
+            return False, f"Ошибка 1С ({patch_resp.status_code}): {err_details}"
+
+    except requests.exceptions.Timeout:
+        err_msg = "Таймаут подключения к 1С при отправке email."
+        logger.error(err_msg)
+        return False, err_msg
+    except requests.exceptions.ConnectionError:
+        err_msg = "Не удалось подключиться к серверу 1С (Connection Error)."
+        logger.error(err_msg)
+        return False, err_msg
+    except Exception as ex:
+        err_msg = f"Исключение при взаимодействии с 1С: {str(ex)}"
+        logger.error(err_msg)
+        return False, err_msg
 
 
 def get_active_user(ref_key):

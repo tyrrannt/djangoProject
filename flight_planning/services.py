@@ -2,7 +2,7 @@
 import re
 from datetime import date, timedelta
 from typing import List, Dict, Any, Optional, Tuple, Set
-from .models import PilotAssignment, AircraftMovement
+from .models import PilotAssignment, AircraftMovement, PeriodicCheckRecord
 
 
 def handle_aircraft_movement_crew_fallback(
