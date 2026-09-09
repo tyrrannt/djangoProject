@@ -83,6 +83,12 @@ class MedicalExaminationUpdateForm(forms.ModelForm):
 
 
 class OfficialMemoAddForm(forms.ModelForm):
+    """Форма создания новой служебной записки на служебную поездку или командировку.
+
+    Поддерживает выбор сотрудника, типа поездки, дат, места назначения и отправления,
+    расчет аванса, а также флаг ретроспективного ввода (задним числом).
+    """
+
     memo_type = [
         ("1", "Направление"),
         ("2", "Продление"),
@@ -127,6 +133,12 @@ class OfficialMemoAddForm(forms.ModelForm):
         )
 
     def __init__(self, *args, **kwargs):
+        """Инициализирует форму и настраивает стилизацию виджетов.
+
+        Args:
+            *args: Позиционные аргументы конструктора формы.
+            **kwargs: Именованные аргументы конструктора формы.
+        """
         super(OfficialMemoAddForm, self).__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs["class"] = "form-control form-control-modern"
@@ -144,14 +156,30 @@ class OfficialMemoAddForm(forms.ModelForm):
             if field not in excluded_fields:
                 make_custom_field(self.fields[field])
 
-    def date_difference(self, day):
-        """
-        :param day: Целое число, представляющее количество дней, которое необходимо вычесть из текущей даты.
-        :return: Разница в днях между текущей датой и датой, полученной путем вычитания заданного количества дней.
+    def date_difference(self, day: int) -> datetime.date:
+        """Вычисляет дату со смещением на заданное количество дней назад от текущей.
+
+        Args:
+            day (int): Количество дней для вычитания из текущей даты.
+
+        Returns:
+            datetime.date: Рассчитанная календарная дата.
         """
         return datetime.date.today() - datetime.timedelta(days=day)
 
-    def clean(self):
+    def clean(self) -> Dict[str, Any]:
+        """Выполняет валидацию данных формы создания служебной записки.
+
+        Проверяет корректность указания документа основания при продлении,
+        допустимость выбора прошедших дат (не старше 7 дней, если не установлен
+        переключатель creation_retroactively), и непротиворечивость диапазона дат.
+
+        Returns:
+            Dict[str, Any]: Словарь очищенных данных формы.
+
+        Raises:
+            forms.ValidationError: Если нарушены бизнес-правила дат или продления.
+        """
         cleaned_data = super().clean()
         official_memo_type = cleaned_data.get("official_memo_type")
         document_extension = cleaned_data.get("document_extension")

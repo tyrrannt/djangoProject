@@ -156,7 +156,7 @@
                                 {{ form.type_trip|add_class:"form-control form-control-modern" }}
                             </div>
 
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_period_from">Дата начала <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
@@ -165,7 +165,7 @@
                                            name="period_from" value="{{ object.period_from|date:'c'|default:'' }}" required/>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_period_for">Дата окончания <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
@@ -173,6 +173,16 @@
                                            onchange="expenses()" onblur="expenses()"
                                            name="period_for" value="{{ object.period_for|date:'c'|default:'' }}" required/>
                                 </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label d-block" for="{{ form.creation_retroactively.id_for_label }}">Ввод задним числом</label>
+                                <div class="form-check form-switch mt-2">
+                                    {{ form.creation_retroactively|add_class:"form-check-input" }}
+                                    <label class="form-check-label ms-2 font-weight-semibold" for="{{ form.creation_retroactively.id_for_label }}">
+                                        Документ введен задним числом
+                                    </label>
+                                </div>
+                                <div class="small text-muted mt-1">Разрешить выбор прошедших дат</div>
                             </div>
 
                             <div class="col-12 col-md-6">

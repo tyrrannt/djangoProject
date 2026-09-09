@@ -83,6 +83,9 @@
                         <p class="card-subtitle text-muted mb-0">Служебная записка &bull; Сотрудник: <strong>{{ object.person }}</strong></p>
                     </div>
                     <div>
+                        {% if object.creation_retroactively %}
+                            <span class="badge bg-warning text-dark p-2 fs-6 me-1">Задним числом</span>
+                        {% endif %}
                         {% if object.cancellation %}
                             <span class="badge bg-danger p-2 fs-6">Отменена</span>
                         {% else %}
@@ -147,16 +150,28 @@
                                 <div class="attr-value">{{ object.purpose_trip|default:"—" }}</div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-4">
                             <div class="attr-box">
                                 <div class="attr-label">Ответственный</div>
                                 <div class="attr-value">{{ object.responsible }}</div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-4">
                             <div class="attr-box">
                                 <div class="attr-label">Дата создания</div>
                                 <div class="attr-value">{{ object.date_of_creation|date:"d.m.Y H:i"|default:"—" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Ввод документа</div>
+                                <div class="attr-value">
+                                    {% if object.creation_retroactively %}
+                                        <span class="text-warning font-weight-bold"><i class="bx bx-time-five me-1"></i>Задним числом</span>
+                                    {% else %}
+                                        <span class="text-success"><i class="bx bx-check-circle me-1"></i>В установленный срок</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
