@@ -65,6 +65,54 @@ def register_dejavu_fonts() -> None:
 register_dejavu_fonts()
 
 
+def explain_password_ambiguous_chars(password: str) -> List[str]:
+    """Анализирует символы пароля и формирует понятные пояснения для знаков со сходным начертанием.
+
+    Выявляет символы, которые могут быть неоднозначно прочитаны при печати на бумаге
+    (например, '0' и 'O', '1', 'l' и 'I', '8' и 'B', '5' и 'S', '2' и 'Z', '9' и 'q', '-' и '_').
+
+    Args:
+        password (str): Пароль учетной записи.
+
+    Returns:
+        List[str]: Список текстовых пояснений с указанием позиции каждого неоднозначного символа.
+    """
+    if not password or password == "—":
+        return []
+
+    char_desc: Dict[str, str] = {
+        "0": "цифра <b>0</b> (НОЛЬ, не буква O)",
+        "O": "заглавная латинская буква <b>O</b> (буква, не цифра 0)",
+        "o": "строчная латинская буква <b>o</b> (буква, не цифра 0)",
+        "1": "цифра <b>1</b> (ЕДИНИЦА, не буква l или I)",
+        "l": "строчная латинская буква <b>l</b> («эль», не цифра 1 и не заглавная I)",
+        "I": "заглавная латинская буква <b>I</b> («ай», не цифра 1 и не строчная l)",
+        "|": "символ <b>|</b> (вертикальная черта / pipe)",
+        "8": "цифра <b>8</b> (ВОСЕМЬ, не буква B)",
+        "B": "заглавная латинская буква <b>B</b> («би», не цифра 8)",
+        "S": "заглавная латинская буква <b>S</b> («эс», не цифра 5)",
+        "5": "цифра <b>5</b> (ПЯТЬ, не буква S)",
+        "Z": "заглавная латинская буква <b>Z</b> («зет», не цифра 2)",
+        "2": "цифра <b>2</b> (ДВА, не буква Z)",
+        "q": "строчная латинская буква <b>q</b> («кью», не цифра 9 и не g)",
+        "9": "цифра <b>9</b> (ДЕВЯТЬ, не буква q или g)",
+        "g": "строчная латинская буква <b>g</b> («джи», не цифра 9)",
+        "v": "строчная латинская буква <b>v</b> («вэ», не u)",
+        "u": "строчная латинская буква <b>u</b> («ю/у», не v)",
+        "V": "заглавная латинская буква <b>V</b> («вэ», не U)",
+        "U": "заглавная латинская буква <b>U</b> («ю/у», не V)",
+        "-": "знак <b>-</b> (дефис/минус, не подчеркивание)",
+        "_": "знак <b>_</b> (нижнее подчеркивание, не дефис)",
+    }
+
+    clarifications: List[str] = []
+    for idx, ch in enumerate(password, start=1):
+        if ch in char_desc:
+            clarifications.append(f"{idx}-й символ: {char_desc[ch]}")
+
+    return clarifications
+
+
 def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
     """Генерирует структурированный PDF-документ (памятку) с учетными данными сотрудника.
 
@@ -323,12 +371,13 @@ def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
     )
     elements.append(emp_sec_header)
 
+    tab_number = user.service_number or user.username
     emp_table_data = [
         [
             Paragraph("ФИО работника:", label_style),
             Paragraph(f"<b>{user_fio}</b>", val_style),
-            Paragraph("Логин:", label_style),
-            Paragraph(f"<b>{user.username}</b>", val_code_style),
+            Paragraph("Табельный номер:", label_style),
+            Paragraph(f"<b>{tab_number}</b>", val_code_style),
         ],
         [
             Paragraph("Должность:", label_style),
@@ -425,17 +474,19 @@ def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
         [
             Paragraph("Веб-почта (URL):", label_style),
             Paragraph("<b>https://ms.barkol.ru/</b>", val_code_style),
-            Paragraph("Адрес почты (Логин):", label_style),
-            Paragraph(f"<b>{user_email}</b>", val_code_style),
+            Paragraph("Способы доступа:", label_style),
+            Paragraph(
+                "Через раздел 'Корпоративная почта' на корпоративном портале либо через почтовый клиент (компьютер / смартфон)",
+                val_style),
         ],
         [
+            Paragraph("Адрес почты (Логин):", label_style),
+            Paragraph(f"<b>{user_email}</b>", val_code_style),
             Paragraph("Пароль от почты:", label_style),
             Paragraph(f"<b>{work_password}</b>", val_code_style),
-            Paragraph("Единый пароль:", label_style),
-            Paragraph("Совпадает с паролем от портала компании", val_style),
         ],
     ]
-    mail_table = Table(mail_table_data, colWidths=[115, 155, 120, 157])
+    mail_table = Table(mail_table_data, colWidths=[115, 150, 115, 167])
     mail_table.setStyle(
         TableStyle(
             [
@@ -538,12 +589,32 @@ def generate_employee_credentials_pdf(user: DataBaseUser) -> bytes:
     )
     elements.append(security_sec_header)
 
-    security_text = (
-        "<b>Важно:</b> Учетные данные являются строго конфиденциальными. "
-        "Категорически запрещается передавать логин и пароль третьим лицам.<br/>"
-        "• В случае компрометации пароля немедленно обратитесь в службу информационных технологий.<br/>"
-        "• <b>Техническая поддержка:</b> ИТ-отдел | Почта: <b>it_unit@barkol.ru</b> | Корпоративный портал: <b>https://corp.barkol.ru/</b>"
+    clarifications = explain_password_ambiguous_chars(work_password)
+
+    security_lines = [
+        "<b>Важно:</b> Учетные данные являются строго конфиденциальными. Категорически запрещается передавать логин и пароль третьим лицам.",
+    ]
+    if clarifications:
+        security_lines.append(
+            "• <b>Обратите внимание на символы в пароле (во избежание опечаток при вводе):</b>"
+        )
+        for clar in clarifications:
+            security_lines.append(f"&nbsp;&nbsp;&nbsp;&nbsp;— {clar}")
+    else:
+        security_lines.append(
+            "• <b>Регистр символов:</b> Все буквы пароля чувствительны к регистру (заглавные и строчные различаются)."
+        )
+    security_lines.append(
+        "• Для смены или восстановления пароля обратитесь в информационно-аналитический отдел."
     )
+    security_lines.append(
+        "• В случае компрометации пароля немедленно обратитесь в информационно-аналитический отдел."
+    )
+    security_lines.append(
+        "• <b>Техническая поддержка:</b> Информационно-аналитический отдел | Почта: <b>it_unit@barkol.ru</b> | Корпоративный портал: <b>https://corp.barkol.ru/</b>"
+    )
+
+    security_text = "<br/>".join(security_lines)
     security_table = Table(
         [[Paragraph(security_text, memo_text_style)]],
         colWidths=[547],
