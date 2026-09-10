@@ -16,8 +16,8 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #1e293b;
-            border-bottom: 2px solid #e2e8f0;
+            color: #0f172a;
+            border-bottom: 2px solid #cbd5e1;
             padding-bottom: 8px;
             margin-bottom: 16px;
             display: flex;
@@ -28,7 +28,7 @@
             width: 26px;
             height: 26px;
             border-radius: 50%;
-            background: #0088cc;
+            background: #0284c7;
             color: #ffffff;
             font-size: 13px;
             font-weight: 700;
@@ -44,9 +44,25 @@
         }
         .employee-preview-badge {
             font-size: 11px;
-            font-weight: 600;
-            padding: 3px 8px;
+            font-weight: 700;
+            padding: 4px 10px;
             border-radius: 4px;
+            background: #166534 !important;
+            color: #ffffff !important;
+        }
+        .form-label-contrast {
+            color: #0f172a !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+        }
+        .form-help-contrast {
+            color: #475569 !important;
+            font-size: 11.5px !important;
+        }
+        .emp-detail-text {
+            color: #1e293b !important;
+            font-weight: 500 !important;
+            font-size: 12.5px !important;
         }
     </style>
 {% endblock %}
@@ -115,46 +131,46 @@
 
                                 <div class="row g-3">
                                     <div class="col-12 col-md-8">
-                                        <label for="{{ form.link_django_user.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.link_django_user.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.link_django_user.label }}
                                         </label>
                                         {{ form.link_django_user }}
-                                        <small class="text-muted font-size-11">{{ form.link_django_user.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.link_django_user.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-4 d-flex align-items-center pt-3">
                                         <div class="form-check form-switch">
                                             {{ form.create_django_account }}
-                                            <label class="form-check-label font-size-13 fw-semibold" for="{{ form.create_django_account.id_for_label }}">
+                                            <label class="form-check-label form-label-contrast" for="{{ form.create_django_account.id_for_label }}">
                                                 {{ form.create_django_account.label }}
                                             </label>
-                                            <small class="d-block text-muted font-size-11">{{ form.create_django_account.help_text }}</small>
+                                            <small class="d-block form-help-contrast">{{ form.create_django_account.help_text }}</small>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Интерактивная карточка выбранного сотрудника -->
-                                <div id="employeePreviewCard" class="card border border-success-subtle bg-success-subtle bg-opacity-10 p-3 mt-3 d-none rounded-3">
+                                <div id="employeePreviewCard" class="card border p-3 mt-3 d-none rounded-3" style="border-color: #86efac !important; background-color: #f0fdf4 !important;">
                                     <div class="d-flex align-items-start gap-3">
-                                        <div id="previewEmpAvatar" style="width: 44px; height: 44px; font-size: 18px; background: #0088cc; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                                        <div id="previewEmpAvatar" style="width: 44px; height: 44px; font-size: 18px; background: #0284c7; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
                                             Б
                                         </div>
                                         <div class="flex-grow-1 overflow-hidden">
                                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                <strong class="font-size-15 text-dark" id="previewEmpName">—</strong>
-                                                <span class="badge bg-light text-dark font-monospace border" id="previewEmpUsername" title="Логин на портале">—</span>
-                                                <span class="badge bg-primary-subtle text-primary border font-monospace" id="previewEmpEmail" title="Рекомендуемый адрес почты BARKOL">
+                                                <strong class="font-size-15 text-dark fw-bold" id="previewEmpName">—</strong>
+                                                <span class="badge bg-white text-dark font-monospace border fw-bold" id="previewEmpUsername" title="Логин на портале">—</span>
+                                                <span class="badge bg-white text-primary border font-monospace fw-bold" id="previewEmpEmail" title="Рекомендуемый адрес почты BARKOL">
                                                     <i class="bx bx-envelope me-1"></i><span id="previewEmpEmailText">—</span>
                                                 </span>
-                                                <span class="badge bg-success text-white employee-preview-badge">
+                                                <span class="badge employee-preview-badge">
                                                     <i class="bx bx-check-double me-1"></i>Данные загружены
                                                 </span>
                                             </div>
-                                            <div class="text-muted font-size-12 mt-1 d-flex align-items-center gap-2" id="previewEmpJobDiv">
-                                                <i class="bx bx-briefcase"></i> <span id="previewEmpJobText">—</span>
+                                            <div class="emp-detail-text mt-1 d-flex align-items-center gap-2" id="previewEmpJobDiv">
+                                                <i class="bx bx-briefcase text-secondary"></i> <span id="previewEmpJobText">—</span>
                                             </div>
-                                            <div class="text-muted font-size-12 d-flex align-items-center gap-2 mt-1" id="previewEmpPhoneDiv">
-                                                <i class="bx bx-phone"></i> <span id="previewEmpPhoneText">—</span>
+                                            <div class="emp-detail-text d-flex align-items-center gap-2 mt-1" id="previewEmpPhoneDiv">
+                                                <i class="bx bx-phone text-secondary"></i> <span id="previewEmpPhoneText">—</span>
                                             </div>
                                         </div>
                                     </div>
@@ -163,7 +179,7 @@
                         </div>
 
                         <!-- Блок 2: Учетная запись Kerio Connect -->
-                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
                                     <span class="step-number-badge">2</span>
@@ -172,23 +188,23 @@
 
                                 <div class="row g-3">
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.login_name.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.login_name.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.login_name.label }} <span class="text-danger">*</span>
                                         </label>
                                         {{ form.login_name }}
-                                        <small class="text-muted font-size-11">{{ form.login_name.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.login_name.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.domain_name.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.domain_name.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.domain_name.label }} <span class="text-danger">*</span>
                                         </label>
                                         {{ form.domain_name }}
-                                        <small class="text-muted font-size-11">{{ form.domain_name.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.domain_name.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.password.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.password.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.password.label }} <span class="text-danger">*</span>
                                         </label>
                                         <div class="input-group">
@@ -200,11 +216,11 @@
                                                 <i class="bx bx-refresh"></i> Сгенерировать
                                             </button>
                                         </div>
-                                        <small class="text-muted font-size-11">{{ form.password.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.password.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.confirm_password.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.confirm_password.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.confirm_password.label }} <span class="text-danger">*</span>
                                         </label>
                                         <div class="input-group">
@@ -216,34 +232,34 @@
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.full_name.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.full_name.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.full_name.label }}
                                         </label>
                                         {{ form.full_name }}
-                                        <small class="text-muted font-size-11">{{ form.full_name.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.full_name.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.description.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.description.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.description.label }}
                                         </label>
                                         {{ form.description }}
-                                        <small class="text-muted font-size-11">{{ form.description.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.description.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.quota_mb.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.quota_mb.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.quota_mb.label }}
                                         </label>
                                         {{ form.quota_mb }}
-                                        <small class="text-muted font-size-11">{{ form.quota_mb.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.quota_mb.help_text }}</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Блок 3: Внешняя доставка (Загрузка POP3) -->
-                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
                                     <span class="step-number-badge">3</span>
@@ -252,28 +268,28 @@
 
                                 <div class="form-check form-switch mb-3">
                                     {{ form.configure_pop3_download }}
-                                    <label class="form-check-label fw-semibold font-size-13 text-dark" for="{{ form.configure_pop3_download.id_for_label }}">
+                                    <label class="form-check-label form-label-contrast" for="{{ form.configure_pop3_download.id_for_label }}">
                                         {{ form.configure_pop3_download.label }}
                                     </label>
-                                    <div class="text-muted font-size-11">{{ form.configure_pop3_download.help_text }}</div>
+                                    <div class="form-help-contrast">{{ form.configure_pop3_download.help_text }}</div>
                                 </div>
 
                                 <div class="pop3-preset-box" id="pop3DetailsContainer">
                                     <div class="alert alert-info py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
-                                        <i class="bx bx-info-circle font-size-18 flex-shrink-0"></i>
+                                        <i class="bx bx-info-circle font-size-18 flex-shrink-0 text-primary"></i>
                                         <span>Стандартные параметры компании: сервер <strong>mail.barkol.ru:995 SSL</strong>, интервал опроса <strong>1 минута</strong>, удаление писем с внешнего сервера.</span>
                                     </div>
 
                                     <div class="row g-3">
                                         <div class="col-12 col-md-6">
-                                            <label for="{{ form.external_pop3_host.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                            <label for="{{ form.external_pop3_host.id_for_label }}" class="form-label form-label-contrast">
                                                 {{ form.external_pop3_host.label }}
                                             </label>
                                             {{ form.external_pop3_host }}
                                         </div>
 
                                         <div class="col-12 col-md-3">
-                                            <label for="{{ form.external_pop3_port.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                            <label for="{{ form.external_pop3_port.id_for_label }}" class="form-label form-label-contrast">
                                                 {{ form.external_pop3_port.label }}
                                             </label>
                                             {{ form.external_pop3_port }}
@@ -282,7 +298,7 @@
                                         <div class="col-12 col-md-3 d-flex align-items-center pt-3">
                                             <div class="form-check">
                                                 {{ form.external_pop3_ssl }}
-                                                <label class="form-check-label font-size-12 fw-semibold" for="{{ form.external_pop3_ssl.id_for_label }}">
+                                                <label class="form-check-label form-label-contrast" for="{{ form.external_pop3_ssl.id_for_label }}">
                                                     SSL (порт 995)
                                                 </label>
                                             </div>
@@ -291,10 +307,10 @@
                                         <div class="col-12">
                                             <div class="form-check">
                                                 {{ form.external_leave_messages }}
-                                                <label class="form-check-label font-size-12 text-muted" for="{{ form.external_leave_messages.id_for_label }}">
+                                                <label class="form-check-label form-label-contrast" for="{{ form.external_leave_messages.id_for_label }}">
                                                     {{ form.external_leave_messages.label }}
                                                 </label>
-                                                <small class="d-block text-muted font-size-11">{{ form.external_leave_messages.help_text }}</small>
+                                                <small class="d-block form-help-contrast">{{ form.external_leave_messages.help_text }}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -303,7 +319,7 @@
                         </div>
 
                         <!-- Блок 4: Исходящая маршрутизация («Доставка SMTP» / Relay) -->
-                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
                                     <span class="step-number-badge">4</span>
@@ -312,28 +328,28 @@
 
                                 <div class="form-check form-switch mb-3">
                                     {{ form.configure_smtp_delivery }}
-                                    <label class="form-check-label fw-semibold font-size-13 text-dark" for="{{ form.configure_smtp_delivery.id_for_label }}">
+                                    <label class="form-check-label form-label-contrast" for="{{ form.configure_smtp_delivery.id_for_label }}">
                                         {{ form.configure_smtp_delivery.label }}
                                     </label>
-                                    <div class="text-muted font-size-11">{{ form.configure_smtp_delivery.help_text }}</div>
+                                    <div class="form-help-contrast">{{ form.configure_smtp_delivery.help_text }}</div>
                                 </div>
 
                                 <div class="pop3-preset-box" id="smtpDetailsContainer">
                                     <div class="alert alert-info py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
-                                        <i class="bx bx-info-circle font-size-18 flex-shrink-0"></i>
+                                        <i class="bx bx-info-circle font-size-18 flex-shrink-0 text-primary"></i>
                                         <span>Регламент BARKOL: если отправитель равен адресу ящика, почта отправляется через ретранслятор <strong>smtp.barkol.ru:587</strong> (STARTTLS) с авторизацией по полному адресу и паролю (SMTP AUTH).</span>
                                     </div>
 
                                     <div class="row g-3">
                                         <div class="col-12 col-md-8">
-                                            <label for="{{ form.external_smtp_host.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                            <label for="{{ form.external_smtp_host.id_for_label }}" class="form-label form-label-contrast">
                                                 {{ form.external_smtp_host.label }}
                                             </label>
                                             {{ form.external_smtp_host }}
                                         </div>
 
                                         <div class="col-12 col-md-4">
-                                            <label for="{{ form.external_smtp_port.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                            <label for="{{ form.external_smtp_port.id_for_label }}" class="form-label form-label-contrast">
                                                 {{ form.external_smtp_port.label }}
                                             </label>
                                             {{ form.external_smtp_port }}

@@ -22,6 +22,7 @@ def test_imap_connection(
     security: str,
     username: str,
     password: str,
+    verify_ssl: bool = True,
 ) -> Tuple[bool, str]:
     """Проверяет сетевое подключение и авторизацию на сервере IMAP.
 
@@ -31,6 +32,7 @@ def test_imap_connection(
         security (str): Тип шифрования ('ssl', 'starttls', 'plain').
         username (str): Логин пользователя.
         password (str): Пароль пользователя.
+        verify_ssl (bool, optional): Проверять ли валидность SSL-сертификата (по умолчанию True с fallback).
 
     Returns:
         Tuple[bool, str]: Кортеж (успех, текстовое сообщение о результате/ошибке).
@@ -45,7 +47,17 @@ def test_imap_connection(
     try:
         if security == "ssl":
             ssl_context = ssl.create_default_context()
-            client = imaplib.IMAP4_SSL(host=host, port=port, ssl_context=ssl_context)
+            if not verify_ssl:
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+            try:
+                client = imaplib.IMAP4_SSL(host=host, port=port, ssl_context=ssl_context)
+            except ssl.SSLCertVerificationError:
+                # Резервная попытка без строгой проверки имени хоста
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                client = imaplib.IMAP4_SSL(host=host, port=port, ssl_context=ssl_context)
         else:
             client = imaplib.IMAP4(host=host, port=port)
             if security == "starttls":
@@ -80,6 +92,7 @@ def test_smtp_connection(
     security: str,
     username: str,
     password: str,
+    verify_ssl: bool = True,
 ) -> Tuple[bool, str]:
     """Проверяет сетевое подключение и авторизацию на сервере SMTP.
 
@@ -89,6 +102,7 @@ def test_smtp_connection(
         security (str): Тип шифрования ('ssl', 'starttls', 'plain').
         username (str): Логин пользователя.
         password (str): Пароль пользователя.
+        verify_ssl (bool, optional): Проверять ли валидность SSL-сертификата (по умолчанию True с fallback).
 
     Returns:
         Tuple[bool, str]: Кортеж (успех, текстовое сообщение о результате/ошибке).
@@ -103,12 +117,32 @@ def test_smtp_connection(
     try:
         if security == "ssl":
             ssl_context = ssl.create_default_context()
-            server = smtplib.SMTP_SSL(host=host, port=port, timeout=SOCKET_TIMEOUT_SECONDS, context=ssl_context)
+            if not verify_ssl:
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+            try:
+                server = smtplib.SMTP_SSL(host=host, port=port, timeout=SOCKET_TIMEOUT_SECONDS, context=ssl_context)
+            except ssl.SSLCertVerificationError:
+                # Резервная попытка без строгой проверки имени хоста
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                server = smtplib.SMTP_SSL(host=host, port=port, timeout=SOCKET_TIMEOUT_SECONDS, context=ssl_context)
         else:
             server = smtplib.SMTP(host=host, port=port, timeout=SOCKET_TIMEOUT_SECONDS)
             if security == "starttls":
                 server.ehlo()
-                server.starttls()
+                ssl_context = ssl.create_default_context()
+                if not verify_ssl:
+                    ssl_context.check_hostname = False
+                    ssl_context.verify_mode = ssl.CERT_NONE
+                try:
+                    server.starttls(context=ssl_context)
+                except ssl.SSLCertVerificationError:
+                    ssl_context = ssl.create_default_context()
+                    ssl_context.check_hostname = False
+                    ssl_context.verify_mode = ssl.CERT_NONE
+                    server.starttls(context=ssl_context)
                 server.ehlo()
 
         server.login(username, password)

@@ -133,7 +133,7 @@ def generate_corporate_mailbox_login(
     - **Уровень 2 (Коллизия имени, инициал отчества)**: если базовый логин занят, используется
       `<первая_буква_имени><первая_буква_отчества>.<фамилия>` (например: `ab.abramov`).
     - **Уровень 3 (Коллизия отчества, полное имя)**: если отчество отсутствует или вариант занят,
-      используется `<полное_имя>.<фамилия>` (например: `alexey.abramov`).
+      используется `<полное_имя>.<фамилия>` (например: `aleksey.abramov`).
     - **Уровень 4 (Полные тезки, числовой суффикс)**: если все предыдущие варианты заняты,
       добавляется числовой инкрементный индекс: `<первая_буква_имени>.<фамилия><N>` (например: `a.abramov2`, `a.abramov3`).
 
@@ -174,7 +174,7 @@ def generate_corporate_mailbox_login(
         if candidate_2 not in occupied:
             return candidate_2
 
-    # Вариант 3: <полное_имя>.<фамилия> (alexey.abramov)
+    # Вариант 3: <полное_имя>.<фамилия> (aleksey.abramov)
     if clean_first and len(clean_first) > 1:
         candidate_3 = f"{clean_first}.{clean_last}"
         if candidate_3 not in occupied:
@@ -214,3 +214,30 @@ def get_all_existing_logins_set() -> Set[str]:
         pass
 
     return logins
+
+
+def get_django_setting(name: str, default: Any = None) -> Any:
+    """Безопасно извлекает значение настройки из django.conf.settings.
+
+    Гарантирует отсутствие исключений (ImproperlyConfigured, AttributeError,
+    ImportError), если settings не сконфигурирован или запуск производится
+    вне контекста Django приложения (в изолированных unit-тестах).
+
+    Args:
+        name (str): Имя параметра конфигурации Django (например, 'KERIO_API_URL').
+        default (Any, optional): Значение по умолчанию. Defaults to None.
+
+    Returns:
+        Any: Значение настройки Django или default.
+
+    Example:
+        >>> get_django_setting("KERIO_DEFAULT_SMTP_RELAY_HOST", "smtp.barkol.ru")
+        'smtp.barkol.ru'
+    """
+    try:
+        from django.conf import settings
+        if settings.configured:
+            return getattr(settings, name, default)
+    except Exception:
+        pass
+    return default

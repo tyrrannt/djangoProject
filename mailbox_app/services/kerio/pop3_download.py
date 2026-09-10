@@ -2,17 +2,13 @@
 
 import logging
 from typing import Any, Dict, List, Optional
-try:
-    from django.conf import settings
-except ImportError:
-    settings = None
-
 from mailbox_app.services.kerio.client import KerioConnectAdminClient
 from mailbox_app.services.kerio.exceptions import (
     KerioAPIError,
     KerioObjectNotFoundError,
     KerioValidationError,
 )
+from mailbox_app.services.kerio.utils import get_django_setting
 
 logger = logging.getLogger(__name__)
 
@@ -179,15 +175,12 @@ class Pop3DownloadManager:
         if not password:
             raise KerioValidationError("Пароль для внешнего POP3 сервера не может быть пустым.")
 
-        ext_host = server or getattr(settings, "KERIO_EXTERNAL_POP3_HOST", "mail.barkol.ru")
-        ext_port = port or getattr(settings, "KERIO_EXTERNAL_POP3_PORT", 995)
-        ext_ssl = use_ssl if use_ssl is not None else getattr(settings, "KERIO_EXTERNAL_POP3_SSL", True)
-        ext_leave = (
-            leave_messages_on_server
-            if leave_messages_on_server is not None
-            else getattr(settings, "KERIO_EXTERNAL_POP3_LEAVE_MESSAGES", False)
-        )
+        ext_host = server or str(get_django_setting("KERIO_EXTERNAL_POP3_HOST", "mail.barkol.ru") or "mail.barkol.ru")
+        ext_port = int(port or get_django_setting("KERIO_EXTERNAL_POP3_PORT", 995) or 995)
+        ext_ssl = use_ssl if use_ssl is not None else bool(get_django_setting("KERIO_EXTERNAL_POP3_SSL", True))
+        ext_leave = leave_messages_on_server if leave_messages_on_server is not None else bool(get_django_setting("KERIO_EXTERNAL_POP3_LEAVE_MESSAGES", False))
         ext_username = username or target_user
+
 
         # Структура Pop3Account строго по спецификации Delivery.idl
         account_data: Dict[str, Any] = {

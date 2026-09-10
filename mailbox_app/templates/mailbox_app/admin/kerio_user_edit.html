@@ -8,6 +8,17 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <style>
+        .form-label-contrast {
+            color: #0f172a !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+        }
+        .form-help-contrast {
+            color: #475569 !important;
+            font-size: 11.5px !important;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -41,7 +52,7 @@
                                     <span>{{ title }}</span>
                                 </h4>
                                 {% if k_user %}
-                                    <small class="text-muted">Логин: <strong>{{ k_user.loginName }}</strong> (ID: {{ user_id }})</small>
+                                    <small class="text-secondary">Логин: <strong class="text-dark">{{ k_user.loginName }}</strong> (ID: {{ user_id }})</small>
                                 {% endif %}
                             </div>
                         </div>
@@ -64,38 +75,38 @@
                             </div>
                         {% endif %}
 
-                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="row g-3">
                                     <div class="col-12">
-                                        <label for="{{ form.full_name.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.full_name.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.full_name.label }}
                                         </label>
                                         {{ form.full_name }}
                                     </div>
 
                                     <div class="col-12">
-                                        <label for="{{ form.description.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.description.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.description.label }}
                                         </label>
                                         {{ form.description }}
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.quota_mb.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                        <label for="{{ form.quota_mb.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.quota_mb.label }}
                                         </label>
                                         {{ form.quota_mb }}
-                                        <small class="text-muted font-size-11">{{ form.quota_mb.help_text }}</small>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.quota_mb.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-6 d-flex align-items-center pt-3">
                                         <div class="form-check form-switch">
                                             {{ form.is_enabled }}
-                                            <label class="form-check-label font-size-13 fw-semibold" for="{{ form.is_enabled.id_for_label }}">
+                                            <label class="form-check-label form-label-contrast" for="{{ form.is_enabled.id_for_label }}">
                                                 {{ form.is_enabled.label }}
                                             </label>
-                                            <small class="d-block text-muted font-size-11">{{ form.is_enabled.help_text }}</small>
+                                            <small class="d-block form-help-contrast">{{ form.is_enabled.help_text }}</small>
                                         </div>
                                     </div>
                                 </div>

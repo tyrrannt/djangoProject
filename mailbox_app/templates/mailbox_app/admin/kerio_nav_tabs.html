@@ -4,50 +4,50 @@
     <div class="card-body p-2">
         <ul class="nav nav-pills nav-fill flex-column flex-sm-row gap-1" id="kerioAdminNavTabs">
             <li class="nav-item">
-                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'kerio_users' %}active fw-semibold shadow-sm{% else %}text-secondary{% endif %}"
+                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'kerio_users' %}active fw-bold shadow-sm text-white{% else %}text-dark fw-semibold{% endif %}"
                    href="{% url 'mailbox_app:kerio_admin_users' %}"
-                   style="border-radius: 8px; font-size: 13px;">
+                   style="border-radius: 8px; font-size: 13px; {% if active_admin_tab == 'kerio_users' %}background-color: #0088cc; color: #ffffff !important;{% else %}background-color: #f8fafc; color: #1e293b !important; border: 1px solid #e2e8f0;{% endif %}">
                     <i class="bx bx-user-check font-size-17"></i>
                     <span>Пользователи Kerio Connect</span>
                     {% if total_items is not None and total_items > 0 %}
-                        <span class="badge {% if active_admin_tab == 'kerio_users' %}bg-white text-primary{% else %}bg-primary-subtle text-primary{% endif %} rounded-pill font-size-11">{{ total_items }}</span>
+                        <span class="badge {% if active_admin_tab == 'kerio_users' %}bg-white text-primary fw-bold{% else %}bg-secondary-subtle text-dark fw-bold border{% endif %} rounded-pill font-size-11">{{ total_items }}</span>
                     {% endif %}
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'kerio_pop3' %}active fw-semibold shadow-sm{% else %}text-secondary{% endif %}"
+                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'kerio_pop3' %}active fw-bold shadow-sm text-white{% else %}text-dark fw-semibold{% endif %}"
                    href="{% url 'mailbox_app:kerio_admin_pop3' %}"
-                   style="border-radius: 8px; font-size: 13px;">
+                   style="border-radius: 8px; font-size: 13px; {% if active_admin_tab == 'kerio_pop3' %}background-color: #0088cc; color: #ffffff !important;{% else %}background-color: #f8fafc; color: #1e293b !important; border: 1px solid #e2e8f0;{% endif %}">
                     <i class="bx bx-download font-size-17"></i>
                     <span>Сборщик почты (Загрузка POP3)</span>
                     {% if total_count is not None and active_admin_tab == 'kerio_pop3' %}
-                        <span class="badge bg-white text-primary rounded-pill font-size-11">{{ total_count }}</span>
+                        <span class="badge bg-white text-primary fw-bold rounded-pill font-size-11">{{ total_count }}</span>
                     {% endif %}
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'portal_mailboxes' %}active fw-semibold shadow-sm{% else %}text-secondary{% endif %}"
+                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'portal_mailboxes' %}active fw-bold shadow-sm text-white{% else %}text-dark fw-semibold{% endif %}"
                    href="{% url 'mailbox_app:mailbox_admin_list' %}"
-                   style="border-radius: 8px; font-size: 13px;">
+                   style="border-radius: 8px; font-size: 13px; {% if active_admin_tab == 'portal_mailboxes' %}background-color: #0088cc; color: #ffffff !important;{% else %}background-color: #f8fafc; color: #1e293b !important; border: 1px solid #e2e8f0;{% endif %}">
                     <i class="bx bx-briefcase-alt-2 font-size-17"></i>
                     <span>Общие ящики портала</span>
                     {% if total_count is not None and active_admin_tab == 'portal_mailboxes' %}
-                        <span class="badge bg-white text-primary rounded-pill font-size-11">{{ total_count }}</span>
+                        <span class="badge bg-white text-primary fw-bold rounded-pill font-size-11">{{ total_count }}</span>
                     {% endif %}
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'print_settings' %}active fw-semibold shadow-sm{% else %}text-secondary{% endif %}"
+                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'print_settings' %}active fw-bold shadow-sm text-white{% else %}text-dark fw-semibold{% endif %}"
                    href="{% url 'mailbox_app:admin_print_settings' %}"
-                   style="border-radius: 8px; font-size: 13px;">
+                   style="border-radius: 8px; font-size: 13px; {% if active_admin_tab == 'print_settings' %}background-color: #0088cc; color: #ffffff !important;{% else %}background-color: #f8fafc; color: #1e293b !important; border: 1px solid #e2e8f0;{% endif %}">
                     <i class="bx bx-printer font-size-17"></i>
                     <span>Бланк печати</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'diag' %}active fw-semibold shadow-sm{% else %}text-secondary{% endif %}"
+                <a class="nav-link d-flex align-items-center justify-content-center gap-2 py-2 px-3 {% if active_admin_tab == 'diag' %}active fw-bold shadow-sm text-white{% else %}text-dark fw-semibold{% endif %}"
                    href="{% url 'mailbox_app:diag' %}"
-                   style="border-radius: 8px; font-size: 13px;">
+                   style="border-radius: 8px; font-size: 13px; {% if active_admin_tab == 'diag' %}background-color: #0088cc; color: #ffffff !important;{% else %}background-color: #f8fafc; color: #1e293b !important; border: 1px solid #e2e8f0;{% endif %}">
                     <i class="bx bx-tachometer font-size-17"></i>
                     <span>Диагностика</span>
                 </a>

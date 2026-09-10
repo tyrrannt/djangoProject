@@ -3136,6 +3136,8 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             ext_port = form.cleaned_data.get("external_pop3_port", 995)
             ext_ssl = form.cleaned_data.get("external_pop3_ssl", True)
             ext_leave = form.cleaned_data.get("external_leave_messages", False)
+            ext_smtp_host = form.cleaned_data.get("external_smtp_host", "smtp.barkol.ru")
+            ext_smtp_port = form.cleaned_data.get("external_smtp_port", 587)
             link_user = form.cleaned_data.get("link_django_user")
             create_django = form.cleaned_data.get("create_django_account", True)
 
@@ -3157,6 +3159,9 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                     external_pop3_ssl=ext_ssl,
                     external_leave_messages=ext_leave,
                     create_django_account=create_django,
+                    configure_smtp_delivery=configure_smtp,
+                    external_smtp_host=ext_smtp_host,
+                    external_smtp_port=ext_smtp_port,
                 )
                 full_email = f"{login_name}@{domain_name}"
                 extra_notes = []
@@ -3440,14 +3445,22 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
                     password=password,
                     domain_name=domain_name,
                 )
-                action_text = "обновлено" if res.get("action") == "updated" else "создано"
+                action_type = res.get("action")
+                if action_type == "updated":
+                    action_text = "обновлено"
+                elif action_type == "verified":
+                    action_text = "подтверждено"
+                else:
+                    action_text = "настроено"
+
+                msg = res.get("message") or f"Правило ретрансляции «Доставка SMTP» для '{login_name}' успешно {action_text}!"
                 return JsonResponse({
                     "success": True,
-                    "message": f"Правило ретрансляции «Доставка SMTP» для '{login_name}' успешно {action_text}!",
+                    "message": msg,
                     "details": res,
                 })
             except Exception as err:
-                logger.error(f"[KerioAdmin] Ошибка создания/обновления правила Доставка SMTP: {err}", exc_info=True)
-                return JsonResponse({"success": False, "message": str(err)}, status=500)
+                logger.error(f"[KerioAdmin] Ошибка настройки правила Доставка SMTP: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=400)
 
         return JsonResponse({"success": False, "message": f"Неизвестное действие: '{action}'"}, status=400)

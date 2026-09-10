@@ -11,14 +11,63 @@
     <style>
         .pop3-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 10px;
             padding: 16px;
             margin-bottom: 12px;
-            transition: box-shadow 0.2s ease;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
         }
         .pop3-card:hover {
-            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            border-color: #94a3b8;
+        }
+        .table-kerio-head {
+            background-color: #f8fafc !important;
+            color: #1e293b !important;
+            font-weight: 700 !important;
+            font-size: 12px !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #cbd5e1 !important;
+        }
+        .badge-status-active {
+            background: #dcfce7 !important;
+            color: #14532d !important;
+            border: 1px solid #86efac !important;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .badge-status-inactive {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+            border: 1px solid #fca5a5 !important;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .badge-security-ssl {
+            background: #dcfce7 !important;
+            color: #14532d !important;
+            border: 1px solid #86efac !important;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-security-plain {
+            background: #f1f5f9 !important;
+            color: #475569 !important;
+            border: 1px solid #cbd5e1 !important;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-interval {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+            font-weight: 600;
+            font-size: 11.5px;
         }
     </style>
 {% endblock %}
@@ -57,7 +106,7 @@
                                     <span>Служба сбора почты: Загрузка POP3</span>
                                     <span class="badge bg-primary text-white rounded-pill font-size-12">{{ total_count }}</span>
                                 </h4>
-                                <small class="text-muted">Панель «Доставка» &rarr; «Загрузка POP3» почтового сервера Kerio Connect 9.4.1</small>
+                                <small class="text-secondary">Панель «Доставка» &rarr; «Загрузка POP3» почтового сервера Kerio Connect 9.4.1</small>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
@@ -84,8 +133,8 @@
                     <div class="alert alert-info py-3 px-3 mb-4 rounded-3 shadow-sm font-size-13 d-flex align-items-start gap-2">
                         <i class="bx bx-info-circle font-size-20 flex-shrink-0 text-primary mt-1"></i>
                         <div>
-                            <strong>Регламент внешней доставки:</strong>
-                            <p class="mb-0 mt-1">
+                            <strong class="text-dark">Регламент внешней доставки:</strong>
+                            <p class="mb-0 mt-1 text-dark">
                                 Kerio Connect производит регулярный сбор входящих сообщений с внешнего почтового шлюза (<strong>mail.barkol.ru:995 SSL</strong>) с периодичностью <strong>1 минута</strong>.
                                 После успешной загрузки в локальное хранилище Kerio Connect сообщения автоматически удаляются с внешнего сервера для экономии места.
                             </p>
@@ -93,10 +142,10 @@
                     </div>
 
                     <!-- Таблица правил POP3 (Десктоп) -->
-                    <div class="card border-0 shadow-sm d-none d-md-block mb-4" style="border-radius: 10px; overflow: hidden;">
+                    <div class="card border shadow-sm d-none d-md-block mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; overflow: hidden;">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light text-muted font-size-12 text-uppercase">
+                                <thead class="table-kerio-head">
                                     <tr>
                                         <th class="ps-3 py-3" style="width: 25%;">Получатель в Kerio</th>
                                         <th style="width: 25%;">Внешний сервер POP3</th>
@@ -114,40 +163,40 @@
                                                     <i class="bx bx-user text-primary font-size-16"></i>
                                                     <span>{{ p.targetUser }}</span>
                                                 </div>
-                                                <small class="text-muted font-size-11">Локальный ящик Kerio</small>
+                                                <small class="text-secondary font-size-11">Локальный ящик Kerio</small>
                                             </td>
                                             <td>
-                                                <div class="font-size-13 fw-semibold text-dark">
+                                                <div class="font-size-13 fw-bold text-dark">
                                                     {{ p.server }}:{{ p.port }}
                                                 </div>
-                                                <div class="font-size-11 text-muted">
+                                                <div class="font-size-11 mt-1">
                                                     {% if p.security == 'Ssl' or p.port == 995 %}
-                                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">SSL Шифрование</span>
+                                                        <span class="badge badge-security-ssl rounded-pill">SSL Шифрование</span>
                                                     {% else %}
-                                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill">Обычный</span>
+                                                        <span class="badge badge-security-plain rounded-pill">Обычный</span>
                                                     {% endif %}
                                                     {% if not p.leaveMessagesOnServer %}
-                                                        <span class="badge bg-light text-secondary border rounded-pill ms-1">Удаление с сервера</span>
+                                                        <span class="badge bg-light text-dark border rounded-pill ms-1 fw-semibold">Удаление с сервера</span>
                                                     {% endif %}
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="font-size-13 text-secondary font-monospace">
+                                                <div class="font-size-13 text-dark font-monospace fw-semibold">
                                                     {{ p.userName }}
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge bg-light text-dark border font-size-12">
-                                                    <i class="bx bx-time-five me-1"></i> {{ p.interval|default:"1" }} мин
+                                                <span class="badge badge-interval rounded-pill">
+                                                    <i class="bx bx-time-five me-1 text-primary"></i> {{ p.interval|default:"1" }} мин
                                                 </span>
                                             </td>
                                             <td class="text-center">
                                                 {% if p.isEnabled %}
-                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-11">
+                                                    <span class="badge badge-status-active">
                                                         Активно
                                                     </span>
                                                 {% else %}
-                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-size-11">
+                                                    <span class="badge badge-status-inactive">
                                                         Отключено
                                                     </span>
                                                 {% endif %}
@@ -156,7 +205,7 @@
                                                 <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-none py-1 px-2"
                                                         onclick="triggerDownloadNow('{{ p.id }}', this)" title="Загрузить почту по этому правилу немедленно">
                                                     <i class="bx bx-download"></i>
-                                                    <span class="font-size-12">Собрать</span>
+                                                    <span class="font-size-12 fw-semibold">Собрать</span>
                                                 </button>
                                             </td>
                                         </tr>
@@ -164,8 +213,8 @@
                                         <tr>
                                             <td colspan="6" class="text-center py-5 text-muted">
                                                 <i class="bx bx-download font-size-48 d-block mb-2 text-secondary opacity-50"></i>
-                                                <div class="fw-semibold font-size-15">Правила Загрузки POP3 отсутствуют</div>
-                                                <small>Правила создаются автоматически при добавлении пользователя через мастер</small>
+                                                <div class="fw-bold font-size-15 text-dark">Правила Загрузки POP3 отсутствуют</div>
+                                                <small class="text-secondary">Правила создаются автоматически при добавлении пользователя через мастер</small>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -184,30 +233,30 @@
                                             <i class="bx bx-user text-primary"></i>
                                             <span>{{ p.targetUser }}</span>
                                         </div>
-                                        <div class="text-muted font-size-12 font-monospace">{{ p.userName }}</div>
+                                        <div class="text-secondary font-size-12 font-monospace fw-semibold">{{ p.userName }}</div>
                                     </div>
                                     {% if p.isEnabled %}
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-11">Активно</span>
+                                        <span class="badge badge-status-active">Активно</span>
                                     {% else %}
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-size-11">Отключено</span>
+                                        <span class="badge badge-status-inactive">Отключено</span>
                                     {% endif %}
                                 </div>
 
-                                <div class="font-size-12 text-secondary mb-2">
-                                    <i class="bx bx-server me-1"></i> {{ p.server }}:{{ p.port }} (каждые {{ p.interval|default:"1" }} мин)
+                                <div class="font-size-12 text-dark fw-semibold mb-2">
+                                    <i class="bx bx-server me-1 text-primary"></i> {{ p.server }}:{{ p.port }} (каждые {{ p.interval|default:"1" }} мин)
                                 </div>
 
                                 <div class="d-flex justify-content-end pt-2 border-top">
                                     <button type="button" class="btn btn-outline-primary btn-sm py-1 px-3 d-flex align-items-center gap-1"
                                             onclick="triggerDownloadNow('{{ p.id }}', this)">
-                                        <i class="bx bx-download"></i> Загрузить сейчас
+                                        <i class="bx bx-download"></i> <span class="fw-semibold">Загрузить сейчас</span>
                                     </button>
                                 </div>
                             </div>
                         {% empty %}
-                            <div class="text-center py-4 text-muted card border-0 shadow-sm p-4">
-                                <i class="bx bx-download font-size-40 mb-2"></i>
-                                <div>Правила Загрузки POP3 отсутствуют</div>
+                            <div class="text-center py-4 text-muted card border shadow-sm p-4" style="border-color: #cbd5e1;">
+                                <i class="bx bx-download font-size-40 mb-2 text-secondary"></i>
+                                <div class="fw-bold text-dark">Правила Загрузки POP3 отсутствуют</div>
                             </div>
                         {% endfor %}
                     </div>

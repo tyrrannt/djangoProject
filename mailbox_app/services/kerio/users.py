@@ -390,19 +390,72 @@ class UserManager:
         """
         return self.update_user(user_id=user_id, is_enabled=is_enabled)
 
-    def remove_user(self, user_id: str) -> Dict[str, Any]:
+    def remove_user(
+        self,
+        user_id: str,
+        domain_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Удаляет пользователя с сервера Kerio Connect.
 
+        Выполняет отказоустойчивое удаление пользователя, поддерживая различные
+        сигнатуры параметров вызова API Kerio Connect (domainId + userIds/ids, а также плоские списки).
+
         Args:
-            user_id (str): Идентификатор пользователя.
+            user_id (str): Идентификатор пользователя (ID или логин).
+            domain_id (Optional[str]): Идентификатор домена (если известен).
 
         Returns:
             Dict[str, Any]: Ответ сервера Kerio Connect.
+
+        Raises:
+            KerioObjectNotFoundError: Если пользователь не найден.
+            KerioAPIError: При ошибке API сервера.
         """
         raw_id = user_id.strip()
         if raw_id.startswith("keriodb:/") and not raw_id.startswith("keriodb://"):
             raw_id = "keriodb://" + raw_id[9:]
 
-        result = self.client.call("Users.remove", params={"userIds": [raw_id]})
-        logger.warning(f"[KerioAdmin] Пользователь ID '{raw_id}' удален из Kerio Connect.")
-        return result
+        # Попытка извлечь domainId из URI пользователя (keriodb://user/<domain_guid>/<user_guid>)
+        resolved_domain_id = domain_id
+        if not resolved_domain_id and "keriodb://user/" in raw_id:
+            try:
+                parts = raw_id.replace("keriodb://user/", "").split("/")
+                if parts and parts[0]:
+                    resolved_domain_id = f"keriodb://domain/{parts[0]}"
+            except Exception:
+                pass
+
+        # Варианты методов и параметров вызова API Kerio Connect
+        candidates = []
+        if resolved_domain_id:
+            candidates.append(("Users.remove", {"domainId": resolved_domain_id, "userIds": [raw_id]}))
+            candidates.append(("Users.remove", {"domainId": resolved_domain_id, "ids": [raw_id]}))
+            candidates.append(("Users.remove", {"domainId": resolved_domain_id, "userIdList": [raw_id]}))
+        candidates.append(("Users.remove", {"userIds": [raw_id]}))
+        candidates.append(("Users.remove", {"ids": [raw_id]}))
+        candidates.append(("Users.remove", {"userIdList": [raw_id]}))
+        if resolved_domain_id:
+            candidates.append(("Users.removeUserList", {"domainId": resolved_domain_id, "ids": [raw_id]}))
+            candidates.append(("Users.delete", {"domainId": resolved_domain_id, "ids": [raw_id]}))
+        candidates.append(("Users.removeUserList", {"ids": [raw_id]}))
+        candidates.append(("Users.delete", {"ids": [raw_id]}))
+
+        last_exc: Optional[Exception] = None
+        for method_name, params in candidates:
+            try:
+                result = self.client.call(method_name, params=params)
+                logger.warning(f"[KerioAdmin] Пользователь ID '{raw_id}' успешно удален вызовом {method_name}.")
+                return result
+            except (KerioAPIError, KerioObjectNotFoundError) as exc:
+                last_exc = exc
+                err_code = getattr(exc, "code", None)
+                err_msg = str(exc)
+                # Если метод не найден или неверные параметры, пробуем следующий кандидат
+                if err_code in (-32601, -32602) or "invalid params" in err_msg.lower() or "method not found" in err_msg.lower():
+                    continue
+                # Иные ошибки (например, permission denied) выбрасываем сразу
+                raise
+
+        if last_exc:
+            raise last_exc
+        raise KerioAPIError(f"Не удалось удалить пользователя '{raw_id}'.")

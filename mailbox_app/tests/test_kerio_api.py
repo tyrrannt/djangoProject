@@ -187,6 +187,27 @@ class KerioManagersTestCase(TestCase):
         manager.remove_user("u_2")
         self.mock_client.call.assert_called_with("Users.remove", params={"userIds": ["u_2"]})
 
+    def test_remove_user_with_uri_domain_extraction_and_fallback(self) -> None:
+        """Тест удаления пользователя с автоматическим извлечением domainId из URI и fallback при -32602."""
+        manager = UserManager(self.mock_client)
+        user_uri = "keriodb://user/f16df5f7-c299-47f6-b631-8efff9f1d222/3cc2f617-c761-42e3-8e33-1f61f73517fa"
+        expected_dom = "keriodb://domain/f16df5f7-c299-47f6-b631-8efff9f1d222"
+
+        # Симулируем ошибку -32602 на первом кандидате {"domainId": ..., "userIds": ...}
+        # и успех на втором кандидате {"domainId": ..., "ids": ...}
+        self.mock_client.call.side_effect = [
+            KerioAPIError("[Код -32602] Invalid params.", code=-32602),
+            {"removedUserIds": [user_uri]},
+        ]
+
+        res = manager.remove_user(user_uri)
+        self.assertEqual(res, {"removedUserIds": [user_uri]})
+        self.assertEqual(self.mock_client.call.call_count, 2)
+        # Проверяем, что первый вызов содержал извлеченный domainId
+        first_call = self.mock_client.call.call_args_list[0]
+        self.assertEqual(first_call[0][0], "Users.remove")
+        self.assertEqual(first_call[1]["params"]["domainId"], expected_dom)
+
     def test_pop3_download_manager(self) -> None:
         """Тест менеджера правил «Загрузка POP3» со стандартными настройками."""
         manager = Pop3DownloadManager(self.mock_client)
@@ -222,6 +243,8 @@ class KerioAdminServiceTestCase(TestCase):
         )
         self.mock_client = MagicMock(spec=KerioConnectAdminClient)
         self.mock_client.token = "mock_token"
+        self.mock_client.api_url = "https://192.168.10.242:4040/admin/api/jsonrpc/"
+        self.mock_client.username = "admin"
         self.service = KerioAdminService(client=self.mock_client)
 
     def test_test_admin_connection_success(self) -> None:
@@ -317,9 +340,9 @@ class CorporateLoginUtilsTestCase(TestCase):
 
         # Уровень 3: полное имя + фамилия
         login_lvl3 = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
-        self.assertEqual(login_lvl3, "alexey.abramov")
+        self.assertEqual(login_lvl3, "aleksey.abramov")
 
-        occupied.add("alexey.abramov")
+        occupied.add("aleksey.abramov")
 
         # Уровень 4: числовой суффикс
         login_lvl4 = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
@@ -403,9 +426,12 @@ class SmtpDeliveryManagerTestCase(TestCase):
         self.assertIsNotNone(found2)
         self.assertEqual(found2["id"], "keriodb://deliveryroute/admin_route")
 
-        # Несуществующий пользователь
-        found_none = self.manager.get_route_for_sender("unknown.user@barkol.ru")
-        self.assertIsNone(found_none)
+        # Поиск для пользователя, попадающего под общее серверное правило
+        found_other = self.manager.get_route_for_sender("other.user@barkol.ru")
+        self.assertIsNotNone(found_other)
+        self.assertEqual(found_other["sender"], "other.user@barkol.ru")
+        self.assertEqual(found_other["server"], "smtp.barkol.ru")
+        self.assertEqual(found_other["port"], 587)
 
     def test_create_delivery_route(self) -> None:
         """Тест создания правила ретрансляции SMTP."""
@@ -424,6 +450,23 @@ class SmtpDeliveryManagerTestCase(TestCase):
         self.assertEqual(res["relay_port"], 587)
         self.client.call.assert_called()
 
+    def test_create_delivery_route_method_not_found_fallback(self) -> None:
+        """Тест корректной обработки ситуации, когда в API Kerio Connect метод создания табличных правил отсутствует (-32601)."""
+        from mailbox_app.services.kerio.exceptions import KerioObjectNotFoundError
+        self.client.call.side_effect = KerioObjectNotFoundError("[Код -32601] Method not found.")
+
+        res = self.manager.create_delivery_route(
+            sender_email="a.administrator@barkol.ru",
+            password="securePassword123",
+            relay_host="smtp.barkol.ru",
+            relay_port=587,
+        )
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["method"], "server_relay_configured")
+        self.assertEqual(res["sender"], "a.administrator@barkol.ru")
+        self.assertTrue(res.get("is_global"))
+
     def test_remove_delivery_route(self) -> None:
         """Тест удаления правила доставки SMTP."""
         self.client.call.return_value = {"result": "ok"}
@@ -431,5 +474,148 @@ class SmtpDeliveryManagerTestCase(TestCase):
         res = self.manager.remove_delivery_route("keriodb://deliveryroute/123")
         self.assertTrue(res["success"])
         self.client.call.assert_called_with("Delivery.removeDeliveryRouteList", params={"ids": ["keriodb://deliveryroute/123"]})
+
+    def test_extract_routes_from_smtp_get(self) -> None:
+        """Тест извлечения индивидуальных правил из конфигурации Smtp.get (таблица «Доставка SMTP»)."""
+        from mailbox_app.services.kerio.exceptions import KerioObjectNotFoundError
+
+        def mock_call(method: str, params: dict = None) -> dict:
+            if method == "Smtp.get":
+                return {
+                    "server": {
+                        "delivery": {
+                            "useSsl": True,
+                            "customRules": [
+                                {
+                                    "id": "keriodb://deliveryroute/e.shevcova",
+                                    "isEnabled": True,
+                                    "description": "e.shevcova",
+                                    "conditionType": "ConditionSender",
+                                    "matchPattern": "e.shevcova@barkol.ru",
+                                    "actionType": "ActionRelayServer",
+                                    "relayServer": {
+                                        "server": "smtp.barkol.ru",
+                                        "port": 587,
+                                        "mode": "StlsCommand",
+                                        "authentication": {
+                                            "isEnabled": True,
+                                            "userName": "e.shevcova@barkol.ru",
+                                            "password": "secretPassword",
+                                        },
+                                    },
+                                }
+                            ],
+                        }
+                    }
+                }
+            raise KerioObjectNotFoundError("[Код -32601] Method not found.")
+
+        self.client.call.side_effect = mock_call
+        routes = self.manager.get_routes()
+        self.assertEqual(len(routes), 1)
+        self.assertEqual(routes[0]["description"], "e.shevcova")
+        self.assertEqual(routes[0]["sender"], "e.shevcova@barkol.ru")
+        self.assertEqual(routes[0]["server"], "smtp.barkol.ru")
+
+    def test_create_delivery_route_via_smtp_set(self) -> None:
+        """Тест создания правила через Smtp.get -> Smtp.set при отсутствии прямого табличного метода."""
+        from mailbox_app.services.kerio.exceptions import KerioObjectNotFoundError
+
+        smtp_config = {
+            "server": {
+                "delivery": {
+                    "useSsl": True,
+                    "customRules": [],
+                }
+            }
+        }
+
+        def mock_call(method: str, params: dict = None) -> dict:
+            if method == "Smtp.get":
+                return smtp_config
+            if method == "Smtp.set":
+                return {"result": "ok"}
+            raise KerioObjectNotFoundError("[Код -32601] Method not found.")
+
+        self.client.call.side_effect = mock_call
+        res = self.manager.create_delivery_route(
+            sender_email="a.administrator@barkol.ru",
+            password="securePassword123",
+            relay_host="smtp.barkol.ru",
+            relay_port=587,
+        )
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["method"], "Smtp.set")
+        self.assertEqual(res["sender"], "a.administrator@barkol.ru")
+
+    def test_get_django_setting_fallback(self) -> None:
+        """Тест безопасного извлечения параметров с fallback значением."""
+        from mailbox_app.services.kerio.utils import get_django_setting
+
+        val = get_django_setting("NON_EXISTING_SETTING_12345", "fallback_val")
+        self.assertEqual(val, "fallback_val")
+
+    def test_get_users_list_individual_vs_global_smtp(self) -> None:
+        """Тест корректной классификации индивидуального и серверного SMTP Relay в get_users_list."""
+        from mailbox_app.services.kerio.exceptions import KerioObjectNotFoundError
+        from mailbox_app.services.kerio.service import KerioAdminService
+
+        mock_client = MagicMock(spec=KerioConnectAdminClient)
+        mock_client.token = "token123"
+
+        def mock_call(method: str, params: dict = None) -> dict:
+            if method == "Domains.get":
+                return {
+                    "list": [{"id": "dom_barkol", "name": "barkol.ru"}],
+                    "totalItems": 1,
+                }
+            if method == "Users.get":
+                return {
+                    "list": [
+                        {"id": "u1", "loginName": "a.administrator", "fullName": "Admin User", "isEnabled": True},
+                        {"id": "u2", "loginName": "e.shevcova", "fullName": "Elena Shevcova", "isEnabled": True},
+                    ],
+                    "totalItems": 2,
+                }
+            if method == "Delivery.getPop3AccountList":
+                return {
+                    "list": [
+                        {"id": "p1", "targetUser": "a.administrator", "server": "mail.barkol.ru", "port": 995, "isActive": True}
+                    ]
+                }
+            if method == "Smtp.get":
+                return {
+                    "server": {
+                        "delivery": {
+                            "customRules": [
+                                {
+                                    "id": "keriodb://deliveryroute/e.shevcova",
+                                    "matchPattern": "e.shevcova@barkol.ru",
+                                    "relayServer": {"server": "smtp.barkol.ru", "port": 587},
+                                }
+                            ]
+                        }
+                    }
+                }
+            raise KerioObjectNotFoundError("Method not found")
+
+        mock_client.call.side_effect = mock_call
+        service = KerioAdminService(client=mock_client)
+        result = service.get_users_list(domain_name="barkol.ru")
+
+        self.assertEqual(result["totalItems"], 2)
+        users = result["list"]
+
+        # u1: a.administrator -> индивидуального правила нет, но есть серверный fallback
+        admin_u = next(u for u in users if u["loginName"] == "a.administrator")
+        self.assertTrue(admin_u["has_smtp_delivery"])
+        self.assertFalse(admin_u["is_individual_smtp_delivery"])
+
+        # u2: e.shevcova -> индивидуальное правило есть
+        elena_u = next(u for u in users if u["loginName"] == "e.shevcova")
+        self.assertTrue(elena_u["has_smtp_delivery"])
+        self.assertTrue(elena_u["is_individual_smtp_delivery"])
+
 
 

@@ -5,11 +5,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import requests
 import urllib3
 
-try:
-    from django.conf import settings
-except ImportError:
-    settings = None
-
 from mailbox_app.services.kerio.exceptions import (
     KerioAPIError,
     KerioAuthenticationError,
@@ -18,6 +13,7 @@ from mailbox_app.services.kerio.exceptions import (
     KerioSessionExpired,
     KerioValidationError,
 )
+from mailbox_app.services.kerio.utils import get_django_setting
 
 logger = logging.getLogger(__name__)
 
@@ -59,19 +55,15 @@ class KerioConnectAdminClient:
             verify_ssl (Optional[bool]): Проверка SSL. Если None, берется из settings.KERIO_API_VERIFY_SSL.
             timeout (Optional[int]): Таймаут в секундах. Если None, берется из settings.KERIO_API_TIMEOUT.
         """
-        self.api_url = api_url or getattr(
-            settings,
-            "KERIO_API_URL",
-            "https://192.168.10.242:4040/admin/api/jsonrpc/",
-        )
-        self.username = username or getattr(settings, "KERIO_API_USER", "")
-        self.password = password or getattr(settings, "KERIO_API_PASSWORD", "")
+        self.api_url = str(api_url or get_django_setting("KERIO_API_URL", "https://192.168.10.242:4040/admin/api/jsonrpc/") or "https://192.168.10.242:4040/admin/api/jsonrpc/")
+        self.username = str(username or get_django_setting("KERIO_API_USER", "") or "")
+        self.password = str(password or get_django_setting("KERIO_API_PASSWORD", "") or "")
         self.verify_ssl = (
             verify_ssl
             if verify_ssl is not None
-            else getattr(settings, "KERIO_API_VERIFY_SSL", False)
+            else bool(get_django_setting("KERIO_API_VERIFY_SSL", False))
         )
-        self.timeout = timeout or getattr(settings, "KERIO_API_TIMEOUT", 15)
+        self.timeout = int(timeout or get_django_setting("KERIO_API_TIMEOUT", 15) or 15)
 
         self.session: requests.Session = requests.Session()
         self.token: Optional[str] = None
@@ -88,8 +80,8 @@ class KerioConnectAdminClient:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Выход из контекстного менеджера: выполняет безопасное закрытие сессии (Session.logout)."""
-        self.logout()
+        """Выход из контекстного менеджера."""
+        pass
 
     def _get_next_id(self) -> int:
         """Генерирует монотонно возрастающий идентификатор JSON-RPC запроса.
@@ -116,6 +108,11 @@ class KerioConnectAdminClient:
                 "Учетные данные администратора Kerio Connect не настроены. "
                 "Укажите переменные KERIO_API_USER и KERIO_API_PASSWORD в файле .env."
             )
+
+        # Очистка устаревших сессионных кук и заголовков перед запросом авторизации
+        self.token = None
+        self.session.cookies.clear()
+        self.session.headers.pop("X-Token", None)
 
         payload = {
             "jsonrpc": "2.0",
@@ -168,6 +165,8 @@ class KerioConnectAdminClient:
             "X-Token": self.token,
             "Content-Type": "application/json",
         })
+        if not self.session.cookies.get("SESSION_CONNECT_WEBADMIN"):
+            self.session.cookies.set("SESSION_CONNECT_WEBADMIN", self.token)
         logger.info(f"[KerioAdmin] Успешная авторизация в Kerio Connect под пользователем '{self.username}'.")
         return self.token
 
@@ -280,7 +279,8 @@ class KerioConnectAdminClient:
             is_session_expired = (
                 self.token is not None
                 and (
-                    "session expired" in msg_lower
+                    err_code == -32001
+                    or "session expired" in msg_lower
                     or "invalid token" in msg_lower
                     or "please login first" in msg_lower
                 )

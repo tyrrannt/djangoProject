@@ -154,17 +154,205 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f"    [OK] Загружен kerioApiConstants.js ({len(c_resp.content)} байт)"))
                 const_text = c_resp.text
                 
-                # Ищем все ключевые слова
+                # Ищем все строки с ключевыми словами
                 lines = const_text.splitlines()
                 matched_lines = [l.strip() for l in lines if any(k in l.lower() for k in ["delivery", "smtp", "relay", "route", "routing", "rule"])]
                 self.stdout.write(f"    Строк с ключевыми словами в kerioApiConstants.js: {len(matched_lines)}")
                 for ml in matched_lines[:40]:
                     self.stdout.write(f"      - {ml}")
 
-                # Ищем идентификаторы интерфейсов и методов
-                found_tokens = set(re.findall(r'([A-Za-z0-9_]+)', const_text))
-                target_tokens = [t for t in found_tokens if any(k in t.lower() for k in ["route", "relay", "delivery", "smtp"]) and len(t) > 3]
-                self.stdout.write(f"    Токены API: {', '.join(sorted(target_tokens)[:30])}")
+            # Сканируем index.html и ВСЕ бандлы WebAdmin на предмет RPC методов
+            try:
+                idx_resp = client.session.get(base_admin_url, verify=False, timeout=10)
+                js_files_found = set()
+                if idx_resp.status_code == 200:
+                    self.stdout.write(f"    [index.html] Длина HTML: {len(idx_resp.content)} байт")
+                    self.stdout.write("    --- Содержимое index.html (теги и загрузчики) ---")
+                    for line in idx_resp.text.splitlines():
+                        s_line = line.strip()
+                        if any(kw in s_line.lower() for kw in ["<script", "<link", "src=", "href=", "ext.", "loader", "require", "class"]):
+                            self.stdout.write(f"      {s_line[:150]}")
+
+                    for script_match in re.findall(r'src=["\']([^"\']+\.js[^"\']*)["\']', idx_resp.text):
+                        js_files_found.add(script_match)
+                    
+                    # Ищем ссылки на JSON манифесты / app / bootstrap
+                    for json_manifest in re.findall(r'["\']([^"\']+\.json[^"\']*)["\']', idx_resp.text):
+                        js_files_found.add(json_manifest)
+
+                # Дополнительно проверяем стандартные пути к бандлам и манифестам Kerio Connect WebAdmin
+                well_known_scripts = [
+                    "kerioApiConstants.js",
+                    "admin.html",
+                    "login.html",
+                    "bootstrap.json",
+                    "app.json",
+                    "manifest.json",
+                    "bootstrap.js",
+                    "admin.js",
+                    "app.js",
+                    "kms.js",
+                    "all-classes.js",
+                    "app/Application.js",
+                    "app/all-classes.js",
+                    "js/all-classes.js",
+                    "js/admin.js",
+                    "js/kms.js",
+                    "ext-all.js",
+                    "locale/ru.js",
+                    "locale/en.js",
+                ]
+                for wks in well_known_scripts:
+                    js_files_found.add(wks)
+
+                self.stdout.write(self.style.SUCCESS(f"\n    Проверяем ресурсы WebAdmin ({len(js_files_found)} кандидатов)..."))
+                
+                all_found_rpc: Set[str] = set()
+                keywords_matches: List[str] = []
+
+                for js_file in sorted(js_files_found):
+                    clean_js_name = js_file.split("?")[0]
+                    js_url = base_admin_url + js_file if not js_file.startswith("http") else js_file
+                    try:
+                        js_resp = client.session.get(js_url, verify=False, timeout=10)
+                        if js_resp.status_code == 200 and len(js_resp.content) > 50:
+                            js_text = js_resp.text
+                            self.stdout.write(f"    - Анализ '{clean_js_name}' ({len(js_resp.content)} байт)...")
+
+                            # Если это JSON манифест (bootstrap.json / app.json), парсим список файлов
+                            if clean_js_name.endswith(".json"):
+                                try:
+                                    j_data = js_resp.json()
+                                    if isinstance(j_data, dict):
+                                        # Рекурсивно собираем все строковые значения, оканчивающиеся на .js
+                                        def extract_js_from_json(obj: Any) -> None:
+                                            if isinstance(obj, dict):
+                                                for k, v in obj.items():
+                                                    extract_js_from_json(v)
+                                            elif isinstance(obj, list):
+                                                for item in obj:
+                                                    extract_js_from_json(item)
+                                            elif isinstance(obj, str) and (obj.endswith(".js") or "/" in obj):
+                                                if any(k in obj.lower() for k in ["smtp", "delivery", "relay", "route"]):
+                                                    self.stdout.write(f"      [JSON Path] Найден связанный файл: {obj}")
+                                        extract_js_from_json(j_data)
+                                except Exception:
+                                    pass
+
+                            # 1. Ищем все возможные имена методов Class.method
+                            rpc_candidates = re.findall(r'["\']([A-Z][A-Za-z0-9]{2,}\.[a-z][A-Za-z0-9]{2,})["\']', js_text)
+                            for rpc_m in rpc_candidates:
+                                all_found_rpc.add(rpc_m)
+
+                            # 2. Ищем упоминания релея и доставки в коде
+                            for kw in ["RelayCond", "msSmtpDelivering", "KMS_Relay", "KMS_msSmtpDelivering", "deliveryroute", "DeliveryRoute", "smtpDelivery", "smtp_delivery", "RelayComp"]:
+                                if kw in js_text:
+                                    keywords_matches.append(f"{clean_js_name} содержит '{kw}'")
+                                    # Ищем контекст вокруг ключевого слова
+                                    for match in re.finditer(re.escape(kw), js_text):
+                                        start = max(0, match.start() - 100)
+                                        end = min(len(js_text), match.end() + 150)
+                                        snippet = js_text[start:end].replace("\n", " ")
+                                        keywords_matches.append(f"      контекст: ...{snippet}...")
+                    except Exception as js_err:
+                        pass
+
+                if keywords_matches:
+                    self.stdout.write(self.style.NOTICE("\n    --- Найденные совпадения ключевых слов в WebAdmin бандлах ---"))
+                    for km in keywords_matches[:25]:
+                        self.stdout.write(f"    {km}")
+
+                # Формируем полный матричный список методов для проверки
+                predefined_candidates = [
+                    "Api.getInterfaces",
+                    "Api.getApiDescription",
+                    "System.getApiVersion",
+                    "Session.getApiVersion",
+                    "Delivery.get",
+                    "Delivery.getPop3AccountList",
+                    "Delivery.getDeliveryRouteList",
+                    "Delivery.getRouteList",
+                    "Delivery.getDeliveryRoutes",
+                    "Delivery.getRoutes",
+                    "Delivery.getSmtpDeliveryRouteList",
+                    "Delivery.getSmtpDeliveryRoutes",
+                    "Delivery.getSmtpDeliveryList",
+                    "Delivery.getSmtpRoutes",
+                    "Delivery.getSmtpRouteList",
+                    "Delivery.getSmtpList",
+                    "Delivery.getRelayList",
+                    "Delivery.getRelayRouteList",
+                    "Delivery.getRelayRoutes",
+                    "Delivery.getRelayRules",
+                    "Smtp.get",
+                    "Smtp.getDeliveryRouteList",
+                    "Smtp.getDeliveryRoutes",
+                    "Smtp.getDeliveryList",
+                    "Smtp.getDelivery",
+                    "Smtp.getRoutes",
+                    "Smtp.getRouteList",
+                    "Smtp.getRelayList",
+                    "Smtp.getRelayRouteList",
+                    "Smtp.getRelayRoutes",
+                    "Smtp.getRelayRules",
+                    "Smtp.getSmtpDeliveryList",
+                    "Smtp.getSmtpDeliveryRoutes",
+                    "SmtpDelivery.get",
+                    "SmtpDelivery.getList",
+                    "SmtpDelivery.getRoutes",
+                    "SmtpDelivery.getRouteList",
+                    "SmtpDelivery.getDeliveryRoutes",
+                    "SmtpDelivery.getDeliveryRouteList",
+                    "SmtpDeliveryRoutes.get",
+                    "SmtpDeliveryRoutes.getList",
+                    "DeliveryRoutes.get",
+                    "DeliveryRoutes.getList",
+                    "Relay.get",
+                    "Relay.getList",
+                    "Relay.getRoutes",
+                    "Relay.getRouteList",
+                    "Relay.getRules",
+                    "Relay.getRuleList",
+                    "Routing.get",
+                    "Routing.getList",
+                    "Routing.getRoutes",
+                    "Routing.getRouteList",
+                    "Routing.getDeliveryRoutes",
+                    "Routing.getDeliveryRouteList",
+                    "MailDelivery.get",
+                    "MailDelivery.getRoutes",
+                    "OutgoingRouting.get",
+                    "OutgoingRouting.getRoutes",
+                    "SmtpRelay.get",
+                    "SmtpRelay.getRoutes",
+                    "SmtpRelay.getRouteList",
+                ]
+
+                all_candidates_to_probe = set(predefined_candidates)
+                for rpc in all_found_rpc:
+                    if any(k in rpc.lower() for k in ["smtp", "delivery", "relay", "route", "server", "domain", "user", "api"]):
+                        all_candidates_to_probe.add(rpc)
+
+                self.stdout.write(self.style.SUCCESS(f"\n    Всего RPC методов для проверки: {len(all_candidates_to_probe)}"))
+                
+                # Пробуем вызвать каждый кандидат через API
+                self.stdout.write("\n    --- Опрос матрицы методов Kerio Connect API ---")
+                active_methods = []
+                for rpc in sorted(all_candidates_to_probe):
+                    for p_try in [{}, {"query": {}}]:
+                        try:
+                            r_res = client.call(rpc, params=p_try)
+                            active_methods.append((rpc, r_res))
+                            self.stdout.write(self.style.SUCCESS(f"    [ACTIVE / SUCCESS] {rpc}({json.dumps(p_try)}) -> {json.dumps(r_res, ensure_ascii=False)[:300]}"))
+                            break
+                        except Exception as call_err:
+                            err_str = str(call_err)
+                            if "-32601" not in err_str:
+                                active_methods.append((rpc, err_str))
+                                self.stdout.write(self.style.NOTICE(f"    [ACTIVE / METHOD EXISTS] {rpc}({json.dumps(p_try)}) -> {err_str}"))
+                                break
+            except Exception as w_exc:
+                self.stdout.write(self.style.WARNING(f"    Сканирование WebAdmin: {w_exc}"))
         except Exception as exc:
             self.stdout.write(self.style.WARNING(f"    Анализ kerioApiConstants.js: {exc}"))
 
@@ -177,29 +365,33 @@ class Command(BaseCommand):
             routes = smtp_delivery_mgr.get_routes()
             self.stdout.write(self.style.SUCCESS(f"    Найдено настроенных правил доставки SMTP: {len(routes)}"))
             for r in routes:
-                self.stdout.write(f"      - ID={r.get('id')}: Отправитель='{r.get('sender') or r.get('matchPattern')}', Сервер={r.get('server')}:{r.get('port')}, AuthUser='{r.get('userName')}', Active={r.get('isEnabled')}")
+                self.stdout.write(f"      - ID={r.get('id')}: Отправитель='{r.get('sender') or r.get('matchPattern')}', Сервер={r.get('server')}:{r.get('port')}, AuthUser='{r.get('userName')}', Active={r.get('isEnabled')}, isGlobal={r.get('isGlobal')}")
 
             if target_user_arg:
                 target_user_clean = target_user_arg.split("@")[0].lower()
                 target_email = f"{target_user_clean}@barkol.ru"
                 matched_route = smtp_delivery_mgr.get_route_for_sender(target_email)
 
-                if matched_route:
-                    self.stdout.write(self.style.SUCCESS(f"    -> [OK] Найдено правило ретрансляции SMTP для '{target_email}': {json.dumps(matched_route, ensure_ascii=False, indent=6)}"))
+                is_individual = bool(matched_route and not matched_route.get("isGlobal") and matched_route.get("id") != "kerio_smtp_relay_server")
+
+                if is_individual:
+                    self.stdout.write(self.style.SUCCESS(f"    -> [OK / Индивидуальное правило] Найдено в таблице «Доставка SMTP» для '{target_email}': {json.dumps(matched_route, ensure_ascii=False, indent=6)}"))
                 else:
-                    self.stdout.write(self.style.WARNING(f"    -> [MISSING] Правило ретрансляции SMTP для '{target_email}' ОТСУТСТВУЕТ!"))
-                    if fix_route_flag or target_password_arg:
-                        self.stdout.write(self.style.NOTICE(f"    -> Создание правила ретрансляции SMTP для '{target_email}'..."))
-                        try:
-                            service_obj = KerioAdminService(client=client)
-                            fix_res = service_obj.ensure_user_smtp_delivery_route(
-                                login_name=target_user_clean,
-                                password=target_password_arg,
-                                domain_name="barkol.ru",
-                            )
-                            self.stdout.write(self.style.SUCCESS(f"    -> [SUCCESS] Правило ретрансляции SMTP успешно создано: {json.dumps(fix_res, ensure_ascii=False, indent=6)}"))
-                        except Exception as fix_exc:
-                            self.stdout.write(self.style.ERROR(f"    -> [ERROR] Не удалось создать правило ретрансляции SMTP: {fix_exc}"))
+                    self.stdout.write(self.style.NOTICE(f"    -> [Глобальное/Серверное правило] Активна общая ретрансляция для '{target_email}': {json.dumps(matched_route, ensure_ascii=False, indent=6)}"))
+
+                # Если передан флаг --fix-smtp-route или указан пароль, запускаем создание/актуализацию правила
+                if fix_route_flag or target_password_arg:
+                    self.stdout.write(self.style.NOTICE(f"\n    -> [TRIGGER] Запуск ensure_user_smtp_delivery_route для '{target_email}'..."))
+                    try:
+                        service_obj = KerioAdminService(client=client)
+                        fix_res = service_obj.ensure_user_smtp_delivery_route(
+                            login_name=target_user_clean,
+                            password=target_password_arg,
+                            domain_name="barkol.ru",
+                        )
+                        self.stdout.write(self.style.SUCCESS(f"    -> [РЕЗУЛЬТАТ] ensure_user_smtp_delivery_route:\n{json.dumps(fix_res, ensure_ascii=False, indent=6)}"))
+                    except Exception as fix_exc:
+                        self.stdout.write(self.style.ERROR(f"    -> [ERROR] ensure_user_smtp_delivery_route: {fix_exc}"))
         except Exception as exc:
             self.stdout.write(self.style.ERROR(f"    Ошибка SmtpDeliveryManager: {exc}"))
 

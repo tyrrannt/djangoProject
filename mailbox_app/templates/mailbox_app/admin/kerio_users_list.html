@@ -11,38 +11,113 @@
     <style>
         .kerio-user-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 10px;
             padding: 16px;
             margin-bottom: 12px;
-            transition: box-shadow 0.2s ease;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
         }
         .kerio-user-card:hover {
-            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            border-color: #94a3b8;
         }
         .badge-pop3-active {
-            background: #ecfdf5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
+            background: #dcfce7 !important;
+            color: #14532d !important;
+            border: 1px solid #86efac !important;
             font-size: 11px;
             font-weight: 600;
-            padding: 3px 8px;
+            padding: 4px 8px;
             border-radius: 6px;
         }
         .badge-pop3-none {
-            background: #fffbeb;
-            color: #92400e;
-            border: 1px solid #fde68a;
+            background: #f1f5f9 !important;
+            color: #475569 !important;
+            border: 1px solid #cbd5e1 !important;
             font-size: 11px;
-            padding: 3px 8px;
+            font-weight: 500;
+            padding: 4px 8px;
             border-radius: 6px;
+        }
+        .badge-smtp-individual {
+            background: #dcfce7 !important;
+            color: #14532d !important;
+            border: 1px solid #86efac !important;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .badge-smtp-server {
+            background: #e0f2fe !important;
+            color: #0369a1 !important;
+            border: 1px solid #7dd3fc !important;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .badge-smtp-none {
+            background: #fef3c7 !important;
+            color: #92400e !important;
+            border: 1px solid #fde68a !important;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .badge-quota {
+            background: #f8fafc !important;
+            color: #1e293b !important;
+            border: 1px solid #cbd5e1 !important;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 8px;
+        }
+        .badge-portal-linked {
+            background: #dcfce7 !important;
+            color: #14532d !important;
+            border: 1px solid #86efac !important;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .user-full-name {
+            color: #0f172a !important;
+            font-weight: 700 !important;
+            font-size: 14px;
+        }
+        .user-email-text {
+            color: #0284c7 !important;
+            font-weight: 600 !important;
+            font-size: 12px;
+        }
+        .user-desc-text {
+            color: #475569 !important;
+            font-size: 11px;
+        }
+        .table-kerio-head {
+            background-color: #f8fafc !important;
+            color: #1e293b !important;
+            font-weight: 700 !important;
+            font-size: 12px !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #cbd5e1 !important;
+        }
+        .btn-action-relay {
+            color: #0284c7 !important;
+            font-weight: 700 !important;
+            font-size: 11px;
+            text-decoration: underline !important;
         }
         .user-avatar-circle {
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: #e0f2fe;
-            color: #0369a1;
+            background: #0284c7;
+            color: #ffffff;
             font-weight: 700;
             font-size: 14px;
             display: flex;
@@ -54,10 +129,13 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            color: #0f172a;
         }
         .status-dot {
             width: 8px;
@@ -66,12 +144,12 @@
             display: inline-block;
         }
         .status-dot-online {
-            background: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            background: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
         }
         .status-dot-offline {
-            background: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+            background: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
         }
     </style>
 {% endblock %}
@@ -174,10 +252,10 @@
                     </div>
 
                     <!-- Десктопная таблица пользователей (>=769px) -->
-                    <div class="card border-0 shadow-sm d-none d-md-block mb-4" style="border-radius: 10px; overflow: hidden;">
+                    <div class="card border shadow-sm d-none d-md-block mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; overflow: hidden;">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light text-muted font-size-12 text-uppercase">
+                                <thead class="table-kerio-head">
                                     <tr>
                                         <th class="ps-3 py-3" style="width: 25%;">Пользователь / Email</th>
                                         <th style="width: 25%;">Внешняя доставка (POP3 / SMTP)</th>
@@ -200,15 +278,15 @@
                                                         {% endif %}
                                                     </div>
                                                     <div class="overflow-hidden">
-                                                        <div class="fw-bold text-dark font-size-14 text-truncate">
+                                                        <div class="user-full-name text-truncate">
                                                             {{ u.fullName|default:u.loginName }}
                                                         </div>
-                                                        <div class="text-muted font-size-12 d-flex align-items-center gap-1">
-                                                            <i class="bx bx-envelope text-primary"></i>
+                                                        <div class="user-email-text d-flex align-items-center gap-1">
+                                                            <i class="bx bx-envelope"></i>
                                                             <span class="user-select-all">{{ u.email|default:u.loginName }}</span>
                                                         </div>
                                                         {% if u.description %}
-                                                            <small class="text-muted d-block text-truncate fst-italic" style="font-size: 11px;">{{ u.description }}</small>
+                                                            <div class="user-desc-text text-truncate fst-italic">{{ u.description }}</div>
                                                         {% endif %}
                                                     </div>
                                                 </div>
@@ -217,7 +295,7 @@
                                                 <div class="d-flex flex-column gap-1">
                                                     <!-- Входящий POP3 Сборщик -->
                                                     {% if u.has_pop3_download %}
-                                                        <span class="badge-pop3-active d-inline-flex align-items-center gap-1 w-auto" title="Входящий сбор почты с внешнего сервера">
+                                                        <span class="badge-pop3-active d-inline-flex align-items-center gap-1 w-auto" title="Входящий сбор почты с внешнего сервера (POP3 SSL 995)">
                                                             <i class="bx bx-down-arrow-circle"></i>
                                                             <span>POP3: {{ u.pop3_details.server|default:"mail.barkol.ru" }}:{{ u.pop3_details.port|default:"995" }}</span>
                                                         </span>
@@ -228,17 +306,26 @@
                                                     {% endif %}
 
                                                     <!-- Исходящая ретрансляция «Доставка SMTP» -->
-                                                    {% if u.has_smtp_delivery %}
-                                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-11 d-inline-flex align-items-center gap-1 w-auto" title="Исходящая почта отправляется через ретранслятор с SMTP AUTH">
-                                                            <i class="bx bx-up-arrow-circle"></i>
+                                                    {% if u.is_individual_smtp_delivery %}
+                                                        <span class="badge-smtp-individual d-inline-flex align-items-center gap-1 w-auto" title="Индивидуальное правило исходящей ретрансляции Kerio Connect с авторизацией SMTP AUTH сотрудника">
+                                                            <i class="bx bx-check-double"></i>
                                                             <span>SMTP Relay: {{ u.smtp_delivery_details.server|default:"smtp.barkol.ru" }}:{{ u.smtp_delivery_details.port|default:"587" }}</span>
                                                         </span>
+                                                    {% elif u.has_smtp_delivery %}
+                                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                                            <span class="badge-smtp-server d-inline-flex align-items-center gap-1" title="Используется общий серверный шлюз ретрансляции Kerio Connect (*@barkol.ru)">
+                                                                <i class="bx bx-server"></i> Серверный Relay
+                                                            </span>
+                                                            <button type="button" class="btn btn-link btn-sm p-0 btn-action-relay" onclick="syncUserSmtpDelivery('{{ u.loginName }}', '{{ current_domain }}')" title="Создать индивидуальное правило в таблице Kerio Connect">
+                                                                [+ Индивидуальное]
+                                                            </button>
+                                                        </div>
                                                     {% else %}
                                                         <div class="d-flex align-items-center gap-1">
-                                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill font-size-10 d-inline-flex align-items-center gap-1" title="Исходящее правило ретрансляции не найдено">
+                                                            <span class="badge-smtp-none d-inline-flex align-items-center gap-1" title="Исходящее правило ретрансляции не найдено">
                                                                 <i class="bx bx-error"></i> SMTP без relay
                                                             </span>
-                                                            <button type="button" class="btn btn-link btn-sm p-0 font-size-11 text-primary text-decoration-none" onclick="syncUserSmtpDelivery('{{ u.loginName }}', '{{ current_domain }}')" title="Создать правило Доставка SMTP для пользователя">
+                                                            <button type="button" class="btn btn-link btn-sm p-0 btn-action-relay" onclick="syncUserSmtpDelivery('{{ u.loginName }}', '{{ current_domain }}')" title="Создать правило Доставка SMTP для пользователя">
                                                                 [+ Настроить]
                                                             </button>
                                                         </div>
@@ -249,24 +336,24 @@
                                                 {% if u.django_user %}
                                                     <div class="d-flex align-items-center gap-1">
                                                         <i class="bx bx-user-check text-success font-size-16"></i>
-                                                        <span class="font-size-13 text-dark fw-semibold">{{ u.django_user.get_full_name|default:u.django_user.username }}</span>
+                                                        <span class="font-size-13 text-dark fw-bold">{{ u.django_user.get_full_name|default:u.django_user.username }}</span>
                                                     </div>
                                                     {% if u.mail_account %}
-                                                        <small class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-10 mt-1">
-                                                            MailAccount активен
-                                                        </small>
+                                                        <span class="badge-portal-linked d-inline-block mt-1">
+                                                            <i class="bx bx-check me-1"></i>MailAccount активен
+                                                        </span>
                                                     {% endif %}
                                                 {% else %}
-                                                    <span class="text-muted small font-size-12 fst-italic">Не привязан</span>
+                                                    <span class="text-secondary small font-size-12 fst-italic">Не привязан</span>
                                                 {% endif %}
                                             </td>
                                             <td>
                                                 {% if u.itemBox and u.itemBox.isEnabled %}
-                                                    <span class="badge bg-light text-secondary border font-size-11">
-                                                        <i class="bx bx-pie-chart-alt-2 me-1"></i>{{ u.itemBox.limit }} МБ
+                                                    <span class="badge badge-quota rounded-pill">
+                                                        <i class="bx bx-pie-chart-alt-2 me-1 text-primary"></i>{{ u.itemBox.limit }} МБ
                                                     </span>
                                                 {% else %}
-                                                    <span class="text-muted small font-size-12">Безлимит</span>
+                                                    <span class="text-secondary small font-size-12 fw-semibold">Безлимит</span>
                                                 {% endif %}
                                             </td>
                                             <td class="text-center">
@@ -280,20 +367,20 @@
                                             </td>
                                             <td class="text-end pe-3 text-nowrap">
                                                 <div class="btn-group btn-group-sm" role="group" aria-label="Действия над пользователем">
-                                                    <button type="button" class="btn btn-outline-warning text-dark py-1 px-2 shadow-none"
+                                                    <button type="button" class="btn btn-outline-secondary py-1 px-2 shadow-none"
                                                             onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')"
                                                             title="Сменить пароль">
-                                                        <i class="bx bx-key"></i>
+                                                        <i class="bx bx-key text-warning font-size-15"></i>
                                                     </button>
                                                     {% if u.loginName %}
                                                         <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.loginName %}" class="btn btn-outline-primary py-1 px-2 shadow-none" title="Редактировать параметры">
-                                                            <i class="bx bx-edit"></i>
+                                                            <i class="bx bx-edit font-size-15"></i>
                                                         </a>
                                                     {% endif %}
                                                     <button type="button" class="btn btn-outline-danger py-1 px-2 shadow-none"
                                                             onclick="openDeleteUserModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')"
                                                             title="Удалить почтовый ящик">
-                                                        <i class="bx bx-trash"></i>
+                                                        <i class="bx bx-trash font-size-15"></i>
                                                     </button>
                                                 </div>
                                             </td>
@@ -302,8 +389,8 @@
                                         <tr>
                                             <td colspan="6" class="text-center py-5 text-muted">
                                                 <i class="bx bx-user-x font-size-48 d-block mb-2 text-secondary opacity-50"></i>
-                                                <div class="fw-semibold font-size-15">Пользователи не найдены</div>
-                                                <small>Измените параметры поиска или создайте нового пользователя почты</small>
+                                                <div class="fw-bold font-size-15 text-dark">Пользователи не найдены</div>
+                                                <small class="text-secondary">Измените параметры поиска или создайте нового пользователя почты</small>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -322,8 +409,8 @@
                                             {% if u.fullName %}{{ u.fullName|slice:":1"|upper }}{% else %}{{ u.loginName|slice:":1"|upper }}{% endif %}
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark font-size-14">{{ u.fullName|default:u.loginName }}</div>
-                                            <div class="text-muted font-size-12 user-select-all">{{ u.email|default:u.loginName }}</div>
+                                            <div class="user-full-name">{{ u.fullName|default:u.loginName }}</div>
+                                            <div class="user-email-text user-select-all">{{ u.email|default:u.loginName }}</div>
                                         </div>
                                     </div>
                                     <div class="form-check form-switch">
@@ -334,21 +421,25 @@
                                 </div>
 
                                 {% if u.description %}
-                                    <div class="font-size-12 text-muted mb-2 fst-italic">{{ u.description }}</div>
+                                    <div class="user-desc-text mb-2 fst-italic">{{ u.description }}</div>
                                 {% endif %}
 
                                 <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between pt-2 border-top">
                                     <div class="d-flex flex-wrap gap-1 align-items-center">
                                         {% if u.has_pop3_download %}
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-size-11"><i class="bx bx-down-arrow-circle"></i> POP3 995 SSL</span>
+                                            <span class="badge-pop3-active"><i class="bx bx-down-arrow-circle"></i> POP3 995 SSL</span>
                                         {% else %}
-                                            <span class="badge bg-light text-muted border rounded-pill font-size-10"><i class="bx bx-info-circle"></i> Без POP3</span>
+                                            <span class="badge-pop3-none"><i class="bx bx-info-circle"></i> Без POP3</span>
                                         {% endif %}
 
-                                        {% if u.has_smtp_delivery %}
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-11"><i class="bx bx-up-arrow-circle"></i> SMTP 587 Relay</span>
+                                        {% if u.is_individual_smtp_delivery %}
+                                            <span class="badge-smtp-individual" title="Индивидуальное правило SMTP AUTH"><i class="bx bx-check-double"></i> SMTP 587 Relay</span>
+                                        {% elif u.has_smtp_delivery %}
+                                            <span class="badge-smtp-server" onclick="syncUserSmtpDelivery('{{ u.loginName }}', '{{ current_domain }}')" role="button" title="Серверный Relay. Нажмите для добавления индивидуального правила">
+                                                <i class="bx bx-server"></i> Серверный Relay [+ Настроить]
+                                            </span>
                                         {% else %}
-                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill font-size-10" onclick="syncUserSmtpDelivery('{{ u.loginName }}', '{{ current_domain }}')" role="button" title="Нажмите для настройки SMTP">
+                                            <span class="badge-smtp-none" onclick="syncUserSmtpDelivery('{{ u.loginName }}', '{{ current_domain }}')" role="button" title="Нажмите для настройки SMTP">
                                                 <i class="bx bx-error"></i> Без SMTP [+ Настроить]
                                             </span>
                                         {% endif %}
@@ -359,8 +450,8 @@
                                             <i class="bx bx-key text-warning font-size-16"></i>
                                         </button>
                                         {% if u.loginName %}
-                                            <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.loginName %}" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Редактировать">
-                                                <i class="bx bx-edit text-primary font-size-16"></i>
+                                            <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.loginName %}" class="btn btn-outline-primary btn-sm py-1 px-2" title="Редактировать">
+                                                <i class="bx bx-edit font-size-16"></i>
                                             </a>
                                         {% endif %}
                                         <button class="btn btn-outline-danger btn-sm py-1 px-2"
@@ -371,9 +462,9 @@
                                 </div>
                             </div>
                         {% empty %}
-                            <div class="text-center py-4 text-muted card border-0 shadow-sm p-4">
-                                <i class="bx bx-user-x font-size-40 mb-2"></i>
-                                <div>Пользователи не найдены</div>
+                            <div class="text-center py-4 text-muted card border shadow-sm p-4" style="border-color: #cbd5e1;">
+                                <i class="bx bx-user-x font-size-40 mb-2 text-secondary"></i>
+                                <div class="fw-bold text-dark">Пользователи не найдены</div>
                             </div>
                         {% endfor %}
                     </div>
@@ -752,9 +843,20 @@
         }
 
         // Синхронизация и создание правила «Доставка SMTP»
-        function syncUserSmtpDelivery(loginName, domain) {
-            if (!confirm("Настроить правило маршрутизации «Доставка SMTP» (исходящая ретрансляция smtp.barkol.ru:587 с авторизацией SMTP AUTH) для пользователя '" + loginName + "'?")) {
-                return;
+        function syncUserSmtpDelivery(loginName, domain, userPassword) {
+            if (!userPassword) {
+                if (!confirm("Настроить индивидуальное правило маршрутизации «Доставка SMTP» (исходящая ретрансляция smtp.barkol.ru:587 с авторизацией SMTP AUTH) для пользователя '" + loginName + "'?")) {
+                    return;
+                }
+            }
+
+            var payload = {
+                action: "sync_smtp_route",
+                login_name: loginName,
+                domain_name: domain || "barkol.ru"
+            };
+            if (userPassword) {
+                payload.password = userPassword;
             }
 
             fetch("{% url 'mailbox_app:api_kerio_action' %}", {
@@ -763,15 +865,21 @@
                     "Content-Type": "application/json",
                     "X-CSRFToken": getCsrfToken()
                 },
-                body: JSON.stringify({
-                    action: "sync_smtp_route",
-                    login_name: loginName,
-                    domain_name: domain || "barkol.ru"
-                })
+                body: JSON.stringify(payload)
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if (data.success) {
+                    if (data.details && data.details.action === "server_relay") {
+                        var enterPass = confirm(data.message + "\n\nЖелаете ввести пароль сотрудника сейчас, чтобы создать индивидуальную запись в таблице Kerio Connect?");
+                        if (enterPass) {
+                            var pass = prompt("Введите пароль учетной записи для '" + loginName + "':");
+                            if (pass && pass.trim()) {
+                                syncUserSmtpDelivery(loginName, domain, pass.trim());
+                                return;
+                            }
+                        }
+                    }
                     alert(data.message || "Правило «Доставка SMTP» успешно настроено!");
                     window.location.reload();
                 } else {
