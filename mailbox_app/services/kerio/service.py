@@ -1,7 +1,7 @@
 """Высокоуровневый сервис бизнес-логики администрирования Kerio Connect и интеграции с порталом BARKOL."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 try:
     from django.contrib.auth import get_user_model
@@ -710,43 +710,298 @@ class KerioAdminService:
         self,
         login_name: str,
         domain_name: str = "barkol.ru",
+        delete_external: bool = True,
     ) -> Dict[str, Any]:
-        """Удаляет пользователя, его правило загрузки POP3 и правило Доставки SMTP из Kerio Connect.
+        """Удаляет пользователя, его правило загрузки POP3, правило Доставки SMTP из Kerio Connect и ящик в ISPmanager.
 
         Args:
             login_name (str): Логин пользователя.
-            domain_name (str): Домен.
+            domain_name (str): Домен почтового ящика (по умолчанию 'barkol.ru').
+            delete_external (bool): Удалить ли связанный ящик на внешнем сервере ISPmanager (Reg.ru). По умолчанию True.
 
         Returns:
-            Dict[str, Any]: Отчет об удалении.
+            Dict[str, Any]: Отчет об удалении со статусом выполнения каждого шага.
+
+        Raises:
+            KerioObjectNotFoundError: Если пользователь не найден в Kerio Connect.
         """
         clean_login = login_name.split("@")[0].strip().lower()
         full_email = f"{clean_login}@{domain_name}"
 
+        report: Dict[str, Any] = {"login": clean_login, "email": full_email, "deleted": False, "success": False, "steps": {}}
+
+        # 1. Внешний почтовый сервер (ISPmanager на Reg.ru)
+        if delete_external:
+            try:
+                ext_deleted = self.external_provider.delete_mailbox(full_email)
+                report["steps"]["external_server"] = "ok" if ext_deleted else "skipped_or_not_found"
+            except Exception as ext_err:
+                logger.warning(f"[KerioAdminService] Ошибка удаления ящика '{full_email}' в ISPmanager: {ext_err}")
+                report["steps"]["external_server"] = f"warning: {ext_err}"
+
+        # 2. Удаляем POP3 правило в Kerio Connect
+        try:
+            pop3_rule = self.pop3.get_account_for_user(clean_login)
+            if pop3_rule and "id" in pop3_rule:
+                self.pop3.remove_pop3_account(pop3_rule["id"])
+                report["steps"]["kerio_pop3_download"] = "ok"
+        except Exception as pop_err:
+            logger.warning(f"[KerioAdminService] Ошибка удаления правила POP3 для {clean_login}: {pop_err}")
+            report["steps"]["kerio_pop3_download"] = f"warning: {pop_err}"
+
+        # 3. Удаляем Доставка SMTP правило
+        try:
+            self.smtp_delivery.remove_route_for_sender(full_email)
+            report["steps"]["kerio_smtp_delivery"] = "ok"
+        except Exception as smtp_exc:
+            logger.warning(f"[KerioAdminService] Ошибка удаления правила Доставка SMTP: {smtp_exc}")
+            report["steps"]["kerio_smtp_delivery"] = f"warning: {smtp_exc}"
+
+        # 4. Удаляем пользователя в Kerio Connect
         domain_id = self.domains.get_domain_id(domain_name)
         k_user = self.users.get_user_by_login(clean_login, domain_id=domain_id)
         if not k_user:
             raise KerioObjectNotFoundError(f"Пользователь '{clean_login}' не найден в Kerio Connect.")
 
-        # Удаляем POP3 правило
-        pop3_rule = self.pop3.get_account_for_user(clean_login)
-        if pop3_rule and "id" in pop3_rule:
-            self.pop3.remove_pop3_account(pop3_rule["id"])
-
-        # Удаляем Доставка SMTP правило
-        try:
-            self.smtp_delivery.remove_route_for_sender(full_email)
-        except Exception as smtp_exc:
-            logger.warning(f"[KerioAdminService] Ошибка удаления правила Доставка SMTP: {smtp_exc}")
-
-        # Удаляем пользователя
         self.users.remove_user(k_user["id"], domain_id=domain_id)
+        report["steps"]["kerio_user"] = "ok"
 
-        # Удаляем связанный MailAccount если есть
+        # 5. Удаляем связанный MailAccount если есть
         if MailAccount:
             try:
-                MailAccount.objects.filter(email__iexact=full_email).delete()
+                deleted_count, _ = MailAccount.objects.filter(email__iexact=full_email).delete()
+                report["steps"]["django_account"] = f"deleted {deleted_count} records"
             except Exception as d_err:
                 logger.debug(f"[KerioAdminService] Ошибка удаления MailAccount: {d_err}")
 
-        return {"login": clean_login, "deleted": True, "success": True}
+        report["deleted"] = True
+        report["success"] = True
+        return report
+
+    def create_external_mailbox_for_user(
+        self,
+        login_name: str,
+        domain_name: str = "barkol.ru",
+        password: Optional[str] = None,
+        full_name: Optional[str] = None,
+        quota_mb: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Создает почтовый ящик в ISPmanager на Reg.ru для существующего пользователя Kerio Connect.
+
+        Если пароль не передан явно, автоматически пытается извлечь его из связанного
+        `DataBaseUserWorkProfile.work_email_password` или `MailAccount`.
+
+        Args:
+            login_name (str): Логин пользователя.
+            domain_name (str): Домен ящика (по умолчанию 'barkol.ru').
+            password (Optional[str]): Пароль ящика (если None, извлекается из профиля).
+            full_name (Optional[str]): Имя владельца ящика.
+            quota_mb (Optional[int]): Дисковая квота в МБ.
+
+        Returns:
+            Dict[str, Any]: Результат создания ящика в ISPmanager.
+
+        Raises:
+            KerioValidationError: Если пароль не найден и не передан.
+        """
+        clean_login = login_name.split("@")[0].strip().lower()
+        full_email = f"{clean_login}@{domain_name}"
+
+        # Автоматический поиск пароля в профиле, если не указан
+        if not password and MailAccount:
+            try:
+                acc = MailAccount.objects.filter(email__iexact=full_email).first()
+                if acc:
+                    password = acc.get_password()
+            except Exception:
+                pass
+
+        if not password and User:
+            try:
+                u = User.objects.filter(
+                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+                ).select_related("user_work_profile").first()
+                if u and hasattr(u, "user_work_profile") and u.user_work_profile and u.user_work_profile.work_email_password:
+                    password = u.user_work_profile.work_email_password
+                if not full_name and u:
+                    full_name = getattr(u, "title", "") or u.get_full_name() or u.username
+            except Exception:
+                pass
+
+        if not password:
+            raise KerioValidationError(
+                f"Не удалось определить пароль для '{clean_login}'. Укажите пароль явно для создания ящика в ISPmanager."
+            )
+
+        res = self.external_provider.create_mailbox(
+            email=full_email,
+            password=password,
+            full_name=full_name or clean_login,
+            quota_mb=quota_mb,
+        )
+        return res
+
+    def audit_mailboxes_sync(
+        self,
+        domain_name: str = "barkol.ru",
+    ) -> Dict[str, Any]:
+        """Выполняет комплексный аудит синхронизации почтовых ящиков между Kerio Connect и внешним ISPmanager (Reg.ru).
+
+        Получает полный реестр пользователей Kerio Connect, сопоставляет его со списком ящиков в панели
+        ISPmanager, правилами Загрузка POP3 и Доставка SMTP, и формирует аналитический отчет о расхождениях.
+
+        Args:
+            domain_name (str): Имя домена для аудита (по умолчанию 'barkol.ru').
+
+        Returns:
+            Dict[str, Any]: Словарь с результатами аудита:
+                - success (bool): True при успешном сборе данных.
+                - domain (str): Имя проверенного домена.
+                - isp_provider_configured (bool): Флаг активности настроек ISPmanager.
+                - isp_connected (bool): Статус подключения к панели ISPmanager.
+                - summary (Dict[str, Any]): Сводная статистика (total_kerio, total_isp, synced_count, missing_in_isp_count, orphaned_in_isp_count, missing_pop3_count, missing_smtp_count).
+                - users (List[Dict[str, Any]]): Список пользователей с детализацией статусов во всех системах.
+                - orphans (List[Dict[str, Any]]): Почтовые ящики, присутствующие в ISPmanager, но отсутствующие в Kerio Connect.
+                - message (str): Человекопонятное резюме аудита.
+        """
+        # 1. Пользователи Kerio Connect
+        kerio_users_res = self.get_users_list(domain_name=domain_name, limit=1000)
+        kerio_users = kerio_users_res.get("list", [])
+
+        # 2. Ящики в ISPmanager
+        isp_connected = False
+        isp_error = None
+        isp_mailboxes: List[Dict[str, Any]] = []
+
+        if self.external_provider.is_configured:
+            try:
+                isp_mailboxes = self.external_provider.get_mailboxes(domain=domain_name if domain_name != "all" else None)
+                isp_connected = True
+            except Exception as e_isp:
+                logger.warning(f"[KerioAdminService] Ошибка запроса ящиков из ISPmanager при аудите: {e_isp}")
+                isp_connected = False
+                isp_error = str(e_isp)
+        else:
+            isp_error = "Параметры подключения к ISPmanager не настроены в .env (ISPMANAGER_API_USER/PASSWORD)."
+
+        # Строим карту ISPmanager ящиков для быстрого поиска
+        isp_map: Dict[str, Dict[str, Any]] = {}
+        for mb in isp_mailboxes:
+            mb_email = str(mb.get("email", "")).strip().lower()
+            mb_name = str(mb.get("name", "")).strip().lower()
+            if mb_email:
+                isp_map[mb_email] = mb
+            if mb_name:
+                isp_map[mb_name] = mb
+                if "@" not in mb_name and domain_name and domain_name != "all":
+                    isp_map[f"{mb_name}@{domain_name.lower()}"] = mb
+
+        # Сопоставляем каждого пользователя Kerio с ISPmanager
+        audit_users: List[Dict[str, Any]] = []
+        matched_isp_emails: Set[str] = set()
+
+        synced_count = 0
+        missing_in_isp_count = 0
+        missing_pop3_count = 0
+        missing_smtp_count = 0
+
+        for ku in kerio_users:
+            login = ku.get("loginName", "")
+            email = ku.get("email") or (f"{login}@{domain_name}" if "@" not in login else login)
+            clean_login = login.strip().lower()
+            clean_email = email.strip().lower()
+
+            isp_box = isp_map.get(clean_email) or isp_map.get(clean_login) or isp_map.get(clean_login.split("@")[0])
+            in_isp = bool(isp_box)
+
+            if in_isp and isp_box:
+                if isp_box.get("email"):
+                    matched_isp_emails.add(str(isp_box["email"]).lower())
+                if isp_box.get("name"):
+                    matched_isp_emails.add(str(isp_box["name"]).lower())
+
+            has_pop3 = bool(ku.get("has_pop3_download"))
+            has_smtp = bool(ku.get("has_smtp_delivery"))
+            is_indiv_smtp = bool(ku.get("is_individual_smtp_delivery"))
+
+            if not has_pop3:
+                missing_pop3_count += 1
+            if not has_smtp:
+                missing_smtp_count += 1
+
+            if in_isp:
+                synced_count += 1
+                sync_status = "synced"
+                sync_label = "Создан везде"
+            else:
+                missing_in_isp_count += 1
+                sync_status = "missing_in_isp"
+                sync_label = "Отсутствует в ISPmanager"
+
+            audit_users.append({
+                "login": clean_login,
+                "email": clean_email,
+                "full_name": ku.get("fullName", ""),
+                "description": ku.get("description", ""),
+                "is_enabled": ku.get("isEnabled", True),
+                "in_kerio": True,
+                "in_ispmanager": in_isp,
+                "isp_quota": isp_box.get("quota") if isp_box else None,
+                "isp_used": isp_box.get("used") if isp_box else None,
+                "isp_status": isp_box.get("status") if isp_box else None,
+                "isp_note": isp_box.get("note") if isp_box else None,
+                "has_pop3": has_pop3,
+                "pop3_details": ku.get("pop3_details"),
+                "has_smtp_delivery": has_smtp,
+                "is_individual_smtp_delivery": is_indiv_smtp,
+                "smtp_delivery_details": ku.get("smtp_delivery_details"),
+                "sync_status": sync_status,
+                "sync_label": sync_label,
+            })
+
+        # Поиск сирот (ящики есть в ISPmanager, но нет в Kerio)
+        orphans: List[Dict[str, Any]] = []
+        for mb in isp_mailboxes:
+            mb_email = str(mb.get("email", "")).strip().lower()
+            mb_name = str(mb.get("name", "")).strip().lower()
+            if mb_email not in matched_isp_emails and mb_name not in matched_isp_emails:
+                orphans.append({
+                    "email": mb.get("email") or f"{mb_name}@{domain_name}",
+                    "name": mb_name,
+                    "domain": mb.get("domain", domain_name),
+                    "quota": mb.get("quota"),
+                    "used": mb.get("used"),
+                    "status": mb.get("status"),
+                    "note": mb.get("note"),
+                    "in_kerio": False,
+                    "in_ispmanager": True,
+                    "sync_status": "orphan_in_isp",
+                    "sync_label": "Только в ISPmanager",
+                })
+
+        summary = {
+            "total_kerio": len(kerio_users),
+            "total_isp": len(isp_mailboxes),
+            "synced_count": synced_count,
+            "missing_in_isp_count": missing_in_isp_count,
+            "orphaned_in_isp_count": len(orphans),
+            "missing_pop3_count": missing_pop3_count,
+            "missing_smtp_count": missing_smtp_count,
+            "isp_provider_configured": self.external_provider.is_configured,
+            "isp_connected": isp_connected,
+            "isp_error": isp_error,
+        }
+
+        return {
+            "success": True,
+            "domain": domain_name,
+            "summary": summary,
+            "users": audit_users,
+            "orphans": orphans,
+            "message": (
+                f"Аудит завершен: в Kerio Connect {len(kerio_users)} ящиков, "
+                f"в ISPmanager {len(isp_mailboxes)} ящиков. "
+                f"Синхронизировано: {synced_count}, отсутствуют в ISPmanager: {missing_in_isp_count}, "
+                f"только в ISPmanager: {len(orphans)}."
+            ),
+        }

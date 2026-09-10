@@ -362,6 +362,124 @@ class KerioAdminServiceTestCase(TestCase):
         if hasattr(self.user, "user_work_profile") and self.user.user_work_profile:
             self.assertEqual(self.user.user_work_profile.work_email_password, "BrandNewPassword999!")
 
+    def test_delete_user_with_external_isp_deletion(self) -> None:
+        """Тест комплексного удаления пользователя с удалением из Kerio Connect и ISPmanager."""
+        from mailbox_app.models import MailAccount
+
+        # Создаем тестовый MailAccount
+        account, _ = MailAccount.objects.get_or_create(
+            user=self.user,
+            defaults={
+                "email": "v.shakirov@barkol.ru",
+                "display_name": "Вадим Шакиров",
+                "imap_host": "imap.barkol.ru",
+                "imap_port": 993,
+                "imap_use_ssl": True,
+                "smtp_host": "sm.barkol.ru",
+                "smtp_port": 465,
+                "smtp_use_ssl": True,
+                "is_active": True,
+            },
+        )
+
+        mock_ext_delete = MagicMock(return_value=True)
+        self.service.external_provider.delete_mailbox = mock_ext_delete
+
+        self.mock_client.call.side_effect = [
+            # Pop3.get (get_account_for_user)
+            {"list": [{"id": "pop3://account/1", "targetUser": "v.shakirov"}]},
+            # Pop3.remove
+            {"success": True},
+            # Smtp.get (remove_route_for_sender)
+            {"smtp": {"deliveryRules": []}},
+            # Domains.get (get_domain_id)
+            {"list": [{"id": "dom_barkol", "name": "barkol.ru"}]},
+            # Users.get (get_user_by_login)
+            {"list": [{"id": "keriodb://user/dom_barkol/user_1", "loginName": "v.shakirov"}]},
+            # Users.remove
+            {"success": True},
+        ]
+
+        res = self.service.delete_user(
+            login_name="v.shakirov",
+            domain_name="barkol.ru",
+            delete_external=True,
+        )
+
+        self.assertTrue(res["success"])
+        self.assertTrue(res["deleted"])
+        self.assertEqual(res["steps"]["external_server"], "ok")
+        self.assertEqual(res["steps"]["kerio_user"], "ok")
+        mock_ext_delete.assert_called_once_with("v.shakirov@barkol.ru")
+        self.assertFalse(MailAccount.objects.filter(email="v.shakirov@barkol.ru").exists())
+
+    def test_audit_mailboxes_sync(self) -> None:
+        """Тест комплексного аудита синхронизации почтовых ящиков (Kerio Connect ↔ ISPmanager)."""
+        # Мокируем список пользователей Kerio
+        self.service.get_users_list = MagicMock(return_value={
+            "list": [
+                {
+                    "loginName": "v.shakirov",
+                    "email": "v.shakirov@barkol.ru",
+                    "fullName": "Вадим Шакиров",
+                    "isEnabled": True,
+                    "has_pop3_download": True,
+                    "has_smtp_delivery": True,
+                    "is_individual_smtp_delivery": True,
+                },
+                {
+                    "loginName": "a.abramov",
+                    "email": "a.abramov@barkol.ru",
+                    "fullName": "Алексей Абрамов",
+                    "isEnabled": True,
+                    "has_pop3_download": False,
+                    "has_smtp_delivery": True,
+                    "is_individual_smtp_delivery": False,
+                },
+            ]
+        })
+
+        # Мокируем провайдер ISPmanager
+        self.service.external_provider.is_configured = True
+        self.service.external_provider.get_mailboxes = MagicMock(return_value=[
+            {
+                "email": "v.shakirov@barkol.ru",
+                "name": "v.shakirov",
+                "domain": "barkol.ru",
+                "quota": "1024",
+                "used": "150",
+                "status": "active",
+            },
+            {
+                "email": "orphan@barkol.ru",
+                "name": "orphan",
+                "domain": "barkol.ru",
+                "quota": "512",
+                "used": "10",
+                "status": "active",
+            },
+        ])
+
+        audit = self.service.audit_mailboxes_sync(domain_name="barkol.ru")
+
+        self.assertTrue(audit["success"])
+        self.assertEqual(audit["summary"]["total_kerio"], 2)
+        self.assertEqual(audit["summary"]["total_isp"], 2)
+        self.assertEqual(audit["summary"]["synced_count"], 1)
+        self.assertEqual(audit["summary"]["missing_in_isp_count"], 1)
+        self.assertEqual(audit["summary"]["orphaned_in_isp_count"], 1)
+        self.assertEqual(len(audit["users"]), 2)
+        self.assertEqual(len(audit["orphans"]), 1)
+
+        # Проверяем статусы пользователей
+        u_shakirov = next(u for u in audit["users"] if u["login"] == "v.shakirov")
+        self.assertTrue(u_shakirov["in_ispmanager"])
+        self.assertEqual(u_shakirov["sync_status"], "synced")
+
+        u_abramov = next(u for u in audit["users"] if u["login"] == "a.abramov")
+        self.assertFalse(u_abramov["in_ispmanager"])
+        self.assertEqual(u_abramov["sync_status"], "missing_in_isp")
+
 
 class CorporateLoginUtilsTestCase(TestCase):
     """Тестирование транслитерации и генерации корпоративных логинов BARKOL."""

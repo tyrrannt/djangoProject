@@ -656,6 +656,9 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
     def delete_mailbox(self, email: str) -> bool:
         """Удаляет почтовый ящик в ISPmanager (`func=email.delete`).
 
+        Поддерживает поочередный перебор формата идентификатора ящика (полный email и имя аккаунта)
+        с привязкой к родительскому домену `plid` / `domainname`.
+
         Args:
             email (str): Email адрес удаляемого ящика.
 
@@ -671,6 +674,7 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
         name = parts[0]
         domain = parts[1] if len(parts) > 1 else "barkol.ru"
 
+        # Вариант 1: elid = полный email (например, user@barkol.ru)
         params: Dict[str, Any] = {
             "sok": "ok",
             "elid": clean_email,
@@ -682,7 +686,29 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
 
         try:
             res = self._call_api("email.delete", params=params)
-            return bool(res.get("success"))
+            if res.get("success"):
+                logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{clean_email}' успешно удален из ISPmanager.")
+                return True
+        except Exception as e1:
+            logger.debug(f"[ISPmanagerExternalMailProvider] Попытка 1 удаления '{clean_email}' не удалась: {e1}")
+
+        # Вариант 2: elid = имя ящика (например, user) с plid = barkol.ru
+        params_fallback: Dict[str, Any] = {
+            "sok": "ok",
+            "elid": name,
+            "name": name,
+            "domainname": domain,
+            "domain": domain,
+            "plid": domain,
+        }
+
+        try:
+            res = self._call_api("email.delete", params=params_fallback)
+            if res.get("success"):
+                logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{name}' (домен {domain}) успешно удален из ISPmanager.")
+                return True
+            logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка удаления ящика '{clean_email}': {res.get('error')}")
+            return False
         except Exception as exc:
             logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка удаления ящика '{clean_email}': {exc}")
             return False

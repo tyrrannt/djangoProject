@@ -3413,12 +3413,21 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
         elif action == "delete_user":
             login_name = data.get("login_name", "").strip()
             domain_name = data.get("domain_name", "barkol.ru").strip()
+            delete_external_raw = data.get("delete_external", True)
+            delete_external = delete_external_raw in (True, "true", "True", "1", 1)
             if not login_name:
                 return JsonResponse({"success": False, "message": "Логин пользователя обязателен."}, status=400)
             try:
-                res = service.delete_user(login_name=login_name, domain_name=domain_name)
-                return JsonResponse(
-                    {"success": True, "message": f"Пользователь '{login_name}' удален из Kerio Connect."})
+                res = service.delete_user(
+                    login_name=login_name,
+                    domain_name=domain_name,
+                    delete_external=delete_external,
+                )
+                return JsonResponse({
+                    "success": True,
+                    "message": f"Пользователь '{login_name}' успешно удален из Kerio Connect и внешнего сервера (ISPmanager).",
+                    "details": res,
+                })
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка удаления пользователя: {err}", exc_info=True)
                 return JsonResponse({"success": False, "message": str(err)}, status=500)
@@ -3432,6 +3441,47 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка вызова downloadNow: {err}", exc_info=True)
                 return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "audit_sync":
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            try:
+                res = service.audit_mailboxes_sync(domain_name=domain_name)
+                return JsonResponse(res)
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка аудита синхронизации Kerio Connect и ISPmanager: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": f"Ошибка проведения аудита: {err}"}, status=500)
+
+        elif action == "create_isp_mailbox":
+            login_name = data.get("login_name", "").strip()
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            password = data.get("password", "").strip() or None
+            full_name = data.get("full_name", "").strip() or None
+            quota_mb_raw = data.get("quota_mb")
+            quota_mb = int(quota_mb_raw) if quota_mb_raw and str(quota_mb_raw).isdigit() else None
+            if not login_name:
+                return JsonResponse({"success": False, "message": "Логин пользователя обязателен."}, status=400)
+            try:
+                res = service.create_external_mailbox_for_user(
+                    login_name=login_name,
+                    domain_name=domain_name,
+                    password=password,
+                    full_name=full_name,
+                    quota_mb=quota_mb,
+                )
+                if not res.get("success"):
+                    return JsonResponse({
+                        "success": False,
+                        "message": res.get("error") or "Не удалось создать ящик в ISPmanager.",
+                        "details": res,
+                    }, status=400)
+                return JsonResponse({
+                    "success": True,
+                    "message": f"Почтовый ящик для '{login_name}' успешно создан в ISPmanager на Reg.ru!",
+                    "details": res,
+                })
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка создания ящика в ISPmanager: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=400)
 
         elif action == "sync_smtp_route":
             login_name = data.get("login_name", "").strip()

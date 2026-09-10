@@ -200,6 +200,12 @@
                                 </button>
                             </div>
 
+                            <!-- Кнопка аудита статусов ящиков Kerio + ISPmanager -->
+                            <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="runSyncAudit()" id="btnSyncAudit" title="Сверить наличие ящиков в Kerio Connect и на удаленном сервере ISPmanager (Reg.ru)">
+                                <i class="bx bx-check-shield font-size-16" id="btnSyncAuditIcon"></i>
+                                <span id="btnSyncAuditText">Проверить статус (Kerio ↔ ISPmanager)</span>
+                            </button>
+
                             <a href="{% url 'mailbox_app:kerio_admin_user_create' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
                                 <i class="bx bx-user-plus font-size-16"></i> <span>Создать ящик сотрудника</span>
                             </a>
@@ -534,8 +540,14 @@
                     <p class="font-size-14 text-dark mb-2">
                         Вы действительно хотите удалить учетную запись <strong id="modalDeleteUserDisplay"></strong>?
                     </p>
-                    <div class="alert alert-warning py-2 px-3 font-size-12 mb-0">
-                        <i class="bx bx-error me-1"></i> Будет удален почтовый ящик в Kerio Connect и связанное правило внешней доставки «Загрузка POP3». Данное действие необратимо.
+                    <div class="alert alert-warning py-2 px-3 font-size-12 mb-3">
+                        <i class="bx bx-error me-1"></i> Будет удален почтовый ящик в Kerio Connect, а также правила «Загрузка POP3» и «Доставка SMTP».
+                    </div>
+                    <div class="form-check p-2 bg-light border rounded mb-2">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="modalDeleteExternal" checked>
+                        <label class="form-check-label font-size-13 fw-semibold text-dark" for="modalDeleteExternal">
+                            Удалить почтовый ящик также с внешнего сервера ISPmanager (Reg.ru)
+                        </label>
                     </div>
                     <input type="hidden" id="modalDeleteLoginName">
                     <input type="hidden" id="modalDeleteDomain" value="barkol.ru">
@@ -546,6 +558,106 @@
                     <button type="button" class="btn btn-danger btn-sm" id="btnSubmitDeleteUser" onclick="submitDeleteUser()">
                         <i class="bx bx-trash me-1"></i> Удалить навсегда
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно аудита синхронизации Kerio Connect ↔ ISPmanager -->
+    <div class="modal fade" id="kerioSyncAuditModal" tabindex="-1" aria-labelledby="kerioSyncAuditModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-primary text-white py-3 px-4">
+                    <h5 class="modal-title font-size-16 fw-bold d-flex align-items-center gap-2" id="kerioSyncAuditModalLabel">
+                        <i class="bx bx-check-shield font-size-22"></i>
+                        <span>Аудит синхронизации почтовых ящиков (Kerio Connect ↔ ISPmanager Reg.ru)</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- Сводные карточки метрик -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-2">
+                            <div class="card border h-100 shadow-none text-center p-2" style="background: #ffffff; border-color: #cbd5e1 !important; border-radius: 8px;">
+                                <div class="font-size-11 text-muted text-uppercase fw-bold">В Kerio Connect</div>
+                                <div class="font-size-20 fw-bold text-dark" id="auditStatKerio">0</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="card border h-100 shadow-none text-center p-2" style="background: #ffffff; border-color: #cbd5e1 !important; border-radius: 8px;">
+                                <div class="font-size-11 text-muted text-uppercase fw-bold">В ISPmanager</div>
+                                <div class="font-size-20 fw-bold text-primary" id="auditStatIsp">0</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border h-100 shadow-none text-center p-2" style="background: #f0fdf4; border-color: #86efac !important; border-radius: 8px;">
+                                <div class="font-size-11 text-success text-uppercase fw-bold">Созданы везде (OK)</div>
+                                <div class="font-size-20 fw-bold text-success" id="auditStatSynced">0</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border h-100 shadow-none text-center p-2" style="background: #fef2f2; border-color: #fca5a5 !important; border-radius: 8px;">
+                                <div class="font-size-11 text-danger text-uppercase fw-bold">Нет в ISPmanager</div>
+                                <div class="font-size-20 fw-bold text-danger" id="auditStatMissingIsp">0</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <div class="card border h-100 shadow-none text-center p-2" style="background: #f8fafc; border-color: #cbd5e1 !important; border-radius: 8px;">
+                                <div class="font-size-11 text-secondary text-uppercase fw-bold">Только на хостинге</div>
+                                <div class="font-size-20 fw-bold text-secondary" id="auditStatOrphans">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Оповещение об ошибке ISPmanager API (если возникла) -->
+                    <div id="auditIspErrorAlert" class="alert alert-warning py-2 px-3 d-none font-size-12 mb-3">
+                        <i class="bx bx-error-circle me-1"></i>
+                        <span id="auditIspErrorText"></span>
+                    </div>
+
+                    <!-- Панель фильтров и быстрого поиска в аудите -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div class="btn-group btn-group-sm" role="group" id="auditFilterButtonGroup">
+                            <button type="button" class="btn btn-primary active" onclick="filterAuditTable('all')" id="btnFilterAll">Все (<span id="countFilterAll">0</span>)</button>
+                            <button type="button" class="btn btn-outline-danger" onclick="filterAuditTable('missing_in_isp')" id="btnFilterMissing">⚠️ Отсутствуют в ISPmanager (<span id="countFilterMissing">0</span>)</button>
+                            <button type="button" class="btn btn-outline-success" onclick="filterAuditTable('synced')" id="btnFilterSynced">✅ Созданы везде (<span id="countFilterSynced">0</span>)</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="filterAuditTable('orphan_in_isp')" id="btnFilterOrphan">ℹ️ Только в ISPmanager (<span id="countFilterOrphan">0</span>)</button>
+                        </div>
+                        <div class="input-group input-group-sm" style="max-width: 280px;">
+                            <span class="input-group-text bg-white border-end-0"><i class="bx bx-search text-muted"></i></span>
+                            <input type="text" class="form-control border-start-0" id="auditSearchInput" placeholder="Поиск в результатах аудита..." oninput="filterAuditTable(currentAuditFilter)">
+                        </div>
+                    </div>
+
+                    <!-- Таблица аудита -->
+                    <div class="card border shadow-sm" style="border-radius: 8px; border-color: #cbd5e1 !important; overflow: hidden; background: #ffffff;">
+                        <div class="table-responsive" style="max-height: 480px;">
+                            <table class="table table-hover align-middle mb-0 font-size-13" id="auditResultsTable">
+                                <thead class="table-kerio-head" style="position: sticky; top: 0; z-index: 2;">
+                                    <tr>
+                                        <th class="ps-3 py-2" style="width: 25%;">Email / Сотрудник</th>
+                                        <th style="width: 15%;">Kerio Connect</th>
+                                        <th style="width: 20%;">ISPmanager (Reg.ru)</th>
+                                        <th style="width: 15%;">POP3 Сборщик</th>
+                                        <th style="width: 15%;">SMTP Relay</th>
+                                        <th style="width: 10%;" class="text-end pe-3">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditTableBody">
+                                    <!-- Динамические строки аудита -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <span class="font-size-11 text-muted" id="auditTimestampText">Аудит выполнен только что</span>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="runSyncAudit()">
+                            <i class="bx bx-refresh me-1"></i> Повторить аудит
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -791,6 +903,8 @@
         function submitDeleteUser() {
             var loginName = document.getElementById("modalDeleteLoginName") ? document.getElementById("modalDeleteLoginName").value : "";
             var domain = document.getElementById("modalDeleteDomain") ? document.getElementById("modalDeleteDomain").value : "barkol.ru";
+            var deleteExtCheckbox = document.getElementById("modalDeleteExternal");
+            var deleteExternal = deleteExtCheckbox ? deleteExtCheckbox.checked : true;
             var btn = document.getElementById("btnSubmitDeleteUser");
             var errBox = document.getElementById("deleteUserError");
 
@@ -808,7 +922,8 @@
                 body: JSON.stringify({
                     action: "delete_user",
                     login_name: loginName,
-                    domain_name: domain
+                    domain_name: domain,
+                    delete_external: deleteExternal
                 })
             })
             .then(function(res) { return res.json(); })
@@ -888,6 +1003,295 @@
             })
             .catch(function(err) {
                 alert("Сетевая ошибка при настройке правила: " + err);
+            });
+        }
+
+        // ==========================================
+        // Аудит синхронизации Kerio Connect ↔ ISPmanager
+        // ==========================================
+        var currentAuditData = null;
+        var currentAuditFilter = 'all';
+
+        function runSyncAudit(domain) {
+            var domainName = domain || "{{ current_domain|default:'barkol.ru' }}";
+            var btn = document.getElementById("btnSyncAudit");
+            var btnIcon = document.getElementById("btnSyncAuditIcon");
+            var btnText = document.getElementById("btnSyncAuditText");
+
+            if (btn) {
+                btn.disabled = true;
+                if (btnIcon) btnIcon.className = "spinner-border spinner-border-sm";
+                if (btnText) btnText.innerText = "Выполняется аудит...";
+            }
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "audit_sync",
+                    domain_name: domainName
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (btn) {
+                    btn.disabled = false;
+                    if (btnIcon) btnIcon.className = "bx bx-check-shield font-size-16";
+                    if (btnText) btnText.innerText = "Проверить статус (Kerio ↔ ISPmanager)";
+                }
+
+                if (!data.success) {
+                    alert("Ошибка при выполнении аудита: " + (data.message || "Неизвестная ошибка"));
+                    return;
+                }
+
+                currentAuditData = data;
+                renderAuditStats(data.summary);
+                renderAuditTable(data, 'all');
+
+                // Обогащаем основную страницу бейджами статуса ISPmanager
+                enrichMainTableWithAudit(data.users);
+
+                var timeEl = document.getElementById("auditTimestampText");
+                if (timeEl) {
+                    var now = new Date();
+                    timeEl.innerText = "Аудит завершен: " + now.toLocaleTimeString() + " (домен " + (data.domain || 'barkol.ru') + ")";
+                }
+
+                showKerioModal("kerioSyncAuditModal");
+            })
+            .catch(function(err) {
+                if (btn) {
+                    btn.disabled = false;
+                    if (btnIcon) btnIcon.className = "bx bx-check-shield font-size-16";
+                    if (btnText) btnText.innerText = "Проверить статус (Kerio ↔ ISPmanager)";
+                }
+                alert("Сетевая ошибка при проведении аудита: " + err);
+            });
+        }
+
+        function renderAuditStats(summary) {
+            if (!summary) return;
+            var elKerio = document.getElementById("auditStatKerio");
+            var elIsp = document.getElementById("auditStatIsp");
+            var elSynced = document.getElementById("auditStatSynced");
+            var elMissing = document.getElementById("auditStatMissingIsp");
+            var elOrphans = document.getElementById("auditStatOrphans");
+
+            if (elKerio) elKerio.innerText = summary.total_kerio || 0;
+            if (elIsp) elIsp.innerText = summary.total_isp || 0;
+            if (elSynced) elSynced.innerText = summary.synced_count || 0;
+            if (elMissing) elMissing.innerText = summary.missing_in_isp_count || 0;
+            if (elOrphans) elOrphans.innerText = summary.orphaned_in_isp_count || 0;
+
+            var cAll = document.getElementById("countFilterAll");
+            var cMissing = document.getElementById("countFilterMissing");
+            var cSynced = document.getElementById("countFilterSynced");
+            var cOrphan = document.getElementById("countFilterOrphan");
+
+            var totalItems = (summary.total_kerio || 0) + (summary.orphaned_in_isp_count || 0);
+            if (cAll) cAll.innerText = totalItems;
+            if (cMissing) cMissing.innerText = summary.missing_in_isp_count || 0;
+            if (cSynced) cSynced.innerText = summary.synced_count || 0;
+            if (cOrphan) cOrphan.innerText = summary.orphaned_in_isp_count || 0;
+
+            var errBox = document.getElementById("auditIspErrorAlert");
+            var errText = document.getElementById("auditIspErrorText");
+            if (errBox && errText) {
+                if (summary.isp_error) {
+                    errText.innerText = summary.isp_error;
+                    errBox.classList.remove("d-none");
+                } else {
+                    errBox.classList.add("d-none");
+                }
+            }
+        }
+
+        function filterAuditTable(filter) {
+            currentAuditFilter = filter || 'all';
+            var buttons = {
+                'all': 'btnFilterAll',
+                'missing_in_isp': 'btnFilterMissing',
+                'synced': 'btnFilterSynced',
+                'orphan_in_isp': 'btnFilterOrphan'
+            };
+            for (var k in buttons) {
+                var b = document.getElementById(buttons[k]);
+                if (b) {
+                    if (k === currentAuditFilter) {
+                        b.classList.add("active");
+                    } else {
+                        b.classList.remove("active");
+                    }
+                }
+            }
+            if (currentAuditData) {
+                renderAuditTable(currentAuditData, currentAuditFilter);
+            }
+        }
+
+        function renderAuditTable(data, filter) {
+            var tbody = document.getElementById("auditTableBody");
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            var searchQ = "";
+            var searchInput = document.getElementById("auditSearchInput");
+            if (searchInput) {
+                searchQ = searchInput.value.trim().toLowerCase();
+            }
+
+            var allEntries = [];
+
+            if (data.users && data.users.length) {
+                for (var i = 0; i < data.users.length; i++) {
+                    allEntries.push(data.users[i]);
+                }
+            }
+
+            if (data.orphans && data.orphans.length) {
+                for (var j = 0; j < data.orphans.length; j++) {
+                    allEntries.push(data.orphans[j]);
+                }
+            }
+
+            var visibleCount = 0;
+            for (var idx = 0; idx < allEntries.length; idx++) {
+                var item = allEntries[idx];
+
+                if (filter === 'missing_in_isp' && item.sync_status !== 'missing_in_isp') continue;
+                if (filter === 'synced' && item.sync_status !== 'synced') continue;
+                if (filter === 'orphan_in_isp' && item.sync_status !== 'orphan_in_isp') continue;
+
+                if (searchQ) {
+                    var strToCheck = (item.email + " " + (item.full_name || '') + " " + (item.login || item.name || '')).toLowerCase();
+                    if (strToCheck.indexOf(searchQ) === -1) continue;
+                }
+
+                visibleCount++;
+                var tr = document.createElement("tr");
+
+                var userCol = '<div class="fw-bold text-dark">' + (item.full_name || item.login || item.name || item.email) + '</div>' +
+                              '<div class="font-size-12 text-primary font-monospace">' + item.email + '</div>';
+
+                var kerioCol = item.in_kerio
+                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bx bx-check me-1"></i> Создан</span>'
+                    : '<span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1"><i class="bx bx-x me-1"></i> Нет</span>';
+
+                var ispCol = '';
+                if (item.in_ispmanager) {
+                    var quotaInfo = item.isp_quota ? (' (' + item.isp_quota + ' МБ)') : '';
+                    ispCol = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bx bx-check-circle me-1"></i> Создан' + quotaInfo + '</span>';
+                } else {
+                    ispCol = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bx bx-x-circle me-1"></i> Отсутствует</span>';
+                }
+
+                var pop3Col = item.has_pop3
+                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bx bx-down-arrow-circle me-1"></i> Активен</span>'
+                    : '<span class="badge bg-light text-muted border px-2 py-1">—</span>';
+
+                var smtpCol = '';
+                if (item.is_individual_smtp_delivery) {
+                    smtpCol = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" title="Индивидуальное правило"><i class="bx bx-send me-1"></i> Инд. Relay</span>';
+                } else if (item.has_smtp_delivery) {
+                    smtpCol = '<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1" title="Серверный ретранслятор"><i class="bx bx-server me-1"></i> Серверный</span>';
+                } else {
+                    smtpCol = '<span class="badge bg-light text-muted border px-2 py-1">—</span>';
+                }
+
+                var actionCol = '';
+                if (item.sync_status === 'missing_in_isp') {
+                    actionCol = '<button type="button" class="btn btn-warning btn-sm py-0 px-2 font-size-11 fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-none" ' +
+                                'onclick="createIspMailbox(\'' + (item.login || item.email.split('@')[0]) + '\', \'' + (item.email.split('@')[1] || 'barkol.ru') + '\', \'' + (item.full_name || '') + '\')">' +
+                                '<i class="bx bx-plus-circle"></i> Создать в ISP</button>';
+                } else if (item.sync_status === 'orphan_in_isp') {
+                    actionCol = '<span class="badge bg-secondary font-size-11">Только хостинг</span>';
+                } else {
+                    actionCol = '<span class="text-success font-size-12 fw-bold"><i class="bx bx-check-double"></i> OK</span>';
+                }
+
+                tr.innerHTML = '<td class="ps-3 py-2">' + userCol + '</td>' +
+                               '<td>' + kerioCol + '</td>' +
+                               '<td>' + ispCol + '</td>' +
+                               '<td>' + pop3Col + '</td>' +
+                               '<td>' + smtpCol + '</td>' +
+                               '<td class="text-end pe-3">' + actionCol + '</td>';
+                tbody.appendChild(tr);
+            }
+
+            if (visibleCount === 0) {
+                var emptyTr = document.createElement("tr");
+                emptyTr.innerHTML = '<td colspan="6" class="text-center py-4 text-muted">' +
+                                    '<i class="bx bx-search font-size-24 d-block mb-1"></i> По вашему фильтру не найдено записей</td>';
+                tbody.appendChild(emptyTr);
+            }
+        }
+
+        function enrichMainTableWithAudit(users) {
+            if (!users || !users.length) return;
+            for (var i = 0; i < users.length; i++) {
+                var u = users[i];
+                var row = document.getElementById("user-row-" + u.login);
+                if (row) {
+                    var cell = row.children[1];
+                    if (cell) {
+                        var existingBadge = cell.querySelector(".badge-isp-audit");
+                        if (existingBadge) existingBadge.remove();
+
+                        var badge = document.createElement("div");
+                        badge.className = "mt-1 badge-isp-audit";
+                        if (u.in_ispmanager) {
+                            badge.innerHTML = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 font-size-11" title="Ящик создан на хостинге ISPmanager (Reg.ru)"><i class="bx bx-check-circle me-1"></i> ISPmanager: Создан</span>';
+                        } else {
+                            badge.innerHTML = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1 font-size-11" title="Ящик отсутствует в ISPmanager"><i class="bx bx-x-circle me-1"></i> ISPmanager: Нет ящика</span>';
+                        }
+                        var colDiv = cell.querySelector(".d-flex.flex-column");
+                        if (colDiv) colDiv.appendChild(badge);
+                    }
+                }
+            }
+        }
+
+        function createIspMailbox(loginName, domainName, fullName, quotaMb) {
+            var domain = domainName || "barkol.ru";
+            var email = loginName + "@" + domain;
+
+            var pass = prompt("Введите пароль для создания ящика '" + email + "' в ISPmanager (или оставьте пустым для автопоиска пароля в профиле сотрудника):");
+            if (pass === null) return;
+
+            var payload = {
+                action: "create_isp_mailbox",
+                login_name: loginName,
+                domain_name: domain,
+                full_name: fullName || "",
+                quota_mb: quotaMb || null
+            };
+            if (pass && pass.trim()) {
+                payload.password = pass.trim();
+            }
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert(data.message || ("Почтовый ящик " + email + " успешно создан в ISPmanager!"));
+                    runSyncAudit(domain);
+                } else {
+                    alert("Ошибка создания ящика в ISPmanager: " + (data.message || "Неизвестная ошибка"));
+                }
+            })
+            .catch(function(err) {
+                alert("Сетевая ошибка при создании ящика в ISPmanager: " + err);
             });
         }
     </script>

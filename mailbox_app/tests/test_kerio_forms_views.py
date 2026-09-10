@@ -158,13 +158,62 @@ class KerioAdminFormsViewsTestCase(unittest.TestCase):
         request.user.is_authenticated = True
         request.user.is_superuser = True
         request.content_type = "application/json"
-        request.body = b'{"action": "delete_user", "login_name": "i.ivanov", "domain_name": "barkol.ru"}'
+        request.body = b'{"action": "delete_user", "login_name": "i.ivanov", "domain_name": "barkol.ru", "delete_external": true}'
 
         response = view.post(request)
         self.assertEqual(response.status_code, 200)
         mock_delete.assert_called_once_with(
             login_name="i.ivanov",
             domain_name="barkol.ru",
+            delete_external=True,
+        )
+
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.audit_mailboxes_sync")
+    def test_kerio_action_api_audit_sync(self, mock_audit: MagicMock) -> None:
+        """Тест AJAX API аудита синхронизации Kerio Connect и ISPmanager."""
+        from mailbox_app.views import KerioAdminActionAPIView
+
+        mock_audit.return_value = {
+            "success": True,
+            "domain": "barkol.ru",
+            "summary": {"total_kerio": 2, "total_isp": 2, "synced_count": 2},
+            "users": [],
+            "orphans": [],
+        }
+
+        view = KerioAdminActionAPIView()
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.user.is_superuser = True
+        request.content_type = "application/json"
+        request.body = b'{"action": "audit_sync", "domain_name": "barkol.ru"}'
+
+        response = view.post(request)
+        self.assertEqual(response.status_code, 200)
+        mock_audit.assert_called_once_with(domain_name="barkol.ru")
+
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.create_external_mailbox_for_user")
+    def test_kerio_action_api_create_isp_mailbox(self, mock_create: MagicMock) -> None:
+        """Тест AJAX API создания ящика в ISPmanager."""
+        from mailbox_app.views import KerioAdminActionAPIView
+
+        mock_create.return_value = {"success": True, "provider": "ispmanager", "email": "i.ivanov@barkol.ru"}
+
+        view = KerioAdminActionAPIView()
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.user.is_superuser = True
+        request.content_type = "application/json"
+        request.body = b'{"action": "create_isp_mailbox", "login_name": "i.ivanov", "domain_name": "barkol.ru", "password": "SecretPassword123!"}'
+
+        response = view.post(request)
+        self.assertEqual(response.status_code, 200)
+        mock_create.assert_called_once_with(
+            login_name="i.ivanov",
+            domain_name="barkol.ru",
+            password="SecretPassword123!",
+            full_name=None,
+            quota_mb=None,
         )
 
 
