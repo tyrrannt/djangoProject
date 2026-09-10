@@ -2960,9 +2960,15 @@ class KerioAdminUsersListView(MailboxAdminAccessMixin, View):
             )
             users_list = res.get("list", [])
             total_items = res.get("totalItems", len(users_list))
+        except KerioAuthenticationError as err:
+            logger.error(f"[KerioAdmin] Ошибка аутентификации Kerio Connect: {err}")
+            error_message = f"{err} Проверьте переменные KERIO_API_USER и KERIO_API_PASSWORD в файле .env."
+        except KerioConnectionError as err:
+            logger.error(f"[KerioAdmin] Ошибка сетевого соединения с Kerio Connect: {err}")
+            error_message = f"{err} Проверьте доступность сервера 192.168.10.242:4040."
         except Exception as err:
             logger.error(f"[KerioAdmin] Ошибка загрузки списка пользователей Kerio: {err}")
-            error_message = f"Не удалось связаться с сервером Kerio Connect ({err}). Проверьте сетевое подключение к серверу 192.168.10.242:4040."
+            error_message = f"Не удалось связаться с сервером Kerio Connect: {err}"
 
         emails_list = [u.get("email", "").lower() for u in users_list if u.get("email")]
         login_list = [u.get("loginName", "").lower() for u in users_list if u.get("loginName")]

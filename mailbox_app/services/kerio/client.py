@@ -14,6 +14,7 @@ from mailbox_app.services.kerio.exceptions import (
     KerioAPIError,
     KerioAuthenticationError,
     KerioConnectionError,
+    KerioObjectNotFoundError,
     KerioSessionExpired,
     KerioValidationError,
 )
@@ -106,13 +107,14 @@ class KerioConnectAdminClient:
             str: Полученный авторизационный токен сессии.
 
         Raises:
-            KerioAuthenticationError: При неверном логине/пароле.
+            KerioAuthenticationError: При неверном логине/пароле или их отсутствии.
             KerioConnectionError: При сетевых ошибках или недоступности сервера.
             KerioAPIError: При прочих ошибках API Kerio.
         """
         if not self.username or not self.password:
             raise KerioAuthenticationError(
-                "Учетные данные администратора Kerio Connect (KERIO_API_USER / KERIO_API_PASSWORD) не заданы."
+                "Учетные данные администратора Kerio Connect не настроены. "
+                "Укажите переменные KERIO_API_USER и KERIO_API_PASSWORD в файле .env."
             )
 
         payload = {
@@ -136,7 +138,7 @@ class KerioConnectAdminClient:
                 json=payload,
                 verify=self.verify_ssl,
                 timeout=self.timeout,
-                headers={"Content-Type": "application/json-rpc"},
+                headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
             data = response.json()
@@ -154,17 +156,18 @@ class KerioConnectAdminClient:
             err_obj = data["error"]
             err_msg = err_obj.get("message", "Ошибка авторизации Kerio")
             err_code = err_obj.get("code")
-            logger.warning(f"[KerioAdmin] Ошибка авторизации (код {err_code}): {err_msg}")
-            raise KerioAuthenticationError(err_msg, code=err_code, data=err_obj)
+            logger.warning(f"[KerioAdmin] Ошибка авторизации в Kerio Connect (код {err_code}): {err_msg}")
+            raise KerioAuthenticationError(f"Ошибка авторизации в Kerio Connect: {err_msg}", code=err_code, data=err_obj)
 
         result = data.get("result", {})
         self.token = result.get("token")
         if not self.token:
             raise KerioAuthenticationError("Сервер Kerio Connect не вернул токен сессии в ответе Session.login.")
 
-        # Установка токена в заголовок и куки сессии requests
-        self.session.headers.update({"X-Token": self.token})
-        self.session.cookies.set("SESSION_CONNECT_WEBADMIN", self.token)
+        self.session.headers.update({
+            "X-Token": self.token,
+            "Content-Type": "application/json",
+        })
         logger.info(f"[KerioAdmin] Успешная авторизация в Kerio Connect под пользователем '{self.username}'.")
         return self.token
 
@@ -174,20 +177,38 @@ class KerioConnectAdminClient:
         Returns:
             bool: True в случае успешного завершения сессии.
         """
-        if not self.token:
-            return True
+        token_to_close = self.token
+        self.token = None
+
+        if token_to_close:
+            try:
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": self._get_next_id(),
+                    "method": "Session.logout",
+                    "params": {},
+                    "token": token_to_close,
+                }
+                headers = {
+                    "Content-Type": "application/json",
+                    "X-Token": token_to_close,
+                }
+                self.session.post(
+                    self.api_url,
+                    json=payload,
+                    headers=headers,
+                    verify=self.verify_ssl,
+                    timeout=min(self.timeout, 5),
+                )
+            except Exception as exc:
+                logger.debug(f"[KerioAdmin] Фоновое завершение сессии: {exc}")
 
         try:
-            self.call("Session.logout", retry_on_expired=False)
-            logger.info("[KerioAdmin] Сессия Kerio Connect успешно завершена.")
-        except Exception as exc:
-            logger.warning(f"[KerioAdmin] Ошибка при вызове Session.logout: {exc}")
-        finally:
-            self.token = None
-            self.session.headers.pop("X-Token", None)
-            self.session.cookies.clear()
             self.session.close()
+        except Exception:
+            pass
 
+        self.session = requests.Session()
         return True
 
     def call(
@@ -225,7 +246,7 @@ class KerioConnectAdminClient:
             payload["token"] = self.token
 
         headers = {
-            "Content-Type": "application/json-rpc",
+            "Content-Type": "application/json",
         }
         if self.token:
             headers["X-Token"] = self.token
@@ -255,21 +276,30 @@ class KerioConnectAdminClient:
             err_code = err_obj.get("code")
             err_msg = err_obj.get("message", "Неизвестная ошибка Kerio API")
 
-            # Обработка ошибки истечения сессии (коды -32001, -32000 или текст 'Session expired' / 'Invalid token')
-            is_expired = (
-                err_code in (-32000, -32001)
-                or "session" in err_msg.lower()
-                or "token" in err_msg.lower()
+            msg_lower = err_msg.lower()
+            is_session_expired = (
+                self.token is not None
+                and (
+                    "session expired" in msg_lower
+                    or "invalid token" in msg_lower
+                    or "please login first" in msg_lower
+                )
             )
 
-            if is_expired and retry_on_expired:
-                logger.warning(f"[KerioAdmin] Сессия протухла при вызове {method} ({err_msg}). Повторная авторизация...")
+            if is_session_expired and retry_on_expired:
+                logger.warning(f"[KerioAdmin] Сессия Kerio Connect протухла при вызове {method} ({err_msg}). Повторная авторизация...")
                 self.token = None
                 self.login()
                 return self.call(method, params=params, retry_on_expired=False)
 
-            if is_expired:
+            if is_session_expired:
                 raise KerioSessionExpired(err_msg, code=err_code, data=err_obj)
+
+            if "permission denied" in msg_lower or "authentication" in msg_lower or "invalid user" in msg_lower:
+                raise KerioAuthenticationError(err_msg, code=err_code, data=err_obj)
+
+            if "not found" in msg_lower or err_code == -32601:
+                raise KerioObjectNotFoundError(err_msg, code=err_code, data=err_obj)
 
             logger.error(f"[KerioAdmin] Ошибка API в методе '{method}' (код {err_code}): {err_msg}")
             raise KerioAPIError(err_msg, code=err_code, data=err_obj)

@@ -263,33 +263,23 @@
                                                            title="Включить / отключить пользователя">
                                                 </div>
                                             </td>
-                                            <td class="text-end pe-3">
-                                                <div class="dropdown">
-                                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="bx bx-dots-horizontal-rounded"></i>
+                                            <td class="text-end pe-3 text-nowrap">
+                                                <div class="btn-group btn-group-sm" role="group" aria-label="Действия над пользователем">
+                                                    <button type="button" class="btn btn-outline-warning text-dark py-1 px-2 shadow-none"
+                                                            onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')"
+                                                            title="Сменить пароль">
+                                                        <i class="bx bx-key"></i>
                                                     </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                                        <li>
-                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                               onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')">
-                                                                <i class="bx bx-key text-warning"></i> Сменить пароль
-                                                            </a>
-                                                        </li>
-                                                        {% if u.id %}
-                                                            <li>
-                                                                <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'mailbox_app:kerio_admin_user_edit' u.id %}">
-                                                                    <i class="bx bx-edit text-primary"></i> Редактировать
-                                                                </a>
-                                                            </li>
-                                                        {% endif %}
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                               onclick="openDeleteUserModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')">
-                                                                <i class="bx bx-trash"></i> Удалить ящик
-                                                            </a>
-                                                        </li>
-                                                    </ul>
+                                                    {% if u.id %}
+                                                        <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.id %}" class="btn btn-outline-primary py-1 px-2 shadow-none" title="Редактировать параметры">
+                                                            <i class="bx bx-edit"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    <button type="button" class="btn btn-outline-danger py-1 px-2 shadow-none"
+                                                            onclick="openDeleteUserModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')"
+                                                            title="Удалить почтовый ящик">
+                                                        <i class="bx bx-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -448,8 +438,35 @@
     </div>
 {% endblock %}
 
-{% block custom_js %}
+{% block custom_script %}
     <script>
+        // Вспомогательные функции безопасного открытия и закрытия модальных окон
+        function showKerioModal(modalId) {
+            var modalEl = document.getElementById(modalId);
+            if (!modalEl) return;
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                inst.show();
+            } else if (typeof $ !== 'undefined' && $.fn.modal) {
+                $(modalEl).modal('show');
+            }
+        }
+
+        function hideKerioModal(modalId) {
+            var modalEl = document.getElementById(modalId);
+            if (!modalEl) return;
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var inst = bootstrap.Modal.getInstance(modalEl);
+                if (inst) {
+                    inst.hide();
+                } else {
+                    new bootstrap.Modal(modalEl).hide();
+                }
+            } else if (typeof $ !== 'undefined' && $.fn.modal) {
+                $(modalEl).modal('hide');
+            }
+        }
+
         // Получение CSRF токена из cookies
         function getCsrfToken() {
             var cookieValue = null;
@@ -526,18 +543,30 @@
 
         // Модальное окно смены пароля
         function openResetPasswordModal(loginName, fullName, domain) {
-            document.getElementById("modalResetUserLogin").value = fullName ? (fullName + " (" + loginName + ")") : loginName;
-            document.getElementById("modalResetUserLogin").setAttribute("data-raw-login", loginName);
-            document.getElementById("modalResetDomain").value = domain || "barkol.ru";
-            document.getElementById("modalResetNewPassword").value = "";
-            document.getElementById("resetPasswordError").classList.add("d-none");
-            var modal = new bootstrap.Modal(document.getElementById("resetPasswordModal"));
-            modal.show();
+            var inputUser = document.getElementById("modalResetUserLogin");
+            if (inputUser) {
+                inputUser.value = fullName ? (fullName + " (" + loginName + ")") : loginName;
+                inputUser.setAttribute("data-raw-login", loginName);
+            }
+            var inputDomain = document.getElementById("modalResetDomain");
+            if (inputDomain) {
+                inputDomain.value = domain || "barkol.ru";
+            }
+            var inputPass = document.getElementById("modalResetNewPassword");
+            if (inputPass) {
+                inputPass.value = "";
+            }
+            var errBox = document.getElementById("resetPasswordError");
+            if (errBox) {
+                errBox.classList.add("d-none");
+            }
+            showKerioModal("resetPasswordModal");
         }
 
         function togglePasswordVisibility(inputId) {
             var input = document.getElementById(inputId);
             var icon = document.getElementById(inputId + "Icon");
+            if (!input) return;
             if (input.type === "password") {
                 input.type = "text";
                 if (icon) icon.className = "bx bx-hide";
@@ -554,27 +583,34 @@
                 password += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             var input = document.getElementById(inputId);
-            input.value = password;
-            input.type = "text";
+            if (input) {
+                input.value = password;
+                input.type = "text";
+            }
             var icon = document.getElementById(inputId + "Icon");
             if (icon) icon.className = "bx bx-hide";
         }
 
         function submitPasswordReset() {
-            var rawLogin = document.getElementById("modalResetUserLogin").getAttribute("data-raw-login");
-            var newPass = document.getElementById("modalResetNewPassword").value.trim();
-            var domain = document.getElementById("modalResetDomain").value;
+            var inputUser = document.getElementById("modalResetUserLogin");
+            var rawLogin = inputUser ? inputUser.getAttribute("data-raw-login") : "";
+            var newPass = document.getElementById("modalResetNewPassword") ? document.getElementById("modalResetNewPassword").value.trim() : "";
+            var domain = document.getElementById("modalResetDomain") ? document.getElementById("modalResetDomain").value : "barkol.ru";
             var errBox = document.getElementById("resetPasswordError");
             var btn = document.getElementById("btnSubmitResetPassword");
 
             if (!newPass) {
-                errBox.innerText = "Пожалуйста, введите или сгенерируйте пароль.";
-                errBox.classList.remove("d-none");
+                if (errBox) {
+                    errBox.innerText = "Пожалуйста, введите или сгенерируйте пароль.";
+                    errBox.classList.remove("d-none");
+                }
                 return;
             }
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Сохранение...';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Сохранение...';
+            }
 
             fetch("{% url 'mailbox_app:api_kerio_action' %}", {
                 method: "POST",
@@ -591,44 +627,63 @@
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль';
+                }
                 if (data.success) {
-                    var modalEl = document.getElementById("resetPasswordModal");
-                    var modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
+                    hideKerioModal("resetPasswordModal");
                     alert("Пароль для пользователя '" + rawLogin + "' успешно обновлен!");
                 } else {
-                    errBox.innerText = data.message || "Ошибка обновления пароля";
-                    errBox.classList.remove("d-none");
+                    if (errBox) {
+                        errBox.innerText = data.message || "Ошибка обновления пароля";
+                        errBox.classList.remove("d-none");
+                    }
                 }
             })
             .catch(function(err) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль';
-                errBox.innerText = "Сетевая ошибка при смене пароля: " + err;
-                errBox.classList.remove("d-none");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль';
+                }
+                if (errBox) {
+                    errBox.innerText = "Сетевая ошибка при смене пароля: " + err;
+                    errBox.classList.remove("d-none");
+                }
             });
         }
 
         // Модальное окно удаления
         function openDeleteUserModal(loginName, fullName, domain) {
-            document.getElementById("modalDeleteUserDisplay").innerText = fullName ? (fullName + " (" + loginName + ")") : loginName;
-            document.getElementById("modalDeleteLoginName").value = loginName;
-            document.getElementById("modalDeleteDomain").value = domain || "barkol.ru";
-            document.getElementById("deleteUserError").classList.add("d-none");
-            var modal = new bootstrap.Modal(document.getElementById("deleteUserModal"));
-            modal.show();
+            var displayEl = document.getElementById("modalDeleteUserDisplay");
+            if (displayEl) {
+                displayEl.innerText = fullName ? (fullName + " (" + loginName + ")") : loginName;
+            }
+            var loginInput = document.getElementById("modalDeleteLoginName");
+            if (loginInput) {
+                loginInput.value = loginName;
+            }
+            var domainInput = document.getElementById("modalDeleteDomain");
+            if (domainInput) {
+                domainInput.value = domain || "barkol.ru";
+            }
+            var errBox = document.getElementById("deleteUserError");
+            if (errBox) {
+                errBox.classList.add("d-none");
+            }
+            showKerioModal("deleteUserModal");
         }
 
         function submitDeleteUser() {
-            var loginName = document.getElementById("modalDeleteLoginName").value;
-            var domain = document.getElementById("modalDeleteDomain").value;
+            var loginName = document.getElementById("modalDeleteLoginName") ? document.getElementById("modalDeleteLoginName").value : "";
+            var domain = document.getElementById("modalDeleteDomain") ? document.getElementById("modalDeleteDomain").value : "barkol.ru";
             var btn = document.getElementById("btnSubmitDeleteUser");
             var errBox = document.getElementById("deleteUserError");
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Удаление...';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Удаление...';
+            }
 
             fetch("{% url 'mailbox_app:api_kerio_action' %}", {
                 method: "POST",
@@ -644,26 +699,32 @@
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bx bx-trash me-1"></i> Удалить навсегда';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-trash me-1"></i> Удалить навсегда';
+                }
                 if (data.success) {
                     var row = document.getElementById("user-row-" + loginName);
                     if (row) row.remove();
                     var card = document.getElementById("mobile-card-" + loginName);
                     if (card) card.remove();
-                    var modalEl = document.getElementById("deleteUserModal");
-                    var modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
+                    hideKerioModal("deleteUserModal");
                 } else {
-                    errBox.innerText = data.message || "Ошибка удаления";
-                    errBox.classList.remove("d-none");
+                    if (errBox) {
+                        errBox.innerText = data.message || "Ошибка удаления";
+                        errBox.classList.remove("d-none");
+                    }
                 }
             })
             .catch(function(err) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bx bx-trash me-1"></i> Удалить навсегда';
-                errBox.innerText = "Сетевая ошибка: " + err;
-                errBox.classList.remove("d-none");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-trash me-1"></i> Удалить навсегда';
+                }
+                if (errBox) {
+                    errBox.innerText = "Сетевая ошибка: " + err;
+                    errBox.classList.remove("d-none");
+                }
             });
         }
     </script>

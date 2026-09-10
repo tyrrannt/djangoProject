@@ -203,9 +203,9 @@ class KerioManagersTestCase(TestCase):
         call_args = self.mock_client.call.call_args[1]["params"]["accounts"][0]
         self.assertEqual(call_args["server"], "mail.barkol.ru")
         self.assertEqual(call_args["port"], 995)
-        self.assertEqual(call_args["security"], "Ssl")
-        self.assertEqual(call_args["leaveMessagesOnServer"], False)
-        self.assertEqual(call_args["interval"], 1)
+        self.assertEqual(call_args["mode"], "SpecialPort")
+        self.assertEqual(call_args["leaveOnServer"]["enabled"], False)
+        self.assertEqual(call_args["deliveryAddress"], "i.ivanov")
 
 
 class KerioAdminServiceTestCase(TestCase):

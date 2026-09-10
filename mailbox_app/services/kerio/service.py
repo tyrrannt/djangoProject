@@ -156,16 +156,24 @@ class KerioAdminService:
                 pop3_map = {}
                 for p in pop3_accounts:
                     tgt = str(p.get("targetUser", "")).strip().lower()
-                    if tgt:
-                        pop3_map[tgt] = p
-            except Exception:
+                    deliv = str(p.get("deliveryAddress", "")).strip().lower()
+                    uname = str(p.get("userName", "")).strip().lower()
+                    for k in (tgt, deliv, uname):
+                        if k:
+                            pop3_map[k] = p
+                            if "@" in k:
+                                pop3_map[k.split("@")[0]] = p
+            except Exception as err:
+                logger.warning(f"[KerioAdminService] Не удалось загрузить правила POP3 при получении пользователей: {err}")
                 pop3_map = {}
 
             users_list = []
             for u in raw_users.get("list", []):
                 login = u.get("loginName", "")
                 email = f"{login}@{domain_name or 'barkol.ru'}" if "@" not in login else login
-                pop3_rule = pop3_map.get(login.lower()) or pop3_map.get(email.lower())
+                clean_login = login.lower()
+                clean_email = email.lower()
+                pop3_rule = pop3_map.get(clean_login) or pop3_map.get(clean_email) or pop3_map.get(clean_login.split("@")[0])
 
                 u_enriched = dict(u)
                 u_enriched["email"] = email
