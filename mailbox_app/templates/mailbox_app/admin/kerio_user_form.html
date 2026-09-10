@@ -302,6 +302,47 @@
                             </div>
                         </div>
 
+                        <!-- Блок 4: Исходящая маршрутизация («Доставка SMTP» / Relay) -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <span class="step-number-badge">4</span>
+                                    <span>Исходящая маршрутизация: «Доставка SMTP» (Ретрансляция)</span>
+                                </div>
+
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.configure_smtp_delivery }}
+                                    <label class="form-check-label fw-semibold font-size-13 text-dark" for="{{ form.configure_smtp_delivery.id_for_label }}">
+                                        {{ form.configure_smtp_delivery.label }}
+                                    </label>
+                                    <div class="text-muted font-size-11">{{ form.configure_smtp_delivery.help_text }}</div>
+                                </div>
+
+                                <div class="pop3-preset-box" id="smtpDetailsContainer">
+                                    <div class="alert alert-info py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
+                                        <i class="bx bx-info-circle font-size-18 flex-shrink-0"></i>
+                                        <span>Регламент BARKOL: если отправитель равен адресу ящика, почта отправляется через ретранслятор <strong>smtp.barkol.ru:587</strong> (STARTTLS) с авторизацией по полному адресу и паролю (SMTP AUTH).</span>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-8">
+                                            <label for="{{ form.external_smtp_host.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                                {{ form.external_smtp_host.label }}
+                                            </label>
+                                            {{ form.external_smtp_host }}
+                                        </div>
+
+                                        <div class="col-12 col-md-4">
+                                            <label for="{{ form.external_smtp_port.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                                {{ form.external_smtp_port.label }}
+                                            </label>
+                                            {{ form.external_smtp_port }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Кнопки отправки -->
                         <div class="d-flex align-items-center justify-content-between pt-2 mb-5">
                             <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm px-3">
@@ -456,6 +497,17 @@
                 }
                 pop3Checkbox.addEventListener('change', updatePop3Visibility);
                 updatePop3Visibility();
+            }
+
+            // Переключение блока параметров SMTP ретрансляции
+            var smtpCheckbox = document.getElementById('id_configure_smtp_delivery');
+            var smtpBox = document.getElementById('smtpDetailsContainer');
+            if (smtpCheckbox && smtpBox) {
+                function updateSmtpVisibility() {
+                    smtpBox.style.display = smtpCheckbox.checked ? 'block' : 'none';
+                }
+                smtpCheckbox.addEventListener('change', updateSmtpVisibility);
+                updateSmtpVisibility();
             }
 
             // Предотвращение двойного сабмита

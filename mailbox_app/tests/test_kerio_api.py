@@ -329,3 +329,107 @@ class CorporateLoginUtilsTestCase(TestCase):
         login_lvl4_next = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
         self.assertEqual(login_lvl4_next, "a.abramov3")
 
+
+class SmtpDeliveryManagerTestCase(TestCase):
+    """Тестирование менеджера правил исходящей ретрансляции SmtpDeliveryManager («Доставка SMTP»)."""
+
+    def setUp(self) -> None:
+        """Подготовка тестовых данных."""
+        self.client = MagicMock(spec=KerioConnectAdminClient)
+        from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
+        self.manager = SmtpDeliveryManager(self.client)
+
+    def test_get_routes_normalization(self) -> None:
+        """Тест получения и нормализации структуры правил Доставка SMTP."""
+        self.client.call.return_value = {
+            "list": [
+                {
+                    "id": "keriodb://deliveryroute/123",
+                    "isEnabled": True,
+                    "description": "Ретрансляция для a.administrator@barkol.ru",
+                    "conditionType": "ConditionSender",
+                    "matchPattern": "a.administrator@barkol.ru",
+                    "actionType": "ActionRelayServer",
+                    "relayServer": {
+                        "server": "smtp.barkol.ru",
+                        "port": 587,
+                        "mode": "StlsCommand",
+                        "authentication": {
+                            "isEnabled": True,
+                            "userName": "a.administrator@barkol.ru",
+                            "password": "secretPassword",
+                        },
+                    },
+                }
+            ]
+        }
+
+        routes = self.manager.get_routes()
+        self.assertEqual(len(routes), 1)
+        r = routes[0]
+        self.assertEqual(r["id"], "keriodb://deliveryroute/123")
+        self.assertTrue(r["isEnabled"])
+        self.assertEqual(r["matchPattern"], "a.administrator@barkol.ru")
+        self.assertEqual(r["sender"], "a.administrator@barkol.ru")
+        self.assertEqual(r["server"], "smtp.barkol.ru")
+        self.assertEqual(r["port"], 587)
+        self.assertEqual(r["userName"], "a.administrator@barkol.ru")
+        self.assertTrue(r["hasPassword"])
+
+    def test_get_route_for_sender(self) -> None:
+        """Тест поиска правила по email или логину отправителя."""
+        self.client.call.return_value = {
+            "list": [
+                {
+                    "id": "keriodb://deliveryroute/admin_route",
+                    "isEnabled": True,
+                    "matchPattern": "a.administrator@barkol.ru",
+                    "relayServer": {
+                        "server": "smtp.barkol.ru",
+                        "port": 587,
+                        "authentication": {"userName": "a.administrator@barkol.ru", "password": "123"},
+                    },
+                }
+            ]
+        }
+
+        # Поиск по полному email
+        found1 = self.manager.get_route_for_sender("a.administrator@barkol.ru")
+        self.assertIsNotNone(found1)
+        self.assertEqual(found1["id"], "keriodb://deliveryroute/admin_route")
+
+        # Поиск по короткому логину
+        found2 = self.manager.get_route_for_sender("a.administrator")
+        self.assertIsNotNone(found2)
+        self.assertEqual(found2["id"], "keriodb://deliveryroute/admin_route")
+
+        # Несуществующий пользователь
+        found_none = self.manager.get_route_for_sender("unknown.user@barkol.ru")
+        self.assertIsNone(found_none)
+
+    def test_create_delivery_route(self) -> None:
+        """Тест создания правила ретрансляции SMTP."""
+        self.client.call.return_value = {"result": {"ids": ["new_route_id"]}}
+
+        res = self.manager.create_delivery_route(
+            sender_email="a.administrator@barkol.ru",
+            password="securePassword123",
+            relay_host="smtp.barkol.ru",
+            relay_port=587,
+        )
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["sender"], "a.administrator@barkol.ru")
+        self.assertEqual(res["relay_host"], "smtp.barkol.ru")
+        self.assertEqual(res["relay_port"], 587)
+        self.client.call.assert_called()
+
+    def test_remove_delivery_route(self) -> None:
+        """Тест удаления правила доставки SMTP."""
+        self.client.call.return_value = {"result": "ok"}
+
+        res = self.manager.remove_delivery_route("keriodb://deliveryroute/123")
+        self.assertTrue(res["success"])
+        self.client.call.assert_called_with("Delivery.removeDeliveryRouteList", params={"ids": ["keriodb://deliveryroute/123"]})
+
+

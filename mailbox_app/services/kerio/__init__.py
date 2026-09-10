@@ -17,6 +17,7 @@ from mailbox_app.services.kerio.external_provider import (
 )
 from mailbox_app.services.kerio.pop3_download import Pop3DownloadManager
 from mailbox_app.services.kerio.service import KerioAdminService
+from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
 from mailbox_app.services.kerio.users import UserManager
 from mailbox_app.services.kerio.utils import (
     generate_corporate_mailbox_login,
@@ -29,6 +30,7 @@ __all__ = [
     "DomainManager",
     "UserManager",
     "Pop3DownloadManager",
+    "SmtpDeliveryManager",
     "KerioAdminService",
     "BaseExternalMailProvider",
     "ManualExternalMailProvider",

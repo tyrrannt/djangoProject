@@ -3131,6 +3131,7 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             description = form.cleaned_data.get("description", "")
             quota_mb = form.cleaned_data.get("quota_mb")
             configure_pop3 = form.cleaned_data.get("configure_pop3_download", True)
+            configure_smtp = form.cleaned_data.get("configure_smtp_delivery", True)
             ext_host = form.cleaned_data.get("external_pop3_host", "mail.barkol.ru")
             ext_port = form.cleaned_data.get("external_pop3_port", 995)
             ext_ssl = form.cleaned_data.get("external_pop3_ssl", True)
@@ -3158,10 +3159,15 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                     create_django_account=create_django,
                 )
                 full_email = f"{login_name}@{domain_name}"
+                extra_notes = []
+                if configure_pop3:
+                    extra_notes.append("сборщик POP3 (mail.barkol.ru)")
+                if configure_smtp:
+                    extra_notes.append("правило «Доставка SMTP» (smtp.barkol.ru:587)")
+                notes_str = f" ({', '.join(extra_notes)} активны)" if extra_notes else ""
                 messages.success(
                     request,
-                    f"Почтовый ящик «{full_email}» успешно создан в Kerio Connect"
-                    + (" и привязан к сборщику POP3 с mail.barkol.ru!" if configure_pop3 else "!")
+                    f"Почтовый ящик «{full_email}» успешно создан в Kerio Connect{notes_str}!"
                 )
                 return redirect("mailbox_app:kerio_admin_users")
             except Exception as err:
@@ -3420,6 +3426,28 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
                     {"success": True, "message": "Запрос немедленной загрузки POP3 успешно отправлен в Kerio Connect."})
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка вызова downloadNow: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "sync_smtp_route":
+            login_name = data.get("login_name", "").strip()
+            password = data.get("password", "").strip() or None
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            if not login_name:
+                return JsonResponse({"success": False, "message": "Логин пользователя обязателен."}, status=400)
+            try:
+                res = service.ensure_user_smtp_delivery_route(
+                    login_name=login_name,
+                    password=password,
+                    domain_name=domain_name,
+                )
+                action_text = "обновлено" if res.get("action") == "updated" else "создано"
+                return JsonResponse({
+                    "success": True,
+                    "message": f"Правило ретрансляции «Доставка SMTP» для '{login_name}' успешно {action_text}!",
+                    "details": res,
+                })
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка создания/обновления правила Доставка SMTP: {err}", exc_info=True)
                 return JsonResponse({"success": False, "message": str(err)}, status=500)
 
         return JsonResponse({"success": False, "message": f"Неизвестное действие: '{action}'"}, status=400)

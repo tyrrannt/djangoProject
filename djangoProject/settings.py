@@ -1435,3 +1435,8 @@ KERIO_EXTERNAL_POP3_LEAVE_MESSAGES = config(
     "KERIO_EXTERNAL_POP3_LEAVE_MESSAGES", default=False, cast=bool
 )
 
+# Настройки исходящей доставки SMTP (Конфигурация -> Сервер SMTP -> Доставка SMTP в Kerio)
+KERIO_DEFAULT_SMTP_RELAY_HOST = config("KERIO_DEFAULT_SMTP_RELAY_HOST", default="smtp.barkol.ru")
+KERIO_DEFAULT_SMTP_RELAY_PORT = config("KERIO_DEFAULT_SMTP_RELAY_PORT", default=587, cast=int)
+KERIO_DEFAULT_SMTP_RELAY_MODE = config("KERIO_DEFAULT_SMTP_RELAY_MODE", default="StlsCommand")
+

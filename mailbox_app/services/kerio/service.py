@@ -29,6 +29,7 @@ from mailbox_app.services.kerio.external_provider import (
     RegRuExternalMailProvider,
 )
 from mailbox_app.services.kerio.pop3_download import Pop3DownloadManager
+from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
 from mailbox_app.services.kerio.users import UserManager
 
 logger = logging.getLogger(__name__)
@@ -38,13 +39,15 @@ class KerioAdminService:
     """Сервис бизнес-логики управления почтовой инфраструктурой Kerio Connect 9.4.1.
 
     Координирует работу с доменами, пользователями, правилами сбора почты POP3 Download,
-    внешними провайдерами и синхронизацией с кадровыми профилями корпоративного портала.
+    правилами исходящей ретрансляции Доставка SMTP, внешними провайдерами и синхронизацией
+    с кадровыми профилями корпоративного портала.
 
     Attributes:
         client (KerioConnectAdminClient): Низкоуровневый клиент JSON-RPC.
         domains (DomainManager): Менеджер почтовых доменов.
         users (UserManager): Менеджер пользователей Kerio.
         pop3 (Pop3DownloadManager): Менеджер правил «Загрузка POP3» (сборщик почты).
+        smtp_delivery (SmtpDeliveryManager): Менеджер правил исходящей ретрансляции «Доставка SMTP».
         external_provider (BaseExternalMailProvider): Адаптер внешнего почтового сервера.
     """
 
@@ -63,6 +66,7 @@ class KerioAdminService:
         self.domains = DomainManager(self.client)
         self.users = UserManager(self.client)
         self.pop3 = Pop3DownloadManager(self.client)
+        self.smtp_delivery = SmtpDeliveryManager(self.client)
         self.external_provider = external_provider or RegRuExternalMailProvider()
 
     def test_admin_connection(self) -> Dict[str, Any]:
@@ -167,6 +171,23 @@ class KerioAdminService:
                 logger.warning(f"[KerioAdminService] Не удалось загрузить правила POP3 при получении пользователей: {err}")
                 pop3_map = {}
 
+            # Получаем все правила «Доставка SMTP» для быстрой состыковки
+            try:
+                smtp_routes = self.smtp_delivery.get_routes()
+                smtp_map = {}
+                for r in smtp_routes:
+                    patt = str(r.get("matchPattern", "")).strip().lower()
+                    snd = str(r.get("sender", "")).strip().lower()
+                    un = str(r.get("userName", "")).strip().lower()
+                    for k in (patt, snd, un):
+                        if k:
+                            smtp_map[k] = r
+                            if "@" in k:
+                                smtp_map[k.split("@")[0]] = r
+            except Exception as err:
+                logger.warning(f"[KerioAdminService] Не удалось загрузить правила SMTP доставки при получении пользователей: {err}")
+                smtp_map = {}
+
             users_list = []
             for u in raw_users.get("list", []):
                 login = u.get("loginName", "")
@@ -174,11 +195,14 @@ class KerioAdminService:
                 clean_login = login.lower()
                 clean_email = email.lower()
                 pop3_rule = pop3_map.get(clean_login) or pop3_map.get(clean_email) or pop3_map.get(clean_login.split("@")[0])
+                smtp_rule = smtp_map.get(clean_email) or smtp_map.get(clean_login) or smtp_map.get(clean_login.split("@")[0])
 
                 u_enriched = dict(u)
                 u_enriched["email"] = email
                 u_enriched["has_pop3_download"] = bool(pop3_rule)
                 u_enriched["pop3_details"] = pop3_rule
+                u_enriched["has_smtp_delivery"] = bool(smtp_rule)
+                u_enriched["smtp_delivery_details"] = smtp_rule
                 users_list.append(u_enriched)
 
             return {
@@ -292,6 +316,23 @@ class KerioAdminService:
                 logger.error(f"[KerioAdminService] Ошибка создания POP3 правила в Kerio: {pop_exc}")
                 report["steps"]["kerio_pop3_download"] = {"status": "error", "error": str(pop_exc)}
 
+            # Создаем правило «Доставка SMTP» (ретрансляция через smtp.barkol.ru:587 с SMTP AUTH)
+            try:
+                smtp_relay_host = getattr(settings, "KERIO_DEFAULT_SMTP_RELAY_HOST", "smtp.barkol.ru") if settings else "smtp.barkol.ru"
+                smtp_relay_port = getattr(settings, "KERIO_DEFAULT_SMTP_RELAY_PORT", 587) if settings else 587
+                smtp_route_res = self.smtp_delivery.create_delivery_route(
+                    sender_email=full_email,
+                    password=password,
+                    relay_host=smtp_relay_host,
+                    relay_port=smtp_relay_port,
+                    auth_username=full_email,
+                    is_enabled=True,
+                )
+                report["steps"]["kerio_smtp_delivery"] = {"status": "ok", "details": smtp_route_res}
+            except Exception as smtp_exc:
+                logger.warning(f"[KerioAdminService] Ошибка создания правила «Доставка SMTP» в Kerio: {smtp_exc}")
+                report["steps"]["kerio_smtp_delivery"] = {"status": "warning", "error": str(smtp_exc)}
+
         # Шаг 4. Связывание в Django (MailAccount)
         if create_django_account and django_user_id:
             try:
@@ -330,6 +371,80 @@ class KerioAdminService:
         logger.info(f"[KerioAdminService] Почтовый ящик '{full_email}' успешно подготовлен и сконфигурирован.")
         return report
 
+    def ensure_user_smtp_delivery_route(
+        self,
+        login_name: str,
+        password: Optional[str] = None,
+        domain_name: str = "barkol.ru",
+        relay_host: Optional[str] = None,
+        relay_port: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Проверяет наличие и при необходимости создает/актуализирует правило «Доставка SMTP» для пользователя.
+
+        Если пароль не указан явно, пытается извлечь его из связанного профиля MailAccount базы данных Django.
+
+        Args:
+            login_name (str): Логин или email пользователя.
+            password (Optional[str]): Пароль ящика (если None, ищется в Django MailAccount).
+            domain_name (str): Почтовый домен (barkol.ru).
+            relay_host (Optional[str]): Сервер ретрансляции (по умолчанию 'smtp.barkol.ru').
+            relay_port (Optional[int]): Порт сервера ретрансляции (по умолчанию 587).
+
+        Returns:
+            Dict[str, Any]: Отчет о проверке и создании правила Доставки SMTP.
+
+        Raises:
+            KerioValidationError: Если пароль не найден и не передан.
+        """
+        clean_login = login_name.split("@")[0].strip().lower()
+        full_email = f"{clean_login}@{domain_name}"
+
+        target_password = password
+        if not target_password and MailAccount:
+            acc = MailAccount.objects.filter(email__iexact=full_email).first()
+            if acc:
+                target_password = acc.get_password()
+
+        if not target_password:
+            raise KerioValidationError(
+                f"Не удалось определить пароль для '{full_email}'. Укажите пароль вручную."
+            )
+
+        with self.client:
+            existing_route = self.smtp_delivery.get_route_for_sender(full_email)
+            if existing_route and existing_route.get("id"):
+                # Обновляем пароль в существующем правиле
+                res = self.smtp_delivery.update_delivery_route(
+                    route_id=existing_route["id"],
+                    password=target_password,
+                    relay_host=relay_host,
+                    relay_port=relay_port,
+                    is_enabled=True,
+                )
+                return {
+                    "success": True,
+                    "action": "updated",
+                    "route_id": existing_route["id"],
+                    "email": full_email,
+                    "details": res,
+                }
+            else:
+                # Создаем новое правило
+                res = self.smtp_delivery.create_delivery_route(
+                    sender_email=full_email,
+                    password=target_password,
+                    relay_host=relay_host,
+                    relay_port=relay_port,
+                    auth_username=full_email,
+                    is_enabled=True,
+                )
+                return {
+                    "success": True,
+                    "action": "created",
+                    "email": full_email,
+                    "details": res,
+                }
+
     def update_user_password(
         self,
         login_name: str,
@@ -337,7 +452,7 @@ class KerioAdminService:
         domain_name: str = "barkol.ru",
         update_django: bool = True,
     ) -> Dict[str, Any]:
-        """Синхронно обновляет пароль в Kerio Connect, правиле POP3 и MailAccount портала.
+        """Синхронно обновляет пароль в Kerio Connect, правиле POP3, правиле Доставка SMTP и MailAccount портала.
 
         Args:
             login_name (str): Логин пользователя.
@@ -377,7 +492,15 @@ class KerioAdminService:
                 self.pop3.update_pop3_account(pop3_rule["id"], password=new_password)
                 report["steps"]["kerio_pop3_download"] = "ok"
 
-        # 4. Django MailAccount
+            # 4. Доставка SMTP правило (SMTP AUTH)
+            try:
+                self.smtp_delivery.set_route_password_for_sender(full_email, new_password)
+                report["steps"]["kerio_smtp_delivery"] = "ok"
+            except Exception as smtp_exc:
+                logger.warning(f"[KerioAdminService] Ошибка обновления пароля в правиле Доставка SMTP: {smtp_exc}")
+                report["steps"]["kerio_smtp_delivery"] = f"warning: {smtp_exc}"
+
+        # 5. Django MailAccount
         if update_django:
             accounts = MailAccount.objects.filter(email__iexact=full_email)
             for acc in accounts:
@@ -394,7 +517,7 @@ class KerioAdminService:
         is_enabled: bool,
         domain_name: str = "barkol.ru",
     ) -> Dict[str, Any]:
-        """Блокирует или разблокирует пользователя в Kerio Connect, POP3 правиле и MailAccount.
+        """Блокирует или разблокирует пользователя в Kerio Connect, POP3 правиле, правиле Доставка SMTP и MailAccount.
 
         Args:
             login_name (str): Логин пользователя.
@@ -420,6 +543,12 @@ class KerioAdminService:
             if pop3_rule and "id" in pop3_rule:
                 self.pop3.update_pop3_account(pop3_rule["id"], is_enabled=is_enabled)
 
+            # Доставка SMTP правило
+            try:
+                self.smtp_delivery.toggle_route_for_sender(full_email, is_enabled=is_enabled)
+            except Exception as smtp_exc:
+                logger.warning(f"[KerioAdminService] Ошибка переключения активности правила Доставка SMTP: {smtp_exc}")
+
         # Django MailAccount
         MailAccount.objects.filter(email__iexact=full_email).update(is_active=is_enabled)
 
@@ -430,7 +559,7 @@ class KerioAdminService:
         login_name: str,
         domain_name: str = "barkol.ru",
     ) -> Dict[str, Any]:
-        """Удаляет пользователя и его правило загрузки POP3 из Kerio Connect.
+        """Удаляет пользователя, его правило загрузки POP3 и правило Доставки SMTP из Kerio Connect.
 
         Args:
             login_name (str): Логин пользователя.
@@ -440,6 +569,7 @@ class KerioAdminService:
             Dict[str, Any]: Отчет об удалении.
         """
         clean_login = login_name.split("@")[0].strip().lower()
+        full_email = f"{clean_login}@{domain_name}"
 
         with self.client:
             domain_id = self.domains.get_domain_id(domain_name)
@@ -451,6 +581,12 @@ class KerioAdminService:
             pop3_rule = self.pop3.get_account_for_user(clean_login)
             if pop3_rule and "id" in pop3_rule:
                 self.pop3.remove_pop3_account(pop3_rule["id"])
+
+            # Удаляем Доставка SMTP правило
+            try:
+                self.smtp_delivery.remove_route_for_sender(full_email)
+            except Exception as smtp_exc:
+                logger.warning(f"[KerioAdminService] Ошибка удаления правила Доставка SMTP: {smtp_exc}")
 
             # Удаляем пользователя
             self.users.remove_user(k_user["id"])

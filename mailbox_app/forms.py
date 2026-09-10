@@ -738,6 +738,42 @@ class KerioUserProvisionForm(forms.Form):
         ),
         help_text="По умолчанию выключено (письма удаляются с внешнего сервера после скачивания в Kerio)",
     )
+    configure_smtp_delivery = forms.BooleanField(
+        label="Настроить правило исходящей «Доставка SMTP» (Ретрансляция smtp.barkol.ru:587)",
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "id_configure_smtp_delivery",
+            }
+        ),
+        help_text="Автоматически создаст правило в Kerio Connect (Конфигурация -> Сервер SMTP -> Доставка SMTP) с авторизацией SMTP AUTH",
+    )
+    external_smtp_host = forms.CharField(
+        label="Сервер ретрансляции SMTP Relay",
+        max_length=255,
+        required=False,
+        initial="smtp.barkol.ru",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "smtp.barkol.ru",
+                "id": "id_ext_smtp_host",
+            }
+        ),
+    )
+    external_smtp_port = forms.IntegerField(
+        label="Порт SMTP Relay",
+        required=False,
+        initial=587,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "id": "id_ext_smtp_port",
+            }
+        ),
+    )
 
     def __init__(self, *args, **kwargs) -> None:
         """Инициализирует форму и заполняет queryset активных сотрудников.
