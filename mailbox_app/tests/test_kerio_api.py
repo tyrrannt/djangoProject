@@ -306,6 +306,62 @@ class KerioAdminServiceTestCase(TestCase):
         self.assertEqual(account.smtp_host, "sm.barkol.ru")
         self.assertTrue(account.is_active)
 
+        # Проверяем синхронизацию пароля в рабочем профиле сотрудника DataBaseUserWorkProfile
+        self.user.refresh_from_db()
+        if hasattr(self.user, "user_work_profile") and self.user.user_work_profile:
+            self.assertEqual(self.user.user_work_profile.work_email_password, "UltraSecretPassword123")
+
+    def test_update_user_password_syncs_work_profile(self) -> None:
+        """Тест синхронизации пароля в MailAccount и DataBaseUserWorkProfile при сбросе/смене пароля."""
+        # 1. Подготовка MailAccount для пользователя
+        account = MailAccount.objects.create(
+            user=self.user,
+            email="v.shakirov@barkol.ru",
+            display_name="Виталий Шакиров",
+            imap_host="imap.barkol.ru",
+            imap_port=993,
+            imap_use_ssl=True,
+            smtp_host="sm.barkol.ru",
+            smtp_port=465,
+            smtp_use_ssl=True,
+            is_active=True,
+        )
+        account.set_password("OldPassword111")
+        account.save()
+
+        # 2. Мокируем ответы Kerio Connect (Domains.get, Users.get, Users.setPassword, Delivery.getPop3AccountList)
+        self.mock_client.call.side_effect = [
+            # Domains.get (get_domain_id)
+            {"list": [{"id": "dom_barkol", "name": "barkol.ru"}]},
+            # Users.get (get_user_by_login)
+            {"list": [{"id": "u_kerio_1", "loginName": "v.shakirov"}]},
+            # Users.setPassword
+            {"success": True},
+            # Delivery.getPop3AccountList (get_account_for_user)
+            {"list": [{"id": "pop_rule_1", "deliveryAddress": "v.shakirov"}]},
+            # Delivery.setPop3Account / update_pop3_account
+            {"success": True},
+            # Smtp.get (SmtpDeliveryManager.set_route_password_for_sender)
+            {"smtp": {"deliveryRules": []}},
+        ]
+
+        res = self.service.update_user_password(
+            login_name="v.shakirov",
+            new_password="BrandNewPassword999!",
+            domain_name="barkol.ru",
+            update_django=True,
+        )
+        self.assertTrue(res["success"])
+
+        # Проверяем обновленный пароль в MailAccount
+        account.refresh_from_db()
+        self.assertEqual(account.get_password(), "BrandNewPassword999!")
+
+        # Проверяем обновленный пароль в профиле пользователя на сайте
+        self.user.refresh_from_db()
+        if hasattr(self.user, "user_work_profile") and self.user.user_work_profile:
+            self.assertEqual(self.user.user_work_profile.work_email_password, "BrandNewPassword999!")
+
 
 class CorporateLoginUtilsTestCase(TestCase):
     """Тестирование транслитерации и генерации корпоративных логинов BARKOL."""

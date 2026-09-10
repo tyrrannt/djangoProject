@@ -5,11 +5,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from django.contrib.auth import get_user_model
-    from django.db import transaction
+    from django.db import models, transaction
     from mailbox_app.models import MailAccount, Mailbox
     from mailbox_app.services.crypto_service import encrypt_password
     User = get_user_model()
 except Exception:
+    models = None
     User = None
     MailAccount = None
     Mailbox = None
@@ -35,6 +36,44 @@ from mailbox_app.services.kerio.users import UserManager
 from mailbox_app.services.kerio.utils import get_django_setting
 
 logger = logging.getLogger(__name__)
+
+
+def _sync_user_work_profile_password(portal_user: Any, password: str) -> None:
+    """Синхронизирует пароль от корпоративной почты в рабочем профиле сотрудника DataBaseUserWorkProfile.
+
+    Записывает пароль в поле work_email_password рабочего профиля пользователя портала,
+    а при отсутствии профиля — автоматически создает его.
+
+    Args:
+        portal_user (Any): Экземпляр пользователя Django (DataBaseUser / User).
+        password (str): Пароль от почты в открытом виде.
+    """
+    if not portal_user or not password:
+        return
+    try:
+        if hasattr(portal_user, "user_work_profile") and portal_user.user_work_profile:
+            portal_user.user_work_profile.work_email_password = password
+            portal_user.user_work_profile.save(update_fields=["work_email_password"])
+            logger.info(
+                f"[KerioAdminService] Пароль корпоративной почты записан в рабочий профиль сотрудника {portal_user.username}."
+            )
+        else:
+            try:
+                from customers_app.models import DataBaseUserWorkProfile
+                work_profile = DataBaseUserWorkProfile.objects.create(work_email_password=password)
+                portal_user.user_work_profile = work_profile
+                portal_user.save(update_fields=["user_work_profile"])
+                logger.info(
+                    f"[KerioAdminService] Создан рабочий профиль DataBaseUserWorkProfile и сохранен пароль почты для {portal_user.username}."
+                )
+            except Exception as e_prof:
+                logger.debug(
+                    f"[KerioAdminService] Не удалось создать DataBaseUserWorkProfile для {portal_user}: {e_prof}"
+                )
+    except Exception as exc:
+        logger.warning(
+            f"[KerioAdminService] Ошибка сохранения work_email_password для {portal_user}: {exc}"
+        )
 
 
 class KerioAdminService:
@@ -364,16 +403,38 @@ class KerioAdminService:
             logger.warning(f"[KerioAdminService] Ошибка создания правила «Доставка SMTP» в Kerio: {smtp_exc}")
             report["steps"]["kerio_smtp_delivery"] = {"status": "warning", "error": str(smtp_exc)}
 
-        # Шаг 4. Связывание в Django (MailAccount)
-        if create_django_account and django_user_id:
+        # Шаг 4. Связывание в Django (MailAccount и DataBaseUserWorkProfile)
+        portal_user = None
+        if django_user_id and User:
             try:
-                portal_user = User.objects.get(pk=django_user_id)
+                portal_user = User.objects.filter(pk=django_user_id).select_related("user_work_profile").first()
+            except Exception:
+                pass
+
+        if not portal_user and User and models:
+            # Автоматический поиск пользователя по email или логину
+            portal_user = User.objects.filter(
+                models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+            ).select_related("user_work_profile").first()
+
+        if portal_user:
+            # 4.1 Записываем пароль корпоративной почты в рабочий профиль сотрудника на сайте
+            _sync_user_work_profile_password(portal_user, password)
+            if not portal_user.email:
+                try:
+                    portal_user.email = full_email
+                    portal_user.save(update_fields=["email"])
+                except Exception:
+                    pass
+
+        if create_django_account and portal_user and MailAccount:
+            try:
                 with transaction.atomic():
                     mail_account, created = MailAccount.objects.get_or_create(
                         user=portal_user,
                         defaults={
                             "email": full_email,
-                            "display_name": full_name or portal_user.get_full_name(),
+                            "display_name": full_name or portal_user.get_full_name() or portal_user.username,
                             "imap_host": "imap.barkol.ru",
                             "imap_port": 993,
                             "imap_use_ssl": True,
@@ -436,6 +497,13 @@ class KerioAdminService:
             if acc:
                 target_password = acc.get_password()
 
+        if not target_password and User and models:
+            u = User.objects.filter(
+                models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+            ).select_related("user_work_profile").first()
+            if u and hasattr(u, "user_work_profile") and u.user_work_profile and u.user_work_profile.work_email_password:
+                target_password = u.user_work_profile.work_email_password.strip()
+
         existing_route = self.smtp_delivery.get_route_for_sender(full_email)
         is_individual_existing = bool(existing_route and existing_route.get("id") and not existing_route.get("isGlobal"))
 
@@ -464,8 +532,15 @@ class KerioAdminService:
                 f"Не удалось определить пароль для '{full_email}'. Укажите пароль учетной записи для привязки SMTP AUTH."
             )
 
-        # Синхронизируем Django MailAccount если есть
-        if MailAccount:
+        # Синхронизируем Django MailAccount и рабочий профиль сотрудника
+        if target_password and User and models:
+            matched_users = User.objects.filter(
+                models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+            ).select_related("user_work_profile")
+            for u in matched_users:
+                _sync_user_work_profile_password(u, target_password)
+
+        if MailAccount and target_password:
             try:
                 m_acc = MailAccount.objects.filter(email__iexact=full_email).first()
                 if m_acc:
@@ -518,13 +593,13 @@ class KerioAdminService:
         domain_name: str = "barkol.ru",
         update_django: bool = True,
     ) -> Dict[str, Any]:
-        """Синхронно обновляет пароль в Kerio Connect, правиле POP3, правиле Доставка SMTP и MailAccount портала.
+        """Синхронно обновляет пароль в Kerio Connect, правиле POP3, правиле Доставка SMTP, MailAccount и DataBaseUserWorkProfile.
 
         Args:
             login_name (str): Логин пользователя.
             new_password (str): Новый пароль в открытом виде.
             domain_name (str): Имя домена.
-            update_django (bool): Обновить ли пароль в MailAccount.
+            update_django (bool): Обновить ли пароль в MailAccount и профиле пользователя на сайте.
 
         Returns:
             Dict[str, Any]: Отчет об обновлении пароля по всем контурам.
@@ -565,13 +640,26 @@ class KerioAdminService:
             logger.warning(f"[KerioAdminService] Ошибка обновления пароля в правиле Доставка SMTP: {smtp_exc}")
             report["steps"]["kerio_smtp_delivery"] = f"warning: {smtp_exc}"
 
-        # 5. Django MailAccount
+        # 5. Django MailAccount и DataBaseUserWorkProfile.work_email_password
         if update_django:
-            accounts = MailAccount.objects.filter(email__iexact=full_email)
-            for acc in accounts:
-                acc.set_password(new_password)
-                acc.save(update_fields=["encrypted_password", "updated_at"])
-            report["steps"]["django_account"] = f"updated {accounts.count()} accounts"
+            updated_accounts_count = 0
+            if MailAccount:
+                accounts = MailAccount.objects.filter(email__iexact=full_email).select_related("user", "user__user_work_profile")
+                for acc in accounts:
+                    acc.set_password(new_password)
+                    acc.save(update_fields=["encrypted_password", "updated_at"])
+                    if acc.user:
+                        _sync_user_work_profile_password(acc.user, new_password)
+                updated_accounts_count = accounts.count()
+                report["steps"]["django_account"] = f"updated {updated_accounts_count} accounts"
+
+            # 5.2 Гарантированная синхронизация пароля в профиле сотрудника по email / loginName
+            if User and models:
+                matched_users = User.objects.filter(
+                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+                ).select_related("user_work_profile")
+                for u in matched_users:
+                    _sync_user_work_profile_password(u, new_password)
 
         report["success"] = True
         return report
