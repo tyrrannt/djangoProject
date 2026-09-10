@@ -25,12 +25,12 @@
             gap: 8px;
         }
         .step-number-badge {
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             background: #0088cc;
             color: #ffffff;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
@@ -41,6 +41,12 @@
             border: 1px solid #cbd5e1;
             border-radius: 8px;
             padding: 16px;
+        }
+        .employee-preview-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
         }
     </style>
 {% endblock %}
@@ -94,11 +100,73 @@
                             </div>
                         {% endif %}
 
-                        <!-- Блок 1: Учетная запись Kerio Connect -->
+                        <!-- Блок 1: Выбор сотрудника портала BARKOL (Быстрое автозаполнение) -->
+                        <div class="card border border-primary-subtle shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header text-primary">
+                                    <span class="step-number-badge bg-primary">1</span>
+                                    <span>Сотрудник на портале BARKOL (Быстрое автозаполнение)</span>
+                                </div>
+
+                                <div class="alert alert-info py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
+                                    <i class="bx bx-info-circle font-size-20 flex-shrink-0 text-primary"></i>
+                                    <span>Выберите сотрудника из списка — его <strong>ФИО</strong>, <strong>логин</strong>, <strong>должность</strong>, <strong>подразделение</strong> и <strong>телефон</strong> подставятся автоматически, а также будет сгенерирован надежный пароль.</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-8">
+                                        <label for="{{ form.link_django_user.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.link_django_user.label }}
+                                        </label>
+                                        {{ form.link_django_user }}
+                                        <small class="text-muted font-size-11">{{ form.link_django_user.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-4 d-flex align-items-center pt-3">
+                                        <div class="form-check form-switch">
+                                            {{ form.create_django_account }}
+                                            <label class="form-check-label font-size-13 fw-semibold" for="{{ form.create_django_account.id_for_label }}">
+                                                {{ form.create_django_account.label }}
+                                            </label>
+                                            <small class="d-block text-muted font-size-11">{{ form.create_django_account.help_text }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Интерактивная карточка выбранного сотрудника -->
+                                <div id="employeePreviewCard" class="card border border-success-subtle bg-success-subtle bg-opacity-10 p-3 mt-3 d-none rounded-3">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div id="previewEmpAvatar" style="width: 44px; height: 44px; font-size: 18px; background: #0088cc; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                                            Б
+                                        </div>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <strong class="font-size-15 text-dark" id="previewEmpName">—</strong>
+                                                <span class="badge bg-light text-dark font-monospace border" id="previewEmpUsername" title="Логин на портале">—</span>
+                                                <span class="badge bg-primary-subtle text-primary border font-monospace" id="previewEmpEmail" title="Рекомендуемый адрес почты BARKOL">
+                                                    <i class="bx bx-envelope me-1"></i><span id="previewEmpEmailText">—</span>
+                                                </span>
+                                                <span class="badge bg-success text-white employee-preview-badge">
+                                                    <i class="bx bx-check-double me-1"></i>Данные загружены
+                                                </span>
+                                            </div>
+                                            <div class="text-muted font-size-12 mt-1 d-flex align-items-center gap-2" id="previewEmpJobDiv">
+                                                <i class="bx bx-briefcase"></i> <span id="previewEmpJobText">—</span>
+                                            </div>
+                                            <div class="text-muted font-size-12 d-flex align-items-center gap-2 mt-1" id="previewEmpPhoneDiv">
+                                                <i class="bx bx-phone"></i> <span id="previewEmpPhoneText">—</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 2: Учетная запись Kerio Connect -->
                         <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
-                                    <span class="step-number-badge">1</span>
+                                    <span class="step-number-badge">2</span>
                                     <span>Учетная запись почтового сервера Kerio Connect</span>
                                 </div>
 
@@ -174,11 +242,11 @@
                             </div>
                         </div>
 
-                        <!-- Блок 2: Внешняя доставка (Загрузка POP3) -->
+                        <!-- Блок 3: Внешняя доставка (Загрузка POP3) -->
                         <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
-                                    <span class="step-number-badge">2</span>
+                                    <span class="step-number-badge">3</span>
                                     <span>Внешняя доставка: сборщик «Загрузка POP3»</span>
                                 </div>
 
@@ -234,36 +302,6 @@
                             </div>
                         </div>
 
-                        <!-- Блок 3: Интеграция с порталом -->
-                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
-                            <div class="card-body p-4">
-                                <div class="form-section-header">
-                                    <span class="step-number-badge">3</span>
-                                    <span>Связывание с профилем сотрудника на портале BARKOL</span>
-                                </div>
-
-                                <div class="row g-3">
-                                    <div class="col-12 col-md-7">
-                                        <label for="{{ form.link_django_user.id_for_label }}" class="form-label font-size-13 fw-semibold">
-                                            {{ form.link_django_user.label }}
-                                        </label>
-                                        {{ form.link_django_user }}
-                                        <small class="text-muted font-size-11">{{ form.link_django_user.help_text }}</small>
-                                    </div>
-
-                                    <div class="col-12 col-md-5 d-flex align-items-center pt-3">
-                                        <div class="form-check form-switch">
-                                            {{ form.create_django_account }}
-                                            <label class="form-check-label font-size-13 fw-semibold" for="{{ form.create_django_account.id_for_label }}">
-                                                {{ form.create_django_account.label }}
-                                            </label>
-                                            <small class="d-block text-muted font-size-11">{{ form.create_django_account.help_text }}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Кнопки отправки -->
                         <div class="d-flex align-items-center justify-content-between pt-2 mb-5">
                             <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm px-3">
@@ -282,9 +320,52 @@
 {% endblock %}
 
 {% block custom_script %}
+    {{ employees_json|json_script:"employeesDataJson" }}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script>
+        // Функция транслитерации русского текста на латиницу (стандарт BARKOL)
+        function transliterateRuToEn(text) {
+            if (!text) return '';
+            var map = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
+                'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+                'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+                'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+                'ы': 'y', 'э': 'e', 'ю': 'yu', 'я': 'ya', 'ъ': '', 'ь': '', '-': '-'
+            };
+            return text.toLowerCase().split('').map(function(c) {
+                return map[c] !== undefined ? map[c] : (/[a-z0-9\-]/.test(c) ? c : '');
+            }).join('');
+        }
+
+        // Генератор логина по ФИО (первая буква имени + точка + фамилия)
+        function generateCorporateLogin(fio) {
+            if (!fio) return '';
+            var parts = fio.trim().split(/\s+/);
+            if (parts.length === 0) return '';
+            var lastName = parts[0];
+            var firstName = parts.length > 1 ? parts[1] : '';
+            var cleanLast = transliterateRuToEn(lastName);
+            var cleanFirst = transliterateRuToEn(firstName);
+            if (!cleanLast) return 'user';
+            var firstInit = cleanFirst ? cleanFirst.charAt(0) : '';
+            return firstInit ? (firstInit + '.' + cleanLast) : cleanLast;
+        }
+
         $(document).ready(function() {
+            var employeesMap = {};
+            var scriptEl = document.getElementById('employeesDataJson');
+            if (scriptEl) {
+                try {
+                    employeesMap = JSON.parse(scriptEl.textContent);
+                    if (typeof employeesMap === 'string') {
+                        employeesMap = JSON.parse(employeesMap);
+                    }
+                } catch (e) {
+                    console.error('Ошибка парсинга employeesDataJson:', e);
+                }
+            }
+
             if ($.fn.select2) {
                 $('.select2-user').select2({
                     theme: 'bootstrap',
@@ -292,6 +373,78 @@
                     allowClear: true,
                     placeholder: "Выберите сотрудника портала..."
                 });
+            }
+
+            // Обработка выбора сотрудника для мгновенного автозаполнения формы
+            $('#id_link_django_user').on('change', function() {
+                var selectedId = $(this).val();
+                var previewCard = document.getElementById('employeePreviewCard');
+                if (selectedId && employeesMap[selectedId]) {
+                    var emp = employeesMap[selectedId];
+
+                    // 1. Автозаполнение логина по корпоративному стандарту BARKOL (имя.фамилия)
+                    var targetLogin = emp.suggested_login || generateCorporateLogin(emp.fio) || emp.username;
+                    var loginInput = document.getElementById('id_kerio_login');
+                    if (loginInput) {
+                        loginInput.value = targetLogin;
+                    }
+
+                    // 2. Автозаполнение ФИО
+                    var fullNameInput = document.getElementById('id_kerio_fullname');
+                    if (fullNameInput) {
+                        fullNameInput.value = emp.fio;
+                    }
+
+                    // 3. Автозаполнение должности / описания
+                    var descInput = document.getElementById('id_kerio_description');
+                    if (descInput) {
+                        descInput.value = emp.description;
+                    }
+
+                    // 4. Генерация надежного пароля, если поле пустое
+                    var passInput = document.getElementById('id_kerio_password');
+                    if (passInput && !passInput.value) {
+                        generateAndSetPasswords();
+                    }
+
+                    // 5. Заполнение и показ карточки сотрудника
+                    var previewName = document.getElementById('previewEmpName');
+                    if (previewName) previewName.innerText = emp.fio;
+
+                    var previewUser = document.getElementById('previewEmpUsername');
+                    if (previewUser) previewUser.innerText = 'Портал: ' + emp.username;
+
+                    var previewEmailText = document.getElementById('previewEmpEmailText');
+                    if (previewEmailText) {
+                        previewEmailText.innerText = (emp.suggested_email || (targetLogin + '@barkol.ru'));
+                    }
+
+                    var previewJobText = document.getElementById('previewEmpJobText');
+                    if (previewJobText) {
+                        var jobDiv = [emp.job, emp.division].filter(Boolean).join(' / ');
+                        previewJobText.innerText = jobDiv || 'Должность не указана';
+                    }
+
+                    var previewPhoneText = document.getElementById('previewEmpPhoneText');
+                    if (previewPhoneText) {
+                        previewPhoneText.innerText = emp.phone ? ('Тел: ' + emp.phone) : 'Телефон не указан';
+                    }
+
+                    var previewAvatar = document.getElementById('previewEmpAvatar');
+                    if (previewAvatar && emp.fio) {
+                        previewAvatar.innerText = emp.fio.charAt(0).toUpperCase();
+                    }
+
+                    if (previewCard) previewCard.classList.remove('d-none');
+                } else {
+                    if (previewCard) previewCard.classList.add('d-none');
+                }
+            });
+
+            // Если при загрузке страницы уже выбран сотрудник (например, при повторном открытии/ошибке)
+            var currentSelectedId = $('#id_link_django_user').val();
+            if (currentSelectedId && employeesMap[currentSelectedId]) {
+                $('#id_link_django_user').trigger('change');
             }
 
             // Переключение блока параметров POP3

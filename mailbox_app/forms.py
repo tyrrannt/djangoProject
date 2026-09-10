@@ -535,22 +535,71 @@ class MailTemplateForm(forms.ModelForm):
         }
 
 
+class StaffModelChoiceField(forms.ModelChoiceField):
+    """Поле выбора сотрудника портала с расширенным форматированием ФИО, должности и подразделения."""
+
+    def label_from_instance(self, obj: Any) -> str:
+        """Формирует информативную метку для выпадающего списка сотрудников.
+
+        Args:
+            obj: Объект пользователя (DataBaseUser).
+
+        Returns:
+            str: Форматированная строка с ФИО, логином, должностью и подразделением.
+        """
+        fio = getattr(obj, "title", "") or obj.get_full_name() or obj.username
+        parts = []
+        if hasattr(obj, "user_work_profile") and obj.user_work_profile:
+            wp = obj.user_work_profile
+            if getattr(wp, "job", None):
+                parts.append(wp.job.name)
+            if getattr(wp, "divisions", None):
+                parts.append(wp.divisions.name)
+        suffix = f" — {' / '.join(parts)}" if parts else ""
+        return f"{fio} ({obj.username}){suffix}"
+
+
 class KerioUserProvisionForm(forms.Form):
     """Форма создания и настройки учетной записи почтового сервера Kerio Connect и интеграции с порталом."""
 
+    link_django_user = StaffModelChoiceField(
+        label="Сотрудник на портале BARKOL",
+        queryset=None,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "form-select select2-user",
+                "id": "id_link_django_user",
+                "data-placeholder": "Выберите сотрудника из базы портала для автозаполнения...",
+            }
+        ),
+        help_text="Выберите сотрудника — его ФИО, логин, должность и телефон заполнятся автоматически",
+    )
+    create_django_account = forms.BooleanField(
+        label="Создать учетную запись MailAccount на портале",
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "id_create_django_account",
+            }
+        ),
+        help_text="Автоматически настроит почтовый клиент для выбранного сотрудника портала",
+    )
     login_name = forms.CharField(
-        label="Логин (имя пользователя)",
+        label="Логин (имя ящика)",
         max_length=100,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control font-monospace",
-                "placeholder": "например: i.ivanov",
+                "placeholder": "например: a.abramov",
                 "id": "id_kerio_login",
                 "required": True,
                 "autocomplete": "off",
             }
         ),
-        help_text="Логин сотрудника латинскими буквами без символа @",
+        help_text="Корпоративный стандарт: первая буква имени, точка, фамилия на латинице (например: a.abramov)",
     )
     domain_name = forms.CharField(
         label="Почтовый домен",
@@ -689,31 +738,6 @@ class KerioUserProvisionForm(forms.Form):
         ),
         help_text="По умолчанию выключено (письма удаляются с внешнего сервера после скачивания в Kerio)",
     )
-    link_django_user = forms.ModelChoiceField(
-        label="Связать с сотрудником портала",
-        queryset=None,
-        required=False,
-        widget=forms.Select(
-            attrs={
-                "class": "form-select select2-user",
-                "id": "id_link_django_user",
-                "data-placeholder": "Выберите сотрудника из базы портала...",
-            }
-        ),
-        help_text="При связывании сотрудник получит доступ к почтовому ящику в интерфейсе портала",
-    )
-    create_django_account = forms.BooleanField(
-        label="Создать учетную запись MailAccount на портале",
-        required=False,
-        initial=True,
-        widget=forms.CheckboxInput(
-            attrs={
-                "class": "form-check-input",
-                "id": "id_create_django_account",
-            }
-        ),
-        help_text="Автоматически настроит почтовый клиент для выбранного сотрудника портала",
-    )
 
     def __init__(self, *args, **kwargs) -> None:
         """Инициализирует форму и заполняет queryset активных сотрудников.
@@ -724,10 +748,14 @@ class KerioUserProvisionForm(forms.Form):
         """
         super().__init__(*args, **kwargs)
         User = get_user_model()
-        self.fields["link_django_user"].queryset = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+        self.fields["link_django_user"].queryset = (
+            User.objects.filter(is_active=True)
+            .select_related("user_work_profile__job", "user_work_profile__divisions")
+            .order_by("last_name", "first_name")
+        )
 
     def clean(self) -> Dict[str, Any]:
-        """Проверяет совпадение паролей и корректность логина.
+        """Проверяет совпадение паролей, заполняет недостающие поля сотрудника и валидирует логин.
 
         Returns:
             Dict[str, Any]: Очищенные валидированные данные формы.
@@ -736,6 +764,40 @@ class KerioUserProvisionForm(forms.Form):
             forms.ValidationError: Если пароли не совпадают или логин некорректен.
         """
         cleaned_data = super().clean()
+        link_user = cleaned_data.get("link_django_user")
+
+        if link_user:
+            if not cleaned_data.get("login_name"):
+                from mailbox_app.services.kerio.utils import (
+                    generate_corporate_mailbox_login,
+                    get_all_existing_logins_set,
+                    parse_fio_components,
+                )
+
+                fn, ln, mn = parse_fio_components(link_user)
+                existing_logins = get_all_existing_logins_set()
+                cleaned_data["login_name"] = generate_corporate_mailbox_login(
+                    first_name=fn,
+                    last_name=ln,
+                    middle_name=mn,
+                    existing_logins=existing_logins,
+                )
+            if not cleaned_data.get("full_name"):
+                cleaned_data["full_name"] = getattr(link_user, "title", "") or link_user.get_full_name() or link_user.username
+            if not cleaned_data.get("description"):
+                desc_parts: List[str] = []
+                if hasattr(link_user, "user_work_profile") and link_user.user_work_profile:
+                    wp = link_user.user_work_profile
+                    if getattr(wp, "job", None):
+                        desc_parts.append(wp.job.name)
+                    if getattr(wp, "divisions", None):
+                        desc_parts.append(wp.divisions.name)
+                    if getattr(wp, "internal_phone", None):
+                        desc_parts.append(f"вн. {wp.internal_phone}")
+                if getattr(link_user, "personal_phone", None) and not any("вн." in p for p in desc_parts):
+                    desc_parts.append(f"тел. {link_user.personal_phone}")
+                cleaned_data["description"] = " / ".join(desc_parts)
+
         login = cleaned_data.get("login_name", "").strip().lower()
         if "@" in login:
             login = login.split("@")[0]

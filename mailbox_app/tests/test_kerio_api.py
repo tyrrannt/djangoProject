@@ -268,3 +268,64 @@ class KerioAdminServiceTestCase(TestCase):
         self.assertEqual(account.imap_host, "imap.barkol.ru")
         self.assertEqual(account.smtp_host, "sm.barkol.ru")
         self.assertTrue(account.is_active)
+
+
+class CorporateLoginUtilsTestCase(TestCase):
+    """Тестирование транслитерации и генерации корпоративных логинов BARKOL."""
+
+    def test_transliteration(self) -> None:
+        """Тест транслитерации кириллицы по стандарту BARKOL."""
+        from mailbox_app.services.kerio.utils import transliterate_ru_to_en
+
+        self.assertEqual(transliterate_ru_to_en("Абрамов"), "abramov")
+        self.assertEqual(transliterate_ru_to_en("Дерянин"), "deryanin")
+        self.assertEqual(transliterate_ru_to_en("Чупрына"), "chupryna")
+        self.assertEqual(transliterate_ru_to_en("Шакиров"), "shakirov")
+        self.assertEqual(transliterate_ru_to_en("Щукин"), "shchukin")
+        self.assertEqual(transliterate_ru_to_en("Мамин-Сибиряк"), "mamin-sibiryak")
+
+    def test_fio_parsing(self) -> None:
+        """Тест извлечения компонентов ФИО."""
+        from mailbox_app.services.kerio.utils import parse_fio_components
+
+        fn, ln, mn = parse_fio_components("Абрамов Алексей Борисович")
+        self.assertEqual(ln, "Абрамов")
+        self.assertEqual(fn, "Алексей")
+        self.assertEqual(mn, "Борисович")
+
+    def test_corporate_login_generation_standard(self) -> None:
+        """Тест генерации стандартного логина (первая буква имени + фамилия)."""
+        from mailbox_app.services.kerio.utils import generate_corporate_mailbox_login
+
+        login = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович")
+        self.assertEqual(login, "a.abramov")
+
+        login2 = generate_corporate_mailbox_login("Андрей", "Дерянин")
+        self.assertEqual(login2, "a.deryanin")
+
+    def test_collision_resolution_levels(self) -> None:
+        """Тест 4-уровневого разрешения коллизий тезок."""
+        from mailbox_app.services.kerio.utils import generate_corporate_mailbox_login
+
+        occupied = {"a.abramov"}
+
+        # Уровень 2: инициал имени + инициал отчества
+        login_lvl2 = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
+        self.assertEqual(login_lvl2, "ab.abramov")
+
+        occupied.add("ab.abramov")
+
+        # Уровень 3: полное имя + фамилия
+        login_lvl3 = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
+        self.assertEqual(login_lvl3, "alexey.abramov")
+
+        occupied.add("alexey.abramov")
+
+        # Уровень 4: числовой суффикс
+        login_lvl4 = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
+        self.assertEqual(login_lvl4, "a.abramov2")
+
+        occupied.add("a.abramov2")
+        login_lvl4_next = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
+        self.assertEqual(login_lvl4_next, "a.abramov3")
+

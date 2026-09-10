@@ -270,8 +270,8 @@
                                                             title="Сменить пароль">
                                                         <i class="bx bx-key"></i>
                                                     </button>
-                                                    {% if u.id %}
-                                                        <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.id %}" class="btn btn-outline-primary py-1 px-2 shadow-none" title="Редактировать параметры">
+                                                    {% if u.loginName %}
+                                                        <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.loginName %}" class="btn btn-outline-primary py-1 px-2 shadow-none" title="Редактировать параметры">
                                                             <i class="bx bx-edit"></i>
                                                         </a>
                                                     {% endif %}
@@ -335,8 +335,8 @@
                                                 onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')" title="Сменить пароль">
                                             <i class="bx bx-key text-warning font-size-16"></i>
                                         </button>
-                                        {% if u.id %}
-                                            <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.id %}" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Редактировать">
+                                        {% if u.loginName %}
+                                            <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.loginName %}" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Редактировать">
                                                 <i class="bx bx-edit text-primary font-size-16"></i>
                                             </a>
                                         {% endif %}

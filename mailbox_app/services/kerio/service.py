@@ -122,7 +122,7 @@ class KerioAdminService:
         domain_name: Optional[str] = None,
         search_query: Optional[str] = None,
         start: int = 0,
-        limit: int = 50,
+        limit: int = 1000,
     ) -> Dict[str, Any]:
         """Возвращает постраничный список пользователей Kerio Connect с обогащением информацией о POP3 сборщике.
 
@@ -130,14 +130,14 @@ class KerioAdminService:
             domain_name (Optional[str]): Имя домена (например, 'barkol.ru').
             search_query (Optional[str]): Строка поиска.
             start (int): Смещение для пагинации.
-            limit (int): Количество на страницу.
+            limit (int): Количество на страницу (по умолчанию 1000).
 
         Returns:
             Dict[str, Any]: Словарь со списком обогащенных пользователей и общим количеством.
         """
         with self.client:
             domain_id = None
-            if domain_name:
+            if domain_name and domain_name != "all":
                 try:
                     domain_id = self.domains.get_domain_id(domain_name)
                 except KerioObjectNotFoundError:
