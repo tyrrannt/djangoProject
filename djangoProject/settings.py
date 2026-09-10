@@ -1414,3 +1414,24 @@ UNFOLD = {
         },
     ],
 }
+
+# ==============================================================================
+# KERIO CONNECT ADMINISTRATION API CONFIGURATION
+# ==============================================================================
+KERIO_API_URL = config(
+    "KERIO_API_URL",
+    default="https://192.168.10.242:4040/admin/api/jsonrpc/",
+)
+KERIO_API_USER = config("KERIO_API_USER", default="")
+KERIO_API_PASSWORD = config("KERIO_API_PASSWORD", default="")
+KERIO_API_VERIFY_SSL = config("KERIO_API_VERIFY_SSL", default=False, cast=bool)
+KERIO_API_TIMEOUT = config("KERIO_API_TIMEOUT", default=15, cast=int)
+
+# Настройки внешнего POP3 сборщика по умолчанию (Панель «Доставка» -> «Загрузка POP3» в Kerio)
+KERIO_EXTERNAL_POP3_HOST = config("KERIO_EXTERNAL_POP3_HOST", default="mail.barkol.ru")
+KERIO_EXTERNAL_POP3_PORT = config("KERIO_EXTERNAL_POP3_PORT", default=995, cast=int)
+KERIO_EXTERNAL_POP3_SSL = config("KERIO_EXTERNAL_POP3_SSL", default=True, cast=bool)
+KERIO_EXTERNAL_POP3_LEAVE_MESSAGES = config(
+    "KERIO_EXTERNAL_POP3_LEAVE_MESSAGES", default=False, cast=bool
+)
+

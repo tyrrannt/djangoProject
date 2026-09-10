@@ -109,8 +109,17 @@
                 <!-- Настройки ящика и диагностика -->
                 <div class="d-flex flex-column gap-1">
                     {% if can_manage_mailboxes %}
-                        <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="mailbox-settings-link text-primary fw-semibold">
-                            <i class="bx bx-briefcase-alt-2 font-size-18"></i> Управление ящиками
+                        <div class="px-2 pt-1 pb-1">
+                            <span class="text-uppercase text-muted small font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Администрирование</span>
+                        </div>
+                        <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="mailbox-settings-link text-primary fw-semibold" style="font-size: 13px;">
+                            <i class="bx bx-server font-size-18"></i> Сервер Kerio Connect
+                        </a>
+                        <a href="{% url 'mailbox_app:kerio_admin_pop3' %}" class="mailbox-settings-link text-primary" style="font-size: 13px;">
+                            <i class="bx bx-download font-size-18"></i> Загрузка POP3
+                        </a>
+                        <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="mailbox-settings-link text-primary" style="font-size: 13px;">
+                            <i class="bx bx-briefcase-alt-2 font-size-18"></i> Общие ящики портала
                         </a>
                         <a href="{% url 'mailbox_app:admin_print_settings' %}" class="mailbox-settings-link text-primary" style="font-size: 13px;">
                             <i class="bx bx-printer font-size-18"></i> Бланк печати
@@ -239,8 +248,15 @@
 
         <div class="border-top pt-3 d-flex flex-column gap-2">
             {% if can_manage_mailboxes %}
-                <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-semibold" style="border-radius: 8px;">
-                    <i class="bx bx-briefcase-alt-2 font-size-18"></i> Управление ящиками
+                <div class="text-uppercase text-muted fw-bold px-1" style="font-size: 11px; letter-spacing: 0.5px;">Администрирование</div>
+                <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-semibold" style="border-radius: 8px;">
+                    <i class="bx bx-server font-size-18"></i> Сервер Kerio Connect
+                </a>
+                <a href="{% url 'mailbox_app:kerio_admin_pop3' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px; font-size: 13px;">
+                    <i class="bx bx-download font-size-18"></i> Загрузка POP3
+                </a>
+                <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px; font-size: 13px;">
+                    <i class="bx bx-briefcase-alt-2 font-size-18"></i> Общие ящики портала
                 </a>
                 <a href="{% url 'mailbox_app:admin_print_settings' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2" style="border-radius: 8px; font-size: 13px;">
                     <i class="bx bx-printer font-size-18"></i> Бланк печати

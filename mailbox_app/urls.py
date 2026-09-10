@@ -67,6 +67,12 @@ urlpatterns = [
     path("admin/print-settings/", views.MailboxPrintSettingsAdminView.as_view(), name="admin_print_settings"),
     path("api/mailbox/test-connection/", views.MailboxTestConnectionAPIView.as_view(), name="api_mailbox_test_connection"),
     path("api/mailbox/domain-defaults/", views.MailboxDomainPresetAPIView.as_view(), name="api_mailbox_domain_defaults"),
+    # Администрирование почтового сервера Kerio Connect 9.4.1 и сборщика «Загрузка POP3»
+    path("admin/kerio/users/", views.KerioAdminUsersListView.as_view(), name="kerio_admin_users"),
+    path("admin/kerio/users/create/", views.KerioAdminUserCreateView.as_view(), name="kerio_admin_user_create"),
+    path("admin/kerio/users/<str:user_id>/edit/", views.KerioAdminUserUpdateView.as_view(), name="kerio_admin_user_edit"),
+    path("admin/kerio/pop3/", views.KerioAdminPop3ListView.as_view(), name="kerio_admin_pop3"),
+    path("api/kerio/action/", views.KerioAdminActionAPIView.as_view(), name="api_kerio_action"),
     # AJAX API шаблонов ответов / писем
     path("api/templates/", views.MailboxTemplatesAPIView.as_view(), name="api_templates"),
     path("api/templates/<int:pk>/", views.MailboxTemplatesAPIView.as_view(), name="api_template_detail"),

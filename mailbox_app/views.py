@@ -19,6 +19,7 @@ from urllib.parse import quote
 import zipfile
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.db import models
@@ -43,6 +44,9 @@ from django.utils.dateparse import parse_datetime
 
 from customers_app.models import DataBaseUser
 from mailbox_app.forms import (
+    KerioUserEditForm,
+    KerioUserPasswordResetForm,
+    KerioUserProvisionForm,
     MailAccountSettingsForm,
     MailComposeForm,
     MailContactForm,
@@ -62,6 +66,14 @@ from mailbox_app.models import (
 )
 from mailbox_app.services.account_service import get_user_mail_account
 from mailbox_app.services.connection_test_service import test_full_mailbox_connection
+from mailbox_app.services.kerio import (
+    KerioAdminService,
+    KerioAPIError,
+    KerioAuthenticationError,
+    KerioConnectionError,
+    KerioObjectNotFoundError,
+    KerioValidationError,
+)
 from mailbox_app.services.imap_service import (
     ImapMailService,
     decode_imap_utf7,
@@ -184,8 +196,8 @@ class MailboxBaseMixin(LoginRequiredMixin):
 
             mb_id = int(req_mb)
             has_access = (
-                is_mailbox_admin(user)
-                or Mailbox.objects.filter(id=mb_id, is_active=True, users=user).exists()
+                    is_mailbox_admin(user)
+                    or Mailbox.objects.filter(id=mb_id, is_active=True, users=user).exists()
             )
             if has_access:
                 self.request.session["active_mailbox_id"] = str(mb_id)
@@ -449,14 +461,14 @@ class MailboxFolderView(HtmxResponseMixin, MailboxBaseMixin, TemplateView):
 
         cf_lower = current_folder.lower()
         is_sent = (
-            current_type == "sent"
-            or any(f.get("raw_name") == current_folder and f.get("root_type") == "sent" for f in folders)
-            or any(s in cf_lower for s in ("sent", "отправленн"))
+                current_type == "sent"
+                or any(f.get("raw_name") == current_folder and f.get("root_type") == "sent" for f in folders)
+                or any(s in cf_lower for s in ("sent", "отправленн"))
         )
         is_drafts = (
-            current_type == "drafts"
-            or any(f.get("raw_name") == current_folder and f.get("root_type") == "drafts" for f in folders)
-            or any(s in cf_lower for s in ("draft", "черновик"))
+                current_type == "drafts"
+                or any(f.get("raw_name") == current_folder and f.get("root_type") == "drafts" for f in folders)
+                or any(s in cf_lower for s in ("draft", "черновик"))
         )
         show_recipient = is_sent or is_drafts
 
@@ -657,14 +669,14 @@ class MailboxEmailDetailView(HtmxResponseMixin, MailboxBaseMixin, TemplateView):
 
         fn_lower = folder_name.lower()
         is_sent = (
-            current_type == "sent"
-            or any(f.get("raw_name") == folder_name and f.get("root_type") == "sent" for f in folders)
-            or any(s in fn_lower for s in ("sent", "отправленн"))
+                current_type == "sent"
+                or any(f.get("raw_name") == folder_name and f.get("root_type") == "sent" for f in folders)
+                or any(s in fn_lower for s in ("sent", "отправленн"))
         )
         is_drafts = (
-            current_type == "drafts"
-            or any(f.get("raw_name") == folder_name and f.get("root_type") == "drafts" for f in folders)
-            or any(s in fn_lower for s in ("draft", "черновик"))
+                current_type == "drafts"
+                or any(f.get("raw_name") == folder_name and f.get("root_type") == "drafts" for f in folders)
+                or any(s in fn_lower for s in ("draft", "черновик"))
         )
 
         show_recipient = is_sent or is_drafts
@@ -1182,10 +1194,10 @@ class MailboxContactsAPIView(LoginRequiredMixin, View):
             mb_filter = Q()
             for v in q_variants:
                 mb_filter |= (
-                    Q(name__icontains=v)
-                    | Q(email__icontains=v)
-                    | Q(display_name__icontains=v)
-                    | Q(description__icontains=v)
+                        Q(name__icontains=v)
+                        | Q(email__icontains=v)
+                        | Q(display_name__icontains=v)
+                        | Q(description__icontains=v)
                 )
             mailboxes_qs = mailboxes_qs.filter(mb_filter)
 
@@ -1216,13 +1228,13 @@ class MailboxContactsAPIView(LoginRequiredMixin, View):
             user_filter = Q()
             for v in q_variants:
                 user_filter |= (
-                    Q(last_name__icontains=v)
-                    | Q(first_name__icontains=v)
-                    | Q(surname__icontains=v)
-                    | Q(email__icontains=v)
-                    | Q(username__icontains=v)
-                    | Q(mail_account__email__icontains=v)
-                    | Q(mail_account__display_name__icontains=v)
+                        Q(last_name__icontains=v)
+                        | Q(first_name__icontains=v)
+                        | Q(surname__icontains=v)
+                        | Q(email__icontains=v)
+                        | Q(username__icontains=v)
+                        | Q(mail_account__email__icontains=v)
+                        | Q(mail_account__display_name__icontains=v)
                 )
             users_qs = users_qs.filter(user_filter)
 
@@ -1258,7 +1270,7 @@ class MailboxContactsAPIView(LoginRequiredMixin, View):
                 contact_filter = Q()
                 for v in q_variants:
                     contact_filter |= (
-                        Q(name__icontains=v) | Q(email__icontains=v)
+                            Q(name__icontains=v) | Q(email__icontains=v)
                     )
                 contacts_qs = contacts_qs.filter(contact_filter)
 
@@ -1396,7 +1408,8 @@ class MailboxContactCreateOrUpdateView(MailboxBaseMixin, View):
         email_addr = (data.get("email") or "").strip().lower()
 
         if not email_addr:
-            if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get("Content-Type", ""):
+            if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get(
+                    "Content-Type", ""):
                 return JsonResponse({"success": False, "error": "Email адрес обязателен для заполнения"}, status=400)
             messages.error(request, "Email адрес обязателен для заполнения.")
             return redirect("mailbox_app:contacts_list")
@@ -1410,7 +1423,8 @@ class MailboxContactCreateOrUpdateView(MailboxBaseMixin, View):
             },
         )
 
-        if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get("Content-Type", ""):
+        if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get(
+                "Content-Type", ""):
             return JsonResponse({
                 "success": True,
                 "created": created,
@@ -1694,10 +1708,10 @@ class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
 
                 curr_latest_uid = latest_mail.get("uid") if latest_mail else None
                 has_new_incoming = (
-                    (unseen_count > prev_unseen)
-                    or (curr_latest_uid and curr_latest_uid != prev_latest_uid)
-                    or (unseen_count > 0 and not prev_snapshot)
-                    or force_refresh
+                        (unseen_count > prev_unseen)
+                        or (curr_latest_uid and curr_latest_uid != prev_latest_uid)
+                        or (unseen_count > 0 and not prev_snapshot)
+                        or force_refresh
                 )
 
                 if has_new_incoming:
@@ -1718,14 +1732,14 @@ class MailboxUnreadCountAPIView(MailboxBaseMixin, View):
                 if cached_folders and isinstance(cached_folders, list):
                     folder_updated = False
                     for f in cached_folders:
-                        if (f.get("type") == "inbox" and f.get("level") == 0) or f.get("raw_name", "").upper() == "INBOX":
+                        if (f.get("type") == "inbox" and f.get("level") == 0) or f.get("raw_name",
+                                                                                       "").upper() == "INBOX":
                             if f.get("unseen") != unseen_count:
                                 f["unseen"] = unseen_count
                                 folder_updated = True
                             break
                     if folder_updated:
                         cache.set(cache_key_folders, cached_folders, timeout=1800)
-
 
                 elapsed_ms = round((time.perf_counter() - t_start) * 1000, 1)
                 res_data = {
@@ -1910,7 +1924,8 @@ class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
                 p_banner = p_sock.recv(1024).decode("latin-1", errors="ignore").strip()
                 p_banner_ms = (time.perf_counter() - t0) * 1000
                 p_sock.close()
-                record("2.1 Тест порта 143 (Plain IMAP)", p_conn_ms + p_banner_ms, f"Коннект: {p_conn_ms:.1f}мс, Баннер: {p_banner_ms:.1f}мс ({p_banner[:40]})")
+                record("2.1 Тест порта 143 (Plain IMAP)", p_conn_ms + p_banner_ms,
+                       f"Коннект: {p_conn_ms:.1f}мс, Баннер: {p_banner_ms:.1f}мс ({p_banner[:40]})")
             except Exception as e:
                 record("2.1 Тест порта 143 (Plain IMAP)", 0.0, f"Порт 143 закрыт или недоступен ({e})", status="INFO")
 
@@ -1925,17 +1940,20 @@ class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
                 try:
                     t0 = time.perf_counter()
                     raw_s = socket.create_connection((host, port), timeout=5)
-                    ssl_s = ssl_ctx.wrap_socket(raw_s, server_hostname=None if host.strip().replace(".", "").isdigit() else host)
+                    ssl_s = ssl_ctx.wrap_socket(raw_s, server_hostname=None if host.strip().replace(".",
+                                                                                                    "").isdigit() else host)
                     pure_ssl_ms = (time.perf_counter() - t0) * 1000
-                    
+
                     # 3b. Ожидание приветственного баннера от сервера
                     t0 = time.perf_counter()
                     server_banner = ssl_s.recv(1024).decode("latin-1", errors="ignore").strip()
                     banner_ms = (time.perf_counter() - t0) * 1000
                     ssl_s.close()
-                    
-                    record("3a. Чистый SSL Handshake (TLS crypto)", pure_ssl_ms, f"Шифр: {ssl_s.cipher()[0] if hasattr(ssl_s, 'cipher') else 'TLS'}")
-                    record("3b. Ожидание баннера сервера (Reverse DNS/Kerio)", banner_ms, f"Баннер: {server_banner[:60]}")
+
+                    record("3a. Чистый SSL Handshake (TLS crypto)", pure_ssl_ms,
+                           f"Шифр: {ssl_s.cipher()[0] if hasattr(ssl_s, 'cipher') else 'TLS'}")
+                    record("3b. Ожидание баннера сервера (Reverse DNS/Kerio)", banner_ms,
+                           f"Баннер: {server_banner[:60]}")
                 except Exception as e:
                     record("3a. Проверка сокета SSL", 0.0, f"Ошибка: {e}", status="WARN")
 
@@ -2028,7 +2046,8 @@ class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
                         sort_ms = (time.perf_counter() - t0) * 1000
                         if sort_data and sort_data[0]:
                             sorted_uids = [u for u in sort_data[0].split() if u and u != b"0"]
-                        record("8b. IMAP UID SORT (REVERSE DATE)", sort_ms, f"Отсортировано по реальной дате: {len(sorted_uids)}")
+                        record("8b. IMAP UID SORT (REVERSE DATE)", sort_ms,
+                               f"Отсортировано по реальной дате: {len(sorted_uids)}")
                     except Exception as e:
                         sort_ms = (time.perf_counter() - t0) * 1000
                         record("8b. IMAP UID SORT (REVERSE DATE)", sort_ms, f"Ошибка/Fallback: {e}", status="WARN")
@@ -2042,7 +2061,8 @@ class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
                         unseen_ms = (time.perf_counter() - t0) * 1000
                         if unseen_data and unseen_data[0]:
                             unseen_uids = [u for u in unseen_data[0].split() if u and u != b"0"]
-                        record("9. IMAP UID SEARCH UNSEEN (Непрочитанные)", unseen_ms, f"Непрочитанных: {len(unseen_uids)}")
+                        record("9. IMAP UID SEARCH UNSEEN (Непрочитанные)", unseen_ms,
+                               f"Непрочитанных: {len(unseen_uids)}")
                     except Exception as e:
                         unseen_ms = (time.perf_counter() - t0) * 1000
                         record("9. IMAP UID SEARCH UNSEEN (Непрочитанные)", unseen_ms, f"Ошибка: {e}", status="ERR")
@@ -2066,7 +2086,8 @@ class MailboxDiagnosticView(MailboxAdminAccessMixin, TemplateView):
                             for item in fetch_data:
                                 if isinstance(item, tuple) and len(item) > 1 and isinstance(item[1], bytes):
                                     batch_bytes += len(item[1])
-                        record("10. IMAP Batch FETCH (25 заголовков)", fetch_ms, f"Объем данных: {batch_bytes / 1024:.1f} KB")
+                        record("10. IMAP Batch FETCH (25 заголовков)", fetch_ms,
+                               f"Объем данных: {batch_bytes / 1024:.1f} KB")
                     except Exception as e:
                         fetch_ms = (time.perf_counter() - t0) * 1000
                         record("10. IMAP Batch FETCH (25 заголовков)", fetch_ms, f"Ошибка FETCH: {e}", status="ERR")
@@ -2896,8 +2917,392 @@ class MailboxServerPollerRunAPIView(MailboxAdminAccessMixin, View):
             return JsonResponse({"success": False, "error": str(e)})
 
 
+class KerioAdminUsersListView(MailboxAdminAccessMixin, View):
+    """Представление реестра пользователей почтового сервера Kerio Connect 9.4.1."""
+
+    def get(self, request, *args, **kwargs):
+        """Отображает список пользователей Kerio с фильтрацией, пагинацией и статусами POP3 сборщика.
+
+        Args:
+            request: Входящий HTTP GET запрос.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Отрендеренная страница реестра пользователей Kerio.
+        """
+        search_query = request.GET.get("q", "").strip()
+        domain = request.GET.get("domain", "barkol.ru").strip()
+        if domain == "all":
+            domain_filter = None
+        else:
+            domain_filter = domain or "barkol.ru"
+
+        service = KerioAdminService()
+        error_message = None
+        users_list = []
+        total_items = 0
+        domains = []
+
+        try:
+            domains_data = service.get_domains_list()
+            domains = [d.get("name", "") for d in domains_data if d.get("name")]
+        except Exception as err:
+            logger.warning(f"[KerioAdmin] Не удалось получить список доменов: {err}")
+            domains = ["barkol.ru"]
+
+        try:
+            res = service.get_users_list(
+                domain_name=domain_filter,
+                search_query=search_query or None,
+                start=0,
+                limit=200,
+            )
+            users_list = res.get("list", [])
+            total_items = res.get("totalItems", len(users_list))
+        except Exception as err:
+            logger.error(f"[KerioAdmin] Ошибка загрузки списка пользователей Kerio: {err}")
+            error_message = f"Не удалось связаться с сервером Kerio Connect ({err}). Проверьте сетевое подключение к серверу 192.168.10.242:4040."
+
+        emails_list = [u.get("email", "").lower() for u in users_list if u.get("email")]
+        login_list = [u.get("loginName", "").lower() for u in users_list if u.get("loginName")]
+
+        user_model = get_user_model()
+        django_users_by_email = {}
+        if emails_list or login_list:
+            for du in user_model.objects.filter(
+                    models.Q(email__in=emails_list) | models.Q(username__in=login_list)
+            ):
+                if du.email:
+                    django_users_by_email[du.email.lower()] = du
+                if du.username:
+                    django_users_by_email[du.username.lower()] = du
+
+        django_mailaccounts_by_email = {}
+        if emails_list:
+            for ma in MailAccount.objects.filter(email__in=emails_list).select_related("user"):
+                django_mailaccounts_by_email[ma.email.lower()] = ma
+
+        for u in users_list:
+            u_email = u.get("email", "").lower()
+            u_login = u.get("loginName", "").lower()
+            u["django_user"] = django_users_by_email.get(u_email) or django_users_by_email.get(u_login)
+            u["mail_account"] = django_mailaccounts_by_email.get(u_email)
+
+        active_users_count = sum(1 for u in users_list if u.get("isEnabled", True))
+
+        context = self.get_context_data(**kwargs)
+        context.update({
+            "title": "ПОЛЬЗОВАТЕЛИ ПОЧТОВОГО СЕРВЕРА KERIO CONNECT",
+            "users": users_list,
+            "total_items": total_items,
+            "active_users_count": active_users_count,
+            "domains": domains,
+            "current_domain": domain,
+            "search_query": search_query,
+            "error_message": error_message,
+        })
+        return render(request, "mailbox_app/admin/kerio_users_list.html", context)
 
 
+class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
+    """Представление создания нового пользователя почты в Kerio Connect с POP3 сборщиком и аккаунтом портала."""
+
+    def get(self, request, *args, **kwargs):
+        """Отображает мастер добавления почтового ящика.
+
+        Args:
+            request: Входящий HTTP GET запрос.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Страница формы создания.
+        """
+        form = KerioUserProvisionForm()
+        context = self.get_context_data(**kwargs)
+        context.update({
+            "title": "СОЗДАНИЕ ПОЧТОВОГО ЯЩИКА СОТРУДНИКА",
+            "form": form,
+            "is_create": True,
+        })
+        return render(request, "mailbox_app/admin/kerio_user_form.html", context)
+
+    def post(self, request, *args, **kwargs):
+        """Обрабатывает отправку формы создания почтового ящика.
+
+        Args:
+            request: Входящий HTTP POST запрос.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Редирект в реестр пользователей при успехе или форма с ошибками.
+        """
+        form = KerioUserProvisionForm(request.POST)
+        if form.is_valid():
+            login_name = form.cleaned_data["login_name"]
+            domain_name = form.cleaned_data["domain_name"]
+            password = form.cleaned_data["password"]
+            full_name = form.cleaned_data.get("full_name", "")
+            description = form.cleaned_data.get("description", "")
+            quota_mb = form.cleaned_data.get("quota_mb")
+            configure_pop3 = form.cleaned_data.get("configure_pop3_download", True)
+            ext_host = form.cleaned_data.get("external_pop3_host", "mail.barkol.ru")
+            ext_port = form.cleaned_data.get("external_pop3_port", 995)
+            ext_ssl = form.cleaned_data.get("external_pop3_ssl", True)
+            ext_leave = form.cleaned_data.get("external_leave_messages", False)
+            link_user = form.cleaned_data.get("link_django_user")
+            create_django = form.cleaned_data.get("create_django_account", True)
+
+            service = KerioAdminService()
+            try:
+                service.provision_full_mailbox(
+                    login_name=login_name,
+                    password=password,
+                    domain_name=domain_name,
+                    full_name=full_name,
+                    description=description,
+                    django_user_id=link_user.pk if link_user else None,
+                    quota_mb=quota_mb,
+                    external_pop3_host=ext_host,
+                    external_pop3_port=ext_port,
+                    external_pop3_ssl=ext_ssl,
+                    external_leave_messages=ext_leave,
+                    create_django_account=create_django,
+                )
+                full_email = f"{login_name}@{domain_name}"
+                messages.success(
+                    request,
+                    f"Почтовый ящик «{full_email}» успешно создан в Kerio Connect"
+                    + (" и привязан к сборщику POP3 с mail.barkol.ru!" if configure_pop3 else "!")
+                )
+                return redirect("mailbox_app:kerio_admin_users")
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка создания пользователя: {err}", exc_info=True)
+                messages.error(request, f"Ошибка создания пользователя в Kerio Connect: {err}")
+
+        context = self.get_context_data(**kwargs)
+        context.update({
+            "title": "СОЗДАНИЕ ПОЧТОВОГО ЯЩИКА СОТРУДНИКА",
+            "form": form,
+            "is_create": True,
+        })
+        return render(request, "mailbox_app/admin/kerio_user_form.html", context)
 
 
+class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
+    """Представление редактирования параметров пользователя в Kerio Connect."""
 
+    def get(self, request, user_id, *args, **kwargs):
+        """Отображает форму редактирования пользователя.
+
+        Args:
+            request: Входящий HTTP GET запрос.
+            user_id (str): Идентификатор пользователя в Kerio Connect.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Страница редактирования.
+        """
+        service = KerioAdminService()
+        try:
+            k_user = service.users.get_user_by_id(user_id)
+        except Exception as err:
+            messages.error(request, f"Не удалось найти пользователя в Kerio Connect: {err}")
+            return redirect("mailbox_app:kerio_admin_users")
+
+        item_box = k_user.get("itemBox", {})
+        quota_mb = item_box.get("limit") if item_box.get("isEnabled") else None
+
+        initial_data = {
+            "full_name": k_user.get("fullName", ""),
+            "description": k_user.get("description", ""),
+            "quota_mb": quota_mb,
+            "is_enabled": k_user.get("isEnabled", True),
+        }
+        form = KerioUserEditForm(initial=initial_data)
+
+        context = self.get_context_data(**kwargs)
+        context.update({
+            "title": f"РЕДАКТИРОВАНИЕ: {k_user.get('loginName')}",
+            "form": form,
+            "k_user": k_user,
+            "user_id": user_id,
+        })
+        return render(request, "mailbox_app/admin/kerio_user_edit.html", context)
+
+    def post(self, request, user_id, *args, **kwargs):
+        """Сохраняет измененные параметры пользователя в Kerio Connect.
+
+        Args:
+            request: Входящий HTTP POST запрос.
+            user_id (str): Идентификатор пользователя в Kerio.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Редирект в реестр пользователей.
+        """
+        form = KerioUserEditForm(request.POST)
+        service = KerioAdminService()
+        if form.is_valid():
+            try:
+                service.users.update_user(
+                    user_id=user_id,
+                    full_name=form.cleaned_data["full_name"],
+                    description=form.cleaned_data["description"],
+                    is_enabled=form.cleaned_data["is_enabled"],
+                    quota_mb=form.cleaned_data["quota_mb"],
+                )
+                messages.success(request, "Параметры пользователя успешно обновлены в Kerio Connect!")
+                return redirect("mailbox_app:kerio_admin_users")
+            except Exception as err:
+                messages.error(request, f"Ошибка обновления данных в Kerio Connect: {err}")
+
+        context = self.get_context_data(**kwargs)
+        context.update({
+            "title": "РЕДАКТИРОВАНИЕ ПОЛЬЗОВАТЕЛЯ",
+            "form": form,
+            "user_id": user_id,
+        })
+        return render(request, "mailbox_app/admin/kerio_user_edit.html", context)
+
+
+class KerioAdminPop3ListView(MailboxAdminAccessMixin, View):
+    """Представление реестра правил сбора почты «Загрузка POP3» (Панель «Доставка» Kerio Connect)."""
+
+    def get(self, request, *args, **kwargs):
+        """Отображает список правил загрузки POP3.
+
+        Args:
+            request: Входящий HTTP GET запрос.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Страница списка правил POP3.
+        """
+        service = KerioAdminService()
+        pop3_accounts = []
+        error_message = None
+
+        try:
+            pop3_accounts = service.pop3.get_accounts()
+        except Exception as err:
+            logger.error(f"[KerioAdmin] Ошибка загрузки правил POP3: {err}")
+            error_message = f"Не удалось получить список правил «Загрузка POP3» из Kerio Connect: {err}"
+
+        active_count = sum(1 for p in pop3_accounts if p.get("isEnabled", True))
+
+        context = self.get_context_data(**kwargs)
+        context.update({
+            "title": "СБОРЩИК ПОЧТЫ (ЗАГРУЗКА POP3)",
+            "pop3_accounts": pop3_accounts,
+            "total_count": len(pop3_accounts),
+            "active_count": active_count,
+            "error_message": error_message,
+        })
+        return render(request, "mailbox_app/admin/kerio_pop3_list.html", context)
+
+
+class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
+    """AJAX API выполнения административных действий с Kerio Connect."""
+
+    def post(self, request, *args, **kwargs):
+        """Обрабатывает AJAX запросы управления пользователями и службами Kerio Connect.
+
+        Поддерживаемые действия:
+        - `test_connection`: Тестирование соединения и авторизации в Kerio API.
+        - `reset_password`: Смена/сброс пароля в Kerio, POP3 правиле и Django MailAccount.
+        - `toggle_active`: Блокировка/разблокировка учетной записи.
+        - `delete_user`: Удаление пользователя и правила POP3 из Kerio Connect.
+        - `download_now`: Запуск немедленного сбора почты по правилу POP3.
+
+        Args:
+            request: Входящий HTTP POST запрос с JSON или form payload.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            JsonResponse: Результат выполнения операции.
+        """
+        import json
+
+        if request.content_type == "application/json":
+            try:
+                data = json.loads(request.body)
+            except Exception:
+                data = {}
+        else:
+            data = request.POST
+
+        action = data.get("action", "").strip()
+        service = KerioAdminService()
+
+        if action == "test_connection":
+            report = service.test_admin_connection()
+            return JsonResponse(report)
+
+        elif action == "reset_password":
+            login_name = data.get("login_name", "").strip()
+            new_password = data.get("new_password", "").strip()
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            if not login_name or not new_password:
+                return JsonResponse({"success": False, "message": "Логин и новый пароль обязательны."}, status=400)
+            try:
+                res = service.update_user_password(
+                    login_name=login_name,
+                    new_password=new_password,
+                    domain_name=domain_name,
+                )
+                return JsonResponse(
+                    {"success": True, "message": f"Пароль для '{login_name}' успешно обновлен!", "details": res})
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка сброса пароля: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "toggle_active":
+            login_name = data.get("login_name", "").strip()
+            is_enabled_raw = data.get("is_enabled")
+            is_enabled = is_enabled_raw in (True, "true", "True", "1", 1)
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            if not login_name:
+                return JsonResponse({"success": False, "message": "Логин пользователя обязателен."}, status=400)
+            try:
+                res = service.toggle_user_active(
+                    login_name=login_name,
+                    is_enabled=is_enabled,
+                    domain_name=domain_name,
+                )
+                return JsonResponse({"success": True, "is_enabled": is_enabled,
+                                     "message": f"Статус пользователя '{login_name}' обновлен."})
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка переключения статуса: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "delete_user":
+            login_name = data.get("login_name", "").strip()
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            if not login_name:
+                return JsonResponse({"success": False, "message": "Логин пользователя обязателен."}, status=400)
+            try:
+                res = service.delete_user(login_name=login_name, domain_name=domain_name)
+                return JsonResponse(
+                    {"success": True, "message": f"Пользователь '{login_name}' удален из Kerio Connect."})
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка удаления пользователя: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "download_now":
+            account_id = data.get("account_id")
+            try:
+                res = service.pop3.download_now(account_id=account_id)
+                return JsonResponse(
+                    {"success": True, "message": "Запрос немедленной загрузки POP3 успешно отправлен в Kerio Connect."})
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка вызова downloadNow: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        return JsonResponse({"success": False, "message": f"Неизвестное действие: '{action}'"}, status=400)

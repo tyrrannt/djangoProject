@@ -1,0 +1,670 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    Пользователи Kerio Connect — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <style>
+        .kerio-user-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.2s ease;
+        }
+        .kerio-user-card:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+        .badge-pop3-active {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .badge-pop3-none {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .user-avatar-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #e0f2fe;
+            color: #0369a1;
+            font-weight: 700;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .server-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot-online {
+            background: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+        .status-dot-offline {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox-view="folder">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основная область администрирования Kerio Connect -->
+            <div class="inner-body mailbox-settings" id="mailboxMainContent">
+                <!-- Полоса вкладок корпоративных ящиков -->
+                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
+                <div class="mailbox-settings-container" style="max-width: 1280px;">
+                    <!-- Навигационные вкладки админ-раздела -->
+                    {% include 'mailbox_app/admin/kerio_nav_tabs.html' with active_admin_tab='kerio_users' total_items=total_items %}
+
+                    <!-- Шапка раздела -->
+                    <header class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                            </button>
+                            <div>
+                                <h4 class="mailbox-page-title m-0 d-flex align-items-center gap-2">
+                                    <i class="bx bx-server text-primary"></i>
+                                    <span>Управление сервером Kerio Connect 9.4.1</span>
+                                </h4>
+                                <small class="text-muted">Управление учетными записями, сборщиком Загрузка POP3 и синхронизация с порталом</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <!-- Статус API -->
+                            <div class="server-status-pill bg-light border" id="serverStatusWidget">
+                                <span class="status-dot {% if error_message %}status-dot-offline{% else %}status-dot-online{% endif %}" id="serverStatusDot"></span>
+                                <span id="serverStatusText">{% if error_message %}Сервер недоступен{% else %}Kerio Connect API Online{% endif %}</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-muted" onclick="checkKerioConnection()" title="Проверить связь с сервером">
+                                    <i class="bx bx-refresh font-size-16"></i>
+                                </button>
+                            </div>
+
+                            <a href="{% url 'mailbox_app:kerio_admin_user_create' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+                                <i class="bx bx-user-plus font-size-16"></i> <span>Создать ящик сотрудника</span>
+                            </a>
+                        </div>
+                    </header>
+
+                    <!-- Предупреждение об ошибке подключения -->
+                    {% if error_message %}
+                        <div class="alert alert-danger d-flex align-items-center gap-2 py-3 px-3 mb-4 rounded-3 shadow-sm font-size-13" role="alert">
+                            <i class="bx bx-error-circle font-size-22 text-danger flex-shrink-0"></i>
+                            <div class="flex-grow-1">
+                                <strong class="d-block mb-1">Связь с сервером Kerio Connect временно недоступна:</strong>
+                                <span>{{ error_message }}</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="checkKerioConnection()">Повторить</button>
+                        </div>
+                    {% endif %}
+
+                    <!-- Панель поиска и фильтрации -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                        <div class="card-body p-3">
+                            <form method="get" class="row g-2 align-items-center">
+                                <div class="col-12 col-md-5">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light border-end-0"><i class="bx bx-search text-muted"></i></span>
+                                        <input type="text" class="form-control border-start-0" name="q" value="{{ search_query }}" placeholder="Поиск по логину, ФИО или описанию..." autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-7 col-md-4">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light"><i class="bx bx-globe text-muted"></i></span>
+                                        <select name="domain" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value="all" {% if current_domain == 'all' %}selected{% endif %}>Все домены</option>
+                                            {% for d in domains %}
+                                                <option value="{{ d }}" {% if current_domain == d %}selected{% endif %}>@{{ d }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-5 col-md-3 d-flex gap-1">
+                                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Найти</button>
+                                    {% if search_query or current_domain != 'barkol.ru' %}
+                                        <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm" title="Сбросить фильтры">
+                                            <i class="bx bx-x"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Десктопная таблица пользователей (>=769px) -->
+                    <div class="card border-0 shadow-sm d-none d-md-block mb-4" style="border-radius: 10px; overflow: hidden;">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted font-size-12 text-uppercase">
+                                    <tr>
+                                        <th class="ps-3 py-3" style="width: 26%;">Пользователь / Email</th>
+                                        <th style="width: 22%;">Сборщик «Загрузка POP3»</th>
+                                        <th style="width: 20%;">Профиль портала</th>
+                                        <th style="width: 12%;">Квота</th>
+                                        <th style="width: 8%;" class="text-center">Статус</th>
+                                        <th style="width: 12%;" class="text-end pe-3">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for u in users %}
+                                        <tr id="user-row-{{ u.loginName }}">
+                                            <td class="ps-3 py-3">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="user-avatar-circle">
+                                                        {% if u.fullName %}
+                                                            {{ u.fullName|slice:":1"|upper }}
+                                                        {% else %}
+                                                            {{ u.loginName|slice:":1"|upper }}
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="overflow-hidden">
+                                                        <div class="fw-bold text-dark font-size-14 text-truncate">
+                                                            {{ u.fullName|default:u.loginName }}
+                                                        </div>
+                                                        <div class="text-muted font-size-12 d-flex align-items-center gap-1">
+                                                            <i class="bx bx-envelope text-primary"></i>
+                                                            <span class="user-select-all">{{ u.email|default:u.loginName }}</span>
+                                                        </div>
+                                                        {% if u.description %}
+                                                            <small class="text-muted d-block text-truncate fst-italic" style="font-size: 11px;">{{ u.description }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if u.has_pop3_download %}
+                                                    <div class="d-flex flex-column gap-1">
+                                                        <span class="badge-pop3-active d-inline-flex align-items-center gap-1 w-auto">
+                                                            <i class="bx bx-check-shield"></i>
+                                                            <span>{{ u.pop3_details.server|default:"mail.barkol.ru" }}:{{ u.pop3_details.port|default:"995" }}</span>
+                                                        </span>
+                                                        <small class="text-muted" style="font-size: 11px;">
+                                                            SSL • опрос 1 мин • автоудаление
+                                                        </small>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="badge-pop3-none d-inline-flex align-items-center gap-1">
+                                                        <i class="bx bx-info-circle"></i> Не настроен
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if u.django_user %}
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <i class="bx bx-user-check text-success font-size-16"></i>
+                                                        <span class="font-size-13 text-dark fw-semibold">{{ u.django_user.get_full_name|default:u.django_user.username }}</span>
+                                                    </div>
+                                                    {% if u.mail_account %}
+                                                        <small class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-10 mt-1">
+                                                            MailAccount активен
+                                                        </small>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted small font-size-12 fst-italic">Не привязан</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if u.itemBox and u.itemBox.isEnabled %}
+                                                    <span class="badge bg-light text-secondary border font-size-11">
+                                                        <i class="bx bx-pie-chart-alt-2 me-1"></i>{{ u.itemBox.limit }} МБ
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted small font-size-12">Безлимит</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="form-check form-switch d-inline-block">
+                                                    <input class="form-check-input" type="checkbox" role="switch"
+                                                           id="switch-{{ u.loginName }}"
+                                                           {% if u.isEnabled %}checked{% endif %}
+                                                           onchange="toggleUserStatus('{{ u.loginName }}', this.checked, '{{ current_domain }}')"
+                                                           title="Включить / отключить пользователя">
+                                                </div>
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <div class="dropdown">
+                                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="bx bx-dots-horizontal-rounded"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                               onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')">
+                                                                <i class="bx bx-key text-warning"></i> Сменить пароль
+                                                            </a>
+                                                        </li>
+                                                        {% if u.id %}
+                                                            <li>
+                                                                <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'mailbox_app:kerio_admin_user_edit' u.id %}">
+                                                                    <i class="bx bx-edit text-primary"></i> Редактировать
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                               onclick="openDeleteUserModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')">
+                                                                <i class="bx bx-trash"></i> Удалить ящик
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <i class="bx bx-user-x font-size-48 d-block mb-2 text-secondary opacity-50"></i>
+                                                <div class="fw-semibold font-size-15">Пользователи не найдены</div>
+                                                <small>Измените параметры поиска или создайте нового пользователя почты</small>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Мобильный список карточек (<=768px) -->
+                    <div class="d-md-none mb-4">
+                        {% for u in users %}
+                            <div class="kerio-user-card" id="mobile-card-{{ u.loginName }}">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar-circle">
+                                            {% if u.fullName %}{{ u.fullName|slice:":1"|upper }}{% else %}{{ u.loginName|slice:":1"|upper }}{% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark font-size-14">{{ u.fullName|default:u.loginName }}</div>
+                                            <div class="text-muted font-size-12 user-select-all">{{ u.email|default:u.loginName }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               {% if u.isEnabled %}checked{% endif %}
+                                               onchange="toggleUserStatus('{{ u.loginName }}', this.checked, '{{ current_domain }}')">
+                                    </div>
+                                </div>
+
+                                {% if u.description %}
+                                    <div class="font-size-12 text-muted mb-2 fst-italic">{{ u.description }}</div>
+                                {% endif %}
+
+                                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between pt-2 border-top">
+                                    <div>
+                                        {% if u.has_pop3_download %}
+                                            <span class="badge-pop3-active"><i class="bx bx-check-shield"></i> POP3 995 SSL</span>
+                                        {% else %}
+                                            <span class="badge-pop3-none"><i class="bx bx-info-circle"></i> Без POP3</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <button class="btn btn-outline-secondary btn-sm py-1 px-2"
+                                                onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')" title="Сменить пароль">
+                                            <i class="bx bx-key text-warning font-size-16"></i>
+                                        </button>
+                                        {% if u.id %}
+                                            <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.id %}" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Редактировать">
+                                                <i class="bx bx-edit text-primary font-size-16"></i>
+                                            </a>
+                                        {% endif %}
+                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                                onclick="openDeleteUserModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')" title="Удалить">
+                                            <i class="bx bx-trash font-size-16"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-4 text-muted card border-0 shadow-sm p-4">
+                                <i class="bx bx-user-x font-size-40 mb-2"></i>
+                                <div>Пользователи не найдены</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Модальное окно смены пароля -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light py-3 px-4">
+                    <h5 class="modal-title font-size-16 fw-bold d-flex align-items-center gap-2" id="resetPasswordModalLabel">
+                        <i class="bx bx-key text-warning font-size-20"></i> Смена пароля пользователя
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
+                        <i class="bx bx-sync font-size-18 flex-shrink-0"></i>
+                        <span>Пароль будет автоматически синхронизирован в Kerio Connect, сборщике Загрузка POP3 и на портале.</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label font-size-13 fw-semibold">Пользователь</label>
+                        <input type="text" class="form-control font-monospace bg-light" id="modalResetUserLogin" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label font-size-13 fw-semibold">Новый пароль</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control font-monospace" id="modalResetNewPassword" placeholder="Введите новый пароль...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('modalResetNewPassword')" title="Показать/скрыть">
+                                <i class="bx bx-show" id="modalResetNewPasswordIcon"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" type="button" onclick="generateRandomPassword('modalResetNewPassword')" title="Сгенерировать надежный пароль">
+                                <i class="bx bx-refresh"></i> Сгенерировать
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="modalResetDomain" value="barkol.ru">
+                    <div id="resetPasswordError" class="alert alert-danger py-2 px-3 d-none font-size-12"></div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnSubmitResetPassword" onclick="submitPasswordReset()">
+                        <i class="bx bx-check me-1"></i> Сохранить пароль
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white py-3 px-4">
+                    <h5 class="modal-title font-size-16 fw-bold d-flex align-items-center gap-2" id="deleteUserModalLabel">
+                        <i class="bx bx-trash font-size-20"></i> Подтверждение удаления почтового ящика
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="font-size-14 text-dark mb-2">
+                        Вы действительно хотите удалить учетную запись <strong id="modalDeleteUserDisplay"></strong>?
+                    </p>
+                    <div class="alert alert-warning py-2 px-3 font-size-12 mb-0">
+                        <i class="bx bx-error me-1"></i> Будет удален почтовый ящик в Kerio Connect и связанное правило внешней доставки «Загрузка POP3». Данное действие необратимо.
+                    </div>
+                    <input type="hidden" id="modalDeleteLoginName">
+                    <input type="hidden" id="modalDeleteDomain" value="barkol.ru">
+                    <div id="deleteUserError" class="alert alert-danger py-2 px-3 mt-3 d-none font-size-12"></div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-danger btn-sm" id="btnSubmitDeleteUser" onclick="submitDeleteUser()">
+                        <i class="bx bx-trash me-1"></i> Удалить навсегда
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_js %}
+    <script>
+        // Получение CSRF токена из cookies
+        function getCsrfToken() {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, 10) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Проверка связи с сервером Kerio Connect
+        function checkKerioConnection() {
+            var dot = document.getElementById("serverStatusDot");
+            var text = document.getElementById("serverStatusText");
+            if (text) text.innerText = "Проверка...";
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({ action: "test_connection" })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    if (dot) dot.className = "status-dot status-dot-online";
+                    if (text) text.innerText = "Kerio Connect API Online (" + (data.domains_count || 1) + " дом.)";
+                } else {
+                    if (dot) dot.className = "status-dot status-dot-offline";
+                    if (text) text.innerText = "Ошибка: " + (data.message || data.error);
+                }
+            })
+            .catch(function(err) {
+                if (dot) dot.className = "status-dot status-dot-offline";
+                if (text) text.innerText = "Сетевая ошибка";
+            });
+        }
+
+        // Переключение статуса активности пользователя
+        function toggleUserStatus(loginName, isEnabled, domain) {
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "toggle_active",
+                    login_name: loginName,
+                    is_enabled: isEnabled,
+                    domain_name: domain || "barkol.ru"
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (!data.success) {
+                    alert("Ошибка переключения статуса: " + (data.message || "Неизвестная ошибка"));
+                    location.reload();
+                }
+            })
+            .catch(function(err) {
+                alert("Сетевая ошибка при изменении статуса");
+                location.reload();
+            });
+        }
+
+        // Модальное окно смены пароля
+        function openResetPasswordModal(loginName, fullName, domain) {
+            document.getElementById("modalResetUserLogin").value = fullName ? (fullName + " (" + loginName + ")") : loginName;
+            document.getElementById("modalResetUserLogin").setAttribute("data-raw-login", loginName);
+            document.getElementById("modalResetDomain").value = domain || "barkol.ru";
+            document.getElementById("modalResetNewPassword").value = "";
+            document.getElementById("resetPasswordError").classList.add("d-none");
+            var modal = new bootstrap.Modal(document.getElementById("resetPasswordModal"));
+            modal.show();
+        }
+
+        function togglePasswordVisibility(inputId) {
+            var input = document.getElementById(inputId);
+            var icon = document.getElementById(inputId + "Icon");
+            if (input.type === "password") {
+                input.type = "text";
+                if (icon) icon.className = "bx bx-hide";
+            } else {
+                input.type = "password";
+                if (icon) icon.className = "bx bx-show";
+            }
+        }
+
+        function generateRandomPassword(inputId) {
+            var chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*";
+            var password = "";
+            for (var i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            var input = document.getElementById(inputId);
+            input.value = password;
+            input.type = "text";
+            var icon = document.getElementById(inputId + "Icon");
+            if (icon) icon.className = "bx bx-hide";
+        }
+
+        function submitPasswordReset() {
+            var rawLogin = document.getElementById("modalResetUserLogin").getAttribute("data-raw-login");
+            var newPass = document.getElementById("modalResetNewPassword").value.trim();
+            var domain = document.getElementById("modalResetDomain").value;
+            var errBox = document.getElementById("resetPasswordError");
+            var btn = document.getElementById("btnSubmitResetPassword");
+
+            if (!newPass) {
+                errBox.innerText = "Пожалуйста, введите или сгенерируйте пароль.";
+                errBox.classList.remove("d-none");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Сохранение...';
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "reset_password",
+                    login_name: rawLogin,
+                    new_password: newPass,
+                    domain_name: domain
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль';
+                if (data.success) {
+                    var modalEl = document.getElementById("resetPasswordModal");
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    alert("Пароль для пользователя '" + rawLogin + "' успешно обновлен!");
+                } else {
+                    errBox.innerText = data.message || "Ошибка обновления пароля";
+                    errBox.classList.remove("d-none");
+                }
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль';
+                errBox.innerText = "Сетевая ошибка при смене пароля: " + err;
+                errBox.classList.remove("d-none");
+            });
+        }
+
+        // Модальное окно удаления
+        function openDeleteUserModal(loginName, fullName, domain) {
+            document.getElementById("modalDeleteUserDisplay").innerText = fullName ? (fullName + " (" + loginName + ")") : loginName;
+            document.getElementById("modalDeleteLoginName").value = loginName;
+            document.getElementById("modalDeleteDomain").value = domain || "barkol.ru";
+            document.getElementById("deleteUserError").classList.add("d-none");
+            var modal = new bootstrap.Modal(document.getElementById("deleteUserModal"));
+            modal.show();
+        }
+
+        function submitDeleteUser() {
+            var loginName = document.getElementById("modalDeleteLoginName").value;
+            var domain = document.getElementById("modalDeleteDomain").value;
+            var btn = document.getElementById("btnSubmitDeleteUser");
+            var errBox = document.getElementById("deleteUserError");
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Удаление...';
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "delete_user",
+                    login_name: loginName,
+                    domain_name: domain
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-trash me-1"></i> Удалить навсегда';
+                if (data.success) {
+                    var row = document.getElementById("user-row-" + loginName);
+                    if (row) row.remove();
+                    var card = document.getElementById("mobile-card-" + loginName);
+                    if (card) card.remove();
+                    var modalEl = document.getElementById("deleteUserModal");
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                } else {
+                    errBox.innerText = data.message || "Ошибка удаления";
+                    errBox.classList.remove("d-none");
+                }
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-trash me-1"></i> Удалить навсегда';
+                errBox.innerText = "Сетевая ошибка: " + err;
+                errBox.classList.remove("d-none");
+            });
+        }
+    </script>
+{% endblock %}

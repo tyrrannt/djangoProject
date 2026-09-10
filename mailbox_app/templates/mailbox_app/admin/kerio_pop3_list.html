@@ -1,0 +1,276 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    Сборщик почты (Загрузка POP3) — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <style>
+        .pop3-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.2s ease;
+        }
+        .pop3-card:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox-view="folder">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основная область списка правил Загрузка POP3 -->
+            <div class="inner-body mailbox-settings" id="mailboxMainContent">
+                <!-- Полоса вкладок корпоративных почтовых ящиков -->
+                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
+                <div class="mailbox-settings-container" style="max-width: 1280px;">
+                    <!-- Навигационные вкладки админ-раздела -->
+                    {% include 'mailbox_app/admin/kerio_nav_tabs.html' with active_admin_tab='kerio_pop3' total_count=total_count %}
+
+                    <!-- Шапка раздела -->
+                    <header class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                            </button>
+                            <div>
+                                <h4 class="mailbox-page-title m-0 d-flex align-items-center gap-2">
+                                    <i class="bx bx-download text-primary"></i>
+                                    <span>Служба сбора почты: Загрузка POP3</span>
+                                    <span class="badge bg-primary text-white rounded-pill font-size-12">{{ total_count }}</span>
+                                </h4>
+                                <small class="text-muted">Панель «Доставка» &rarr; «Загрузка POP3» почтового сервера Kerio Connect 9.4.1</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="triggerDownloadNow(null, this)">
+                                <i class="bx bx-refresh font-size-16"></i> <span>Загрузить всю почту сейчас</span>
+                            </button>
+                            <a href="{% url 'mailbox_app:kerio_admin_user_create' %}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+                                <i class="bx bx-plus font-size-16"></i> <span class="d-none d-sm-inline">Добавить ящик с POP3</span>
+                            </a>
+                        </div>
+                    </header>
+
+                    <!-- Ошибки подключения -->
+                    {% if error_message %}
+                        <div class="alert alert-danger d-flex align-items-center gap-2 py-3 px-3 mb-4 rounded-3 shadow-sm font-size-13" role="alert">
+                            <i class="bx bx-error-circle font-size-22 text-danger flex-shrink-0"></i>
+                            <div class="flex-grow-1">
+                                <span>{{ error_message }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Информация о регламенте доставки -->
+                    <div class="alert alert-info py-3 px-3 mb-4 rounded-3 shadow-sm font-size-13 d-flex align-items-start gap-2">
+                        <i class="bx bx-info-circle font-size-20 flex-shrink-0 text-primary mt-1"></i>
+                        <div>
+                            <strong>Регламент внешней доставки:</strong>
+                            <p class="mb-0 mt-1">
+                                Kerio Connect производит регулярный сбор входящих сообщений с внешнего почтового шлюза (<strong>mail.barkol.ru:995 SSL</strong>) с периодичностью <strong>1 минута</strong>.
+                                После успешной загрузки в локальное хранилище Kerio Connect сообщения автоматически удаляются с внешнего сервера для экономии места.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Таблица правил POP3 (Десктоп) -->
+                    <div class="card border-0 shadow-sm d-none d-md-block mb-4" style="border-radius: 10px; overflow: hidden;">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted font-size-12 text-uppercase">
+                                    <tr>
+                                        <th class="ps-3 py-3" style="width: 25%;">Получатель в Kerio</th>
+                                        <th style="width: 25%;">Внешний сервер POP3</th>
+                                        <th style="width: 20%;">Логин внешнего сервера</th>
+                                        <th style="width: 12%;">Интервал</th>
+                                        <th style="width: 8%;" class="text-center">Статус</th>
+                                        <th style="width: 10%;" class="text-end pe-3">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in pop3_accounts %}
+                                        <tr id="pop3-row-{{ p.id }}">
+                                            <td class="ps-3 py-3">
+                                                <div class="fw-bold text-dark font-size-14 d-flex align-items-center gap-1">
+                                                    <i class="bx bx-user text-primary font-size-16"></i>
+                                                    <span>{{ p.targetUser }}</span>
+                                                </div>
+                                                <small class="text-muted font-size-11">Локальный ящик Kerio</small>
+                                            </td>
+                                            <td>
+                                                <div class="font-size-13 fw-semibold text-dark">
+                                                    {{ p.server }}:{{ p.port }}
+                                                </div>
+                                                <div class="font-size-11 text-muted">
+                                                    {% if p.security == 'Ssl' or p.port == 995 %}
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">SSL Шифрование</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill">Обычный</span>
+                                                    {% endif %}
+                                                    {% if not p.leaveMessagesOnServer %}
+                                                        <span class="badge bg-light text-secondary border rounded-pill ms-1">Удаление с сервера</span>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="font-size-13 text-secondary font-monospace">
+                                                    {{ p.userName }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border font-size-12">
+                                                    <i class="bx bx-time-five me-1"></i> {{ p.interval|default:"1" }} мин
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if p.isEnabled %}
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-11">
+                                                        Активно
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-size-11">
+                                                        Отключено
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-none py-1 px-2"
+                                                        onclick="triggerDownloadNow('{{ p.id }}', this)" title="Загрузить почту по этому правилу немедленно">
+                                                    <i class="bx bx-download"></i>
+                                                    <span class="font-size-12">Собрать</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <i class="bx bx-download font-size-48 d-block mb-2 text-secondary opacity-50"></i>
+                                                <div class="fw-semibold font-size-15">Правила Загрузки POP3 отсутствуют</div>
+                                                <small>Правила создаются автоматически при добавлении пользователя через мастер</small>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Мобильный список карточек (<=768px) -->
+                    <div class="d-md-none mb-4">
+                        {% for p in pop3_accounts %}
+                            <div class="pop3-card">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div>
+                                        <div class="fw-bold text-dark font-size-14 d-flex align-items-center gap-1">
+                                            <i class="bx bx-user text-primary"></i>
+                                            <span>{{ p.targetUser }}</span>
+                                        </div>
+                                        <div class="text-muted font-size-12 font-monospace">{{ p.userName }}</div>
+                                    </div>
+                                    {% if p.isEnabled %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-size-11">Активно</span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-size-11">Отключено</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="font-size-12 text-secondary mb-2">
+                                    <i class="bx bx-server me-1"></i> {{ p.server }}:{{ p.port }} (каждые {{ p.interval|default:"1" }} мин)
+                                </div>
+
+                                <div class="d-flex justify-content-end pt-2 border-top">
+                                    <button type="button" class="btn btn-outline-primary btn-sm py-1 px-3 d-flex align-items-center gap-1"
+                                            onclick="triggerDownloadNow('{{ p.id }}', this)">
+                                        <i class="bx bx-download"></i> Загрузить сейчас
+                                    </button>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-4 text-muted card border-0 shadow-sm p-4">
+                                <i class="bx bx-download font-size-40 mb-2"></i>
+                                <div>Правила Загрузки POP3 отсутствуют</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block custom_js %}
+    <script>
+        function getCsrfToken() {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, 10) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function triggerDownloadNow(accountId, btnElement) {
+            var originalHtml = btnElement ? btnElement.innerHTML : '';
+            if (btnElement) {
+                btnElement.disabled = true;
+                btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Опрос...';
+            }
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "download_now",
+                    account_id: accountId || null
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalHtml;
+                }
+                if (data.success) {
+                    alert(data.message || "Команда немедленного сбора почты успешно отправлена в Kerio Connect!");
+                } else {
+                    alert("Ошибка: " + (data.message || "Не удалось запустить сбор почты"));
+                }
+            })
+            .catch(function(err) {
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalHtml;
+                }
+                alert("Сетевая ошибка при запуске сбора почты: " + err);
+            });
+        }
+    </script>
+{% endblock %}

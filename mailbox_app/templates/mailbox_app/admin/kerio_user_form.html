@@ -1,0 +1,350 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}
+    {{ title }} — Корпоративная почта БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}" />
+    <style>
+        .form-section-header {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .step-number-badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pop3-preset-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 16px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-with-menu mailbox">
+        <div class="content-with-menu-container" data-mailbox-view="folder">
+            <div class="inner-menu-toggle">
+                <a href="#" class="inner-menu-expand" data-open="inner-menu">
+                    Папки <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+
+            <!-- Боковое меню папок -->
+            {% include 'mailbox_app/includes/mailbox_sidebar.html' %}
+
+            <!-- Основная область формы создания -->
+            <div class="inner-body mailbox-settings" id="mailboxMainContent">
+                <!-- Полоса вкладок корпоративных почтовых ящиков -->
+                {% include 'mailbox_app/includes/mailbox_tabs.html' %}
+
+                <div class="mailbox-settings-container" style="max-width: 1000px;">
+                    <!-- Шапка формы -->
+                    <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                            </button>
+                            <h4 class="mailbox-page-title m-0 d-flex align-items-center gap-2">
+                                <i class="bx bx-user-plus text-primary"></i>
+                                <span>{{ title }}</span>
+                            </h4>
+                        </div>
+                        <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                            <i class="bx bx-arrow-back font-size-16"></i> <span class="d-none d-sm-inline">К пользователям Kerio</span>
+                        </a>
+                    </header>
+
+                    <form method="post" id="kerioUserCreateForm" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger py-2 px-3 mb-4 font-size-13 rounded-3 shadow-sm">
+                                <strong>Пожалуйста, исправьте следующие ошибки:</strong>
+                                <ul class="mb-0 mt-1">
+                                    {% for field, errors in form.errors.items %}
+                                        <li>{{ field }}: {{ errors|join:", " }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <!-- Блок 1: Учетная запись Kerio Connect -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <span class="step-number-badge">1</span>
+                                    <span>Учетная запись почтового сервера Kerio Connect</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.login_name.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.login_name.label }} <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.login_name }}
+                                        <small class="text-muted font-size-11">{{ form.login_name.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.domain_name.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.domain_name.label }} <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.domain_name }}
+                                        <small class="text-muted font-size-11">{{ form.domain_name.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.password.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.password.label }} <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            {{ form.password }}
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_kerio_password')" title="Показать/скрыть">
+                                                <i class="bx bx-show" id="id_kerio_passwordIcon"></i>
+                                            </button>
+                                            <button class="btn btn-outline-primary" type="button" onclick="generateAndSetPasswords()" title="Сгенерировать надежный пароль">
+                                                <i class="bx bx-refresh"></i> Сгенерировать
+                                            </button>
+                                        </div>
+                                        <small class="text-muted font-size-11">{{ form.password.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.confirm_password.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.confirm_password.label }} <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            {{ form.confirm_password }}
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_kerio_confirm_password')" title="Показать/скрыть">
+                                                <i class="bx bx-show" id="id_kerio_confirm_passwordIcon"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.full_name.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.full_name.label }}
+                                        </label>
+                                        {{ form.full_name }}
+                                        <small class="text-muted font-size-11">{{ form.full_name.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.description.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.description.label }}
+                                        </label>
+                                        {{ form.description }}
+                                        <small class="text-muted font-size-11">{{ form.description.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.quota_mb.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.quota_mb.label }}
+                                        </label>
+                                        {{ form.quota_mb }}
+                                        <small class="text-muted font-size-11">{{ form.quota_mb.help_text }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 2: Внешняя доставка (Загрузка POP3) -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <span class="step-number-badge">2</span>
+                                    <span>Внешняя доставка: сборщик «Загрузка POP3»</span>
+                                </div>
+
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.configure_pop3_download }}
+                                    <label class="form-check-label fw-semibold font-size-13 text-dark" for="{{ form.configure_pop3_download.id_for_label }}">
+                                        {{ form.configure_pop3_download.label }}
+                                    </label>
+                                    <div class="text-muted font-size-11">{{ form.configure_pop3_download.help_text }}</div>
+                                </div>
+
+                                <div class="pop3-preset-box" id="pop3DetailsContainer">
+                                    <div class="alert alert-info py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
+                                        <i class="bx bx-info-circle font-size-18 flex-shrink-0"></i>
+                                        <span>Стандартные параметры компании: сервер <strong>mail.barkol.ru:995 SSL</strong>, интервал опроса <strong>1 минута</strong>, удаление писем с внешнего сервера.</span>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label for="{{ form.external_pop3_host.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                                {{ form.external_pop3_host.label }}
+                                            </label>
+                                            {{ form.external_pop3_host }}
+                                        </div>
+
+                                        <div class="col-12 col-md-3">
+                                            <label for="{{ form.external_pop3_port.id_for_label }}" class="form-label font-size-12 fw-semibold">
+                                                {{ form.external_pop3_port.label }}
+                                            </label>
+                                            {{ form.external_pop3_port }}
+                                        </div>
+
+                                        <div class="col-12 col-md-3 d-flex align-items-center pt-3">
+                                            <div class="form-check">
+                                                {{ form.external_pop3_ssl }}
+                                                <label class="form-check-label font-size-12 fw-semibold" for="{{ form.external_pop3_ssl.id_for_label }}">
+                                                    SSL (порт 995)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                {{ form.external_leave_messages }}
+                                                <label class="form-check-label font-size-12 text-muted" for="{{ form.external_leave_messages.id_for_label }}">
+                                                    {{ form.external_leave_messages.label }}
+                                                </label>
+                                                <small class="d-block text-muted font-size-11">{{ form.external_leave_messages.help_text }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 3: Интеграция с порталом -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <span class="step-number-badge">3</span>
+                                    <span>Связывание с профилем сотрудника на портале BARKOL</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-7">
+                                        <label for="{{ form.link_django_user.id_for_label }}" class="form-label font-size-13 fw-semibold">
+                                            {{ form.link_django_user.label }}
+                                        </label>
+                                        {{ form.link_django_user }}
+                                        <small class="text-muted font-size-11">{{ form.link_django_user.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-5 d-flex align-items-center pt-3">
+                                        <div class="form-check form-switch">
+                                            {{ form.create_django_account }}
+                                            <label class="form-check-label font-size-13 fw-semibold" for="{{ form.create_django_account.id_for_label }}">
+                                                {{ form.create_django_account.label }}
+                                            </label>
+                                            <small class="d-block text-muted font-size-11">{{ form.create_django_account.help_text }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки отправки -->
+                        <div class="d-flex align-items-center justify-content-between pt-2 mb-5">
+                            <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm px-3">
+                                Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-sm px-4 py-2 d-flex align-items-center gap-2 shadow-sm font-size-14 fw-semibold" id="btnSubmitForm">
+                                <i class="bx bx-check-shield font-size-18"></i>
+                                <span>Создать почтовый ящик в Kerio Connect</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block custom_js %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            if ($.fn.select2) {
+                $('.select2-user').select2({
+                    theme: 'bootstrap',
+                    width: '100%',
+                    allowClear: true,
+                    placeholder: "Выберите сотрудника портала..."
+                });
+            }
+
+            // Переключение блока параметров POP3
+            var pop3Checkbox = document.getElementById('id_configure_pop3');
+            var pop3Box = document.getElementById('pop3DetailsContainer');
+            if (pop3Checkbox && pop3Box) {
+                function updatePop3Visibility() {
+                    pop3Box.style.display = pop3Checkbox.checked ? 'block' : 'none';
+                }
+                pop3Checkbox.addEventListener('change', updatePop3Visibility);
+                updatePop3Visibility();
+            }
+
+            // Предотвращение двойного сабмита
+            $('#kerioUserCreateForm').on('submit', function() {
+                var btn = $('#btnSubmitForm');
+                btn.prop('disabled', true);
+                btn.html('<span class="spinner-border spinner-border-sm me-2"></span> Создание в Kerio Connect...');
+            });
+        });
+
+        function togglePasswordVisibility(inputId) {
+            var input = document.getElementById(inputId);
+            var icon = document.getElementById(inputId + "Icon");
+            if (input.type === "password") {
+                input.type = "text";
+                if (icon) icon.className = "bx bx-hide";
+            } else {
+                input.type = "password";
+                if (icon) icon.className = "bx bx-show";
+            }
+        }
+
+        function generateAndSetPasswords() {
+            var chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*";
+            var password = "";
+            for (var i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            var p1 = document.getElementById('id_kerio_password');
+            var p2 = document.getElementById('id_kerio_confirm_password');
+            if (p1) {
+                p1.value = password;
+                p1.type = 'text';
+                var icon1 = document.getElementById('id_kerio_passwordIcon');
+                if (icon1) icon1.className = 'bx bx-hide';
+            }
+            if (p2) {
+                p2.value = password;
+                p2.type = 'text';
+                var icon2 = document.getElementById('id_kerio_confirm_passwordIcon');
+                if (icon2) icon2.className = 'bx bx-hide';
+            }
+        }
+    </script>
+{% endblock %}
