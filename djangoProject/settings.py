@@ -1440,3 +1440,10 @@ KERIO_DEFAULT_SMTP_RELAY_HOST = config("KERIO_DEFAULT_SMTP_RELAY_HOST", default=
 KERIO_DEFAULT_SMTP_RELAY_PORT = config("KERIO_DEFAULT_SMTP_RELAY_PORT", default=587, cast=int)
 KERIO_DEFAULT_SMTP_RELAY_MODE = config("KERIO_DEFAULT_SMTP_RELAY_MODE", default="StlsCommand")
 
+# Настройки интеграции с панелью ISPmanager на внешнем хостинге Reg.ru (создание ящиков на mail.barkol.ru)
+ISPMANAGER_API_URL = config("ISPMANAGER_API_URL", default="https://mail.barkol.ru:1500/ispmgr")
+ISPMANAGER_API_USER = config("ISPMANAGER_API_USER", default="")
+ISPMANAGER_API_PASSWORD = config("ISPMANAGER_API_PASSWORD", default="")
+ISPMANAGER_API_VERIFY_SSL = config("ISPMANAGER_API_VERIFY_SSL", default=False, cast=bool)
+ISPMANAGER_API_TIMEOUT = config("ISPMANAGER_API_TIMEOUT", default=10, cast=int)
+

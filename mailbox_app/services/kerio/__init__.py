@@ -12,6 +12,7 @@ from mailbox_app.services.kerio.exceptions import (
 )
 from mailbox_app.services.kerio.external_provider import (
     BaseExternalMailProvider,
+    ISPmanagerExternalMailProvider,
     ManualExternalMailProvider,
     RegRuExternalMailProvider,
 )
@@ -35,6 +36,7 @@ __all__ = [
     "BaseExternalMailProvider",
     "ManualExternalMailProvider",
     "RegRuExternalMailProvider",
+    "ISPmanagerExternalMailProvider",
     "KerioAPIError",
     "KerioConnectionError",
     "KerioAuthenticationError",

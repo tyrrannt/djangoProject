@@ -440,18 +440,18 @@ class SmtpDeliveryManagerTestCase(TestCase):
                     "id": "keriodb://deliveryroute/123",
                     "isEnabled": True,
                     "description": "Ретрансляция для a.administrator@barkol.ru",
-                    "conditionType": "ConditionSender",
-                    "matchPattern": "a.administrator@barkol.ru",
-                    "actionType": "ActionRelayServer",
-                    "relayServer": {
-                        "server": "smtp.barkol.ru",
-                        "port": 587,
-                        "mode": "StlsCommand",
-                        "authentication": {
-                            "isEnabled": True,
-                            "userName": "a.administrator@barkol.ru",
-                            "password": "secretPassword",
-                        },
+                    "hostName": "smtp.barkol.ru",
+                    "port": 587,
+                    "authentication": {
+                        "isRequired": True,
+                        "userName": "a.administrator@barkol.ru",
+                        "password": "secretPassword",
+                        "authType": "Auth",
+                    },
+                    "condition": {
+                        "test": "RelayCondSender",
+                        "comparator": "RelayCompEqual",
+                        "pattern": "a.administrator@barkol.ru",
                     },
                 }
             ]
@@ -476,12 +476,10 @@ class SmtpDeliveryManagerTestCase(TestCase):
                 {
                     "id": "keriodb://deliveryroute/admin_route",
                     "isEnabled": True,
-                    "matchPattern": "a.administrator@barkol.ru",
-                    "relayServer": {
-                        "server": "smtp.barkol.ru",
-                        "port": 587,
-                        "authentication": {"userName": "a.administrator@barkol.ru", "password": "123"},
-                    },
+                    "hostName": "smtp.barkol.ru",
+                    "port": 587,
+                    "authentication": {"isRequired": True, "userName": "a.administrator@barkol.ru", "password": "123"},
+                    "condition": {"test": "RelayCondSender", "pattern": "a.administrator@barkol.ru"},
                 }
             ]
         }
@@ -499,13 +497,36 @@ class SmtpDeliveryManagerTestCase(TestCase):
         # Поиск для пользователя, попадающего под общее серверное правило
         found_other = self.manager.get_route_for_sender("other.user@barkol.ru")
         self.assertIsNotNone(found_other)
-        self.assertEqual(found_other["sender"], "other.user@barkol.ru")
+        self.assertEqual(found_other["sender"], "*@barkol.ru")
         self.assertEqual(found_other["server"], "smtp.barkol.ru")
         self.assertEqual(found_other["port"], 587)
+        self.assertTrue(found_other["isGlobal"])
 
     def test_create_delivery_route(self) -> None:
-        """Тест создания правила ретрансляции SMTP."""
-        self.client.call.return_value = {"result": {"ids": ["new_route_id"]}}
+        """Тест создания правила ретрансляции SMTP через Smtp.setRelayDeliveryRuleList."""
+        created_rule = {
+            "id": "keriodb://deliveryroute/new_route_id",
+            "isEnabled": True,
+            "description": "Ретрансляция SMTP для a.administrator@barkol.ru",
+            "hostName": "smtp.barkol.ru",
+            "port": 587,
+            "authentication": {
+                "isRequired": True,
+                "userName": "a.administrator@barkol.ru",
+                "password": "securePassword123",
+                "authType": "Auth",
+            },
+            "condition": {
+                "test": "RelayCondSender",
+                "comparator": "RelayCompEqual",
+                "pattern": "a.administrator@barkol.ru",
+            },
+        }
+        self.client.call.side_effect = [
+            {"list": []},
+            {"result": {}},
+            {"list": [created_rule]},
+        ]
 
         res = self.manager.create_delivery_route(
             sender_email="a.administrator@barkol.ru",
@@ -515,15 +536,33 @@ class SmtpDeliveryManagerTestCase(TestCase):
         )
 
         self.assertTrue(res["success"])
+        self.assertEqual(res["method"], "Smtp.setRelayDeliveryRuleList")
         self.assertEqual(res["sender"], "a.administrator@barkol.ru")
         self.assertEqual(res["relay_host"], "smtp.barkol.ru")
         self.assertEqual(res["relay_port"], 587)
-        self.client.call.assert_called()
+        self.assertEqual(res["id"], "keriodb://deliveryroute/new_route_id")
 
     def test_create_delivery_route_method_not_found_fallback(self) -> None:
-        """Тест корректной обработки ситуации, когда в API Kerio Connect метод создания табличных правил отсутствует (-32601)."""
+        """Тест корректной обработки ситуации, когда в API Kerio Connect метод Smtp.setRelayDeliveryRuleList отсутствует (-32601), переход на Smtp.set."""
         from mailbox_app.services.kerio.exceptions import KerioObjectNotFoundError
-        self.client.call.side_effect = KerioObjectNotFoundError("[Код -32601] Method not found.")
+
+        smtp_config = {
+            "server": {
+                "delivery": {
+                    "useSsl": True,
+                    "customRules": [],
+                }
+            }
+        }
+
+        def mock_call(method: str, params: dict = None) -> dict:
+            if method == "Smtp.get":
+                return smtp_config
+            if method == "Smtp.set":
+                return {"result": "ok"}
+            raise KerioObjectNotFoundError("[Код -32601] Method not found.")
+
+        self.client.call.side_effect = mock_call
 
         res = self.manager.create_delivery_route(
             sender_email="a.administrator@barkol.ru",
@@ -533,17 +572,24 @@ class SmtpDeliveryManagerTestCase(TestCase):
         )
 
         self.assertTrue(res["success"])
-        self.assertEqual(res["method"], "server_relay_configured")
+        self.assertEqual(res["method"], "Smtp.set")
         self.assertEqual(res["sender"], "a.administrator@barkol.ru")
-        self.assertTrue(res.get("is_global"))
 
     def test_remove_delivery_route(self) -> None:
-        """Тест удаления правила доставки SMTP."""
-        self.client.call.return_value = {"result": "ok"}
+        """Тест удаления правила доставки SMTP через Smtp.setRelayDeliveryRuleList."""
+        existing_rule = {
+            "id": "keriodb://deliveryroute/123",
+            "isEnabled": True,
+            "condition": {"test": "RelayCondSender", "pattern": "a.administrator@barkol.ru"},
+        }
+        self.client.call.side_effect = [
+            {"list": [existing_rule]},
+            {"result": {}},
+        ]
 
         res = self.manager.remove_delivery_route("keriodb://deliveryroute/123")
         self.assertTrue(res["success"])
-        self.client.call.assert_called_with("Delivery.removeDeliveryRouteList", params={"ids": ["keriodb://deliveryroute/123"]})
+        self.assertEqual(res["method"], "Smtp.setRelayDeliveryRuleList")
 
     def test_extract_routes_from_smtp_get(self) -> None:
         """Тест извлечения индивидуальных правил из конфигурации Smtp.get (таблица «Доставка SMTP»)."""
@@ -686,6 +732,157 @@ class SmtpDeliveryManagerTestCase(TestCase):
         elena_u = next(u for u in users if u["loginName"] == "e.shevcova")
         self.assertTrue(elena_u["has_smtp_delivery"])
         self.assertTrue(elena_u["is_individual_smtp_delivery"])
+
+
+class ISPmanagerExternalMailProviderTestCase(TestCase):
+    """Тестирование адаптера ISPmanagerExternalMailProvider (Reg.ru хостинг)."""
+
+    def test_unconfigured_provider_graceful_fallback(self) -> None:
+        """Тест работы провайдера без настроенных параметров подключения."""
+        from mailbox_app.services.kerio.external_provider import ISPmanagerExternalMailProvider
+
+        provider = ISPmanagerExternalMailProvider(
+            panel_url="https://mail.barkol.ru:1500/ispmgr",
+            api_username="",
+            api_password="",
+        )
+        self.assertFalse(provider.is_configured)
+
+        res = provider.create_mailbox(
+            email="test.user@barkol.ru",
+            password="SecurePassword123!",
+            full_name="Тестовый Пользователь",
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["provider"], "ispmanager")
+
+        # Проверка смены пароля и удаления в неконфигурированном режиме
+        self.assertTrue(provider.change_password("test.user@barkol.ru", "NewPass123!"))
+        self.assertTrue(provider.check_mailbox_exists("test.user@barkol.ru"))
+        self.assertTrue(provider.delete_mailbox("test.user@barkol.ru"))
+
+    @patch("mailbox_app.services.kerio.external_provider.requests.post")
+    def test_configured_provider_create_and_change_password(self, mock_post: MagicMock) -> None:
+        """Тест создания ящика и смены пароля в настроенном провайдере ISPmanager."""
+        from mailbox_app.services.kerio.external_provider import ISPmanagerExternalMailProvider
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"doc": {"ok": ""}}
+        mock_post.return_value = mock_resp
+
+        provider = ISPmanagerExternalMailProvider(
+            panel_url="https://mail.barkol.ru:1500/ispmgr",
+            api_username="barkol_admin",
+            api_password="HostingPassword123!",
+        )
+        self.assertTrue(provider.is_configured)
+
+        # 1. Создание ящика
+        res = provider.create_mailbox(
+            email="i.ivanov@barkol.ru",
+            password="SecretPassword123!",
+            full_name="Иван Иванов",
+            quota_mb=2048,
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["status"], "created")
+
+        mock_post.assert_called()
+        call_kwargs = mock_post.call_args[1]
+        self.assertEqual(call_kwargs["data"]["func"], "email.edit")
+        self.assertEqual(call_kwargs["data"]["name"], "i.ivanov")
+        self.assertEqual(call_kwargs["data"]["domain"], "barkol.ru")
+        self.assertEqual(call_kwargs["data"]["domainname"], "barkol.ru")
+        self.assertEqual(call_kwargs["data"]["plid"], "barkol.ru")
+        self.assertEqual(call_kwargs["data"]["passwd"], "SecretPassword123!")
+        self.assertEqual(call_kwargs["data"]["confirm"], "SecretPassword123!")
+        self.assertEqual(call_kwargs["data"]["password"], "SecretPassword123!")
+        self.assertEqual(call_kwargs["data"]["passwd_confirm"], "SecretPassword123!")
+        self.assertEqual(call_kwargs["data"]["maxsize"], 2048)
+        self.assertEqual(call_kwargs["data"]["quota"], 2048)
+        self.assertEqual(call_kwargs["data"]["note"], "Иван Иванов")
+
+        # 2. Смена пароля
+        mock_post.reset_mock()
+        pwd_res = provider.change_password("i.ivanov@barkol.ru", "NewPass456!")
+        self.assertTrue(pwd_res)
+        self.assertEqual(mock_post.call_args[1]["data"]["elid"], "i.ivanov@barkol.ru")
+        self.assertEqual(mock_post.call_args[1]["data"]["domainname"], "barkol.ru")
+        self.assertEqual(mock_post.call_args[1]["data"]["passwd"], "NewPass456!")
+        self.assertEqual(mock_post.call_args[1]["data"]["confirm"], "NewPass456!")
+        self.assertEqual(mock_post.call_args[1]["data"]["password"], "NewPass456!")
+        self.assertEqual(mock_post.call_args[1]["data"]["passwd_confirm"], "NewPass456!")
+
+        # 3. Удаление ящика
+        mock_post.reset_mock()
+        del_res = provider.delete_mailbox("i.ivanov@barkol.ru")
+        self.assertTrue(del_res)
+        self.assertEqual(mock_post.call_args[1]["data"]["func"], "email.delete")
+        self.assertEqual(mock_post.call_args[1]["data"]["elid"], "i.ivanov@barkol.ru")
+
+    @patch("mailbox_app.services.kerio.external_provider.requests.post")
+    def test_provider_diagnostics_and_queries(self, mock_post: MagicMock) -> None:
+        """Тест диагностических методов ISPmanager: test_connection, get_mailboxes, get_form_metadata, get_domains."""
+        from mailbox_app.services.kerio.external_provider import ISPmanagerExternalMailProvider
+
+        provider = ISPmanagerExternalMailProvider(
+            panel_url="https://mail.barkol.ru:1500/ispmgr",
+            api_username="barkol_admin",
+            api_password="HostingPassword123!",
+        )
+
+        # 1. test_connection
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"doc": {"user": "barkol_admin"}}
+        mock_post.return_value = mock_resp
+
+        conn_res = provider.test_connection()
+        self.assertTrue(conn_res["success"])
+        self.assertEqual(conn_res["user"], "barkol_admin")
+
+        # 2. get_form_metadata
+        mock_resp.json.return_value = {
+            "doc": {
+                "name": {},
+                "domain": {},
+                "passwd": {},
+                "confirm": {},
+                "quota": {},
+            }
+        }
+        form_res = provider.get_form_metadata("email.edit")
+        self.assertTrue(form_res["success"])
+        self.assertIn("passwd", form_res["data"]["doc"])
+
+        # 3. get_mailboxes
+        mock_resp.json.return_value = {
+            "doc": {
+                "elem": [
+                    {"name": "a.administrator", "domain": "barkol.ru", "quota": "2048", "used": "120"},
+                    {"name": "test.user@barkol.ru", "domain": "", "quota": "512", "used": "0"},
+                ]
+            }
+        }
+        boxes = provider.get_mailboxes(domain="barkol.ru")
+        self.assertEqual(len(boxes), 2)
+        self.assertEqual(boxes[0]["email"], "a.administrator@barkol.ru")
+        self.assertEqual(boxes[1]["email"], "test.user@barkol.ru")
+
+        # 4. get_domains
+        mock_resp.json.return_value = {
+            "doc": {
+                "elem": [
+                    {"name": "barkol.ru", "status": "active"},
+                ]
+            }
+        }
+        doms = provider.get_domains()
+        self.assertEqual(len(doms), 1)
+        self.assertEqual(doms[0]["name"], "barkol.ru")
+
+
 
 
 
