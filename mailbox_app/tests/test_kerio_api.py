@@ -185,28 +185,42 @@ class KerioManagersTestCase(TestCase):
 
         # 4. remove_user
         manager.remove_user("u_2")
-        self.mock_client.call.assert_called_with("Users.remove", params={"userIds": ["u_2"]})
+        self.mock_client.call.assert_called_with(
+            "Users.remove",
+            params={
+                "requests": [
+                    {
+                        "userId": "u_2",
+                        "method": "DeleteFolder",
+                        "mode": "DSModeDelete",
+                        "removeReferences": True,
+                        "targetUserId": "",
+                    }
+                ]
+            },
+            suppress_log=True,
+        )
 
     def test_remove_user_with_uri_domain_extraction_and_fallback(self) -> None:
         """Тест удаления пользователя с автоматическим извлечением domainId из URI и fallback при -32602."""
         manager = UserManager(self.mock_client)
         user_uri = "keriodb://user/f16df5f7-c299-47f6-b631-8efff9f1d222/3cc2f617-c761-42e3-8e33-1f61f73517fa"
-        expected_dom = "keriodb://domain/f16df5f7-c299-47f6-b631-8efff9f1d222"
 
-        # Симулируем ошибку -32602 на первом кандидате {"domainId": ..., "userIds": ...}
-        # и успех на втором кандидате {"domainId": ..., "ids": ...}
+        # Симулируем ошибку -32602 на первом кандидате {"requests": [DeleteFolder]}
+        # и успех на втором кандидате {"requests": [KeepFolder]}
         self.mock_client.call.side_effect = [
             KerioAPIError("[Код -32602] Invalid params.", code=-32602),
-            {"removedUserIds": [user_uri]},
+            {"errors": []},
         ]
 
         res = manager.remove_user(user_uri)
-        self.assertEqual(res, {"removedUserIds": [user_uri]})
+        self.assertEqual(res, {"errors": []})
         self.assertEqual(self.mock_client.call.call_count, 2)
-        # Проверяем, что первый вызов содержал извлеченный domainId
-        first_call = self.mock_client.call.call_args_list[0]
-        self.assertEqual(first_call[0][0], "Users.remove")
-        self.assertEqual(first_call[1]["params"]["domainId"], expected_dom)
+        # Проверяем, что второй вызов содержал KeepFolder
+        second_call = self.mock_client.call.call_args_list[1]
+        self.assertEqual(second_call[0][0], "Users.remove")
+        self.assertEqual(second_call[1]["params"]["requests"][0]["method"], "KeepFolder")
+        self.assertEqual(second_call[1]["params"]["requests"][0]["userId"], user_uri)
 
     def test_pop3_download_manager(self) -> None:
         """Тест менеджера правил «Загрузка POP3» со стандартными настройками."""

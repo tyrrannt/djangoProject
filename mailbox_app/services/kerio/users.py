@@ -1,7 +1,7 @@
 """Менеджер управления почтовыми пользователями в Kerio Connect Administration API."""
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from mailbox_app.services.kerio.client import KerioConnectAdminClient
 from mailbox_app.services.kerio.exceptions import (
@@ -397,65 +397,204 @@ class UserManager:
     ) -> Dict[str, Any]:
         """Удаляет пользователя с сервера Kerio Connect.
 
-        Выполняет отказоустойчивое удаление пользователя, поддерживая различные
-        сигнатуры параметров вызова API Kerio Connect (domainId + userIds/ids, а также плоские списки).
+        Выполняет отказоустойчивое удаление пользователя через JSON-RPC метод API `Users.remove`
+        с передачей массива структур параметров `requests` (`method: DeleteFolder`,
+        `mode: DSModeDelete`, `removeReferences: True`, `targetUserId: ""`) в соответствии
+        со спецификацией Kerio Connect Administration API IDL (`Users.idl`), а также
+        поддерживает каскадные fallback-варианты при различных форматах идентификаторов (URI
+        `keriodb://user/...` и GUID).
 
         Args:
-            user_id (str): Идентификатор пользователя (ID или логин).
-            domain_id (Optional[str]): Идентификатор домена (если известен).
+            user_id (str): Идентификатор пользователя (полный URI `keriodb://user/...`, GUID или логин).
+            domain_id (Optional[str]): Идентификатор домена (`keriodb://domain/...` или GUID, если известен).
 
         Returns:
-            Dict[str, Any]: Ответ сервера Kerio Connect.
+            Dict[str, Any]: Ответ сервера Kerio Connect (например, `{'errors': []}`).
 
         Raises:
-            KerioObjectNotFoundError: Если пользователь не найден.
-            KerioAPIError: При ошибке API сервера.
+            KerioObjectNotFoundError: Если пользователь не найден на сервере.
+            KerioAPIError: При ошибке API сервера Kerio Connect.
         """
         raw_id = user_id.strip()
         if raw_id.startswith("keriodb:/") and not raw_id.startswith("keriodb://"):
             raw_id = "keriodb://" + raw_id[9:]
 
-        # Попытка извлечь domainId из URI пользователя (keriodb://user/<domain_guid>/<user_guid>)
-        resolved_domain_id = domain_id
-        if not resolved_domain_id and "keriodb://user/" in raw_id:
+        user_guid: Optional[str] = None
+        extracted_domain_guid: Optional[str] = None
+
+        if "keriodb://user/" in raw_id:
             try:
                 parts = raw_id.replace("keriodb://user/", "").split("/")
-                if parts and parts[0]:
-                    resolved_domain_id = f"keriodb://domain/{parts[0]}"
+                if len(parts) >= 2:
+                    extracted_domain_guid = parts[0]
+                    user_guid = parts[1]
+                elif len(parts) == 1:
+                    user_guid = parts[0]
             except Exception:
                 pass
 
-        # Варианты методов и параметров вызова API Kerio Connect
-        candidates = []
+        resolved_domain_id = domain_id
+        if not resolved_domain_id and extracted_domain_guid:
+            resolved_domain_id = f"keriodb://domain/{extracted_domain_guid}"
+
+        domain_guid: Optional[str] = None
         if resolved_domain_id:
-            candidates.append(("Users.remove", {"domainId": resolved_domain_id, "userIds": [raw_id]}))
-            candidates.append(("Users.remove", {"domainId": resolved_domain_id, "ids": [raw_id]}))
-            candidates.append(("Users.remove", {"domainId": resolved_domain_id, "userIdList": [raw_id]}))
-        candidates.append(("Users.remove", {"userIds": [raw_id]}))
-        candidates.append(("Users.remove", {"ids": [raw_id]}))
-        candidates.append(("Users.remove", {"userIdList": [raw_id]}))
+            if "keriodb://domain/" in resolved_domain_id:
+                domain_guid = resolved_domain_id.replace("keriodb://domain/", "").strip("/")
+            else:
+                domain_guid = resolved_domain_id.strip()
+
+        # Варианты идентификаторов пользователя
+        target_ids: List[str] = [raw_id]
+        if user_guid and user_guid != raw_id:
+            target_ids.append(user_guid)
+
+        # Кандидаты вызова API Kerio Connect в порядке убывания приоритета
+        candidates: List[Tuple[str, Dict[str, Any]]] = []
+
+        # 1. Приоритетные вызовы по официальной спецификации IDL: Users.remove(in RemovalRequestList requests)
+        for t_id in target_ids:
+            # 1.1 Полная структура RemovalRequest
+            candidates.append((
+                "Users.remove",
+                {
+                    "requests": [
+                        {
+                            "userId": t_id,
+                            "method": "DeleteFolder",
+                            "mode": "DSModeDelete",
+                            "removeReferences": True,
+                            "targetUserId": "",
+                        }
+                    ]
+                },
+            ))
+            # 1.2 Структура KeepFolder
+            candidates.append((
+                "Users.remove",
+                {
+                    "requests": [
+                        {
+                            "userId": t_id,
+                            "method": "KeepFolder",
+                            "mode": "DSModeDelete",
+                            "removeReferences": True,
+                            "targetUserId": "",
+                        }
+                    ]
+                },
+            ))
+            # 1.3 Упрощенные структуры requests
+            candidates.append((
+                "Users.remove",
+                {
+                    "requests": [
+                        {
+                            "userId": t_id,
+                            "method": "DeleteFolder",
+                            "removeReferences": True,
+                        }
+                    ]
+                },
+            ))
+            candidates.append((
+                "Users.remove",
+                {
+                    "requests": [
+                        {
+                            "userId": t_id,
+                            "removeReferences": True,
+                        }
+                    ]
+                },
+            ))
+            candidates.append((
+                "Users.remove",
+                {
+                    "requests": [
+                        {
+                            "userId": t_id,
+                        }
+                    ]
+                },
+            ))
+
+        # 2. Варианты с domainId на верхнем уровне
         if resolved_domain_id:
-            candidates.append(("Users.removeUserList", {"domainId": resolved_domain_id, "ids": [raw_id]}))
-            candidates.append(("Users.delete", {"domainId": resolved_domain_id, "ids": [raw_id]}))
-        candidates.append(("Users.removeUserList", {"ids": [raw_id]}))
-        candidates.append(("Users.delete", {"ids": [raw_id]}))
+            for t_id in target_ids:
+                candidates.append((
+                    "Users.remove",
+                    {
+                        "domainId": resolved_domain_id,
+                        "requests": [
+                            {
+                                "userId": t_id,
+                                "method": "DeleteFolder",
+                                "mode": "DSModeDelete",
+                                "removeReferences": True,
+                                "targetUserId": "",
+                            }
+                        ],
+                    },
+                ))
+
+        # 3. Fallback: альтернативные форматы ключей (request, userIds, ids)
+        for t_id in target_ids:
+            candidates.append((
+                "Users.remove",
+                {
+                    "request": {
+                        "userId": t_id,
+                        "method": "DeleteFolder",
+                        "mode": "DSModeDelete",
+                        "removeReferences": True,
+                        "targetUserId": "",
+                    }
+                },
+            ))
+            candidates.append((
+                "Users.remove",
+                {
+                    "userIds": [t_id],
+                    "request": {
+                        "method": "DeleteFolder",
+                        "mode": "DSModeDelete",
+                        "removeReferences": True,
+                        "targetUserId": "",
+                    },
+                },
+            ))
+            candidates.append(("Users.remove", {"userIds": [t_id]}))
+            candidates.append(("Users.remove", {"ids": [t_id]}))
 
         last_exc: Optional[Exception] = None
         for method_name, params in candidates:
             try:
-                result = self.client.call(method_name, params=params)
-                logger.warning(f"[KerioAdmin] Пользователь ID '{raw_id}' успешно удален вызовом {method_name}.")
+                result = self.client.call(method_name, params=params, suppress_log=True)
+                # Проверяем, вернул ли сервер массив ошибок внутри result (out ErrorList errors)
+                if isinstance(result, dict) and result.get("errors"):
+                    err_list = result.get("errors", [])
+                    if err_list:
+                        err_msg = "; ".join([str(e.get("message", e)) if isinstance(e, dict) else str(e) for e in err_list])
+                        logger.warning(f"[KerioAdmin] Сервер вернул ошибку при удалении: {err_msg}")
+                        raise KerioAPIError(f"Ошибка удаления пользователя в Kerio Connect: {err_msg}")
+
+                logger.info(f"[KerioAdmin] Пользователь ID '{raw_id}' успешно удален вызовом {method_name}.")
                 return result
             except (KerioAPIError, KerioObjectNotFoundError) as exc:
                 last_exc = exc
                 err_code = getattr(exc, "code", None)
                 err_msg = str(exc)
-                # Если метод не найден или неверные параметры, пробуем следующий кандидат
+                # Если метод не найден (-32601) или неверные параметры (-32602), пробуем следующий вариант
                 if err_code in (-32601, -32602) or "invalid params" in err_msg.lower() or "method not found" in err_msg.lower():
+                    logger.debug(f"[KerioAdmin] Вызов {method_name} с params={params} вернул ошибку [{err_code}]: {err_msg}. Пробуем следующий кандидат.")
                     continue
-                # Иные ошибки (например, permission denied) выбрасываем сразу
+                # Иные критические ошибки (например, permission denied) выбрасываем сразу
                 raise
 
         if last_exc:
+            logger.error(f"[KerioAdmin] Не удалось удалить пользователя '{raw_id}': {last_exc}")
             raise last_exc
         raise KerioAPIError(f"Не удалось удалить пользователя '{raw_id}'.")
+
+

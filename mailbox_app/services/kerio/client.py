@@ -215,6 +215,7 @@ class KerioConnectAdminClient:
         method: str,
         params: Optional[Dict[str, Any]] = None,
         retry_on_expired: bool = True,
+        suppress_log: bool = False,
     ) -> Any:
         """Выполняет вызов произвольного JSON-RPC метода API Kerio Connect.
 
@@ -222,6 +223,7 @@ class KerioConnectAdminClient:
             method (str): Наименование метода API (например, 'Domains.get', 'Users.create').
             params (Optional[Dict[str, Any]]): Словарь параметров метода.
             retry_on_expired (bool): Выполнять ли однократную повторную авторизацию при протухании сессии.
+            suppress_log (bool): Подавлять ли вывод ошибок в лог на уровне ERROR (логировать на уровне DEBUG).
 
         Returns:
             Any: Поле 'result' из успешного ответа Kerio Connect.
@@ -261,13 +263,16 @@ class KerioConnectAdminClient:
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.Timeout as err:
-            logger.error(f"[KerioAdmin] Таймаут вызова метода '{method}': {err}")
+            if not suppress_log:
+                logger.error(f"[KerioAdmin] Таймаут вызова метода '{method}': {err}")
             raise KerioConnectionError(f"Превышен таймаут выполнения запроса к Kerio Connect ({self.timeout}с).") from err
         except requests.exceptions.RequestException as err:
-            logger.error(f"[KerioAdmin] Сетевая ошибка при вызове метода '{method}': {err}")
+            if not suppress_log:
+                logger.error(f"[KerioAdmin] Сетевая ошибка при вызове метода '{method}': {err}")
             raise KerioConnectionError(f"Сетевой сбой при обращении к Kerio Connect: {err}") from err
         except ValueError as err:
-            logger.error(f"[KerioAdmin] Некорректный JSON в ответе метода '{method}': {err}")
+            if not suppress_log:
+                logger.error(f"[KerioAdmin] Некорректный JSON в ответе метода '{method}': {err}")
             raise KerioAPIError(f"Сервер Kerio вернул некорректный ответ при вызове {method}.") from err
 
         if "error" in data and data["error"]:
@@ -290,7 +295,7 @@ class KerioConnectAdminClient:
                 logger.warning(f"[KerioAdmin] Сессия Kerio Connect протухла при вызове {method} ({err_msg}). Повторная авторизация...")
                 self.token = None
                 self.login()
-                return self.call(method, params=params, retry_on_expired=False)
+                return self.call(method, params=params, retry_on_expired=False, suppress_log=suppress_log)
 
             if is_session_expired:
                 raise KerioSessionExpired(err_msg, code=err_code, data=err_obj)
@@ -301,7 +306,10 @@ class KerioConnectAdminClient:
             if "not found" in msg_lower or err_code == -32601:
                 raise KerioObjectNotFoundError(err_msg, code=err_code, data=err_obj)
 
-            logger.error(f"[KerioAdmin] Ошибка API в методе '{method}' (код {err_code}): {err_msg}")
+            if suppress_log:
+                logger.debug(f"[KerioAdmin] Ошибка API в методе '{method}' (код {err_code}): {err_msg}")
+            else:
+                logger.error(f"[KerioAdmin] Ошибка API в методе '{method}' (код {err_code}): {err_msg}")
             raise KerioAPIError(err_msg, code=err_code, data=err_obj)
 
         return data.get("result")
