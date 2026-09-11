@@ -382,6 +382,56 @@ class KerioAdminFormsViewsTestCase(unittest.TestCase):
         self.assertEqual(sorted_users[1]["fullName"], "Борисов Борис")
         self.assertEqual(sorted_users[2]["fullName"], "Яковлев Яков")
 
+    @patch("mailbox_app.views.MailboxDownloadAttachmentsZipView.get_imap_service")
+    @patch("mailbox_app.views.MailboxDownloadAttachmentsZipView.get_account")
+    def test_download_attachments_zip_view(
+        self,
+        mock_get_account: MagicMock,
+        mock_get_imap: MagicMock,
+    ) -> None:
+        """Тест формирования ZIP-архива вложений в представлении MailboxDownloadAttachmentsZipView."""
+        import io
+        import zipfile
+        from mailbox_app.views import MailboxDownloadAttachmentsZipView
+
+        mock_account = MagicMock()
+        mock_get_account.return_value = mock_account
+
+        mock_imap_svc = MagicMock()
+        mock_get_imap.return_value.__enter__.return_value = mock_imap_svc
+
+        # Настраиваем ответ get_message_detail и download_attachment
+        mock_imap_svc.get_message_detail.return_value = {
+            "uid": 105,
+            "subject": "Документы по договору",
+            "attachments": [
+                {"part_index": 1, "filename": "договор.pdf"},
+                {"part_index": 2, "filename": "акт.xlsx"},
+            ],
+        }
+        mock_imap_svc.download_attachment.side_effect = [
+            ("договор.pdf", "application/pdf", b"PDF_CONTENT_DATA"),
+            ("акт.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", b"EXCEL_CONTENT_DATA"),
+        ]
+
+        view = MailboxDownloadAttachmentsZipView()
+        request = MagicMock()
+        request.user.is_authenticated = True
+
+        response = view.get(request, folder="INBOX", uid=105)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/zip")
+        self.assertIn("attachment;", response["Content-Disposition"])
+
+        # Проверяем распаковку сгенерированного ZIP-архива
+        zip_buf = io.BytesIO(response.content)
+        with zipfile.ZipFile(zip_buf, "r") as zf:
+            file_list = zf.namelist()
+            self.assertIn("договор.pdf", file_list)
+            self.assertIn("акт.xlsx", file_list)
+            self.assertEqual(zf.read("договор.pdf"), b"PDF_CONTENT_DATA")
+            self.assertEqual(zf.read("акт.xlsx"), b"EXCEL_CONTENT_DATA")
+
 
 if __name__ == "__main__":
     unittest.main()

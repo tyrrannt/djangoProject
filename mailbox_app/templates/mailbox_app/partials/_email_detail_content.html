@@ -220,9 +220,10 @@
                     <h5 class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-2">
                         <i class="bx bx-paperclip text-primary font-size-18"></i> Вложенные файлы ({{ email.attachments|length }})
                     </h5>
-                    {% if email.attachments|length > 1 %}
+                    {% if email.attachments %}
                         <a href="{% url 'mailbox_app:download_all_attachments_zip' current_folder email.uid %}"
                            class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-none"
+                           download
                            title="Скачать все файлы вложения единым ZIP-архивом">
                             <i class="bx bx-archive-in font-size-16"></i>
                             <span>Скачать все архивом (.zip)</span>

@@ -1307,24 +1307,42 @@ class MailboxDownloadAttachmentsZipView(MailboxBaseMixin, View):
         account = self.get_account()
         try:
             with self.get_imap_service(account) as imap_svc:
-                msg_data = imap_svc.get_message_detail(folder, uid)
+                msg_data = imap_svc.get_message_detail(folder, int(uid))
                 if not msg_data or not msg_data.get("attachments"):
                     messages.warning(request, "В данном сообщении отсутствуют прикрепленные файлы.")
                     return redirect("mailbox_app:email_detail", folder=folder, uid=uid)
 
                 attachments = msg_data["attachments"]
                 buffer = io.BytesIO()
+                files_added = 0
+
                 with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
                     used_filenames = set()
                     for att in attachments:
-                        data = att.get("data")
-                        if not data and att.get("part_index") is not None:
-                            data = imap_svc.download_attachment(folder, uid, att["part_index"])
+                        part_idx = att.get("part_index")
+                        raw_name = att.get("filename") or (
+                            f"attachment_{part_idx}" if part_idx is not None else "attachment"
+                        )
+                        data = None
+
+                        if part_idx is not None:
+                            att_result = imap_svc.download_attachment(folder, int(uid), int(part_idx))
+                            if att_result:
+                                fname_from_part, _, payload_bytes = att_result
+                                data = payload_bytes
+                                if fname_from_part:
+                                    raw_name = fname_from_part
+                        elif att.get("data"):
+                            raw_data = att.get("data")
+                            if isinstance(raw_data, tuple) and len(raw_data) >= 3:
+                                raw_name = raw_data[0] or raw_name
+                                data = raw_data[2]
+                            elif isinstance(raw_data, (bytes, bytearray)):
+                                data = raw_data
 
                         if not data:
                             continue
 
-                        raw_name = att.get("filename") or f"attachment_{att.get('part_index', 1)}"
                         # Предотвращение коллизий одинаковых имен
                         filename = raw_name
                         counter = 1
@@ -1338,17 +1356,25 @@ class MailboxDownloadAttachmentsZipView(MailboxBaseMixin, View):
                         zinfo.date_time = datetime.now().timetuple()[:6]
                         zinfo.compress_type = zipfile.ZIP_DEFLATED
                         zip_file.writestr(zinfo, data)
+                        files_added += 1
+
+                if files_added == 0:
+                    messages.warning(request, "Не удалось извлечь файлы вложений из сообщения.")
+                    return redirect("mailbox_app:email_detail", folder=folder, uid=uid)
 
                 buffer.seek(0)
                 subj_clean = re.sub(r'[\\/*?:"<>|]', "", msg_data.get("subject", "письмо") or "письмо").strip()
+                if not subj_clean:
+                    subj_clean = "письмо"
                 zip_filename = f"Вложения_{subj_clean[:35]}_UID{uid}.zip"
                 safe_encoded = quote(zip_filename)
+                ascii_fallback = f"attachments_UID{uid}.zip"
 
                 response = HttpResponse(buffer.getvalue(), content_type="application/zip")
-                response["Content-Disposition"] = f"attachment; filename*=UTF-8''{safe_encoded}"
+                response["Content-Disposition"] = f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{safe_encoded}'
                 return response
         except Exception as e:
-            logger.error(f"[Mailbox] Ошибка упаковки вложений в ZIP для UID {uid}: {e}")
+            logger.error(f"[Mailbox] Ошибка упаковки вложений в ZIP для UID {uid}: {e}", exc_info=True)
             messages.error(request, f"Не удалось сформировать архив вложений: {e}")
             return redirect("mailbox_app:email_detail", folder=folder, uid=uid)
 
