@@ -98,6 +98,13 @@ class UserManager:
                 except Exception as d_err:
                     logger.warning(f"[UserManager] Не удалось получить пользователей домена '{d.get('name')}': {d_err}")
 
+            all_users.sort(
+                key=lambda u: (
+                    (u.get("fullName") or u.get("loginName") or u.get("email") or "")
+                    .strip()
+                    .casefold()
+                )
+            )
             return {"list": all_users, "totalItems": total or len(all_users)}
 
         params: Dict[str, Any] = {"domainId": domain_id, "query": query}

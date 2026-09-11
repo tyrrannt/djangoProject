@@ -2994,6 +2994,21 @@ class KerioAdminUsersListView(MailboxAdminAccessMixin, View):
             u["django_user"] = django_users_by_email.get(u_email) or django_users_by_email.get(u_login)
             u["mail_account"] = django_mailaccounts_by_email.get(u_email)
 
+        # Алфавитная сортировка пользователей по ФИО / профилю портала / логину / email
+        users_list.sort(
+            key=lambda u: (
+                (
+                    u.get("fullName")
+                    or (u.get("django_user") and u["django_user"].get_full_name())
+                    or u.get("loginName")
+                    or u.get("email")
+                    or ""
+                )
+                .strip()
+                .casefold()
+            )
+        )
+
         active_users_count = sum(1 for u in users_list if u.get("isEnabled", True))
 
         context = self.get_context_data(**kwargs)
@@ -3034,6 +3049,7 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                 "user_work_profile__job__name",
                 "user_work_profile__divisions__name",
             )
+            .order_by("last_name", "first_name", "username")
         )
         from mailbox_app.services.kerio.utils import (
             generate_corporate_mailbox_login,
@@ -3369,6 +3385,14 @@ class KerioAdminPop3ListView(MailboxAdminAccessMixin, View):
 
         try:
             pop3_accounts = service.pop3.get_accounts()
+            # Алфавитная сортировка правил POP3 по получателю в Kerio / внешнему логину
+            pop3_accounts.sort(
+                key=lambda p: (
+                    str(p.get("targetUser") or p.get("userName") or p.get("deliveryAddress") or "")
+                    .strip()
+                    .casefold()
+                )
+            )
         except Exception as err:
             logger.error(f"[KerioAdmin] Ошибка загрузки правил POP3: {err}")
             error_message = f"Не удалось получить список правил «Загрузка POP3» из Kerio Connect: {err}"

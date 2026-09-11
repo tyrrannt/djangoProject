@@ -921,6 +921,41 @@ class SmtpDeliveryManagerTestCase(TestCase):
         self.assertTrue(elena_u["has_smtp_delivery"])
         self.assertTrue(elena_u["is_individual_smtp_delivery"])
 
+    def test_get_users_list_alphabetical_sorting(self) -> None:
+        """Тест сортировки пользователей по алфавиту (по ФИО и логину)."""
+        from mailbox_app.services.kerio.service import KerioAdminService
+
+        mock_client = MagicMock(spec=KerioConnectAdminClient)
+        mock_client.token = "token123"
+
+        def mock_call(method: str, params: dict = None) -> dict:
+            if method == "Domains.get":
+                return {"list": [{"id": "dom_barkol", "name": "barkol.ru"}], "totalItems": 1}
+            if method == "Users.get":
+                return {
+                    "list": [
+                        {"id": "u3", "loginName": "z.zaytsev", "fullName": "Яковлев Яков", "isEnabled": True},
+                        {"id": "u1", "loginName": "b.borisov", "fullName": "Алексеев Алексей", "isEnabled": True},
+                        {"id": "u2", "loginName": "a.andreev", "fullName": "Борисов Борис", "isEnabled": True},
+                    ],
+                    "totalItems": 3,
+                }
+            if method == "Delivery.getPop3AccountList":
+                return {"list": []}
+            if method == "Smtp.get":
+                return {"server": {"delivery": {"customRules": []}}}
+            return {}
+
+        mock_client.call.side_effect = mock_call
+        service = KerioAdminService(client=mock_client)
+        result = service.get_users_list(domain_name="barkol.ru")
+        users = result["list"]
+
+        self.assertEqual(len(users), 3)
+        self.assertEqual(users[0]["fullName"], "Алексеев Алексей")
+        self.assertEqual(users[1]["fullName"], "Борисов Борис")
+        self.assertEqual(users[2]["fullName"], "Яковлев Яков")
+
 
 class ISPmanagerExternalMailProviderTestCase(TestCase):
     """Тестирование адаптера ISPmanagerExternalMailProvider (Reg.ru хостинг)."""

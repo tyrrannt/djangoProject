@@ -267,6 +267,15 @@ class KerioAdminService:
             u_enriched["smtp_delivery_details"] = smtp_rule
             users_list.append(u_enriched)
 
+        # Алфавитная сортировка пользователей по ФИО / логину / email (регистронезависимо)
+        users_list.sort(
+            key=lambda u: (
+                (u.get("fullName") or u.get("loginName") or u.get("email") or "")
+                .strip()
+                .casefold()
+            )
+        )
+
         return {
             "list": users_list,
             "totalItems": raw_users.get("totalItems", len(users_list)),

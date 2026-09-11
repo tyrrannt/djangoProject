@@ -340,6 +340,48 @@ class KerioAdminFormsViewsTestCase(unittest.TestCase):
         self.assertTrue(form.is_valid())
         self.assertTrue(form.cleaned_data["sync_1c"])
 
+    @patch("mailbox_app.views.render")
+    @patch("mailbox_app.views.get_user_model")
+    @patch("mailbox_app.views.KerioAdminService")
+    def test_kerio_users_list_view_alphabetical_sorting(
+        self,
+        mock_service_cls: MagicMock,
+        mock_user_model: MagicMock,
+        mock_render: MagicMock,
+    ) -> None:
+        """Тест сортировки пользователей по алфавиту в представлении KerioAdminUsersListView."""
+        from mailbox_app.views import KerioAdminUsersListView
+
+        mock_service = mock_service_cls.return_value
+        mock_service.get_domains_list.return_value = [{"name": "barkol.ru"}]
+        mock_service.get_users_list.return_value = {
+            "list": [
+                {"id": "u3", "loginName": "z.zaytsev", "fullName": "Яковлев Яков", "isEnabled": True, "email": "z.zaytsev@barkol.ru"},
+                {"id": "u1", "loginName": "b.borisov", "fullName": "Алексеев Алексей", "isEnabled": True, "email": "b.borisov@barkol.ru"},
+                {"id": "u2", "loginName": "a.andreev", "fullName": "Борисов Борис", "isEnabled": True, "email": "a.andreev@barkol.ru"},
+            ],
+            "totalItems": 3,
+        }
+        mock_user_model.return_value.objects.filter.return_value = []
+        mock_render.return_value = MagicMock(status_code=200)
+
+        view = KerioAdminUsersListView()
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.user.is_superuser = True
+        request.GET = {}
+
+        response = view.get(request)
+        self.assertEqual(response.status_code, 200)
+
+        # Проверяем, что в context передан отсортированный список пользователей
+        render_call_args = mock_render.call_args
+        context = render_call_args[0][2]
+        sorted_users = context["users"]
+        self.assertEqual(sorted_users[0]["fullName"], "Алексеев Алексей")
+        self.assertEqual(sorted_users[1]["fullName"], "Борисов Борис")
+        self.assertEqual(sorted_users[2]["fullName"], "Яковлев Яков")
+
 
 if __name__ == "__main__":
     unittest.main()
