@@ -1,7 +1,10 @@
 """Представления (Views) модуля периодического тестирования сотрудников."""
 
-from urllib.parse import quote
+import io
 import json
+from typing import Dict, List, Optional, Any, Tuple
+from urllib.parse import quote
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
@@ -9,6 +12,7 @@ from django.db.models import Q, Count
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
+from django.utils import timezone
 from django.utils.encoding import escape_uri_path
 from django.views import View
 from django.views.generic import (
@@ -58,6 +62,12 @@ from testing_app.services.material_service import (
     get_material_access_report_qs,
     export_material_report_excel,
     export_material_report_csv,
+    check_employee_lecture_readiness,
+    get_employee_event_materials_checklist,
+)
+from testing_app.services.blank_service import (
+    generate_filled_testing_blank_bytes,
+    send_testing_blank_by_email,
 )
 from administration_app.utils import get_client_ip, get_device_info
 from customers_app.models import Affiliation, Job, DataBaseUser, Division
@@ -144,13 +154,36 @@ class TestingIndexView(LoginRequiredMixin, View):
 
 
 class MyTestsView(LoginRequiredMixin, TemplateView):
-    """Кабинет сотрудника: список назначенных и доступных тестирований."""
+    """Кабинет сотрудника: список назначенных и доступных тестирований.
+
+    Отображает назначенные тестирования с детализацией текущей фазы мероприятия
+    (обучение/подготовка или тестирование), чек-листом обязательных материалов
+    и возможностью скачивания/отправки на почту заполненного бланка тестирования.
+    """
 
     template_name = "testing_app/my_tests.html"
 
     def get_context_data(self, **kwargs):
+        """Формирует контекст страницы со списком назначений и чек-листами материалов.
+
+        Returns:
+            Dict[str, Any]: Контекст страницы с ключом 'assignments', где для каждого
+            назначения вычислен чек-лист материалов и признак готовности.
+        """
         context = super().get_context_data(**kwargs)
-        assignments = get_user_assignments(self.request.user)
+        assignments = list(
+            get_user_assignments(self.request.user).prefetch_related(
+                "testing__required_lectures",
+                "testing__required_video_lectures",
+            )
+        )
+
+        for assign in assignments:
+            checklist = get_employee_event_materials_checklist(assign, user=self.request.user)
+            assign.materials_checklist = checklist
+            assign.is_lecture_ready = checklist["is_ready"]
+            assign.missing_materials_count = checklist["missing_count"]
+
         context["assignments"] = assignments
         return context
 
@@ -1059,6 +1092,126 @@ class CertificateVerifyView(LoginRequiredMixin, View):
             "cert_data": cert_data,
             "searched_uuid": certificate_uuid
         })
+
+
+class DownloadTestingBlankView(LoginRequiredMixin, View):
+    """Выгрузка предзаполненного бланка тестирования в формате DOCX.
+
+    Генерирует официальный Word-документ бланка итогового тестирования
+    с автоматической подстановкой ФИО, должности по приказу и даты.
+    Доступно сотруднику с момента начала мероприятия (фаза обучения/подготовки)
+    и ответственному менеджеру.
+    """
+
+    def get(self, request, assignment_id: int, *args, **kwargs) -> HttpResponse:
+        """Обрабатывает запрос на скачивание заполненного бланка.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            assignment_id (int): Идентификатор назначения сотрудника на тестирование.
+
+        Returns:
+            HttpResponse: Поток файла DOCX с заголовком Content-Disposition.
+        """
+        assignment = get_object_or_404(
+            TestingAssignment.objects.select_related("testing", "employee", "group"),
+            pk=assignment_id,
+        )
+
+        is_owner = (assignment.employee == request.user)
+        is_manager = is_testing_manager_user(request.user)
+
+        if not is_owner and not is_manager:
+            messages.error(request, "У вас нет прав для доступа к данному бланку тестирования.")
+            return redirect("testing_app:my_tests")
+
+        # Проверка временной фазы (мероприятие должно быть активно/опубликовано)
+        if not is_manager and assignment.testing.status == Testing.Status.DRAFT:
+            messages.error(request, "Мероприятие находится в статусе черновика.")
+            return redirect("testing_app:my_tests")
+
+        try:
+            docx_bytes = generate_filled_testing_blank_bytes(assignment)
+        except Exception as exc:
+            messages.error(request, f"Ошибка формирования бланка DOCX: {str(exc)}")
+            return redirect("testing_app:my_tests")
+
+        employee_name = f"{assignment.employee.last_name}_{assignment.employee.first_name}"
+        order_num = assignment.testing.order_number or f"id_{assignment.testing_id}"
+        filename = f"Бланк_тестирования_{employee_name}_{order_num}.docx"
+
+        response = HttpResponse(
+            docx_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{escape_uri_path(filename)}"'
+
+        TestingAuditLog.objects.create(
+            user=request.user,
+            action="download_testing_blank",
+            object_repr=f"Скачивание бланка DOCX для назначения #{assignment.id} ({assignment.employee})",
+            details={"assignment_id": assignment.id, "testing_id": assignment.testing_id},
+        )
+        return response
+
+
+class SendTestingBlankEmailView(LoginRequiredMixin, View):
+    """Отправка заполненного бланка тестирования на email сотрудника.
+
+    Формирует DOCX-файл бланка и отправляет его в качестве вложения
+    на электронную почту сотрудника. Поддерживает как стандартный POST-запрос
+    с редиректом, так и асинхронный AJAX-вызов с ответом JSON.
+    """
+
+    def post(self, request, assignment_id: int, *args, **kwargs) -> HttpResponse:
+        """Обрабатывает POST-запрос отправки бланка на почту.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            assignment_id (int): Идентификатор назначения сотрудника на тестирование.
+
+        Returns:
+            HttpResponse: JSON-ответ или редирект с сообщением в messages.
+        """
+        assignment = get_object_or_404(
+            TestingAssignment.objects.select_related("testing", "employee", "group"),
+            pk=assignment_id,
+        )
+
+        is_owner = (assignment.employee == request.user)
+        is_manager = is_testing_manager_user(request.user)
+
+        is_ajax = (
+            request.headers.get("x-requested-with") == "XMLHttpRequest"
+            or request.POST.get("format") == "json"
+            or "application/json" in request.headers.get("Accept", "")
+        )
+
+        if not is_owner and not is_manager:
+            err_msg = "У вас нет прав для отправки данного бланка тестирования."
+            if is_ajax:
+                return JsonResponse({"success": False, "message": err_msg}, status=403)
+            messages.error(request, err_msg)
+            return redirect("testing_app:my_tests")
+
+        success, msg = send_testing_blank_by_email(assignment, user=request.user)
+
+        TestingAuditLog.objects.create(
+            user=request.user,
+            action="email_testing_blank",
+            object_repr=f"Отправка бланка DOCX на email для #{assignment.id} ({assignment.employee}): {'Успех' if success else 'Ошибка'}",
+            details={"assignment_id": assignment.id, "success": success, "message": msg},
+        )
+
+        if is_ajax:
+            return JsonResponse({"success": success, "message": msg})
+
+        if success:
+            messages.success(request, msg)
+        else:
+            messages.error(request, msg)
+
+        return redirect("testing_app:my_tests")
 
 
 # ==============================================================================

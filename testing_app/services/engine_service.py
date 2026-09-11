@@ -47,8 +47,16 @@ def start_or_resume_attempt(assignment: TestingAssignment, user=None) -> Tuple[T
 
     # Проверка статуса мероприятия и временных рамок
     if testing.status != Testing.Status.ACTIVE:
-        if not (testing.start_datetime <= now <= testing.end_datetime):
-            raise ValidationError("Тестирование в данный момент недоступно: мероприятие не активно.")
+        raise ValidationError("Тестирование в данный момент недоступно: мероприятие не активно.")
+
+    if now < testing.start_datetime:
+        formatted_start = timezone.localtime(testing.start_datetime).strftime("%d.%m.%Y в %H:%M")
+        raise ValidationError(
+            f"В данный момент идет этап теоретической подготовки. Тестирование откроется {formatted_start}."
+        )
+
+    if now > testing.end_datetime:
+        raise ValidationError("Срок проведения тестирования по данному мероприятию завершен.")
 
     # Проверка: тест уже успешно сдан
     if assignment.status == TestingAssignment.Status.PASSED:
@@ -64,6 +72,17 @@ def start_or_resume_attempt(assignment: TestingAssignment, user=None) -> Tuple[T
         else:
             # Время вышло, завершаем старую попытку по таймауту
             finish_attempt(active_attempt, reason=TestingAttempt.CompletionReason.TIME_EXPIRED)
+
+    # Проверка ознакомления с обязательными лекциями перед началом новой попытки
+    from testing_app.services.material_service import check_employee_lecture_readiness
+    is_ready, missing_materials = check_employee_lecture_readiness(assignment, user=user)
+    if not is_ready:
+        missing_titles = [m["title"] for m in missing_materials]
+        missing_list_str = ", ".join(f"«{t}»" for t in missing_titles)
+        raise ValidationError(
+            f"Перед прохождением тестирования необходимо обязательно ознакомиться с лекционными материалами мероприятия. "
+            f"Не открыто лекций ({len(missing_materials)}): {missing_list_str}."
+        )
 
     # Проверка лимита попыток
     if assignment.attempts_used >= testing.max_attempts:

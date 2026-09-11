@@ -132,12 +132,30 @@
                     <div class="card-body p-4">
                         <div class="row g-3">
                             <div class="col-sm-6">
-                                <div class="text-muted small">Период начала:</div>
+                                <div class="text-muted small">Начало мероприятия (обучение):</div>
+                                <div class="font-weight-bold text-dark">{{ event.actual_event_start_datetime|date:"d.m.Y H:i" }}</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Период начала тестирования:</div>
                                 <div class="font-weight-bold text-dark">{{ event.start_datetime|date:"d.m.Y H:i" }}</div>
                             </div>
                             <div class="col-sm-6">
-                                <div class="text-muted small">Период окончания:</div>
+                                <div class="text-muted small">Период окончания тестирования:</div>
                                 <div class="font-weight-bold text-dark">{{ event.end_datetime|date:"d.m.Y H:i" }}</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Текущая фаза:</div>
+                                <div>
+                                    {% if event.is_training_active_now %}
+                                        <span class="badge bg-info text-white">Обучение / подготовка</span>
+                                    {% elif event.is_testing_active_now %}
+                                        <span class="badge bg-success">Тестирование открыто</span>
+                                    {% elif event.status == 'completed' %}
+                                        <span class="badge bg-secondary">Завершено</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border">{{ event.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="text-muted small">Количество вопросов:</div>
@@ -154,6 +172,35 @@
                             <div class="col-sm-6">
                                 <div class="text-muted small">Максимально попыток:</div>
                                 <div class="font-weight-bold text-dark">{{ event.max_attempts }} попыток</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="text-muted small mb-1">Обязательные учебные материалы для допуска:</div>
+                                {% with req_lecs=event.required_lectures.all req_vids=event.required_video_lectures.all %}
+                                    {% if req_lecs or req_vids %}
+                                        <div class="d-flex flex-column gap-1">
+                                            {% for lec in req_lecs %}
+                                                <div class="small">
+                                                    <i class="bx bx-file-blank text-primary me-1"></i>
+                                                    <a href="{% url 'testing_app:lecture_detail' lec.id %}" target="_blank" class="text-decoration-none">
+                                                        {{ lec.title }}
+                                                    </a>
+                                                    <span class="badge bg-light text-muted border ms-1">Лекция{% if lec.scan_file %} (PDF){% elif lec.doc_file %} (DOCX){% endif %}</span>
+                                                </div>
+                                            {% endfor %}
+                                            {% for vid in req_vids %}
+                                                <div class="small">
+                                                    <i class="bx bx-video text-danger me-1"></i>
+                                                    <a href="{% url 'testing_app:video_lecture_detail' vid.id %}" target="_blank" class="text-decoration-none">
+                                                        {{ vid.title }}
+                                                    </a>
+                                                    <span class="badge bg-light text-muted border ms-1">Видео</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">Обязательные материалы не назначены (свободный допуск к тесту)</span>
+                                    {% endif %}
+                                {% endwith %}
                             </div>
                             <div class="col-12">
                                 <div class="text-muted small">Описание:</div>

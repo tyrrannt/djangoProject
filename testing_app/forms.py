@@ -99,8 +99,25 @@ class TestingForm(forms.ModelForm):
         ),
         input_formats=["%Y-%m-%d", "%d.%m.%Y"]
     )
+    event_start_datetime = forms.DateTimeField(
+        label="Дата и время начала мероприятия (обучение)",
+        required=False,
+        help_text="С этого момента открывается доступ к учебным материалам и бланку. Если не указано, совпадает с началом тестирования.",
+        widget=forms.DateTimeInput(
+            attrs={"class": "form-control", "type": "datetime-local"},
+            format="%Y-%m-%dT%H:%M"
+        ),
+        input_formats=[
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%d.%m.%Y %H:%M",
+        ]
+    )
     start_datetime = forms.DateTimeField(
         label="Дата и время начала тестирования",
+        help_text="С этого момента сотрудникам открывается возможность сдачи теста (после ознакомления с лекциями).",
         widget=forms.DateTimeInput(
             attrs={"class": "form-control", "type": "datetime-local"},
             format="%Y-%m-%dT%H:%M"
@@ -127,6 +144,20 @@ class TestingForm(forms.ModelForm):
             "%d.%m.%Y %H:%M",
         ]
     )
+    required_lectures = forms.ModelMultipleChoiceField(
+        label="Обязательные лекционные материалы",
+        queryset=LectureMaterial.objects.filter(is_actual=True).order_by("title"),
+        required=False,
+        help_text="Отметьте лекции, с которыми сотрудники обязаны ознакомиться перед тестированием",
+        widget=forms.SelectMultiple(attrs={"class": "form-control form-select select2-multiple", "size": "6"}),
+    )
+    required_video_lectures = forms.ModelMultipleChoiceField(
+        label="Обязательные видеолекции (опционально)",
+        queryset=VideoLecture.objects.filter(is_actual=True).order_by("title"),
+        required=False,
+        help_text="Опционально: видеоматериалы для изучения перед тестированием",
+        widget=forms.SelectMultiple(attrs={"class": "form-control form-select select2-multiple", "size": "4"}),
+    )
 
     class Meta:
         model = Testing
@@ -136,8 +167,11 @@ class TestingForm(forms.ModelForm):
             "order_date",
             "order_name",
             "description",
+            "event_start_datetime",
             "start_datetime",
             "end_datetime",
+            "required_lectures",
+            "required_video_lectures",
             "questions_count",
             "passing_score_percentage",
             "max_attempts",
@@ -161,6 +195,9 @@ class TestingForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             if self.instance.order_date:
                 self.initial["order_date"] = self.instance.order_date.strftime("%Y-%m-%d")
+            if self.instance.event_start_datetime:
+                local_event_start = timezone.localtime(self.instance.event_start_datetime)
+                self.initial["event_start_datetime"] = local_event_start.strftime("%Y-%m-%dT%H:%M")
             if self.instance.start_datetime:
                 local_start = timezone.localtime(self.instance.start_datetime)
                 self.initial["start_datetime"] = local_start.strftime("%Y-%m-%dT%H:%M")
@@ -170,10 +207,14 @@ class TestingForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        event_start = cleaned_data.get("event_start_datetime")
         start = cleaned_data.get("start_datetime")
         end = cleaned_data.get("end_datetime")
+
+        if event_start and start and event_start > start:
+            self.add_error("event_start_datetime", "Дата начала мероприятия (обучение) не может быть позже даты начала тестирования.")
         if start and end and start >= end:
-            self.add_error("end_datetime", "Дата и время окончания должны быть строго позже даты начала.")
+            self.add_error("end_datetime", "Дата и время окончания тестирования должны быть строго позже даты начала.")
         return cleaned_data
 
 

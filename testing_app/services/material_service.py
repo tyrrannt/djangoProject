@@ -2,12 +2,13 @@
 
 import csv
 import io
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
 
 from django.conf import settings
 from django.db import models, transaction
 from django.db.models import F, Q, Sum, Count
+from django.urls import reverse
 from django.utils import timezone
 
 import openpyxl
@@ -387,3 +388,111 @@ def export_material_report_csv(queryset: models.QuerySet) -> str:
         ])
 
     return output.getvalue()
+
+
+def get_employee_event_materials_checklist(
+    assignment,
+    user=None,
+) -> Dict[str, Any]:
+    """Формирует подробный чек-лист обязательных материалов мероприятия с признаком ознакомления.
+
+    Args:
+        assignment (TestingAssignment): Назначение сотрудника на тестирование.
+        user (Optional[DataBaseUser]): Пользователь (по умолчанию assignment.employee).
+
+    Returns:
+        Dict[str, Any]: Словарь с полями:
+            - 'items': Список словарей материалов с полями id, type, type_display, title, url, is_viewed, etc.;
+            - 'total_count': Общее число обязательных материалов;
+            - 'viewed_count': Количество изученных материалов;
+            - 'missing_items': Список неизученных материалов;
+            - 'missing_count': Количество оставшихся для изучения материалов;
+            - 'is_ready': Булев флаг готовности (все материалы открыты).
+    """
+    target_user = user or assignment.employee
+    testing = assignment.testing
+    starting_datetime = testing.actual_event_start_datetime
+
+    items: List[Dict[str, Any]] = []
+
+    # Текстовые лекции
+    required_lectures = list(testing.required_lectures.filter(is_actual=True))
+    if required_lectures:
+        viewed_lec_ids = set(
+            MaterialViewLog.objects.filter(
+                user=target_user,
+                lecture__in=required_lectures,
+                last_viewed_at__gte=starting_datetime,
+            ).values_list("lecture_id", flat=True)
+        )
+        for lec in required_lectures:
+            is_viewed = lec.id in viewed_lec_ids
+            file_format = "PDF" if lec.scan_file else ("DOCX" if lec.doc_file else "Материал")
+            items.append({
+                "id": lec.id,
+                "type": "lecture",
+                "type_display": "Лекция",
+                "title": lec.title,
+                "file_format": file_format,
+                "url": reverse("testing_app:lecture_detail", kwargs={"pk": lec.pk}),
+                "is_viewed": is_viewed,
+            })
+
+    # Видеолекции
+    required_videos = list(testing.required_video_lectures.filter(is_actual=True))
+    if required_videos:
+        viewed_vid_ids = set(
+            MaterialViewLog.objects.filter(
+                user=target_user,
+                video_lecture__in=required_videos,
+                last_viewed_at__gte=starting_datetime,
+            ).values_list("video_lecture_id", flat=True)
+        )
+        for vid in required_videos:
+            is_viewed = vid.id in viewed_vid_ids
+            items.append({
+                "id": vid.id,
+                "type": "video",
+                "type_display": "Видео",
+                "title": vid.title,
+                "url": reverse("testing_app:video_lecture_detail", kwargs={"pk": vid.pk}),
+                "is_viewed": is_viewed,
+            })
+
+    total_count = len(items)
+    missing_items = [i for i in items if not i["is_viewed"]]
+    viewed_count = total_count - len(missing_items)
+    is_ready = len(missing_items) == 0
+
+    return {
+        "items": items,
+        "total_count": total_count,
+        "viewed_count": viewed_count,
+        "missing_items": missing_items,
+        "missing_count": len(missing_items),
+        "is_ready": is_ready,
+    }
+
+
+def check_employee_lecture_readiness(
+    assignment,
+    user=None,
+) -> Tuple[bool, List[Dict[str, Any]]]:
+    """Проверяет факт ознакомления сотрудника со всеми обязательными материалами мероприятия.
+
+    Сотрудник должен хотя бы один раз с момента начала мероприятия (event_start_datetime)
+    открыть каждую из обязательных лекций (LectureMaterial) и видеолекций (VideoLecture).
+
+    Args:
+        assignment (TestingAssignment): Назначение сотрудника на тестирование.
+        user (Optional[User]): Пользователь (по умолчанию assignment.employee).
+
+    Returns:
+        Tuple[bool, List[Dict[str, Any]]]:
+            - is_ready (bool): True, если все обязательные материалы открыты.
+            - missing_materials (List[Dict[str, Any]]): Список неознакомленных материалов
+              со структурой: [{"type": "lecture"|"video", "id": int, "title": str, "url": str}].
+    """
+    checklist = get_employee_event_materials_checklist(assignment, user=user)
+    return checklist["is_ready"], checklist["missing_items"]
+

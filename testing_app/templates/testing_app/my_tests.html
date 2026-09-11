@@ -49,10 +49,39 @@
             </div>
             <div class="card-body p-4 d-flex flex-column justify-content-between">
                 <div>
+                    <!-- Сведения о приказе -->
                     <div class="small text-muted mb-2">
                         <i class="bx bx-news me-1"></i>Приказ №{{ assign.testing.order_number }} от {{ assign.testing.order_date|date:"d.m.Y" }}
                     </div>
 
+                    <!-- Информационный баннер текущей фазы мероприятия -->
+                    {% if assign.testing.is_training_active_now %}
+                        <div class="alert alert-info py-2 px-3 mb-3 small d-flex align-items-center gap-2">
+                            <i class="bx bx-book-reader fs-3 text-info flex-shrink-0"></i>
+                            <div>
+                                <strong class="d-block text-dark">Фаза обучения и подготовки:</strong>
+                                <span>Ознакомьтесь с обязательными лекциями и скачайте бланк. Тестирование откроется <strong>{{ assign.testing.start_datetime|date:"d.m.Y в H:i" }}</strong>.</span>
+                            </div>
+                        </div>
+                    {% elif assign.testing.is_testing_active_now %}
+                        <div class="alert alert-success-subtle border border-success-subtle py-2 px-3 mb-3 small d-flex align-items-center gap-2">
+                            <i class="bx bx-time-five fs-3 text-success flex-shrink-0"></i>
+                            <div>
+                                <strong class="d-block text-success">Тестирование открыто:</strong>
+                                <span>Сдача теста доступна до <strong>{{ assign.testing.end_datetime|date:"d.m.Y в H:i" }}</strong>.</span>
+                            </div>
+                        </div>
+                    {% elif assign.testing.status == 'completed' %}
+                        <div class="alert alert-secondary py-2 px-3 mb-3 small d-flex align-items-center gap-2">
+                            <i class="bx bx-lock-alt fs-3 flex-shrink-0"></i>
+                            <div>
+                                <strong class="d-block">Мероприятие завершено:</strong>
+                                <span>Прием ответов и сдача тестирования окончены {{ assign.testing.end_datetime|date:"d.m.Y H:i" }}.</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Параметры назначения -->
                     <div class="p-3 bg-light rounded border mb-3">
                         <div class="row g-2 small">
                             <div class="col-sm-6">
@@ -74,13 +103,84 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <!-- Блок: Экзаменационный бланк (DOCX) -->
+                    <div class="card bg-light-subtle border border-dashed rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <div class="font-weight-bold text-dark small">
+                                <i class="bx bx-file text-primary me-1"></i> Бланк итогового тестирования АТП
+                            </div>
+                            <span class="badge bg-light text-muted border">Автозаполнение ФИО и даты</span>
+                        </div>
+                        <p class="text-muted small mb-2">
+                            Официальный бланк с предзаполненными данными сотрудника (ФИО, должность, дата приказа).
+                        </p>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{% url 'testing_app:download_blank' assign.id %}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                                <i class="bx bx-download"></i> Скачать бланк (DOCX)
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm btn-send-blank-email" data-assign-id="{{ assign.id }}">
+                                <i class="bx bx-envelope"></i> <span>Отправить мне на email</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Блок: Обязательные учебные материалы для допуска -->
+                    {% if assign.materials_checklist.total_count > 0 %}
+                    <div class="card border rounded p-3 mb-3 {% if assign.is_lecture_ready %}border-success-subtle bg-success-subtle{% else %}border-warning-subtle bg-warning-subtle{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+                            <div class="font-weight-bold small text-dark">
+                                <i class="bx bx-book-bookmark text-primary me-1"></i> Обязательные материалы ({{ assign.materials_checklist.viewed_count }} из {{ assign.materials_checklist.total_count }})
+                            </div>
+                            <div>
+                                {% if assign.is_lecture_ready %}
+                                    <span class="badge bg-success text-white small"><i class="bx bx-check me-1"></i>Все изучены (допуск открыт)</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark small"><i class="bx bx-error me-1"></i>Не изучено: {{ assign.missing_materials_count }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <ul class="list-unstyled mb-0 small">
+                            {% for mat in assign.materials_checklist.items %}
+                            <li class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                <div class="text-truncate me-2">
+                                    {% if mat.type == 'lecture' %}
+                                        <i class="bx bx-file-blank text-secondary me-1"></i>
+                                    {% else %}
+                                        <i class="bx bx-video text-danger me-1"></i>
+                                    {% endif %}
+                                    <a href="{{ mat.url }}" target="_blank" class="text-decoration-none {% if mat.is_viewed %}text-dark{% else %}text-primary font-weight-bold{% endif %}">
+                                        {{ mat.title }}
+                                    </a>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    {% if mat.is_viewed %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bx bx-check"></i> Ознакомлен</span>
+                                    {% else %}
+                                        <a href="{{ mat.url }}" target="_blank" class="btn btn-xs btn-outline-warning py-0 px-2 font-weight-bold">
+                                            Открыть <i class="bx bx-link-external"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% if not assign.is_lecture_ready %}
+                            <div class="text-danger small mt-2">
+                                <i class="bx bx-info-circle me-1"></i>Для допуска к тестированию откройте все неизученные материалы выше.
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Попытки сотрудника -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="small text-muted">Использовано попыток:</span>
                         <span class="font-weight-bold text-dark">{{ assign.attempts_used }} из {{ assign.testing.max_attempts }}</span>
                     </div>
 
-                    <!-- Прогресс попыток -->
-                    <div class="progress mb-4" style="height: 8px;">
+                    <!-- Прогресс-бар попыток -->
+                    <div class="progress mb-3" style="height: 8px;">
                         <div class="progress-bar {% if assign.status == 'passed' %}bg-success{% elif assign.attempts_used >= assign.testing.max_attempts %}bg-danger{% else %}bg-primary{% endif %}"
                              role="progressbar"
                              style="width: {% widthratio assign.attempts_used assign.testing.max_attempts 100 %}%;">
@@ -114,6 +214,7 @@
                     {% endif %}
                 </div>
 
+                <!-- Блок действий (кнопка старта теста) -->
                 <div class="pt-2 border-top">
                     {% if assign.status == 'passed' %}
                         <div class="d-flex justify-content-between align-items-center">
@@ -127,6 +228,52 @@
                                     </a>
                                 {% endif %}
                             {% endwith %}
+                        </div>
+                    {% elif assign.testing.is_training_active_now %}
+                        <button type="button" class="btn btn-secondary w-100 shadow-sm d-flex align-items-center justify-content-center gap-2" disabled>
+                            <i class="bx bx-time fs-4"></i>
+                            <span>Тестирование начнется {{ assign.testing.start_datetime|date:"d.m.Y H:i" }}</span>
+                        </button>
+                    {% elif not assign.is_lecture_ready and assign.materials_checklist.total_count > 0 %}
+                        <button type="button" class="btn btn-warning w-100 shadow-sm d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#unreadModal_{{ assign.id }}">
+                            <i class="bx bx-lock-alt fs-4"></i>
+                            <span>Ознакомьтесь с лекциями (осталось {{ assign.missing_materials_count }})</span>
+                        </button>
+
+                        <!-- Модальное окно предупреждения о неизученных лекциях -->
+                        <div class="modal fade" id="unreadModal_{{ assign.id }}" tabindex="-1" aria-labelledby="unreadModalLabel_{{ assign.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-warning text-dark">
+                                        <h5 class="modal-title font-weight-bold" id="unreadModalLabel_{{ assign.id }}">
+                                            <i class="bx bx-error me-1"></i> Требуется изучение материалов
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                                    </div>
+                                    <div class="modal-body p-4">
+                                        <p class="text-dark mb-3">
+                                            Согласно регламенту проверки знаний, перед началом тестирования сотрудник обязан ознакомиться со всеми лекционными материалами мероприятия.
+                                        </p>
+                                        <div class="font-weight-bold text-dark small mb-2">Необходимо открыть следующие материалы:</div>
+                                        <ul class="list-group list-group-flush border rounded mb-3">
+                                            {% for m in assign.materials_checklist.missing_items %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span class="text-truncate me-2">{{ m.title }}</span>
+                                                    <a href="{{ m.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                                        Изучить <i class="bx bx-link-external"></i>
+                                                    </a>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                        <div class="alert alert-info py-2 small mb-0">
+                                            <i class="bx bx-info-circle me-1"></i> После открытия всех материалов страница обновит статус и кнопка старта станет активна.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Понятно</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     {% elif assign.attempts_used < assign.testing.max_attempts %}
                         <form method="post" action="{% url 'testing_app:start_attempt' assign.id %}">
@@ -163,4 +310,49 @@
     </div>
     {% endfor %}
 </div>
+
+<!-- Скрипт отправки бланка на email -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailButtons = document.querySelectorAll('.btn-send-blank-email');
+    emailButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const assignId = this.getAttribute('data-assign-id');
+            const originalContent = this.innerHTML;
+            
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Отправка...';
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
+
+            fetch(`/testing/assignment/${assignId}/blank/email/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({'format': 'json'})
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.disabled = false;
+                this.innerHTML = originalContent;
+                if (data.success) {
+                    alert(data.message || 'Бланк успешно отправлен на вашу электронную почту.');
+                } else {
+                    alert('Ошибка: ' + (data.message || 'Не удалось отправить письмо.'));
+                }
+            })
+            .catch(err => {
+                this.disabled = false;
+                this.innerHTML = originalContent;
+                alert('Произошла сетевая ошибка при отправке запроса.');
+            });
+        });
+    });
+});
+</script>
 {% endblock %}
+

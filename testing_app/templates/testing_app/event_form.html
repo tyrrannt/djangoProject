@@ -76,21 +76,51 @@
                     <i class="bx bx-time-five text-primary me-1"></i> Сроки проведения проверки знаний
                 </h5>
                 <div class="row g-3 mb-3">
-                    <div class="col-md-6 col-12">
-                        <label class="form-label font-weight-semibold text-dark">Дата и время начала тестирования:</label>
+                    <div class="col-md-4 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Начало мероприятия (обучение):</label>
+                        {{ form.event_start_datetime }}
+                        {% if form.event_start_datetime.errors %}<div class="text-danger small mt-1">{{ form.event_start_datetime.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">С этого момента доступно изучение лекций и скачивание бланка.</div>
+                    </div>
+                    <div class="col-md-4 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Начало тестирования:</label>
                         {{ form.start_datetime }}
                         {% if form.start_datetime.errors %}<div class="text-danger small mt-1">{{ form.start_datetime.errors.0 }}</div>{% endif %}
-                        <div class="form-text text-muted">До наступления этого времени сотрудники не смогут начать тест.</div>
+                        <div class="form-text text-muted">До наступления этого времени сдача теста заблокирована.</div>
                     </div>
-                    <div class="col-md-6 col-12">
-                        <label class="form-label font-weight-semibold text-dark">Дата и время окончания тестирования:</label>
+                    <div class="col-md-4 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Окончание тестирования:</label>
                         {{ form.end_datetime }}
                         {% if form.end_datetime.errors %}<div class="text-danger small mt-1">{{ form.end_datetime.errors.0 }}</div>{% endif %}
-                        <div class="form-text text-muted">После наступления дедлайна создание новых попыток блокируется.</div>
+                        <div class="form-text text-muted">После дедлайна сдача теста и новые попытки блокируются.</div>
                     </div>
                 </div>
 
-                <!-- 3. Параметры теста -->
+                <!-- 3. Обязательные учебные материалы для допуска -->
+                <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3 mt-4">
+                    <i class="bx bx-book-reader text-primary me-1"></i> Обязательные учебные материалы для допуска
+                </h5>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Обязательные лекционные материалы:</label>
+                        {{ form.required_lectures }}
+                        {% if form.required_lectures.errors %}<div class="text-danger small mt-1">{{ form.required_lectures.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">Удерживайте Ctrl (Cmd на Mac) для выбора нескольких лекций.</div>
+                    </div>
+                    <div class="col-md-6 col-12">
+                        <label class="form-label font-weight-semibold text-dark">Обязательные видеолекции (опционально):</label>
+                        {{ form.required_video_lectures }}
+                        {% if form.required_video_lectures.errors %}<div class="text-danger small mt-1">{{ form.required_video_lectures.errors.0 }}</div>{% endif %}
+                        <div class="form-text text-muted">Удерживайте Ctrl (Cmd на Mac) для выбора нескольких видеолекций.</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-info py-2 small mb-0">
+                            <i class="bx bx-info-circle me-1"></i> Сотрудники получат допуск к сдаче тестирования только после того, как ознакомятся со всеми выбранными материалами с момента старта мероприятия.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Параметры теста -->
                 <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3 mt-4">
                     <i class="bx bx-slider-alt text-primary me-1"></i> Параметры тестирования
                 </h5>

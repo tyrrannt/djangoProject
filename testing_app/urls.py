@@ -37,6 +37,8 @@ urlpatterns = [
 
     # Движок тестирования и прохождение теста (Этап 4)
     path("assignment/<int:assignment_id>/start/", views.StartTestAttemptView.as_view(), name="start_attempt"),
+    path("assignment/<int:assignment_id>/blank/download/", views.DownloadTestingBlankView.as_view(), name="download_blank"),
+    path("assignment/<int:assignment_id>/blank/email/", views.SendTestingBlankEmailView.as_view(), name="send_blank_email"),
     path("attempt/<int:attempt_id>/", views.TestSessionView.as_view(), name="test_session"),
     path("attempt/<int:attempt_id>/save-answer/", views.SaveDraftAnswerAjaxView.as_view(), name="save_draft_answer"),
     path("attempt/<int:attempt_id>/finish/", views.FinishTestAttemptView.as_view(), name="finish_attempt"),

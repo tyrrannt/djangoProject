@@ -256,11 +256,32 @@ class Testing(models.Model):
         default="",
         verbose_name="Описание мероприятия"
     )
+    event_start_datetime = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Дата и время начала мероприятия (обучение)",
+        help_text="С этого момента начинается теоретическая подготовка сотрудников, открывается доступ к лекциям и бланку"
+    )
     start_datetime = models.DateTimeField(
-        verbose_name="Дата и время начала"
+        verbose_name="Дата и время начала тестирования",
+        help_text="С этого момента открывается возможность запуска попыток сдачи теста"
     )
     end_datetime = models.DateTimeField(
-        verbose_name="Дата и время окончания"
+        verbose_name="Дата и время окончания тестирования"
+    )
+    required_lectures = models.ManyToManyField(
+        "LectureMaterial",
+        blank=True,
+        related_name="required_in_testings",
+        verbose_name="Обязательные лекции",
+        help_text="Список лекций, с которыми сотрудники должны ознакомиться перед тестированием"
+    )
+    required_video_lectures = models.ManyToManyField(
+        "VideoLecture",
+        blank=True,
+        related_name="required_in_testings",
+        verbose_name="Обязательные видеолекции (опционально)",
+        help_text="Видеоматериалы, рекомендованные или обязательные к просмотру"
     )
     questions_count = models.PositiveIntegerField(
         default=20,
@@ -319,10 +340,42 @@ class Testing(models.Model):
         return f"{self.title} (Приказ №{self.order_number} от {self.order_date.strftime('%d.%m.%Y')})"
 
     @property
-    def is_active_now(self) -> bool:
-        """Проверяет, активно ли мероприятие в данный момент по времени и статусу."""
+    def actual_event_start_datetime(self):
+        """Возвращает фактическую дату начала мероприятия/обучения (с fallback на start_datetime)."""
+        return self.event_start_datetime or self.start_datetime
+
+    @property
+    def is_training_active_now(self) -> bool:
+        """Проверяет, идет ли сейчас этап теоретической подготовки/обучения."""
         now = timezone.now()
-        return self.status == self.Status.ACTIVE and self.start_datetime <= now <= self.end_datetime
+        return self.status == self.Status.ACTIVE and (self.actual_event_start_datetime <= now < self.start_datetime)
+
+    @property
+    def is_testing_active_now(self) -> bool:
+        """Проверяет, идет ли сейчас этап сдачи тестирования."""
+        now = timezone.now()
+        return self.status == self.Status.ACTIVE and (self.start_datetime <= now <= self.end_datetime)
+
+    @property
+    def is_active_now(self) -> bool:
+        """Проверяет, активно ли мероприятие в данный момент (период обучения или период тестирования)."""
+        now = timezone.now()
+        return self.status == self.Status.ACTIVE and self.actual_event_start_datetime <= now <= self.end_datetime
+
+    def get_current_phase(self) -> str:
+        """Определяет текущую фазу мероприятия: 'not_started', 'training', 'testing', 'completed'.
+
+        Returns:
+            str: Код фазы ('not_started', 'training', 'testing', 'completed').
+        """
+        now = timezone.now()
+        if now < self.actual_event_start_datetime:
+            return "not_started"
+        if self.actual_event_start_datetime <= now < self.start_datetime:
+            return "training"
+        if self.start_datetime <= now <= self.end_datetime:
+            return "testing"
+        return "completed"
 
     def check_readiness(self) -> List[str]:
         """Проверяет критерии готовности мероприятия к запуску согласно разделу 85 ТЗ.
@@ -337,8 +390,10 @@ class Testing(models.Model):
             errors.append("Не указан номер приказа.")
         if not self.order_date:
             errors.append("Не указана дата приказа.")
+        if self.event_start_datetime and self.event_start_datetime > self.start_datetime:
+            errors.append("Дата начала мероприятия (обучение) не может быть позже даты начала тестирования.")
         if self.start_datetime >= self.end_datetime:
-            errors.append("Дата начала должна быть строго раньше даты окончания.")
+            errors.append("Дата начала тестирования должна быть строго раньше даты окончания.")
         if self.questions_count <= 0:
             errors.append("Количество вопросов должно быть больше нуля.")
         if not (1 <= self.passing_score_percentage <= 100):
