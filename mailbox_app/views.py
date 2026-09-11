@@ -3171,6 +3171,7 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             create_django = form.cleaned_data.get("create_django_account", True)
             save_email_to_user = form.cleaned_data.get("save_email_to_user", True)
             sync_1c = form.cleaned_data.get("sync_1c", True)
+            isp_password = form.cleaned_data.get("isp_password") or None
 
             if not full_name and link_user:
                 full_name = getattr(link_user, "title", "") or link_user.get_full_name() or link_user.username
@@ -3195,6 +3196,7 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                     external_smtp_port=ext_smtp_port,
                     save_email_to_user=save_email_to_user,
                     sync_1c=sync_1c,
+                    isp_password=isp_password,
                 )
                 full_email = f"{login_name}@{domain_name}"
                 extra_notes = []
@@ -3607,6 +3609,45 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
                 return JsonResponse(res)
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка синхронизации с 1С/порталом: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "change_isp_password":
+            login_name = data.get("login_name", "").strip()
+            new_password = data.get("new_password", "").strip()
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            if not login_name or not new_password:
+                return JsonResponse({"success": False, "message": "Логин и новый пароль ISP обязательны."}, status=400)
+            try:
+                res = service.change_user_isp_password(
+                    login_name=login_name,
+                    new_password=new_password,
+                    domain_name=domain_name,
+                )
+                return JsonResponse({
+                    "success": True,
+                    "message": f"Пароль ISPManager и Доставки SMTP для '{login_name}' успешно обновлен!",
+                    "details": res,
+                })
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка смены пароля ISPManager: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "batch_change_isp_passwords":
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            logins = data.get("logins")
+            explicit_password = data.get("explicit_password", "").strip() or None
+            generate_passwords_raw = data.get("generate_passwords", True)
+            generate_passwords = generate_passwords_raw in (True, "true", "True", "1", 1)
+            try:
+                res = service.batch_change_isp_passwords(
+                    logins_or_emails=logins,
+                    domain_name=domain_name,
+                    explicit_password=explicit_password,
+                    generate_passwords=generate_passwords,
+                )
+                return JsonResponse(res)
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка пакетной смены паролей ISPManager: {err}", exc_info=True)
                 return JsonResponse({"success": False, "message": str(err)}, status=500)
 
         return JsonResponse({"success": False, "message": f"Неизвестное действие: '{action}'"}, status=400)

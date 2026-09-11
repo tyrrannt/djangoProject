@@ -616,7 +616,7 @@ class KerioUserProvisionForm(forms.Form):
         help_text="Корпоративный домен (по умолчанию barkol.ru)",
     )
     password = forms.CharField(
-        label="Пароль учетной записи",
+        label="Пароль учетной записи (Kerio Connect / Портал)",
         widget=forms.PasswordInput(
             attrs={
                 "class": "form-control font-monospace",
@@ -626,16 +626,41 @@ class KerioUserProvisionForm(forms.Form):
                 "autocomplete": "new-password",
             }
         ),
-        help_text="Единый пароль для внешнего сервера, Kerio Connect и корпоративного почтового клиента",
+        help_text="Основной пароль для входа в Kerio Connect, веб-почту и корпоративный почтовый клиент (work_email_password)",
     )
     confirm_password = forms.CharField(
-        label="Подтверждение пароля",
+        label="Подтверждение основного пароля",
         widget=forms.PasswordInput(
             attrs={
                 "class": "form-control font-monospace",
                 "placeholder": "Повторите введенный пароль...",
                 "id": "id_kerio_confirm_password",
                 "required": True,
+                "autocomplete": "new-password",
+            }
+        ),
+    )
+    isp_password = forms.CharField(
+        label="Внешний пароль ISPManager / Доставка SMTP",
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control font-monospace",
+                "placeholder": "Оставьте пустым для совпадения с основным паролем...",
+                "id": "id_kerio_isp_password",
+                "autocomplete": "new-password",
+            }
+        ),
+        help_text="Пароль внешнего ящика ISPManager (Reg.ru) и авторизации «Доставка SMTP» / «Загрузка POP3» (work_application_password). Если не указан, совпадает с основным.",
+    )
+    confirm_isp_password = forms.CharField(
+        label="Подтверждение внешнего пароля ISPManager",
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control font-monospace",
+                "placeholder": "Повторите внешний пароль ISP...",
+                "id": "id_kerio_confirm_isp_password",
                 "autocomplete": "new-password",
             }
         ),
@@ -867,7 +892,13 @@ class KerioUserProvisionForm(forms.Form):
         pwd_confirm = cleaned_data.get("confirm_password")
 
         if pwd and pwd_confirm and pwd != pwd_confirm:
-            self.add_error("confirm_password", "Введенные пароли не совпадают.")
+            self.add_error("confirm_password", "Введенные основные пароли не совпадают.")
+
+        isp_pwd = cleaned_data.get("isp_password")
+        isp_pwd_confirm = cleaned_data.get("confirm_isp_password")
+
+        if isp_pwd and isp_pwd_confirm and isp_pwd != isp_pwd_confirm:
+            self.add_error("confirm_isp_password", "Введенные внешние пароли ISPManager не совпадают.")
 
         return cleaned_data
 
@@ -978,5 +1009,49 @@ class KerioUserPasswordResetForm(forms.Form):
         pwd_confirm = cleaned_data.get("confirm_password")
         if pwd and pwd_confirm and pwd != pwd_confirm:
             self.add_error("confirm_password", "Введенные пароли не совпадают.")
+        return cleaned_data
+
+
+class KerioUserIspPasswordResetForm(forms.Form):
+    """Форма смены и сброса внешнего пароля ISPManager / Доставка SMTP (work_application_password)."""
+
+    new_isp_password = forms.CharField(
+        label="Новый пароль ISPManager / Доставка SMTP",
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control font-monospace",
+                "placeholder": "Введите новый внешний пароль ISP...",
+                "required": True,
+                "autocomplete": "new-password",
+            }
+        ),
+        help_text="Синхронно обновится на сервере ISPManager (Reg.ru), в правилах «Доставка SMTP» / «Загрузка POP3» и в профиле сотрудника.",
+    )
+    confirm_isp_password = forms.CharField(
+        label="Подтверждение нового внешнего пароля",
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control font-monospace",
+                "placeholder": "Повторите новый внешний пароль...",
+                "required": True,
+                "autocomplete": "new-password",
+            }
+        ),
+    )
+
+    def clean(self) -> Dict[str, Any]:
+        """Проверяет совпадение нового внешнего пароля ISPManager и подтверждения.
+
+        Returns:
+            Dict[str, Any]: Очищенные валидированные данные.
+
+        Raises:
+            forms.ValidationError: Если пароли не совпадают.
+        """
+        cleaned_data = super().clean()
+        pwd = cleaned_data.get("new_isp_password")
+        pwd_confirm = cleaned_data.get("confirm_isp_password")
+        if pwd and pwd_confirm and pwd != pwd_confirm:
+            self.add_error("confirm_isp_password", "Введенные внешние пароли ISPManager не совпадают.")
         return cleaned_data
 

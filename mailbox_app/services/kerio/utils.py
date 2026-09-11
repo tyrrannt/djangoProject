@@ -1,7 +1,34 @@
 """Вспомогательные утилиты транслитерации и генерации логинов корпоративной почты BARKOL."""
 
 import re
+import secrets
+import string
 from typing import Any, List, Optional, Set, Tuple
+
+
+def generate_random_password(length: int = 16) -> str:
+    """Генерирует надежный случайный ASCII-пароль для почтовых учетных записей.
+
+    Гарантирует наличие строчных и прописных латинских букв, цифр и безопасных спецсимволов.
+
+    Args:
+        length (int): Длина пароля (по умолчанию 16).
+
+    Returns:
+        str: Сгенерированный пароль.
+    """
+    specials = "!@#$%^&*()-_=+"
+    alphabet = string.ascii_letters + string.digits + specials
+    while True:
+        pwd = "".join(secrets.choice(alphabet) for _ in range(max(8, length)))
+        if (
+            any(c.islower() for c in pwd)
+            and any(c.isupper() for c in pwd)
+            and any(c.isdigit() for c in pwd)
+            and any(c in specials for c in pwd)
+        ):
+            return pwd
+
 
 
 # Таблица транслитерации русского алфавита в латиницу по стандарту BARKOL / ГОСТ

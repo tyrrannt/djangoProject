@@ -232,6 +232,34 @@
                                     </div>
 
                                     <div class="col-12 col-md-6">
+                                        <label for="{{ form.isp_password.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.isp_password.label }}
+                                        </label>
+                                        <div class="input-group">
+                                            {{ form.isp_password }}
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_kerio_isp_password')" title="Показать/скрыть">
+                                                <i class="bx bx-show" id="id_kerio_isp_passwordIcon"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" type="button" onclick="generateAndSetIspPasswords()" title="Сгенерировать отдельный надежный пароль для ISP">
+                                                <i class="bx bx-refresh"></i> <span class="d-none d-sm-inline">Сгенерировать</span>
+                                            </button>
+                                        </div>
+                                        <small class="form-help-contrast d-block mt-1">{{ form.isp_password.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.confirm_isp_password.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.confirm_isp_password.label }}
+                                        </label>
+                                        <div class="input-group">
+                                            {{ form.confirm_isp_password }}
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_kerio_confirm_isp_password')" title="Показать/скрыть">
+                                                <i class="bx bx-show" id="id_kerio_confirm_isp_passwordIcon"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
                                         <label for="{{ form.full_name.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.full_name.label }}
                                         </label>
@@ -594,6 +622,28 @@
                 p2.value = password;
                 p2.type = 'text';
                 var icon2 = document.getElementById('id_kerio_confirm_passwordIcon');
+                if (icon2) icon2.className = 'bx bx-hide';
+            }
+        }
+
+        function generateAndSetIspPasswords() {
+            var chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*";
+            var password = "";
+            for (var i = 0; i < 16; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            var p1 = document.getElementById('id_kerio_isp_password');
+            var p2 = document.getElementById('id_kerio_confirm_isp_password');
+            if (p1) {
+                p1.value = password;
+                p1.type = 'text';
+                var icon1 = document.getElementById('id_kerio_isp_passwordIcon');
+                if (icon1) icon1.className = 'bx bx-hide';
+            }
+            if (p2) {
+                p2.value = password;
+                p2.type = 'text';
+                var icon2 = document.getElementById('id_kerio_confirm_isp_passwordIcon');
                 if (icon2) icon2.className = 'bx bx-hide';
             }
         }

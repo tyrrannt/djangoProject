@@ -1030,7 +1030,8 @@ class ISPmanagerExternalMailProviderTestCase(TestCase):
         mock_post.reset_mock()
         pwd_res = provider.change_password("i.ivanov@barkol.ru", "NewPass456!")
         self.assertTrue(pwd_res)
-        self.assertEqual(mock_post.call_args[1]["data"]["elid"], "i.ivanov@barkol.ru")
+        self.assertEqual(mock_post.call_args[1]["data"]["elid"], "i.ivanov")
+        self.assertEqual(mock_post.call_args[1]["data"]["plid"], "barkol.ru")
         self.assertEqual(mock_post.call_args[1]["data"]["domainname"], "barkol.ru")
         self.assertEqual(mock_post.call_args[1]["data"]["passwd"], "NewPass456!")
         self.assertEqual(mock_post.call_args[1]["data"]["confirm"], "NewPass456!")
@@ -1042,7 +1043,8 @@ class ISPmanagerExternalMailProviderTestCase(TestCase):
         del_res = provider.delete_mailbox("i.ivanov@barkol.ru")
         self.assertTrue(del_res)
         self.assertEqual(mock_post.call_args[1]["data"]["func"], "email.delete")
-        self.assertEqual(mock_post.call_args[1]["data"]["elid"], "i.ivanov@barkol.ru")
+        self.assertEqual(mock_post.call_args[1]["data"]["elid"], "i.ivanov")
+        self.assertEqual(mock_post.call_args[1]["data"]["plid"], "barkol.ru")
 
     @patch("mailbox_app.services.kerio.external_provider.requests.post")
     def test_provider_diagnostics_and_queries(self, mock_post: MagicMock) -> None:

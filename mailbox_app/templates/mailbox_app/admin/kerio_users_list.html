@@ -206,6 +206,12 @@
                                 <span id="btnSyncAuditText">Проверить статус (Kerio ↔ ISPmanager)</span>
                             </button>
 
+                            <!-- Кнопка пакетной смены паролей ISPManager / Доставка SMTP -->
+                            <button type="button" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="openBatchChangeIspPasswordModal()" id="btnBatchIspPassword" title="Пакетная смена паролей на внешнем сервере ISPManager и в правилах «Доставка SMTP» / «Загрузка POP3» Kerio Connect">
+                                <i class="bx bx-shield-quarter font-size-16"></i>
+                                <span>Пакетная смена паролей ISP / SMTP</span>
+                            </button>
+
                             <a href="{% url 'mailbox_app:kerio_admin_user_create' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
                                 <i class="bx bx-user-plus font-size-16"></i> <span>Создать ящик сотрудника</span>
                             </a>
@@ -372,11 +378,16 @@
                                                 </div>
                                             </td>
                                              <td class="text-end pe-3 text-nowrap">
-                                                <div class="btn-group btn-group-sm" role="group" aria-label="Действия над пользователем">
+                                                 <div class="btn-group btn-group-sm" role="group" aria-label="Действия над пользователем">
                                                     <button type="button" class="btn btn-outline-secondary py-1 px-2 shadow-none"
                                                             onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')"
-                                                            title="Сменить пароль">
+                                                            title="Сменить пароль Kerio Connect / Веб-почта">
                                                         <i class="bx bx-key text-warning font-size-15"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-warning py-1 px-2 shadow-none"
+                                                            onclick="openChangeIspPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')"
+                                                            title="Сменить пароль ISPManager / Доставка SMTP (work_application_password)">
+                                                        <i class="bx bx-lock-alt text-warning font-size-15"></i>
                                                     </button>
                                                     <button type="button" class="btn btn-outline-info py-1 px-2 shadow-none"
                                                             onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}')"
@@ -465,8 +476,12 @@
                                     </div>
                                      <div class="d-flex align-items-center gap-1">
                                         <button class="btn btn-outline-secondary btn-sm py-1 px-2"
-                                                onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')" title="Сменить пароль">
+                                                onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')" title="Сменить пароль Kerio Connect">
                                             <i class="bx bx-key text-warning font-size-16"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm py-1 px-2"
+                                                onclick="openChangeIspPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')" title="Сменить пароль ISPManager / Доставка SMTP">
+                                            <i class="bx bx-lock-alt text-warning font-size-16"></i>
                                         </button>
                                         <button class="btn btn-outline-info btn-sm py-1 px-2"
                                                 onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}')"
@@ -546,6 +561,180 @@
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
                     <button type="button" class="btn btn-primary btn-sm" id="btnSubmitResetPassword" onclick="submitPasswordReset()">
                         <i class="bx bx-check me-1"></i> Сохранить пароль
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно смены внешнего пароля ISPManager / Доставка SMTP -->
+    <div class="modal fade" id="changeIspPasswordModal" tabindex="-1" aria-labelledby="changeIspPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light py-3 px-4">
+                    <h5 class="modal-title font-size-16 fw-bold d-flex align-items-center gap-2" id="changeIspPasswordModalLabel">
+                        <i class="bx bx-lock-alt text-warning font-size-20"></i> Смена пароля ISPManager / Доставка SMTP
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
+                        <i class="bx bx-info-circle font-size-18 flex-shrink-0"></i>
+                        <span>Пароль будет синхронно изменен на внешнем сервере ISPManager (Reg.ru), в правиле «Доставка SMTP» Kerio, в сборщике «Загрузка POP3» и сохранен в профиле сотрудника (<code>work_application_password</code>).</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label font-size-13 fw-semibold">Пользователь / Email</label>
+                        <input type="text" class="form-control font-monospace bg-light" id="modalChangeIspUserLogin" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label font-size-13 fw-semibold">Новый внешний пароль ISP</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control font-monospace" id="modalChangeIspNewPassword" placeholder="Введите новый пароль ISP...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('modalChangeIspNewPassword')" title="Показать/скрыть">
+                                <i class="bx bx-show" id="modalChangeIspNewPasswordIcon"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" type="button" onclick="generateRandomPassword('modalChangeIspNewPassword')" title="Сгенерировать надежный пароль">
+                                <i class="bx bx-refresh"></i> <span class="d-none d-sm-inline">Сгенерировать</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="modalChangeIspDomain" value="barkol.ru">
+                    <div id="changeIspPasswordError" class="alert alert-danger py-2 px-3 d-none font-size-12"></div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-warning btn-sm fw-semibold" id="btnSubmitChangeIspPassword" onclick="submitChangeIspPassword()">
+                        <i class="bx bx-check me-1"></i> Сохранить пароль ISP
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно пакетной смены паролей ISPManager / Доставка SMTP -->
+    <div class="modal fade" id="batchChangeIspPasswordModal" tabindex="-1" aria-labelledby="batchChangeIspPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-warning text-dark py-3 px-4">
+                    <h5 class="modal-title font-size-16 fw-bold d-flex align-items-center gap-2" id="batchChangeIspPasswordModalLabel">
+                        <i class="bx bx-shield-quarter font-size-22"></i> Пакетная смена паролей ISPManager / Доставка SMTP
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="alert alert-info py-2 px-3 mb-3 font-size-12 d-flex align-items-center gap-2">
+                        <i class="bx bx-info-circle font-size-20 flex-shrink-0"></i>
+                        <div>
+                            <strong>Что делает эта операция:</strong>
+                            <div class="mt-1">Для всех выбранных пользователей одновременно меняет пароль на хостинге ISPManager (Reg.ru), обновляет пароль в Kerio Connect «Доставка SMTP» (SMTP AUTH), в правиле «Загрузка POP3» и сохраняет новый пароль в профиле каждого сотрудника (<code>work_application_password</code>).</div>
+                        </div>
+                    </div>
+
+                    <div id="batchFormSection">
+                        <div class="card border mb-3">
+                            <div class="card-body p-3">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label font-size-13 fw-semibold">Целевой домен</label>
+                                        <select class="form-select form-select-sm" id="batchIspDomainSelect">
+                                            {% for d in domains %}
+                                                <option value="{{ d }}" {% if current_domain == d or forloop.first %}selected{% endif %}>@{{ d }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label font-size-13 fw-semibold">Режим генерации паролей</label>
+                                        <select class="form-select form-select-sm" id="batchIspModeSelect" onchange="toggleBatchPasswordMode(this.value)">
+                                            <option value="generate" selected>Сгенерировать уникальные случайные пароли (16 символов)</option>
+                                            <option value="explicit">Задать один общий пароль для всех</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 d-none" id="batchExplicitPassGroup">
+                                        <label class="form-label font-size-13 fw-semibold">Общий пароль для всех выбранных ящиков</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="password" class="form-control font-monospace" id="batchExplicitPassword" placeholder="Введите общий пароль...">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('batchExplicitPassword')" title="Показать/скрыть">
+                                                <i class="bx bx-show" id="batchExplicitPasswordIcon"></i>
+                                            </button>
+                                            <button class="btn btn-outline-primary" type="button" onclick="generateRandomPassword('batchExplicitPassword')" title="Сгенерировать">
+                                                <i class="bx bx-refresh"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border mb-3">
+                            <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center">
+                                <span class="font-size-13 fw-bold text-dark">Выбор учетных записей (всего: <span id="batchSelectedCount">{{ users|length }}</span>)</span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-link btn-sm p-0 font-size-12 text-primary" onclick="toggleAllBatchUsers(true)">Выбрать все</button>
+                                    <span class="text-muted">|</span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 font-size-12 text-secondary" onclick="toggleAllBatchUsers(false)">Снять выбор</button>
+                                </div>
+                            </div>
+                            <div class="card-body p-2" style="max-height: 220px; overflow-y: auto;">
+                                <div class="row g-2">
+                                    {% for u in users %}
+                                        <div class="col-12 col-md-6">
+                                            <div class="form-check font-size-12">
+                                                <input class="form-check-input batch-user-checkbox" type="checkbox" value="{{ u.loginName }}" id="chkBatchUser_{{ u.loginName }}" checked onchange="updateBatchSelectedCount()">
+                                                <label class="form-check-label font-monospace" for="chkBatchUser_{{ u.loginName }}">
+                                                    {{ u.loginName }} <span class="text-muted font-sans-serif">({{ u.fullName|default:u.loginName }})</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Блок прогресса / выполнения -->
+                    <div id="batchProgressSection" class="d-none text-center py-4">
+                        <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="visually-hidden">Выполнение...</span>
+                        </div>
+                        <h5 class="fw-bold text-dark">Выполняется пакетная смена паролей...</h5>
+                        <p class="text-muted font-size-13">Пожалуйста, не закрывайте страницу до завершения синхронизации.</p>
+                    </div>
+
+                    <!-- Блок результатов -->
+                    <div id="batchResultsSection" class="d-none">
+                        <div class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center justify-content-between font-size-13" id="batchSuccessSummary">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-check-circle font-size-22"></i>
+                                <span id="batchResultsSummaryText">Операция успешно завершена!</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-dark" onclick="copyBatchResultsToClipboard()">
+                                <i class="bx bx-copy me-1"></i> Скопировать отчет с паролями
+                            </button>
+                        </div>
+                        <div class="table-responsive bg-white rounded border" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0 font-size-12">
+                                <thead class="table-light">
+                                    <tr>
+                                       <th>Логин / Email</th>
+                                       <th>Новый пароль ISP</th>
+                                       <th>ISPManager</th>
+                                       <th>SMTP Relay</th>
+                                       <th>POP3</th>
+                                       <th>Профиль</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batchResultsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn btn-warning btn-sm fw-bold" id="btnRunBatchChangeIsp" onclick="submitBatchChangeIspPasswords()">
+                        <i class="bx bx-play-circle me-1"></i> Запустить смену паролей
                     </button>
                 </div>
             </div>
@@ -902,6 +1091,236 @@
                     errBox.innerText = "Сетевая ошибка при смене пароля: " + err;
                     errBox.classList.remove("d-none");
                 }
+            });
+        }
+
+        // Модальное окно смены внешнего пароля ISPManager / Доставка SMTP
+        function openChangeIspPasswordModal(loginName, fullName, domain) {
+            var inputUser = document.getElementById("modalChangeIspUserLogin");
+            if (inputUser) {
+                inputUser.value = fullName ? (fullName + " (" + loginName + ")") : loginName;
+                inputUser.setAttribute("data-raw-login", loginName);
+            }
+            var inputDomain = document.getElementById("modalChangeIspDomain");
+            if (inputDomain) {
+                inputDomain.value = domain || "barkol.ru";
+            }
+            var inputPass = document.getElementById("modalChangeIspNewPassword");
+            if (inputPass) {
+                inputPass.value = "";
+            }
+            var errBox = document.getElementById("changeIspPasswordError");
+            if (errBox) {
+                errBox.classList.add("d-none");
+            }
+            showKerioModal("changeIspPasswordModal");
+        }
+
+        function submitChangeIspPassword() {
+            var inputUser = document.getElementById("modalChangeIspUserLogin");
+            var rawLogin = inputUser ? inputUser.getAttribute("data-raw-login") : "";
+            var newPass = document.getElementById("modalChangeIspNewPassword") ? document.getElementById("modalChangeIspNewPassword").value.trim() : "";
+            var domain = document.getElementById("modalChangeIspDomain") ? document.getElementById("modalChangeIspDomain").value : "barkol.ru";
+            var errBox = document.getElementById("changeIspPasswordError");
+            var btn = document.getElementById("btnSubmitChangeIspPassword");
+
+            if (!newPass) {
+                if (errBox) {
+                    errBox.innerText = "Пожалуйста, введите или сгенерируйте пароль.";
+                    errBox.classList.remove("d-none");
+                }
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Сохранение...';
+            }
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "change_isp_password",
+                    login_name: rawLogin,
+                    new_password: newPass,
+                    domain_name: domain
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль ISP';
+                }
+                if (data.success) {
+                    hideKerioModal("changeIspPasswordModal");
+                    alert("Пароль ISPManager и Доставки SMTP для '" + rawLogin + "' успешно обновлен!");
+                } else {
+                    if (errBox) {
+                        errBox.innerText = data.message || "Ошибка обновления пароля";
+                        errBox.classList.remove("d-none");
+                    }
+                }
+            })
+            .catch(function(err) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-check me-1"></i> Сохранить пароль ISP';
+                }
+                if (errBox) {
+                    errBox.innerText = "Сетевая ошибка при смене пароля ISP.";
+                    errBox.classList.remove("d-none");
+                }
+            });
+        }
+
+        // Модальное окно пакетной смены паролей ISP / SMTP
+        function openBatchChangeIspPasswordModal() {
+            var formSection = document.getElementById("batchFormSection");
+            var progSection = document.getElementById("batchProgressSection");
+            var resSection = document.getElementById("batchResultsSection");
+            var btnRun = document.getElementById("btnRunBatchChangeIsp");
+
+            if (formSection) formSection.classList.remove("d-none");
+            if (progSection) progSection.classList.add("d-none");
+            if (resSection) resSection.classList.add("d-none");
+            if (btnRun) {
+                btnRun.disabled = false;
+                btnRun.classList.remove("d-none");
+            }
+            updateBatchSelectedCount();
+            showKerioModal("batchChangeIspPasswordModal");
+        }
+
+        function toggleBatchPasswordMode(val) {
+            var group = document.getElementById("batchExplicitPassGroup");
+            if (group) {
+                if (val === "explicit") {
+                    group.classList.remove("d-none");
+                } else {
+                    group.classList.add("d-none");
+                }
+            }
+        }
+
+        function toggleAllBatchUsers(checked) {
+            var boxes = document.querySelectorAll(".batch-user-checkbox");
+            boxes.forEach(function(b) { b.checked = checked; });
+            updateBatchSelectedCount();
+        }
+
+        function updateBatchSelectedCount() {
+            var checked = document.querySelectorAll(".batch-user-checkbox:checked");
+            var countEl = document.getElementById("batchSelectedCount");
+            if (countEl) countEl.innerText = checked.length;
+        }
+
+        var _lastBatchResults = [];
+
+        function submitBatchChangeIspPasswords() {
+            var checkedBoxes = document.querySelectorAll(".batch-user-checkbox:checked");
+            var logins = [];
+            checkedBoxes.forEach(function(b) { logins.push(b.value); });
+
+            if (logins.length === 0) {
+                alert("Пожалуйста, выберите хотя бы одного пользователя.");
+                return;
+            }
+
+            var domain = document.getElementById("batchIspDomainSelect") ? document.getElementById("batchIspDomainSelect").value : "barkol.ru";
+            var mode = document.getElementById("batchIspModeSelect") ? document.getElementById("batchIspModeSelect").value : "generate";
+            var explicitPass = document.getElementById("batchExplicitPassword") ? document.getElementById("batchExplicitPassword").value.trim() : "";
+
+            if (mode === "explicit" && !explicitPass) {
+                alert("Пожалуйста, введите общий пароль или выберите режим автоматической генерации.");
+                return;
+            }
+
+            if (!confirm("Вы действительно хотите сменить пароли ISPManager и Доставки SMTP для " + logins.length + " пользователей?")) {
+                return;
+            }
+
+            var formSection = document.getElementById("batchFormSection");
+            var progSection = document.getElementById("batchProgressSection");
+            var resSection = document.getElementById("batchResultsSection");
+            var btnRun = document.getElementById("btnRunBatchChangeIsp");
+
+            if (formSection) formSection.classList.add("d-none");
+            if (progSection) progSection.classList.remove("d-none");
+            if (resSection) resSection.classList.add("d-none");
+            if (btnRun) btnRun.disabled = true;
+
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "batch_change_isp_passwords",
+                    domain_name: domain,
+                    logins: logins,
+                    generate_passwords: mode === "generate",
+                    explicit_password: explicitPass
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (progSection) progSection.classList.add("d-none");
+                if (resSection) resSection.classList.remove("d-none");
+                if (btnRun) btnRun.classList.add("d-none");
+
+                _lastBatchResults = data.results || [];
+
+                var summaryText = document.getElementById("batchResultsSummaryText");
+                if (summaryText) {
+                    summaryText.innerText = data.message || "Пакетная смена завершена.";
+                }
+
+                var tbody = document.getElementById("batchResultsTableBody");
+                if (tbody) {
+                    tbody.innerHTML = "";
+                    _lastBatchResults.forEach(function(item) {
+                        var tr = document.createElement("tr");
+                        var steps = item.steps || {};
+                        var ispBadge = steps.external_server === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-warning text-dark">' + (steps.external_server || '—') + '</span>';
+                        var smtpBadge = steps.kerio_smtp_delivery === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-warning text-dark">' + (steps.kerio_smtp_delivery || '—') + '</span>';
+                        var pop3Badge = steps.kerio_pop3_download === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-light text-dark">' + (steps.kerio_pop3_download || '—') + '</span>';
+                        var profBadge = (steps.user_work_profile && steps.user_work_profile.indexOf('updated') !== -1) ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-light text-dark">' + (steps.user_work_profile || '—') + '</span>';
+
+                        tr.innerHTML = '<td><strong>' + item.login + '</strong><br><small class="text-muted">' + item.email + '</small></td>' +
+                                       '<td><code class="user-select-all fw-bold text-dark font-monospace">' + (item.new_password || '—') + '</code></td>' +
+                                       '<td>' + ispBadge + '</td>' +
+                                       '<td>' + smtpBadge + '</td>' +
+                                       '<td>' + pop3Badge + '</td>' +
+                                       '<td>' + profBadge + '</td>';
+                        tbody.appendChild(tr);
+                    });
+                }
+            })
+            .catch(function(err) {
+                if (progSection) progSection.classList.add("d-none");
+                if (formSection) formSection.classList.remove("d-none");
+                if (btnRun) btnRun.disabled = false;
+                alert("Сетевая ошибка при выполнении пакетной смены паролей: " + err);
+            });
+        }
+
+        function copyBatchResultsToClipboard() {
+            if (!_lastBatchResults || _lastBatchResults.length === 0) return;
+            var lines = ["ЛОГИН\tEMAIL\tНОВЫЙ_ПАРОЛЬ_ISP\tСТАТУС"];
+            _lastBatchResults.forEach(function(item) {
+                lines.push(item.login + "\t" + item.email + "\t" + item.new_password + "\t" + (item.success ? "УСПЕХ" : "ОШИБКА"));
+            });
+            var text = lines.join("\n");
+            navigator.clipboard.writeText(text).then(function() {
+                alert("Таблица с новыми паролями сотрудников скопирована в буфер обмена!");
+            }).catch(function() {
+                alert("Не удалось скопировать. Пожалуйста, выделите текст в таблице вручную.");
             });
         }
 

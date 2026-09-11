@@ -462,6 +462,7 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
         Передает поля `domainname` и `plid` (для явного указания домена в мультидоменном аккаунте),
         `passwd` и `confirm` (стандарт ISPmanager), `maxsize` (дисковая квота в МБ),
         а также алиасы `domain`, `password` и `passwd_confirm` для совместимости со всеми версиями ISPmanager 5 и 6.
+        Если ящик уже существует на сервере (ошибка дублирования записи), автоматически актуализирует его пароль.
 
         Args:
             email (str): Полный email адрес ящика (например, i.ivanov@barkol.ru).
@@ -538,7 +539,26 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
                     "details": res,
                 }
             else:
-                err_msg = res.get("error", "Неизвестная ошибка ISPmanager")
+                err_msg = str(res.get("error", "Неизвестная ошибка ISPmanager"))
+                # Если ящик уже существует на сервере Reg.ru (дублирование записи в таблице mailbox),
+                # автоматически актуализируем пароль существующего ящика
+                if (
+                    "unable to paste into the table" in err_msg.lower()
+                    or "already exists" in err_msg.lower()
+                    or "существует" in err_msg.lower()
+                    or "duplicate" in err_msg.lower()
+                ):
+                    logger.info(f"[ISPmanagerExternalMailProvider] Ящик {clean_email} уже существует в ISPmanager, актуализируем пароль...")
+                    if self.change_password(clean_email, password):
+                        return {
+                            "success": True,
+                            "provider": "ispmanager",
+                            "email": clean_email,
+                            "domain": domain,
+                            "status": "existing_updated",
+                            "message": f"Почтовый ящик {clean_email} уже существовал в ISPmanager, пароль успешно актуализирован.",
+                        }
+
                 logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка создания ящика {clean_email}: {err_msg}")
                 return {
                     "success": False,
@@ -607,6 +627,11 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
     def change_password(self, email: str, new_password: str) -> bool:
         """Изменяет пароль почтового ящика в ISPmanager (`func=email.edit`).
 
+        Использует многоуровневый перебор вариантов параметров идентификации ящика
+        (`elid=name` с `plid=domain`, `elid=email`, `elid=name`), обеспечивая полную совместимость
+        со всеми версиями ISPmanager 5 и 6 и предотвращая ошибку дублирования записи
+        (Unable to paste into the table 'mailbox').
+
         Args:
             email (str): Email адрес сотрудника.
             new_password (str): Новый пароль.
@@ -629,35 +654,122 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
             )
             return False
 
-        params: Dict[str, Any] = {
+        # Вариант 1: Доменный контекст ISPmanager 5/6 (elid = имя ящика 'it-head', plid = домен 'barkol.ru')
+        params1: Dict[str, Any] = {
             "sok": "ok",
-            "elid": clean_email,
+            "elid": name,
             "name": name,
-            "domainname": domain,
-            "domain": domain,
             "plid": domain,
+            "domain": domain,
+            "domainname": domain,
             "passwd": new_password,
             "password": new_password,
             "confirm": new_password,
             "passwd_confirm": new_password,
         }
-
         try:
-            res = self._call_api("email.edit", params=params)
-            if res.get("success"):
-                logger.info(f"[ISPmanagerExternalMailProvider] Пароль для '{clean_email}' успешно изменен на Reg.ru!")
+            res1 = self._call_api("email.edit", params=params1)
+            if res1.get("success"):
+                logger.info(
+                    f"[ISPmanagerExternalMailProvider] Пароль для '{clean_email}' успешно изменен на Reg.ru "
+                    f"(стратегия 1: elid={name}, plid={domain})!"
+                )
                 return True
-            logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка смены пароля для '{clean_email}': {res.get('error')}")
-            return False
-        except Exception as exc:
-            logger.warning(f"[ISPmanagerExternalMailProvider] Исключение при смене пароля ящика '{clean_email}': {exc}")
-            return False
+            logger.debug(
+                f"[ISPmanagerExternalMailProvider] Попытка 1 смены пароля для '{clean_email}' "
+                f"(elid={name}, plid={domain}) вернула: {res1.get('error')}"
+            )
+        except Exception as exc1:
+            logger.debug(f"[ISPmanagerExternalMailProvider] Исключение попытки 1 смены пароля для '{clean_email}': {exc1}")
+
+        # Вариант 2: Глобальный контекст без plid (elid = полный email 'it-head@barkol.ru')
+        params2: Dict[str, Any] = {
+            "sok": "ok",
+            "elid": clean_email,
+            "passwd": new_password,
+            "password": new_password,
+            "confirm": new_password,
+            "passwd_confirm": new_password,
+        }
+        try:
+            res2 = self._call_api("email.edit", params=params2)
+            if res2.get("success"):
+                logger.info(
+                    f"[ISPmanagerExternalMailProvider] Пароль для '{clean_email}' успешно изменен на Reg.ru "
+                    f"(стратегия 2: elid={clean_email})!"
+                )
+                return True
+            logger.debug(f"[ISPmanagerExternalMailProvider] Попытка 2 смены пароля для '{clean_email}' вернула: {res2.get('error')}")
+        except Exception as exc2:
+            logger.debug(f"[ISPmanagerExternalMailProvider] Исключение попытки 2 смены пароля для '{clean_email}': {exc2}")
+
+        # Вариант 3: Имя ящика без plid (elid = name 'it-head')
+        params3: Dict[str, Any] = {
+            "sok": "ok",
+            "elid": name,
+            "passwd": new_password,
+            "password": new_password,
+            "confirm": new_password,
+            "passwd_confirm": new_password,
+        }
+        try:
+            res3 = self._call_api("email.edit", params=params3)
+            if res3.get("success"):
+                logger.info(
+                    f"[ISPmanagerExternalMailProvider] Пароль для '{clean_email}' успешно изменен на Reg.ru "
+                    f"(стратегия 3: elid={name})!"
+                )
+                return True
+            logger.debug(f"[ISPmanagerExternalMailProvider] Попытка 3 смены пароля для '{clean_email}' вернула: {res3.get('error')}")
+        except Exception as exc3:
+            logger.debug(f"[ISPmanagerExternalMailProvider] Исключение попытки 3 смены пароля для '{clean_email}': {exc3}")
+
+        # Вариант 4: elid = email с plid = domain
+        params4: Dict[str, Any] = {
+            "sok": "ok",
+            "elid": clean_email,
+            "plid": domain,
+            "domain": domain,
+            "domainname": domain,
+            "name": name,
+            "passwd": new_password,
+            "password": new_password,
+            "confirm": new_password,
+            "passwd_confirm": new_password,
+        }
+        last_err = "Не удалось обновить пароль ящика"
+        try:
+            res4 = self._call_api("email.edit", params=params4)
+            if res4.get("success"):
+                logger.info(
+                    f"[ISPmanagerExternalMailProvider] Пароль для '{clean_email}' успешно изменен на Reg.ru "
+                    f"(стратегия 4: elid={clean_email}, plid={domain})!"
+                )
+                return True
+            last_err = str(res4.get("error") or res1.get("error") or "Не удалось обновить пароль ящика")
+        except Exception as exc4:
+            last_err = str(exc4)
+            logger.debug(f"[ISPmanagerExternalMailProvider] Исключение попытки 4 смены пароля для '{clean_email}': {exc4}")
+
+        # Если ящик отсутствовал на внешнем сервере ISPmanager, пробуем автоматически создать его с новым паролем
+        try:
+            if not self.check_mailbox_exists(clean_email):
+                logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{clean_email}' не найден на Reg.ru, выполняем автоматическое создание...")
+                create_res = self.create_mailbox(clean_email, new_password)
+                if create_res.get("success"):
+                    logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{clean_email}' успешно создан на Reg.ru с новым паролем!")
+                    return True
+        except Exception as exc_create:
+            logger.debug(f"[ISPmanagerExternalMailProvider] Попытка автосоздания ящика '{clean_email}' не удалась: {exc_create}")
+
+        logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка смены пароля для '{clean_email}' после всех попыток: {last_err}")
+        return False
 
     def delete_mailbox(self, email: str) -> bool:
         """Удаляет почтовый ящик в ISPmanager (`func=email.delete`).
 
-        Поддерживает поочередный перебор формата идентификатора ящика (полный email и имя аккаунта)
-        с привязкой к родительскому домену `plid` / `domainname`.
+        Поддерживает поочередный перебор формата идентификатора ящика (имя ящика с привязкой
+        к родительскому домену `plid` / `domainname`, полный email) для совместимости со всеми версиями ISPmanager.
 
         Args:
             email (str): Email адрес удаляемого ящика.
@@ -674,26 +786,8 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
         name = parts[0]
         domain = parts[1] if len(parts) > 1 else "barkol.ru"
 
-        # Вариант 1: elid = полный email (например, user@barkol.ru)
-        params: Dict[str, Any] = {
-            "sok": "ok",
-            "elid": clean_email,
-            "name": name,
-            "domainname": domain,
-            "domain": domain,
-            "plid": domain,
-        }
-
-        try:
-            res = self._call_api("email.delete", params=params)
-            if res.get("success"):
-                logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{clean_email}' успешно удален из ISPmanager.")
-                return True
-        except Exception as e1:
-            logger.debug(f"[ISPmanagerExternalMailProvider] Попытка 1 удаления '{clean_email}' не удалась: {e1}")
-
-        # Вариант 2: elid = имя ящика (например, user) с plid = barkol.ru
-        params_fallback: Dict[str, Any] = {
+        # Вариант 1: elid = имя ящика (например, user) с plid = barkol.ru (стандарт ISPmanager)
+        params1: Dict[str, Any] = {
             "sok": "ok",
             "elid": name,
             "name": name,
@@ -701,13 +795,42 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
             "domain": domain,
             "plid": domain,
         }
-
         try:
-            res = self._call_api("email.delete", params=params_fallback)
-            if res.get("success"):
+            res1 = self._call_api("email.delete", params=params1)
+            if res1.get("success"):
                 logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{name}' (домен {domain}) успешно удален из ISPmanager.")
                 return True
-            logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка удаления ящика '{clean_email}': {res.get('error')}")
+        except Exception as e1:
+            logger.debug(f"[ISPmanagerExternalMailProvider] Попытка 1 удаления '{clean_email}' не удалась: {e1}")
+
+        # Вариант 2: elid = полный email (например, user@barkol.ru)
+        params2: Dict[str, Any] = {
+            "sok": "ok",
+            "elid": clean_email,
+            "name": name,
+            "domainname": domain,
+            "domain": domain,
+            "plid": domain,
+        }
+        try:
+            res2 = self._call_api("email.delete", params=params2)
+            if res2.get("success"):
+                logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{clean_email}' успешно удален из ISPmanager.")
+                return True
+        except Exception as e2:
+            logger.debug(f"[ISPmanagerExternalMailProvider] Попытка 2 удаления '{clean_email}' не удалась: {e2}")
+
+        # Вариант 3: elid = clean_email без plid
+        params3: Dict[str, Any] = {
+            "sok": "ok",
+            "elid": clean_email,
+        }
+        try:
+            res3 = self._call_api("email.delete", params=params3)
+            if res3.get("success"):
+                logger.info(f"[ISPmanagerExternalMailProvider] Ящик '{clean_email}' успешно удален из ISPmanager (без plid).")
+                return True
+            logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка удаления ящика '{clean_email}': {res3.get('error')}")
             return False
         except Exception as exc:
             logger.warning(f"[ISPmanagerExternalMailProvider] Ошибка удаления ящика '{clean_email}': {exc}")

@@ -33,7 +33,7 @@ from mailbox_app.services.kerio.external_provider import (
 from mailbox_app.services.kerio.pop3_download import Pop3DownloadManager
 from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
 from mailbox_app.services.kerio.users import UserManager
-from mailbox_app.services.kerio.utils import get_django_setting
+from mailbox_app.services.kerio.utils import generate_random_password, get_django_setting
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,45 @@ def _sync_user_work_profile_password(portal_user: Any, password: str) -> None:
         logger.warning(
             f"[KerioAdminService] Ошибка сохранения work_email_password для {portal_user}: {exc}"
         )
+
+
+def _sync_user_work_profile_application_password(portal_user: Any, password: str) -> None:
+    """Синхронизирует пароль от внешнего почтового ящика ISPManager (Доставка SMTP) в профиле сотрудника DataBaseUserWorkProfile.
+
+    Записывает пароль в поле work_application_password («Внешний пароль») рабочего профиля,
+    а при отсутствии профиля — автоматически создает его.
+
+    Args:
+        portal_user (Any): Экземпляр пользователя Django (DataBaseUser / User).
+        password (str): Пароль от ISPManager / Доставки SMTP в открытом виде.
+    """
+    if not portal_user or not password:
+        return
+    try:
+        if hasattr(portal_user, "user_work_profile") and portal_user.user_work_profile:
+            portal_user.user_work_profile.work_application_password = password
+            portal_user.user_work_profile.save(update_fields=["work_application_password"])
+            logger.info(
+                f"[KerioAdminService] Внешний пароль ISPManager (work_application_password) сохранен в профиль {portal_user.username}."
+            )
+        else:
+            try:
+                from customers_app.models import DataBaseUserWorkProfile
+                work_profile = DataBaseUserWorkProfile.objects.create(work_application_password=password)
+                portal_user.user_work_profile = work_profile
+                portal_user.save(update_fields=["user_work_profile"])
+                logger.info(
+                    f"[KerioAdminService] Создан профиль DataBaseUserWorkProfile и сохранен work_application_password для {portal_user.username}."
+                )
+            except Exception as e_prof:
+                logger.debug(
+                    f"[KerioAdminService] Не удалось создать DataBaseUserWorkProfile для {portal_user}: {e_prof}"
+                )
+    except Exception as exc:
+        logger.warning(
+            f"[KerioAdminService] Ошибка сохранения work_application_password для {portal_user}: {exc}"
+        )
+
 
 
 class KerioAdminService:
@@ -300,6 +339,7 @@ class KerioAdminService:
         external_smtp_port: int = 587,
         save_email_to_user: bool = True,
         sync_1c: bool = True,
+        isp_password: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Комплексный конвейер подготовки и полного развертывания почтового ящика.
 
@@ -309,11 +349,11 @@ class KerioAdminService:
         3. Создание правила внешнего сборщика «Загрузка POP3» (Pop3Download.create);
         4. Создание правила исходящей ретрансляции «Доставка SMTP» (SmtpDelivery.create);
         5. Создание / связывание MailAccount в базе Django с шифрованием пароля Fernet AES;
-        6. Запись email и пароля в профиль сотрудника DataBaseUser и синхронизация с 1С (ЗУП) через OData.
+        6. Запись email и паролей в профиль сотрудника DataBaseUserWorkProfile (work_email_password и work_application_password) и синхронизация с 1С (ЗУП) через OData.
 
         Args:
             login_name (str): Логин пользователя (например, 'i.ivanov').
-            password (str): Пароль учетной записи (единый для внешнего сервера, Kerio и портала).
+            password (str): Внутренний пароль учетной записи Kerio Connect и портала.
             domain_name (str): Домен почты (по умолчанию 'barkol.ru').
             full_name (str): Полное имя сотрудника (ФИО).
             description (str): Должность / подразделение / примечание.
@@ -329,6 +369,7 @@ class KerioAdminService:
             external_smtp_port (int): Порт SMTP relay (по умолчанию 587).
             save_email_to_user (bool): Записывать ли созданный email адрес в модель DataBaseUser (по умолчанию True).
             sync_1c (bool): Вызывать ли функцию синхронизации email в 1С (ЗУП) через OData (по умолчанию True).
+            isp_password (Optional[str]): Внешний пароль ISPManager / Доставки SMTP. Если не указан, используется основной пароль.
 
         Returns:
             Dict[str, Any]: Полный отчет о созданных компонентах почтового ящика.
@@ -343,6 +384,8 @@ class KerioAdminService:
         if not clean_login or not password:
             raise KerioValidationError("Логин и пароль обязательны для создания почтового ящика.")
 
+        effective_isp_password = isp_password.strip() if (isp_password and isp_password.strip()) else password
+
         report: Dict[str, Any] = {
             "email": full_email,
             "login": clean_login,
@@ -351,11 +394,11 @@ class KerioAdminService:
             "success": False,
         }
 
-        # Шаг 1. Внешний почтовый сервер
+        # Шаг 1. Внешний почтовый сервер (ISPManager)
         try:
             ext_res = self.external_provider.create_mailbox(
                 email=full_email,
-                password=password,
+                password=effective_isp_password,
                 full_name=full_name,
                 quota_mb=quota_mb,
             )
@@ -367,7 +410,7 @@ class KerioAdminService:
         # Шаг 2 и 3. Работа с Kerio Connect API
         domain_id = self.domains.get_domain_id(domain_name)
 
-        # Создаем пользователя Kerio Connect
+        # Создаем пользователя Kerio Connect (внутренний пароль)
         user_create_res = self.users.create_user(
             domain_id=domain_id,
             login_name=clean_login,
@@ -379,11 +422,11 @@ class KerioAdminService:
         )
         report["steps"]["kerio_user"] = {"status": "ok", "details": user_create_res}
 
-        # Создаем правило Загрузка POP3
+        # Создаем правило Загрузка POP3 (авторизуется на ISPManager внешним паролем)
         try:
             pop3_res = self.pop3.create_pop3_account(
                 target_user=clean_login,
-                password=password,
+                password=effective_isp_password,
                 server=external_pop3_host,
                 port=external_pop3_port,
                 username=full_email,
@@ -397,13 +440,13 @@ class KerioAdminService:
             logger.error(f"[KerioAdminService] Ошибка создания POP3 правила в Kerio: {pop_exc}")
             report["steps"]["kerio_pop3_download"] = {"status": "error", "error": str(pop_exc)}
 
-        # Создаем правило «Доставка SMTP» (ретрансляция через smtp.barkol.ru:587 с SMTP AUTH)
+        # Создаем правило «Доставка SMTP» (ретрансляция через smtp.barkol.ru:587 с SMTP AUTH внешним паролем)
         try:
             smtp_relay_host = str(get_django_setting("KERIO_DEFAULT_SMTP_RELAY_HOST", "smtp.barkol.ru") or "smtp.barkol.ru")
             smtp_relay_port = int(get_django_setting("KERIO_DEFAULT_SMTP_RELAY_PORT", 587) or 587)
             smtp_route_res = self.smtp_delivery.create_delivery_route(
                 sender_email=full_email,
-                password=password,
+                password=effective_isp_password,
                 relay_host=smtp_relay_host,
                 relay_port=smtp_relay_port,
                 auth_username=full_email,
@@ -429,8 +472,9 @@ class KerioAdminService:
             ).select_related("user_work_profile").first()
 
         if portal_user:
-            # 4.1 Записываем пароль корпоративной почты в рабочий профиль сотрудника на сайте
+            # 4.1 Записываем внутренний пароль почты и внешний пароль ISPManager в рабочий профиль
             _sync_user_work_profile_password(portal_user, password)
+            _sync_user_work_profile_application_password(portal_user, effective_isp_password)
 
             # 4.2 Записываем созданный email в модель DataBaseUser
             if save_email_to_user:
@@ -559,17 +603,20 @@ class KerioAdminService:
         full_email = f"{clean_login}@{domain_name}"
 
         target_password = password
-        if not target_password and MailAccount:
-            acc = MailAccount.objects.filter(email__iexact=full_email).first()
-            if acc:
-                target_password = acc.get_password()
-
         if not target_password and User and models:
             u = User.objects.filter(
                 models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
             ).select_related("user_work_profile").first()
-            if u and hasattr(u, "user_work_profile") and u.user_work_profile and u.user_work_profile.work_email_password:
-                target_password = u.user_work_profile.work_email_password.strip()
+            if u and hasattr(u, "user_work_profile") and u.user_work_profile:
+                if u.user_work_profile.work_application_password:
+                    target_password = u.user_work_profile.work_application_password.strip()
+                elif u.user_work_profile.work_email_password:
+                    target_password = u.user_work_profile.work_email_password.strip()
+
+        if not target_password and MailAccount:
+            acc = MailAccount.objects.filter(email__iexact=full_email).first()
+            if acc:
+                target_password = acc.get_password()
 
         existing_route = self.smtp_delivery.get_route_for_sender(full_email)
         is_individual_existing = bool(existing_route and existing_route.get("id") and not existing_route.get("isGlobal"))
@@ -599,13 +646,13 @@ class KerioAdminService:
                 f"Не удалось определить пароль для '{full_email}'. Укажите пароль учетной записи для привязки SMTP AUTH."
             )
 
-        # Синхронизируем Django MailAccount и рабочий профиль сотрудника
+        # Синхронизируем внешний пароль (work_application_password) в рабочем профиле сотрудника
         if target_password and User and models:
             matched_users = User.objects.filter(
                 models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
             ).select_related("user_work_profile")
             for u in matched_users:
-                _sync_user_work_profile_password(u, target_password)
+                _sync_user_work_profile_application_password(u, target_password)
 
         if MailAccount and target_password:
             try:
@@ -875,6 +922,21 @@ class KerioAdminService:
         full_email = f"{clean_login}@{domain_name}"
 
         # Автоматический поиск пароля в профиле, если не указан
+        if not password and User:
+            try:
+                u = User.objects.filter(
+                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+                ).select_related("user_work_profile").first()
+                if u and hasattr(u, "user_work_profile") and u.user_work_profile:
+                    if u.user_work_profile.work_application_password:
+                        password = u.user_work_profile.work_application_password.strip()
+                    elif u.user_work_profile.work_email_password:
+                        password = u.user_work_profile.work_email_password.strip()
+                if not full_name and u:
+                    full_name = getattr(u, "title", "") or u.get_full_name() or u.username
+            except Exception:
+                pass
+
         if not password and MailAccount:
             try:
                 acc = MailAccount.objects.filter(email__iexact=full_email).first()
@@ -883,22 +945,21 @@ class KerioAdminService:
             except Exception:
                 pass
 
-        if not password and User:
-            try:
-                u = User.objects.filter(
-                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
-                ).select_related("user_work_profile").first()
-                if u and hasattr(u, "user_work_profile") and u.user_work_profile and u.user_work_profile.work_email_password:
-                    password = u.user_work_profile.work_email_password
-                if not full_name and u:
-                    full_name = getattr(u, "title", "") or u.get_full_name() or u.username
-            except Exception:
-                pass
-
         if not password:
             raise KerioValidationError(
                 f"Не удалось определить пароль для '{clean_login}'. Укажите пароль явно для создания ящика в ISPmanager."
             )
+
+        # Сохраняем внешний пароль в профиль сотрудника
+        if User and models:
+            try:
+                matched_users = User.objects.filter(
+                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+                ).select_related("user_work_profile")
+                for u in matched_users:
+                    _sync_user_work_profile_application_password(u, password)
+            except Exception:
+                pass
 
         res = self.external_provider.create_mailbox(
             email=full_email,
@@ -1197,5 +1258,198 @@ class KerioAdminService:
             "portal_synced": portal_synced,
             "one_c_synced": one_c_synced,
             "one_c_message": one_c_message,
+        }
+
+    def change_user_isp_password(
+        self,
+        login_name: str,
+        new_password: str,
+        domain_name: str = "barkol.ru",
+    ) -> Dict[str, Any]:
+        """Синхронно изменяет внешний пароль ящика в ISPManager, Kerio «Доставка SMTP», «Загрузка POP3» и профиле сотрудника.
+
+        Обновляет:
+        1. Пароль почтового ящика на внешнем почтовом сервере ISPManager (Reg.ru);
+        2. Пароль в правиле исходящей ретрансляции Kerio Connect «Доставка SMTP» (SMTP AUTH);
+        3. Пароль в правиле входящего сбора почты Kerio Connect «Загрузка POP3» (POP3 AUTH);
+        4. Поле `work_application_password` («Внешний пароль») в профиле сотрудника `DataBaseUserWorkProfile`.
+
+        Args:
+            login_name (str): Логин или email пользователя.
+            new_password (str): Новый внешний пароль ISPManager / Доставки SMTP.
+            domain_name (str): Почтовый домен (по умолчанию 'barkol.ru').
+
+        Returns:
+            Dict[str, Any]: Словарь с отчетом о выполненных шагах и статусе операции:
+                - success (bool): Общий статус выполнения.
+                - login (str): Логин пользователя.
+                - email (str): Полный email адрес.
+                - new_password (str): Установленный пароль.
+                - steps (Dict[str, Any]): Статус каждого этапа.
+                - message (str): Человекопонятное резюме.
+
+        Raises:
+            KerioValidationError: Если не передан логин или пароль.
+        """
+        clean_login = login_name.split("@")[0].strip().lower()
+        target_domain = domain_name.strip().lower() if domain_name else "barkol.ru"
+        full_email = f"{clean_login}@{target_domain}"
+
+        if not clean_login or not new_password:
+            raise KerioValidationError("Логин и новый пароль обязательны для смены пароля ISPManager.")
+
+        report: Dict[str, Any] = {
+            "login": clean_login,
+            "email": full_email,
+            "new_password": new_password,
+            "steps": {},
+            "success": False,
+        }
+
+        # 1. Внешний почтовый сервер ISPManager (Reg.ru)
+        try:
+            ext_success = self.external_provider.change_password(full_email, new_password)
+            if ext_success:
+                report["steps"]["external_server"] = "ok"
+            else:
+                report["steps"]["external_server"] = "warning: не удалось обновить пароль на внешнем сервере ISPmanager"
+        except Exception as ext_err:
+            logger.warning(f"[KerioAdminService] Ошибка смены пароля в ISPManager для {full_email}: {ext_err}")
+            report["steps"]["external_server"] = f"warning: {ext_err}"
+
+        # 2. Правило исходящей ретрансляции Kerio Connect «Доставка SMTP» (SMTP AUTH)
+        try:
+            self.smtp_delivery.set_route_password_for_sender(full_email, new_password)
+            report["steps"]["kerio_smtp_delivery"] = "ok"
+        except Exception as smtp_exc:
+            logger.warning(f"[KerioAdminService] Ошибка обновления Доставки SMTP для {full_email}: {smtp_exc}")
+            report["steps"]["kerio_smtp_delivery"] = f"warning: {smtp_exc}"
+
+        # 3. Правило сбора почты Kerio Connect «Загрузка POP3»
+        try:
+            pop3_rule = self.pop3.get_account_for_user(clean_login)
+            if pop3_rule and "id" in pop3_rule:
+                self.pop3.update_pop3_account(pop3_rule["id"], password=new_password)
+                report["steps"]["kerio_pop3_download"] = "ok"
+            else:
+                report["steps"]["kerio_pop3_download"] = "not_found"
+        except Exception as pop_exc:
+            logger.warning(f"[KerioAdminService] Ошибка обновления POP3 для {clean_login}: {pop_exc}")
+            report["steps"]["kerio_pop3_download"] = f"warning: {pop_exc}"
+
+        # 4. Профиль сотрудника DataBaseUserWorkProfile.work_application_password
+        updated_profiles_count = 0
+        if User and models:
+            try:
+                matched_users = User.objects.filter(
+                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+                ).select_related("user_work_profile")
+                for u in matched_users:
+                    _sync_user_work_profile_application_password(u, new_password)
+                    updated_profiles_count += 1
+                report["steps"]["user_work_profile"] = f"updated {updated_profiles_count} profiles"
+            except Exception as db_exc:
+                logger.warning(f"[KerioAdminService] Ошибка сохранения work_application_password для {full_email}: {db_exc}")
+                report["steps"]["user_work_profile"] = f"error: {db_exc}"
+
+        report["success"] = True
+        report["message"] = f"Внешний пароль ISPManager и Доставки SMTP для '{full_email}' успешно обновлен."
+        return report
+
+    def batch_change_isp_passwords(
+        self,
+        logins_or_emails: Optional[List[str]] = None,
+        domain_name: str = "barkol.ru",
+        explicit_password: Optional[str] = None,
+        generate_passwords: bool = True,
+    ) -> Dict[str, Any]:
+        """Выполняет пакетную смену паролей ISPManager и Доставки SMTP для группы или всех пользователей домена.
+
+        Для каждого пользователя:
+        - Либо генерирует надежный 16-значный случайный пароль (`generate_passwords=True`);
+        - Либо устанавливает единый пароль (`explicit_password`);
+        - Синхронно обновляет пароль в ISPManager, Kerio «Доставка SMTP», Kerio «Загрузка POP3» и `work_application_password` в профиле сотрудника на портале.
+
+        Args:
+            logins_or_emails (Optional[List[str]]): Список логинов или email-адресов. Если None или пуст, обрабатываются все пользователи указанного домена в Kerio Connect.
+            domain_name (str): Почтовый домен (по умолчанию 'barkol.ru').
+            explicit_password (Optional[str]): Единый пароль для всех (если `generate_passwords=False`).
+            generate_passwords (bool): Генерировать ли уникальный надежный пароль для каждого пользователя (по умолчанию True).
+
+        Returns:
+            Dict[str, Any]: Сводный отчет о результатах пакетного обновления:
+                - success (bool): True при успешном завершении процедуры.
+                - total (int): Общее количество обработанных ящиков.
+                - success_count (int): Количество успешно обновленных.
+                - error_count (int): Количество ящиков с ошибками.
+                - domain (str): Имя домена.
+                - results (List[Dict[str, Any]]): Детальные отчеты по каждому пользователю.
+                - message (str): Человекопонятное резюме.
+        """
+        target_logins: List[str] = []
+
+        if logins_or_emails and isinstance(logins_or_emails, (list, tuple, set)):
+            target_logins = [str(item).strip() for item in logins_or_emails if str(item).strip()]
+        elif logins_or_emails and isinstance(logins_or_emails, str):
+            target_logins = [item.strip() for item in logins_or_emails.split(",") if item.strip()]
+
+        if not target_logins:
+            # Получаем всех пользователей домена из Kerio Connect
+            try:
+                users_res = self.get_users_list(domain_name=domain_name, limit=1000)
+                user_list = users_res.get("list", [])
+                target_logins = [u.get("loginName") for u in user_list if u.get("loginName")]
+            except Exception as e_fetch:
+                logger.error(f"[KerioAdminService] Ошибка получения списка пользователей для пакетной смены: {e_fetch}")
+                return {
+                    "success": False,
+                    "total": 0,
+                    "success_count": 0,
+                    "error_count": 0,
+                    "domain": domain_name,
+                    "results": [],
+                    "message": f"Не удалось получить список пользователей домена '{domain_name}': {e_fetch}",
+                }
+
+        results: List[Dict[str, Any]] = []
+        success_count = 0
+        error_count = 0
+
+        for login in target_logins:
+            pwd = generate_random_password(16) if (generate_passwords or not explicit_password) else explicit_password.strip()
+            try:
+                res = self.change_user_isp_password(
+                    login_name=login,
+                    new_password=pwd,
+                    domain_name=domain_name,
+                )
+                if res.get("success"):
+                    success_count += 1
+                else:
+                    error_count += 1
+                results.append(res)
+            except Exception as item_err:
+                logger.error(f"[KerioAdminService] Ошибка смены пароля ISP для '{login}': {item_err}")
+                error_count += 1
+                results.append({
+                    "login": login,
+                    "email": f"{login}@{domain_name}" if "@" not in login else login,
+                    "new_password": pwd,
+                    "success": False,
+                    "error": str(item_err),
+                    "steps": {"error": str(item_err)},
+                })
+
+        return {
+            "success": True,
+            "total": len(target_logins),
+            "success_count": success_count,
+            "error_count": error_count,
+            "domain": domain_name,
+            "results": results,
+            "message": (
+                f"Пакетная смена паролей ISPManager / Доставка SMTP завершена. "
+                f"Всего обработано: {len(target_logins)}, успешно: {success_count}, ошибок: {error_count}."
+            ),
         }
 
