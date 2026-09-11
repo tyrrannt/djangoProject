@@ -41,6 +41,7 @@ from django.views.generic import DetailView, FormView, ListView, TemplateView, C
 
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.safestring import mark_safe
 
 from customers_app.models import DataBaseUser
 from mailbox_app.forms import (
@@ -96,12 +97,10 @@ def is_mailbox_admin(user) -> bool:
     """Проверяет наличие административных прав на корпоративную почту у пользователя.
 
     Административный доступ (управление корпоративными ящиками, диагностика и профилирование)
-    предоставляется строго:
+    предоставляется:
     1. Суперадминистраторам (is_superuser);
-    2. Участникам специальной группы «Администраторы почты»;
+    2. Участникам групп «Администраторы почты», «ИТ», «IT», «password»;
     3. Пользователям с явным разрешением 'mailbox_app.manage_mailboxes'.
-
-    Флаг обычного персонала (is_staff) намеренно исключен в целях изоляции прав.
 
     Args:
         user: Экземпляр модели пользователя Django.
@@ -113,7 +112,7 @@ def is_mailbox_admin(user) -> bool:
         return False
     if user.is_superuser:
         return True
-    if user.groups.filter(name="Администраторы почты").exists():
+    if user.groups.filter(name__in=["Администраторы почты", "ИТ", "IT", "password"]).exists():
         return True
     if user.has_perm("mailbox_app.manage_mailboxes"):
         return True
@@ -3093,6 +3092,9 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
     def get(self, request, *args, **kwargs):
         """Отображает мастер добавления почтового ящика.
 
+        Поддерживает автоматический предвыбор сотрудника портала при передаче
+        GET-параметра ?user=<id>, ?user_id=<id> или ?employee_id=<id>.
+
         Args:
             request: Входящий HTTP GET запрос.
             *args: Позиционные аргументы.
@@ -3101,7 +3103,18 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
         Returns:
             HttpResponse: Страница формы создания.
         """
-        form = KerioUserProvisionForm()
+        user_param = request.GET.get("user") or request.GET.get("user_id") or request.GET.get("employee_id")
+        initial_data: Dict[str, Any] = {}
+        if user_param:
+            try:
+                User = get_user_model()
+                selected_user = User.objects.filter(pk=int(user_param), is_active=True).first()
+                if selected_user:
+                    initial_data["link_django_user"] = selected_user.pk
+            except (ValueError, TypeError):
+                pass
+
+        form = KerioUserProvisionForm(initial=initial_data)
         context = self.get_context_data(**kwargs)
         context.update({
             "title": "СОЗДАНИЕ ПОЧТОВОГО ЯЩИКА СОТРУДНИКА",
@@ -3140,13 +3153,15 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             ext_smtp_port = form.cleaned_data.get("external_smtp_port", 587)
             link_user = form.cleaned_data.get("link_django_user")
             create_django = form.cleaned_data.get("create_django_account", True)
+            save_email_to_user = form.cleaned_data.get("save_email_to_user", True)
+            sync_1c = form.cleaned_data.get("sync_1c", True)
 
             if not full_name and link_user:
                 full_name = getattr(link_user, "title", "") or link_user.get_full_name() or link_user.username
 
             service = KerioAdminService()
             try:
-                service.provision_full_mailbox(
+                report = service.provision_full_mailbox(
                     login_name=login_name,
                     password=password,
                     domain_name=domain_name,
@@ -3162,17 +3177,39 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                     configure_smtp_delivery=configure_smtp,
                     external_smtp_host=ext_smtp_host,
                     external_smtp_port=ext_smtp_port,
+                    save_email_to_user=save_email_to_user,
+                    sync_1c=sync_1c,
                 )
                 full_email = f"{login_name}@{domain_name}"
                 extra_notes = []
                 if configure_pop3:
-                    extra_notes.append("сборщик POP3 (mail.barkol.ru)")
+                    extra_notes.append("сборщик POP3")
                 if configure_smtp:
-                    extra_notes.append("правило «Доставка SMTP» (smtp.barkol.ru:587)")
-                notes_str = f" ({', '.join(extra_notes)} активны)" if extra_notes else ""
+                    extra_notes.append("SMTP Relay")
+                if save_email_to_user and link_user:
+                    extra_notes.append("email записан в модель пользователя")
+
+                sync_1c_step = report.get("steps", {}).get("sync_1c", {})
+                if sync_1c and sync_1c_step:
+                    if sync_1c_step.get("status") == "ok":
+                        extra_notes.append("1С ЗУП синхронизирована")
+                    elif sync_1c_step.get("status") == "warning":
+                        extra_notes.append(f"1С замечание: {sync_1c_step.get('message', '')}")
+                    elif sync_1c_step.get("status") == "skipped":
+                        extra_notes.append("1С пропущена (нет GUID)")
+
+                notes_str = f" ({', '.join(extra_notes)})" if extra_notes else ""
+                pdf_btn_html = ""
+                if link_user:
+                    pdf_url = reverse("customers_app:generate_employee_file", args=[link_user.pk])
+                    pdf_btn_html = (
+                        f' <a href="{pdf_url}" target="_blank" class="btn btn-sm btn-outline-success ms-2 py-0 px-2 font-size-12 fw-semibold" '
+                        f'title="Открыть памятку с учетными данными сотрудника для печати"><i class="bx bx-printer"></i> Распечатать памятку (PDF)</a>'
+                    )
+
                 messages.success(
                     request,
-                    f"Почтовый ящик «{full_email}» успешно создан в Kerio Connect{notes_str}!"
+                    mark_safe(f"Почтовый ящик «{full_email}» успешно создан в Kerio Connect{notes_str}!{pdf_btn_html}")
                 )
                 return redirect("mailbox_app:kerio_admin_users")
             except Exception as err:
@@ -3283,7 +3320,21 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
                         display_name=full_name_val or clean_login,
                     )
 
-                messages.success(request, f"Параметры пользователя «{login_name}» успешно обновлены в Kerio Connect!")
+                    do_sync_1c = form.cleaned_data.get("sync_1c", False)
+                    sync_1c_note = ""
+                    if do_sync_1c:
+                        sync_res = service.sync_user_email_to_portal_and_1c(
+                            login_name=login_name,
+                            domain_name="barkol.ru",
+                        )
+                        if sync_res.get("one_c_synced"):
+                            sync_1c_note = " (email сохранен в профиле портала и синхронизирован с 1С ЗУП)"
+                        elif sync_res.get("portal_synced"):
+                            sync_1c_note = f" (email сохранен на портале; 1С: {sync_res.get('one_c_message', '')})"
+                        else:
+                            sync_1c_note = f" (замечание синхронизации: {sync_res.get('message', '')})"
+
+                messages.success(request, f"Параметры пользователя «{login_name}» успешно обновлены в Kerio Connect!{sync_1c_note}")
                 return redirect("mailbox_app:kerio_admin_users")
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка обновления пользователя '{user_id}': {err}", exc_info=True)
@@ -3347,6 +3398,10 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
         - `toggle_active`: Блокировка/разблокировка учетной записи.
         - `delete_user`: Удаление пользователя и правила POP3 из Kerio Connect.
         - `download_now`: Запуск немедленного сбора почты по правилу POP3.
+        - `audit_sync`: Сверка ящиков Kerio Connect и ISPmanager (Reg.ru).
+        - `create_isp_mailbox`: Создание отсутствующего ящика в ISPmanager.
+        - `sync_smtp_route`: Создание/проверка правила исходящей ретрансляции Доставка SMTP.
+        - `sync_1c`: Синхронизация email адреса пользователя с моделью DataBaseUser и 1С (ЗУП).
 
         Args:
             request: Входящий HTTP POST запрос с JSON или form payload.
@@ -3512,5 +3567,22 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка настройки правила Доставка SMTP: {err}", exc_info=True)
                 return JsonResponse({"success": False, "message": str(err)}, status=400)
+
+        elif action == "sync_1c":
+            login_name = data.get("login_name", "").strip()
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            email = data.get("email", "").strip() or None
+            if not login_name:
+                return JsonResponse({"success": False, "message": "Логин пользователя обязателен."}, status=400)
+            try:
+                res = service.sync_user_email_to_portal_and_1c(
+                    login_name=login_name,
+                    domain_name=domain_name,
+                    email=email,
+                )
+                return JsonResponse(res)
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка синхронизации с 1С/порталом: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": str(err)}, status=500)
 
         return JsonResponse({"success": False, "message": f"Неизвестное действие: '{action}'"}, status=400)

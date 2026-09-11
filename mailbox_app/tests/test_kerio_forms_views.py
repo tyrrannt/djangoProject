@@ -216,6 +216,131 @@ class KerioAdminFormsViewsTestCase(unittest.TestCase):
             quota_mb=None,
         )
 
+    def test_kerio_provision_form_with_portal_integration_switches(self) -> None:
+        """Тест валидации формы создания с переключателями сохранения в модель пользователя и 1С."""
+        from mailbox_app.forms import KerioUserProvisionForm
+
+        with patch("django.contrib.auth.get_user_model") as mock_user_model:
+            mock_user_model.return_value.objects.filter.return_value.order_by.return_value = []
+            form_data = {
+                "login_name": "s.petrov",
+                "domain_name": "barkol.ru",
+                "password": "Password12345!",
+                "confirm_password": "Password12345!",
+                "full_name": "Петров Сергей",
+                "save_email_to_user": True,
+                "sync_1c": True,
+            }
+            form = KerioUserProvisionForm(data=form_data)
+            self.assertTrue(form.is_valid(), f"Ошибки формы: {form.errors}")
+            self.assertTrue(form.cleaned_data["save_email_to_user"])
+            self.assertTrue(form.cleaned_data["sync_1c"])
+
+    @patch("mailbox_app.views.render")
+    def test_kerio_user_create_view_get_with_user_param(self, mock_render: MagicMock) -> None:
+        """Тест предвыбора сотрудника в KerioAdminUserCreateView при GET-запросе с ?user=<id>."""
+        from mailbox_app.views import KerioAdminUserCreateView
+
+        view = KerioAdminUserCreateView()
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.user.is_superuser = True
+        request.GET = {"user": "198"}
+
+        mock_user = MagicMock()
+        mock_user.pk = 198
+        mock_user.is_active = True
+
+        with patch("django.contrib.auth.get_user_model") as mock_user_model:
+            mock_user_model.return_value.objects.filter.return_value.first.return_value = mock_user
+            mock_user_model.return_value.objects.filter.return_value.select_related.return_value.only.return_value = []
+            mock_user_model.return_value.objects.filter.return_value.order_by.return_value = []
+            with patch.object(view, "get_context_data", return_value={}):
+                view.get(request)
+                self.assertTrue(mock_render.called)
+                context = mock_render.call_args[0][2]
+                self.assertEqual(context["form"].initial.get("link_django_user"), 198)
+
+    @patch("mailbox_app.views.messages")
+    @patch("mailbox_app.views.redirect")
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.provision_full_mailbox")
+    def test_kerio_user_create_view_post_with_portal_and_1c_sync(
+        self, mock_provision: MagicMock, mock_redirect: MagicMock, mock_messages: MagicMock
+    ) -> None:
+        """Тест отправки формы создания ящика с флагами save_email_to_user и sync_1c."""
+        from mailbox_app.views import KerioAdminUserCreateView
+
+        mock_provision.return_value = {
+            "success": True,
+            "email": "s.petrov@barkol.ru",
+            "steps": {"sync_1c": {"status": "ok", "message": "Email записан в 1С"}},
+        }
+
+        view = KerioAdminUserCreateView()
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.user.is_superuser = True
+        request.POST = {
+            "login_name": "s.petrov",
+            "domain_name": "barkol.ru",
+            "password": "Password12345!",
+            "confirm_password": "Password12345!",
+            "full_name": "Петров Сергей",
+            "save_email_to_user": "on",
+            "sync_1c": "on",
+        }
+
+        with patch("django.contrib.auth.get_user_model") as mock_user_model:
+            mock_user_model.return_value.objects.filter.return_value.order_by.return_value = []
+            with patch.object(view, "get_context_data", return_value={}):
+                view.post(request)
+                mock_provision.assert_called_once()
+                call_kwargs = mock_provision.call_args[1]
+                self.assertTrue(call_kwargs["save_email_to_user"])
+                self.assertTrue(call_kwargs["sync_1c"])
+
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.sync_user_email_to_portal_and_1c")
+    def test_kerio_action_api_sync_1c(self, mock_sync_1c: MagicMock) -> None:
+        """Тест AJAX API принудительной синхронизации email с моделью пользователя и 1С (ЗУП)."""
+        from mailbox_app.views import KerioAdminActionAPIView
+
+        mock_sync_1c.return_value = {
+            "success": True,
+            "message": "Email успешно синхронизирован с 1С и порталом!",
+            "email": "i.ivanov@barkol.ru",
+            "one_c_synced": True,
+        }
+
+        view = KerioAdminActionAPIView()
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.user.is_superuser = True
+        request.content_type = "application/json"
+        request.body = b'{"action": "sync_1c", "login_name": "i.ivanov", "domain_name": "barkol.ru"}'
+
+        response = view.post(request)
+        self.assertEqual(response.status_code, 200)
+        mock_sync_1c.assert_called_once_with(
+            login_name="i.ivanov",
+            domain_name="barkol.ru",
+            email=None,
+        )
+
+    def test_kerio_edit_form_with_sync_1c(self) -> None:
+        """Тест формы редактирования с переключателем синхронизации с 1С."""
+        from mailbox_app.forms import KerioUserEditForm
+
+        form_data = {
+            "full_name": "Петров Петр Петрович",
+            "description": "Инженер",
+            "is_enabled": True,
+            "sync_1c": True,
+        }
+        form = KerioUserEditForm(data=form_data)
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.cleaned_data["sync_1c"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -109,6 +109,16 @@
                                             <small class="d-block form-help-contrast">{{ form.is_enabled.help_text }}</small>
                                         </div>
                                     </div>
+
+                                    <div class="col-12 pt-2 border-top">
+                                        <div class="form-check form-switch">
+                                            {{ form.sync_1c }}
+                                            <label class="form-check-label form-label-contrast" for="{{ form.sync_1c.id_for_label }}">
+                                                {{ form.sync_1c.label }}
+                                            </label>
+                                            <small class="d-block form-help-contrast">{{ form.sync_1c.help_text }}</small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -190,11 +190,19 @@
                                                            name="email" id="id_email"
                                                            value="{{ object.email|empty_item }}"/>
                                                     {% if user|has_group:"password" or user.is_superuser or user|has_group:"Администраторы почты" or user|has_group:"ИТ" or user|has_group:"IT" %}
-                                                        <button type="button" class="btn btn-primary d-flex align-items-center" id="btnOpenSetEmailModal"
-                                                                data-bs-toggle="modal" data-bs-target="#setCorporateEmailModal"
-                                                                title="Назначить корпоративную почту и передать в 1С">
-                                                            <i class="bx bx-sync me-1"></i> <span class="d-none d-sm-inline">{% if object.email %}Внести в 1С{% else %}Назначить почту{% endif %}</span>
-                                                        </button>
+                                                        {% if object.email %}
+                                                            <a href="{% url 'mailbox_app:kerio_admin_users' %}?q={{ object.email }}"
+                                                               class="btn btn-outline-primary d-flex align-items-center"
+                                                               title="Перейти к управлению ящиком Kerio Connect">
+                                                                <i class="bx bx-envelope me-1"></i> <span class="d-none d-sm-inline">Почта Kerio</span>
+                                                            </a>
+                                                        {% else %}
+                                                            <a href="{% url 'mailbox_app:kerio_admin_user_create' %}?user={{ object.pk }}"
+                                                               class="btn btn-primary d-flex align-items-center"
+                                                               title="Создать почтовый ящик сотрудника">
+                                                                <i class="bx bx-plus me-1"></i> <span class="d-none d-sm-inline">Создать ящик</span>
+                                                            </a>
+                                                        {% endif %}
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -416,10 +424,17 @@
 
             {% if user|has_group:"password" or user.is_superuser or user|has_group:"Администраторы почты" or user|has_group:"ИТ" or user|has_group:"IT" %}
                 <div class="col-12 col-md-auto">
-                    <button type="button" class="btn btn-outline-primary btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100"
-                            data-bs-toggle="modal" data-bs-target="#setCorporateEmailModal">
-                        <i class="bx bx-envelope text-4 me-2"></i> Корпоративная почта
-                    </button>
+                    {% if object.email %}
+                        <a href="{% url 'mailbox_app:kerio_admin_users' %}?q={{ object.email }}"
+                           class="btn btn-outline-primary btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                            <i class="bx bx-envelope text-4 me-2"></i> Корпоративная почта
+                        </a>
+                    {% else %}
+                        <a href="{% url 'mailbox_app:kerio_admin_user_create' %}?user={{ object.pk }}"
+                           class="btn btn-outline-primary btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                            <i class="bx bx-envelope text-4 me-2"></i> Корпоративная почта
+                        </a>
+                    {% endif %}
                 </div>
             {% endif %}
 
@@ -454,255 +469,4 @@
         </div>
     </div>
     <!-- end: page -->
-
-{% if user|has_group:"password" or user.is_superuser or user|has_group:"Администраторы почты" or user|has_group:"ИТ" or user|has_group:"IT" %}
-<!-- Модальное окно назначения корпоративной почты и синхронизации с 1С -->
-<div class="modal fade" id="setCorporateEmailModal" tabindex="-1" aria-labelledby="setCorporateEmailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title d-flex align-items-center text-white" id="setCorporateEmailModalLabel">
-                    <i class="bx bx-envelope me-2 fs-4"></i> Назначение корпоративной почты
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="setCorporateEmailForm">
-                {% csrf_token %}
-                <div class="modal-body p-4">
-                    <div class="mb-3 text-center pb-2 border-bottom">
-                        <span class="text-muted small d-block">Сотрудник</span>
-                        <strong class="fs-5 text-dark" id="modalEmployeeName">{{ object.title }}</strong>
-                        {% if object.person_ref_key %}
-                            <div class="small text-success mt-1">
-                                <i class="bx bx-check-circle me-1"></i> Привязан к 1С физлицу (GUID: {{ object.person_ref_key|truncatechars:15 }})
-                            </div>
-                        {% else %}
-                            <div class="small text-warning mt-1">
-                                <i class="bx bx-error-circle me-1"></i> GUID физлица в 1С отсутствует (сохранится только на портале)
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="id_corporate_email" class="form-label fw-semibold">
-                            Корпоративный Email <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bx bx-at"></i></span>
-                            <input type="email" class="form-control" id="id_corporate_email" name="email"
-                                   value="{{ object.email|default:'' }}"
-                                   placeholder="name@barkol.ru" required>
-                            <button type="button" class="btn btn-outline-secondary" id="btnSuggestEmail" title="Предложить email по ФИО">
-                                <i class="bx bx-magic-wand"></i>
-                            </button>
-                        </div>
-                        <div class="form-text small">Корпоративный адрес электронной почты сотрудника.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="id_corporate_password" class="form-label fw-semibold">Пароль учетной записи / почты</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bx bx-key"></i></span>
-                            <input type="password" class="form-control" id="id_corporate_password" name="password"
-                                   value="{{ object.user_work_profile.work_email_password|default:'' }}"
-                                   placeholder="Введите пароль или сгенерируйте">
-                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="id_corporate_password" title="Показать/скрыть пароль">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="btnGeneratePassword" title="Сгенерировать надежный пароль">
-                                <i class="bx bx-refresh"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="id_change_password" name="change_password" checked>
-                        <label class="form-check-label fw-semibold" for="id_change_password">
-                            Изменить пароль учетной записи / почты
-                        </label>
-                    </div>
-
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="id_sync_1c" name="sync_1c" checked>
-                        <label class="form-check-label fw-semibold" for="id_sync_1c">
-                            Мгновенно записать в 1С (ЗУП) через OData
-                        </label>
-                    </div>
-
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="id_generate_pdf" name="generate_pdf">
-                        <label class="form-check-label fw-semibold" for="id_generate_pdf">
-                            <i class="bx bx-printer me-1 text-primary"></i> Сформировать данные для печати (PDF)
-                        </label>
-                    </div>
-
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="id_send_notification" name="send_notification">
-                        <label class="form-check-label" for="id_send_notification">
-                            Отправить письмо с учетными данными сотруднику
-                        </label>
-                    </div>
-
-                    <div id="emailModalAlert" class="alert d-none mt-3 mb-0 py-2 small" role="alert"></div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" class="btn btn-primary" id="btnSubmitSetEmail">
-                        <span class="spinner-border spinner-border-sm me-1 d-none" id="submitSpinner" role="status" aria-hidden="true"></span>
-                        <i class="bx bx-save me-1" id="submitIcon"></i> Сохранить и передать в 1С
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const emailForm = document.getElementById('setCorporateEmailForm');
-    if (!emailForm) return;
-
-    const emailInput = document.getElementById('id_corporate_email');
-    const passwordInput = document.getElementById('id_corporate_password');
-    const changePassSwitch = document.getElementById('id_change_password');
-    const btnSuggest = document.getElementById('btnSuggestEmail');
-    const btnGeneratePass = document.getElementById('btnGeneratePassword');
-    const submitBtn = document.getElementById('btnSubmitSetEmail');
-    const submitSpinner = document.getElementById('submitSpinner');
-    const submitIcon = document.getElementById('submitIcon');
-    const alertBox = document.getElementById('emailModalAlert');
-    const lastName = "{{ object.last_name|default:'' }}";
-    const firstName = "{{ object.first_name|default:'' }}";
-
-    if (changePassSwitch && passwordInput) {
-        changePassSwitch.addEventListener('change', function() {
-            passwordInput.disabled = !this.checked;
-            if (btnGeneratePass) btnGeneratePass.disabled = !this.checked;
-        });
-    }
-
-    function transliterateRuToEn(text) {
-        const map = {
-            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'i', 'к': 'k', 'л': 'l', 'м': 'm',
-            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-            'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
-            'ы': 'y', 'э': 'e', 'ю': 'yu', 'я': 'ya', 'ъ': '', 'ь': '', ' ': '.', '-': '-'
-        };
-        return text.toLowerCase().split('').map(c => map[c] !== undefined ? map[c] : (/[a-z0-9]/.test(c) ? c : '')).join('');
-    }
-
-    if (btnSuggest) {
-        btnSuggest.addEventListener('click', function() {
-            if (lastName) {
-                const enLast = transliterateRuToEn(lastName);
-                const enFirstInit = firstName ? transliterateRuToEn(firstName.charAt(0)) : '';
-                emailInput.value = (enFirstInit ? enFirstInit + '.' : '') + enLast + '@barkol.ru';
-            }
-        });
-    }
-
-    if (btnGeneratePass) {
-        btnGeneratePass.addEventListener('click', function() {
-            const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
-            let pass = '';
-            const array = new Uint32Array(10);
-            window.crypto.getRandomValues(array);
-            for (let i = 0; i < 10; i++) {
-                pass += chars[array[i] % chars.length];
-            }
-            passwordInput.value = pass;
-            passwordInput.setAttribute('type', 'text');
-        });
-    }
-
-    emailForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        const changePassword = changePassSwitch ? changePassSwitch.checked : true;
-        const sync1c = document.getElementById('id_sync_1c').checked;
-        const generatePdf = document.getElementById('id_generate_pdf').checked;
-        const sendNotification = document.getElementById('id_send_notification').checked;
-
-        if (!email) {
-            alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
-            alertBox.textContent = 'Пожалуйста, укажите адрес электронной почты.';
-            alertBox.classList.remove('d-none');
-            return;
-        }
-
-        submitBtn.disabled = true;
-        submitSpinner.classList.remove('d-none');
-        submitIcon.classList.add('d-none');
-        alertBox.classList.add('d-none');
-
-        fetch("{% url 'customers_app:staff_set_corporate_email' object.pk %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                email: email,
-                password: password,
-                change_password: changePassword,
-                sync_1c: sync1c,
-                generate_pdf: generatePdf,
-                send_notification: sendNotification
-            })
-        })
-        .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, data: data })))
-        .then(result => {
-            submitBtn.disabled = false;
-            submitSpinner.classList.add('d-none');
-            submitIcon.classList.remove('d-none');
-
-            if (result.ok && result.data.status === 'success') {
-                alertBox.className = 'alert alert-success mt-3 mb-0 py-2 small';
-                alertBox.innerHTML = '<i class="bx bx-check-circle me-1"></i> ' + result.data.message;
-                alertBox.classList.remove('d-none');
-
-                // Если запрошено формирование PDF — открываем памятку в новой вкладке
-                if (result.data.pdf_url) {
-                    window.open(result.data.pdf_url, '_blank');
-                }
-
-                // Обновляем отображение email на странице
-                const mainEmailInput = document.getElementById('id_email');
-                if (mainEmailInput) {
-                    mainEmailInput.value = result.data.email;
-                }
-                const workPassInput = document.getElementById('id_work_email_password');
-                if (workPassInput && changePassword && password) {
-                    workPassInput.value = password;
-                }
-                const openBtn = document.getElementById('btnOpenSetEmailModal');
-                if (openBtn) {
-                    openBtn.innerHTML = '<i class="bx bx-sync me-1"></i> <span class="d-none d-sm-inline">Внести в 1С</span>';
-                }
-
-                setTimeout(() => {
-                    const modalEl = document.getElementById('setCorporateEmailModal');
-                    const modalInst = bootstrap.Modal.getInstance(modalEl);
-                    if (modalInst) modalInst.hide();
-                }, 2000);
-            } else {
-                alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
-                alertBox.innerHTML = '<i class="bx bx-error-circle me-1"></i> ' + (result.data.message || 'Произошла ошибка при сохранении.');
-                alertBox.classList.remove('d-none');
-            }
-        })
-        .catch(err => {
-            submitBtn.disabled = false;
-            submitSpinner.classList.add('d-none');
-            submitIcon.classList.remove('d-none');
-            alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
-            alertBox.innerHTML = '<i class="bx bx-error-circle me-1"></i> Ошибка сети: ' + err.message;
-            alertBox.classList.remove('d-none');
-        });
-    });
-});
-</script>
-{% endif %}
 {% endblock %}

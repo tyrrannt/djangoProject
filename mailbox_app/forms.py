@@ -774,6 +774,30 @@ class KerioUserProvisionForm(forms.Form):
             }
         ),
     )
+    save_email_to_user = forms.BooleanField(
+        label="Записать созданный адрес электронной почты в модель пользователя",
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "id_save_email_to_user",
+            }
+        ),
+        help_text="Сохраняет email в профиле сотрудника DataBaseUser на корпоративном портале",
+    )
+    sync_1c = forms.BooleanField(
+        label="Передать данные в 1С (ЗУП)",
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "id_sync_1c",
+            }
+        ),
+        help_text="Синхронизирует корпоративный адрес электронной почты с физическим лицом в 1С через OData",
+    )
 
     def __init__(self, *args, **kwargs) -> None:
         """Инициализирует форму и заполняет queryset активных сотрудников.
@@ -899,6 +923,18 @@ class KerioUserEditForm(forms.Form):
             }
         ),
         help_text="При отключении вход в почту и прием корреспонденции блокируются",
+    )
+    sync_1c = forms.BooleanField(
+        label="Синхронизировать email с профилем сотрудника и 1С (ЗУП)",
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "id_edit_sync_1c",
+            }
+        ),
+        help_text="При включении обновит email в профиле DataBaseUser на портале и отправит данные в 1С (ЗУП)",
     )
 
 

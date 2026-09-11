@@ -272,7 +272,7 @@ class KerioAdminServiceTestCase(TestCase):
         self.assertEqual(res["domains_count"], 1)
 
     def test_provision_full_mailbox(self) -> None:
-        """Тест создания полного контура ящика (Kerio + POP3 + Django MailAccount)."""
+        """Тест создания полного контура ящика (Kerio + POP3 + Django MailAccount + email в DataBaseUser)."""
         self.mock_client.call.side_effect = [
             # 1. Domains.get
             {"list": [{"id": "dom_barkol", "name": "barkol.ru"}]},
@@ -290,6 +290,8 @@ class KerioAdminServiceTestCase(TestCase):
             description="Ведущий инженер",
             django_user_id=self.user.pk,
             quota_mb=2048,
+            save_email_to_user=True,
+            sync_1c=False,
         )
 
         self.assertTrue(report["success"])
@@ -297,6 +299,11 @@ class KerioAdminServiceTestCase(TestCase):
         self.assertEqual(report["steps"]["kerio_user"]["status"], "ok")
         self.assertEqual(report["steps"]["kerio_pop3_download"]["status"], "ok")
         self.assertEqual(report["steps"]["django_account"]["status"], "ok")
+        self.assertEqual(report["steps"]["user_email_saved"]["status"], "ok")
+
+        # Проверяем сохранение email в модели пользователя Django
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "v.shakirov@barkol.ru")
 
         # Проверяем созданный MailAccount в БД Django
         account = MailAccount.objects.get(user=self.user)
@@ -307,9 +314,44 @@ class KerioAdminServiceTestCase(TestCase):
         self.assertTrue(account.is_active)
 
         # Проверяем синхронизацию пароля в рабочем профиле сотрудника DataBaseUserWorkProfile
-        self.user.refresh_from_db()
         if hasattr(self.user, "user_work_profile") and self.user.user_work_profile:
             self.assertEqual(self.user.user_work_profile.work_email_password, "UltraSecretPassword123")
+
+    @patch("administration_app.utils.update_1c_physical_person_email")
+    def test_provision_full_mailbox_with_1c_sync(self, mock_update_1c: MagicMock) -> None:
+        """Тест создания ящика с синхронизацией email в 1С (ЗУП)."""
+        mock_update_1c.return_value = (True, "Email успешно записан в 1С")
+
+        self.mock_client.call.side_effect = [
+            # 1. Domains.get
+            {"list": [{"id": "dom_barkol", "name": "barkol.ru"}]},
+            # 2. Users.create
+            {"createdUserIds": ["k_user_2"]},
+            # 3. Pop3Download.create
+            {"createdAccountIds": ["k_pop_2"]},
+        ]
+
+        if hasattr(self.user, "person_ref_key"):
+            self.user.person_ref_key = "72095052-970f-11e3-84fb-00e05301b4e4"
+            self.user.save()
+
+        report = self.service.provision_full_mailbox(
+            login_name="v.shakirov2",
+            password="UltraSecretPassword123",
+            domain_name="barkol.ru",
+            full_name="Виталий Шакиров",
+            description="Ведущий инженер",
+            django_user_id=self.user.pk,
+            quota_mb=2048,
+            save_email_to_user=True,
+            sync_1c=True,
+        )
+
+        self.assertTrue(report["success"])
+        self.assertEqual(report["email"], "v.shakirov2@barkol.ru")
+        self.assertIn("sync_1c", report["steps"])
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "v.shakirov2@barkol.ru")
 
     def test_update_user_password_syncs_work_profile(self) -> None:
         """Тест синхронизации пароля в MailAccount и DataBaseUserWorkProfile при сбросе/смене пароля."""
@@ -479,6 +521,34 @@ class KerioAdminServiceTestCase(TestCase):
         u_abramov = next(u for u in audit["users"] if u["login"] == "a.abramov")
         self.assertFalse(u_abramov["in_ispmanager"])
         self.assertEqual(u_abramov["sync_status"], "missing_in_isp")
+
+    @patch("administration_app.utils.update_1c_physical_person_email")
+    def test_sync_user_email_to_portal_and_1c(self, mock_update_1c: MagicMock) -> None:
+        """Тест метода sync_user_email_to_portal_and_1c для обновления email в модели пользователя и 1С."""
+        mock_update_1c.return_value = (True, "OK в 1С")
+
+        if hasattr(self.user, "person_ref_key"):
+            self.user.person_ref_key = "72095052-970f-11e3-84fb-00e05301b4e4"
+            self.user.email = "old.email@barkol.ru"
+            self.user.save()
+
+        res = self.service.sync_user_email_to_portal_and_1c(
+            login_name="v.shakirov",
+            domain_name="barkol.ru",
+        )
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["email"], "v.shakirov@barkol.ru")
+        self.assertTrue(res["portal_synced"])
+        self.assertTrue(res["one_c_synced"])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "v.shakirov@barkol.ru")
+        mock_update_1c.assert_called_once_with(
+            person_ref_key="72095052-970f-11e3-84fb-00e05301b4e4",
+            email="v.shakirov@barkol.ru",
+            base_index=0,
+        )
 
 
 class CorporateLoginUtilsTestCase(TestCase):

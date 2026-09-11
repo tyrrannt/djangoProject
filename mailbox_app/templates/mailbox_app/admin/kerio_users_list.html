@@ -371,13 +371,26 @@
                                                            title="Включить / отключить пользователя">
                                                 </div>
                                             </td>
-                                            <td class="text-end pe-3 text-nowrap">
+                                             <td class="text-end pe-3 text-nowrap">
                                                 <div class="btn-group btn-group-sm" role="group" aria-label="Действия над пользователем">
                                                     <button type="button" class="btn btn-outline-secondary py-1 px-2 shadow-none"
                                                             onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')"
                                                             title="Сменить пароль">
                                                         <i class="bx bx-key text-warning font-size-15"></i>
                                                     </button>
+                                                    <button type="button" class="btn btn-outline-info py-1 px-2 shadow-none"
+                                                            onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}')"
+                                                            title="Синхронизировать email с профилем сотрудника и 1С (ЗУП)">
+                                                        <i class="bx bx-sync text-info font-size-15"></i>
+                                                    </button>
+                                                    {% if u.django_user %}
+                                                        <a href="{% url 'customers_app:generate_employee_file' u.django_user.pk %}"
+                                                           target="_blank"
+                                                           class="btn btn-outline-success py-1 px-2 shadow-none"
+                                                           title="Распечатать памятку сотрудника (PDF)">
+                                                            <i class="bx bx-printer font-size-15"></i>
+                                                        </a>
+                                                    {% endif %}
                                                     {% if u.loginName %}
                                                         <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.loginName %}" class="btn btn-outline-primary py-1 px-2 shadow-none" title="Редактировать параметры">
                                                             <i class="bx bx-edit font-size-15"></i>
@@ -450,11 +463,24 @@
                                             </span>
                                         {% endif %}
                                     </div>
-                                    <div class="d-flex align-items-center gap-1">
+                                     <div class="d-flex align-items-center gap-1">
                                         <button class="btn btn-outline-secondary btn-sm py-1 px-2"
                                                 onclick="openResetPasswordModal('{{ u.loginName }}', '{{ u.fullName|escapejs }}', '{{ current_domain }}')" title="Сменить пароль">
                                             <i class="bx bx-key text-warning font-size-16"></i>
                                         </button>
+                                        <button class="btn btn-outline-info btn-sm py-1 px-2"
+                                                onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}')"
+                                                title="Синхронизировать email с профилем сотрудника и 1С (ЗУП)">
+                                            <i class="bx bx-sync text-info font-size-16"></i>
+                                        </button>
+                                        {% if u.django_user %}
+                                            <a href="{% url 'customers_app:generate_employee_file' u.django_user.pk %}"
+                                               target="_blank"
+                                               class="btn btn-outline-success btn-sm py-1 px-2"
+                                               title="Распечатать памятку сотрудника (PDF)">
+                                                <i class="bx bx-printer font-size-16"></i>
+                                            </a>
+                                        {% endif %}
                                         {% if u.loginName %}
                                             <a href="{% url 'mailbox_app:kerio_admin_user_edit' u.loginName %}" class="btn btn-outline-primary btn-sm py-1 px-2" title="Редактировать">
                                                 <i class="bx bx-edit font-size-16"></i>
@@ -1292,6 +1318,39 @@
             })
             .catch(function(err) {
                 alert("Сетевая ошибка при создании ящика в ISPmanager: " + err);
+            });
+        }
+
+        function sync1cUser(loginName, domainName) {
+            var domain = domainName || "{{ current_domain|default:'barkol.ru' }}";
+            var email = loginName + "@" + domain;
+            if (!confirm("Синхронизировать почтовый ящик «" + email + "» с моделью пользователя портала и отправить данные в 1С (ЗУП)?")) {
+                return;
+            }
+            fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: "sync_1c",
+                    login_name: loginName,
+                    domain_name: domain,
+                    email: email
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert(data.message || ("Email " + email + " успешно синхронизирован с 1С и порталом!"));
+                    window.location.reload();
+                } else {
+                    alert("Замечание синхронизации: " + (data.message || "Не удалось синхронизировать"));
+                }
+            })
+            .catch(function(err) {
+                alert("Сетевая ошибка при синхронизации с 1С: " + err);
             });
         }
     </script>

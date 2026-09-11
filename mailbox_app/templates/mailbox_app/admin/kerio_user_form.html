@@ -359,6 +359,32 @@
                             </div>
                         </div>
 
+                        <!-- Блок 5: Интеграция с порталом и 1С (ЗУП) -->
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <span class="step-number-badge">5</span>
+                                    <span>Интеграция: Портал BARKOL и 1С (ЗУП)</span>
+                                </div>
+
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.save_email_to_user }}
+                                    <label class="form-check-label form-label-contrast" for="{{ form.save_email_to_user.id_for_label }}">
+                                        {{ form.save_email_to_user.label }}
+                                    </label>
+                                    <div class="form-help-contrast">{{ form.save_email_to_user.help_text }}</div>
+                                </div>
+
+                                <div class="form-check form-switch mb-0">
+                                    {{ form.sync_1c }}
+                                    <label class="form-check-label form-label-contrast" for="{{ form.sync_1c.id_for_label }}">
+                                        {{ form.sync_1c.label }}
+                                    </label>
+                                    <div class="form-help-contrast">{{ form.sync_1c.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Кнопки отправки -->
                         <div class="d-flex align-items-center justify-content-between pt-2 mb-5">
                             <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm px-3">
@@ -498,10 +524,14 @@
                 }
             });
 
-            // Если при загрузке страницы уже выбран сотрудник (например, при повторном открытии/ошибке)
+            // Если при загрузке страницы уже выбран сотрудник (например, передан в GET ?user= или initial)
             var currentSelectedId = $('#id_link_django_user').val();
-            if (currentSelectedId && employeesMap[currentSelectedId]) {
-                $('#id_link_django_user').trigger('change');
+            if (currentSelectedId) {
+                if ($.fn.select2) {
+                    $('.select2-user').val(currentSelectedId).trigger('change');
+                } else {
+                    $('#id_link_django_user').trigger('change');
+                }
             }
 
             // Переключение блока параметров POP3

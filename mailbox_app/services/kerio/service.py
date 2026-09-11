@@ -289,16 +289,18 @@ class KerioAdminService:
         configure_smtp_delivery: bool = True,
         external_smtp_host: str = "smtp.barkol.ru",
         external_smtp_port: int = 587,
+        save_email_to_user: bool = True,
+        sync_1c: bool = True,
     ) -> Dict[str, Any]:
-        """Выполняет полный цикл создания пользователя и настройки почтового ящика компании.
+        """Комплексный конвейер подготовки и полного развертывания почтового ящика.
 
-        Последовательность операций:
-        1. Создание учетной записи на внешнем почтовом шлюзе (Reg.ru / внешний сервер);
-        2. Создание почтового аккаунта в локальном Kerio Connect 9.4.1 (Users.create);
-        3. Создание правила сбора почты «Доставка -> Загрузка POP3» (Pop3Download.create)
-           с параметрами mail.barkol.ru:995 SSL, удаление сообщений с внешнего сервера;
+        Выполняет 6 взаимосвязанных этапов развертывания:
+        1. Создание ящика на внешнем почтовом сервере ISPmanager / Reg.ru (ISPmanagerExternalMailProvider);
+        2. Создание учетной записи пользователя в Kerio Connect (Users.create);
+        3. Создание правила внешнего сборщика «Загрузка POP3» (Pop3Download.create);
         4. Создание правила исходящей ретрансляции «Доставка SMTP» (SmtpDelivery.create);
-        5. Создание / связывание MailAccount в базе Django с шифрованием пароля Fernet AES.
+        5. Создание / связывание MailAccount в базе Django с шифрованием пароля Fernet AES;
+        6. Запись email и пароля в профиль сотрудника DataBaseUser и синхронизация с 1С (ЗУП) через OData.
 
         Args:
             login_name (str): Логин пользователя (например, 'i.ivanov').
@@ -316,8 +318,8 @@ class KerioAdminService:
             configure_smtp_delivery (bool): Настраивать ли правило исходящей ретрансляции Доставка SMTP.
             external_smtp_host (str): Хост SMTP relay (по умолчанию 'smtp.barkol.ru').
             external_smtp_port (int): Порт SMTP relay (по умолчанию 587).
-            external_leave_messages (bool): Оставлять ли письма на внешнем сервере (False — удалять).
-            create_django_account (bool): Создавать ли модель MailAccount в Django.
+            save_email_to_user (bool): Записывать ли созданный email адрес в модель DataBaseUser (по умолчанию True).
+            sync_1c (bool): Вызывать ли функцию синхронизации email в 1С (ЗУП) через OData (по умолчанию True).
 
         Returns:
             Dict[str, Any]: Полный отчет о созданных компонентах почтового ящика.
@@ -420,12 +422,68 @@ class KerioAdminService:
         if portal_user:
             # 4.1 Записываем пароль корпоративной почты в рабочий профиль сотрудника на сайте
             _sync_user_work_profile_password(portal_user, password)
-            if not portal_user.email:
+
+            # 4.2 Записываем созданный email в модель DataBaseUser
+            if save_email_to_user:
                 try:
                     portal_user.email = full_email
                     portal_user.save(update_fields=["email"])
-                except Exception:
-                    pass
+                    report["steps"]["user_email_saved"] = {
+                        "status": "ok",
+                        "email": full_email,
+                        "user_id": portal_user.pk,
+                    }
+                    logger.info(
+                        f"[KerioAdminService] Адрес '{full_email}' успешно записан в модель DataBaseUser сотрудника {portal_user.username}."
+                    )
+                except Exception as u_exc:
+                    logger.error(
+                        f"[KerioAdminService] Ошибка записи email в профиль пользователя {portal_user.username}: {u_exc}"
+                    )
+                    report["steps"]["user_email_saved"] = {"status": "error", "error": str(u_exc)}
+
+            # 4.3 Передаем данные в 1С (ЗУП) через OData
+            if sync_1c:
+                person_key = getattr(portal_user, "person_ref_key", None)
+                if person_key and str(person_key) not in ["", "00000000-0000-0000-0000-000000000000"]:
+                    try:
+                        from administration_app.utils import update_1c_physical_person_email
+                        sync_1c_ok, sync_1c_msg = update_1c_physical_person_email(
+                            person_ref_key=str(person_key),
+                            email=full_email,
+                            base_index=0,
+                        )
+                        report["steps"]["sync_1c"] = {
+                            "status": "ok" if sync_1c_ok else "warning",
+                            "success": sync_1c_ok,
+                            "message": sync_1c_msg,
+                            "person_ref_key": str(person_key),
+                        }
+                        if sync_1c_ok:
+                            logger.info(
+                                f"[KerioAdminService] Email '{full_email}' успешно синхронизирован с 1С (ЗУП) для физлица {person_key}."
+                            )
+                        else:
+                            logger.warning(
+                                f"[KerioAdminService] Замечание синхронизации email с 1С для {portal_user.username}: {sync_1c_msg}"
+                            )
+                    except Exception as one_c_exc:
+                        logger.error(f"[KerioAdminService] Ошибка при синхронизации с 1С: {one_c_exc}")
+                        report["steps"]["sync_1c"] = {
+                            "status": "error",
+                            "success": False,
+                            "message": str(one_c_exc),
+                        }
+                else:
+                    guid_msg = "GUID физлица в 1С отсутствует (person_ref_key не указан)"
+                    report["steps"]["sync_1c"] = {
+                        "status": "skipped",
+                        "success": False,
+                        "message": guid_msg,
+                    }
+                    logger.info(
+                        f"[KerioAdminService] Синхронизация с 1С пропущена ({guid_msg}) для пользователя {portal_user.username}."
+                    )
 
         if create_django_account and portal_user and MailAccount:
             try:
@@ -1005,3 +1063,130 @@ class KerioAdminService:
                 f"только в ISPmanager: {len(orphans)}."
             ),
         }
+
+    def sync_user_email_to_portal_and_1c(
+        self,
+        login_name: str,
+        domain_name: str = "barkol.ru",
+        email: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Синхронизирует корпоративный email ящика с профилем сотрудника DataBaseUser и 1С (ЗУП).
+
+        Выполняет:
+        1. Определение целевого email адреса (по переданному значению или login_name@domain_name).
+        2. Поиск сотрудника портала в модели DataBaseUser (по username, email или связанному MailAccount).
+        3. Запись email в профиль DataBaseUser (user.email) и сохранение в БД.
+        4. Отправку PATCH-запроса через OData (update_1c_physical_person_email) в 1С ЗУП по person_ref_key.
+
+        Args:
+            login_name (str): Логин пользователя (например, 'i.ivanov' или 'i.ivanov@barkol.ru').
+            domain_name (str): Домен почты (по умолчанию 'barkol.ru').
+            email (Optional[str]): Явный email адрес (если не указан, формируется автоматически).
+
+        Returns:
+            Dict[str, Any]: Словарь с результатами синхронизации:
+                - success (bool): Общий статус выполнения операции.
+                - message (str): Человекочитаемое сообщение о результате.
+                - email (str): Синхронизированный email адрес.
+                - user_id (Optional[int]): ID пользователя портала DataBaseUser.
+                - portal_synced (bool): Успешность сохранения email на портале.
+                - one_c_synced (bool): Успешность синхронизации с 1С (ЗУП).
+                - one_c_message (str): Детальный ответ шлюза 1С OData.
+
+        Raises:
+            KerioValidationError: Если не указан логин пользователя.
+        """
+        clean_login = login_name.split("@")[0].strip().lower()
+        if not clean_login:
+            raise KerioValidationError("Логин пользователя обязателен для синхронизации.")
+
+        target_domain = domain_name.strip().lower() if domain_name else "barkol.ru"
+        full_email = str(email).strip().lower() if email else f"{clean_login}@{target_domain}"
+
+        portal_user = None
+        if User and models:
+            portal_user = User.objects.filter(
+                models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+            ).select_related("user_work_profile").first()
+
+            if not portal_user and MailAccount:
+                acc = MailAccount.objects.filter(
+                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+                ).select_related("user").first()
+                if acc and acc.user:
+                    portal_user = acc.user
+
+        if not portal_user:
+            return {
+                "success": False,
+                "message": f"Сотрудник на портале для учетной записи '{clean_login}' ({full_email}) не найден.",
+                "email": full_email,
+                "user_id": None,
+                "portal_synced": False,
+                "one_c_synced": False,
+                "one_c_message": "Пользователь портала не найден",
+            }
+
+        # 1. Запись email в профиль сотрудника на портале
+        portal_synced = False
+        try:
+            portal_user.email = full_email
+            portal_user.save(update_fields=["email"])
+            portal_synced = True
+            logger.info(
+                f"[KerioAdminService] Email '{full_email}' сохранен в профиль сотрудника {portal_user.username} (ID: {portal_user.pk})."
+            )
+        except Exception as p_exc:
+            logger.error(
+                f"[KerioAdminService] Ошибка сохранения email в профиль пользователя {portal_user.username}: {p_exc}"
+            )
+
+        # 2. Передача email в 1С (ЗУП) через OData
+        one_c_synced = False
+        one_c_message = ""
+        person_key = getattr(portal_user, "person_ref_key", None)
+        if person_key and str(person_key) not in ["", "00000000-0000-0000-0000-000000000000"]:
+            try:
+                from administration_app.utils import update_1c_physical_person_email
+                one_c_synced, one_c_message = update_1c_physical_person_email(
+                    person_ref_key=str(person_key),
+                    email=full_email,
+                    base_index=0,
+                )
+                if one_c_synced:
+                    logger.info(
+                        f"[KerioAdminService] Email '{full_email}' успешно синхронизирован с 1С (ЗУП) для физлица {person_key}."
+                    )
+                else:
+                    logger.warning(
+                        f"[KerioAdminService] Замечание синхронизации email с 1С для {portal_user.username}: {one_c_message}"
+                    )
+            except Exception as one_c_exc:
+                one_c_message = str(one_c_exc)
+                logger.error(f"[KerioAdminService] Ошибка вызова update_1c_physical_person_email: {one_c_exc}")
+        else:
+            one_c_message = "GUID физлица в 1С отсутствует (person_ref_key не указан)"
+            logger.info(
+                f"[KerioAdminService] Синхронизация с 1С пропущена ({one_c_message}) для {portal_user.username}."
+            )
+
+        # Формирование итогового сообщения
+        if one_c_synced and portal_synced:
+            msg = f"Email '{full_email}' успешно сохранен в профиле портала и синхронизирован с 1С (ЗУП)!"
+        elif portal_synced and not one_c_synced and "GUID физлица" in one_c_message:
+            msg = f"Email '{full_email}' сохранен на портале, но в 1С не передан (у сотрудника отсутствует GUID физлица)."
+        elif portal_synced and not one_c_synced:
+            msg = f"Email '{full_email}' сохранен на портале, но при передаче в 1С возникло замечание: {one_c_message}"
+        else:
+            msg = f"Ошибка сохранения email на портале. Замечание 1С: {one_c_message}"
+
+        return {
+            "success": portal_synced or one_c_synced,
+            "message": msg,
+            "email": full_email,
+            "user_id": portal_user.pk,
+            "portal_synced": portal_synced,
+            "one_c_synced": one_c_synced,
+            "one_c_message": one_c_message,
+        }
+
