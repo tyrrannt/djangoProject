@@ -110,10 +110,12 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="triggerDownloadNow(null, this)">
-                                <i class="bx bx-refresh font-size-16"></i> <span>Загрузить всю почту сейчас</span>
+                            <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm" style="min-height: 38px;" onclick="triggerDownloadNow(null, this)">
+                                <i class="bx bx-refresh font-size-16"></i>
+                                <span class="d-none d-sm-inline">Загрузить всю почту сейчас</span>
+                                <span class="d-sm-none">Собрать все</span>
                             </button>
-                            <a href="{% url 'mailbox_app:kerio_admin_user_create' %}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+                            <a href="{% url 'mailbox_app:kerio_admin_user_create' %}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style="min-height: 38px;">
                                 <i class="bx bx-plus font-size-16"></i> <span class="d-none d-sm-inline">Добавить ящик с POP3</span>
                             </a>
                         </div>
@@ -202,8 +204,8 @@
                                                 {% endif %}
                                             </td>
                                             <td class="text-end pe-3">
-                                                <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-none py-1 px-2"
-                                                        onclick="triggerDownloadNow('{{ p.id }}', this)" title="Загрузить почту по этому правилу немедленно">
+                                                <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-none py-1.5 px-2.5"
+                                                        onclick="triggerDownloadNow('{{ p.id|escapejs }}', this)" title="Загрузить почту по этому правилу немедленно">
                                                     <i class="bx bx-download"></i>
                                                     <span class="font-size-12 fw-semibold">Собрать</span>
                                                 </button>
@@ -247,8 +249,8 @@
                                 </div>
 
                                 <div class="d-flex justify-content-end pt-2 border-top">
-                                    <button type="button" class="btn btn-outline-primary btn-sm py-1 px-3 d-flex align-items-center gap-1"
-                                            onclick="triggerDownloadNow('{{ p.id }}', this)">
+                                    <button type="button" class="btn btn-outline-primary btn-sm py-2 px-3 d-flex align-items-center gap-1" style="min-height: 40px;"
+                                            onclick="triggerDownloadNow('{{ p.id|escapejs }}', this)">
                                         <i class="bx bx-download"></i> <span class="fw-semibold">Загрузить сейчас</span>
                                     </button>
                                 </div>

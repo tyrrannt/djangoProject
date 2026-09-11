@@ -213,7 +213,7 @@
                                                 <i class="bx bx-show" id="id_kerio_passwordIcon"></i>
                                             </button>
                                             <button class="btn btn-outline-primary" type="button" onclick="generateAndSetPasswords()" title="Сгенерировать надежный пароль">
-                                                <i class="bx bx-refresh"></i> Сгенерировать
+                                                <i class="bx bx-refresh"></i> <span class="d-none d-sm-inline">Сгенерировать</span>
                                             </button>
                                         </div>
                                         <small class="form-help-contrast d-block mt-1">{{ form.password.help_text }}</small>
@@ -386,13 +386,13 @@
                         </div>
 
                         <!-- Кнопки отправки -->
-                        <div class="d-flex align-items-center justify-content-between pt-2 mb-5">
-                            <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm px-3">
+                        <div class="d-flex align-items-center justify-content-between pt-2 mb-5 flex-wrap gap-2">
+                            <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm px-3 py-2" style="min-height: 40px; display: inline-flex; align-items: center;">
                                 Отмена
                             </a>
-                            <button type="submit" class="btn btn-primary btn-sm px-4 py-2 d-flex align-items-center gap-2 shadow-sm font-size-14 fw-semibold" id="btnSubmitForm">
+                            <button type="submit" class="btn btn-primary btn-sm px-4 py-2 d-flex align-items-center gap-2 shadow-sm font-size-14 fw-semibold" style="min-height: 40px;" id="btnSubmitForm">
                                 <i class="bx bx-check-shield font-size-18"></i>
-                                <span>Создать почтовый ящик в Kerio Connect</span>
+                                <span>Создать почтовый ящик<span class="d-none d-sm-inline"> в Kerio Connect</span></span>
                             </button>
                         </div>
                     </form>

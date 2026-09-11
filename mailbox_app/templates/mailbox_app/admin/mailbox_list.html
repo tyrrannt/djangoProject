@@ -58,7 +58,7 @@
 
                 <div class="mailbox-settings-container" style="max-width: 1200px;">
                     <!-- Навигационные вкладки админ-раздела -->
-                    {% include 'mailbox_app/admin/kerio_nav_tabs.html' with active_admin_tab='portal_mailboxes' %}
+                    {% include 'mailbox_app/admin/kerio_nav_tabs.html' with active_admin_tab='portal_mailboxes' total_count=total_count %}
 
                     <!-- Шапка раздела -->
                     <header class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom flex-wrap gap-2">
@@ -350,7 +350,9 @@
             </div>
         </div>
     </div>
+{% endblock %}
 
+{% block custom_script %}
     <script>
         function testConnectionModal(mailboxId, mailboxName) {
             const modalEl = document.getElementById("testConnModal");

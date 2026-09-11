@@ -534,7 +534,7 @@
                                 <i class="bx bx-show" id="modalResetNewPasswordIcon"></i>
                             </button>
                             <button class="btn btn-outline-primary" type="button" onclick="generateRandomPassword('modalResetNewPassword')" title="Сгенерировать надежный пароль">
-                                <i class="bx bx-refresh"></i> Сгенерировать
+                                <i class="bx bx-refresh"></i> <span class="d-none d-sm-inline">Сгенерировать</span>
                             </button>
                         </div>
                     </div>
@@ -643,13 +643,13 @@
 
                     <!-- Панель фильтров и быстрого поиска в аудите -->
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <div class="btn-group btn-group-sm" role="group" id="auditFilterButtonGroup">
-                            <button type="button" class="btn btn-primary active" onclick="filterAuditTable('all')" id="btnFilterAll">Все (<span id="countFilterAll">0</span>)</button>
-                            <button type="button" class="btn btn-outline-danger" onclick="filterAuditTable('missing_in_isp')" id="btnFilterMissing">⚠️ Отсутствуют в ISPmanager (<span id="countFilterMissing">0</span>)</button>
-                            <button type="button" class="btn btn-outline-success" onclick="filterAuditTable('synced')" id="btnFilterSynced">✅ Созданы везде (<span id="countFilterSynced">0</span>)</button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="filterAuditTable('orphan_in_isp')" id="btnFilterOrphan">ℹ️ Только в ISPmanager (<span id="countFilterOrphan">0</span>)</button>
+                        <div class="d-flex flex-wrap gap-1" role="group" id="auditFilterButtonGroup">
+                            <button type="button" class="btn btn-sm btn-primary active" onclick="filterAuditTable('all')" id="btnFilterAll">Все (<span id="countFilterAll">0</span>)</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="filterAuditTable('missing_in_isp')" id="btnFilterMissing">⚠️ Отсутствуют в ISPmanager (<span id="countFilterMissing">0</span>)</button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="filterAuditTable('synced')" id="btnFilterSynced">✅ Созданы везде (<span id="countFilterSynced">0</span>)</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="filterAuditTable('orphan_in_isp')" id="btnFilterOrphan">ℹ️ Только в ISPmanager (<span id="countFilterOrphan">0</span>)</button>
                         </div>
-                        <div class="input-group input-group-sm" style="max-width: 280px;">
+                        <div class="input-group input-group-sm flex-grow-1 flex-md-grow-0" style="max-width: 280px;">
                             <span class="input-group-text bg-white border-end-0"><i class="bx bx-search text-muted"></i></span>
                             <input type="text" class="form-control border-start-0" id="auditSearchInput" placeholder="Поиск в результатах аудита..." oninput="filterAuditTable(currentAuditFilter)">
                         </div>

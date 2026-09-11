@@ -304,17 +304,17 @@
 
                         <!-- Панель кнопок сохранения и проверки -->
                         <div class="d-flex align-items-center justify-content-between pt-3 pb-5 flex-wrap gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold d-flex align-items-center gap-1 shadow-sm" style="min-height: 40px;">
                                     <i class="bx bx-check font-size-18"></i>
                                     <span>{% if is_create %}Создать почтовый ящик{% else %}Сохранить изменения{% endif %}</span>
                                 </button>
-                                <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary px-3 py-2">
+                                <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary px-3 py-2" style="min-height: 40px; display: inline-flex; align-items: center;">
                                     Отмена
                                 </a>
                             </div>
 
-                            <button type="button" id="btnTestConnForm" class="btn btn-outline-info px-3 py-2 d-flex align-items-center gap-1 shadow-sm" onclick="runLiveConnectionTest()">
+                            <button type="button" id="btnTestConnForm" class="btn btn-outline-info px-3 py-2 d-flex align-items-center gap-1 shadow-sm" style="min-height: 40px;" onclick="runLiveConnectionTest()">
                                 <i class="bx bx-wifi font-size-18"></i>
                                 <span>Проверить подключение</span>
                             </button>
@@ -324,7 +324,9 @@
             </div>
         </div>
     </section>
+{% endblock %}
 
+{% block custom_script %}
     <!-- Скрипты управления формой -->
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script>

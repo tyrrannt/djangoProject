@@ -47,11 +47,15 @@
                 <header class="mailbox-header-bar mb-4">
                     <div class="d-flex align-items-center justify-content-between gap-2 w-100 flex-wrap">
                         <div class="d-flex align-items-center gap-2">
-                            <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-outline-primary btn-sm mobile-folder-drawer-toggle d-md-none d-flex align-items-center gap-1 shadow-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#mailboxMobileDrawer" aria-controls="mailboxMobileDrawer">
+                                <i class="bx bx-folder-open font-size-18"></i>
+                            </button>
+                            <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" style="min-height: 38px;">
                                 <i class="bx bx-arrow-back"></i> <span class="d-none d-sm-inline">К ящикам</span>
                             </a>
                             <h4 class="mailbox-page-title m-0 d-flex align-items-center gap-2">
-                                <i class="bx bx-printer text-primary"></i> Настройки официального бланка печати
+                                <i class="bx bx-printer text-primary"></i> <span>Настройки официального бланка печати</span>
                             </h4>
                         </div>
                         <div>
@@ -124,12 +128,12 @@
                                     </label>
                                 </div>
 
-                                <div class="d-flex align-items-center justify-content-between border-top pt-3">
-                                    <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary btn-sm px-3">
+                                <div class="d-flex align-items-center justify-content-between border-top pt-3 flex-wrap gap-2">
+                                    <a href="{% url 'mailbox_app:mailbox_admin_list' %}" class="btn btn-outline-secondary btn-sm px-3 py-2" style="min-height: 40px; display: inline-flex; align-items: center;">
                                         Отмена
                                     </a>
-                                    <button type="submit" class="btn btn-primary btn-sm px-4 py-2 d-flex align-items-center gap-1 shadow-sm font-weight-semibold">
-                                        <i class="bx bx-check font-size-18"></i> Сохранить настройки
+                                    <button type="submit" class="btn btn-primary btn-sm px-4 py-2 d-flex align-items-center gap-1 shadow-sm font-weight-semibold" style="min-height: 40px;">
+                                        <i class="bx bx-check font-size-18"></i> <span>Сохранить настройки</span>
                                     </button>
                                 </div>
                             </form>
@@ -148,7 +152,7 @@
 
                             <div class="preview-box">
                                 <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-3">
-                                    <img src="/static/customers_app/img/logo.png" alt="Logo" style="max-height: 40px;" onerror="this.style.display='none';">
+                                    <img src="{% static 'customers_app/img/logo.png' %}" alt="Logo" style="max-height: 40px;" onerror="this.style.display='none';">
                                     <div>
                                         <div class="fw-bold text-primary font-size-14 text-uppercase" id="previewOrgName">{{ print_settings.organization_name }}</div>
                                         <div class="text-muted small fw-semibold text-uppercase" id="previewHeaderTitle" style="font-size: 11px;">{{ print_settings.header_title }}</div>
