@@ -247,6 +247,16 @@ class UserManager:
         auth_type: str = "UInternalAuth",
         quota_mb: Optional[int] = None,
         email_alias: Optional[str] = None,
+        can_change_password: bool = False,
+        first_name: str = "",
+        middle_name: str = "",
+        last_name: str = "",
+        job_title: str = "",
+        department: str = "",
+        company: str = "Авиакомпания БАРКОЛ",
+        phone: str = "",
+        mobile_phone: str = "",
+        contact: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Создает нового почтового пользователя в Kerio Connect.
 
@@ -260,6 +270,16 @@ class UserManager:
             auth_type (str): Тип аутентификации в Kerio ('UInternalAuth', 'UWindowsNTAuth' и др., по умолчанию 'UInternalAuth').
             quota_mb (Optional[int]): Лимит дисковой квоты в мегабайтах (если None или 0 — без ограничений).
             email_alias (Optional[str]): Дополнительный псевдоним / алиас.
+            can_change_password (bool): Разрешить ли пользователю менять свой пароль в Kerio Connect Client (по умолчанию False — запрещено).
+            first_name (str): Имя сотрудника для вкладки «Контакт».
+            middle_name (str): Отчество сотрудника для вкладки «Контакт».
+            last_name (str): Фамилия сотрудника для вкладки «Контакт».
+            job_title (str): Должность для вкладки «Контакт».
+            department (str): Подразделение / отдел для вкладки «Контакт».
+            company (str): Название организации для вкладки «Контакт» (по умолчанию 'Авиакомпания БАРКОЛ').
+            phone (str): Рабочий / внутренний телефон для вкладки «Контакт».
+            mobile_phone (str): Мобильный телефон для вкладки «Контакт».
+            contact (Optional[Dict[str, Any]]): Произвольный словарь контактных данных Kerio Connect.
 
         Returns:
             Dict[str, Any]: Словарь с результатом создания и присвоенным ID.
@@ -286,7 +306,32 @@ class UserManager:
             "description": description.strip(),
             "isEnabled": is_enabled,
             "authType": valid_auth_type,
+            "canChangePassword": bool(can_change_password),
         }
+
+        # Формирование контактных данных (вкладка «Контакт» в Kerio Connect)
+        contact_dict: Dict[str, Any] = {}
+        if contact and isinstance(contact, dict):
+            contact_dict.update(contact)
+        if first_name:
+            contact_dict["firstName"] = first_name.strip()
+        if middle_name:
+            contact_dict["middleName"] = middle_name.strip()
+        if last_name:
+            contact_dict["lastName"] = last_name.strip()
+        if job_title:
+            contact_dict["jobTitle"] = job_title.strip()
+        if department:
+            contact_dict["department"] = department.strip()
+        if company:
+            contact_dict["company"] = company.strip()
+        if phone:
+            contact_dict["businessPhone"] = phone.strip()
+        if mobile_phone:
+            contact_dict["mobilePhone"] = mobile_phone.strip()
+
+        if contact_dict:
+            user_data["contact"] = contact_dict
 
         if quota_mb is not None and int(quota_mb) > 0:
             user_data["itemBox"] = {
@@ -317,6 +362,16 @@ class UserManager:
         description: Optional[str] = None,
         is_enabled: Optional[bool] = None,
         quota_mb: Optional[int] = None,
+        can_change_password: Optional[bool] = None,
+        first_name: Optional[str] = None,
+        middle_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        job_title: Optional[str] = None,
+        department: Optional[str] = None,
+        company: Optional[str] = None,
+        phone: Optional[str] = None,
+        mobile_phone: Optional[str] = None,
+        contact: Optional[Dict[str, Any]] = None,
         extra_fields: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Обновляет атрибуты существующего пользователя в Kerio Connect.
@@ -327,6 +382,16 @@ class UserManager:
             description (Optional[str]): Новое описание / должность.
             is_enabled (Optional[bool]): Флаг активности.
             quota_mb (Optional[int]): Новое значение квоты ящика в МБ.
+            can_change_password (Optional[bool]): Разрешить ли смену пароля в Kerio Connect Client.
+            first_name (Optional[str]): Имя сотрудника для вкладки «Контакт».
+            middle_name (Optional[str]): Отчество сотрудника для вкладки «Контакт».
+            last_name (Optional[str]): Фамилия сотрудника для вкладки «Контакт».
+            job_title (Optional[str]): Должность для вкладки «Контакт».
+            department (Optional[str]): Подразделение для вкладки «Контакт».
+            company (Optional[str]): Организация для вкладки «Контакт».
+            phone (Optional[str]): Рабочий / внутренний телефон для вкладки «Контакт».
+            mobile_phone (Optional[str]): Мобильный телефон для вкладки «Контакт».
+            contact (Optional[Dict[str, Any]]): Словарь контактных параметров.
             extra_fields (Optional[Dict[str, Any]]): Дополнительные параметры Kerio.
 
         Returns:
@@ -343,6 +408,32 @@ class UserManager:
             pattern["description"] = description.strip()
         if is_enabled is not None:
             pattern["isEnabled"] = is_enabled
+        if can_change_password is not None:
+            pattern["canChangePassword"] = bool(can_change_password)
+
+        contact_dict: Dict[str, Any] = {}
+        if contact and isinstance(contact, dict):
+            contact_dict.update(contact)
+        if first_name is not None:
+            contact_dict["firstName"] = first_name.strip()
+        if middle_name is not None:
+            contact_dict["middleName"] = middle_name.strip()
+        if last_name is not None:
+            contact_dict["lastName"] = last_name.strip()
+        if job_title is not None:
+            contact_dict["jobTitle"] = job_title.strip()
+        if department is not None:
+            contact_dict["department"] = department.strip()
+        if company is not None:
+            contact_dict["company"] = company.strip()
+        if phone is not None:
+            contact_dict["businessPhone"] = phone.strip()
+        if mobile_phone is not None:
+            contact_dict["mobilePhone"] = mobile_phone.strip()
+
+        if contact_dict:
+            pattern["contact"] = contact_dict
+
         if quota_mb is not None:
             pattern["itemBox"] = {
                 "limit": int(quota_mb) if quota_mb else 0,

@@ -30,6 +30,7 @@ from mailbox_app.services.kerio.external_provider import (
     ManualExternalMailProvider,
     RegRuExternalMailProvider,
 )
+from mailbox_app.services.kerio.mailing_lists import MailingListManager
 from mailbox_app.services.kerio.pop3_download import Pop3DownloadManager
 from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
 from mailbox_app.services.kerio.users import UserManager
@@ -145,6 +146,7 @@ class KerioAdminService:
         self.client = client or KerioConnectAdminClient()
         self.domains = DomainManager(self.client)
         self.users = UserManager(self.client)
+        self.mailing_lists = MailingListManager(self.client)
         self.pop3 = Pop3DownloadManager(self.client)
         self.smtp_delivery = SmtpDeliveryManager(self.client)
         self.external_provider = external_provider or RegRuExternalMailProvider()
@@ -201,6 +203,78 @@ class KerioAdminService:
             List[Dict[str, Any]]: Список словарей с данными доменов.
         """
         return self.domains.get_domains()
+
+    def get_mailing_lists(self, domain_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Возвращает список всех доступных списков рассылки Kerio Connect.
+
+        Args:
+            domain_name (Optional[str]): Имя домена (например, 'barkol.ru').
+
+        Returns:
+            List[Dict[str, Any]]: Список словарей списков рассылки (id, name, email, description, ...).
+        """
+        domain_id = None
+        if domain_name and domain_name != "all":
+            try:
+                domain_id = self.domains.get_domain_id(domain_name)
+            except Exception:
+                domain_id = None
+        return self.mailing_lists.get_mailing_lists(domain_id=domain_id)
+
+    def get_user_mailing_lists(
+        self,
+        user_id: Optional[str] = None,
+        email: Optional[str] = None,
+        domain_name: Optional[str] = None,
+    ) -> List[str]:
+        """Определяет, в каких списках рассылки состоит указанный пользователь или email.
+
+        Args:
+            user_id (Optional[str]): Системный ID пользователя в Kerio Connect.
+            email (Optional[str]): Email адрес сотрудника.
+            domain_name (Optional[str]): Имя домена.
+
+        Returns:
+            List[str]: Список идентификаторов списков рассылки, в которых состоит пользователь.
+        """
+        domain_id = None
+        if domain_name and domain_name != "all":
+            try:
+                domain_id = self.domains.get_domain_id(domain_name)
+            except Exception:
+                domain_id = None
+        return self.mailing_lists.get_user_memberships(user_id=user_id, email=email, domain_id=domain_id)
+
+    def set_user_mailing_lists(
+        self,
+        email: str,
+        selected_mailing_list_ids: List[str],
+        user_id: Optional[str] = None,
+        domain_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Синхронизирует подписку сотрудника на списки рассылки.
+
+        Args:
+            email (str): Email адрес сотрудника.
+            selected_mailing_list_ids (List[str]): Список выбранных ID рассылок.
+            user_id (Optional[str]): Системный ID пользователя.
+            domain_name (Optional[str]): Имя домена.
+
+        Returns:
+            Dict[str, Any]: Отчет о добавленных и удаленных подписках.
+        """
+        domain_id = None
+        if domain_name and domain_name != "all":
+            try:
+                domain_id = self.domains.get_domain_id(domain_name)
+            except Exception:
+                domain_id = None
+        return self.mailing_lists.set_user_memberships(
+            user_id=user_id,
+            email=email,
+            selected_mailing_list_ids=selected_mailing_list_ids,
+            domain_id=domain_id,
+        )
 
     def get_users_list(
         self,
@@ -340,16 +414,27 @@ class KerioAdminService:
         save_email_to_user: bool = True,
         sync_1c: bool = True,
         isp_password: Optional[str] = None,
+        can_change_password: bool = False,
+        first_name: str = "",
+        middle_name: str = "",
+        last_name: str = "",
+        job_title: str = "",
+        department: str = "",
+        company: str = "Авиакомпания БАРКОЛ",
+        phone: str = "",
+        mobile_phone: str = "",
+        mailing_list_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Комплексный конвейер подготовки и полного развертывания почтового ящика.
 
-        Выполняет 6 взаимосвязанных этапов развертывания:
+        Выполняет взаимосвязанные этапы развертывания:
         1. Создание ящика на внешнем почтовом сервере ISPmanager / Reg.ru (ISPmanagerExternalMailProvider);
-        2. Создание учетной записи пользователя в Kerio Connect (Users.create);
-        3. Создание правила внешнего сборщика «Загрузка POP3» (Pop3Download.create);
-        4. Создание правила исходящей ретрансляции «Доставка SMTP» (SmtpDelivery.create);
-        5. Создание / связывание MailAccount в базе Django с шифрованием пароля Fernet AES;
-        6. Запись email и паролей в профиль сотрудника DataBaseUserWorkProfile (work_email_password и work_application_password) и синхронизация с 1С (ЗУП) через OData.
+        2. Создание учетной записи пользователя в Kerio Connect (Users.create) с контактными полями и флагом canChangePassword=False;
+        3. Включение пользователя в выбранные списки рассылки (MailingLists.addSubscribers);
+        4. Создание правила внешнего сборщика «Загрузка POP3» (Pop3Download.create);
+        5. Создание правила исходящей ретрансляции «Доставка SMTP» (SmtpDelivery.create);
+        6. Создание / связывание MailAccount в базе Django с шифрованием пароля Fernet AES;
+        7. Запись email и паролей в профиль сотрудника DataBaseUserWorkProfile (work_email_password и work_application_password) и синхронизация с 1С (ЗУП) через OData.
 
         Args:
             login_name (str): Логин пользователя (например, 'i.ivanov').
@@ -370,6 +455,16 @@ class KerioAdminService:
             save_email_to_user (bool): Записывать ли созданный email адрес в модель DataBaseUser (по умолчанию True).
             sync_1c (bool): Вызывать ли функцию синхронизации email в 1С (ЗУП) через OData (по умолчанию True).
             isp_password (Optional[str]): Внешний пароль ISPManager / Доставки SMTP. Если не указан, используется основной пароль.
+            can_change_password (bool): Разрешить ли смену пароля в Kerio Connect Client (по умолчанию False).
+            first_name (str): Имя для вкладки «Контакт».
+            middle_name (str): Отчество для вкладки «Контакт».
+            last_name (str): Фамилия для вкладки «Контакт».
+            job_title (str): Должность для вкладки «Контакт».
+            department (str): Подразделение для вкладки «Контакт».
+            company (str): Компания для вкладки «Контакт».
+            phone (str): Внутренний / рабочий телефон для вкладки «Контакт».
+            mobile_phone (str): Мобильный телефон для вкладки «Контакт».
+            mailing_list_ids (Optional[List[str]]): Список идентификаторов списков рассылки для немедленного включения.
 
         Returns:
             Dict[str, Any]: Полный отчет о созданных компонентах почтового ящика.
@@ -407,10 +502,10 @@ class KerioAdminService:
             logger.warning(f"[KerioAdminService] Внешний провайдер вернул предупреждение: {exc}")
             report["steps"]["external_server"] = {"status": "warning", "error": str(exc)}
 
-        # Шаг 2 и 3. Работа с Kerio Connect API
+        # Шаг 2. Работа с Kerio Connect API
         domain_id = self.domains.get_domain_id(domain_name)
 
-        # Создаем пользователя Kerio Connect (внутренний пароль)
+        # Создаем пользователя Kerio Connect (внутренний пароль, canChangePassword=False, contact)
         user_create_res = self.users.create_user(
             domain_id=domain_id,
             login_name=clean_login,
@@ -419,8 +514,50 @@ class KerioAdminService:
             description=description,
             is_enabled=True,
             quota_mb=quota_mb,
+            can_change_password=can_change_password,
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            job_title=job_title,
+            department=department,
+            company=company,
+            phone=phone,
+            mobile_phone=mobile_phone,
         )
         report["steps"]["kerio_user"] = {"status": "ok", "details": user_create_res}
+
+        # Шаг 2.1. Добавление в выбранные списки рассылки Kerio Connect
+        if mailing_list_ids:
+            try:
+                created_user_id: Optional[str] = None
+                if isinstance(user_create_res, dict):
+                    users_ret = user_create_res.get("users", []) or user_create_res.get("list", []) or user_create_res.get("result", [])
+                    if users_ret and isinstance(users_ret[0], dict):
+                        created_user_id = users_ret[0].get("id")
+                    elif "userIds" in user_create_res and user_create_res["userIds"]:
+                        created_user_id = user_create_res["userIds"][0]
+                    elif "ids" in user_create_res and user_create_res["ids"]:
+                        created_user_id = user_create_res["ids"][0]
+
+                if not created_user_id:
+                    try:
+                        found_user = self.users.get_user_by_login(clean_login, domain_id=domain_id)
+                        if found_user:
+                            created_user_id = found_user.get("id")
+                    except Exception:
+                        pass
+
+                ml_report = self.mailing_lists.set_user_memberships(
+                    user_id=created_user_id,
+                    email=full_email,
+                    selected_mailing_list_ids=mailing_list_ids,
+                    domain_id=domain_id,
+                    full_name=full_name,
+                )
+                report["steps"]["mailing_lists"] = {"status": "ok", "details": ml_report}
+            except Exception as ml_exc:
+                logger.warning(f"[KerioAdminService] Ошибка включения '{full_email}' в списки рассылки: {ml_exc}")
+                report["steps"]["mailing_lists"] = {"status": "warning", "error": str(ml_exc)}
 
         # Создаем правило Загрузка POP3 (авторизуется на ISPManager внешним паролем)
         try:

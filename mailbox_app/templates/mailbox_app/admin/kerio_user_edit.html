@@ -9,6 +9,19 @@
 {% block custom_css %}
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mailbox.css' %}" />
     <style>
+        .form-section-header {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #0f172a;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .form-label-contrast {
             color: #0f172a !important;
             font-weight: 600 !important;
@@ -38,7 +51,7 @@
                 <!-- Полоса вкладок корпоративных почтовых ящиков -->
                 {% include 'mailbox_app/includes/mailbox_tabs.html' %}
 
-                <div class="mailbox-settings-container" style="max-width: 800px;">
+                <div class="mailbox-settings-container" style="max-width: 900px;">
                     <!-- Шапка формы -->
                     <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
@@ -52,7 +65,7 @@
                                     <span>{{ title }}</span>
                                 </h4>
                                 {% if k_user %}
-                                    <small class="text-secondary">Логин: <strong class="text-dark">{{ k_user.loginName }}</strong> (ID: {{ user_id }})</small>
+                                    <small class="text-secondary">Логин: <strong class="text-dark">{{ k_user.loginName }}</strong> | Домен: <strong class="text-dark">{{ k_user.domainId|default:"barkol.ru" }}</strong> (ID: {{ actual_user_id }})</small>
                                 {% endif %}
                             </div>
                         </div>
@@ -75,17 +88,24 @@
                             </div>
                         {% endif %}
 
+                        <!-- Блок 1: Основные параметры учетной записи -->
                         <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-user-check text-primary font-size-20"></i>
+                                    <span>Учетная запись и безопасность</span>
+                                </div>
+
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label for="{{ form.full_name.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.full_name.label }}
                                         </label>
                                         {{ form.full_name }}
+                                        <small class="form-help-contrast d-block mt-1">Отображаемое ФИО в глобальной адресной книге Kerio Connect</small>
                                     </div>
 
-                                    <div class="col-12">
+                                    <div class="col-12 col-md-6">
                                         <label for="{{ form.description.id_for_label }}" class="form-label form-label-contrast">
                                             {{ form.description.label }}
                                         </label>
@@ -100,13 +120,23 @@
                                         <small class="form-help-contrast d-block mt-1">{{ form.quota_mb.help_text }}</small>
                                     </div>
 
-                                    <div class="col-12 col-md-6 d-flex align-items-center pt-3">
+                                    <div class="col-12 col-md-6 pt-2">
                                         <div class="form-check form-switch">
                                             {{ form.is_enabled }}
                                             <label class="form-check-label form-label-contrast" for="{{ form.is_enabled.id_for_label }}">
                                                 {{ form.is_enabled.label }}
                                             </label>
                                             <small class="d-block form-help-contrast">{{ form.is_enabled.help_text }}</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 pt-2">
+                                        <div class="form-check form-switch">
+                                            {{ form.can_change_password }}
+                                            <label class="form-check-label form-label-contrast" for="{{ form.can_change_password.id_for_label }}">
+                                                {{ form.can_change_password.label }}
+                                            </label>
+                                            <small class="d-block form-help-contrast">{{ form.can_change_password.help_text }}</small>
                                         </div>
                                     </div>
 
@@ -123,6 +153,117 @@
                             </div>
                         </div>
 
+                        <!-- Блок 2: Контактная информация (Вкладка «Контакт» в Kerio Connect) -->
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-id-card text-success font-size-20"></i>
+                                    <span>Контактная информация (Вкладка «Контакт» в Kerio Connect)</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.last_name.label }}
+                                        </label>
+                                        {{ form.last_name }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.first_name.label }}
+                                        </label>
+                                        {{ form.first_name }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.middle_name.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.middle_name.label }}
+                                        </label>
+                                        {{ form.middle_name }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.job_title.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.job_title.label }}
+                                        </label>
+                                        {{ form.job_title }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.department.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.department.label }}
+                                        </label>
+                                        {{ form.department }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.company.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.company.label }}
+                                        </label>
+                                        {{ form.company }}
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.phone.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.phone.label }}
+                                        </label>
+                                        {{ form.phone }}
+                                        <small class="form-help-contrast d-block mt-1">Рабочий / внутренний телефон (businessPhone)</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.mobile_phone.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.mobile_phone.label }}
+                                        </label>
+                                        {{ form.mobile_phone }}
+                                        <small class="form-help-contrast d-block mt-1">Мобильный номер телефона сотрудника (mobilePhone)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 3: Списки рассылки Kerio Connect (Mailing Lists) -->
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-envelope-open text-warning font-size-20"></i>
+                                    <span>Списки рассылки Kerio Connect (Членство в группах)</span>
+                                </div>
+
+                                <p class="form-help-contrast mb-3">
+                                    Отметьте списки рассылки, в которые должен входить сотрудник. Снятие отметки исключит сотрудника из списка рассылки.
+                                </p>
+
+                                <div class="row g-2">
+                                    {% if mailing_lists %}
+                                        {% for ml in mailing_lists %}
+                                            <div class="col-12 col-md-6">
+                                                <div class="p-2 border rounded-3 bg-light d-flex align-items-start gap-2 h-100">
+                                                    <input type="checkbox" name="mailing_lists" value="{{ ml.id }}" id="ml_edit_{{ forloop.counter }}" class="form-check-input mt-1 flex-shrink-0"
+                                                           {% if user_ml_ids and ml.id in user_ml_ids %}checked{% elif form.mailing_lists.value and ml.id in form.mailing_lists.value %}checked{% endif %}>
+                                                    <label for="ml_edit_{{ forloop.counter }}" class="form-check-label mb-0 cursor-pointer d-flex flex-column flex-grow-1">
+                                                        <span class="font-size-13 text-dark fw-bold">{{ ml.name }}</span>
+                                                        <span class="text-primary font-monospace font-size-11">{{ ml.email }}</span>
+                                                        {% if ml.description %}
+                                                            <small class="text-muted font-size-11 mt-1">{{ ml.description }}</small>
+                                                        {% endif %}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="col-12">
+                                            <div class="alert alert-secondary py-2 px-3 mb-0 font-size-12">
+                                                <i class="bx bx-info-circle me-1"></i>Списки рассылки не зарегистрированы на сервере Kerio Connect либо сервер недоступен.
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки сохранения -->
                         <div class="d-flex align-items-center justify-content-between pt-2 mb-5 flex-wrap gap-2">
                             <a href="{% url 'mailbox_app:kerio_admin_users' %}" class="btn btn-outline-secondary btn-sm px-3 py-2" style="min-height: 40px; display: inline-flex; align-items: center;">
                                 Отмена

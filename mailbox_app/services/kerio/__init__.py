@@ -16,6 +16,7 @@ from mailbox_app.services.kerio.external_provider import (
     ManualExternalMailProvider,
     RegRuExternalMailProvider,
 )
+from mailbox_app.services.kerio.mailing_lists import MailingListManager
 from mailbox_app.services.kerio.pop3_download import Pop3DownloadManager
 from mailbox_app.services.kerio.service import KerioAdminService
 from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
@@ -30,6 +31,7 @@ __all__ = [
     "KerioConnectAdminClient",
     "DomainManager",
     "UserManager",
+    "MailingListManager",
     "Pop3DownloadManager",
     "SmtpDeliveryManager",
     "KerioAdminService",

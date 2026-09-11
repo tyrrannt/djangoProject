@@ -678,8 +678,125 @@ class KerioUserProvisionForm(forms.Form):
         ),
         help_text="Отображаемое имя в адресной книге и письмах",
     )
+    first_name = forms.CharField(
+        label="Имя",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Иван",
+                "id": "id_kerio_firstname",
+            }
+        ),
+        help_text="Имя сотрудника (вкладка «Контакт»)",
+    )
+    last_name = forms.CharField(
+        label="Фамилия",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Иванов",
+                "id": "id_kerio_lastname",
+            }
+        ),
+        help_text="Фамилия сотрудника (вкладка «Контакт»)",
+    )
+    middle_name = forms.CharField(
+        label="Отчество",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Иванович",
+                "id": "id_kerio_middlename",
+            }
+        ),
+        help_text="Отчество сотрудника (вкладка «Контакт»)",
+    )
+    job_title = forms.CharField(
+        label="Должность",
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Командир ВС Ми-8",
+                "id": "id_kerio_jobtitle",
+            }
+        ),
+        help_text="Должность сотрудника (вкладка «Контакт»)",
+    )
+    department = forms.CharField(
+        label="Подразделение / Отдел",
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Летный отряд",
+                "id": "id_kerio_department",
+            }
+        ),
+        help_text="Подразделение / отдел (вкладка «Контакт»)",
+    )
+    company = forms.CharField(
+        label="Организация / Компания",
+        max_length=255,
+        required=False,
+        initial="Авиакомпания БАРКОЛ",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Авиакомпания БАРКОЛ",
+                "id": "id_kerio_company",
+            }
+        ),
+        help_text="Компания (вкладка «Контакт», по умолчанию Авиакомпания БАРКОЛ)",
+    )
+    phone = forms.CharField(
+        label="Рабочий / внутренний телефон",
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "123",
+                "id": "id_kerio_phone",
+            }
+        ),
+        help_text="Внутренний или рабочий телефон (businessPhone)",
+    )
+    mobile_phone = forms.CharField(
+        label="Мобильный телефон",
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "+7 (999) 000-00-00",
+                "id": "id_kerio_mobilephone",
+            }
+        ),
+        help_text="Мобильный телефон сотрудника (mobilePhone)",
+    )
+    can_change_password = forms.BooleanField(
+        label="Пользователь может менять свой пароль в Kerio Connect Client",
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "id_can_change_password",
+            }
+        ),
+        help_text="По умолчанию выключено — сотрудникам запрещено менять пароли самостоятельно в Kerio Connect Client",
+    )
     description = forms.CharField(
-        label="Должность / Подразделение",
+        label="Служебное описание / примечание",
         max_length=255,
         required=False,
         widget=forms.TextInput(
@@ -689,7 +806,7 @@ class KerioUserProvisionForm(forms.Form):
                 "id": "id_kerio_description",
             }
         ),
-        help_text="Служебная отметка или должность сотрудника",
+        help_text="Служебная отметка или примечание к ящику",
     )
     quota_mb = forms.IntegerField(
         label="Дисковая квота ящика (МБ)",
@@ -703,6 +820,15 @@ class KerioUserProvisionForm(forms.Form):
             }
         ),
         help_text="Максимальный размер ящика в мегабайтах (пусто — без ограничений)",
+    )
+    mailing_lists = forms.MultipleChoiceField(
+        label="Списки рассылки Kerio Connect",
+        required=False,
+        widget=forms.CheckboxSelectMultiple(
+            attrs={"class": "form-check-input"}
+        ),
+        choices=(),
+        help_text="Отметьте списки рассылки, в которые следует включить сотрудника",
     )
     configure_pop3_download = forms.BooleanField(
         label="Настроить правило внешней доставки «Загрузка POP3» (сборщик почты)",
@@ -824,11 +950,12 @@ class KerioUserProvisionForm(forms.Form):
         help_text="Синхронизирует корпоративный адрес электронной почты с физическим лицом в 1С через OData",
     )
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Инициализирует форму и заполняет queryset активных сотрудников.
+    def __init__(self, *args, mailing_lists_choices: Optional[List[Tuple[str, str]]] = None, **kwargs) -> None:
+        """Инициализирует форму, заполняет queryset активных сотрудников и варианты списков рассылки.
 
         Args:
             *args: Позиционные аргументы формы.
+            mailing_lists_choices (Optional[List[Tuple[str, str]]]): Список пар (ID, Название) списков рассылки.
             **kwargs: Именованные аргументы формы.
         """
         super().__init__(*args, **kwargs)
@@ -838,9 +965,11 @@ class KerioUserProvisionForm(forms.Form):
             .select_related("user_work_profile__job", "user_work_profile__divisions")
             .order_by("last_name", "first_name")
         )
+        if mailing_lists_choices is not None:
+            self.fields["mailing_lists"].choices = mailing_lists_choices
 
     def clean(self) -> Dict[str, Any]:
-        """Проверяет совпадение паролей, заполняет недостающие поля сотрудника и валидирует логин.
+        """Проверяет совпадение паролей, заполняет недостающие контактные поля и валидирует логин.
 
         Returns:
             Dict[str, Any]: Очищенные валидированные данные формы.
@@ -851,15 +980,15 @@ class KerioUserProvisionForm(forms.Form):
         cleaned_data = super().clean()
         link_user = cleaned_data.get("link_django_user")
 
-        if link_user:
-            if not cleaned_data.get("login_name"):
-                from mailbox_app.services.kerio.utils import (
-                    generate_corporate_mailbox_login,
-                    get_all_existing_logins_set,
-                    parse_fio_components,
-                )
+        from mailbox_app.services.kerio.utils import (
+            generate_corporate_mailbox_login,
+            get_all_existing_logins_set,
+            parse_fio_components,
+        )
 
-                fn, ln, mn = parse_fio_components(link_user)
+        if link_user:
+            fn, ln, mn = parse_fio_components(link_user)
+            if not cleaned_data.get("login_name"):
                 existing_logins = get_all_existing_logins_set()
                 cleaned_data["login_name"] = generate_corporate_mailbox_login(
                     first_name=fn,
@@ -867,21 +996,57 @@ class KerioUserProvisionForm(forms.Form):
                     middle_name=mn,
                     existing_logins=existing_logins,
                 )
+            if not cleaned_data.get("first_name") and fn:
+                cleaned_data["first_name"] = fn
+            if not cleaned_data.get("last_name") and ln:
+                cleaned_data["last_name"] = ln
+            if not cleaned_data.get("middle_name") and mn:
+                cleaned_data["middle_name"] = mn
+
             if not cleaned_data.get("full_name"):
                 cleaned_data["full_name"] = getattr(link_user, "title", "") or link_user.get_full_name() or link_user.username
+
+            if hasattr(link_user, "user_work_profile") and link_user.user_work_profile:
+                wp = link_user.user_work_profile
+                if not cleaned_data.get("job_title") and getattr(wp, "job", None):
+                    cleaned_data["job_title"] = wp.job.name
+                if not cleaned_data.get("department") and getattr(wp, "divisions", None):
+                    cleaned_data["department"] = wp.divisions.name
+                if not cleaned_data.get("phone") and getattr(wp, "internal_phone", None):
+                    cleaned_data["phone"] = wp.internal_phone
+
+            if not cleaned_data.get("mobile_phone") and getattr(link_user, "personal_phone", None):
+                cleaned_data["mobile_phone"] = link_user.personal_phone
+
             if not cleaned_data.get("description"):
                 desc_parts: List[str] = []
-                if hasattr(link_user, "user_work_profile") and link_user.user_work_profile:
-                    wp = link_user.user_work_profile
-                    if getattr(wp, "job", None):
-                        desc_parts.append(wp.job.name)
-                    if getattr(wp, "divisions", None):
-                        desc_parts.append(wp.divisions.name)
-                    if getattr(wp, "internal_phone", None):
-                        desc_parts.append(f"вн. {wp.internal_phone}")
-                if getattr(link_user, "personal_phone", None) and not any("вн." in p for p in desc_parts):
-                    desc_parts.append(f"тел. {link_user.personal_phone}")
+                if cleaned_data.get("job_title"):
+                    desc_parts.append(cleaned_data["job_title"])
+                if cleaned_data.get("department"):
+                    desc_parts.append(cleaned_data["department"])
+                if cleaned_data.get("phone"):
+                    desc_parts.append(f"вн. {cleaned_data['phone']}")
+                elif cleaned_data.get("mobile_phone"):
+                    desc_parts.append(f"тел. {cleaned_data['mobile_phone']}")
                 cleaned_data["description"] = " / ".join(desc_parts)
+
+        # Синхронизация ФИО и компонентов имени
+        full_name_val = cleaned_data.get("full_name", "").strip()
+        fn_val = cleaned_data.get("first_name", "").strip()
+        ln_val = cleaned_data.get("last_name", "").strip()
+        mn_val = cleaned_data.get("middle_name", "").strip()
+
+        if full_name_val and (not fn_val or not ln_val):
+            parsed_fn, parsed_ln, parsed_mn = parse_fio_components(full_name_val)
+            if not fn_val and parsed_fn:
+                cleaned_data["first_name"] = parsed_fn
+            if not ln_val and parsed_ln:
+                cleaned_data["last_name"] = parsed_ln
+            if not mn_val and parsed_mn:
+                cleaned_data["middle_name"] = parsed_mn
+        elif not full_name_val and (fn_val or ln_val):
+            composed_fio = " ".join([p for p in [ln_val, fn_val, mn_val] if p]).strip()
+            cleaned_data["full_name"] = composed_fio
 
         login = cleaned_data.get("login_name", "").strip().lower()
         if "@" in login:
@@ -918,8 +1083,105 @@ class KerioUserEditForm(forms.Form):
             }
         ),
     )
+    first_name = forms.CharField(
+        label="Имя",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Иван",
+                "id": "id_edit_firstname",
+            }
+        ),
+    )
+    last_name = forms.CharField(
+        label="Фамилия",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Иванов",
+                "id": "id_edit_lastname",
+            }
+        ),
+    )
+    middle_name = forms.CharField(
+        label="Отчество",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Иванович",
+                "id": "id_edit_middlename",
+            }
+        ),
+    )
+    job_title = forms.CharField(
+        label="Должность",
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Командир ВС Ми-8",
+                "id": "id_edit_jobtitle",
+            }
+        ),
+    )
+    department = forms.CharField(
+        label="Подразделение / Отдел",
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Летный отряд",
+                "id": "id_edit_department",
+            }
+        ),
+    )
+    company = forms.CharField(
+        label="Организация / Компания",
+        max_length=255,
+        required=False,
+        initial="Авиакомпания БАРКОЛ",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Авиакомпания БАРКОЛ",
+                "id": "id_edit_company",
+            }
+        ),
+    )
+    phone = forms.CharField(
+        label="Рабочий / внутренний телефон",
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "123",
+                "id": "id_edit_phone",
+            }
+        ),
+    )
+    mobile_phone = forms.CharField(
+        label="Мобильный телефон",
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "+7 (999) 000-00-00",
+                "id": "id_edit_mobilephone",
+            }
+        ),
+    )
     description = forms.CharField(
-        label="Должность / Примечание",
+        label="Служебное описание / примечание",
         max_length=255,
         required=False,
         widget=forms.TextInput(
@@ -942,6 +1204,27 @@ class KerioUserEditForm(forms.Form):
             }
         ),
         help_text="Оставьте пустым для снятия ограничений по размеру",
+    )
+    can_change_password = forms.BooleanField(
+        label="Пользователь может менять свой пароль в Kerio Connect Client",
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "id_edit_can_change_password",
+            }
+        ),
+        help_text="Разрешить ли сотруднику менять свой пароль самостоятельно в Kerio Connect Client",
+    )
+    mailing_lists = forms.MultipleChoiceField(
+        label="Списки рассылки Kerio Connect",
+        required=False,
+        widget=forms.CheckboxSelectMultiple(
+            attrs={"class": "form-check-input"}
+        ),
+        choices=(),
+        help_text="Отметьте списки рассылки, в которые включен сотрудник",
     )
     is_enabled = forms.BooleanField(
         label="Учетная запись активна",
@@ -967,6 +1250,46 @@ class KerioUserEditForm(forms.Form):
         ),
         help_text="При включении обновит email в профиле DataBaseUser на портале и отправит данные в 1С (ЗУП)",
     )
+
+    def __init__(self, *args, mailing_lists_choices: Optional[List[Tuple[str, str]]] = None, **kwargs) -> None:
+        """Инициализирует форму редактирования пользователя.
+
+        Args:
+            *args: Позиционные аргументы.
+            mailing_lists_choices (Optional[List[Tuple[str, str]]]): Список пар (ID, Название) рассылок.
+            **kwargs: Именованные аргументы.
+        """
+        super().__init__(*args, **kwargs)
+        if mailing_lists_choices is not None:
+            self.fields["mailing_lists"].choices = mailing_lists_choices
+
+    def clean(self) -> Dict[str, Any]:
+        """Синхронизирует full_name и контактные поля при редактировании.
+
+        Returns:
+            Dict[str, Any]: Валидированные данные.
+        """
+        cleaned_data = super().clean()
+        from mailbox_app.services.kerio.utils import parse_fio_components
+
+        full_name_val = cleaned_data.get("full_name", "").strip()
+        fn_val = cleaned_data.get("first_name", "").strip()
+        ln_val = cleaned_data.get("last_name", "").strip()
+        mn_val = cleaned_data.get("middle_name", "").strip()
+
+        if full_name_val and (not fn_val or not ln_val):
+            parsed_fn, parsed_ln, parsed_mn = parse_fio_components(full_name_val)
+            if not fn_val and parsed_fn:
+                cleaned_data["first_name"] = parsed_fn
+            if not ln_val and parsed_ln:
+                cleaned_data["last_name"] = parsed_ln
+            if not mn_val and parsed_mn:
+                cleaned_data["middle_name"] = parsed_mn
+        elif not full_name_val and (fn_val or ln_val):
+            composed_fio = " ".join([p for p in [ln_val, fn_val, mn_val] if p]).strip()
+            cleaned_data["full_name"] = composed_fio
+
+        return cleaned_data
 
 
 class KerioUserPasswordResetForm(forms.Form):

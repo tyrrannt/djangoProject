@@ -260,11 +260,11 @@
                                     </div>
 
                                     <div class="col-12 col-md-6">
-                                        <label for="{{ form.full_name.id_for_label }}" class="form-label form-label-contrast">
-                                            {{ form.full_name.label }}
+                                        <label for="{{ form.quota_mb.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.quota_mb.label }}
                                         </label>
-                                        {{ form.full_name }}
-                                        <small class="form-help-contrast d-block mt-1">{{ form.full_name.help_text }}</small>
+                                        {{ form.quota_mb }}
+                                        <small class="form-help-contrast d-block mt-1">{{ form.quota_mb.help_text }}</small>
                                     </div>
 
                                     <div class="col-12 col-md-6">
@@ -275,22 +275,142 @@
                                         <small class="form-help-contrast d-block mt-1">{{ form.description.help_text }}</small>
                                     </div>
 
-                                    <div class="col-12 col-md-6">
-                                        <label for="{{ form.quota_mb.id_for_label }}" class="form-label form-label-contrast">
-                                            {{ form.quota_mb.label }}
-                                        </label>
-                                        {{ form.quota_mb }}
-                                        <small class="form-help-contrast d-block mt-1">{{ form.quota_mb.help_text }}</small>
+                                    <div class="col-12 pt-2 border-top">
+                                        <div class="form-check form-switch">
+                                            {{ form.can_change_password }}
+                                            <label class="form-check-label form-label-contrast" for="{{ form.can_change_password.id_for_label }}">
+                                                {{ form.can_change_password.label }}
+                                            </label>
+                                            <small class="d-block form-help-contrast">{{ form.can_change_password.help_text }}</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Блок 3: Внешняя доставка (Загрузка POP3) -->
+                        <!-- Блок 3: Контактная информация (Вкладка «Контакт» в Kerio Connect) -->
                         <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
                                     <span class="step-number-badge">3</span>
+                                    <span>Контактная информация (Вкладка «Контакт» в Kerio Connect)</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label for="{{ form.full_name.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.full_name.label }}
+                                        </label>
+                                        {{ form.full_name }}
+                                        <small class="form-help-contrast d-block mt-1">{{ form.full_name.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.last_name.label }}
+                                        </label>
+                                        {{ form.last_name }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.first_name.label }}
+                                        </label>
+                                        {{ form.first_name }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.middle_name.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.middle_name.label }}
+                                        </label>
+                                        {{ form.middle_name }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.job_title.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.job_title.label }}
+                                        </label>
+                                        {{ form.job_title }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.department.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.department.label }}
+                                        </label>
+                                        {{ form.department }}
+                                    </div>
+
+                                    <div class="col-12 col-md-4">
+                                        <label for="{{ form.company.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.company.label }}
+                                        </label>
+                                        {{ form.company }}
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.phone.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.phone.label }}
+                                        </label>
+                                        {{ form.phone }}
+                                        <small class="form-help-contrast d-block mt-1">{{ form.phone.help_text }}</small>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="{{ form.mobile_phone.id_for_label }}" class="form-label form-label-contrast">
+                                            {{ form.mobile_phone.label }}
+                                        </label>
+                                        {{ form.mobile_phone }}
+                                        <small class="form-help-contrast d-block mt-1">{{ form.mobile_phone.help_text }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 4: Списки рассылки Kerio Connect (Mailing Lists) -->
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <span class="step-number-badge">4</span>
+                                    <span>Списки рассылки Kerio Connect (Включение в группы)</span>
+                                </div>
+
+                                <p class="form-help-contrast mb-3">
+                                    Отметьте группы и списки рассылки, в которые требуется сразу включить сотрудника при создании почтового ящика.
+                                </p>
+
+                                <div class="row g-2">
+                                    {% if mailing_lists %}
+                                        {% for ml in mailing_lists %}
+                                            <div class="col-12 col-md-6">
+                                                <div class="p-2 border rounded-3 bg-light d-flex align-items-start gap-2 h-100">
+                                                    <input type="checkbox" name="mailing_lists" value="{{ ml.id }}" id="ml_create_{{ forloop.counter }}" class="form-check-input mt-1 flex-shrink-0"
+                                                           {% if form.mailing_lists.value and ml.id in form.mailing_lists.value %}checked{% endif %}>
+                                                    <label for="ml_create_{{ forloop.counter }}" class="form-check-label mb-0 cursor-pointer d-flex flex-column flex-grow-1">
+                                                        <span class="font-size-13 text-dark fw-bold">{{ ml.name }}</span>
+                                                        <span class="text-primary font-monospace font-size-11">{{ ml.email }}</span>
+                                                        {% if ml.description %}
+                                                            <small class="text-muted font-size-11 mt-1">{{ ml.description }}</small>
+                                                        {% endif %}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="col-12">
+                                            <div class="alert alert-secondary py-2 px-3 mb-0 font-size-12">
+                                                <i class="bx bx-info-circle me-1"></i>Списки рассылки не зарегистрированы на сервере Kerio Connect либо сервер недоступен.
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 5: Внешняя доставка (Загрузка POP3) -->
+                        <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <span class="step-number-badge">5</span>
                                     <span>Внешняя доставка: сборщик «Загрузка POP3»</span>
                                 </div>
 
@@ -346,11 +466,11 @@
                             </div>
                         </div>
 
-                        <!-- Блок 4: Исходящая маршрутизация («Доставка SMTP» / Relay) -->
+                        <!-- Блок 6: Исходящая маршрутизация («Доставка SMTP» / Relay) -->
                         <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
-                                    <span class="step-number-badge">4</span>
+                                    <span class="step-number-badge">6</span>
                                     <span>Исходящая маршрутизация: «Доставка SMTP» (Ретрансляция)</span>
                                 </div>
 
@@ -387,11 +507,11 @@
                             </div>
                         </div>
 
-                        <!-- Блок 5: Интеграция с порталом и 1С (ЗУП) -->
+                        <!-- Блок 7: Интеграция с порталом и 1С (ЗУП) -->
                         <div class="card border shadow-sm mb-4" style="border-radius: 10px; border-color: #cbd5e1 !important; background: #ffffff;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
-                                    <span class="step-number-badge">5</span>
+                                    <span class="step-number-badge">7</span>
                                     <span>Интеграция: Портал BARKOL и 1С (ЗУП)</span>
                                 </div>
 
@@ -500,19 +620,42 @@
                         loginInput.value = targetLogin;
                     }
 
-                    // 2. Автозаполнение ФИО
+                    // 2. Автозаполнение ФИО и компонентов имени
                     var fullNameInput = document.getElementById('id_kerio_fullname');
-                    if (fullNameInput) {
-                        fullNameInput.value = emp.fio;
-                    }
+                    if (fullNameInput) fullNameInput.value = emp.fio || '';
 
-                    // 3. Автозаполнение должности / описания
+                    var fnInput = document.getElementById('id_kerio_firstname');
+                    if (fnInput) fnInput.value = emp.first_name || '';
+
+                    var lnInput = document.getElementById('id_kerio_lastname');
+                    if (lnInput) lnInput.value = emp.last_name || '';
+
+                    var mnInput = document.getElementById('id_kerio_middlename');
+                    if (mnInput) mnInput.value = emp.middle_name || '';
+
+                    // 3. Автозаполнение должности, подразделения, компании и телефонов
+                    var jobInput = document.getElementById('id_kerio_jobtitle');
+                    if (jobInput) jobInput.value = emp.job || '';
+
+                    var deptInput = document.getElementById('id_kerio_department');
+                    if (deptInput) deptInput.value = emp.division || '';
+
+                    var compInput = document.getElementById('id_kerio_company');
+                    if (compInput) compInput.value = emp.company || 'Авиакомпания БАРКОЛ';
+
+                    var phoneInput = document.getElementById('id_kerio_phone');
+                    if (phoneInput) phoneInput.value = emp.phone || '';
+
+                    var mobileInput = document.getElementById('id_kerio_mobilephone');
+                    if (mobileInput) mobileInput.value = emp.mobile_phone || '';
+
+                    // 4. Автозаполнение должности / описания
                     var descInput = document.getElementById('id_kerio_description');
                     if (descInput) {
                         descInput.value = emp.description;
                     }
 
-                    // 4. Генерация надежного пароля, если поле пустое
+                    // 5. Генерация надежного пароля, если поле пустое
                     var passInput = document.getElementById('id_kerio_password');
                     if (passInput && !passInput.value) {
                         generateAndSetPasswords();

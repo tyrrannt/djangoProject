@@ -1108,6 +1108,240 @@ class ISPmanagerExternalMailProviderTestCase(TestCase):
         self.assertEqual(doms[0]["name"], "barkol.ru")
 
 
+class KerioMailingListsTestCase(TestCase):
+    """Тестирование управления списками рассылки Kerio Connect MailingListManager."""
+
+    def setUp(self) -> None:
+        """Подготовка тестовых сервисов."""
+        self.client = MagicMock()
+        from mailbox_app.services.kerio.mailing_lists import MailingListManager
+        self.ml_mgr = MailingListManager(self.client)
+
+    def test_get_mailing_lists(self) -> None:
+        """Тест получения и нормализации списков рассылки с domainId."""
+        self.client.call.return_value = {
+            "list": [
+                {
+                    "id": "ml-1",
+                    "name": "all-staff",
+                    "domainId": "d-1",
+                    "description": "Все сотрудники",
+                    "membersCount": 42,
+                },
+                {
+                    "id": "ml-2",
+                    "name": "pilots",
+                    "domainId": "d-1",
+                    "description": "Летный состав",
+                    "membersCount": 15,
+                },
+            ],
+            "totalItems": 2,
+        }
+        lists = self.ml_mgr.get_mailing_lists(domain_id_or_name="keriodb://domain/d-1")
+        self.assertEqual(len(lists), 2)
+        self.assertEqual(lists[0]["name"], "all-staff")
+        self.assertEqual(lists[0]["email"], "all-staff@barkol.ru")
+        self.assertEqual(lists[1]["name"], "pilots")
+        self.client.call.assert_called_with(
+            "MailingLists.get",
+            params={"query": {"start": 0, "limit": -1}, "domainId": "keriodb://domain/d-1"},
+        )
+
+    def test_get_members_and_subscribers(self) -> None:
+        """Тест получения участников списка рассылки через MailingLists.getMlUserList."""
+        self.client.call.return_value = {
+            "list": [
+                {
+                    "hasId": True,
+                    "userId": "keriodb://user/u1",
+                    "emailAddress": "",
+                    "fullName": "Иванов Иван",
+                    "kind": "Member",
+                },
+                {
+                    "hasId": False,
+                    "userId": "",
+                    "emailAddress": "external@barkol.ru",
+                    "fullName": "Внешний контакт",
+                    "kind": "Member",
+                },
+            ],
+            "totalItems": 2,
+        }
+        members = self.ml_mgr.get_members("ml-1")
+        self.assertEqual(len(members), 2)
+        self.assertEqual(members[0]["userId"], "keriodb://user/u1")
+        self.client.call.assert_called_with(
+            "MailingLists.getMlUserList",
+            params={"mlId": "ml-1", "query": {"start": 0, "limit": -1}},
+        )
+
+        subs = self.ml_mgr.get_subscribers("ml-1")
+        self.assertEqual(len(subs), 2)
+        self.assertEqual(subs[0]["userId"], "keriodb://user/u1")
+
+    def test_add_and_remove_subscriber(self) -> None:
+        """Тест добавления и удаления подписчика через MailingLists.addMlUserList / removeMlUserList."""
+        self.client.call.return_value = {}
+
+        # 1. Добавление пользователя по userId
+        add_user_res = self.ml_mgr.add_user_to_mailing_list(
+            mailing_list_id="ml-1",
+            user_id="keriodb://user/u1",
+            full_name="Иван Иванов",
+            membership="Member",
+        )
+        self.assertTrue(add_user_res)
+        self.client.call.assert_called_with(
+            "MailingLists.addMlUserList",
+            params={
+                "mlId": "ml-1",
+                "members": [
+                    {
+                        "hasId": True,
+                        "userId": "keriodb://user/u1",
+                        "emailAddress": "",
+                        "fullName": "Иван Иванов",
+                        "kind": "Member",
+                    }
+                ],
+            },
+        )
+
+        # 2. Добавление по email
+        add_email_res = self.ml_mgr.add_user_to_mailing_list(
+            mailing_list_id="ml-1",
+            email="i.ivanov@barkol.ru",
+            full_name="Иван Иванов",
+        )
+        self.assertTrue(add_email_res)
+        self.client.call.assert_called_with(
+            "MailingLists.addMlUserList",
+            params={
+                "mlId": "ml-1",
+                "members": [
+                    {
+                        "hasId": False,
+                        "userId": "",
+                        "emailAddress": "i.ivanov@barkol.ru",
+                        "fullName": "Иван Иванов",
+                        "kind": "Member",
+                    }
+                ],
+            },
+        )
+
+        # 3. Удаление пользователя
+        rem_res = self.ml_mgr.remove_user_from_mailing_list(
+            mailing_list_id="ml-1",
+            user_id="keriodb://user/u1",
+        )
+        self.assertTrue(rem_res)
+        self.client.call.assert_called_with(
+            "MailingLists.removeMlUserList",
+            params={
+                "mlId": "ml-1",
+                "members": [
+                    {
+                        "hasId": True,
+                        "userId": "keriodb://user/u1",
+                        "emailAddress": "",
+                        "fullName": "",
+                        "kind": "Member",
+                    }
+                ],
+            },
+        )
+
+    def test_set_user_memberships(self) -> None:
+        """Тест комплексной синхронизации подписок пользователя."""
+        with patch.object(self.ml_mgr, "get_mailing_lists") as mock_get_lists, \
+             patch.object(self.ml_mgr, "get_user_memberships") as mock_get_user_mem, \
+             patch.object(self.ml_mgr, "add_user_to_mailing_list") as mock_add, \
+             patch.object(self.ml_mgr, "remove_user_from_mailing_list") as mock_rem:
+
+            mock_get_lists.return_value = [
+                {"id": "ml-1", "name": "all-staff"},
+                {"id": "ml-2", "name": "pilots"},
+                {"id": "ml-3", "name": "management"},
+            ]
+            # Текущие подписки: ml-1 и ml-2
+            mock_get_user_mem.return_value = ["ml-1", "ml-2"]
+            mock_add.return_value = True
+            mock_rem.return_value = True
+
+            # Желаемые подписки: ml-2 и ml-3 (удалить из ml-1, добавить в ml-3)
+            res = self.ml_mgr.set_user_memberships(
+                user_id="keriodb://user/u1",
+                email="i.ivanov@barkol.ru",
+                target_list_ids=["ml-2", "ml-3"],
+            )
+            self.assertTrue(res["success"])
+            self.assertIn("ml-3", res["added"])
+            self.assertIn("ml-1", res["removed"])
+            mock_rem.assert_called_once_with(
+                mailing_list_id="ml-1",
+                email="i.ivanov@barkol.ru",
+                user_id="keriodb://user/u1",
+                full_name="",
+            )
+            mock_add.assert_called_once_with(
+                mailing_list_id="ml-3",
+                email="i.ivanov@barkol.ru",
+                user_id="keriodb://user/u1",
+                full_name="",
+                domain_id=None,
+            )
+
+
+class KerioUserContactAndSecurityTestCase(TestCase):
+    """Тестирование контактных полей и запрета смены пароля в Kerio Connect UserManager."""
+
+    def setUp(self) -> None:
+        """Подготовка сервисов."""
+        self.client = MagicMock()
+        from mailbox_app.services.kerio.users import UserManager
+        self.user_mgr = UserManager(self.client)
+
+    def test_create_user_with_contact_and_no_password_change(self) -> None:
+        """Тест создания пользователя с canChangePassword=False и структурированным словарем contact."""
+        self.client.call.return_value = {"ids": ["u-new-1"]}
+
+        res = self.user_mgr.create_user(
+            domain_id="d-barkol",
+            login_name="i.ivanov",
+            password="SecretPassword123!",
+            full_name="Иванов Иван Иванович",
+            first_name="Иван",
+            last_name="Иванов",
+            middle_name="Иванович",
+            job_title="Командир воздушного судна",
+            department="Летная служба",
+            company="Авиакомпания БАРКОЛ",
+            phone="8 (495) 123-45-67",
+            mobile_phone="+7 (999) 111-22-33",
+            can_change_password=False,
+        )
+        self.assertEqual(res, "u-new-1")
+        self.client.call.assert_called_once()
+        call_args = self.client.call.call_args[0]
+        self.assertEqual(call_args[0], "Users.create")
+        user_param = call_args[1]["users"][0]
+        self.assertEqual(user_param["loginName"], "i.ivanov")
+        self.assertEqual(user_param["canChangePassword"], False)
+        self.assertIn("contact", user_param)
+        self.assertEqual(user_param["contact"]["firstName"], "Иван")
+        self.assertEqual(user_param["contact"]["lastName"], "Иванов")
+        self.assertEqual(user_param["contact"]["middleName"], "Иванович")
+        self.assertEqual(user_param["contact"]["jobTitle"], "Командир воздушного судна")
+        self.assertEqual(user_param["contact"]["department"], "Летная служба")
+        self.assertEqual(user_param["contact"]["company"], "Авиакомпания БАРКОЛ")
+        self.assertEqual(user_param["contact"]["businessPhone"], "8 (495) 123-45-67")
+        self.assertEqual(user_param["contact"]["mobilePhone"], "+7 (999) 111-22-33")
+
+
+
 
 
 

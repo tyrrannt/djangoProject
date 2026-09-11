@@ -432,7 +432,72 @@ class KerioAdminFormsViewsTestCase(unittest.TestCase):
             self.assertEqual(zf.read("договор.pdf"), b"PDF_CONTENT_DATA")
             self.assertEqual(zf.read("акт.xlsx"), b"EXCEL_CONTENT_DATA")
 
+    def test_kerio_provision_form_with_contact_and_mailing_lists(self) -> None:
+        """Тест формы создания с контактными полями, запретом смены пароля и списками рассылки."""
+        from mailbox_app.forms import KerioUserProvisionForm
+
+        with patch("django.contrib.auth.get_user_model") as mock_user_model:
+            mock_user_model.return_value.objects.filter.return_value.order_by.return_value = []
+            form_data = {
+                "login_name": "v.shakirov",
+                "domain_name": "barkol.ru",
+                "password": "SecretPassword123!",
+                "confirm_password": "SecretPassword123!",
+                "full_name": "Шакиров Виталий Радикович",
+                "first_name": "Виталий",
+                "last_name": "Шакиров",
+                "middle_name": "Радикович",
+                "job_title": "Авиационный техник",
+                "department": "АТБ",
+                "company": "Авиакомпания БАРКОЛ",
+                "phone": "8 (495) 123-45-67",
+                "mobile_phone": "+7 (999) 765-43-21",
+                "can_change_password": False,
+                "mailing_lists": ["ml-pilots", "ml-staff"],
+                "quota_mb": 5120,
+            }
+            form = KerioUserProvisionForm(
+                data=form_data,
+                mailing_lists_choices=[("ml-pilots", "Пилоты"), ("ml-staff", "Сотрудники")],
+            )
+            self.assertTrue(form.is_valid(), f"Ошибки: {form.errors}")
+            self.assertEqual(form.cleaned_data["first_name"], "Виталий")
+            self.assertEqual(form.cleaned_data["last_name"], "Шакиров")
+            self.assertEqual(form.cleaned_data["middle_name"], "Радикович")
+            self.assertEqual(form.cleaned_data["job_title"], "Авиационный техник")
+            self.assertEqual(form.cleaned_data["department"], "АТБ")
+            self.assertEqual(form.cleaned_data["can_change_password"], False)
+            self.assertEqual(form.cleaned_data["mailing_lists"], ["ml-pilots", "ml-staff"])
+
+    def test_kerio_edit_form_with_contact_and_security(self) -> None:
+        """Тест формы редактирования с контактными полями и переключателем смены пароля."""
+        from mailbox_app.forms import KerioUserEditForm
+
+        form_data = {
+            "full_name": "Иванов Иван Иванович",
+            "first_name": "Иван",
+            "last_name": "Иванов",
+            "middle_name": "Иванович",
+            "job_title": "Командир ВС",
+            "department": "Летный отряд",
+            "company": "Авиакомпания БАРКОЛ",
+            "phone": "101",
+            "mobile_phone": "+79990001122",
+            "can_change_password": False,
+            "mailing_lists": ["ml-all"],
+            "quota_mb": 10240,
+            "is_enabled": True,
+        }
+        form = KerioUserEditForm(
+            data=form_data,
+            mailing_lists_choices=[("ml-all", "Все сотрудники"), ("ml-it", "ИТ отдел")],
+        )
+        self.assertTrue(form.is_valid(), f"Ошибки: {form.errors}")
+        self.assertEqual(form.cleaned_data["can_change_password"], False)
+        self.assertEqual(form.cleaned_data["mailing_lists"], ["ml-all"])
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

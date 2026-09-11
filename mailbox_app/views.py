@@ -3058,7 +3058,7 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
         """Формирует JSON словарь активных сотрудников портала для быстрого автозаполнения на клиенте.
 
         Returns:
-            str: JSON строка со структурой {user_id: {id, username, fio, job, division, phone, description}}.
+            str: JSON строка со структурой {user_id: {id, username, fio, first_name, last_name, middle_name, job, division, phone, mobile_phone, description}}.
         """
         User = get_user_model()
         users_qs = (
@@ -3107,7 +3107,9 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                 if wp.internal_phone:
                     internal_phone = wp.internal_phone
 
-            phone = internal_phone or getattr(u, "personal_phone", "") or ""
+            personal_phone = getattr(u, "personal_phone", "") or ""
+            phone = internal_phone or personal_phone
+
             desc_parts = [
                 p
                 for p in [
@@ -3122,11 +3124,16 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                 "id": u.id,
                 "username": u.username,
                 "fio": fio,
+                "first_name": fn,
+                "last_name": ln,
+                "middle_name": mn,
                 "suggested_login": suggested_login,
                 "suggested_email": f"{suggested_login}@barkol.ru",
                 "job": job_name,
                 "division": division_name,
-                "phone": phone,
+                "phone": internal_phone,
+                "mobile_phone": personal_phone,
+                "company": "Авиакомпания БАРКОЛ",
                 "description": " / ".join(desc_parts),
             }
         return json.dumps(employees_data, ensure_ascii=False)
@@ -3146,7 +3153,7 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             HttpResponse: Страница формы создания.
         """
         user_param = request.GET.get("user") or request.GET.get("user_id") or request.GET.get("employee_id")
-        initial_data: Dict[str, Any] = {}
+        initial_data: Dict[str, Any] = {"can_change_password": False}
         if user_param:
             try:
                 User = get_user_model()
@@ -3156,13 +3163,24 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             except (ValueError, TypeError):
                 pass
 
-        form = KerioUserProvisionForm(initial=initial_data)
+        service = KerioAdminService()
+        mailing_lists = []
+        ml_choices: List[Tuple[str, str]] = []
+        try:
+            with service.client:
+                mailing_lists = service.get_mailing_lists()
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
+        except Exception as err:
+            logger.warning(f"[KerioAdminUserCreateView] Не удалось загрузить списки рассылки: {err}")
+
+        form = KerioUserProvisionForm(initial=initial_data, mailing_lists_choices=ml_choices)
         context = self.get_context_data(**kwargs)
         context.update({
             "title": "СОЗДАНИЕ ПОЧТОВОГО ЯЩИКА СОТРУДНИКА",
             "form": form,
             "is_create": True,
             "employees_json": self._get_employees_json(),
+            "mailing_lists": mailing_lists,
         })
         return render(request, "mailbox_app/admin/kerio_user_form.html", context)
 
@@ -3177,12 +3195,32 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
         Returns:
             HttpResponse: Редирект в реестр пользователей при успехе или форма с ошибками.
         """
-        form = KerioUserProvisionForm(request.POST)
+        service = KerioAdminService()
+        mailing_lists = []
+        ml_choices: List[Tuple[str, str]] = []
+        try:
+            with service.client:
+                mailing_lists = service.get_mailing_lists()
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
+        except Exception as err:
+            logger.warning(f"[KerioAdminUserCreateView] Не удалось загрузить списки рассылки: {err}")
+
+        form = KerioUserProvisionForm(request.POST, mailing_lists_choices=ml_choices)
         if form.is_valid():
             login_name = form.cleaned_data["login_name"]
             domain_name = form.cleaned_data["domain_name"]
             password = form.cleaned_data["password"]
             full_name = form.cleaned_data.get("full_name", "")
+            first_name = form.cleaned_data.get("first_name", "")
+            middle_name = form.cleaned_data.get("middle_name", "")
+            last_name = form.cleaned_data.get("last_name", "")
+            job_title = form.cleaned_data.get("job_title", "")
+            department = form.cleaned_data.get("department", "")
+            company = form.cleaned_data.get("company", "Авиакомпания БАРКОЛ")
+            phone = form.cleaned_data.get("phone", "")
+            mobile_phone = form.cleaned_data.get("mobile_phone", "")
+            can_change_password = form.cleaned_data.get("can_change_password", False)
+            selected_ml_ids = form.cleaned_data.get("mailing_lists") or []
             description = form.cleaned_data.get("description", "")
             quota_mb = form.cleaned_data.get("quota_mb")
             configure_pop3 = form.cleaned_data.get("configure_pop3_download", True)
@@ -3202,7 +3240,6 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             if not full_name and link_user:
                 full_name = getattr(link_user, "title", "") or link_user.get_full_name() or link_user.username
 
-            service = KerioAdminService()
             try:
                 report = service.provision_full_mailbox(
                     login_name=login_name,
@@ -3223,6 +3260,16 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                     save_email_to_user=save_email_to_user,
                     sync_1c=sync_1c,
                     isp_password=isp_password,
+                    can_change_password=can_change_password,
+                    first_name=first_name,
+                    middle_name=middle_name,
+                    last_name=last_name,
+                    job_title=job_title,
+                    department=department,
+                    company=company,
+                    phone=phone,
+                    mobile_phone=mobile_phone,
+                    mailing_list_ids=selected_ml_ids,
                 )
                 full_email = f"{login_name}@{domain_name}"
                 extra_notes = []
@@ -3230,6 +3277,8 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
                     extra_notes.append("сборщик POP3")
                 if configure_smtp:
                     extra_notes.append("SMTP Relay")
+                if selected_ml_ids:
+                    extra_notes.append(f"рассылки: {len(selected_ml_ids)}")
                 if save_email_to_user and link_user:
                     extra_notes.append("email записан в модель пользователя")
 
@@ -3266,6 +3315,7 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
             "form": form,
             "is_create": True,
             "employees_json": self._get_employees_json(),
+            "mailing_lists": mailing_lists,
         })
         return render(request, "mailbox_app/admin/kerio_user_form.html", context)
 
@@ -3287,9 +3337,20 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
         """
         service = KerioAdminService()
         k_user = None
+        mailing_lists = []
+        ml_choices: List[Tuple[str, str]] = []
+        user_ml_ids: List[str] = []
         try:
             with service.client:
                 k_user = service.users.get_user_by_id_or_login(user_id)
+                actual_id = k_user.get("id", user_id)
+                login_name = k_user.get("loginName", user_id)
+                clean_login = login_name.split("@")[0].lower()
+                full_email = f"{clean_login}@barkol.ru"
+
+                mailing_lists = service.get_mailing_lists()
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
+                user_ml_ids = service.get_user_mailing_lists(user_id=actual_id, email=full_email, domain_name="barkol.ru")
         except Exception as err:
             logger.error(f"[KerioAdmin] Не удалось найти пользователя '{user_id}': {err}", exc_info=True)
             messages.error(request, f"Не удалось найти пользователя «{user_id}» в Kerio Connect: {err}")
@@ -3297,14 +3358,35 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
 
         item_box = k_user.get("itemBox", {})
         quota_mb = item_box.get("limit") if item_box.get("isEnabled") else None
+        contact = k_user.get("contact", {}) or {}
+
+        first_name = contact.get("firstName", "")
+        last_name = contact.get("lastName", "")
+        middle_name = contact.get("middleName", "")
+        if not first_name and not last_name and k_user.get("fullName"):
+            from mailbox_app.services.kerio.utils import parse_fio_components
+            p_fn, p_ln, p_mn = parse_fio_components(k_user.get("fullName"))
+            first_name = p_fn
+            last_name = p_ln
+            middle_name = p_mn
 
         initial_data = {
             "full_name": k_user.get("fullName", ""),
+            "first_name": first_name,
+            "last_name": last_name,
+            "middle_name": middle_name,
+            "job_title": contact.get("jobTitle", ""),
+            "department": contact.get("department", ""),
+            "company": contact.get("company", "Авиакомпания БАРКОЛ"),
+            "phone": contact.get("businessPhone", ""),
+            "mobile_phone": contact.get("mobilePhone", ""),
             "description": k_user.get("description", ""),
             "quota_mb": quota_mb,
+            "can_change_password": k_user.get("canChangePassword", False),
             "is_enabled": k_user.get("isEnabled", True),
+            "mailing_lists": user_ml_ids,
         }
-        form = KerioUserEditForm(initial=initial_data)
+        form = KerioUserEditForm(initial=initial_data, mailing_lists_choices=ml_choices)
 
         user_display_name = k_user.get("fullName") or k_user.get("loginName") or user_id
 
@@ -3315,6 +3397,8 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
             "k_user": k_user,
             "user_id": user_id,
             "actual_user_id": k_user.get("id", user_id),
+            "mailing_lists": mailing_lists,
+            "user_ml_ids": user_ml_ids,
         })
         return render(request, "mailbox_app/admin/kerio_user_edit.html", context)
 
@@ -3330,8 +3414,17 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
         Returns:
             HttpResponse: Редирект в реестр пользователей.
         """
-        form = KerioUserEditForm(request.POST)
         service = KerioAdminService()
+        mailing_lists = []
+        ml_choices: List[Tuple[str, str]] = []
+        try:
+            with service.client:
+                mailing_lists = service.get_mailing_lists()
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
+        except Exception as err:
+            logger.warning(f"[KerioAdminUserUpdateView] Не удалось загрузить списки рассылки: {err}")
+
+        form = KerioUserEditForm(request.POST, mailing_lists_choices=ml_choices)
         if form.is_valid():
             try:
                 with service.client:
@@ -3340,6 +3433,19 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
                     is_enabled_val = form.cleaned_data["is_enabled"]
                     full_name_val = form.cleaned_data["full_name"]
                     login_name = k_user.get("loginName", user_id)
+                    clean_login = login_name.split("@")[0].lower()
+                    full_email = f"{clean_login}@barkol.ru"
+
+                    first_name_val = form.cleaned_data.get("first_name", "")
+                    last_name_val = form.cleaned_data.get("last_name", "")
+                    middle_name_val = form.cleaned_data.get("middle_name", "")
+                    job_title_val = form.cleaned_data.get("job_title", "")
+                    department_val = form.cleaned_data.get("department", "")
+                    company_val = form.cleaned_data.get("company", "Авиакомпания БАРКОЛ")
+                    phone_val = form.cleaned_data.get("phone", "")
+                    mobile_phone_val = form.cleaned_data.get("mobile_phone", "")
+                    can_change_pwd = form.cleaned_data.get("can_change_password", False)
+                    selected_mls = form.cleaned_data.get("mailing_lists") or []
 
                     service.users.update_user(
                         user_id=actual_id,
@@ -3347,10 +3453,25 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
                         description=form.cleaned_data["description"],
                         is_enabled=is_enabled_val,
                         quota_mb=form.cleaned_data["quota_mb"],
+                        can_change_password=can_change_pwd,
+                        first_name=first_name_val,
+                        middle_name=middle_name_val,
+                        last_name=last_name_val,
+                        job_title=job_title_val,
+                        department=department_val,
+                        company=company_val,
+                        phone=phone_val,
+                        mobile_phone=mobile_phone_val,
+                    )
+
+                    # Синхронизируем подписки на списки рассылки Kerio
+                    ml_sync_res = service.mailing_lists.set_user_memberships(
+                        user_id=actual_id,
+                        email=full_email,
+                        selected_mailing_list_ids=selected_mls,
                     )
 
                     # Синхронизируем активность в правиле POP3 и MailAccount
-                    clean_login = login_name.split("@")[0].lower()
                     pop3_rule = service.pop3.get_account_for_user(clean_login)
                     if pop3_rule and "id" in pop3_rule:
                         try:
@@ -3358,7 +3479,6 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
                         except Exception as pop_err:
                             logger.warning(f"[KerioAdmin] Не удалось обновить статус POP3 правила: {pop_err}")
 
-                    full_email = f"{clean_login}@barkol.ru"
                     MailAccount.objects.filter(email__iexact=full_email).update(
                         is_active=is_enabled_val,
                         display_name=full_name_val or clean_login,
@@ -3389,6 +3509,7 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
             "title": "РЕДАКТИРОВАНИЕ ПОЛЬЗОВАТЕЛЯ",
             "form": form,
             "user_id": user_id,
+            "mailing_lists": mailing_lists,
         })
         return render(request, "mailbox_app/admin/kerio_user_edit.html", context)
 
