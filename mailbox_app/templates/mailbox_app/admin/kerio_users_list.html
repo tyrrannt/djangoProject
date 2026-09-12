@@ -463,7 +463,7 @@
                                                         </li>
                                                         <li>
                                                             <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2"
-                                                                    onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}')">
+                                                                    onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}', '{{ u.fullName|escapejs }}', {% if u.django_user %}{{ u.django_user.pk }}{% else %}null{% endif %})">
                                                                 <i class="bx bx-sync text-info font-size-16"></i>
                                                                 <span>Синхронизировать с 1С (ЗУП)</span>
                                                             </button>
@@ -560,7 +560,7 @@
                                                 </li>
                                                 <li>
                                                     <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2"
-                                                            onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}')">
+                                                            onclick="sync1cUser('{{ u.loginName }}', '{{ current_domain }}', '{{ u.fullName|escapejs }}', {% if u.django_user %}{{ u.django_user.pk }}{% else %}null{% endif %})">
                                                         <i class="bx bx-sync text-info font-size-16"></i>
                                                         <span>Синхронизировать с 1С (ЗУП)</span>
                                                     </button>
@@ -1862,7 +1862,7 @@
             });
         }
 
-        function sync1cUser(loginName, domainName) {
+        function sync1cUser(loginName, domainName, fullName, userId) {
             var domain = domainName || "{{ current_domain|default:'barkol.ru' }}";
             var email = loginName + "@" + domain;
             if (!confirm("Синхронизировать почтовый ящик «" + email + "» с моделью пользователя портала и отправить данные в 1С (ЗУП)?")) {
@@ -1878,7 +1878,9 @@
                     action: "sync_1c",
                     login_name: loginName,
                     domain_name: domain,
-                    email: email
+                    email: email,
+                    full_name: fullName || "",
+                    user_id: userId || null
                 })
             })
             .then(function(res) { return res.json(); })

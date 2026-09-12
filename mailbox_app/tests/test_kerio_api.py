@@ -527,10 +527,11 @@ class KerioAdminServiceTestCase(TestCase):
         """Тест метода sync_user_email_to_portal_and_1c для обновления email в модели пользователя и 1С."""
         mock_update_1c.return_value = (True, "OK в 1С")
 
+        self.user.username = "v.shakirov"
         if hasattr(self.user, "person_ref_key"):
             self.user.person_ref_key = "72095052-970f-11e3-84fb-00e05301b4e4"
-            self.user.email = "old.email@barkol.ru"
-            self.user.save()
+        self.user.email = "old.email@barkol.ru"
+        self.user.save()
 
         res = self.service.sync_user_email_to_portal_and_1c(
             login_name="v.shakirov",
@@ -547,6 +548,69 @@ class KerioAdminServiceTestCase(TestCase):
         mock_update_1c.assert_called_once_with(
             person_ref_key="72095052-970f-11e3-84fb-00e05301b4e4",
             email="v.shakirov@barkol.ru",
+            base_index=0,
+        )
+
+    @patch("administration_app.utils.update_1c_physical_person_email")
+    def test_sync_user_email_to_portal_and_1c_via_mail_account(self, mock_update_1c: MagicMock) -> None:
+        """Тест синхронизации email при поиске сотрудника через связанный MailAccount."""
+        mock_update_1c.return_value = (True, "OK в 1С")
+
+        self.user.username = "custom_login"
+        self.user.email = "custom@example.com"
+        if hasattr(self.user, "person_ref_key"):
+            self.user.person_ref_key = "72095052-970f-11e3-84fb-00e05301b4e4"
+        self.user.save()
+
+        # Создаем связанный MailAccount с искомым корпоративным email
+        MailAccount.objects.create(
+            user=self.user,
+            email="v.shakirov@barkol.ru",
+            display_name="Виталий Шакиров",
+            is_active=True,
+        )
+
+        res = self.service.sync_user_email_to_portal_and_1c(
+            login_name="v.shakirov",
+            domain_name="barkol.ru",
+        )
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["email"], "v.shakirov@barkol.ru")
+        self.assertTrue(res["portal_synced"])
+        self.assertTrue(res["one_c_synced"])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "v.shakirov@barkol.ru")
+
+    @patch("administration_app.utils.update_1c_physical_person_email")
+    def test_sync_user_email_to_portal_and_1c_via_transliterated_login(self, mock_update_1c: MagicMock) -> None:
+        """Тест синхронизации email по транслитерированному логину BARKOL (o.adygezalov -> Адыгезалов Омар)."""
+        mock_update_1c.return_value = (True, "OK в 1С")
+
+        self.user.username = "00-00045"
+        self.user.last_name = "Адыгезалов"
+        self.user.first_name = "Омар"
+        self.user.email = ""
+        if hasattr(self.user, "person_ref_key"):
+            self.user.person_ref_key = "72095052-970f-11e3-84fb-00e05301b4e4"
+        self.user.save()
+
+        res = self.service.sync_user_email_to_portal_and_1c(
+            login_name="o.adygezalov",
+            domain_name="barkol.ru",
+        )
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["email"], "o.adygezalov@barkol.ru")
+        self.assertTrue(res["portal_synced"])
+        self.assertTrue(res["one_c_synced"])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "o.adygezalov@barkol.ru")
+        mock_update_1c.assert_called_once_with(
+            person_ref_key="72095052-970f-11e3-84fb-00e05301b4e4",
+            email="o.adygezalov@barkol.ru",
             base_index=0,
         )
 
@@ -609,6 +673,32 @@ class CorporateLoginUtilsTestCase(TestCase):
         occupied.add("a.abramov2")
         login_lvl4_next = generate_corporate_mailbox_login("Алексей", "Абрамов", "Борисович", existing_logins=occupied)
         self.assertEqual(login_lvl4_next, "a.abramov3")
+
+    def test_find_portal_user_by_kerio_identity(self) -> None:
+        """Тест комплексного многоуровневого поиска пользователя портала."""
+        from mailbox_app.services.kerio.utils import find_portal_user_by_kerio_identity
+
+        user = User.objects.create_user(
+            username="00-00077",
+            first_name="Омар",
+            last_name="Адыгезалов",
+            email="temp@example.com",
+        )
+
+        # 1. Поиск по транслитерированному логину BARKOL
+        found = find_portal_user_by_kerio_identity("o.adygezalov")
+        self.assertIsNotNone(found)
+        self.assertEqual(found.pk, user.pk)
+
+        # 2. Поиск по явному user_id
+        found_by_id = find_portal_user_by_kerio_identity("unknown_login", user_id=user.pk)
+        self.assertIsNotNone(found_by_id)
+        self.assertEqual(found_by_id.pk, user.pk)
+
+        # 3. Поиск по ФИО
+        found_by_fio = find_portal_user_by_kerio_identity("unknown_login", full_name="Адыгезалов Омар")
+        self.assertIsNotNone(found_by_fio)
+        self.assertEqual(found_by_fio.pk, user.pk)
 
 
 class SmtpDeliveryManagerTestCase(TestCase):

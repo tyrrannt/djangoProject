@@ -268,3 +268,181 @@ def get_django_setting(name: str, default: Any = None) -> Any:
     except Exception:
         pass
     return default
+
+
+def find_portal_user_by_kerio_identity(
+    login_name: str,
+    domain_name: str = "barkol.ru",
+    email: Optional[str] = None,
+    full_name: Optional[str] = None,
+    user_id: Optional[int] = None,
+    client: Optional[Any] = None,
+) -> Optional[Any]:
+    """Выполняет интеллектуальный многоуровневый поиск профиля сотрудника DataBaseUser на портале.
+
+    Применяет многоуровневые стратегии сопоставления:
+    1. По явному `user_id` (PK модели DataBaseUser).
+    2. По прямому совпадению корпоративного `email` (full_email) в `DataBaseUser.email`.
+    3. По точному совпадению `username` (логин, логин с заменой точек на подчеркивания или удалением точек).
+    4. По связанной записи `MailAccount` (по email или `user__username`).
+    5. По переданному ФИО `full_name` (фамилия + инициал имени / title).
+    6. По данным из Kerio Connect API (если передан `client`, запрашивается fullName и contact).
+    7. По регламенту корпоративного именования BARKOL (инициал имени + транслитерированная фамилия):
+       извлекает транслитерированную фамилию (например 'adygezalov' из 'o.adygezalov') и инициал ('o'),
+       сопоставляя с русскоязычными полями `last_name` ('Адыгезалов') и `first_name` ('Омар') активных пользователей портала.
+
+    Args:
+        login_name (str): Логин пользователя в Kerio Connect (например, 'o.adygezalov' или 'o.adygezalov@barkol.ru').
+        domain_name (str, optional): Имя домена. Defaults to "barkol.ru".
+        email (Optional[str], optional): Явный адрес email. Defaults to None.
+        full_name (Optional[str], optional): ФИО сотрудника (если известно). Defaults to None.
+        user_id (Optional[int], optional): Идентификатор пользователя Django (PK). Defaults to None.
+        client (Optional[Any], optional): Экземпляр KerioConnectAdminClient для подгрузки данных пользователя. Defaults to None.
+
+    Returns:
+        Optional[Any]: Найденный объект модели DataBaseUser либо None.
+    """
+    try:
+        from django.contrib.auth import get_user_model
+        from django.db import models
+        from mailbox_app.models import MailAccount
+    except Exception:
+        return None
+
+    User = get_user_model()
+    if not User:
+        return None
+
+    # 1. Поиск по явному user_id
+    if user_id:
+        try:
+            u = User.objects.filter(pk=user_id).select_related("user_work_profile").first()
+            if u:
+                return u
+        except Exception:
+            pass
+
+    clean_login = login_name.split("@")[0].strip().lower() if login_name else ""
+    target_domain = domain_name.strip().lower() if domain_name else "barkol.ru"
+    full_email = str(email).strip().lower() if email else (f"{clean_login}@{target_domain}" if clean_login else "")
+
+    if not clean_login and not full_email:
+        return None
+
+    # 2. Поиск по прямому email и username
+    q_filter = models.Q()
+    if full_email:
+        q_filter |= models.Q(email__iexact=full_email)
+    if clean_login:
+        q_filter |= models.Q(username__iexact=clean_login)
+        if "." in clean_login:
+            q_filter |= models.Q(username__iexact=clean_login.replace(".", "_"))
+            q_filter |= models.Q(username__iexact=clean_login.replace(".", ""))
+
+    portal_user = User.objects.filter(q_filter).select_related("user_work_profile").first()
+    if portal_user:
+        return portal_user
+
+    # 3. Поиск через модель MailAccount
+    if MailAccount:
+        acc_q = models.Q()
+        if full_email:
+            acc_q |= models.Q(email__iexact=full_email)
+        if clean_login:
+            acc_q |= models.Q(user__username__iexact=clean_login)
+        acc = MailAccount.objects.filter(acc_q).select_related("user", "user__user_work_profile").first()
+        if acc and acc.user:
+            return acc.user
+
+    # 4. Попытка получить fullName из Kerio Connect API, если не передан
+    effective_full_name = (full_name or "").strip()
+    if not effective_full_name and client and clean_login:
+        try:
+            from mailbox_app.services.kerio.users import UserManager
+            u_mgr = UserManager(client)
+            k_user = u_mgr.get_user_by_login(clean_login)
+            if k_user:
+                effective_full_name = str(k_user.get("fullName") or "").strip()
+                if not effective_full_name:
+                    contact = k_user.get("contact", {})
+                    if isinstance(contact, dict):
+                        c_first = contact.get("firstName", "")
+                        c_last = contact.get("lastName", "")
+                        c_mid = contact.get("middleName", "")
+                        effective_full_name = f"{c_last} {c_first} {c_mid}".strip()
+        except Exception:
+            pass
+
+    # 5. Поиск по ФИО (first_name, last_name, title)
+    if effective_full_name:
+        f_name, l_name, m_name = parse_fio_components(effective_full_name)
+        if l_name:
+            candidates = list(
+                User.objects.filter(
+                    models.Q(last_name__iexact=l_name) | models.Q(title__icontains=l_name)
+                ).select_related("user_work_profile")
+            )
+            if f_name:
+                f_init = f_name[0].upper()
+                f_matched = [
+                    c for c in candidates
+                    if (c.first_name and c.first_name.upper().startswith(f_init))
+                    or (c.title and l_name in c.title and f_init in c.title)
+                ]
+                if f_matched:
+                    active_m = [c for c in f_matched if c.is_active]
+                    return active_m[0] if active_m else f_matched[0]
+            if candidates:
+                active_c = [c for c in candidates if c.is_active]
+                return active_c[0] if active_c else candidates[0]
+
+    # 6. Эвристический разбор логина по стандарту BARKOL (инициал имени + транслитерированная фамилия)
+    if clean_login:
+        login_base = re.sub(r"\d+$", "", clean_login)
+        initials = ""
+        translit_last = ""
+
+        if "." in login_base:
+            parts = [p.strip() for p in login_base.split(".") if p.strip()]
+            if len(parts) >= 2:
+                translit_last = parts[-1]
+                initials = "".join(parts[:-1])
+            elif len(parts) == 1:
+                translit_last = parts[0]
+        else:
+            translit_last = login_base
+
+        if translit_last:
+            users_qs = list(User.objects.filter(is_active=True).select_related("user_work_profile"))
+            matched_candidates: List[Any] = []
+
+            for u in users_qs:
+                u_last = getattr(u, "last_name", "") or ""
+                u_first = getattr(u, "first_name", "") or ""
+                u_title = getattr(u, "title", "") or ""
+                u_uname = getattr(u, "username", "") or ""
+
+                u_translit_last = transliterate_ru_to_en(u_last)
+                u_translit_first = transliterate_ru_to_en(u_first)
+
+                last_matches = False
+                if u_translit_last and u_translit_last == translit_last:
+                    last_matches = True
+                elif u_uname.lower() == translit_last or u_uname.lower().startswith(translit_last):
+                    last_matches = True
+                elif translit_last in transliterate_ru_to_en(u_title):
+                    last_matches = True
+
+                if last_matches:
+                    if initials and u_translit_first:
+                        if u_translit_first.startswith(initials[0]):
+                            matched_candidates.insert(0, u)
+                        else:
+                            matched_candidates.append(u)
+                    else:
+                        matched_candidates.append(u)
+
+            if matched_candidates:
+                return matched_candidates[0]
+
+    return None

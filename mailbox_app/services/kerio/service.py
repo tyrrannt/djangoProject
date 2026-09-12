@@ -34,7 +34,11 @@ from mailbox_app.services.kerio.mailing_lists import MailingListManager
 from mailbox_app.services.kerio.pop3_download import Pop3DownloadManager
 from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
 from mailbox_app.services.kerio.users import UserManager
-from mailbox_app.services.kerio.utils import generate_random_password, get_django_setting
+from mailbox_app.services.kerio.utils import (
+    find_portal_user_by_kerio_identity,
+    generate_random_password,
+    get_django_setting,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -740,10 +744,13 @@ class KerioAdminService:
         full_email = f"{clean_login}@{domain_name}"
 
         target_password = password
-        if not target_password and User and models:
-            u = User.objects.filter(
-                models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
-            ).select_related("user_work_profile").first()
+        if not target_password:
+            u = find_portal_user_by_kerio_identity(
+                login_name=clean_login,
+                domain_name=domain_name,
+                email=full_email,
+                client=self.client,
+            )
             if u and hasattr(u, "user_work_profile") and u.user_work_profile:
                 if u.user_work_profile.work_application_password:
                     target_password = u.user_work_profile.work_application_password.strip()
@@ -751,7 +758,9 @@ class KerioAdminService:
                     target_password = u.user_work_profile.work_email_password.strip()
 
         if not target_password and MailAccount:
-            acc = MailAccount.objects.filter(email__iexact=full_email).first()
+            acc = MailAccount.objects.filter(
+                models.Q(email__iexact=full_email) | models.Q(user__username__iexact=clean_login)
+            ).first()
             if acc:
                 target_password = acc.get_password()
 
@@ -784,12 +793,15 @@ class KerioAdminService:
             )
 
         # Синхронизируем внешний пароль (work_application_password) в рабочем профиле сотрудника
-        if target_password and User and models:
-            matched_users = User.objects.filter(
-                models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
-            ).select_related("user_work_profile")
-            for u in matched_users:
-                _sync_user_work_profile_application_password(u, target_password)
+        if target_password:
+            matched_u = find_portal_user_by_kerio_identity(
+                login_name=clean_login,
+                domain_name=domain_name,
+                email=full_email,
+                client=self.client,
+            )
+            if matched_u:
+                _sync_user_work_profile_application_password(matched_u, target_password)
 
         if MailAccount and target_password:
             try:
@@ -1276,19 +1288,24 @@ class KerioAdminService:
         login_name: str,
         domain_name: str = "barkol.ru",
         email: Optional[str] = None,
+        django_user_id: Optional[int] = None,
+        full_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Синхронизирует корпоративный email ящика с профилем сотрудника DataBaseUser и 1С (ЗУП).
 
         Выполняет:
         1. Определение целевого email адреса (по переданному значению или login_name@domain_name).
-        2. Поиск сотрудника портала в модели DataBaseUser (по username, email или связанному MailAccount).
+        2. Интеллектуальный многоуровневый поиск сотрудника портала через find_portal_user_by_kerio_identity
+           (по django_user_id, email, username, связанному MailAccount, ФИО или транслитерации BARKOL).
         3. Запись email в профиль DataBaseUser (user.email) и сохранение в БД.
         4. Отправку PATCH-запроса через OData (update_1c_physical_person_email) в 1С ЗУП по person_ref_key.
 
         Args:
-            login_name (str): Логин пользователя (например, 'i.ivanov' или 'i.ivanov@barkol.ru').
+            login_name (str): Логин пользователя (например, 'o.adygezalov' или 'o.adygezalov@barkol.ru').
             domain_name (str): Домен почты (по умолчанию 'barkol.ru').
             email (Optional[str]): Явный email адрес (если не указан, формируется автоматически).
+            django_user_id (Optional[int]): Явный ID пользователя портала (если известен).
+            full_name (Optional[str]): ФИО сотрудника из Kerio Connect.
 
         Returns:
             Dict[str, Any]: Словарь с результатами синхронизации:
@@ -1310,18 +1327,14 @@ class KerioAdminService:
         target_domain = domain_name.strip().lower() if domain_name else "barkol.ru"
         full_email = str(email).strip().lower() if email else f"{clean_login}@{target_domain}"
 
-        portal_user = None
-        if User and models:
-            portal_user = User.objects.filter(
-                models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
-            ).select_related("user_work_profile").first()
-
-            if not portal_user and MailAccount:
-                acc = MailAccount.objects.filter(
-                    models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
-                ).select_related("user").first()
-                if acc and acc.user:
-                    portal_user = acc.user
+        portal_user = find_portal_user_by_kerio_identity(
+            login_name=clean_login,
+            domain_name=target_domain,
+            email=full_email,
+            full_name=full_name,
+            user_id=django_user_id,
+            client=self.client,
+        )
 
         if not portal_user:
             return {

@@ -75,6 +75,7 @@ from mailbox_app.services.kerio import (
     KerioObjectNotFoundError,
     KerioValidationError,
 )
+from mailbox_app.services.kerio.utils import find_portal_user_by_kerio_identity
 from mailbox_app.services.imap_service import (
     ImapMailService,
     decode_imap_utf7,
@@ -3017,8 +3018,24 @@ class KerioAdminUsersListView(MailboxAdminAccessMixin, View):
         for u in users_list:
             u_email = u.get("email", "").lower()
             u_login = u.get("loginName", "").lower()
-            u["django_user"] = django_users_by_email.get(u_email) or django_users_by_email.get(u_login)
-            u["mail_account"] = django_mailaccounts_by_email.get(u_email)
+            matched_user = django_users_by_email.get(u_email) or django_users_by_email.get(u_login)
+            if not matched_user and u_login:
+                matched_user = find_portal_user_by_kerio_identity(
+                    login_name=u_login,
+                    domain_name=domain if domain != "all" else "barkol.ru",
+                    email=u_email,
+                    full_name=u.get("fullName"),
+                )
+                if matched_user:
+                    if u_email:
+                        django_users_by_email[u_email] = matched_user
+                    if u_login:
+                        django_users_by_email[u_login] = matched_user
+
+            u["django_user"] = matched_user
+            u["mail_account"] = django_mailaccounts_by_email.get(u_email) or (
+                getattr(matched_user, "mail_account", None) if matched_user else None
+            )
 
         # Алфавитная сортировка пользователей по ФИО / профилю портала / логину / email
         users_list.sort(
@@ -3745,6 +3762,8 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
             login_name = data.get("login_name", "").strip()
             domain_name = data.get("domain_name", "barkol.ru").strip()
             email = data.get("email", "").strip() or None
+            django_user_id = data.get("user_id") or data.get("django_user_id")
+            full_name = data.get("full_name") or data.get("fullName")
             if not login_name:
                 return JsonResponse({"success": False, "message": "Логин пользователя обязателен."}, status=400)
             try:
@@ -3752,6 +3771,8 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
                     login_name=login_name,
                     domain_name=domain_name,
                     email=email,
+                    django_user_id=int(django_user_id) if django_user_id else None,
+                    full_name=full_name,
                 )
                 return JsonResponse(res)
             except Exception as err:
