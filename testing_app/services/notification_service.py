@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 def send_html_email(
-    subject: str,
-    html_content: str,
-    recipient_email: str,
-    user=None
+        subject: str,
+        html_content: str,
+        recipient_email: str,
+        user=None
 ) -> bool:
     """Универсальная функция безопасной отправки HTML-письма через корпоративный почтовый сервер Kerio Connect.
 
@@ -86,7 +86,7 @@ def send_testing_assignment_notification(assignment_id: int) -> bool:
         logger.warning("У сотрудника %s (ID %s) отсутствует email.", employee.get_full_name(), employee.id)
         return False
 
-    subject = f"ООО «Авиакомпания «БАРКОЛ» — Назначение периодической проверки знаний (Приказ №{testing.order_number})"
+    subject = f"ООО Авиакомпания «БАРКОЛ» — Назначение периодической проверки знаний (Приказ №{testing.order_number})"
 
     training_info_row = ""
     if testing.event_start_datetime and testing.event_start_datetime < testing.start_datetime:
@@ -102,7 +102,7 @@ def send_testing_assignment_notification(assignment_id: int) -> bool:
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #1E3A8A; color: #FFFFFF; padding: 20px; text-align: center;">
-            <h3 style="margin: 0 0 5px 0; text-transform: uppercase;">ООО «Авиакомпания «БАРКОЛ»</h3>
+            <h3 style="margin: 0 0 5px 0; text-transform: uppercase;">ООО Авиакомпания «БАРКОЛ»</h3>
             <p style="margin: 0; font-size: 13px; opacity: 0.9;">Инженерно-авиационная служба (ИАС)</p>
         </div>
         <div style="padding: 24px; color: #1E293B;">
@@ -149,7 +149,7 @@ def send_testing_assignment_notification(assignment_id: int) -> bool:
             </div>
         </div>
         <div style="background-color: #F1F5F9; padding: 12px; text-align: center; font-size: 12px; color: #64748B;">
-            Письмо сформировано автоматически корпоративным порталом ИАС ООО «Авиакомпания «БАРКОЛ». Отвечать на него не нужно.
+            Письмо сформировано автоматически корпоративным порталом ООО Авиакомпания «БАРКОЛ». Отвечать на него не нужно.
         </div>
     </div>
     """
@@ -190,7 +190,7 @@ def send_testing_result_notification(attempt_id: int) -> bool:
         return False
 
     if attempt.is_passed:
-        subject = f"Поздравляем! Проверка знаний успешно пройдена — ООО «Авиакомпания «БАРКОЛ»"
+        subject = f"Поздравляем! Проверка знаний успешно пройдена — ООО Авиакомпания «БАРКОЛ»"
         status_box = f"""
         <div style="background-color: #DCFCE7; border: 1px solid #86EFAC; color: #166534; padding: 16px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
             <h4 style="margin: 0 0 5px 0;">ТЕСТ УСПЕШНО СДАН!</h4>
@@ -207,7 +207,7 @@ def send_testing_result_notification(attempt_id: int) -> bool:
         """
     else:
         rem_attempts = testing.max_attempts - assignment.attempts_used
-        subject = f"Результаты тестирования — ООО «Авиакомпания «БАРКОЛ»"
+        subject = f"Результаты тестирования — ООО Авиакомпания «БАРКОЛ»"
         if rem_attempts > 0:
             status_desc = f"Набранный балл ({attempt.score_percentage}%) ниже порогового значения ({attempt.passing_score_percentage}%). У Вас осталось попыток: <strong>{rem_attempts}</strong>."
         else:
@@ -231,7 +231,7 @@ def send_testing_result_notification(attempt_id: int) -> bool:
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #1E3A8A; color: #FFFFFF; padding: 20px; text-align: center;">
-            <h3 style="margin: 0 0 5px 0; text-transform: uppercase;">ООО «Авиакомпания «БАРКОЛ»</h3>
+            <h3 style="margin: 0 0 5px 0; text-transform: uppercase;">ООО Авиакомпания «БАРКОЛ»</h3>
             <p style="margin: 0; font-size: 13px; opacity: 0.9;">Итоги попытки №{attempt.attempt_number} проверки знаний</p>
         </div>
         <div style="padding: 24px; color: #1E293B;">
@@ -254,7 +254,7 @@ def send_testing_result_notification(attempt_id: int) -> bool:
             {btn_action}
         </div>
         <div style="background-color: #F1F5F9; padding: 12px; text-align: center; font-size: 12px; color: #64748B;">
-            Корпоративный портал ИАС ООО «Авиакомпания «БАРКОЛ»
+            Корпоративный портал ООО Авиакомпания «БАРКОЛ»
         </div>
     </div>
     """
@@ -296,7 +296,7 @@ def send_testing_deadline_reminders() -> Dict[str, int]:
             if not emp.email:
                 continue
 
-            subject = f"Внимание: До окончания проверки знаний осталось {urgency_text} — ООО «Авиакомпания «БАРКОЛ»"
+            subject = f"Внимание: До окончания проверки знаний осталось {urgency_text} — ООО Авиакомпания «БАРКОЛ»"
             html_content = f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
                 <div style="background-color: #DC2626; color: #FFFFFF; padding: 18px; text-align: center;">
