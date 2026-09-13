@@ -61,11 +61,14 @@ def send_html_email(
 def send_testing_assignment_notification(assignment_id: int) -> bool:
     """Отправляет сотруднику email-уведомление о назначении на периодическую проверку знаний.
 
+    Формирует корпоративное HTML-письмо с информацией о приказе, группе,
+    датах теоретической подготовки и сдачи тестирования, а также параметрах теста.
+
     Args:
         assignment_id (int): ID назначения TestingAssignment.
 
     Returns:
-        bool: Результат отправки.
+        bool: True при успешной отправке письма, иначе False.
     """
     assignment = TestingAssignment.objects.select_related(
         "employee", "testing", "group"
@@ -84,6 +87,17 @@ def send_testing_assignment_notification(assignment_id: int) -> bool:
         return False
 
     subject = f"ООО «Авиакомпания «БАРКОЛ» — Назначение периодической проверки знаний (Приказ №{testing.order_number})"
+
+    training_info_row = ""
+    if testing.event_start_datetime and testing.event_start_datetime < testing.start_datetime:
+        training_info_row = f"""
+                <tr style="background-color: #F8FAFC;">
+                    <td style="padding: 10px; border: 1px solid #E2E8F0; font-weight: bold;">Теоретическая подготовка (лекции):</td>
+                    <td style="padding: 10px; border: 1px solid #E2E8F0;">
+                        с <strong>{testing.event_start_datetime.strftime('%d.%m.%Y %H:%M')}</strong>
+                    </td>
+                </tr>
+        """
 
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
@@ -107,8 +121,9 @@ def send_testing_assignment_notification(assignment_id: int) -> bool:
                     <td style="padding: 10px; border: 1px solid #E2E8F0; font-weight: bold;">Группа:</td>
                     <td style="padding: 10px; border: 1px solid #E2E8F0;">{assignment.group.name}</td>
                 </tr>
+                {training_info_row}
                 <tr style="background-color: #F8FAFC;">
-                    <td style="padding: 10px; border: 1px solid #E2E8F0; font-weight: bold;">Период проведения:</td>
+                    <td style="padding: 10px; border: 1px solid #E2E8F0; font-weight: bold;">Сдача тестирования:</td>
                     <td style="padding: 10px; border: 1px solid #E2E8F0;">
                         с <strong>{testing.start_datetime.strftime('%d.%m.%Y %H:%M')}</strong> 
                         по <strong>{testing.end_datetime.strftime('%d.%m.%Y %H:%M')}</strong>

@@ -93,3 +93,26 @@ def check_expired_attempts_task(self):
     except Exception as exc:
         logger.error("Ошибка в check_expired_attempts_task: %s", exc)
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=60)
+def auto_activate_scheduled_testings_task(self):
+    """Периодическая фоновая задача автоматической активации запланированных мероприятий тестирования.
+
+    Запускается по расписанию Celery Beat, отбирает мероприятия со статусом 'scheduled',
+    у которых наступила дата начала обучения/тестирования, переводит их в статус 'active'
+    и инициирует рассылку email-уведомлений назначенным сотрудникам.
+
+    Returns:
+        Dict[str, Any]: Словарь со статистикой автоактивации (обработано, активировано, ошибки).
+    """
+    logger.info("Старт периодической задачи auto_activate_scheduled_testings_task")
+    try:
+        from testing_app.services.event_service import auto_activate_scheduled_testings
+        stats = auto_activate_scheduled_testings()
+        logger.info("Периодическая задача auto_activate_scheduled_testings_task успешно завершена: %s", stats)
+        return stats
+    except Exception as exc:
+        logger.error("Ошибка в auto_activate_scheduled_testings_task: %s", exc, exc_info=True)
+        raise self.retry(exc=exc)
+

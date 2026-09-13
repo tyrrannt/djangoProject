@@ -297,19 +297,37 @@ def index(request):
 
 
 class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
+    """Детальное представление личного профиля сотрудника и интерактивного календаря.
+
+    Отображает персональные данные, рабочую информацию, служебные записки,
+    договоры, а также единый агрегированный календарь FullCalendar (посты,
+    задачи с поддержкой повторений rrule и назначенные мероприятия тестирования).
+    """
+
     context = {}
     model = DataBaseUser
     template_name = 'customers_app/user_profile.html'
 
     def get_queryset(self, *args, **kwargs):
+        """Ограничивает доступ к профилям для обычных пользователей (только свой профиль)."""
         qs = super().get_queryset(*args, **kwargs)
         if not self.request.user.is_superuser:
             qs = qs.filter(pk=self.request.user.pk)
         return qs
 
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует расширенный контекст страницы профиля и календарных событий.
 
+        Агрегирует статистику документов, личные и трудовые показатели,
+        а также формирует единый список `calendar_events` для FullCalendar
+        (мероприятия портала, задачи, посты подразделения и назначенные тестирования/обучение).
 
-    def get_context_data(self, **kwargs):
+        Args:
+            **kwargs: Дополнительные именованные аргументы контекста.
+
+        Returns:
+            Dict[str, Any]: Словарь контекста для шаблона user_profile.html.
+        """
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
         user_obj = self.object
         today = datetime.datetime.today()
@@ -537,6 +555,62 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                             'until': end.isoformat(),
                         }
                     })
+
+        # ----- 4. МЕРОПРИЯТИЯ ТЕСТИРОВАНИЯ И ОБУЧЕНИЯ СОТРУДНИКА -----
+        try:
+            from testing_app.models import Testing, TestingAssignment
+            user_testings_qs = TestingAssignment.objects.select_related('testing', 'group').filter(
+                employee=current_user,
+                testing__status__in=[
+                    Testing.Status.SCHEDULED,
+                    Testing.Status.ACTIVE,
+                    Testing.Status.COMPLETED,
+                ]
+            )
+
+            for assignment in user_testings_qs:
+                testing_obj = assignment.testing
+
+                # Цветовая индикация и текст бейджа в календаре
+                if assignment.status == TestingAssignment.Status.PASSED:
+                    color = 'success'
+                    badge_title = f"✓ Аттестация: {testing_obj.title} ({assignment.best_score:.0f}%)"
+                elif assignment.status in [
+                    TestingAssignment.Status.FAILED,
+                    TestingAssignment.Status.ATTEMPTS_EXHAUSTED,
+                    TestingAssignment.Status.OVERDUE,
+                ]:
+                    color = 'danger'
+                    badge_title = f"⚠ Пересдача: {testing_obj.title}"
+                elif testing_obj.is_training_active_now:
+                    color = 'warning'
+                    badge_title = f"📖 Обучение: {testing_obj.title}"
+                elif testing_obj.status == Testing.Status.SCHEDULED:
+                    color = 'info'
+                    badge_title = f"📅 Запланировано: {testing_obj.title}"
+                else:
+                    color = 'primary'
+                    badge_title = f"📝 Тестирование: {testing_obj.title}"
+
+                start_dt = testing_obj.actual_event_start_datetime
+                end_dt = testing_obj.end_datetime
+
+                event_data = {
+                    'id': f'testing_{assignment.id}',
+                    'title': badge_title,
+                    'url': reverse('testing_app:my_tests'),
+                    'color': color,
+                    'className': f'fc-event-{color}',
+                    'start': start_dt.isoformat() if start_dt else None,
+                    'end': end_dt.isoformat() if end_dt else None,
+                }
+                calendar_events.append(event_data)
+        except Exception as exc:
+            logger.warning(
+                "Ошибка загрузки мероприятий тестирования для календаря пользователя %s: %s",
+                current_user,
+                exc,
+            )
 
         context['repeat_tasks'] = calendar_events
         context['users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name').exclude(is_superuser=True)

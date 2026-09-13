@@ -1,8 +1,8 @@
-"""Сервисы управления мероприятиями тестирования, группами, должностями и назначениями сотрудников."""
-
+import logging
 from typing import Dict, Any, List, Optional, Tuple, Set
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from customers_app.models import Job, DataBaseUser
@@ -16,6 +16,8 @@ from testing_app.models import (
     TestingAttempt,
     TestingAuditLog,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_default_groups_exist(testing: Testing) -> Tuple[TestingGroup, TestingGroup]:
@@ -596,3 +598,70 @@ def change_testing_status(testing: Testing, new_status: str, user=None) -> Tuple
             logger.warning("Не удалось запустить пакетную рассылку уведомлений (Testing ID %s): %s", testing.id, exc)
 
     return True, []
+
+
+def auto_activate_scheduled_testings() -> Dict[str, Any]:
+    """Автоматически переводит запланированные мероприятия тестирования в статус «Активно».
+
+    Находит все мероприятия со статусом SCHEDULED ('scheduled'), у которых наступила дата
+    начала (event_start_datetime <= now, либо при его отсутствии start_datetime <= now).
+    Для каждого подходящего мероприятия запускает процедуру change_testing_status, которая
+    проверяет 14 критериев готовности, переводит статус в ACTIVE ('active'), формирует запись в
+    журнале аудита TestingAuditLog и инициирует пакетную фоновую рассылку email-уведомлений
+    назначенным сотрудникам через Celery.
+
+    Returns:
+        Dict[str, Any]: Словарь с результатами автоактивации со следующими ключами:
+            - 'processed_count' (int): Общее количество найденных запланированных мероприятий.
+            - 'activated_count' (int): Количество успешно переведенных в активный статус мероприятий.
+            - 'activated_ids' (List[int]): Список ID успешно активированных мероприятий.
+            - 'errors' (List[Dict[str, Any]]): Список возникших ошибок валидации по мероприятиям.
+    """
+    now = timezone.now()
+    scheduled_testings = Testing.objects.filter(
+        status=Testing.Status.SCHEDULED
+    ).filter(
+        Q(event_start_datetime__lte=now) | (Q(event_start_datetime__isnull=True) & Q(start_datetime__lte=now))
+    )
+
+    processed_count = 0
+    activated_count = 0
+    activated_ids: List[int] = []
+    errors: List[Dict[str, Any]] = []
+
+    logger.info("Старт автоактивации запланированных мероприятий. Найдено кандидатов: %s", scheduled_testings.count())
+
+    for testing in scheduled_testings:
+        processed_count += 1
+        success, errs = change_testing_status(testing, Testing.Status.ACTIVE, user=None)
+        if success:
+            activated_count += 1
+            activated_ids.append(testing.id)
+            logger.info("Мероприятие '%s' (ID %s) успешно автоматически переведено в статус ACTIVE.", testing.title, testing.id)
+        else:
+            errors.append({
+                "testing_id": testing.id,
+                "title": testing.title,
+                "errors": errs,
+            })
+            logger.warning(
+                "Не удалось автоматически активировать мероприятие '%s' (ID %s). Ошибки: %s",
+                testing.title,
+                testing.id,
+                errs,
+            )
+
+    logger.info(
+        "Автоактивация мероприятий завершена. Обработано: %s, активировано: %s, ошибок: %s",
+        processed_count,
+        activated_count,
+        len(errors),
+    )
+
+    return {
+        "processed_count": processed_count,
+        "activated_count": activated_count,
+        "activated_ids": activated_ids,
+        "errors": errors,
+    }
+
