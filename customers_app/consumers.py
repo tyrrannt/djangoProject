@@ -1,7 +1,9 @@
 # consumers.py
 import os
+import time
 from asyncio import sleep
 import psutil
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -15,6 +17,11 @@ from administration_app.utils import transliterate, get_device_info
 from administration_app.system_monitor_service import get_system_monitor_payload
 
 from contracts_app.templatetags.custom import FIO_format
+from customers_app.models import DataBaseUser
+
+ONLINE_HEARTBEAT_TIMEOUT = 70  # Секунды: таймаут неактивности сессии без heartbeat
+REGISTRY_CACHE_KEY = "portal_online_users_registry"
+REGISTRY_CACHE_TIMEOUT = 300  # Секунды: время жизни кэша реестра (5 минут)
 
 
 def get_scope_user_agent(scope: dict) -> str:
@@ -35,9 +42,35 @@ def get_scope_user_agent(scope: dict) -> str:
     return ''
 
 
-def _format_online_users(registry: dict) -> list:
+def _prune_registry(registry: dict) -> dict:
+    """Очищает реестр соединений от устаревших сессий, превысивших таймаут неактивности.
+
+    Args:
+        registry (dict): Словарь активных соединений вида {channel_name: conn_data}.
+
+    Returns:
+        dict: Очищенный словарь актуальных соединений.
+    """
+    if not isinstance(registry, dict):
+        return {}
+    now = time.time()
+    valid_registry = {}
+    for ch_name, data in registry.items():
+        if not isinstance(data, dict):
+            continue
+        last_seen = data.get('last_seen', 0)
+        # Исключаем сессии без отметки времени или старше таймаута неактивности
+        if last_seen and (now - last_seen) > ONLINE_HEARTBEAT_TIMEOUT:
+            continue
+        valid_registry[ch_name] = data
+    return valid_registry
+
+
+def _format_online_users(registry: dict) -> List[Dict[str, Any]]:
     """Группирует активные WebSocket-подключения по пользователям и формирует список устройств.
 
+    Выполняет строгую верификацию статуса пользователя в БД, исключая деактивированных/уволенных
+    сотрудников (is_active=False), технические терминалы МПД (is_ppa=True) и сессии без heartbeat.
     Обеспечивает обратную совместимость как с кортежным форматом (user[0], user[1]),
     так и со структурированными объектами, агрегируя все клиентские устройства
     пользователя (например, ПК и мобильный телефон) без дублирования одинаковых сессий.
@@ -46,19 +79,54 @@ def _format_online_users(registry: dict) -> list:
         registry (dict): Словарь активных соединений вида {channel_name: session_dict}.
 
     Returns:
-        list: Отсортированный по ФИО список словарей с параметрами активных пользователей.
+        List[Dict[str, Any]]: Отсортированный по ФИО список словарей с параметрами активных пользователей.
     """
-    users_map = {}
-    for ch_name, data in registry.items():
+    active_channels = _prune_registry(registry)
+    if not active_channels:
+        return []
+
+    # Собираем уникальные идентификаторы пользователей для валидации
+    candidate_user_ids = {
+        data.get('user_id')
+        for data in active_channels.values()
+        if data.get('user_id')
+    }
+    if not candidate_user_ids:
+        return []
+
+    # Проверяем реальный статус пользователей в БД
+    try:
+        valid_active_user_ids = set(
+            DataBaseUser.objects.filter(
+                id__in=candidate_user_ids,
+                is_active=True,
+                is_ppa=False
+            ).values_list('id', flat=True)
+        )
+    except Exception:
+        # Резервный режим фильтрации по метаданным сессии при временной недоступности БД
+        valid_active_user_ids = {
+            data.get('user_id')
+            for data in active_channels.values()
+            if data.get('user_id') and data.get('is_active', True) and not data.get('is_ppa', False)
+        }
+
+    users_map: Dict[int, Dict[str, Any]] = {}
+    for ch_name, data in active_channels.items():
         uid = data.get('user_id')
-        if not uid:
+        if not uid or uid not in valid_active_user_ids:
             continue
+
         username = data.get('username', '')
         if uid not in users_map:
             users_map[uid] = {
-                # Строковые ключи '0' и '1' для совместимости с JS user[0], user[1] и защиты от ValueError в Channels/msgpack
+                # Строковые ключи '0'...'5' для совместимости с JS user[0], user[1] и защиты от ValueError в Channels/msgpack
                 '0': username,
                 '1': uid,
+                '2': data.get('device_type', 'Компьютер / Ноутбук'),
+                '3': data.get('device_icon', 'bx bx-laptop'),
+                '4': data.get('os_name', ''),
+                '5': data.get('browser_name', ''),
                 'user_id': uid,
                 'username': username,
                 'devices': [],
@@ -91,19 +159,43 @@ def add_user_connection(channel_name: str, conn_data: dict) -> list:
 
     Args:
         channel_name (str): Уникальный идентификатор канала Channels.
-        conn_data (dict): Словарь параметров сессии (user_id, username, device_info).
+        conn_data (dict): Словарь параметров сессии (user_id, username, device_info, last_seen).
 
     Returns:
         list: Актуальный список пользователей онлайн.
     """
+    now = time.time()
+    conn_data['last_seen'] = now
     try:
-        registry = cache.get("portal_online_users_registry") or {}
+        registry = cache.get(REGISTRY_CACHE_KEY) or {}
+        registry = _prune_registry(registry)
         registry[channel_name] = conn_data
-        cache.set("portal_online_users_registry", registry, timeout=86400)
+        cache.set(REGISTRY_CACHE_KEY, registry, timeout=REGISTRY_CACHE_TIMEOUT)
         return _format_online_users(registry)
     except Exception:
+        OnlineUsersConsumer._local_registry = _prune_registry(OnlineUsersConsumer._local_registry)
         OnlineUsersConsumer._local_registry[channel_name] = conn_data
         return _format_online_users(OnlineUsersConsumer._local_registry)
+
+
+@sync_to_async(thread_sensitive=True)
+def update_user_heartbeat(channel_name: str) -> None:
+    """Обновляет отметку времени последней активности (heartbeat) для указанного канала.
+
+    Args:
+        channel_name (str): Уникальный идентификатор канала Channels.
+    """
+    now = time.time()
+    try:
+        registry = cache.get(REGISTRY_CACHE_KEY) or {}
+        if channel_name in registry:
+            registry[channel_name]['last_seen'] = now
+            registry = _prune_registry(registry)
+            cache.set(REGISTRY_CACHE_KEY, registry, timeout=REGISTRY_CACHE_TIMEOUT)
+    except Exception:
+        if channel_name in OnlineUsersConsumer._local_registry:
+            OnlineUsersConsumer._local_registry[channel_name]['last_seen'] = now
+            OnlineUsersConsumer._local_registry = _prune_registry(OnlineUsersConsumer._local_registry)
 
 
 @sync_to_async(thread_sensitive=True)
@@ -117,12 +209,14 @@ def remove_user_connection(channel_name: str) -> list:
         list: Актуальный список пользователей онлайн.
     """
     try:
-        registry = cache.get("portal_online_users_registry") or {}
+        registry = cache.get(REGISTRY_CACHE_KEY) or {}
         registry.pop(channel_name, None)
-        cache.set("portal_online_users_registry", registry, timeout=86400)
+        registry = _prune_registry(registry)
+        cache.set(REGISTRY_CACHE_KEY, registry, timeout=REGISTRY_CACHE_TIMEOUT)
         return _format_online_users(registry)
     except Exception:
         OnlineUsersConsumer._local_registry.pop(channel_name, None)
+        OnlineUsersConsumer._local_registry = _prune_registry(OnlineUsersConsumer._local_registry)
         return _format_online_users(OnlineUsersConsumer._local_registry)
 
 
@@ -134,11 +228,14 @@ def get_current_online_users() -> list:
         list: Список словарей активных пользователей.
     """
     try:
-        registry = cache.get("portal_online_users_registry") or {}
+        registry = cache.get(REGISTRY_CACHE_KEY) or {}
+        registry = _prune_registry(registry)
+        cache.set(REGISTRY_CACHE_KEY, registry, timeout=REGISTRY_CACHE_TIMEOUT)
         if not registry and OnlineUsersConsumer._local_registry:
-            registry = OnlineUsersConsumer._local_registry
+            registry = _prune_registry(OnlineUsersConsumer._local_registry)
         return _format_online_users(registry)
     except Exception:
+        OnlineUsersConsumer._local_registry = _prune_registry(OnlineUsersConsumer._local_registry)
         return _format_online_users(OnlineUsersConsumer._local_registry)
 
 
@@ -146,8 +243,9 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
     """Асинхронный потребитель WebSockets для отслеживания и трансляции списка пользователей онлайн.
 
     Определяет устройство каждого пользователя (ПК, планшет, смартфон) через User-Agent,
-    поддерживает мультипроцессную синхронизацию сессий через распределенный кэш
-    и информирует клиентский интерфейс о составе активных пользователей.
+    поддерживает проверку активности учетной записи, фильтрацию недействующих сотрудников
+    и технических терминалов МПД, очистку зависших соединений по heartbeat-таймауту
+    и мультипроцессную синхронизацию сессий через распределенный кэш.
 
     Attributes:
         online_users (set): Набор кортежей (username, user_id) для обратной совместимости.
@@ -158,13 +256,13 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
     _local_registry = {}
 
     async def connect(self):
-        """Обрабатывает входящее WebSocket-подключение, определяет тип устройства и регистрирует сессию.
+        """Обрабатывает входящее WebSocket-подключение, выполняет проверки и регистрирует сессию.
 
         Raises:
             Exception: При непредвиденных ошибках регистрации канала в Channel Layer.
         """
         user = self.scope.get('user')
-        if not user or not user.is_authenticated:
+        if not user or not user.is_authenticated or not user.is_active or getattr(user, 'is_ppa', False):
             await self.close()
             return
 
@@ -181,6 +279,9 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
             'device_icon': device_info.get('device_icon', 'bx bx-laptop'),
             'os_name': device_info.get('os_name', ''),
             'browser_name': device_info.get('browser_name', ''),
+            'is_active': bool(user.is_active),
+            'is_ppa': bool(getattr(user, 'is_ppa', False)),
+            'last_seen': time.time(),
         }
 
         self.online_users.add((username, user.pk))
@@ -199,9 +300,30 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
         if user and user.is_authenticated:
             username = FIO_format(getattr(user, 'title', '') or getattr(user, 'username', '') or str(user))
             self.online_users.discard((username, user.pk))
-            users_list = await remove_user_connection(self.channel_name)
-            await self.channel_layer.group_discard('online_users', self.channel_name)
-            await self.send_online_users(users_list)
+        users_list = await remove_user_connection(self.channel_name)
+        await self.channel_layer.group_discard('online_users', self.channel_name)
+        await self.send_online_users(users_list)
+
+    async def receive(self, text_data=None, bytes_data=None):
+        """Обрабатывает входящие сообщения WebSocket, включая регулярный heartbeat (ping).
+
+        Args:
+            text_data (str, optional): Текстовые данные JSON от клиента.
+            bytes_data (bytes, optional): Бинарные данные.
+        """
+        if not text_data:
+            return
+        try:
+            data = json.loads(text_data)
+            msg_type = data.get('type')
+            if msg_type in ('ping', 'heartbeat'):
+                await update_user_heartbeat(self.channel_name)
+                await self.send(text_data=json.dumps({
+                    'type': 'pong',
+                    'timestamp': int(time.time()),
+                }))
+        except Exception:
+            pass
 
     async def send_online_users(self, users_list=None):
         """Отправляет актуальный перечень пользователей всем участникам группы online_users.

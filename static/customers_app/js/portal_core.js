@@ -176,28 +176,44 @@
             };
         }
 
-        // Подключение WebSocket с мягким восстановлением
+        // Подключение WebSocket с мягким восстановлением и heartbeat-пульсом
         var wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         var host = window.location.host;
+        var onlineUsersSocket = null;
+        var onlineUsersHeartbeatInterval = null;
 
         function connectOnlineUsers() {
             var url = wsProtocol + host + '/ws/online_users/';
-            var onlineSocket;
             try {
-                onlineSocket = new WebSocket(url);
+                onlineUsersSocket = new WebSocket(url);
             } catch (err) {
                 console.warn('WebSocket [online_users] creation failed:', err);
                 setTimeout(connectOnlineUsers, 5000);
                 return;
             }
 
-            onlineSocket.onopen = function () {
+            onlineUsersSocket.onopen = function () {
                 console.info('WebSocket [online_users] connected via', wsProtocol);
+                if (onlineUsersHeartbeatInterval) {
+                    clearInterval(onlineUsersHeartbeatInterval);
+                }
+                onlineUsersHeartbeatInterval = setInterval(function () {
+                    if (onlineUsersSocket && onlineUsersSocket.readyState === WebSocket.OPEN) {
+                        try {
+                            onlineUsersSocket.send(JSON.stringify({ type: 'heartbeat' }));
+                        } catch (e) {
+                            console.debug('Failed to send heartbeat:', e);
+                        }
+                    }
+                }, 25000);
             };
 
-            onlineSocket.onmessage = function (event) {
+            onlineUsersSocket.onmessage = function (event) {
                 try {
                     var data = JSON.parse(event.data);
+                    if (data.type === 'pong') {
+                        return; // Служебный ответ heartbeat
+                    }
                     if (data.type === 'online_users') {
                         var usersList = document.getElementById('online-users');
                         if (!usersList) return;
@@ -299,15 +315,36 @@
                 }
             };
 
-            onlineSocket.onerror = function (error) {
+            onlineUsersSocket.onerror = function (error) {
                 console.warn('WebSocket [online_users] error on ' + url + ':', error);
+                if (onlineUsersHeartbeatInterval) {
+                    clearInterval(onlineUsersHeartbeatInterval);
+                    onlineUsersHeartbeatInterval = null;
+                }
             };
 
-            onlineSocket.onclose = function (event) {
+            onlineUsersSocket.onclose = function (event) {
                 console.info('WebSocket [online_users] closed (code: ' + event.code + '). Reconnecting in 5s...');
+                if (onlineUsersHeartbeatInterval) {
+                    clearInterval(onlineUsersHeartbeatInterval);
+                    onlineUsersHeartbeatInterval = null;
+                }
                 setTimeout(connectOnlineUsers, 5000);
             };
         }
+
+        // Корректное закрытие сокета при выгрузке страницы
+        window.addEventListener('beforeunload', function () {
+            if (onlineUsersHeartbeatInterval) {
+                clearInterval(onlineUsersHeartbeatInterval);
+                onlineUsersHeartbeatInterval = null;
+            }
+            if (onlineUsersSocket && onlineUsersSocket.readyState === WebSocket.OPEN) {
+                try {
+                    onlineUsersSocket.close(1000, 'Page unloaded');
+                } catch (e) {}
+            }
+        });
 
         function connectPrivateMessages() {
             var url = wsProtocol + host + '/ws/private/';
