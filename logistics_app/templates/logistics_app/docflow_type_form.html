@@ -1,0 +1,221 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {% if form.instance.pk %}Редактирование вида документа{% else %}Создание вида документа{% endif %} // СЭД БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+        --sed-brand-navy: #002b49;
+        --sed-accent-sky: #0284c7;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+    .error-feedback {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:docflow_type_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к справочнику">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-category me-2 text-primary"></i>
+                    {% if form.instance.pk %}Редактирование вида документа{% else %}Создание вида документа{% endif %}
+                </h2>
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                Заполните параметры классификации, уникальный символьный код и нормативный SLA
+            </p>
+        </div>
+    </header>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card form-card shadow-sm">
+                <div class="card-body p-3 p-md-4">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-3">
+                                {% for err in form.non_field_errors %}
+                                    <div>{{ err }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-12 col-md-8 mb-3">
+                                <label class="form-label fw-semibold" for="{{ form.name.id_for_label }}">
+                                    Наименование вида документа <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="error-feedback">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small text-muted">Например: Договор поставки МТР, Служебная записка на командировку</div>
+                            </div>
+
+                            <div class="col-12 col-md-4 mb-3">
+                                <label class="form-label fw-semibold" for="{{ form.category.id_for_label }}">
+                                    Категория потока <span class="text-danger">*</span>
+                                </label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                    <div class="error-feedback">{{ form.category.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 col-md-6 mb-3">
+                                <label class="form-label fw-semibold" for="{{ form.code.id_for_label }}">
+                                    Символьный код (латиницей) <span class="text-muted small fw-normal">(автогенерация)</span>
+                                </label>
+                                <div class="input-group">
+                                    {{ form.code }}
+                                    <button type="button" class="btn btn-outline-secondary" id="btnGenerateCode" title="Сгенерировать код заново из наименования">
+                                        <i class="bx bx-refresh"></i>
+                                    </button>
+                                </div>
+                                {% if form.code.errors %}
+                                    <div class="error-feedback">{{ form.code.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small text-muted">Формируется автоматически из названия (например: DOGOVOR_POSTAVKI_MTR). При необходимости можно отредактировать.</div>
+                            </div>
+
+                            <div class="col-12 col-md-6 mb-3">
+                                <label class="form-label fw-semibold" for="{{ form.default_sla_hours.id_for_label }}">
+                                    Нормативный срок рассмотрения (SLA, часов) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.default_sla_hours }}
+                                {% if form.default_sla_hours.errors %}
+                                    <div class="error-feedback">{{ form.default_sla_hours.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small text-muted">Срок на согласование каждого этапа по умолчанию (например, 24 или 48)</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">
+                                Описание и регламент применения
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="error-feedback">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-check p-3 bg-light rounded border mb-4">
+                            {{ form.is_active }}
+                            <label class="form-check-label fw-semibold small text-dark" for="{{ form.is_active.id_for_label }}">
+                                Вид документа активен (доступен для выбора при создании новых документов)
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'logistics_app:docflow_type_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-x me-1"></i>Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-touch">
+                                <i class="bx bx-save me-1"></i>Сохранить вид документа
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('id_name');
+    const codeInput = document.getElementById('id_code');
+    const btnGenerate = document.getElementById('btnGenerateCode');
+    
+    // Флаг ручного ввода: если при загрузке страницы код уже заполнен, считаем его пользовательским
+    let isCodeManuallyEdited = Boolean(codeInput && codeInput.value.trim() !== '');
+
+    const translitMap = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+        'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+    };
+
+    function transliterateToCode(str) {
+        if (!str) return '';
+        let result = '';
+        const lower = str.trim().toLowerCase();
+        for (let i = 0; i < lower.length; i++) {
+            const ch = lower[i];
+            if (translitMap[ch] !== undefined) {
+                result += translitMap[ch];
+            } else if (/[a-z0-9]/.test(ch)) {
+                result += ch;
+            } else {
+                result += '_';
+            }
+        }
+        return result.replace(/_+/g, '_').replace(/^_+|_+$/g, '').toUpperCase();
+    }
+
+    if (nameInput && codeInput) {
+        // Живая автогенерация при вводе наименования
+        nameInput.addEventListener('input', function() {
+            if (!isCodeManuallyEdited) {
+                codeInput.value = transliterateToCode(nameInput.value);
+            }
+        });
+
+        // Отслеживание ручной правки пользователем
+        codeInput.addEventListener('input', function() {
+            isCodeManuallyEdited = (codeInput.value.trim() !== '');
+        });
+
+        // Кнопка принудительной регенерации кода
+        if (btnGenerate) {
+            btnGenerate.addEventListener('click', function() {
+                codeInput.value = transliterateToCode(nameInput.value);
+                isCodeManuallyEdited = false;
+                codeInput.focus();
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

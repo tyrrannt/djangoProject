@@ -1,0 +1,150 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Шаблоны маршрутов согласования // СЭД БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --sed-brand: #002b49;
+        --sed-accent: #0284c7;
+        --touch-target: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-sm btn-outline-secondary" title="К документам">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-git-repo-forked me-2 text-primary"></i>Шаблоны маршрутов согласования
+                </h2>
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                Справочник типовых маршрутов и этапов визирования для видов документов
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'logistics_app:docflow_template_add' %}" class="btn btn-primary btn-touch">
+                <i class="bx bx-plus me-1"></i>
+                <span>Создать шаблон</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Navigation Pills / Tabs -->
+    <nav class="sed-nav-pills d-flex flex-wrap mb-3" aria-label="Разделы СЭД">
+        <a href="{% url 'logistics_app:docflow_list' %}" class="nav-link">
+            <i class="bx bx-folder me-2"></i>
+            <span>Реестр документов</span>
+        </a>
+        <a href="{% url 'logistics_app:docflow_template_list' %}" class="nav-link active">
+            <i class="bx bx-git-repo-forked me-2"></i>
+            <span>Шаблоны маршрутов</span>
+        </a>
+        <a href="{% url 'logistics_app:docflow_type_list' %}" class="nav-link">
+            <i class="bx bx-category me-2"></i>
+            <span>Виды документов</span>
+        </a>
+    </nav>
+
+    <!-- Templates Table Card -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <div class="card-body p-0 p-md-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 25%;">Наименование шаблона</th>
+                            <th style="width: 20%;">Вид документа</th>
+                            <th style="width: 30%;">Шаги маршрута</th>
+                            <th style="width: 10%;" class="text-center">По умолчанию</th>
+                            <th style="width: 15%;" class="text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tpl in templates %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ tpl.name }}</div>
+                                    {% if tpl.description %}
+                                        <div class="small text-muted text-truncate" style="max-width: 280px;" title="{{ tpl.description }}">
+                                            {{ tpl.description }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tpl.doc_type %}
+                                        <span class="badge {% if tpl.doc_type.category == 'INBOUND' %}bg-info text-dark{% elif tpl.doc_type.category == 'OUTBOUND' %}bg-primary{% else %}bg-secondary{% endif %} me-1">
+                                            {{ tpl.doc_type.get_category_display }}
+                                        </span>
+                                        <span class="text-dark">{{ tpl.doc_type.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted small">— Общий шаблон —</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for step in tpl.steps.all %}
+                                            <span class="badge bg-light text-dark border small" title="{{ step.step_name }}">
+                                                {{ step.step_order }}. {{ step.step_name|truncatechars:18 }}
+                                            </span>
+                                        {% empty %}
+                                            <span class="text-muted small">Шаги не настроены</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    {% if tpl.is_default %}
+                                        <span class="badge bg-success"><i class="bx bx-check me-1"></i>Да</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-muted border">Нет</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'logistics_app:docflow_template_update' tpl.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Редактировать">
+                                        <i class="bx bx-edit-alt"></i>
+                                    </a>
+                                    <a href="{% url 'logistics_app:docflow_template_delete' tpl.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить">
+                                        <i class="bx bx-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="bx bx-git-repo-forked display-4 d-block opacity-50 mb-2"></i>
+                                    <h5 class="fw-bold">Шаблоны маршрутов отсутствуют</h5>
+                                    <p class="small mb-0">Создайте первый шаблон типового маршрута для автоматизации согласований.</p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

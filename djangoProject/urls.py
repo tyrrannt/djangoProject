@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 
 import library_app.views as library_views
 import administration_app.views as administration_views
@@ -20,6 +20,9 @@ handler404 = library_views.show_404
 handler500 = library_views.show_500
 
 urlpatterns = [
+    # Favicon redirect
+    path('favicon.ico', RedirectView.as_view(url='/static/favicon.png', permanent=True), name='favicon'),
+
     # PWA Service Worker & Offline Fallback
     path('sw.js', TemplateView.as_view(
         template_name='customers_app/sw.js',

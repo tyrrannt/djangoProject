@@ -329,6 +329,18 @@
                         <ul class="nav nav-children">
                             <li class="nav-parent">
                                 <a class="nav-link" href="#">
+                                    <i class="bx bx-file-blank me-1" aria-hidden="true"></i>
+                                    <span>СЭД: Документооборот</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li><a class="nav-link" href="{% url 'logistics_app:docflow_list' %}"><i class="bx bx-list-ul me-1" aria-hidden="true"></i><span>Реестр документов</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'logistics_app:docflow_create' %}"><i class="bx bx-plus me-1" aria-hidden="true"></i><span>Создать документ</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'logistics_app:docflow_template_list' %}"><i class="bx bx-git-repo-forked me-1" aria-hidden="true"></i><span>Шаблоны маршрутов</span></a></li>
+                                    <li><a class="nav-link" href="{% url 'logistics_app:docflow_type_list' %}"><i class="bx bx-category me-1" aria-hidden="true"></i><span>Виды документов</span></a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
                                     <i class="bx bx-car me-1" aria-hidden="true"></i>
                                     <span>Логистика</span>
                                 </a>

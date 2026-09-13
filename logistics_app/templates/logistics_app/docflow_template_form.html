@@ -1,0 +1,558 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {% if form.instance.pk %}Редактирование маршрута «{{ form.instance.name }}»{% else %}Создание шаблона маршрута согласования{% endif %} // СЭД БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --sed-brand-navy: #002b49;
+        --sed-accent-sky: #0284c7;
+        --touch-target: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+    .step-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        transition: box-shadow 0.2s ease;
+    }
+    .step-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .step-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: var(--sed-brand-navy);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .error-feedback {
+        color: #dc3545;
+        font-size: 0.82rem;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:docflow_template_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к списку маршрутов">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-git-repo-forked me-2 text-primary"></i>
+                    {% if form.instance.pk %}Редактирование маршрута «{{ form.instance.name }}»{% else %}Конструктор шаблона маршрута согласования{% endif %}
+                </h2>
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                Задайте базовые свойства регламента и настройте цепочку этапов визирования с исполнителями и сроками SLA
+            </p>
+        </div>
+    </header>
+
+    <form method="POST" id="templateForm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-3">
+                {% for err in form.non_field_errors %}
+                    <div>{{ err }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if steps_formset.non_form_errors %}
+            <div class="alert alert-danger mb-3">
+                {% for err in steps_formset.non_form_errors %}
+                    <div>{{ err }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- 1. Основные параметры шаблона маршрута -->
+        <div class="card form-card shadow-sm mb-4">
+            <div class="card-header bg-light py-3 border-bottom">
+                <h5 class="mb-0 fw-bold text-dark h6">
+                    <i class="bx bx-cog me-2 text-primary"></i>1. Основные параметры регламента маршрута
+                </h5>
+            </div>
+            <div class="card-body p-3 p-md-4">
+                <div class="row">
+                    <div class="col-12 col-md-7 mb-3">
+                        <label class="form-label fw-semibold" for="{{ form.name.id_for_label }}">
+                            Наименование маршрута <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="error-feedback">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small text-muted">Например: «Типовой маршрут согласования договоров аренды»</div>
+                    </div>
+
+                    <div class="col-12 col-md-5 mb-3">
+                        <label class="form-label fw-semibold" for="{{ form.doc_type.id_for_label }}">
+                            Вид документа СЭД <span class="text-danger">*</span>
+                        </label>
+                        {{ form.doc_type }}
+                        {% if form.doc_type.errors %}
+                            <div class="error-feedback">{{ form.doc_type.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small text-muted">К какому виду документов применяется данный регламент</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">
+                        Описание и регламентные указания
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="error-feedback">{{ form.description.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-check p-3 bg-light rounded border mb-0">
+                    {{ form.is_default }}
+                    <label class="form-check-label fw-semibold small text-dark" for="{{ form.is_default.id_for_label }}">
+                        Использовать как основной маршрут по умолчанию для выбранного вида документа
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Конструктор этапов визирования и согласования -->
+        <div class="card form-card shadow-sm mb-4">
+            <div class="card-header bg-light py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark h6">
+                        <i class="bx bx-list-check me-2 text-primary"></i>2. Цепочка этапов согласования (Маршрут)
+                    </h5>
+                    <p class="text-muted small mb-0 d-none d-sm-block">
+                        Укажите последовательность шагов, тип визирования (один сотрудник, параллельно группа или начальник отдела) и SLA
+                    </p>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm btn-touch" id="addStepBtn">
+                    <i class="bx bx-plus me-1"></i>Добавить этап
+                </button>
+            </div>
+            <div class="card-body p-3 p-md-4">
+                {{ steps_formset.management_form }}
+
+                <div id="stepsContainer" class="d-flex flex-column gap-3">
+                    {% for step_form in steps_formset %}
+                        <div class="step-card p-3 p-md-4 position-relative step-item" data-index="{{ forloop.counter0 }}">
+                            {{ step_form.id }}
+                            {% if step_form.DELETE %}
+                                <div class="d-none delete-checkbox-wrapper">
+                                    {{ step_form.DELETE }}
+                                </div>
+                            {% endif %}
+
+                            <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="step-badge step-number-badge">{{ forloop.counter }}</div>
+                                    <h6 class="fw-bold text-dark mb-0">Этап №<span class="step-number-text">{{ forloop.counter }}</span></h6>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-step-btn" title="Удалить данный этап">
+                                    <i class="bx bx-trash me-1"></i><span class="d-none d-sm-inline">Удалить этап</span>
+                                </button>
+                            </div>
+
+                            <div class="row">
+                                <!-- Order & Name -->
+                                <div class="col-12 col-md-2 mb-3">
+                                    <label class="form-label fw-semibold small">Порядок</label>
+                                    {{ step_form.step_order }}
+                                    {% if step_form.step_order.errors %}
+                                        <div class="error-feedback">{{ step_form.step_order.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label class="form-label fw-semibold small">Название этапа <span class="text-danger">*</span></label>
+                                    {{ step_form.step_name }}
+                                    {% if step_form.step_name.errors %}
+                                        <div class="error-feedback">{{ step_form.step_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12 col-md-4 mb-3">
+                                    <label class="form-label fw-semibold small">Тип этапа / режим <span class="text-danger">*</span></label>
+                                    {{ step_form.step_type }}
+                                    {% if step_form.step_type.errors %}
+                                        <div class="error-feedback">{{ step_form.step_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Approvers row -->
+                            <div class="row bg-light p-3 rounded mb-3 border">
+                                <div class="col-12 col-md-4 mb-2 mb-md-0 user-single-col">
+                                    <label class="form-label fw-semibold small">
+                                        <i class="bx bx-user me-1 text-primary"></i>Назначенный сотрудник
+                                    </label>
+                                    {{ step_form.assigned_user }}
+                                    {% if step_form.assigned_user.errors %}
+                                        <div class="error-feedback">{{ step_form.assigned_user.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12 col-md-4 mb-2 mb-md-0 division-col">
+                                    <label class="form-label fw-semibold small">
+                                        <i class="bx bx-buildings me-1 text-primary"></i>Или подразделение
+                                    </label>
+                                    {{ step_form.assigned_division }}
+                                    {% if step_form.assigned_division.errors %}
+                                        <div class="error-feedback">{{ step_form.assigned_division.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12 col-md-4 users-multiple-col">
+                                    <label class="form-label fw-semibold small">
+                                        <i class="bx bx-group me-1 text-primary"></i>Группа согласующих (параллельно)
+                                    </label>
+                                    {{ step_form.assigned_users }}
+                                    {% if step_form.assigned_users.errors %}
+                                        <div class="error-feedback">{{ step_form.assigned_users.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12 mt-2 head-hint-box d-none">
+                                    <div class="alert alert-info py-2 px-3 mb-0 small">
+                                        <i class="bx bx-info-circle me-1"></i>
+                                        <strong>Режим руководителя:</strong> Система автоматически определит непосредственного начальника подразделения автора документа при запуске маршрута.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Options row -->
+                            <div class="row align-items-center">
+                                <div class="col-12 col-md-3 mb-2 mb-md-0">
+                                    <label class="form-label fw-semibold small mb-1">Срок SLA (часов)</label>
+                                    {{ step_form.sla_hours }}
+                                    {% if step_form.sla_hours.errors %}
+                                        <div class="error-feedback">{{ step_form.sla_hours.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12 col-md-5 mb-2 mb-md-0">
+                                    <div class="form-check mt-md-3">
+                                        {{ step_form.can_rollback_to }}
+                                        <label class="form-check-label small text-dark" for="{{ step_form.can_rollback_to.id_for_label }}">
+                                            Разрешить возврат/откат на данный этап
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-4">
+                                    <div class="form-check mt-md-3">
+                                        {{ step_form.allow_reviewer_file_edit }}
+                                        <label class="form-check-label small text-dark" for="{{ step_form.allow_reviewer_file_edit.id_for_label }}">
+                                            Разрешить загрузку файла с правками
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Empty state if no steps -->
+                <div id="noStepsAlert" class="text-center py-4 text-muted border rounded bg-light mt-2 {% if steps_formset.total_form_count > 0 %}d-none{% endif %}">
+                    <i class="bx bx-git-repo-forked display-4 opacity-50 d-block mb-2"></i>
+                    <h6 class="fw-bold">Маршрут пока не содержит этапов</h6>
+                    <p class="small mb-3">Нажмите «Добавить этап» для формирования цепочки визирования документа.</p>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('addStepBtn').click();">
+                        <i class="bx bx-plus me-1"></i>Добавить первый шаг
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sticky Bottom Actions -->
+        <div class="card form-card shadow-sm p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{% url 'logistics_app:docflow_template_list' %}" class="btn btn-outline-secondary btn-touch">
+                    <i class="bx bx-x me-1"></i>Отмена
+                </a>
+                <button type="submit" class="btn btn-primary btn-touch">
+                    <i class="bx bx-save me-1"></i>Сохранить шаблон маршрута
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- ШАБЛОН ДЛЯ ДИНАМИЧЕСКОГО ДОБАВЛЕНИЯ ЭТАПА (EMPTY FORM) -->
+<!-- ========================================================================= -->
+<div id="emptyStepTemplate" class="d-none">
+    <div class="step-card p-3 p-md-4 position-relative step-item" data-index="__prefix__">
+        {{ steps_formset.empty_form.id }}
+        {% if steps_formset.empty_form.DELETE %}
+            <div class="d-none delete-checkbox-wrapper">
+                {{ steps_formset.empty_form.DELETE }}
+            </div>
+        {% endif %}
+
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <div class="step-badge step-number-badge">__order__</div>
+                <h6 class="fw-bold text-dark mb-0">Этап №<span class="step-number-text">__order__</span></h6>
+            </div>
+            <button type="button" class="btn btn-outline-danger btn-sm remove-step-btn" title="Удалить данный этап">
+                <i class="bx bx-trash me-1"></i><span class="d-none d-sm-inline">Удалить этап</span>
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-12 col-md-2 mb-3">
+                <label class="form-label fw-semibold small">Порядок</label>
+                {{ steps_formset.empty_form.step_order }}
+            </div>
+
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-semibold small">Название этапа <span class="text-danger">*</span></label>
+                {{ steps_formset.empty_form.step_name }}
+            </div>
+
+            <div class="col-12 col-md-4 mb-3">
+                <label class="form-label fw-semibold small">Тип этапа / режим <span class="text-danger">*</span></label>
+                {{ steps_formset.empty_form.step_type }}
+            </div>
+        </div>
+
+        <div class="row bg-light p-3 rounded mb-3 border">
+            <div class="col-12 col-md-4 mb-2 mb-md-0 user-single-col">
+                <label class="form-label fw-semibold small">
+                    <i class="bx bx-user me-1 text-primary"></i>Назначенный сотрудник
+                </label>
+                {{ steps_formset.empty_form.assigned_user }}
+            </div>
+
+            <div class="col-12 col-md-4 mb-2 mb-md-0 division-col">
+                <label class="form-label fw-semibold small">
+                    <i class="bx bx-buildings me-1 text-primary"></i>Или подразделение
+                </label>
+                {{ steps_formset.empty_form.assigned_division }}
+            </div>
+
+            <div class="col-12 col-md-4 users-multiple-col">
+                <label class="form-label fw-semibold small">
+                    <i class="bx bx-group me-1 text-primary"></i>Группа согласующих (параллельно)
+                </label>
+                {{ steps_formset.empty_form.assigned_users }}
+            </div>
+
+            <div class="col-12 mt-2 head-hint-box d-none">
+                <div class="alert alert-info py-2 px-3 mb-0 small">
+                    <i class="bx bx-info-circle me-1"></i>
+                    <strong>Режим руководителя:</strong> Система автоматически определит непосредственного начальника подразделения автора документа при запуске маршрута.
+                </div>
+            </div>
+        </div>
+
+        <div class="row align-items-center">
+            <div class="col-12 col-md-3 mb-2 mb-md-0">
+                <label class="form-label fw-semibold small mb-1">Срок SLA (часов)</label>
+                {{ steps_formset.empty_form.sla_hours }}
+            </div>
+
+            <div class="col-12 col-md-5 mb-2 mb-md-0">
+                <div class="form-check mt-md-3">
+                    {{ steps_formset.empty_form.can_rollback_to }}
+                    <label class="form-check-label small text-dark" for="{{ steps_formset.empty_form.can_rollback_to.id_for_label }}">
+                        Разрешить возврат/откат на данный этап
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="form-check mt-md-3">
+                    {{ steps_formset.empty_form.allow_reviewer_file_edit }}
+                    <label class="form-check-label small text-dark" for="{{ steps_formset.empty_form.allow_reviewer_file_edit.id_for_label }}">
+                        Разрешить загрузку файла с правками
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    (function () {
+        'use strict';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var container = document.getElementById('stepsContainer');
+            var addBtn = document.getElementById('addStepBtn');
+            var emptyTpl = document.getElementById('emptyStepTemplate').innerHTML;
+            var totalFormsInput = document.getElementById('id_steps-TOTAL_FORMS');
+            var noStepsAlert = document.getElementById('noStepsAlert');
+
+            function updateStepVisibility(stepCard) {
+                var select = stepCard.querySelector('.step-type-select');
+                if (!select) return;
+                var val = select.value;
+
+                var singleCol = stepCard.querySelector('.user-single-col');
+                var multiCol = stepCard.querySelector('.users-multiple-col');
+                var divCol = stepCard.querySelector('.division-col');
+                var headHint = stepCard.querySelector('.head-hint-box');
+
+                if (val === 'HEAD_OF_DEPARTMENT') {
+                    if (singleCol) singleCol.classList.add('d-none');
+                    if (multiCol) multiCol.classList.add('d-none');
+                    if (divCol) divCol.classList.add('d-none');
+                    if (headHint) headHint.classList.remove('d-none');
+                } else if (val === 'PARALLEL_AND' || val === 'PARALLEL_OR') {
+                    if (singleCol) singleCol.classList.add('d-none');
+                    if (multiCol) multiCol.classList.remove('d-none');
+                    if (divCol) divCol.classList.remove('d-none');
+                    if (headHint) headHint.classList.add('d-none');
+                } else {
+                    if (singleCol) singleCol.classList.remove('d-none');
+                    if (multiCol) multiCol.classList.add('d-none');
+                    if (divCol) divCol.classList.remove('d-none');
+                    if (headHint) headHint.classList.add('d-none');
+                }
+            }
+
+            function reindexSteps() {
+                var visibleSteps = container.querySelectorAll('.step-item:not(.d-none)');
+                var currentNum = 1;
+
+                visibleSteps.forEach(function (card) {
+                    var numBadge = card.querySelector('.step-number-badge');
+                    var numText = card.querySelector('.step-number-text');
+                    var orderInput = card.querySelector('.step-order-field');
+
+                    if (numBadge) numBadge.textContent = currentNum;
+                    if (numText) numText.textContent = currentNum;
+                    if (orderInput) orderInput.value = currentNum;
+
+                    currentNum++;
+                });
+
+                if (visibleSteps.length === 0) {
+                    if (noStepsAlert) noStepsAlert.classList.remove('d-none');
+                } else {
+                    if (noStepsAlert) noStepsAlert.classList.add('d-none');
+                }
+            }
+
+            // Инициализация существующих шагов
+            var allCards = container.querySelectorAll('.step-item');
+            allCards.forEach(function (card) {
+                updateStepVisibility(card);
+
+                var select = card.querySelector('.step-type-select');
+                if (select) {
+                    select.addEventListener('change', function () {
+                        updateStepVisibility(card);
+                    });
+                }
+
+                var removeBtn = card.querySelector('.remove-step-btn');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function () {
+                        var deleteCheck = card.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                        if (deleteCheck) {
+                            deleteCheck.checked = true;
+                            card.classList.add('d-none');
+                        } else {
+                            card.remove();
+                        }
+                        reindexSteps();
+                    });
+                }
+            });
+
+            // Добавление нового шага
+            if (addBtn) {
+                addBtn.addEventListener('click', function () {
+                    var totalForms = parseInt(totalFormsInput.value, 10);
+                    var newOrder = container.querySelectorAll('.step-item:not(.d-none)').length + 1;
+
+                    var newHtml = emptyTpl.replace(/__prefix__/g, totalForms).replace(/__order__/g, newOrder);
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newHtml;
+                    var newCard = tempDiv.firstElementChild;
+
+                    // Устанавливаем order
+                    var orderInput = newCard.querySelector('.step-order-field');
+                    if (orderInput) {
+                        orderInput.value = newOrder;
+                    }
+
+                    container.appendChild(newCard);
+                    totalFormsInput.value = totalForms + 1;
+
+                    // Привязка обработчиков к новому шагу
+                    updateStepVisibility(newCard);
+                    var select = newCard.querySelector('.step-type-select');
+                    if (select) {
+                        select.addEventListener('change', function () {
+                            updateStepVisibility(newCard);
+                        });
+                    }
+
+                    var removeBtn = newCard.querySelector('.remove-step-btn');
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', function () {
+                            var deleteCheck = newCard.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                            if (deleteCheck) {
+                                deleteCheck.checked = true;
+                                newCard.classList.add('d-none');
+                            } else {
+                                newCard.remove();
+                            }
+                            reindexSteps();
+                        });
+                    }
+
+                    reindexSteps();
+                });
+            }
+
+            // Если шагов совсем нет при создании, добавляем сразу 1-й шаг
+            if (allCards.length === 0 && addBtn) {
+                addBtn.click();
+            }
+        });
+    })();
+</script>
+{% endblock %}

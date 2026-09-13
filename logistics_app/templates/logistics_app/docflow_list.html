@@ -1,0 +1,228 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title|default:"Электронный документооборот (СЭД)" }} // БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+        --sed-brand-navy: #002b49;
+        --sed-accent-sky: #0284c7;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .sed-nav-pills {
+        gap: 8px;
+    }
+    .sed-nav-pills .nav-link {
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 600;
+        color: #475569;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .sed-nav-pills .nav-link:hover {
+        background: #f1f5f9;
+        color: var(--sed-brand-navy);
+    }
+    .sed-nav-pills .nav-link.active {
+        background-color: var(--sed-brand-navy);
+        color: #ffffff;
+        border-color: var(--sed-brand-navy);
+        box-shadow: 0 4px 12px rgba(0, 43, 73, 0.15);
+    }
+    .sed-nav-pills .nav-link.active .badge {
+        background-color: #ffffff !important;
+        color: var(--sed-brand-navy) !important;
+    }
+    .card-filter {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+    }
+    .filter-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        margin-bottom: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header Section -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h2 class="h4 font-weight-bold text-dark mb-1">
+                <i class="bx bx-file-blank text-primary me-2"></i>{{ title|default:"Электронный документооборот (СЭД)" }}
+            </h2>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                Реестр входящих, исходящих и внутренних документов, маршруты согласования и аудит
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'logistics_app:docflow_type_list' %}" class="btn btn-outline-secondary btn-touch" title="Виды документов">
+                <i class="bx bx-category me-1"></i>
+                <span class="d-none d-sm-inline">Виды документов</span>
+            </a>
+            <a href="{% url 'logistics_app:docflow_template_list' %}" class="btn btn-outline-secondary btn-touch" title="Шаблоны маршрутов">
+                <i class="bx bx-git-repo-forked me-1"></i>
+                <span class="d-none d-sm-inline">Шаблоны маршрутов</span>
+            </a>
+            <a href="{% url 'logistics_app:docflow_create' %}" class="btn btn-primary btn-touch" title="Создать документ">
+                <i class="bx bx-plus me-1"></i>
+                <span>Создать документ</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Navigation Pills / Tabs -->
+    <nav class="sed-nav-pills d-flex flex-wrap mb-3" aria-label="Вкладки СЭД">
+        <a href="?tab=pending" class="nav-link {% if current_tab == 'pending' %}active{% endif %}">
+            <i class="bx bx-task me-2"></i>
+            <span>Требуют моего согласования</span>
+            {% if pending_count > 0 %}
+                <span class="badge bg-danger ms-2">{{ pending_count }}</span>
+            {% else %}
+                <span class="badge bg-light text-muted border ms-2">0</span>
+            {% endif %}
+        </a>
+        <a href="?tab=my" class="nav-link {% if current_tab == 'my' %}active{% endif %}">
+            <i class="bx bx-user-check me-2"></i>
+            <span>Мои документы</span>
+            <span class="badge bg-light text-dark border ms-2">{{ my_count }}</span>
+        </a>
+        <a href="?tab=all" class="nav-link {% if current_tab == 'all' %}active{% endif %}">
+            <i class="bx bx-folder me-2"></i>
+            <span>Все документы</span>
+            <span class="badge bg-light text-dark border ms-2">{{ all_count }}</span>
+        </a>
+    </nav>
+
+    <!-- Filter Card -->
+    <div class="card card-filter shadow-sm mb-3">
+        <div class="card-body p-3">
+            <form id="docflowFilterForm" method="GET"
+                  hx-get="{% url 'logistics_app:docflow_list' %}"
+                  hx-target="#docflowTableContainer"
+                  hx-trigger="input changed delay:350ms, change"
+                  hx-indicator="#filterSpinner">
+                <input type="hidden" name="tab" value="{{ current_tab }}">
+
+                <div class="row g-2 align-items-end">
+                    <!-- Поиск -->
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <label class="filter-label" for="searchQuery"><i class="bx bx-search me-1"></i>Поиск</label>
+                        <input type="text" id="searchQuery" name="search" class="form-control form-control-sm"
+                               placeholder="№, тема, контрагент, автор..." value="{{ request.GET.search }}">
+                    </div>
+
+                    <!-- Поток документов -->
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="filter-label" for="flowTypeSelect">Поток</label>
+                        <select id="flowTypeSelect" name="flow_type" class="form-select form-select-sm">
+                            <option value="">Все потоки</option>
+                            {% for code, name in flow_choices %}
+                                <option value="{{ code }}" {% if request.GET.flow_type == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Вид документа -->
+                    <div class="col-6 col-md-3 col-lg-2">
+                        <label class="filter-label" for="docTypeSelect">Вид документа</label>
+                        <select id="docTypeSelect" name="doc_type" class="form-select form-select-sm">
+                            <option value="">Все виды</option>
+                            {% for dt in doc_types %}
+                                <option value="{{ dt.id }}" {% if request.GET.doc_type == dt.id|stringformat:"i" %}selected{% endif %}>{{ dt.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Статус -->
+                    <div class="col-6 col-md-3 col-lg-2">
+                        <label class="filter-label" for="statusSelect">Статус</label>
+                        <select id="statusSelect" name="status" class="form-select form-select-sm">
+                            <option value="">Все статусы</option>
+                            {% for code, name in status_choices %}
+                                <option value="{{ code }}" {% if request.GET.status == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Срочность -->
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="filter-label" for="urgencySelect">Срочность</label>
+                        <select id="urgencySelect" name="urgency" class="form-select form-select-sm">
+                            <option value="">Любая</option>
+                            {% for code, name in urgency_choices %}
+                                <option value="{{ code }}" {% if request.GET.urgency == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Кнопка сброса -->
+                    <div class="col-12 col-md-1 col-lg-1 text-end">
+                        <a href="?tab={{ current_tab }}" class="btn btn-sm btn-outline-secondary w-100" title="Сбросить фильтры">
+                            <i class="bx bx-reset"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- HTMX Loading indicator -->
+                <div id="filterSpinner" class="htmx-indicator mt-2 text-center text-primary small">
+                    <i class="bx bx-loader-alt bx-spin me-1"></i>Загрузка данных...
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Table Container -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <div class="card-body p-0 p-md-3" id="docflowTableContainer">
+            {% include 'logistics_app/partials/docflow_table_partial.html' %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    (function () {
+        'use strict';
+        document.addEventListener('DOMContentLoaded', function () {
+            // Регистрация HTMX обработчиков для плавности
+            document.body.addEventListener('htmx:configRequest', function (evt) {
+                // Добавляем CSRF токен если требуется
+                var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (csrf) {
+                    evt.detail.headers['X-CSRFToken'] = csrf.value;
+                }
+            });
+        });
+    })();
+</script>
+{% endblock %}

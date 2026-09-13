@@ -11,6 +11,8 @@
 <style>
     :root {
         --touch-target-size: 44px;
+        --sed-brand-navy: #002b49;
+        --sed-accent-sky: #0284c7;
     }
     .btn-touch {
         min-height: var(--touch-target-size);
@@ -19,28 +21,37 @@
         justify-content: center;
         padding: 8px 20px;
         font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-    <!-- start: page -->
-    <div class="row">
-        <div class="col-12">
-            <!-- Header -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                <div>
-                    <h3 class="font-weight-bold text-dark mb-1">
-                        <i class="bx bx-package text-primary me-2"></i>{% if object %}Редактирование отправки{% else %}Оформление отправки посылки{% endif %}
-                    </h3>
-                    <p class="text-muted small mb-0">Заполните данные об отправке и проверьте список вложенных накладных</p>
-                </div>
-                <div>
-                    <a href="{% url 'logistics_app:package_list' %}" class="btn btn-outline-secondary btn-touch">
-                        <i class="bx bx-arrow-back me-1"></i> К списку отправок
-                    </a>
-                </div>
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:package_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к списку">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-package text-primary me-2"></i>{% if object %}Редактирование отправки{% else %}Оформление отправки посылки{% endif %}
+                </h2>
             </div>
+            <p class="text-muted small mb-0 d-none d-md-block">Заполните данные об отправке и проверьте список вложенных накладных</p>
+        </div>
+        <div>
+            <a href="{% url 'logistics_app:package_list' %}" class="btn btn-outline-secondary btn-touch" aria-label="К списку отправок" title="К списку">
+                <i class="bx bx-arrow-back me-1"></i>
+                <span class="d-none d-sm-inline">К списку отправок</span>
+            </a>
+        </div>
+    </header>
 
             <!-- Form Card -->
             <div class="card card-modern shadow-sm border-0 mb-4">
@@ -146,7 +157,5 @@
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-    <!-- end: page -->
+</div>
 {% endblock %}

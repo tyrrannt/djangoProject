@@ -1,0 +1,43 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Удаление вида документа // СЭД БАРКОЛ
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-danger text-white py-3">
+                    <h5 class="mb-0 font-weight-bold h6">
+                        <i class="bx bx-trash me-2"></i>Подтверждение удаления вида документа
+                    </h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <i class="bx bx-error-circle display-3 text-danger mb-3 d-block"></i>
+                    <h5 class="font-weight-bold text-dark mb-2">Вы уверены, что хотите удалить вид документа?</h5>
+                    <p class="text-muted mb-4">
+                        Вид документа: <strong>«{{ object.name }}»</strong> (<code>{{ object.code }}</code>)<br>
+                        Категория: {{ object.get_category_display }}
+                    </p>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="{% url 'logistics_app:docflow_type_list' %}" class="btn btn-outline-secondary px-4">
+                                Отмена
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4 font-weight-bold">
+                                <i class="bx bx-trash me-1"></i>Удалить вид
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

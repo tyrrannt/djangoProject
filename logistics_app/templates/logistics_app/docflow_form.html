@@ -1,0 +1,307 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Создание документа СЭД // БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --sed-brand: #002b49;
+        --sed-accent: #0284c7;
+        --touch-target: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+    }
+    .section-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--sed-brand);
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+    }
+    .error-feedback {
+        color: #ef4444;
+        font-size: 0.8rem;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к реестру">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-file me-2 text-primary"></i>Создание документа СЭД
+                </h2>
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                Заполните реквизиты, прикрепите проект документа и выберите маршрут согласования
+            </p>
+        </div>
+    </header>
+
+    <form method="POST" enctype="multipart/form-data" novalidate id="docflowForm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-3">
+                <i class="bx bx-error-circle me-1"></i>
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="row g-3">
+            <!-- Left Card: Core Data & Route -->
+            <div class="col-12 col-lg-8">
+                <div class="card form-card shadow-sm mb-3">
+                    <div class="card-body p-3 p-md-4">
+                        <!-- Section 1: Document Type & Subject -->
+                        <div class="section-title">
+                            <i class="bx bx-detail me-1 text-primary"></i>1. Основные реквизиты документа
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.flow_type.id_for_label }}">
+                                    Поток документа <span class="text-danger">*</span>
+                                </label>
+                                {{ form.flow_type }}
+                                {% if form.flow_type.errors %}
+                                    <div class="error-feedback">{{ form.flow_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.doc_type.id_for_label }}">
+                                    Вид документа <span class="text-danger">*</span>
+                                </label>
+                                {{ form.doc_type }}
+                                {% if form.doc_type.errors %}
+                                    <div class="error-feedback">{{ form.doc_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.title.id_for_label }}">
+                                Тема / Краткое содержание <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="error-feedback">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.urgency.id_for_label }}">
+                                    Срочность документа
+                                </label>
+                                {{ form.urgency }}
+                                {% if form.urgency.errors %}
+                                    <div class="error-feedback">{{ form.urgency.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.deadline.id_for_label }}">
+                                    Срок исполнения / Дедлайн
+                                </label>
+                                {{ form.deadline }}
+                                {% if form.deadline.errors %}
+                                    <div class="error-feedback">{{ form.deadline.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Section 2: File Attachment -->
+                        <div class="section-title mt-4">
+                            <i class="bx bx-paperclip me-1 text-primary"></i>2. Прикрепление проекта документа
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.initial_file.id_for_label }}">
+                                    {{ form.initial_file.label }}
+                                </label>
+                                {{ form.initial_file }}
+                                {% if form.initial_file.help_text %}
+                                    <div class="form-text small text-muted">{{ form.initial_file.help_text }}</div>
+                                {% endif %}
+                                {% if form.initial_file.errors %}
+                                    <div class="error-feedback">{{ form.initial_file.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.initial_file_title.id_for_label }}">
+                                    {{ form.initial_file_title.label }}
+                                </label>
+                                {{ form.initial_file_title }}
+                                {% if form.initial_file_title.errors %}
+                                    <div class="error-feedback">{{ form.initial_file_title.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Description -->
+                        <div class="section-title mt-4">
+                            <i class="bx bx-text me-1 text-primary"></i>3. Аннотация и примечания
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">
+                                Сопроводительный текст / Примечания
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="error-feedback">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Card: Counteragent, Route & Relations -->
+            <div class="col-12 col-lg-4">
+                <div class="card form-card shadow-sm mb-3">
+                    <div class="card-body p-3 p-md-4">
+                        <!-- Section: Route Selection -->
+                        <div class="section-title">
+                            <i class="bx bx-git-repo-forked me-1 text-primary"></i>Маршрут согласования
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.route_template.id_for_label }}">
+                                {{ form.route_template.label }}
+                            </label>
+                            {{ form.route_template }}
+                            {% if form.route_template.help_text %}
+                                <div class="form-text small text-muted">{{ form.route_template.help_text }}</div>
+                            {% endif %}
+                            {% if form.route_template.errors %}
+                                <div class="error-feedback">{{ form.route_template.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.responsible.id_for_label }}">
+                                Ответственный сотрудник
+                            </label>
+                            {{ form.responsible }}
+                            {% if form.responsible.errors %}
+                                <div class="error-feedback">{{ form.responsible.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Section: Counteragent -->
+                        <div class="section-title mt-4">
+                            <i class="bx bx-buildings me-1 text-primary"></i>Контрагент
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.counteragent.id_for_label }}">
+                                Организация / Контрагент
+                            </label>
+                            {{ form.counteragent }}
+                            {% if form.counteragent.errors %}
+                                <div class="error-feedback">{{ form.counteragent.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.counteragent_contact_email.id_for_label }}">
+                                Контактный Email контрагента
+                            </label>
+                            {{ form.counteragent_contact_email }}
+                            {% if form.counteragent_contact_email.errors %}
+                                <div class="error-feedback">{{ form.counteragent_contact_email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Section: Relations -->
+                        <div class="section-title mt-4">
+                            <i class="bx bx-link-alt me-1 text-primary"></i>Связи в системе
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.related_waybill.id_for_label }}">
+                                Транспортная накладная
+                            </label>
+                            {{ form.related_waybill }}
+                            {% if form.related_waybill.errors %}
+                                <div class="error-feedback">{{ form.related_waybill.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.related_package.id_for_label }}">
+                                Посылка / Отправка
+                            </label>
+                            {{ form.related_package }}
+                            {% if form.related_package.errors %}
+                                <div class="error-feedback">{{ form.related_package.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ form.related_contract.id_for_label }}">
+                                Договор
+                            </label>
+                            {{ form.related_contract }}
+                            {% if form.related_contract.errors %}
+                                <div class="error-feedback">{{ form.related_contract.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sticky Action Toolbar at Bottom -->
+        <div class="card form-card shadow-sm p-3 mt-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-outline-secondary btn-touch">
+                    <i class="bx bx-x me-1"></i>Отмена
+                </a>
+                <div class="d-flex gap-2">
+                    <button type="submit" name="form_action" value="draft" class="btn btn-outline-primary btn-touch">
+                        <i class="bx bx-save me-1"></i>Сохранить черновик
+                    </button>
+                    <button type="submit" name="form_action" value="start" class="btn btn-primary btn-touch">
+                        <i class="bx bx-paper-plane me-1"></i>Сохранить и запустить согласование
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

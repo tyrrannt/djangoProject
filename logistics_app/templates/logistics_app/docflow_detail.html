@@ -1,0 +1,873 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Документ {{ document.reg_number|default:"Черновик" }} // СЭД БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --sed-brand: #002b49;
+        --sed-accent: #0284c7;
+        --touch-target: 44px;
+    }
+    .btn-touch {
+        min-height: var(--touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .stepper-wrapper {
+        display: flex;
+        overflow-x: auto;
+        padding: 16px 8px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        gap: 12px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .stepper-item {
+        flex: 1;
+        min-width: 170px;
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        padding: 12px;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    .stepper-item.completed {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    .stepper-item.active {
+        border-color: #0284c7;
+        background: #f0f9ff;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+    }
+    .stepper-item.rework {
+        border-color: #f59e0b;
+        background: #fffbeb;
+    }
+    .stepper-item.rejected {
+        border-color: #ef4444;
+        background: #fef2f2;
+    }
+    .stepper-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-right: 8px;
+    }
+    .stepper-item.completed .stepper-badge {
+        background: #10b981;
+        color: white;
+    }
+    .stepper-item.active .stepper-badge {
+        background: #0284c7;
+        color: white;
+        animation: pulse 1.8s infinite;
+    }
+    .stepper-item.pending .stepper-badge {
+        background: #e2e8f0;
+        color: #64748b;
+    }
+    .stepper-item.rework .stepper-badge {
+        background: #f59e0b;
+        color: white;
+    }
+    .stepper-item.rejected .stepper-badge {
+        background: #ef4444;
+        color: white;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.6); }
+        70% { box-shadow: 0 0 0 8px rgba(2, 132, 199, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+    }
+    .meta-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+    }
+    .meta-title {
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.5px;
+    }
+    .pep-stamp-box {
+        font-family: monospace;
+        font-size: 0.75rem;
+        background: #f8fafc;
+        border: 1px dashed #94a3b8;
+        padding: 6px 10px;
+        border-radius: 6px;
+        color: #334155;
+    }
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: #64748b;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 12px 18px;
+    }
+    .nav-tabs .nav-link.active {
+        color: var(--sed-brand);
+        border-bottom: 2px solid var(--sed-brand);
+        background: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Action Bar & Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к реестру">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    {{ document.reg_number|default:"Черновик документа" }}
+                </h2>
+                <!-- Статус -->
+                {% if document.status == 'DRAFT' %}
+                    <span class="badge bg-light text-dark border"><i class="bx bx-edit me-1"></i>Черновик</span>
+                {% elif document.status == 'ON_APPROVAL' %}
+                    <span class="badge bg-primary"><i class="bx bx-time me-1"></i>На согласовании</span>
+                {% elif document.status == 'ON_REWORK' %}
+                    <span class="badge bg-warning text-dark"><i class="bx bx-revision me-1"></i>На доработке</span>
+                {% elif document.status == 'APPROVED' %}
+                    <span class="badge bg-success"><i class="bx bx-check-circle me-1"></i>Согласован</span>
+                {% elif document.status == 'SIGNED' %}
+                    <span class="badge bg-info text-dark"><i class="bx bx-pen me-1"></i>Подписан</span>
+                {% elif document.status == 'EXECUTED' %}
+                    <span class="badge bg-success"><i class="bx bx-check-double me-1"></i>Исполнен</span>
+                {% elif document.status == 'REJECTED' %}
+                    <span class="badge bg-danger"><i class="bx bx-x-circle me-1"></i>Отклонен</span>
+                {% elif document.status == 'ARCHIVED' %}
+                    <span class="badge bg-secondary"><i class="bx bx-archive me-1"></i>В архиве</span>
+                {% endif %}
+
+                {% if document.urgency != 'NORMAL' %}
+                    <span class="badge {% if document.urgency == 'CRITICAL' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                        <i class="bx bx-error me-1"></i>{{ document.get_urgency_display }}
+                    </span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                {{ document.doc_type.name }} • Создан {{ document.created_at|date:"d.m.Y H:i" }} пользователем {{ document.initiator.get_full_name|default:document.initiator.username }}
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex flex-wrap gap-2">
+            <!-- 1. Действия согласующего (если can_approve) -->
+            {% if can_approve and document.status == 'ON_APPROVAL' %}
+                <button type="button" class="btn btn-success btn-touch" data-bs-toggle="modal" data-bs-target="#approveModal">
+                    <i class="bx bx-check-shield me-1"></i>
+                    <span>Согласовать (ПЭП)</span>
+                </button>
+                <button type="button" class="btn btn-warning btn-touch text-dark" data-bs-toggle="modal" data-bs-target="#reworkModal">
+                    <i class="bx bx-undo me-1"></i>
+                    <span class="d-none d-sm-inline">На доработку</span>
+                </button>
+                {% if can_rollback %}
+                    <button type="button" class="btn btn-outline-warning btn-touch" data-bs-toggle="modal" data-bs-target="#rollbackModal">
+                        <i class="bx bx-rewind me-1"></i>
+                        <span class="d-none d-sm-inline">Откат назад</span>
+                    </button>
+                {% endif %}
+                <button type="button" class="btn btn-outline-danger btn-touch" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                    <i class="bx bx-x me-1"></i>
+                    <span class="d-none d-sm-inline">Отклонить</span>
+                </button>
+            {% endif %}
+
+            <!-- 2. Действия автора (запуск / возобновление) -->
+            {% if can_author_edit %}
+                {% if document.status == 'DRAFT' %}
+                    <form method="POST" action="{% url 'logistics_app:docflow_start' document.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-touch" onclick="return confirm('Запустить маршрут согласования документа?');">
+                            <i class="bx bx-paper-plane me-1"></i>
+                            <span>Запустить согласование</span>
+                        </button>
+                    </form>
+                {% elif document.status == 'ON_REWORK' %}
+                    <button type="button" class="btn btn-primary btn-touch" data-bs-toggle="modal" data-bs-target="#resumeRouteModal">
+                        <i class="bx bx-send me-1"></i>
+                        <span>Отправить повторно после доработки</span>
+                    </button>
+                {% endif %}
+            {% endif %}
+
+            <!-- 3. Печать листа согласования -->
+            {% if document.status in 'APPROVED,SIGNED,EXECUTED' or active_step %}
+                <a href="{% url 'logistics_app:docflow_detail' document.pk %}?export=pdf" class="btn btn-outline-secondary btn-touch" target="_blank" title="Печать листа согласования (PDF)">
+                    <i class="bx bx-printer me-1"></i>
+                    <span class="d-none d-md-inline">Лист согласования</span>
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Visual Route Stepper -->
+    {% if document.route_steps.all %}
+        <div class="mb-4">
+            <h5 class="meta-title mb-2"><i class="bx bx-git-commit me-1"></i>Маршрут согласования</h5>
+            <div class="stepper-wrapper">
+                {% for step in document.route_steps.all %}
+                    <div class="stepper-item {% if step.status == 'COMPLETED' %}completed{% elif step.status == 'IN_PROGRESS' %}active{% elif step.status == 'RETURNED_REWORK' %}rework{% elif step.status == 'REJECTED' %}rejected{% else %}pending{% endif %}">
+                        <div class="d-flex align-items-center mb-1">
+                            <div class="stepper-badge">
+                                {% if step.status == 'COMPLETED' %}
+                                    <i class="bx bx-check"></i>
+                                {% elif step.status == 'IN_PROGRESS' %}
+                                    <i class="bx bx-loader-alt bx-spin"></i>
+                                {% elif step.status == 'RETURNED_REWORK' %}
+                                    <i class="bx bx-undo"></i>
+                                {% elif step.status == 'REJECTED' %}
+                                    <i class="bx bx-x"></i>
+                                {% else %}
+                                    {{ step.step_order }}
+                                {% endif %}
+                            </div>
+                            <div class="fw-bold text-truncate" style="font-size: 0.85rem;" title="{{ step.step_name }}">
+                                {{ step.step_name }}
+                            </div>
+                        </div>
+
+                        <div class="text-muted small" style="font-size: 0.75rem;">
+                            {% if step.assigned_user %}
+                                <i class="bx bx-user me-1"></i>{{ step.assigned_user.get_full_name|default:step.assigned_user.username }}
+                            {% elif step.assigned_division %}
+                                <i class="bx bx-buildings me-1"></i>{{ step.assigned_division.name }}
+                            {% else %}
+                                <i class="bx bx-group me-1"></i>Группа участников
+                            {% endif %}
+                        </div>
+
+                        {% if step.status == 'COMPLETED' and step.completed_at %}
+                            <div class="text-success mt-1" style="font-size: 0.72rem;">
+                                <i class="bx bx-check-circle me-1"></i>{{ step.completed_at|date:"d.m.Y H:i" }}
+                            </div>
+                        {% elif step.status == 'IN_PROGRESS' and step.due_date %}
+                            <div class="text-primary mt-1" style="font-size: 0.72rem;">
+                                <i class="bx bx-timer me-1"></i>Срок до {{ step.due_date|date:"d.m.Y H:i" }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Main Content: Metadata & Tabs Grid -->
+    <div class="row g-3">
+        <!-- Left Column: Document Metadata Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card meta-card shadow-sm mb-3">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0 font-weight-bold h6 text-dark">
+                        <i class="bx bx-info-circle text-primary me-2"></i>Реквизиты документа
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <div class="mb-3">
+                        <div class="meta-title">Тема / Наименование</div>
+                        <div class="fw-semibold text-dark">{{ document.title }}</div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="meta-title">Поток</div>
+                            <span class="badge {% if document.flow_type == 'INBOUND' %}bg-info text-dark{% elif document.flow_type == 'OUTBOUND' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ document.get_flow_type_display }}
+                            </span>
+                        </div>
+                        <div class="col-6">
+                            <div class="meta-title">Вид документа</div>
+                            <div class="text-dark small fw-semibold">{{ document.doc_type.name }}</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="meta-title">Контрагент</div>
+                        {% if document.counteragent %}
+                            <div class="text-dark fw-semibold"><i class="bx bx-buildings text-muted me-1"></i>{{ document.counteragent.name }}</div>
+                            {% if document.counteragent_contact_email %}
+                                <div class="text-muted small"><i class="bx bx-envelope text-muted me-1"></i>{{ document.counteragent_contact_email }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted small">— Внутренний документ —</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="meta-title">Инициатор</div>
+                            <div class="small text-dark">{{ document.initiator.get_full_name|default:document.initiator.username }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="meta-title">Ответственный</div>
+                            <div class="small text-dark">{{ document.responsible.get_full_name|default:document.responsible.username }}</div>
+                        </div>
+                    </div>
+
+                    {% if document.deadline %}
+                        <div class="mb-3">
+                            <div class="meta-title">Общий дедлайн исполнения</div>
+                            <div class="small text-danger fw-semibold"><i class="bx bx-calendar-event me-1"></i>{{ document.deadline|date:"d.m.Y H:i" }}</div>
+                        </div>
+                    {% endif %}
+
+                    {% if document.description %}
+                        <div class="mb-3">
+                            <div class="meta-title">Описание / Аннотация</div>
+                            <div class="small text-secondary bg-light p-2 rounded" style="white-space: pre-wrap;">{{ document.description }}</div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Связи -->
+                    {% if document.related_waybill or document.related_package or document.related_contract %}
+                        <div class="border-top pt-2 mt-2">
+                            <div class="meta-title mb-2">Связанные объекты</div>
+                            {% if document.related_waybill %}
+                                <div class="small mb-1">
+                                    <i class="bx bx-transfer-alt text-primary me-1"></i>
+                                    <a href="{% url 'logistics_app:waybill_detail' document.related_waybill.pk %}" class="text-decoration-none">
+                                        Накладная №{{ document.related_waybill.pk }}
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if document.related_package %}
+                                <div class="small mb-1">
+                                    <i class="bx bx-package text-info me-1"></i>
+                                    <span>Посылка №{{ document.related_package.pk }}</span>
+                                </div>
+                            {% endif %}
+                            {% if document.related_contract %}
+                                <div class="small mb-1">
+                                    <i class="bx bx-file text-success me-1"></i>
+                                    <span>Договор: {{ document.related_contract }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Tabs (Files, Audit, Comments) -->
+        <div class="col-12 col-lg-8">
+            <div class="card meta-card shadow-sm">
+                <div class="card-header bg-white border-bottom p-0">
+                    <ul class="nav nav-tabs px-3" id="docTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="files-tab" data-bs-toggle="tab" data-bs-target="#filesTabPane" type="button" role="tab">
+                                <i class="bx bx-file me-1"></i>Файлы и редакции ({{ document.files.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#auditTabPane" type="button" role="tab">
+                                <i class="bx bx-history me-1"></i>Протокол и ПЭП ({{ document.approval_logs.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#commentsTabPane" type="button" role="tab">
+                                <i class="bx bx-conversation me-1"></i>Обсуждение ({{ document.comments.count }})
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body p-3">
+                    <div class="tab-content" id="docTabsContent">
+                        <!-- TAB 1: FILES AND VERSIONS -->
+                        <div class="tab-pane fade show active" id="filesTabPane" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 text-dark">Документы и история правок</h6>
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadVersionModal">
+                                    <i class="bx bx-upload me-1"></i>Загрузить версию
+                                </button>
+                            </div>
+
+                            {% for doc_file in document.files.all %}
+                                <div class="border rounded p-3 mb-3 bg-white">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong class="text-dark font-weight-bold">
+                                                <i class="bx bxs-file-pdf text-danger me-1"></i>{{ doc_file.title }}
+                                            </strong>
+                                            <span class="badge bg-primary ms-2">v{{ doc_file.current_version_number }}</span>
+                                            {% if doc_file.is_main %}
+                                                <span class="badge bg-success-subtle text-success border ms-1">Основной документ</span>
+                                            {% endif %}
+                                        </div>
+                                        <span class="text-muted small">Версий: {{ doc_file.versions.count }}</span>
+                                    </div>
+
+                                    <!-- Version List Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 70px;">Версия</th>
+                                                    <th>Загрузил</th>
+                                                    <th>Дата</th>
+                                                    <th>Размер</th>
+                                                    <th>Комментарий к правкам</th>
+                                                    <th style="width: 110px;" class="text-end">Скачать</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for ver in doc_file.versions.all %}
+                                                    <tr class="{% if ver.version_number == doc_file.current_version_number %}table-active{% endif %}">
+                                                        <td>
+                                                            <strong class="text-primary">v{{ ver.version_number }}</strong>
+                                                        </td>
+                                                        <td>
+                                                            {{ ver.uploaded_by.get_full_name|default:ver.uploaded_by.username }}
+                                                        </td>
+                                                        <td class="text-muted text-nowrap">
+                                                            {{ ver.uploaded_at|date:"d.m.Y H:i" }}
+                                                        </td>
+                                                        <td class="text-muted">
+                                                            {{ ver.file_size_formatted }}
+                                                        </td>
+                                                        <td>
+                                                            {{ ver.change_comment|default:ver.comment|default:"—" }}
+                                                            {% if ver.file_hash %}
+                                                                <div class="text-muted" style="font-size: 0.7rem;" title="SHA-256: {{ ver.file_hash }}">
+                                                                    <i class="bx bx-fingerprint me-1"></i>{{ ver.file_hash|slice:":16" }}...
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <a href="{% url 'logistics_app:docflow_version_download' ver.id %}" class="btn btn-sm btn-outline-primary py-1 px-2" title="Скачать файл">
+                                                                <i class="bx bx-download me-1"></i>Скачать
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="6" class="text-center text-muted py-2">Файлы отсутствуют</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bx bx-file-blank display-4 d-block opacity-50 mb-2"></i>
+                                    <p class="mb-0">К документу еще не прикреплены файлы.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- TAB 2: AUDIT & PEP SIGNATURE LOGS -->
+                        <div class="tab-pane fade" id="auditTabPane" role="tabpanel">
+                            <h6 class="fw-bold mb-3 text-dark">Юридический протокол действий и ПЭП</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 140px;">Дата и время</th>
+                                            <th style="width: 130px;">Действие</th>
+                                            <th>Пользователь</th>
+                                            <th>Этап</th>
+                                            <th>Резолюция / Комментарий</th>
+                                            <th>Штамп ПЭП / IP</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in document.approval_logs.all %}
+                                            <tr>
+                                                <td class="text-nowrap text-muted">
+                                                    {{ log.created_at|date:"d.m.Y H:i:s" }}
+                                                </td>
+                                                <td>
+                                                    {% if log.action == 'APPROVED' or log.action == 'APPROVED_WITH_COMMENTS' %}
+                                                        <span class="badge bg-success"><i class="bx bx-check-shield me-1"></i>Согласовано</span>
+                                                    {% elif log.action == 'REJECTED' %}
+                                                        <span class="badge bg-danger"><i class="bx bx-x me-1"></i>Отклонено</span>
+                                                    {% elif log.action == 'RETURNED_TO_AUTHOR' %}
+                                                        <span class="badge bg-warning text-dark"><i class="bx bx-revision me-1"></i>Доработка</span>
+                                                    {% elif log.action == 'ROLLBACK_TO_STEP' %}
+                                                        <span class="badge bg-warning text-dark"><i class="bx bx-rewind me-1"></i>Откат</span>
+                                                    {% elif log.action == 'STARTED' %}
+                                                        <span class="badge bg-primary"><i class="bx bx-play me-1"></i>Запуск</span>
+                                                    {% else %}
+                                                        <span class="badge bg-light text-dark border">{{ log.get_action_display }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="fw-semibold text-dark">{{ log.user.get_full_name|default:log.user.username }}</div>
+                                                </td>
+                                                <td>
+                                                    {{ log.route_step.step_name|default:"—" }}
+                                                </td>
+                                                <td>
+                                                    {{ log.comment|default:"—" }}
+                                                </td>
+                                                <td>
+                                                    {% if log.pep_certificate_id %}
+                                                        <div class="pep-stamp-box mb-1">
+                                                            <i class="bx bx-badge-check text-success me-1"></i>{{ log.pep_certificate_id }}
+                                                        </div>
+                                                    {% endif %}
+                                                    {% if log.ip_address %}
+                                                        <div class="text-muted" style="font-size: 0.72rem;">
+                                                            IP: {{ log.ip_address }}
+                                                        </div>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4 text-muted">Записи аудита отсутствуют</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: DISCUSSION / COMMENTS -->
+                        <div class="tab-pane fade" id="commentsTabPane" role="tabpanel">
+                            <h6 class="fw-bold mb-3 text-dark">Внутренний чат и обсуждение</h6>
+
+                            <!-- Comment Stream -->
+                            <div id="commentsStream" class="mb-4">
+                                {% for comment in document.comments.all %}
+                                    {% if not comment.parent %}
+                                        {% include 'logistics_app/partials/docflow_comment_item.html' with comment=comment %}
+                                    {% endif %}
+                                {% empty %}
+                                    <div class="text-center py-4 text-muted" id="noCommentsPlaceholder">
+                                        <i class="bx bx-message-rounded-dots display-4 d-block opacity-50 mb-2"></i>
+                                        <p class="mb-0">В этой ветке еще нет сообщений. Будьте первым!</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Comment Input Form -->
+                            <div class="card border p-3 bg-light rounded">
+                                <form method="POST" action="{% url 'logistics_app:docflow_add_comment' document.pk %}" id="commentForm">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="parent" id="commentParentInput" value="">
+                                    <div id="replyToNotice" class="alert alert-info py-1 px-2 d-none justify-content-between align-items-center mb-2 small">
+                                        <span><i class="bx bx-reply me-1"></i>Ответ на сообщение: <strong id="replyToAuthor"></strong></span>
+                                        <button type="button" class="btn-close btn-sm" onclick="clearCommentParent()"></button>
+                                    </div>
+                                    <div class="mb-2">
+                                        <textarea name="text" class="form-control" rows="3" placeholder="Напишите сообщение коллегам..." required></textarea>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary btn-touch">
+                                            <i class="bx bx-send me-1"></i>Отправить сообщение
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- МОДАЛЬНЫЕ ОКНА ДЕЙСТВИЙ СОГЛАСОВАНИЯ -->
+<!-- ========================================================================= -->
+
+<!-- 1. Модальное окно согласования (ПЭП) -->
+{% if can_approve and document.status == 'ON_APPROVAL' %}
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title font-weight-bold" id="approveModalLabel">
+                    <i class="bx bx-check-shield me-2"></i>Наложение визы согласования (ПЭП)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="{% url 'logistics_app:docflow_approve_step' document.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-light border mb-3 small">
+                        <strong>Текущий этап:</strong> {{ active_step.step_name }}<br>
+                        <strong>Согласующее лицо:</strong> {{ request.user.get_full_name|default:request.user.username }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Комментарий / Особое мнение (необязательно)</label>
+                        {{ approval_form.comment }}
+                    </div>
+
+                    <div class="form-check mb-3">
+                        {{ approval_form.is_minor_edit }}
+                        <label class="form-check-label small" for="{{ approval_form.is_minor_edit.id_for_label }}">
+                            {{ approval_form.is_minor_edit.label }}
+                        </label>
+                        <div class="form-text text-muted" style="font-size: 0.75rem;">
+                            {{ approval_form.is_minor_edit.help_text }}
+                        </div>
+                    </div>
+
+                    <div class="form-check p-3 bg-light rounded border">
+                        {{ approval_form.confirm_pep }}
+                        <label class="form-check-label fw-bold small text-dark" for="{{ approval_form.confirm_pep.id_for_label }}">
+                            {{ approval_form.confirm_pep.label }}
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success font-weight-bold">
+                        <i class="bx bx-check-shield me-1"></i>Подтвердить и наложить ПЭП
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Модальное окно возврата автору на доработку -->
+<div class="modal fade" id="reworkModal" tabindex="-1" aria-labelledby="reworkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title font-weight-bold" id="reworkModalLabel">
+                    <i class="bx bx-undo me-2"></i>Возврат документа автору на доработку
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="{% url 'logistics_app:docflow_return_rework' document.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Документ будет возвращен автору ({{ document.initiator.get_full_name|default:document.initiator.username }}). Маршрут будет приостановлен до устранения замечаний.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-danger">Перечень замечаний для исправления *</label>
+                        {{ rework_form.comment }}
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold">
+                        <i class="bx bx-undo me-1"></i>Вернуть на доработку
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Модальное окно многошагового отката -->
+{% if can_rollback and rollback_form %}
+<div class="modal fade" id="rollbackModal" tabindex="-1" aria-labelledby="rollbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title font-weight-bold" id="rollbackModalLabel">
+                    <i class="bx bx-rewind me-2"></i>Откат маршрута на предыдущий этап
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="{% url 'logistics_app:docflow_rollback_step' document.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Выберите этап, на который вернуть документ *</label>
+                        {{ rollback_form.target_step_order }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-danger">Причина отката и замечания *</label>
+                        {{ rollback_form.comment }}
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold">
+                        <i class="bx bx-rewind me-1"></i>Выполнить откат
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 4. Модальное окно отклонения документа -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title font-weight-bold" id="rejectModalLabel">
+                    <i class="bx bx-x-circle me-2"></i>Окончательное отклонение документа
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="{% url 'logistics_app:docflow_reject' document.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger small mb-3">
+                        <strong>Внимание!</strong> Отклонение документа окончательно прекращает процесс согласования.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Причина отклонения *</label>
+                        <textarea name="reject_reason" class="form-control" rows="3" placeholder="Укажите обоснованную причину отклонения..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger font-weight-bold">
+                        <i class="bx bx-x me-1"></i>Отклонить документ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 5. Модальное окно возобновления маршрута после доработки автором -->
+{% if can_author_edit and document.status == 'ON_REWORK' %}
+<div class="modal fade" id="resumeRouteModal" tabindex="-1" aria-labelledby="resumeRouteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="resumeRouteModalLabel">
+                    <i class="bx bx-send me-2"></i>Возобновление согласования после доработки
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="{% url 'logistics_app:docflow_restart' document.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Выберите режим повторной отправки документа на согласование:
+                    </p>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="resume_mode" id="resumeModeStep" value="step" checked>
+                        <label class="form-check-label fw-semibold" for="resumeModeStep">
+                            Возобновить с этапа, вернувшего документ на доработку (Рекомендуется)
+                        </label>
+                        <div class="form-text small text-muted">Ранее согласованные предшествующие этапы останутся принятыми.</div>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="resume_mode" id="resumeModeFull" value="full">
+                        <label class="form-check-label fw-semibold" for="resumeModeFull">
+                            Перезапустить маршрут полностью с Шага 1
+                        </label>
+                        <div class="form-text small text-muted">Все визы будут сброшены, документ пойдет по маршруту заново.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold">
+                        <i class="bx bx-paper-plane me-1"></i>Отправить на согласование
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 6. Модальное окно загрузки новой версии файла -->
+<div class="modal fade" id="uploadVersionModal" tabindex="-1" aria-labelledby="uploadVersionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title font-weight-bold" id="uploadVersionModalLabel">
+                    <i class="bx bx-upload me-2"></i>Загрузка новой версии файла
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="{% url 'logistics_app:docflow_upload_version' document.pk %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Целевой файл в документе</label>
+                        <select name="doc_file_id" class="form-select">
+                            {% for f in document.files.all %}
+                                <option value="{{ f.id }}">{{ f.title }} (текущая v{{ f.current_version_number }})</option>
+                            {% empty %}
+                                <option value="">Основной документ</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Выберите файл на диске *</label>
+                        {{ file_upload_form.file }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Описание изменений / комментарий</label>
+                        {{ file_upload_form.comment }}
+                    </div>
+                    <div class="form-check mb-2">
+                        {{ file_upload_form.is_reviewer_edit }}
+                        <label class="form-check-label small" for="{{ file_upload_form.is_reviewer_edit.id_for_label }}">
+                            {{ file_upload_form.is_reviewer_edit.label }}
+                        </label>
+                        <div class="form-text text-muted" style="font-size: 0.75rem;">
+                            {{ file_upload_form.is_reviewer_edit.help_text }}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold">
+                        <i class="bx bx-upload me-1"></i>Загрузить версию
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    function setCommentParent(commentId, authorName) {
+        document.getElementById('commentParentInput').value = commentId;
+        document.getElementById('replyToAuthor').textContent = authorName;
+        document.getElementById('replyToNotice').classList.remove('d-none');
+        document.getElementById('replyToNotice').classList.add('d-flex');
+        var textarea = document.querySelector('#commentForm textarea');
+        if (textarea) {
+            textarea.focus();
+        }
+    }
+
+    function clearCommentParent() {
+        document.getElementById('commentParentInput').value = '';
+        document.getElementById('replyToNotice').classList.remove('d-flex');
+        document.getElementById('replyToNotice').classList.add('d-none');
+    }
+</script>
+{% endblock %}

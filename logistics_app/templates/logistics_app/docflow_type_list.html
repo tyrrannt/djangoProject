@@ -1,0 +1,180 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Справочник видов документов СЭД // БАРКОЛ
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+        --sed-brand-navy: #002b49;
+        --sed-accent-sky: #0284c7;
+    }
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .sed-nav-pills {
+        gap: 8px;
+    }
+    .sed-nav-pills .nav-link {
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: #475569;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .sed-nav-pills .nav-link:hover {
+        background: #f1f5f9;
+        color: var(--sed-brand-navy);
+    }
+    .sed-nav-pills .nav-link.active {
+        background-color: var(--sed-brand-navy);
+        color: #ffffff;
+        border-color: var(--sed-brand-navy);
+        box-shadow: 0 4px 12px rgba(0, 43, 73, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-sm btn-outline-secondary" title="К документам">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-category me-2 text-primary"></i>Справочник видов документов СЭД
+                </h2>
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                Классификатор категорий, типов входящих, исходящих и внутренних документов с регламентными сроками SLA
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'logistics_app:docflow_type_add' %}" class="btn btn-primary btn-touch">
+                <i class="bx bx-plus me-1"></i>
+                <span>Добавить вид документа</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Navigation Pills / Tabs -->
+    <nav class="sed-nav-pills d-flex flex-wrap mb-3" aria-label="Разделы СЭД">
+        <a href="{% url 'logistics_app:docflow_list' %}" class="nav-link">
+            <i class="bx bx-folder me-2"></i>
+            <span>Реестр документов</span>
+        </a>
+        <a href="{% url 'logistics_app:docflow_template_list' %}" class="nav-link">
+            <i class="bx bx-git-repo-forked me-2"></i>
+            <span>Шаблоны маршрутов</span>
+        </a>
+        <a href="{% url 'logistics_app:docflow_type_list' %}" class="nav-link active">
+            <i class="bx bx-category me-2"></i>
+            <span>Виды документов</span>
+        </a>
+    </nav>
+
+    <!-- Table Card -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <div class="card-body p-0 p-md-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase font-weight-bold" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+                        <tr>
+                            <th style="width: 50px;" class="text-center">#</th>
+                            <th>Наименование вида документа</th>
+                            <th style="width: 130px;">Категория</th>
+                            <th style="width: 140px;">Символьный код</th>
+                            <th style="width: 120px;" class="text-center">SLA по умолч.</th>
+                            <th style="width: 100px;" class="text-center">Шаблоны</th>
+                            <th style="width: 100px;" class="text-center">Документы</th>
+                            <th style="width: 100px;" class="text-center">Статус</th>
+                            <th style="width: 100px;" class="text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in doc_types %}
+                            <tr>
+                                <td class="text-center text-muted small">{{ forloop.counter }}</td>
+                                <td>
+                                    <a href="{% url 'logistics_app:docflow_type_update' item.pk %}" class="font-weight-bold text-dark text-decoration-none d-block">
+                                        {{ item.name }}
+                                    </a>
+                                    {% if item.description %}
+                                        <div class="small text-muted text-truncate" style="max-width: 380px;">{{ item.description }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.category == 'INBOUND' %}
+                                        <span class="badge bg-info text-dark"><i class="bx bx-log-in-circle me-1"></i>Входящий</span>
+                                    {% elif item.category == 'OUTBOUND' %}
+                                        <span class="badge bg-primary"><i class="bx bx-log-out-circle me-1"></i>Исходящий</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary"><i class="bx bx-shuffle me-1"></i>Внутренний</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <code class="text-dark bg-light px-2 py-1 rounded border">{{ item.code }}</code>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">{{ item.default_sla_hours }} ч.</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-primary border">{{ item.templates_count }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">{{ item.documents_count }}</span>
+                                </td>
+                                <td class="text-center">
+                                    {% if item.is_active %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Отключен</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'logistics_app:docflow_type_update' item.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Редактировать">
+                                        <i class="bx bx-edit-alt"></i>
+                                    </a>
+                                    <a href="{% url 'logistics_app:docflow_type_delete' item.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить">
+                                        <i class="bx bx-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="bx bx-category display-4 d-block opacity-50 mb-2"></i>
+                                    <h5 class="fw-bold">Виды документов пока не созданы</h5>
+                                    <p class="small mb-0">Добавьте первый вид документа, чтобы начать регистрацию и настройку маршрутов.</p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

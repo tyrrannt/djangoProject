@@ -1,0 +1,61 @@
+{% load static %}
+
+<div class="comment-item d-flex gap-3 mb-3 p-3 rounded bg-light border" id="comment-{{ comment.id }}">
+    <!-- Avatar Icon / Initial -->
+    <div class="flex-shrink-0">
+        <div class="avatar-circle bg-primary text-white font-weight-bold d-flex align-items-center justify-content-center"
+             style="width: 40px; height: 40px; border-radius: 50%; font-size: 0.95rem;">
+            {{ comment.author.first_name|first|default:comment.author.username|first|upper }}
+        </div>
+    </div>
+
+    <!-- Comment Body -->
+    <div class="flex-grow-1">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <div>
+                <strong class="text-dark">{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                {% if comment.author.user_work_profile.divisions %}
+                    <span class="text-muted small ms-2">({{ comment.author.user_work_profile.divisions.name }})</span>
+                {% endif %}
+            </div>
+            <span class="text-muted small" title="{{ comment.created_at|date:'d.m.Y H:i:s' }}">
+                <i class="bx bx-time-five me-1"></i>{{ comment.created_at|date:"d.m.Y H:i" }}
+            </span>
+        </div>
+
+        <div class="comment-text text-secondary mb-2" style="white-space: pre-wrap; font-size: 0.92rem;">
+            {{ comment.text }}
+        </div>
+
+        <!-- Reply Button -->
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary reply-btn"
+                    onclick="setCommentParent('{{ comment.id }}', '{{ comment.author.get_full_name|default:comment.author.username }}')">
+                <i class="bx bx-reply me-1"></i>Ответить
+            </button>
+        </div>
+
+        <!-- Nested Replies -->
+        {% if comment.replies.all %}
+            <div class="mt-3 ps-3 border-start border-2 border-primary-subtle">
+                {% for reply in comment.replies.all %}
+                    <div class="reply-item d-flex gap-2 mb-2 p-2 rounded bg-white border" id="comment-{{ reply.id }}">
+                        <div class="avatar-circle bg-secondary text-white small font-weight-bold d-flex align-items-center justify-content-center"
+                             style="width: 32px; height: 32px; border-radius: 50%; font-size: 0.8rem;">
+                            {{ reply.author.first_name|first|default:reply.author.username|first|upper }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong class="small text-dark">{{ reply.author.get_full_name|default:reply.author.username }}</strong>
+                                <span class="text-muted small">{{ reply.created_at|date:"d.m.Y H:i" }}</span>
+                            </div>
+                            <div class="reply-text text-secondary small" style="white-space: pre-wrap;">
+                                {{ reply.text }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

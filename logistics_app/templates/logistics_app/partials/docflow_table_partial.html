@@ -1,0 +1,188 @@
+{% load static %}
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle mb-0" id="docflowTable">
+        <thead class="table-light text-uppercase font-weight-bold" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+            <tr>
+                <th style="width: 140px;">№ Регистрации</th>
+                <th style="width: 100px;">Дата</th>
+                <th>Тип и Тема документа</th>
+                <th>Контрагент / Связи</th>
+                <th>Текущий этап</th>
+                <th style="width: 130px;">Дедлайн (SLA)</th>
+                <th style="width: 140px;">Статус</th>
+                <th style="width: 90px;" class="text-center">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documents %}
+                <tr class="{% if doc.urgency == 'CRITICAL' %}table-danger-subtle{% elif doc.urgency == 'URGENT' %}table-warning-subtle{% endif %}">
+                    <!-- Рег. номер -->
+                    <td>
+                        <a href="{% url 'logistics_app:docflow_detail' doc.pk %}" class="font-weight-bold text-primary text-decoration-none">
+                            {{ doc.reg_number|default:"Черновик" }}
+                        </a>
+                        {% if doc.urgency != 'NORMAL' %}
+                            <div>
+                                <span class="badge {% if doc.urgency == 'CRITICAL' %}bg-danger{% else %}bg-warning text-dark{% endif %}" style="font-size: 0.65rem;">
+                                    {{ doc.get_urgency_display }}
+                                </span>
+                            </div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Дата -->
+                    <td class="text-nowrap small text-muted">
+                        {{ doc.reg_date|date:"d.m.Y"|default:doc.created_at|date:"d.m.Y" }}
+                    </td>
+
+                    <!-- Тип и Тема -->
+                    <td>
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge {% if doc.flow_type == 'INBOUND' %}bg-info text-dark{% elif doc.flow_type == 'OUTBOUND' %}bg-primary{% else %}bg-secondary{% endif %} me-2" style="font-size: 0.7rem;">
+                                {{ doc.get_flow_type_display }}
+                            </span>
+                            <span class="text-muted small">{{ doc.doc_type.name }}</span>
+                        </div>
+                        <a href="{% url 'logistics_app:docflow_detail' doc.pk %}" class="text-dark font-weight-semibold text-decoration-none d-block">
+                            {{ doc.title }}
+                        </a>
+                        <div class="small text-muted mt-1">
+                            <i class="bx bx-user me-1"></i>Автор: {{ doc.initiator.get_full_name|default:doc.initiator.username }}
+                        </div>
+                    </td>
+
+                    <!-- Контрагент / Связи -->
+                    <td>
+                        {% if doc.counteragent %}
+                            <div class="font-weight-semibold text-dark">
+                                <i class="bx bx-buildings text-muted me-1"></i>{{ doc.counteragent.name }}
+                            </div>
+                        {% else %}
+                            <span class="text-muted small">— Внутренний —</span>
+                        {% endif %}
+
+                        {% if doc.related_contract %}
+                            <div class="small text-muted mt-1">
+                                <i class="bx bx-file text-muted me-1"></i>Договор: {{ doc.related_contract }}
+                            </div>
+                        {% elif doc.related_waybill %}
+                            <div class="small text-muted mt-1">
+                                <i class="bx bx-transfer-alt text-muted me-1"></i>Накладная: №{{ doc.related_waybill.pk }}
+                            </div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Текущий этап -->
+                    <td>
+                        {% with active_step=doc.active_steps.first %}
+                            {% if active_step %}
+                                <div class="font-weight-semibold text-primary small">
+                                    <i class="bx bx-loader-circle bx-spin me-1"></i>Шаг {{ active_step.step_order }}: {{ active_step.step_name }}
+                                </div>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    {% if active_step.assigned_user %}
+                                        {{ active_step.assigned_user.get_full_name|default:active_step.assigned_user.username }}
+                                    {% elif active_step.assigned_division %}
+                                        {{ active_step.assigned_division.name }}
+                                    {% else %}
+                                        Группа согласующих
+                                    {% endif %}
+                                </div>
+                            {% elif doc.status == 'APPROVED' %}
+                                <span class="badge bg-success" style="font-size: 0.75rem;"><i class="bx bx-check-double me-1"></i>Завершено</span>
+                            {% elif doc.status == 'REJECTED' %}
+                                <span class="badge bg-danger" style="font-size: 0.75rem;"><i class="bx bx-x me-1"></i>Отклонен</span>
+                            {% elif doc.status == 'ON_REWORK' %}
+                                <span class="badge bg-warning text-dark" style="font-size: 0.75rem;"><i class="bx bx-refresh me-1"></i>На доработке</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+
+                    <!-- Дедлайн SLA -->
+                    <td class="small">
+                        {% with active_step=doc.active_steps.first %}
+                            {% if active_step and active_step.due_date %}
+                                <div>до {{ active_step.due_date|date:"d.m.Y H:i" }}</div>
+                            {% elif doc.deadline %}
+                                <div>до {{ doc.deadline|date:"d.m.Y H:i" }}</div>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+
+                    <!-- Статус-бейдж -->
+                    <td>
+                        {% if doc.status == 'DRAFT' %}
+                            <span class="badge bg-light text-dark border px-2 py-1"><i class="bx bx-edit me-1"></i>Черновик</span>
+                        {% elif doc.status == 'ON_APPROVAL' %}
+                            <span class="badge bg-primary px-2 py-1"><i class="bx bx-time me-1"></i>На согласовании</span>
+                        {% elif doc.status == 'ON_REWORK' %}
+                            <span class="badge bg-warning text-dark px-2 py-1"><i class="bx bx-revision me-1"></i>На доработке</span>
+                        {% elif doc.status == 'APPROVED' %}
+                            <span class="badge bg-success px-2 py-1"><i class="bx bx-check-circle me-1"></i>Согласован</span>
+                        {% elif doc.status == 'SIGNED' %}
+                            <span class="badge bg-info text-dark px-2 py-1"><i class="bx bx-pen me-1"></i>Подписан</span>
+                        {% elif doc.status == 'EXECUTED' %}
+                            <span class="badge bg-success px-2 py-1"><i class="bx bx-check-double me-1"></i>Исполнен</span>
+                        {% elif doc.status == 'REJECTED' %}
+                            <span class="badge bg-danger px-2 py-1"><i class="bx bx-x-circle me-1"></i>Отклонен</span>
+                        {% elif doc.status == 'ARCHIVED' %}
+                            <span class="badge bg-secondary px-2 py-1"><i class="bx bx-archive me-1"></i>В архиве</span>
+                        {% else %}
+                            <span class="badge bg-secondary px-2 py-1">{{ doc.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Действия -->
+                    <td class="text-center">
+                        <a href="{% url 'logistics_app:docflow_detail' doc.pk %}" class="btn btn-sm btn-outline-primary" title="Открыть карточку">
+                            <i class="bx bx-show-alt"></i>
+                        </a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bx bx-folder-open display-4 d-block text-muted mb-2 opacity-50"></i>
+                        <h5 class="font-weight-bold">Документы не найдены</h5>
+                        <p class="small mb-0">По указанным критериям фильтрации документы отсутствуют в реестре.</p>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Пагинация -->
+{% if is_paginated %}
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+        <span class="small text-muted">
+            Показано {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ paginator.count }} документов
+        </span>
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&tab={{ current_tab }}" hx-get="?page={{ page_obj.previous_page_number }}&tab={{ current_tab }}" hx-target="#docflowTableContainer">‹</a>
+                </li>
+            {% endif %}
+            {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&tab={{ current_tab }}" hx-get="?page={{ num }}&tab={{ current_tab }}" hx-target="#docflowTableContainer">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&tab={{ current_tab }}" hx-get="?page={{ page_obj.next_page_number }}&tab={{ current_tab }}" hx-target="#docflowTableContainer">›</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+{% endif %}
