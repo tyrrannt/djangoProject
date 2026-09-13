@@ -20,8 +20,14 @@ from contracts_app.templatetags.custom import FIO_format
 from customers_app.models import DataBaseUser
 
 ONLINE_HEARTBEAT_TIMEOUT = 70  # Секунды: таймаут неактивности сессии без heartbeat
-REGISTRY_CACHE_KEY = "portal_online_users_registry"
+REGISTRY_CACHE_KEY = "portal_online_users_registry_v2"
 REGISTRY_CACHE_TIMEOUT = 300  # Секунды: время жизни кэша реестра (5 минут)
+
+# Однократная очистка устаревшего legacy-ключа кэша при инициализации модуля
+try:
+    cache.delete("portal_online_users_registry")
+except Exception:
+    pass
 
 
 def get_scope_user_agent(scope: dict) -> str:
@@ -58,9 +64,11 @@ def _prune_registry(registry: dict) -> dict:
     for ch_name, data in registry.items():
         if not isinstance(data, dict):
             continue
-        last_seen = data.get('last_seen', 0)
-        # Исключаем сессии без отметки времени или старше таймаута неактивности
-        if last_seen and (now - last_seen) > ONLINE_HEARTBEAT_TIMEOUT:
+        last_seen = data.get('last_seen')
+        # Исключаем сессии без валидной отметки времени или старше таймаута неактивности
+        if not last_seen or not isinstance(last_seen, (int, float)):
+            continue
+        if (now - last_seen) > ONLINE_HEARTBEAT_TIMEOUT or (now - last_seen) < -60:
             continue
         valid_registry[ch_name] = data
     return valid_registry
