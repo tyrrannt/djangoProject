@@ -112,6 +112,63 @@
         color: #64748b;
         letter-spacing: 0.5px;
     }
+    .pep-stamp-card {
+        display: inline-block;
+        background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
+        border: 2px solid #0056b3;
+        border-radius: 6px;
+        padding: 6px 10px;
+        color: #002b49;
+        box-shadow: 0 2px 4px rgba(0, 86, 179, 0.08);
+        text-align: left;
+        max-width: 280px;
+        position: relative;
+    }
+    .pep-stamp-card::after {
+        content: "ПЭП";
+        position: absolute;
+        right: 8px;
+        bottom: 2px;
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: rgba(0, 86, 179, 0.06);
+        pointer-events: none;
+        letter-spacing: 2px;
+    }
+    .pep-stamp-header {
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: #0056b3;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #bfdbfe;
+        padding-bottom: 3px;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+    }
+    .pep-stamp-body {
+        font-size: 0.70rem;
+        line-height: 1.35;
+    }
+    .pep-stamp-row {
+        display: flex;
+        gap: 4px;
+        white-space: nowrap;
+    }
+    .pep-stamp-row .lbl {
+        color: #64748b;
+        font-weight: 500;
+    }
+    .pep-stamp-row .val {
+        color: #0f172a;
+        font-weight: 600;
+    }
+    .pep-stamp-row .val-code {
+        color: #0056b3;
+        font-weight: 700;
+        font-family: monospace;
+    }
     .pep-stamp-box {
         font-family: monospace;
         font-size: 0.75rem;
@@ -174,7 +231,7 @@
                 {% endif %}
             </div>
             <p class="text-muted small mb-0 d-none d-md-block">
-                {{ document.doc_type.name }} • Создан {{ document.created_at|date:"d.m.Y H:i" }} пользователем {{ document.initiator.get_full_name|default:document.initiator.username }}
+                {{ document.doc_type.name }} • Создан {{ document.created_at|date:"d.m.Y H:i" }} пользователем {{ document.initiator.title|default:document.initiator.get_full_name|default:document.initiator.username }}
             </p>
         </div>
 
@@ -202,8 +259,12 @@
                 </button>
             {% endif %}
 
-            <!-- 2. Действия автора (запуск / возобновление) -->
+            <!-- 2. Действия автора (редактирование, запуск / возобновление) -->
             {% if can_author_edit %}
+                <a href="{% url 'logistics_app:docflow_update' document.pk %}" class="btn btn-outline-primary btn-touch">
+                    <i class="bx bx-edit me-1"></i>
+                    <span>Редактировать</span>
+                </a>
                 {% if document.status == 'DRAFT' %}
                     <form method="POST" action="{% url 'logistics_app:docflow_start' document.pk %}" class="d-inline">
                         {% csrf_token %}
@@ -231,34 +292,52 @@
     </header>
 
     <!-- Visual Route Stepper -->
-    {% if document.route_steps.all %}
-        <div class="mb-4">
-            <h5 class="meta-title mb-2"><i class="bx bx-git-commit me-1"></i>Маршрут согласования</h5>
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="meta-title mb-0"><i class="bx bx-git-commit me-1"></i>Маршрут согласования</h5>
+            {% if can_author_edit %}
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addStepModal">
+                    <i class="bx bx-plus me-1"></i>Добавить этап
+                </button>
+            {% endif %}
+        </div>
+
+        {% if document.route_steps.all %}
             <div class="stepper-wrapper">
                 {% for step in document.route_steps.all %}
-                    <div class="stepper-item {% if step.status == 'COMPLETED' %}completed{% elif step.status == 'IN_PROGRESS' %}active{% elif step.status == 'RETURNED_REWORK' %}rework{% elif step.status == 'REJECTED' %}rejected{% else %}pending{% endif %}">
-                        <div class="d-flex align-items-center mb-1">
-                            <div class="stepper-badge">
-                                {% if step.status == 'COMPLETED' %}
-                                    <i class="bx bx-check"></i>
-                                {% elif step.status == 'IN_PROGRESS' %}
-                                    <i class="bx bx-loader-alt bx-spin"></i>
-                                {% elif step.status == 'RETURNED_REWORK' %}
-                                    <i class="bx bx-undo"></i>
-                                {% elif step.status == 'REJECTED' %}
-                                    <i class="bx bx-x"></i>
-                                {% else %}
-                                    {{ step.step_order }}
-                                {% endif %}
+                    <div class="stepper-item {% if step.status == 'APPROVED' %}completed{% elif step.status == 'IN_PROGRESS' %}active{% elif step.status == 'RETURNED' %}rework{% elif step.status == 'REJECTED' %}rejected{% else %}pending{% endif %}">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <div class="d-flex align-items-center text-truncate">
+                                <div class="stepper-badge">
+                                    {% if step.status == 'APPROVED' %}
+                                        <i class="bx bx-check"></i>
+                                    {% elif step.status == 'IN_PROGRESS' %}
+                                        <i class="bx bx-loader-alt bx-spin"></i>
+                                    {% elif step.status == 'RETURNED' %}
+                                        <i class="bx bx-undo"></i>
+                                    {% elif step.status == 'REJECTED' %}
+                                        <i class="bx bx-x"></i>
+                                    {% else %}
+                                        {{ step.step_order }}
+                                    {% endif %}
+                                </div>
+                                <div class="fw-bold text-truncate" style="font-size: 0.85rem;" title="{{ step.step_name }}">
+                                    {{ step.step_name }}
+                                </div>
                             </div>
-                            <div class="fw-bold text-truncate" style="font-size: 0.85rem;" title="{{ step.step_name }}">
-                                {{ step.step_name }}
-                            </div>
+                            {% if can_author_edit and step.status == 'PENDING' %}
+                                <form method="POST" action="{% url 'logistics_app:docflow_step_delete' document.pk step.id %}" class="d-inline" onsubmit="return confirm('Удалить этот этап маршрута?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-1" title="Удалить этап">
+                                        <i class="bx bx-trash"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
                         </div>
 
                         <div class="text-muted small" style="font-size: 0.75rem;">
                             {% if step.assigned_user %}
-                                <i class="bx bx-user me-1"></i>{{ step.assigned_user.get_full_name|default:step.assigned_user.username }}
+                                <i class="bx bx-user me-1"></i>{{ step.assigned_user.title|default:step.assigned_user.get_full_name|default:step.assigned_user.username }}
                             {% elif step.assigned_division %}
                                 <i class="bx bx-buildings me-1"></i>{{ step.assigned_division.name }}
                             {% else %}
@@ -266,7 +345,7 @@
                             {% endif %}
                         </div>
 
-                        {% if step.status == 'COMPLETED' and step.completed_at %}
+                        {% if step.status == 'APPROVED' and step.completed_at %}
                             <div class="text-success mt-1" style="font-size: 0.72rem;">
                                 <i class="bx bx-check-circle me-1"></i>{{ step.completed_at|date:"d.m.Y H:i" }}
                             </div>
@@ -278,8 +357,12 @@
                     </div>
                 {% endfor %}
             </div>
-        </div>
-    {% endif %}
+        {% else %}
+            <div class="alert alert-light border p-3 small text-muted">
+                <i class="bx bx-info-circle me-1 text-primary"></i>Маршрут согласования еще не сформирован. Вы можете добавить согласующих лиц вручную или запустить согласование по регламенту типа документа.
+            </div>
+        {% endif %}
+    </div>
 
     <!-- Main Content: Metadata & Tabs Grid -->
     <div class="row g-3">
@@ -325,11 +408,11 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <div class="meta-title">Инициатор</div>
-                            <div class="small text-dark">{{ document.initiator.get_full_name|default:document.initiator.username }}</div>
+                            <div class="small text-dark">{{ document.initiator.title|default:document.initiator.get_full_name|default:document.initiator.username }}</div>
                         </div>
                         <div class="col-6">
                             <div class="meta-title">Ответственный</div>
-                            <div class="small text-dark">{{ document.responsible.get_full_name|default:document.responsible.username }}</div>
+                            <div class="small text-dark">{{ document.responsible.title|default:document.responsible.get_full_name|default:document.responsible.username }}</div>
                         </div>
                     </div>
 
@@ -446,7 +529,7 @@
                                                             <strong class="text-primary">v{{ ver.version_number }}</strong>
                                                         </td>
                                                         <td>
-                                                            {{ ver.uploaded_by.get_full_name|default:ver.uploaded_by.username }}
+                                                            {{ ver.uploaded_by.title|default:ver.uploaded_by.get_full_name|default:ver.uploaded_by.username }}
                                                         </td>
                                                         <td class="text-muted text-nowrap">
                                                             {{ ver.uploaded_at|date:"d.m.Y H:i" }}
@@ -522,7 +605,7 @@
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    <div class="fw-semibold text-dark">{{ log.user.get_full_name|default:log.user.username }}</div>
+                                                    <div class="fw-semibold text-dark">{{ log.user.title|default:log.user.get_full_name|default:log.user.username }}</div>
                                                 </td>
                                                 <td>
                                                     {{ log.route_step.step_name|default:"—" }}
@@ -532,13 +615,33 @@
                                                 </td>
                                                 <td>
                                                     {% if log.pep_certificate_id %}
-                                                        <div class="pep-stamp-box mb-1">
-                                                            <i class="bx bx-badge-check text-success me-1"></i>{{ log.pep_certificate_id }}
+                                                        <div class="pep-stamp-card mb-1">
+                                                            <div class="pep-stamp-header">
+                                                                <i class="bx bxs-badge-check text-primary me-1"></i>ДОКУМЕНТ ПОДПИСАН ЭП
+                                                            </div>
+                                                            <div class="pep-stamp-body">
+                                                                <div class="pep-stamp-row">
+                                                                    <span class="lbl">Сертификат:</span>
+                                                                    <span class="val-code">{{ log.pep_certificate_id }}</span>
+                                                                </div>
+                                                                <div class="pep-stamp-row">
+                                                                    <span class="lbl">Владелец:</span>
+                                                                    <span class="val">{{ log.user.title|default:log.user.get_full_name|default:log.user.username }}</span>
+                                                                </div>
+                                                                <div class="pep-stamp-row">
+                                                                    <span class="lbl">Дата:</span>
+                                                                    <span class="val">{{ log.created_at|date:"d.m.Y H:i:s" }}</span>
+                                                                </div>
+                                                                <div class="pep-stamp-row">
+                                                                    <span class="lbl">Система:</span>
+                                                                    <span class="val">СЭД АК «БАРКОЛ» (ПЭП)</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     {% endif %}
                                                     {% if log.ip_address %}
-                                                        <div class="text-muted" style="font-size: 0.72rem;">
-                                                            IP: {{ log.ip_address }}
+                                                        <div class="text-muted mt-1" style="font-size: 0.70rem;">
+                                                            <i class="bx bx-laptop me-1"></i>IP: {{ log.ip_address }}
                                                         </div>
                                                     {% endif %}
                                                 </td>
@@ -602,10 +705,10 @@
 <!-- МОДАЛЬНЫЕ ОКНА ДЕЙСТВИЙ СОГЛАСОВАНИЯ -->
 <!-- ========================================================================= -->
 
-<!-- 1. Модальное окно согласования (ПЭП) -->
+<!-- 1. Модальное окно согласования (ПЭП) с возможностью динамического назначения исполнителя -->
 {% if can_approve and document.status == 'ON_APPROVAL' %}
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title font-weight-bold" id="approveModalLabel">
@@ -613,16 +716,16 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
-            <form method="POST" action="{% url 'logistics_app:docflow_approve_step' document.pk %}">
+            <form method="POST" action="{% url 'logistics_app:docflow_approve_step' document.pk %}" id="approveActionForm">
                 {% csrf_token %}
                 <div class="modal-body p-4">
                     <div class="alert alert-light border mb-3 small">
                         <strong>Текущий этап:</strong> {{ active_step.step_name }}<br>
-                        <strong>Согласующее лицо:</strong> {{ request.user.get_full_name|default:request.user.username }}
+                        <strong>Согласующее лицо:</strong> {{ request.user.title|default:request.user.get_full_name|default:request.user.username }}
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Комментарий / Особое мнение (необязательно)</label>
+                        <label class="form-label fw-semibold">Комментарий / Резолюция (необязательно)</label>
                         {{ approval_form.comment }}
                     </div>
 
@@ -633,6 +736,68 @@
                         </label>
                         <div class="form-text text-muted" style="font-size: 0.75rem;">
                             {{ approval_form.is_minor_edit.help_text }}
+                        </div>
+                    </div>
+
+                    <!-- Блок динамического движения (Назначение исполнителя) -->
+                    <div class="mb-3 p-3 border rounded bg-light">
+                        <label class="form-label fw-bold text-dark mb-1" for="id_next_step_action">
+                            <i class="bx bx-git-branch text-primary me-1"></i>Дальнейшее движение документа
+                        </label>
+                        {{ approval_form.next_step_action }}
+                        <div class="form-text small text-muted mb-2">
+                            Выберите «Направить на исполнение», чтобы после вашего визирования передать документ конкретному сотруднику или группе для отработки.
+                        </div>
+
+                        <div id="assignExecutorSection" style="display: none;" class="mt-3 pt-3 border-top bg-white p-3 rounded">
+                            <h6 class="fw-bold text-primary mb-3" style="font-size: 0.9rem;">
+                                <i class="bx bx-user-check me-1"></i>Назначение исполнителя / группы
+                            </h6>
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small fw-semibold" for="{{ approval_form.next_executor.id_for_label }}">
+                                        {{ approval_form.next_executor.label }}
+                                    </label>
+                                    {{ approval_form.next_executor }}
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small fw-semibold" for="{{ approval_form.next_division.id_for_label }}">
+                                        {{ approval_form.next_division.label }}
+                                    </label>
+                                    {{ approval_form.next_division }}
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold" for="{{ approval_form.next_executors.id_for_label }}">
+                                    {{ approval_form.next_executors.label }}
+                                </label>
+                                {{ approval_form.next_executors }}
+                                <div class="form-text text-muted" style="font-size: 0.72rem;">Удерживайте Ctrl (Cmd) для выбора нескольких сотрудников.</div>
+                            </div>
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 col-md-8">
+                                    <label class="form-label small fw-semibold" for="{{ approval_form.next_step_name.id_for_label }}">
+                                        {{ approval_form.next_step_name.label }}
+                                    </label>
+                                    {{ approval_form.next_step_name }}
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-semibold" for="{{ approval_form.next_sla_hours.id_for_label }}">
+                                        {{ approval_form.next_sla_hours.label }}
+                                    </label>
+                                    {{ approval_form.next_sla_hours }}
+                                </div>
+                            </div>
+
+                            <div class="mb-1">
+                                <label class="form-label small fw-semibold" for="{{ approval_form.next_step_instructions.id_for_label }}">
+                                    {{ approval_form.next_step_instructions.label }}
+                                </label>
+                                {{ approval_form.next_step_instructions }}
+                            </div>
                         </div>
                     </div>
 
@@ -653,8 +818,10 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- 2. Модальное окно возврата автору на доработку -->
+{% if can_approve and document.status == 'ON_APPROVAL' %}
 <div class="modal fade" id="reworkModal" tabindex="-1" aria-labelledby="reworkModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -668,7 +835,7 @@
                 {% csrf_token %}
                 <div class="modal-body p-4">
                     <p class="small text-muted mb-3">
-                        Документ будет возвращен автору ({{ document.initiator.get_full_name|default:document.initiator.username }}). Маршрут будет приостановлен до устранения замечаний.
+                        Документ будет возвращен автору ({{ document.initiator.title|default:document.initiator.get_full_name|default:document.initiator.username }}). Маршрут будет приостановлен до устранения замечаний.
                     </p>
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-danger">Перечень замечаний для исправления *</label>
@@ -754,7 +921,72 @@
 </div>
 {% endif %}
 
-<!-- 5. Модальное окно возобновления маршрута после доработки автором -->
+<!-- 5. Модальное окно добавления этапа в маршрут черновика -->
+{% if can_author_edit %}
+<div class="modal fade" id="addStepModal" tabindex="-1" aria-labelledby="addStepModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="addStepModalLabel">
+                    <i class="bx bx-plus-circle me-2"></i>Добавление этапа в маршрут
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="{% url 'logistics_app:docflow_step_add' document.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="{{ add_step_form.step_name.id_for_label }}">
+                            {{ add_step_form.step_name.label }} *
+                        </label>
+                        {{ add_step_form.step_name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="{{ add_step_form.step_type.id_for_label }}">
+                            {{ add_step_form.step_type.label }}
+                        </label>
+                        {{ add_step_form.step_type }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="{{ add_step_form.assigned_user.id_for_label }}">
+                            {{ add_step_form.assigned_user.label }}
+                        </label>
+                        {{ add_step_form.assigned_user }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="{{ add_step_form.assigned_users.id_for_label }}">
+                            {{ add_step_form.assigned_users.label }}
+                        </label>
+                        {{ add_step_form.assigned_users }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="{{ add_step_form.assigned_division.id_for_label }}">
+                            {{ add_step_form.assigned_division.label }}
+                        </label>
+                        {{ add_step_form.assigned_division }}
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold" for="{{ add_step_form.sla_hours.id_for_label }}">
+                                {{ add_step_form.sla_hours.label }}
+                            </label>
+                            {{ add_step_form.sla_hours }}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold">
+                        <i class="bx bx-check me-1"></i>Добавить этап
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 6. Модальное окно возобновления маршрута после доработки автором -->
 {% if can_author_edit and document.status == 'ON_REWORK' %}
 <div class="modal fade" id="resumeRouteModal" tabindex="-1" aria-labelledby="resumeRouteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -798,7 +1030,7 @@
 </div>
 {% endif %}
 
-<!-- 6. Модальное окно загрузки новой версии файла -->
+<!-- 7. Модальное окно загрузки новой версии файла -->
 <div class="modal fade" id="uploadVersionModal" tabindex="-1" aria-labelledby="uploadVersionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -869,5 +1101,22 @@
         document.getElementById('replyToNotice').classList.remove('d-flex');
         document.getElementById('replyToNotice').classList.add('d-none');
     }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const nextActionSelect = document.getElementById("id_next_step_action");
+        const assignSection = document.getElementById("assignExecutorSection");
+
+        if (nextActionSelect && assignSection) {
+            function toggleAssignSection() {
+                if (nextActionSelect.value === "ASSIGN_EXECUTOR") {
+                    assignSection.style.display = "block";
+                } else {
+                    assignSection.style.display = "none";
+                }
+            }
+            nextActionSelect.addEventListener("change", toggleAssignSection);
+            toggleAssignSection();
+        }
+    });
 </script>
 {% endblock %}

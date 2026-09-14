@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Division
 from logistics_app.models import (
     DocFlowApprovalLog,
     DocFlowDocument,
@@ -27,9 +27,10 @@ class DocFlowRoutingService:
     """Сервис управления жизненным циклом и маршрутами согласования документов СЭД.
 
     Реализует:
-    - Построение цепочки этапов из системного шаблона;
+    - Построение цепочки этапов из системного шаблона либо динамически «на лету»;
+    - Добавление и удаление ad-hoc этапов согласующих и исполнителей;
     - Запуск и активацию первого этапа согласования;
-    - Обработку визирования (последовательного, параллельного «И» / «ИЛИ», руководителя);
+    - Обработку визирования с динамическим назначением исполнителя руководителем;
     - Наложение Простой Электронной Подписи (ПЭП) и аудит-трейл;
     - Многошаговый откат на любой предшествующий этап;
     - Возврат автору на доработку и последующее возобновление маршрута;
@@ -64,24 +65,180 @@ class DocFlowRoutingService:
         return signature_hash, certificate_id
 
     @classmethod
+    def create_dynamic_initial_route(
+        cls,
+        document: DocFlowDocument,
+        approver: Optional[DataBaseUser] = None,
+        division: Optional[Division] = None,
+        sla_hours: int = 24,
+    ) -> List[DocFlowRouteStep]:
+        """Создает первичный динамический этап согласования без жесткого шаблона.
+
+        Если согласующий не указан явно, пытается автоматически определить руководителя
+        подразделения автора (HEAD_OF_DEPARTMENT) либо назначает ответственного сотрудника.
+
+        Args:
+            document (DocFlowDocument): Документ СЭД.
+            approver (Optional[DataBaseUser]): Конкретно назначенный согласующий.
+            division (Optional[Division]): Подразделение визирования.
+            sla_hours (int): Нормативный срок на рассмотрение в часах. Defaults to 24.
+
+        Returns:
+            List[DocFlowRouteStep]: Список созданных шагов маршрута.
+        """
+        with transaction.atomic():
+            document.route_steps.all().delete()
+            target_user = approver
+            target_division = division
+
+            if not target_user and not target_division:
+                initiator = document.initiator
+                user_work_profile = getattr(initiator, "user_work_profile", None) if initiator else None
+                div = getattr(user_work_profile, "divisions", None) if user_work_profile else None
+                if div:
+                    target_division = div
+                    head = (
+                        DataBaseUser.objects.filter(
+                            user_work_profile__divisions=div,
+                            user_work_profile__job__right_to_approval=True,
+                            is_active=True,
+                        ).first()
+                        or DataBaseUser.objects.filter(
+                            user_work_profile__divisions=div,
+                            is_active=True,
+                            user_work_profile__job__name__icontains="начальник",
+                        ).first()
+                        or DataBaseUser.objects.filter(
+                            user_work_profile__divisions=div,
+                            is_active=True,
+                        ).first()
+                    )
+                    if head:
+                        target_user = head
+                else:
+                    target_user = document.responsible or document.initiator
+
+            step_name = (
+                f"Согласование: {target_user.title or target_user.get_full_name() or target_user.username}"
+                if target_user
+                else "Согласование руководителем"
+            )
+
+            step = DocFlowRouteStep.objects.create(
+                document=document,
+                step_order=1,
+                step_name=step_name,
+                step_type=DocFlowRouteStepTemplate.StepType.SEQUENTIAL,
+                assigned_user=target_user,
+                assigned_division=target_division,
+                status=DocFlowRouteStep.Status.PENDING,
+                sla_hours=sla_hours or 24,
+                can_rollback_to=True,
+                allow_reviewer_file_edit=True,
+            )
+            logger.info("Документ UUID %s: сформирован динамический 1-й шаг маршрута на %s", document.id, target_user or target_division)
+            return [step]
+
+    @classmethod
+    def add_ad_hoc_step(
+        cls,
+        document: DocFlowDocument,
+        step_name: str,
+        step_type: str = DocFlowRouteStepTemplate.StepType.SEQUENTIAL,
+        assigned_user: Optional[DataBaseUser] = None,
+        assigned_users: Optional[List[DataBaseUser]] = None,
+        assigned_division: Optional[Division] = None,
+        sla_hours: int = 24,
+        allow_reviewer_file_edit: bool = True,
+        can_rollback_to: bool = True,
+    ) -> DocFlowRouteStep:
+        """Добавляет произвольный этап в цепочку маршрута черновика документа.
+
+        Args:
+            document (DocFlowDocument): Карточка документа СЭД.
+            step_name (str): Наименование этапа.
+            step_type (str): Тип выполнения шага. Defaults to SEQUENTIAL.
+            assigned_user (Optional[DataBaseUser]): Персонально назначенный сотрудник.
+            assigned_users (Optional[List[DataBaseUser]]): Группа для параллельного визирования.
+            assigned_division (Optional[Division]): Назначенное подразделение.
+            sla_hours (int): Нормативный срок в часах. Defaults to 24.
+            allow_reviewer_file_edit (bool): Разрешить прикрепление файлов с правками. Defaults to True.
+            can_rollback_to (bool): Разрешить откат на данный шаг. Defaults to True.
+
+        Returns:
+            DocFlowRouteStep: Созданный шаг маршрута.
+        """
+        with transaction.atomic():
+            last_order = document.route_steps.order_by("-step_order").values_list("step_order", flat=True).first() or 0
+            new_order = last_order + 1
+            step = DocFlowRouteStep.objects.create(
+                document=document,
+                step_order=new_order,
+                step_name=step_name.strip() or f"Этап №{new_order}",
+                step_type=step_type,
+                assigned_user=assigned_user,
+                assigned_division=assigned_division,
+                status=DocFlowRouteStep.Status.PENDING,
+                sla_hours=sla_hours or 24,
+                allow_reviewer_file_edit=allow_reviewer_file_edit,
+                can_rollback_to=can_rollback_to,
+            )
+            if assigned_users:
+                step.assigned_users.set(assigned_users)
+            logger.info("Документ UUID %s: добавлен этап №%d «%s»", document.id, new_order, step.step_name)
+            return step
+
+    @classmethod
+    def remove_ad_hoc_step(cls, document: DocFlowDocument, step_id: int) -> bool:
+        """Удаляет шаг из маршрута черновика документа и перенумеровывает оставшиеся этапы.
+
+        Args:
+            document (DocFlowDocument): Карточка документа СЭД.
+            step_id (int): Идентификатор удаляемого шага.
+
+        Returns:
+            bool: True в случае успешного удаления.
+
+        Raises:
+            ValueError: Если документ не в статусе черновика или шаг уже запущен.
+        """
+        with transaction.atomic():
+            step = document.route_steps.filter(id=step_id).first()
+            if not step:
+                return False
+            if document.status not in [DocFlowDocument.Status.DRAFT, DocFlowDocument.Status.ON_REWORK] or step.status != DocFlowRouteStep.Status.PENDING:
+                raise ValueError("Удалять можно только ожидающие шаги в черновике или документе на доработке.")
+            step.delete()
+            remaining_steps = document.route_steps.order_by("step_order")
+            for idx, s in enumerate(remaining_steps, start=1):
+                if s.step_order != idx:
+                    s.step_order = idx
+                    s.save(update_fields=["step_order"])
+            return True
+
+    @classmethod
     def build_route_from_template(
         cls,
         document: DocFlowDocument,
         template_id: Optional[int] = None,
+        fallback_to_dynamic: bool = True,
     ) -> List[DocFlowRouteStep]:
         """Формирует цепочку шагов маршрута согласования документа из шаблона.
 
         Если template_id не передан, используется шаблон по умолчанию для doc_type документа.
+        Если шаблон не найден и fallback_to_dynamic=True, автоматически формируется
+        первичный динамический маршрут согласования.
 
         Args:
             document (DocFlowDocument): Карточка документа СЭД.
             template_id (Optional[int]): Идентификатор конкретного шаблона DocFlowRouteTemplate.
+            fallback_to_dynamic (bool): Создавать ли динамический маршрут при отсутствии шаблона. Defaults to True.
 
         Returns:
             List[DocFlowRouteStep]: Список созданных шагов маршрута.
 
         Raises:
-            ValueError: Если подходящий шаблон маршрута не найден.
+            ValueError: Если подходящий шаблон маршрута не найден и fallback_to_dynamic=False.
         """
         if template_id:
             template = DocFlowRouteTemplate.objects.filter(id=template_id).first()
@@ -94,6 +251,8 @@ class DocFlowRoutingService:
             ).first()
 
         if not template:
+            if fallback_to_dynamic:
+                return cls.create_dynamic_initial_route(document)
             raise ValueError(f"Шаблон маршрута для типа «{document.doc_type.name}» не найден.")
 
         with transaction.atomic():
@@ -165,6 +324,9 @@ class DocFlowRoutingService:
         cls,
         document: DocFlowDocument,
         user: DataBaseUser,
+        first_approver: Optional[DataBaseUser] = None,
+        first_division: Optional[Division] = None,
+        first_sla_hours: int = 24,
         ip_address: Optional[str] = None,
         user_agent: str = "",
     ) -> DocFlowDocument:
@@ -176,6 +338,9 @@ class DocFlowRoutingService:
         Args:
             document (DocFlowDocument): Запускаемый документ СЭД.
             user (DataBaseUser): Инициатор запуска процесса.
+            first_approver (Optional[DataBaseUser]): Конкретно выбранный согласующий 1-го этапа.
+            first_division (Optional[Division]): Подразделение 1-го этапа.
+            first_sla_hours (int): SLA 1-го этапа в часах. Defaults to 24.
             ip_address (Optional[str]): IP-адрес клиента. Defaults to None.
             user_agent (str): User-Agent браузера. Defaults to "".
 
@@ -201,9 +366,17 @@ class DocFlowRoutingService:
             if not doc_locked.reg_date:
                 doc_locked.reg_date = timezone.now().date()
 
-            # Если шаги маршрута еще не были созданы, строим из шаблона
+            # Если шаги маршрута еще не были созданы, создаем
             if not doc_locked.route_steps.exists():
-                cls.build_route_from_template(doc_locked)
+                if first_approver or first_division:
+                    cls.create_dynamic_initial_route(
+                        doc_locked,
+                        approver=first_approver,
+                        division=first_division,
+                        sla_hours=first_sla_hours,
+                    )
+                else:
+                    cls.build_route_from_template(doc_locked, fallback_to_dynamic=True)
 
             first_step = doc_locked.route_steps.order_by("step_order").first()
             if not first_step:
@@ -219,7 +392,8 @@ class DocFlowRoutingService:
             doc_locked.status = DocFlowDocument.Status.ON_APPROVAL
             doc_locked.current_step_order = first_step.step_order
             if not doc_locked.deadline:
-                doc_locked.deadline = timezone.now() + timedelta(hours=doc_locked.doc_type.default_sla_hours)
+                default_sla = doc_locked.doc_type.default_sla_hours if doc_locked.doc_type else 72
+                doc_locked.deadline = timezone.now() + timedelta(hours=default_sla)
             doc_locked.save()
 
             # Фиксируем запуск в журнале аудита
@@ -247,14 +421,21 @@ class DocFlowRoutingService:
         user: DataBaseUser,
         comment: str = "",
         is_minor_edit: bool = False,
+        next_step_action: str = "AUTO",
+        next_executor: Optional[DataBaseUser] = None,
+        next_executors: Optional[List[DataBaseUser]] = None,
+        next_division: Optional[Division] = None,
+        next_step_name: str = "",
+        next_sla_hours: int = 48,
+        next_step_instructions: str = "",
         ip_address: Optional[str] = None,
         user_agent: str = "",
     ) -> Dict[str, Any]:
         """Обрабатывает визирование (согласование) текущего активного этапа согласующим лицом.
 
-        Фиксирует электронную подпись ПЭП, проверяет условия завершения шага
-        (консенсус для параллельного «И» или одиночное решение), переводит документ
-        на следующий шаг либо присваивает итоговый статус APPROVED.
+        Фиксирует электронную подпись ПЭП, проверяет условия завершения шага,
+        переводит документ на следующий шаг (по шаблону или динамически назначенному исполнителю)
+        либо присваивает итоговый статус APPROVED.
 
         Args:
             document (DocFlowDocument): Согласуемый документ.
@@ -262,6 +443,13 @@ class DocFlowRoutingService:
             user (DataBaseUser): Согласующий сотрудник.
             comment (str): Комментарий / особое мнение. Defaults to "".
             is_minor_edit (bool): Флаг наличия редакционных правок. Defaults to False.
+            next_step_action (str): Действие после шага ('AUTO', 'ASSIGN_EXECUTOR', 'FINISH'). Defaults to 'AUTO'.
+            next_executor (Optional[DataBaseUser]): Назначенный исполнитель следующего этапа.
+            next_executors (Optional[List[DataBaseUser]]): Группа назначенных исполнителей.
+            next_division (Optional[Division]): Подразделение-исполнитель.
+            next_step_name (str): Название следующего этапа. Defaults to "".
+            next_sla_hours (int): Срок на исполнение в часах. Defaults to 48.
+            next_step_instructions (str): Текст поручения / резолюции исполнителю. Defaults to "".
             ip_address (Optional[str]): IP-адрес клиента. Defaults to None.
             user_agent (str): User-Agent браузера. Defaults to "".
 
@@ -296,13 +484,19 @@ class DocFlowRoutingService:
                 approved_count = step_locked.approved_users.count()
                 is_step_finished = approved_count >= assigned_count
 
+            # Формируем полный комментарий аудита с учетом поручения исполнителям
+            full_comment = comment.strip()
+            if next_step_instructions:
+                instruction_note = f"[Поручение исполнителю]: {next_step_instructions.strip()}"
+                full_comment = f"{full_comment}\n{instruction_note}".strip() if full_comment else instruction_note
+
             # Записываем действие в журнал аудита ПЭП
             DocFlowApprovalLog.objects.create(
                 document=doc_locked,
                 route_step=step_locked,
                 user=user,
                 action=action_type,
-                comment=comment,
+                comment=full_comment,
                 ip_address=ip_address,
                 user_agent=user_agent[:500] if user_agent else "",
                 pep_signature_hash=sig_hash,
@@ -314,40 +508,110 @@ class DocFlowRoutingService:
                 step_locked.completed_at = timezone.now()
                 step_locked.save()
 
-                # Ищем следующий шаг маршрута
-                next_step = doc_locked.route_steps.filter(
-                    step_order__gt=step_locked.step_order,
-                    status=DocFlowRouteStep.Status.PENDING,
-                ).order_by("step_order").first()
+                # Вариант 1: Согласующий явно назначил следующего исполнителя (ASSIGN_EXECUTOR)
+                if next_step_action == "ASSIGN_EXECUTOR" or next_executor or next_executors or next_division:
+                    next_step = doc_locked.route_steps.filter(
+                        step_order__gt=step_locked.step_order,
+                        status=DocFlowRouteStep.Status.PENDING,
+                    ).order_by("step_order").first()
 
-                if next_step:
-                    next_step.status = DocFlowRouteStep.Status.IN_PROGRESS
-                    next_step.started_at = timezone.now()
-                    next_step.due_date = timezone.now() + timedelta(hours=next_step.sla_hours)
-                    next_step.save()
+                    st_type = (
+                        DocFlowRouteStepTemplate.StepType.PARALLEL_AND
+                        if next_executors and len(next_executors) > 1
+                        else DocFlowRouteStepTemplate.StepType.SEQUENTIAL
+                    )
+                    st_name = next_step_name.strip() or "Исполнение служебной записки"
+                    sla = next_sla_hours or 48
+
+                    if next_step:
+                        # Обновляем существующий ожидающий шаг
+                        next_step.step_name = st_name
+                        next_step.step_type = st_type
+                        next_step.assigned_user = next_executor
+                        next_step.assigned_division = next_division
+                        next_step.sla_hours = sla
+                        next_step.status = DocFlowRouteStep.Status.IN_PROGRESS
+                        next_step.started_at = timezone.now()
+                        next_step.due_date = timezone.now() + timedelta(hours=sla)
+                        next_step.save()
+                        if next_executors:
+                            next_step.assigned_users.set(next_executors)
+                    else:
+                        # Динамически создаем новый шаг исполнения
+                        new_order = step_locked.step_order + 1
+                        next_step = DocFlowRouteStep.objects.create(
+                            document=doc_locked,
+                            step_order=new_order,
+                            step_name=st_name,
+                            step_type=st_type,
+                            assigned_user=next_executor,
+                            assigned_division=next_division,
+                            status=DocFlowRouteStep.Status.IN_PROGRESS,
+                            started_at=timezone.now(),
+                            due_date=timezone.now() + timedelta(hours=sla),
+                            sla_hours=sla,
+                            can_rollback_to=True,
+                            allow_reviewer_file_edit=True,
+                        )
+                        if next_executors:
+                            next_step.assigned_users.set(next_executors)
 
                     doc_locked.current_step_order = next_step.step_order
                     doc_locked.save(update_fields=["current_step_order", "updated_at"])
 
                     DocFlowNotificationService.notify_step_assigned(next_step)
-
                     logger.info(
-                        "Документ %s: этап №%d завершен, переход на этап №%d (%s)",
+                        "Документ %s: руководителем назначен этап №%d «%s» на исполнителя %s",
                         doc_locked.reg_number,
-                        step_locked.step_order,
                         next_step.step_order,
                         next_step.step_name,
+                        next_executor or next_executors or next_division,
                     )
                     return {"status": "next_step", "document": doc_locked, "next_step": next_step}
-                else:
-                    # Все этапы успешно пройдены — документ финализирован
+
+                # Вариант 2: Согласующий явно выбрал завершение согласования
+                elif next_step_action == "FINISH":
                     doc_locked.status = DocFlowDocument.Status.APPROVED
                     doc_locked.save(update_fields=["status", "updated_at"])
-
                     DocFlowNotificationService.notify_approval_complete(doc_locked)
-
-                    logger.info("Документ %s: согласование успешно завершено со статусом APPROVED", doc_locked.reg_number)
+                    logger.info("Документ %s: согласование принудительно финализировано руководителем (APPROVED)", doc_locked.reg_number)
                     return {"status": "completed", "document": doc_locked}
+
+                # Вариант 3: Штатный автоматический переход по очереди шагов
+                else:
+                    next_step = doc_locked.route_steps.filter(
+                        step_order__gt=step_locked.step_order,
+                        status=DocFlowRouteStep.Status.PENDING,
+                    ).order_by("step_order").first()
+
+                    if next_step:
+                        next_step.status = DocFlowRouteStep.Status.IN_PROGRESS
+                        next_step.started_at = timezone.now()
+                        next_step.due_date = timezone.now() + timedelta(hours=next_step.sla_hours)
+                        next_step.save()
+
+                        doc_locked.current_step_order = next_step.step_order
+                        doc_locked.save(update_fields=["current_step_order", "updated_at"])
+
+                        DocFlowNotificationService.notify_step_assigned(next_step)
+
+                        logger.info(
+                            "Документ %s: этап №%d завершен, переход на этап №%d (%s)",
+                            doc_locked.reg_number,
+                            step_locked.step_order,
+                            next_step.step_order,
+                            next_step.step_name,
+                        )
+                        return {"status": "next_step", "document": doc_locked, "next_step": next_step}
+                    else:
+                        # Все этапы успешно пройдены — документ финализирован
+                        doc_locked.status = DocFlowDocument.Status.APPROVED
+                        doc_locked.save(update_fields=["status", "updated_at"])
+
+                        DocFlowNotificationService.notify_approval_complete(doc_locked)
+
+                        logger.info("Документ %s: согласование успешно завершено со статусом APPROVED", doc_locked.reg_number)
+                        return {"status": "completed", "document": doc_locked}
             else:
                 step_locked.save()
                 logger.info(

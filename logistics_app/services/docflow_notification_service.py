@@ -208,7 +208,7 @@ class DocFlowNotificationService:
             greeting = f"Вам на согласование поступил документ <strong>«{doc_title}»</strong> (Этап: {step.step_name})."
 
         deadline_str = step.due_date.strftime("%d.%m.%Y %H:%M") if step.due_date else "Не установлен"
-        author_str = document.initiator.get_full_name() or document.initiator.username
+        author_str = document.initiator.title or document.initiator.get_full_name() or document.initiator.username
 
         rows = f"""
             <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -278,7 +278,7 @@ class DocFlowNotificationService:
 
         reg_num = document.reg_number or f"UUID:{str(document.id)[:8]}"
         subject = f"СЭД БАРКОЛ: Документ {reg_num} возвращен на доработку"
-        reviewer_name = reviewer.get_full_name() or reviewer.username
+        reviewer_name = reviewer.title or reviewer.get_full_name() or reviewer.username
 
         greeting = f"Документ <strong>«{document.title}»</strong> возвращен на доработку согласующим лицом <strong>{reviewer_name}</strong>."
 
@@ -396,7 +396,7 @@ class DocFlowNotificationService:
 
         reg_num = document.reg_number or f"UUID:{str(document.id)[:8]}"
         subject = f"СЭД БАРКОЛ: Документ {reg_num} отклонен"
-        reviewer_name = reviewer.get_full_name() or reviewer.username
+        reviewer_name = reviewer.title or reviewer.get_full_name() or reviewer.username
 
         greeting = f"Документ <strong>«{document.title}»</strong> был отклонен сотрудником <strong>{reviewer_name}</strong>."
 

@@ -110,13 +110,49 @@ WayBillInlineFormSet = inlineformset_factory(Package, WayBill, form=WayBillForm,
 # ==============================================================================
 
 class DocFlowDocumentForm(forms.ModelForm):
-    """Форма создания и редактирования учетной карточки документа СЭД."""
+    """Форма создания и редактирования учетной карточки документа СЭД.
 
+    Поддерживает как использование предопределенных шаблонов маршрутов,
+    так и динамическое формирование маршрута «на лету» с выбором согласующего лица.
+    """
+
+    route_mode = forms.ChoiceField(
+        choices=[
+            ("TEMPLATE", "По типовому маршруту (из справочника)"),
+            ("DYNAMIC", "Динамический маршрут (указать согласующего вручную)"),
+        ],
+        initial="TEMPLATE",
+        required=False,
+        label="Режим согласования",
+        widget=forms.RadioSelect(attrs={"class": "form-check-input"}),
+    )
+    first_approver = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name", "first_name"),
+        label="Согласующий руководитель / сотрудник",
+        required=False,
+        help_text="Выберите конкретного руководителя или согласующего для первого этапа.",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    first_approver_division = forms.ModelChoiceField(
+        queryset=Division.objects.all().order_by("name"),
+        label="Подразделение визирования",
+        required=False,
+        help_text="Оставьте пустым или выберите отдел, если визирует любое уполномоченное лицо отдела.",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    first_approver_sla = forms.IntegerField(
+        min_value=1,
+        initial=24,
+        required=False,
+        label="Срок рассмотрения (в часах)",
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+    )
     route_template = forms.ModelChoiceField(
         queryset=DocFlowRouteTemplate.objects.all(),
         label="Шаблон маршрута согласования",
         required=False,
         help_text="Выберите типовой маршрут или оставьте пустым для применения маршрута по умолчанию.",
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
     initial_file = forms.FileField(
         label="Основной файл документа",
@@ -153,21 +189,26 @@ class DocFlowDocumentForm(forms.ModelForm):
             "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }
 
-    def __init__(self, *args, **kwargs):
-        """Инициализация формы с настройкой виджетов."""
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Инициализация формы документа с автоматической стилизацией полей."""
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             make_custom_field(field)
 
 
 class DocFlowApprovalActionForm(forms.Form):
-    """Форма наложения визы согласования с Простой Электронной Подписью (ПЭП)."""
+    """Форма наложения визы согласования с Простой Электронной Подписью (ПЭП).
+
+    Позволяет согласующему лицу согласовать документ, наложить резолюцию,
+    а также динамически назначить следующего конкретного исполнителя (или группу)
+    для дальнейшей отработки документа.
+    """
 
     comment = forms.CharField(
         widget=forms.Textarea(attrs={
             "rows": 3,
             "class": "form-control",
-            "placeholder": "Комментарий / особое мнение (необязательно)",
+            "placeholder": "Комментарий / резолюция (необязательно)",
         }),
         required=False,
         label="Комментарий / Резолюция",
@@ -182,6 +223,109 @@ class DocFlowApprovalActionForm(forms.Form):
         initial=True,
         label="Подтверждаю наложение Простой Электронной Подписи (ПЭП) в СЭД АК «БАРКОЛ»",
     )
+
+    # Динамическая маршрутизация следующего этапа (Исполнение поручения)
+    next_step_action = forms.ChoiceField(
+        choices=[
+            ("AUTO", "По маршруту / Завершить (если завершающий этап)"),
+            ("ASSIGN_EXECUTOR", "Направить на исполнение сотруднику / группе"),
+            ("FINISH", "Завершить согласование (финализировать документ)"),
+        ],
+        initial="AUTO",
+        required=False,
+        label="Дальнейшее действие",
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_next_step_action"}),
+    )
+    next_executor = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name", "first_name"),
+        required=False,
+        label="Назначить исполнителя",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    next_executors = forms.ModelMultipleChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name", "first_name"),
+        required=False,
+        label="Назначить группу исполнителей (для совместного исполнения)",
+        widget=forms.SelectMultiple(attrs={"class": "form-select"}),
+    )
+    next_division = forms.ModelChoiceField(
+        queryset=Division.objects.all().order_by("name"),
+        required=False,
+        label="Назначить подразделение-исполнитель",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    next_step_name = forms.CharField(
+        max_length=255,
+        required=False,
+        initial="Исполнение служебной записки",
+        label="Наименование этапа исполнения",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    next_sla_hours = forms.IntegerField(
+        min_value=1,
+        required=False,
+        initial=48,
+        label="Срок на исполнение (в часах)",
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+    )
+    next_step_instructions = forms.CharField(
+        widget=forms.Textarea(attrs={
+            "rows": 3,
+            "class": "form-control",
+            "placeholder": "Опишите текст поручения / задачи исполнителям...",
+        }),
+        required=False,
+        label="Поручение / указания исполнителям",
+    )
+
+
+class DocFlowRouteStepForm(forms.ModelForm):
+    """Форма добавления и редактирования динамического этапа маршрута документа СЭД."""
+
+    assigned_user = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name", "first_name"),
+        required=False,
+        label="Назначенный сотрудник",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    assigned_users = forms.ModelMultipleChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name", "first_name"),
+        required=False,
+        label="Группа сотрудников (для параллельного)",
+        widget=forms.SelectMultiple(attrs={"class": "form-select"}),
+    )
+    assigned_division = forms.ModelChoiceField(
+        queryset=Division.objects.all().order_by("name"),
+        required=False,
+        label="Назначенное подразделение",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+    class Meta:
+        model = DocFlowRouteStep
+        fields = [
+            "step_name",
+            "step_type",
+            "assigned_user",
+            "assigned_users",
+            "assigned_division",
+            "sla_hours",
+            "can_rollback_to",
+            "allow_reviewer_file_edit",
+        ]
+        widgets = {
+            "step_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Например: Согласование руководителем"}),
+            "step_type": forms.Select(attrs={"class": "form-select"}),
+            "sla_hours": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "can_rollback_to": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "allow_reviewer_file_edit": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Инициализация формы этапа с кастомизацией полей."""
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class DocFlowRollbackActionForm(forms.Form):

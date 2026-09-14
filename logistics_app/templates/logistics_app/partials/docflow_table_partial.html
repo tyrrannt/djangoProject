@@ -48,7 +48,7 @@
                             {{ doc.title }}
                         </a>
                         <div class="small text-muted mt-1">
-                            <i class="bx bx-user me-1"></i>Автор: {{ doc.initiator.get_full_name|default:doc.initiator.username }}
+                            <i class="bx bx-user me-1"></i>Автор: {{ doc.initiator.title|default:doc.initiator.get_full_name|default:doc.initiator.username }}
                         </div>
                     </td>
 
@@ -82,7 +82,7 @@
                                 </div>
                                 <div class="text-muted" style="font-size: 0.75rem;">
                                     {% if active_step.assigned_user %}
-                                        {{ active_step.assigned_user.get_full_name|default:active_step.assigned_user.username }}
+                                        {{ active_step.assigned_user.title|default:active_step.assigned_user.get_full_name|default:active_step.assigned_user.username }}
                                     {% elif active_step.assigned_division %}
                                         {{ active_step.assigned_division.name }}
                                     {% else %}

@@ -223,6 +223,25 @@ class DocFlowSheetGenerator:
             textColor=colors.HexColor("#0f172a"),
         )
 
+        style_pep_header = ParagraphStyle(
+            "PepStampHeader",
+            parent=styles["Normal"],
+            fontName=font_bold,
+            fontSize=6.5,
+            leading=8,
+            textColor=colors.HexColor("#003366"),
+            alignment=1,
+        )
+
+        style_pep_body = ParagraphStyle(
+            "PepStampBody",
+            parent=styles["Normal"],
+            fontName=font_regular,
+            fontSize=5.5,
+            leading=7.2,
+            textColor=colors.HexColor("#0f172a"),
+        )
+
         story: List[Any] = []
 
         # 1. Шапка документа
@@ -238,8 +257,8 @@ class DocFlowSheetGenerator:
 
         counteragent_str = document.counteragent.name if document.counteragent else "Внутренний документ"
         deadline_str = document.deadline.strftime("%d.%m.%Y %H:%M") if document.deadline else "Не установлен"
-        initiator_name = document.initiator.get_full_name() or document.initiator.username
-        responsible_name = document.responsible.get_full_name() or document.responsible.username
+        initiator_name = document.initiator.title or document.initiator.get_full_name() or document.initiator.username
+        responsible_name = document.responsible.title or document.responsible.get_full_name() or document.responsible.username
 
         meta_data = [
             [
@@ -255,26 +274,27 @@ class DocFlowSheetGenerator:
                 Paragraph(document.get_status_display(), style_table_cell),
             ],
             [
+                Paragraph("<b>Контрагент:</b>", style_table_cell),
+                Paragraph(counteragent_str, style_table_cell),
+                Paragraph("<b>Дедлайн:</b>", style_table_cell),
+                Paragraph(deadline_str, style_table_cell),
+            ],
+            [
                 Paragraph("<b>Инициатор:</b>", style_table_cell),
                 Paragraph(initiator_name, style_table_cell),
                 Paragraph("<b>Ответственный:</b>", style_table_cell),
                 Paragraph(responsible_name, style_table_cell),
-            ],
-            [
-                Paragraph("<b>Контрагент:</b>", style_table_cell),
-                Paragraph(counteragent_str, style_table_cell),
-                Paragraph("<b>Срок исполнения:</b>", style_table_cell),
-                Paragraph(deadline_str, style_table_cell),
             ],
         ]
 
         meta_table = Table(meta_data, colWidths=[90, 165, 90, 165])
         meta_table.setStyle(
             TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f8fafc")),
+                ("BACKGROUND", (2, 0), (2, -1), colors.HexColor("#f8fafc")),
                 ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
                 ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("TOPPADDING", (0, 0), (-1, -1), 4),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                 ("LEFTPADDING", (0, 0), (-1, -1), 6),
@@ -315,7 +335,7 @@ class DocFlowSheetGenerator:
             ).order_by("-created_at").first()
 
             assignee_title = (
-                step.assigned_user.get_full_name()
+                (step.assigned_user.title or step.assigned_user.get_full_name() or step.assigned_user.username)
                 if step.assigned_user
                 else (step.assigned_division.name if step.assigned_division else "Группа согласующих")
             )
@@ -327,16 +347,32 @@ class DocFlowSheetGenerator:
             if step_log:
                 dt_str = step_log.created_at.strftime("%d.%m.%Y %H:%M:%S")
                 pep_id = step_log.pep_certificate_id or "ПЭП-ВАЛИДНА"
-                user_fio = step_log.user.get_full_name() or step_log.user.username
+                user_fio = step_log.user.title or step_log.user.get_full_name() or step_log.user.username
                 comment_txt = step_log.comment or "Согласовано без замечаний"
 
-                pep_text = (
-                    f"<b>ДОКУМЕНТ ПОДПИСАН ПЭП</b><br/>"
-                    f"Сертификат: {pep_id}<br/>"
-                    f"Владелец: {user_fio}<br/>"
-                    f"Дата: {dt_str}"
+                pep_stamp_table = Table(
+                    [
+                        [Paragraph("<b>ДОКУМЕНТ ПОДПИСАН<br/>ЭЛЕКТРОННОЙ ПОДПИСЬЮ</b>", style_pep_header)],
+                        [Paragraph(f"<b>Сертификат:</b> {pep_id}", style_pep_body)],
+                        [Paragraph(f"<b>Владелец:</b> {user_fio}", style_pep_body)],
+                        [Paragraph(f"<b>Дата подписи:</b> {dt_str}", style_pep_body)],
+                        [Paragraph("<b>Система:</b> СЭД АК «БАРКОЛ» (ПЭП)", style_pep_body)],
+                    ],
+                    colWidths=[120],
                 )
-                pep_content = Paragraph(pep_text, style_pep_box)
+                pep_stamp_table.setStyle(
+                    TableStyle([
+                        ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#004085")),
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0f7ff")),
+                        ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#b8daff")),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1.5),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ])
+                )
+                pep_content = pep_stamp_table
                 resolution = f"<b>{status_badge}</b><br/>{comment_txt}"
             else:
                 resolution = f"<i>{status_badge}</i>"
@@ -347,10 +383,10 @@ class DocFlowSheetGenerator:
                 Paragraph(assignee_title, style_table_cell),
                 Paragraph(resolution, style_table_cell),
                 Paragraph(dt_str, style_table_cell),
-                pep_content if isinstance(pep_content, Paragraph) else Paragraph(str(pep_content), style_table_cell),
+                pep_content if isinstance(pep_content, (Paragraph, Table)) else Paragraph(str(pep_content), style_table_cell),
             ])
 
-        approval_table = Table(approval_rows, colWidths=[20, 110, 100, 110, 70, 100])
+        approval_table = Table(approval_rows, colWidths=[18, 102, 95, 110, 60, 125])
         approval_table.setStyle(
             TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
@@ -382,7 +418,7 @@ class DocFlowSheetGenerator:
             for doc_file in files:
                 current_ver = doc_file.versions.order_by("-version_number").first()
                 if current_ver:
-                    u_name = current_ver.uploaded_by.get_full_name() if current_ver.uploaded_by else "—"
+                    u_name = (current_ver.uploaded_by.title or current_ver.uploaded_by.get_full_name()) if current_ver.uploaded_by else "—"
                     u_date = current_ver.uploaded_at.strftime("%d.%m.%Y %H:%M")
                     h_sha = current_ver.file_hash[:24] + "..." if current_ver.file_hash else "—"
 

@@ -11,7 +11,9 @@ from logistics_app.views import (
 )
 from logistics_app.views_docflow import (
     DocFlowAddCommentView,
+    DocFlowAddRouteStepView,
     DocFlowApproveStepView,
+    DocFlowDeleteRouteStepView,
     DocFlowDocumentCreateView,
     DocFlowDocumentDetailView,
     DocFlowDocumentListView,
@@ -19,6 +21,7 @@ from logistics_app.views_docflow import (
     DocFlowDocumentTypeDeleteView,
     DocFlowDocumentTypeListView,
     DocFlowDocumentTypeUpdateView,
+    DocFlowDocumentUpdateView,
     DocFlowRejectView,
     DocFlowRestartRouteView,
     DocFlowReturnReworkView,
@@ -48,7 +51,10 @@ urlpatterns = [
     path("docflow/", DocFlowDocumentListView.as_view(), name="docflow_list"),
     path("docflow/add/", DocFlowDocumentCreateView.as_view(), name="docflow_create"),
     path("docflow/<uuid:pk>/", DocFlowDocumentDetailView.as_view(), name="docflow_detail"),
+    path("docflow/<uuid:pk>/update/", DocFlowDocumentUpdateView.as_view(), name="docflow_update"),
     path("docflow/<uuid:pk>/start/", DocFlowStartApprovalView.as_view(), name="docflow_start"),
+    path("docflow/<uuid:pk>/step/add/", DocFlowAddRouteStepView.as_view(), name="docflow_step_add"),
+    path("docflow/<uuid:pk>/step/<int:step_id>/delete/", DocFlowDeleteRouteStepView.as_view(), name="docflow_step_delete"),
     path("docflow/<uuid:pk>/approve/", DocFlowApproveStepView.as_view(), name="docflow_approve_step"),
     path("docflow/<uuid:pk>/rollback/", DocFlowRollbackStepView.as_view(), name="docflow_rollback_step"),
     path("docflow/<uuid:pk>/rework/", DocFlowReturnReworkView.as_view(), name="docflow_return_rework"),

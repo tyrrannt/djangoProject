@@ -53,15 +53,24 @@
     <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к реестру">
-                    <i class="bx bx-arrow-back"></i>
-                </a>
-                <h2 class="h4 font-weight-bold text-dark mb-0">
-                    <i class="bx bx-file me-2 text-primary"></i>Создание документа СЭД
-                </h2>
+                {% if form.instance.pk %}
+                    <a href="{% url 'logistics_app:docflow_detail' form.instance.pk %}" class="btn btn-sm btn-outline-secondary" title="Назад к карточке">
+                        <i class="bx bx-arrow-back"></i>
+                    </a>
+                    <h2 class="h4 font-weight-bold text-dark mb-0">
+                        <i class="bx bx-edit me-2 text-primary"></i>Редактирование документа {{ form.instance.reg_number|default:"Черновик" }}
+                    </h2>
+                {% else %}
+                    <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к реестру">
+                        <i class="bx bx-arrow-back"></i>
+                    </a>
+                    <h2 class="h4 font-weight-bold text-dark mb-0">
+                        <i class="bx bx-file me-2 text-primary"></i>Создание документа СЭД
+                    </h2>
+                {% endif %}
             </div>
             <p class="text-muted small mb-0 d-none d-md-block">
-                Заполните реквизиты, прикрепите проект документа и выберите маршрут согласования
+                Заполните реквизиты, прикрепите проект документа и выберите типовой или динамический маршрут согласования
             </p>
         </div>
     </header>
@@ -79,7 +88,7 @@
         {% endif %}
 
         <div class="row g-3">
-            <!-- Left Card: Core Data & Route -->
+            <!-- Left Card: Core Data & Content -->
             <div class="col-12 col-lg-8">
                 <div class="card form-card shadow-sm mb-3">
                     <div class="card-body p-3 p-md-4">
@@ -147,10 +156,20 @@
                             <i class="bx bx-paperclip me-1 text-primary"></i>2. Прикрепление проекта документа
                         </div>
 
+                        {% if form.instance.main_file %}
+                            <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <i class="bx bx-file me-1"></i>
+                                    <strong>Текущий файл:</strong> {{ form.instance.main_file.title }} (версия {{ form.instance.main_file.current_version_number }})
+                                </div>
+                                <span class="badge bg-primary">Загрузка нового файла создаст новую версию</span>
+                            </div>
+                        {% endif %}
+
                         <div class="row g-3 mb-3">
                             <div class="col-12 col-md-6">
                                 <label class="form-label fw-semibold" for="{{ form.initial_file.id_for_label }}">
-                                    {{ form.initial_file.label }}
+                                    {% if form.instance.pk %}Загрузить новую версию файла{% else %}{{ form.initial_file.label }}{% endif %}
                                 </label>
                                 {{ form.initial_file }}
                                 {% if form.initial_file.help_text %}
@@ -190,7 +209,7 @@
                 </div>
             </div>
 
-            <!-- Right Card: Counteragent, Route & Relations -->
+            <!-- Right Card: Route & Relations -->
             <div class="col-12 col-lg-4">
                 <div class="card form-card shadow-sm mb-3">
                     <div class="card-body p-3 p-md-4">
@@ -200,6 +219,21 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label fw-semibold mb-1">Режим маршрутизации</label>
+                            <div class="p-2 border rounded bg-light mb-2">
+                                {% for choice in form.route_mode %}
+                                    <div class="form-check mb-1">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 1. Блок типового маршрута -->
+                        <div id="templateRouteBlock" class="mb-3">
                             <label class="form-label fw-semibold" for="{{ form.route_template.id_for_label }}">
                                 {{ form.route_template.label }}
                             </label>
@@ -210,6 +244,42 @@
                             {% if form.route_template.errors %}
                                 <div class="error-feedback">{{ form.route_template.errors.0 }}</div>
                             {% endif %}
+                        </div>
+
+                        <!-- 2. Блок динамического маршрута -->
+                        <div id="dynamicRouteBlock" class="mb-3 p-3 border rounded border-primary bg-white" style="display: none;">
+                            <h6 class="fw-bold text-primary mb-2" style="font-size: 0.88rem;">
+                                <i class="bx bx-user-pin me-1"></i>Первый согласующий (Руководитель)
+                            </h6>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold" for="{{ form.first_approver.id_for_label }}">
+                                    {{ form.first_approver.label }}
+                                </label>
+                                {{ form.first_approver }}
+                                {% if form.first_approver.help_text %}
+                                    <div class="form-text small text-muted" style="font-size: 0.75rem;">{{ form.first_approver.help_text }}</div>
+                                {% endif %}
+                                {% if form.first_approver.errors %}
+                                    <div class="error-feedback">{{ form.first_approver.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold" for="{{ form.first_approver_division.id_for_label }}">
+                                    {{ form.first_approver_division.label }}
+                                </label>
+                                {{ form.first_approver_division }}
+                                {% if form.first_approver_division.help_text %}
+                                    <div class="form-text small text-muted" style="font-size: 0.75rem;">{{ form.first_approver_division.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-1">
+                                <label class="form-label small fw-semibold" for="{{ form.first_approver_sla.id_for_label }}">
+                                    {{ form.first_approver_sla.label }}
+                                </label>
+                                {{ form.first_approver_sla }}
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -289,12 +359,18 @@
         <!-- Sticky Action Toolbar at Bottom -->
         <div class="card form-card shadow-sm p-3 mt-2">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-outline-secondary btn-touch">
-                    <i class="bx bx-x me-1"></i>Отмена
-                </a>
+                {% if form.instance.pk %}
+                    <a href="{% url 'logistics_app:docflow_detail' form.instance.pk %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-x me-1"></i>Отмена
+                    </a>
+                {% else %}
+                    <a href="{% url 'logistics_app:docflow_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-x me-1"></i>Отмена
+                    </a>
+                {% endif %}
                 <div class="d-flex gap-2">
                     <button type="submit" name="form_action" value="draft" class="btn btn-outline-primary btn-touch">
-                        <i class="bx bx-save me-1"></i>Сохранить черновик
+                        <i class="bx bx-save me-1"></i>{% if form.instance.pk %}Сохранить изменения{% else %}Сохранить черновик{% endif %}
                     </button>
                     <button type="submit" name="form_action" value="start" class="btn btn-primary btn-touch">
                         <i class="bx bx-paper-plane me-1"></i>Сохранить и запустить согласование
@@ -304,4 +380,35 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const modeRadios = document.querySelectorAll('input[name="route_mode"]');
+        const templateBlock = document.getElementById("templateRouteBlock");
+        const dynamicBlock = document.getElementById("dynamicRouteBlock");
+
+        function updateRouteVisibility() {
+            let selectedMode = "TEMPLATE";
+            modeRadios.forEach(radio => {
+                if (radio.checked) {
+                    selectedMode = radio.value;
+                }
+            });
+
+            if (selectedMode === "DYNAMIC") {
+                templateBlock.style.display = "none";
+                dynamicBlock.style.display = "block";
+            } else {
+                templateBlock.style.display = "block";
+                dynamicBlock.style.display = "none";
+            }
+        }
+
+        modeRadios.forEach(radio => {
+            radio.addEventListener("change", updateRouteVisibility);
+        });
+
+        updateRouteVisibility();
+    });
+</script>
 {% endblock %}

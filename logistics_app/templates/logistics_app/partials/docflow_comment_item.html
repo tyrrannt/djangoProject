@@ -13,7 +13,7 @@
     <div class="flex-grow-1">
         <div class="d-flex justify-content-between align-items-center mb-1">
             <div>
-                <strong class="text-dark">{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                <strong class="text-dark">{{ comment.author.title|default:comment.author.get_full_name|default:comment.author.username }}</strong>
                 {% if comment.author.user_work_profile.divisions %}
                     <span class="text-muted small ms-2">({{ comment.author.user_work_profile.divisions.name }})</span>
                 {% endif %}
@@ -30,7 +30,7 @@
         <!-- Reply Button -->
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary reply-btn"
-                    onclick="setCommentParent('{{ comment.id }}', '{{ comment.author.get_full_name|default:comment.author.username }}')">
+                    onclick="setCommentParent('{{ comment.id }}', '{{ comment.author.title|default:comment.author.get_full_name|default:comment.author.username }}')">
                 <i class="bx bx-reply me-1"></i>Ответить
             </button>
         </div>
@@ -46,7 +46,7 @@
                         </div>
                         <div class="flex-grow-1">
                             <div class="d-flex justify-content-between align-items-center">
-                                <strong class="small text-dark">{{ reply.author.get_full_name|default:reply.author.username }}</strong>
+                                <strong class="small text-dark">{{ reply.author.title|default:reply.author.get_full_name|default:reply.author.username }}</strong>
                                 <span class="text-muted small">{{ reply.created_at|date:"d.m.Y H:i" }}</span>
                             </div>
                             <div class="reply-text text-secondary small" style="white-space: pre-wrap;">

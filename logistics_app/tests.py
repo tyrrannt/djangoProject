@@ -241,3 +241,128 @@ class DocFlowServicesTestCase(TestCase):
         count = check_docflow_sla_deadlines_task()
         self.assertIsInstance(count, int)
 
+    def test_dynamic_initial_route_without_template(self) -> None:
+        """Проверка динамического создания первичного маршрута без шаблона."""
+        # Создаем документ с типом, для которого нет шаблонов
+        doc_type_no_tpl = DocFlowDocumentType.objects.create(
+            name="Служебная записка без шаблона",
+            code="MEMO_NO_TPL",
+            category=DocFlowDocumentType.Category.INTERNAL,
+        )
+        doc = DocFlowDocument.objects.create(
+            doc_type=doc_type_no_tpl,
+            title="Заявка на доступ к сервису",
+            initiator=self.initiator,
+            status=DocFlowDocument.Status.DRAFT,
+        )
+
+        # 1. Запуск с явным указанием согласующего руководителя
+        steps = DocFlowRoutingService.create_dynamic_initial_route(
+            document=doc,
+            approver=self.reviewer_1,
+            sla_hours=24,
+        )
+        self.assertEqual(len(steps), 1)
+        self.assertEqual(steps[0].assigned_user, self.reviewer_1)
+        self.assertEqual(steps[0].step_order, 1)
+
+        # 2. Запуск процесса согласования
+        started_doc = DocFlowRoutingService.start_approval_process(
+            document=doc,
+            user=self.initiator,
+            first_approver=self.reviewer_1,
+        )
+        self.assertEqual(started_doc.status, DocFlowDocument.Status.ON_APPROVAL)
+        first_step = started_doc.route_steps.get(step_order=1)
+        self.assertEqual(first_step.status, DocFlowRouteStep.Status.IN_PROGRESS)
+
+    def test_ad_hoc_step_add_and_delete(self) -> None:
+        """Проверка добавления и удаления произвольных этапов в черновике."""
+        doc = DocFlowDocument.objects.create(
+            doc_type=self.doc_type,
+            title="Служебная записка о закупке",
+            initiator=self.initiator,
+            status=DocFlowDocument.Status.DRAFT,
+        )
+
+        step_1 = DocFlowRoutingService.add_ad_hoc_step(
+            document=doc,
+            step_name="Визирование начальником отдела",
+            assigned_user=self.reviewer_1,
+            sla_hours=24,
+        )
+        self.assertEqual(step_1.step_order, 1)
+
+        step_2 = DocFlowRoutingService.add_ad_hoc_step(
+            document=doc,
+            step_name="Исполнение отделом закупок",
+            assigned_user=self.reviewer_2,
+            sla_hours=48,
+        )
+        self.assertEqual(step_2.step_order, 2)
+        self.assertEqual(doc.route_steps.count(), 2)
+
+        # Удаление шага
+        deleted = DocFlowRoutingService.remove_ad_hoc_step(doc, step_id=step_1.id)
+        self.assertTrue(deleted)
+        self.assertEqual(doc.route_steps.count(), 1)
+        remaining_step = doc.route_steps.first()
+        self.assertEqual(remaining_step.step_order, 1)
+
+    def test_dynamic_executor_assignment_on_approval(self) -> None:
+        """Проверка назначения исполнителя руководителем в момент согласования."""
+        doc = DocFlowDocument.objects.create(
+            doc_type=self.doc_type,
+            title="Служебная записка с динамическим назначением",
+            initiator=self.initiator,
+            status=DocFlowDocument.Status.DRAFT,
+        )
+
+        # Создаем 1-й шаг на руководителя
+        DocFlowRoutingService.create_dynamic_initial_route(
+            document=doc,
+            approver=self.reviewer_1,
+            sla_hours=24,
+        )
+        DocFlowRoutingService.start_approval_process(document=doc, user=self.initiator)
+
+        step_1 = doc.route_steps.get(step_order=1)
+        self.assertEqual(step_1.status, DocFlowRouteStep.Status.IN_PROGRESS)
+
+        # Руководитель визирует и назначает исполнителя reviewer_2
+        res = DocFlowRoutingService.process_approval(
+            document=doc,
+            step=step_1,
+            user=self.reviewer_1,
+            comment="Согласовано. Направить на исполнение.",
+            next_step_action="ASSIGN_EXECUTOR",
+            next_executor=self.reviewer_2,
+            next_step_name="Исполнение задачи",
+            next_sla_hours=48,
+            next_step_instructions="Предоставить доступ до конца недели",
+        )
+
+        self.assertEqual(res["status"], "next_step")
+        step_1.refresh_from_db()
+        self.assertEqual(step_1.status, DocFlowRouteStep.Status.APPROVED)
+
+        # Проверяем, что автоматически создался и активировался Шаг 2 на reviewer_2
+        step_2 = doc.route_steps.get(step_order=2)
+        self.assertEqual(step_2.assigned_user, self.reviewer_2)
+        self.assertEqual(step_2.step_name, "Исполнение задачи")
+        self.assertEqual(step_2.status, DocFlowRouteStep.Status.IN_PROGRESS)
+
+        # Исполнитель завершает задачу
+        res_2 = DocFlowRoutingService.process_approval(
+            document=doc,
+            step=step_2,
+            user=self.reviewer_2,
+            comment="Задача выполнена, доступ предоставлен.",
+            next_step_action="AUTO",
+        )
+        self.assertEqual(res_2["status"], "completed")
+
+        doc.refresh_from_db()
+        self.assertEqual(doc.status, DocFlowDocument.Status.APPROVED)
+
+

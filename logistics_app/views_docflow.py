@@ -1,7 +1,7 @@
 """Контроллеры представлений подсистемы электронного документооборота (СЭД) logistics_app."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -24,6 +24,7 @@ from logistics_app.forms import (
     DocFlowFileUploadForm,
     DocFlowReworkActionForm,
     DocFlowRollbackActionForm,
+    DocFlowRouteStepForm,
     DocFlowRouteStepTemplateForm,
     DocFlowRouteStepTemplateFormSet,
     DocFlowRouteTemplateForm,
@@ -214,11 +215,28 @@ class DocFlowDocumentCreateView(LoginRequiredMixin, CreateView):
                 user_agent=self.request.META.get("HTTP_USER_AGENT", ""),
             )
 
-        # Формирование цепочки маршрута из шаблона
+        # Формирование цепочки маршрута (динамический выбор или типовой шаблон)
+        route_mode = form.cleaned_data.get("route_mode", "TEMPLATE")
+        first_approver = form.cleaned_data.get("first_approver")
+        first_approver_division = form.cleaned_data.get("first_approver_division")
+        first_approver_sla = form.cleaned_data.get("first_approver_sla") or 24
         route_template = form.cleaned_data.get("route_template")
-        template_id = route_template.id if route_template else None
+
         try:
-            DocFlowRoutingService.build_route_from_template(document, template_id=template_id)
+            if route_mode == "DYNAMIC" or first_approver or first_approver_division:
+                DocFlowRoutingService.create_dynamic_initial_route(
+                    document=document,
+                    approver=first_approver,
+                    division=first_approver_division,
+                    sla_hours=first_approver_sla,
+                )
+            else:
+                template_id = route_template.id if route_template else None
+                DocFlowRoutingService.build_route_from_template(
+                    document=document,
+                    template_id=template_id,
+                    fallback_to_dynamic=True,
+                )
         except Exception as exc:
             logger.warning("Не удалось автоматически построить маршрут для документа %s: %s", document.id, exc)
 
@@ -228,6 +246,9 @@ class DocFlowDocumentCreateView(LoginRequiredMixin, CreateView):
                 DocFlowRoutingService.start_approval_process(
                     document=document,
                     user=self.request.user,
+                    first_approver=first_approver,
+                    first_division=first_approver_division,
+                    first_sla_hours=first_approver_sla,
                     ip_address=get_client_ip(self.request),
                     user_agent=self.request.META.get("HTTP_USER_AGENT", ""),
                 )
@@ -236,6 +257,117 @@ class DocFlowDocumentCreateView(LoginRequiredMixin, CreateView):
                 messages.error(self.request, f"Документ сохранен как черновик, но запуск согласования не удался: {exc}")
         else:
             messages.success(self.request, "Карточка документа успешно сохранена в виде черновика.")
+
+        return redirect("logistics_app:docflow_detail", pk=document.pk)
+
+
+class DocFlowDocumentUpdateView(LoginRequiredMixin, UpdateView):
+    """Редактирование карточки документа СЭД в статусе Черновика или На доработке.
+
+    Предоставляет возможность автору или ответственному корректировать тему,
+    содержание, реквизиты, заменять файл проекта и изменять согласующих лиц.
+    """
+
+    model = DocFlowDocument
+    form_class = DocFlowDocumentForm
+    template_name = "logistics_app/docflow_form.html"
+
+    def get_object(self, queryset: Optional[QuerySet[DocFlowDocument]] = None) -> DocFlowDocument:
+        """Получает документ и проверяет права доступа на редактирование."""
+        obj = super().get_object(queryset)
+        user = self.request.user
+        if not (user == obj.initiator or user == obj.responsible or user.is_superuser):
+            raise PermissionDenied("Редактирование карточки документа доступно только автору или ответственному.")
+        if obj.status not in [DocFlowDocument.Status.DRAFT, DocFlowDocument.Status.ON_REWORK]:
+            raise PermissionDenied("Редактировать можно только документы в статусе «Черновик» или «На доработке».")
+        return obj
+
+    def get_initial(self) -> Dict[str, Any]:
+        """Предзаполняет начальные значения формы при редактировании."""
+        initial = super().get_initial()
+        first_step = self.object.route_steps.filter(step_order=1).first()
+        if first_step:
+            if first_step.assigned_user:
+                initial["first_approver"] = first_step.assigned_user
+            if first_step.assigned_division:
+                initial["first_approver_division"] = first_step.assigned_division
+            initial["first_approver_sla"] = first_step.sla_hours
+        return initial
+
+    def form_valid(self, form: DocFlowDocumentForm) -> HttpResponse:
+        """Сохраняет изменения, прикрепляет новую версию файла и обновляет маршрут при необходимости."""
+        document = form.save()
+
+        # Обработка загрузки обновленного файла
+        initial_file = form.cleaned_data.get("initial_file")
+        if initial_file:
+            main_file = document.main_file
+            if main_file:
+                DocFlowVersionService.upload_new_file_version(
+                    doc_file=main_file,
+                    file_obj=initial_file,
+                    user=self.request.user,
+                    comment="Обновленный файл при редактировании карточки документа",
+                    ip_address=get_client_ip(self.request),
+                    user_agent=self.request.META.get("HTTP_USER_AGENT", ""),
+                )
+            else:
+                file_title = form.cleaned_data.get("initial_file_title") or initial_file.name
+                doc_file = DocFlowFile.objects.create(
+                    document=document,
+                    title=file_title,
+                    is_main=True,
+                    current_version_number="1.0",
+                )
+                DocFlowVersionService.upload_new_file_version(
+                    doc_file=doc_file,
+                    file_obj=initial_file,
+                    user=self.request.user,
+                    comment="Исходная редакция документа",
+                    version_number="1.0",
+                    ip_address=get_client_ip(self.request),
+                    user_agent=self.request.META.get("HTTP_USER_AGENT", ""),
+                )
+
+        # Обновление маршрута если статус черновика и согласование не запущено
+        route_mode = form.cleaned_data.get("route_mode", "TEMPLATE")
+        first_approver = form.cleaned_data.get("first_approver")
+        first_approver_division = form.cleaned_data.get("first_approver_division")
+        first_approver_sla = form.cleaned_data.get("first_approver_sla") or 24
+        route_template = form.cleaned_data.get("route_template")
+
+        if document.status == DocFlowDocument.Status.DRAFT and not document.route_steps.filter(status=DocFlowRouteStep.Status.IN_PROGRESS).exists():
+            if route_mode == "DYNAMIC" or first_approver or first_approver_division:
+                DocFlowRoutingService.create_dynamic_initial_route(
+                    document=document,
+                    approver=first_approver,
+                    division=first_approver_division,
+                    sla_hours=first_approver_sla,
+                )
+            elif route_template:
+                DocFlowRoutingService.build_route_from_template(
+                    document=document,
+                    template_id=route_template.id,
+                    fallback_to_dynamic=True,
+                )
+
+        # Если нажата кнопка «Сохранить и запустить согласование»
+        if self.request.POST.get("form_action") == "start":
+            try:
+                DocFlowRoutingService.start_approval_process(
+                    document=document,
+                    user=self.request.user,
+                    first_approver=first_approver,
+                    first_division=first_approver_division,
+                    first_sla_hours=first_approver_sla,
+                    ip_address=get_client_ip(self.request),
+                    user_agent=self.request.META.get("HTTP_USER_AGENT", ""),
+                )
+                messages.success(self.request, f"Документ {document.reg_number} успешно сохранен и запущен на согласование!")
+            except Exception as exc:
+                messages.error(self.request, f"Документ сохранен, но запуск согласования не удался: {exc}")
+        else:
+            messages.success(self.request, "Изменения карточки документа успешно сохранены.")
 
         return redirect("logistics_app:docflow_detail", pk=document.pk)
 
@@ -327,6 +459,7 @@ class DocFlowDocumentDetailView(LoginRequiredMixin, DetailView):
         context["rework_form"] = DocFlowReworkActionForm()
         context["file_upload_form"] = DocFlowFileUploadForm()
         context["comment_form"] = DocFlowCommentForm()
+        context["add_step_form"] = DocFlowRouteStepForm()
 
         return context
 
@@ -358,7 +491,6 @@ class DocFlowDocumentDetailView(LoginRequiredMixin, DetailView):
         return self.render_to_response(context)
 
 
-
 class DocFlowStartApprovalView(LoginRequiredMixin, View):
     """Обработчик запуска процесса согласования документа."""
 
@@ -387,7 +519,7 @@ class DocFlowApproveStepView(LoginRequiredMixin, View):
     """Обработчик наложения визы согласования согласующим лицом."""
 
     def post(self, request: HttpRequest, pk: Any) -> HttpResponse:
-        """Наложение визы."""
+        """Наложение визы и возможное динамическое назначение исполнителей следующего шага."""
         doc = get_object_or_404(DocFlowDocument, pk=pk)
         active_step = doc.route_steps.filter(status=DocFlowRouteStep.Status.IN_PROGRESS).first()
 
@@ -399,6 +531,13 @@ class DocFlowApproveStepView(LoginRequiredMixin, View):
         if form.is_valid():
             comment = form.cleaned_data.get("comment", "")
             is_minor_edit = form.cleaned_data.get("is_minor_edit", False)
+            next_step_action = form.cleaned_data.get("next_step_action") or "AUTO"
+            next_executor = form.cleaned_data.get("next_executor")
+            next_executors = list(form.cleaned_data.get("next_executors") or [])
+            next_division = form.cleaned_data.get("next_division")
+            next_step_name = form.cleaned_data.get("next_step_name") or ""
+            next_sla_hours = form.cleaned_data.get("next_sla_hours") or 48
+            next_step_instructions = form.cleaned_data.get("next_step_instructions") or ""
 
             try:
                 result = DocFlowRoutingService.process_approval(
@@ -407,11 +546,18 @@ class DocFlowApproveStepView(LoginRequiredMixin, View):
                     user=request.user,
                     comment=comment,
                     is_minor_edit=is_minor_edit,
+                    next_step_action=next_step_action,
+                    next_executor=next_executor,
+                    next_executors=next_executors,
+                    next_division=next_division,
+                    next_step_name=next_step_name,
+                    next_sla_hours=next_sla_hours,
+                    next_step_instructions=next_step_instructions,
                     ip_address=get_client_ip(request),
                     user_agent=request.META.get("HTTP_USER_AGENT", ""),
                 )
                 if result.get("status") == "completed":
-                    messages.success(request, "Документ успешно согласован всеми инстанциями!")
+                    messages.success(request, "Документ успешно согласован и финализирован!")
                 elif result.get("status") == "next_step":
                     messages.success(request, f"Ваша виза успешно наложена. Документ перешел на этап «{result['next_step'].step_name}».")
                 else:
@@ -419,7 +565,63 @@ class DocFlowApproveStepView(LoginRequiredMixin, View):
             except Exception as exc:
                 messages.error(request, f"Ошибка наложения визы: {exc}")
         else:
-            messages.error(request, "Пожалуйста, подтвердите наложение ПЭП.")
+            messages.error(request, f"Пожалуйста, проверьте форму: {form.errors}")
+
+        return redirect("logistics_app:docflow_detail", pk=pk)
+
+
+class DocFlowAddRouteStepView(LoginRequiredMixin, View):
+    """Добавление произвольного (ad-hoc) этапа в маршрут черновика документа."""
+
+    def post(self, request: HttpRequest, pk: Any) -> HttpResponse:
+        """Обрабатывает POST-запрос добавления этапа маршрута."""
+        doc = get_object_or_404(DocFlowDocument, pk=pk)
+        if doc.initiator != request.user and doc.responsible != request.user and not request.user.is_superuser:
+            raise PermissionDenied("Добавление этапов доступно только автору или ответственному за документ.")
+        if doc.status not in [DocFlowDocument.Status.DRAFT, DocFlowDocument.Status.ON_REWORK]:
+            messages.error(request, "Добавлять этапы можно только в черновике или документе на доработке.")
+            return redirect("logistics_app:docflow_detail", pk=pk)
+
+        form = DocFlowRouteStepForm(request.POST)
+        if form.is_valid():
+            try:
+                DocFlowRoutingService.add_ad_hoc_step(
+                    document=doc,
+                    step_name=form.cleaned_data.get("step_name"),
+                    step_type=form.cleaned_data.get("step_type"),
+                    assigned_user=form.cleaned_data.get("assigned_user"),
+                    assigned_users=list(form.cleaned_data.get("assigned_users") or []),
+                    assigned_division=form.cleaned_data.get("assigned_division"),
+                    sla_hours=form.cleaned_data.get("sla_hours") or 24,
+                    allow_reviewer_file_edit=form.cleaned_data.get("allow_reviewer_file_edit", True),
+                    can_rollback_to=form.cleaned_data.get("can_rollback_to", True),
+                )
+                messages.success(request, f"Этап «{form.cleaned_data.get('step_name')}» успешно добавлен в маршрут!")
+            except Exception as exc:
+                messages.error(request, f"Ошибка добавления этапа: {exc}")
+        else:
+            messages.error(request, f"Ошибка валидации данных шага: {form.errors}")
+
+        return redirect("logistics_app:docflow_detail", pk=pk)
+
+
+class DocFlowDeleteRouteStepView(LoginRequiredMixin, View):
+    """Удаление шага из цепочки маршрута черновика документа."""
+
+    def post(self, request: HttpRequest, pk: Any, step_id: int) -> HttpResponse:
+        """Обрабатывает POST-запрос удаления шага."""
+        doc = get_object_or_404(DocFlowDocument, pk=pk)
+        if doc.initiator != request.user and doc.responsible != request.user and not request.user.is_superuser:
+            raise PermissionDenied("Удаление этапов доступно только автору или ответственному за документ.")
+
+        try:
+            success = DocFlowRoutingService.remove_ad_hoc_step(doc, step_id=step_id)
+            if success:
+                messages.success(request, "Этап маршрута успешно удален.")
+            else:
+                messages.error(request, "Указанный этап не найден.")
+        except Exception as exc:
+            messages.error(request, f"Ошибка удаления этапа: {exc}")
 
         return redirect("logistics_app:docflow_detail", pk=pk)
 
