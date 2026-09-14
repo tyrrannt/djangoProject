@@ -160,21 +160,22 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Руководитель (Сотрудник) <span class="text-danger">*</span></label>
-                        <select class="form-select" id="assignLeaderEmployeeSelect" required>
-                            <option value="">-- Выберите сотрудника --</option>
-                        </select>
-                        <div class="form-text">Даже если на должности числится несколько человек, выберите ответственное лицо.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Должность руководителя</label>
+                        <label class="form-label fw-bold"><i class="fas fa-briefcase text-primary me-1"></i> Должность руководителя</label>
                         <select class="form-select" id="assignLeaderJobSelect">
-                            <option value="">-- Должность по умолчанию --</option>
+                            <option value="">-- Все должности / Должность по умолчанию --</option>
                             {% for j in jobs %}
                                 <option value="{{ j.id }}">{{ j.name }}</option>
                             {% endfor %}
                         </select>
+                        <div class="form-text">При выборе должности список сотрудников автоматически фильтруется.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-user-check text-primary me-1"></i> Руководитель (Сотрудник) <span class="text-danger">*</span></label>
+                        <select class="form-select" id="assignLeaderEmployeeSelect" required>
+                            <option value="">-- Выберите сотрудника --</option>
+                        </select>
+                        <div class="form-text">Выберите ответственное лицо (включая и.о. или назначенных приказом).</div>
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -395,26 +396,6 @@
                     nodeHistory: (nodeId) => `{% url 'customers_app:api_org_structure_assign_leader' %}`.replace('assign-leader/', `${nodeId}/history/`)
                 }
             });
-
-            // Заполнение селектора сотрудников
-            function populateEmployeeSelect(users) {
-                const empSelect = document.getElementById('assignLeaderEmployeeSelect');
-                if (!empSelect) return;
-                empSelect.innerHTML = '<option value="">-- Выберите сотрудника --</option>';
-                users.forEach(u => {
-                    const name = u.title || `${u.last_name || ''} ${u.first_name || ''} (${u.username})`;
-                    empSelect.innerHTML += `<option value="${u.id}">${name}</option>`;
-                });
-            }
-
-            // Наблюдаем за загрузкой данных
-            const origLoadData = builder.loadData.bind(builder);
-            builder.loadData = async function(sid, d) {
-                await origLoadData(sid, d);
-                if (builder.data && builder.data.users) {
-                    populateEmployeeSelect(builder.data.users);
-                }
-            };
 
             // Кнопки добавления из палитры
             document.querySelectorAll('.btn-quick-add').forEach(btn => {

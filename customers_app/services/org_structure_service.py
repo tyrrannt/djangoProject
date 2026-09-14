@@ -240,10 +240,13 @@ class OrgStructureService:
                     "id": leader_rec.id,
                     "employee_id": leader_rec.employee_id,
                     "employee_name": leader_rec.employee.title or leader_rec.employee.get_full_name(),
+                    "job_id": leader_rec.job_id or node.head_job_id,
                     "job_name": leader_rec.job.name if leader_rec.job else (node.head_job.name if node.head_job else ""),
                     "date_from": leader_rec.date_from.strftime("%d.%m.%Y") if leader_rec.date_from else "",
                     "date_to": leader_rec.date_to.strftime("%d.%m.%Y") if leader_rec.date_to else "",
                     "is_current": leader_rec.is_current,
+                    "order_number": leader_rec.order_number or "",
+                    "comment": leader_rec.comment or "",
                 }
 
             nodes_data.append({
@@ -266,11 +269,29 @@ class OrgStructureService:
 
         all_divisions = list(Division.objects.values("id", "name", "code").order_by("name"))
         all_jobs = list(Job.objects.values("id", "name", "code").order_by("name"))
-        all_users = list(
+        all_users = []
+        for u in (
             DataBaseUser.objects.filter(is_active=True)
-            .values("id", "username", "last_name", "first_name", "title")
-            .order_by("last_name")
-        )
+            .select_related("user_work_profile__job", "user_work_profile__divisions")
+            .order_by("last_name", "first_name")
+        ):
+            work_prof = getattr(u, "user_work_profile", None)
+            job_id = work_prof.job_id if work_prof and work_prof.job_id else None
+            job_name = work_prof.job.name if work_prof and work_prof.job else ""
+            division_id = work_prof.divisions_id if work_prof and work_prof.divisions_id else None
+            division_name = work_prof.divisions.name if work_prof and work_prof.divisions else ""
+
+            all_users.append({
+                "id": u.id,
+                "username": u.username,
+                "last_name": u.last_name or "",
+                "first_name": u.first_name or "",
+                "title": u.title or u.get_full_name() or u.username,
+                "job_id": job_id,
+                "job_name": job_name,
+                "division_id": division_id,
+                "division_name": division_name,
+            })
 
         all_structures = list(
             OrgStructure.objects.values(
