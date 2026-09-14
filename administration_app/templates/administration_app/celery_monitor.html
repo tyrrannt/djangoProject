@@ -1,0 +1,1235 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title|default:"Управление и мониторинг задач Celery" }} // Администрирование
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target-size: 44px;
+        --sed-brand-navy: #002b49;
+        --sed-accent-sky: #0284c7;
+        --sed-accent-hover: #0369a1;
+        --bg-slate-50: #f8fafc;
+        --border-slate-200: #e2e8f0;
+    }
+
+    .btn-touch {
+        min-height: var(--touch-target-size);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+
+    .celery-kpi-card {
+        background: #ffffff;
+        border: 1px solid var(--border-slate-200);
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        height: 100%;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .celery-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 43, 73, 0.08);
+    }
+
+    .celery-kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--border-slate-200);
+    }
+
+    .celery-kpi-card.kpi-navy::before { background: var(--sed-brand-navy); }
+    .celery-kpi-card.kpi-sky::before { background: var(--sed-accent-sky); }
+    .celery-kpi-card.kpi-emerald::before { background: #10b981; }
+    .celery-kpi-card.kpi-amber::before { background: #f59e0b; }
+    .celery-kpi-card.kpi-rose::before { background: #ef4444; }
+
+    .live-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+    }
+
+    .live-dot.online {
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-green 2s infinite;
+    }
+
+    .live-dot.offline {
+        background-color: #ef4444;
+    }
+
+    .live-dot.connecting {
+        background-color: #f59e0b;
+        animation: pulse-amber 1.5s infinite;
+    }
+
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    @keyframes pulse-amber {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    .nav-tabs-modern {
+        border-bottom: 2px solid var(--border-slate-200);
+        gap: 6px;
+    }
+
+    .nav-tabs-modern .nav-link {
+        border: none;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 18px;
+        font-weight: 600;
+        color: #64748b;
+        background: transparent;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .nav-tabs-modern .nav-link:hover {
+        color: var(--sed-brand-navy);
+        background: #f1f5f9;
+    }
+
+    .nav-tabs-modern .nav-link.active {
+        color: var(--sed-brand-navy);
+        background: #ffffff;
+        border-bottom: 3px solid var(--sed-accent-sky);
+        font-weight: 700;
+    }
+
+    .traceback-container {
+        background: #0f172a;
+        color: #f8fafc;
+        border-radius: 8px;
+        padding: 14px;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        max-height: 380px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        border: 1px solid #334155;
+    }
+
+    .badge-status-running {
+        background-color: #0284c7;
+        color: #ffffff;
+        animation: pulse-sky 2s infinite;
+    }
+
+    @keyframes pulse-sky {
+        0% { opacity: 0.9; }
+        50% { opacity: 1; }
+        100% { opacity: 0.9; }
+    }
+
+    .workload-hour-box {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 4px;
+        background: #f8fafc;
+        border: 1px solid var(--border-slate-200);
+        border-radius: 6px;
+        min-width: 42px;
+        font-size: 0.75rem;
+    }
+
+    .workload-hour-box.has-tasks {
+        background: #e0f2fe;
+        border-color: #7dd3fc;
+        font-weight: 700;
+        color: #0369a1;
+    }
+
+    .toast-container-custom {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 1090;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'administration_app:monitoring' %}" class="btn btn-sm btn-outline-secondary" title="К мониторингу сервера">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-task text-primary me-2"></i>{{ title|default:"Управление и мониторинг задач Celery" }}
+                </h2>
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">Инспекция очередей Redis, периодических задач Beat, активных процессов и журнал выполнения в реальном времени</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span id="wsStatusBadge" class="badge bg-light text-dark border px-3 py-2 d-inline-flex align-items-center">
+                <span class="live-dot connecting"></span> Подключение...
+            </span>
+
+            <button type="button" class="btn btn-primary btn-touch shadow-sm" onclick="openTaskRunModal()">
+                <i class="bx bx-play-circle me-1"></i>
+                <span>Запустить задачу</span>
+            </button>
+
+            <button type="button" class="btn btn-outline-secondary btn-touch" onclick="pingWorkers()" title="Проверить отклик воркеров (Ping)">
+                <i class="bx bx-radar me-1"></i>
+                <span class="d-none d-sm-inline">Пинг воркеров</span>
+            </button>
+
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-touch dropdown-toggle" type="button" id="adminMoreActions" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-dots-vertical-rounded"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="adminMoreActions">
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'administration_app:monitoring' %}">
+                            <i class="bx bx-pulse text-primary"></i> Мониторинг сервера
+                        </a>
+                    </li>
+                    {% if user.is_superuser %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'administration_app:web_terminal' %}">
+                                <i class="bx bx-terminal text-dark"></i> Веб-терминал сервера
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item text-danger d-flex align-items-center gap-2" onclick="openPurgeModal()">
+                                <i class="bx bx-trash"></i> Очистить очередь брокера
+                            </button>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- 4 KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Workers -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="celery-kpi-card kpi-navy">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small font-weight-bold text-uppercase">Воркеры Celery</span>
+                    <div class="p-2 rounded bg-light text-primary">
+                        <i class="bx bx-server fs-5"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h3 class="h3 font-weight-bold text-dark mb-0" id="kpiWorkersOnline">
+                        {{ initial_data.kpi.workers_online|default:"0" }}
+                    </h3>
+                    <span class="text-muted small">из {{ initial_data.kpi.workers_total|default:"0" }} воркеров</span>
+                </div>
+                <div class="mt-2 small" id="kpiWorkersStatus">
+                    {% if initial_data.kpi.is_workers_alive %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bx bx-check-circle me-1"></i>Воркеры активны</span>
+                    {% else %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bx bx-x-circle me-1"></i>Воркеры оффлайн</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Active Tasks -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="celery-kpi-card kpi-sky">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small font-weight-bold text-uppercase">Активные задачи</span>
+                    <div class="p-2 rounded bg-light text-info">
+                        <i class="bx bx-loader-alt fs-5"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h3 class="h3 font-weight-bold text-dark mb-0" id="kpiActiveTasks">
+                        {{ initial_data.kpi.active_tasks_count|default:"0" }}
+                    </h3>
+                    <span class="text-muted small">в процессе</span>
+                </div>
+                <div class="mt-2 small text-muted" id="kpiActiveSummary">
+                    Выполняются прямо сейчас
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Broker Queues -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="celery-kpi-card kpi-amber">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small font-weight-bold text-uppercase">Очередь Redis</span>
+                    <div class="p-2 rounded bg-light text-warning">
+                        <i class="bx bx-layer fs-5"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h3 class="h3 font-weight-bold text-dark mb-0" id="kpiQueueLength">
+                        {{ initial_data.kpi.redis_queue_length|default:"0" }}
+                    </h3>
+                    <span class="text-muted small">сообщений в очереди</span>
+                </div>
+                <div class="mt-2 small text-muted" id="kpiBrokerMemory">
+                    Память Redis: <strong>{{ initial_data.redis_stats.used_memory_human|default:"—" }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Beat & History -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="celery-kpi-card kpi-emerald">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small font-weight-bold text-uppercase">Расписание Beat</span>
+                    <div class="p-2 rounded bg-light text-success">
+                        <i class="bx bx-calendar-event fs-5"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h3 class="h3 font-weight-bold text-dark mb-0" id="kpiBeatTotal">
+                        {{ initial_data.kpi.beat_tasks_total|default:"0" }}
+                    </h3>
+                    <span class="text-muted small">периодических задач</span>
+                </div>
+                <div class="mt-2 small d-flex gap-2">
+                    <span class="text-success"><i class="bx bx-check me-1"></i><strong id="kpiSuccessCount">{{ initial_data.kpi.history_success_count|default:"0" }}</strong> ок</span>
+                    <span class="text-danger"><i class="bx bx-x me-1"></i><strong id="kpiFailureCount">{{ initial_data.kpi.history_failure_count|default:"0" }}</strong> ошибок</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <div class="card-header bg-white p-2 border-bottom">
+            <ul class="nav nav-tabs nav-tabs-modern" id="celeryMonitorTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-active-btn" data-bs-toggle="tab" data-bs-target="#tab-active" type="button" role="tab" aria-controls="tab-active" aria-selected="true">
+                        <i class="bx bx-bolt-circle text-primary"></i>
+                        <span>Активные задачи (Live)</span>
+                        <span class="badge bg-primary text-white rounded-pill ms-1" id="tabBadgeActive">{{ initial_data.active_tasks|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-beat-btn" data-bs-toggle="tab" data-bs-target="#tab-beat" type="button" role="tab" aria-controls="tab-beat" aria-selected="false">
+                        <i class="bx bx-calendar-check text-success"></i>
+                        <span>Расписание Celery Beat</span>
+                        <span class="badge bg-light text-dark border rounded-pill ms-1" id="tabBadgeBeat">{{ initial_data.beat_schedule|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-history-btn" data-bs-toggle="tab" data-bs-target="#tab-history" type="button" role="tab" aria-controls="tab-history" aria-selected="false">
+                        <i class="bx bx-history text-secondary"></i>
+                        <span>История и ошибки</span>
+                        <span class="badge bg-light text-dark border rounded-pill ms-1" id="tabBadgeHistory">{{ initial_data.history|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-workers-btn" data-bs-toggle="tab" data-bs-target="#tab-workers" type="button" role="tab" aria-controls="tab-workers" aria-selected="false">
+                        <i class="bx bx-server text-warning"></i>
+                        <span>Воркеры и Redis</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-analytics-btn" data-bs-toggle="tab" data-bs-target="#tab-analytics" type="button" role="tab" aria-controls="tab-analytics" aria-selected="false">
+                        <i class="bx bx-line-chart text-info"></i>
+                        <span>Нагрузка и аналитика</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-3 p-md-4">
+            <div class="tab-content" id="celeryMonitorTabContent">
+
+                <!-- 1. TAB: Active Tasks (Live) -->
+                <div class="tab-pane fade show active" id="tab-active" role="tabpanel" aria-labelledby="tab-active-btn">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="h6 font-weight-bold text-dark mb-0">Выполняющиеся задачи прямо сейчас</h5>
+                            <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchActiveTasks" class="form-control form-control-sm" placeholder="Поиск активных задач..." style="max-width: 250px;">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="activeTasksTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 28%;">Задача / Назначение</th>
+                                    <th style="width: 22%;">Task ID</th>
+                                    <th style="width: 18%;">Воркер</th>
+                                    <th style="width: 14%;">Время старта</th>
+                                    <th style="width: 10%;">Длительность</th>
+                                    <th style="width: 8%;" class="text-center">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeTasksTbody">
+                                {% if initial_data.active_tasks %}
+                                    {% for t in initial_data.active_tasks %}
+                                        <tr data-task-id="{{ t.id }}" data-start-ts="{{ t.time_start_ts }}">
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="{{ t.icon|default:'bx bx-task' }} text-primary fs-5"></i>
+                                                    <div>
+                                                        <strong class="text-dark d-block">{{ t.title }}</strong>
+                                                        <small class="text-muted font-monospace">{{ t.name }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="font-monospace text-muted small d-inline-flex align-items-center gap-1">
+                                                    {{ t.id }}
+                                                    <button class="btn btn-sm btn-link p-0 text-muted" onclick="copyToClipboard('{{ t.id }}')" title="Скопировать ID">
+                                                        <i class="bx bx-copy"></i>
+                                                    </button>
+                                                </span>
+                                            </td>
+                                            <td><span class="badge bg-light text-dark border">{{ t.worker }}</span></td>
+                                            <td><span class="font-monospace small">{{ t.time_start_iso }}</span></td>
+                                            <td><span class="badge bg-primary text-white font-monospace runtime-ticker">{{ t.runtime_sec }}s</span></td>
+                                            <td class="text-center">
+                                                <button class="btn btn-sm btn-outline-danger btn-touch" onclick="revokeTask('{{ t.id }}')" title="Прервать выполнение задачи">
+                                                    <i class="bx bx-stop-circle me-1"></i> Снять
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr id="noActiveTasksRow">
+                                        <td colspan="6" class="text-center py-5 text-muted">
+                                            <i class="bx bx-check-double fs-1 text-success d-block mb-2"></i>
+                                            <h6 class="font-weight-bold">В данный момент активных задач нет</h6>
+                                            <p class="small mb-0">Все воркеры свободны и ожидают поступления заданий из очередей</p>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. TAB: Celery Beat Schedule -->
+                <div class="tab-pane fade" id="tab-beat" role="tabpanel" aria-labelledby="tab-beat-btn">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h5 class="h6 font-weight-bold text-dark mb-0">Каталог периодических cron-задач (Celery Beat)</h5>
+                            <small class="text-muted">Задачи автоматически выполняются по системному графику</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchBeatTasks" class="form-control form-control-sm" placeholder="Поиск по названию/модулю..." style="max-width: 250px;">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="beatTasksTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 32%;">Наименование / Назначение</th>
+                                    <th style="width: 14%;">Категория</th>
+                                    <th style="width: 18%;">Расписание</th>
+                                    <th style="width: 18%;">Следующий запуск</th>
+                                    <th style="width: 18%;" class="text-center">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="beatTasksTbody">
+                                {% for item in initial_data.beat_schedule %}
+                                    <tr data-search="{{ item.title }} {{ item.task_name }} {{ item.category }}">
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="p-2 rounded bg-light text-primary">
+                                                    <i class="{{ item.icon|default:'bx bx-task' }} fs-5"></i>
+                                                </div>
+                                                <div>
+                                                    <strong class="text-dark d-block">{{ item.title }}</strong>
+                                                    <small class="text-muted d-block">{{ item.description }}</small>
+                                                    <small class="text-muted font-monospace opacity-75">{{ item.task_name }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">{{ item.category }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-weight-bold">
+                                                <i class="bx bx-time-five me-1"></i>{{ item.schedule_human }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                <div class="font-monospace text-dark">{{ item.next_run_iso|default:"—" }}</div>
+                                                <small class="text-muted">{{ item.countdown }}</small>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <button class="btn btn-sm btn-primary btn-touch font-weight-bold" onclick="quickRunTask('{{ item.task_name }}', this)" title="Запустить немедленно со стандартными параметрами">
+                                                    <i class="bx bx-play me-1"></i> Запустить
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary btn-touch" onclick="openTaskRunModal('{{ item.task_name }}')" title="Запуск с кастомными аргументами JSON">
+                                                    <i class="bx bx-slider"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. TAB: History & Errors -->
+                <div class="tab-pane fade" id="tab-history" role="tabpanel" aria-labelledby="tab-history-btn">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h5 class="h6 font-weight-bold text-dark mb-0">Журнал завершенных задач и ошибок</h5>
+                            <small class="text-muted">История выполнения из Redis Result Backend</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <select id="filterHistoryStatus" class="form-select form-select-sm" style="max-width: 160px;">
+                                <option value="ALL">Все статусы</option>
+                                <option value="SUCCESS">Только успешные</option>
+                                <option value="FAILURE">Только ошибки</option>
+                                <option value="REVOKED">Отмененные</option>
+                            </select>
+                            <input type="text" id="searchHistoryTasks" class="form-control form-control-sm" placeholder="Поиск по ID/названию..." style="max-width: 200px;">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="historyTasksTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 12%;" class="text-center">Статус</th>
+                                    <th style="width: 25%;">Задача</th>
+                                    <th style="width: 22%;">Task ID</th>
+                                    <th style="width: 15%;">Дата завершения</th>
+                                    <th style="width: 16%;">Результат / Ошибка</th>
+                                    <th style="width: 10%;" class="text-center">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTasksTbody">
+                                {% if initial_data.history %}
+                                    {% for h in initial_data.history %}
+                                        <tr data-status="{{ h.status }}" data-search="{{ h.task_id }} {{ h.title }} {{ h.task_name }}">
+                                            <td class="text-center">
+                                                {% if h.status == 'SUCCESS' %}
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                        <i class="bx bx-check-circle me-1"></i>SUCCESS
+                                                    </span>
+                                                {% elif h.status == 'FAILURE' %}
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                                        <i class="bx bx-x-circle me-1"></i>FAILURE
+                                                    </span>
+                                                {% elif h.status == 'REVOKED' %}
+                                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                                        <i class="bx bx-block me-1"></i>REVOKED
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-light text-dark border px-2 py-1">{{ h.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong class="text-dark d-block">{{ h.title }}</strong>
+                                                <small class="text-muted font-monospace">{{ h.task_name|default:h.task_id }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="font-monospace small text-muted">{{ h.task_id }}</span>
+                                            </td>
+                                            <td><span class="small font-monospace">{{ h.date_done|default:"—" }}</span></td>
+                                            <td>
+                                                <small class="text-truncate d-inline-block font-monospace {% if h.status == 'FAILURE' %}text-danger font-weight-bold{% else %}text-muted{% endif %}" style="max-width: 220px;" title="{{ h.result_preview }}">
+                                                    {{ h.result_preview|default:"—" }}
+                                                </small>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="d-flex justify-content-center gap-1">
+                                                    <button class="btn btn-sm btn-outline-primary btn-touch" onclick="openTaskDetailModal('{{ h.task_id }}')" title="Подробный инспектор задачи и Traceback">
+                                                        <i class="bx bx-search-alt-2"></i>
+                                                    </button>
+                                                    {% if h.task_name %}
+                                                        <button class="btn btn-sm btn-outline-secondary btn-touch" onclick="quickRunTask('{{ h.task_name }}', this)" title="Повторить запуск задачи">
+                                                            <i class="bx bx-refresh"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5 text-muted">
+                                            <i class="bx bx-history fs-1 d-block mb-2"></i>
+                                            История выполнения задач пока пуста в Result Backend
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. TAB: Workers & Redis -->
+                <div class="tab-pane fade" id="tab-workers" role="tabpanel" aria-labelledby="tab-workers-btn">
+                    <div class="row g-4">
+                        <div class="col-12 col-lg-7">
+                            <h5 class="h6 font-weight-bold text-dark mb-3">Запущенные воркеры Celery</h5>
+                            <div id="workersCardsContainer" class="d-flex flex-column gap-3">
+                                {% if initial_data.workers %}
+                                    {% for w in initial_data.workers %}
+                                        <div class="p-3 border rounded bg-white shadow-sm">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="font-weight-bold text-dark mb-1">
+                                                        <i class="bx bx-server text-primary me-1"></i>{{ w.name }}
+                                                    </h6>
+                                                    <span class="badge {% if w.online %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
+                                                        {% if w.online %}ONLINE{% else %}OFFLINE{% endif %}
+                                                    </span>
+                                                </div>
+                                                <span class="badge bg-light text-dark border font-monospace">PID: {{ w.pid|default:"—" }}</span>
+                                            </div>
+                                            <div class="row g-2 mt-2 pt-2 border-top small">
+                                                <div class="col-6 col-md-4">
+                                                    <span class="text-muted d-block">Concurrency:</span>
+                                                    <strong>{{ w.concurrency }} потоков</strong>
+                                                </div>
+                                                <div class="col-6 col-md-4">
+                                                    <span class="text-muted d-block">Выполняется сейчас:</span>
+                                                    <strong class="text-primary">{{ w.active_tasks_count }} задач</strong>
+                                                </div>
+                                                <div class="col-6 col-md-4">
+                                                    <span class="text-muted d-block">Обработано всего:</span>
+                                                    <strong>{{ w.total_processed_tasks }}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="bx bx-error me-2"></i>Нет доступных запущенных воркеров Celery. Убедитесь, что служба <code>celery.service</code> активна.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-5">
+                            <h5 class="h6 font-weight-bold text-dark mb-3">Параметры брокера Redis</h5>
+                            <div class="p-3 border rounded bg-light shadow-sm">
+                                <ul class="list-group list-group-flush bg-transparent small">
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                        <span>Статус подключения:</span>
+                                        {% if initial_data.redis_stats.connected %}
+                                            <span class="badge bg-success">Подключен</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Ошибка</span>
+                                        {% endif %}
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                        <span>Хост брокера:</span>
+                                        <span class="font-monospace text-dark">{{ initial_data.redis_stats.host }}</span>
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                        <span>Используемая память Redis:</span>
+                                        <strong>{{ initial_data.redis_stats.used_memory_human }}</strong>
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                        <span>Активных клиентов:</span>
+                                        <span>{{ initial_data.redis_stats.connected_clients }}</span>
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                        <span>Основная очередь (celery):</span>
+                                        <strong class="text-primary">{{ initial_data.redis_stats.default_queue_length }}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. TAB: Analytics & Timeline -->
+                <div class="tab-pane fade" id="tab-analytics" role="tabpanel" aria-labelledby="tab-analytics-btn">
+                    <h5 class="h6 font-weight-bold text-dark mb-2">Распределение регулярных задач по часам суток (24h Matrix)</h5>
+                    <p class="text-muted small mb-4">Помогает оценить пиковые интервалы планировщика и избежать взаимных задержек тяжелых задач</p>
+
+                    <div class="d-flex flex-wrap gap-2 mb-4 p-3 bg-light rounded border">
+                        {% for item in initial_data.hourly_workload %}
+                            <div class="workload-hour-box {% if item.count > 0 %}has-tasks{% endif %}">
+                                <span>{{ item.hour }}</span>
+                                <strong>{{ item.count }}</strong>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="border rounded p-3 bg-white">
+                        <h6 class="font-weight-bold text-dark mb-2"><i class="bx bx-info-circle text-primary me-1"></i>Рекомендации по балансировке очереди:</h6>
+                        <ul class="text-muted small mb-0 ps-3">
+                            <li>Тяжелые синхронизации 1С рекомендуется разносить по времени с интервалом не менее 10 минут.</li>
+                            <li>Периодические проверки (например, e-mail и Telegram) используют отдельные неблокирующие корутины.</li>
+                            <li>При пиковых нагрузках на CPU рекомендуется масштабировать количество worker-процессов.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================== -->
+<!-- MODAL 1: Run Task with Parameters -->
+<!-- ============================================================================== -->
+<div class="modal fade" id="modalRunTask" tabindex="-1" aria-labelledby="modalRunTaskLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold text-dark" id="modalRunTaskLabel">
+                    <i class="bx bx-play-circle text-primary me-2"></i>Запуск задачи с параметрами
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formRunTask">
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-dark" for="taskSelect">Выберите задачу <span class="text-danger">*</span></label>
+                        <select id="taskSelect" class="form-select form-control-modern">
+                            {% for item in initial_data.beat_schedule %}
+                                <option value="{{ item.task_name }}">{{ item.title }} ({{ item.task_name }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-dark" for="taskArgsInput">
+                            Позиционные аргументы (Args в формате JSON List)
+                        </label>
+                        <textarea id="taskArgsInput" class="form-control font-monospace" rows="2" placeholder="[] (например, [2026, 1])">[]</textarea>
+                        <small class="text-muted">Указываются в виде валидного JSON-массива.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-dark" for="taskKwargsInput">
+                            Именованные аргументы (Kwargs в формате JSON Object)
+                        </label>
+                        <textarea id="taskKwargsInput" class="form-control font-monospace" rows="3" placeholder="{} (например, {&quot;dry_run&quot;: true})">{}</textarea>
+                        <small class="text-muted">Указываются в виде валидного JSON-объекта.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary btn-touch" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary btn-touch font-weight-bold" id="btnSubmitRunTask" onclick="submitRunTask()">
+                    <i class="bx bx-play me-1"></i> Поставить в очередь
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================== -->
+<!-- MODAL 2: Task Deep Inspector & Traceback -->
+<!-- ============================================================================== -->
+<div class="modal fade" id="modalTaskDetail" tabindex="-1" aria-labelledby="modalTaskDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold text-dark" id="modalTaskDetailLabel">
+                    <i class="bx bx-search-alt text-primary me-2"></i>Инспектор задачи и Traceback
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-4" id="taskDetailBody">
+                <div class="text-center py-4 text-muted">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2">Загрузка сведений о задаче...</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-touch" data-bs-dismiss="modal">Закрыть</button>
+                <div class="d-flex gap-2" id="taskDetailFooterActions"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================== -->
+<!-- MODAL 3: Purge Queue Confirmation -->
+<!-- ============================================================================== -->
+<div class="modal fade" id="modalPurgeConfirm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="bx bx-error me-2"></i>Подтверждение очистки очереди
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-dark">Вы действительно хотите сбросить все ожидающие задачи из очереди брокера Celery?</p>
+                <div class="alert alert-warning mb-0 small">
+                    <i class="bx bx-info-circle me-1"></i> Это действие удалит все задачи, находящиеся в очереди ожидания, но не прервет уже исполняющиеся воркерами задачи.
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary btn-touch" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger btn-touch font-weight-bold" onclick="submitPurgeQueue()">
+                    <i class="bx bx-trash me-1"></i> Очистить очередь
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container toast-container-custom" id="toastPlacement"></div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    // CSRF Helper
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    // Toast Notification System
+    function showToast(message, type) {
+        type = type || 'info';
+        var bgClass = 'bg-primary text-white';
+        var icon = 'bx bx-info-circle';
+        if (type === 'success') { bgClass = 'bg-success text-white'; icon = 'bx bx-check-circle'; }
+        if (type === 'danger' || type === 'error') { bgClass = 'bg-danger text-white'; icon = 'bx bx-x-circle'; }
+        if (type === 'warning') { bgClass = 'bg-warning text-dark'; icon = 'bx bx-error'; }
+
+        var toastId = 'toast_' + Date.now();
+        var html = '<div id="' + toastId + '" class="toast align-items-center ' + bgClass + ' border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="d-flex">' +
+            '<div class="toast-body d-flex align-items-center gap-2">' +
+            '<i class="' + icon + ' fs-5"></i><span>' + message + '</span>' +
+            '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '</div></div>';
+
+        $('#toastPlacement').append(html);
+        var toastEl = document.getElementById(toastId);
+        var toast = new bootstrap.Toast(toastEl, { delay: 4500 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', function () { toastEl.remove(); });
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            showToast('ID скопирован в буфер: ' + text, 'info');
+        });
+    }
+
+    // =========================================================================
+    // WebSocket Real-time Connection
+    // =========================================================================
+    var ws = null;
+    var reconnectTimer = null;
+
+    function initWebSocket() {
+        var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var wsUrl = protocol + window.location.host + '/ws/celery_monitor/';
+
+        var badge = document.getElementById('wsStatusBadge');
+        if (badge) {
+            badge.innerHTML = '<span class="live-dot connecting"></span> Подключение...';
+        }
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = function() {
+            console.log('[CeleryMonitor] WebSocket подключен.');
+            if (badge) {
+                badge.innerHTML = '<span class="live-dot online"></span> Онлайн (Live WebSocket)';
+            }
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+        };
+
+        ws.onmessage = function(event) {
+            try {
+                var payload = JSON.parse(event.data);
+                updateDashboard(payload);
+            } catch (err) {
+                console.error('[CeleryMonitor] Ошибка парсинга payload:', err);
+            }
+        };
+
+        ws.onclose = function(e) {
+            console.warn('[CeleryMonitor] WebSocket закрыт. Переподключение через 4 сек...', e.reason);
+            if (badge) {
+                badge.innerHTML = '<span class="live-dot offline"></span> Оффлайн (Переподключение)';
+            }
+            if (!reconnectTimer) {
+                reconnectTimer = setTimeout(initWebSocket, 4000);
+            }
+        };
+
+        ws.onerror = function(err) {
+            console.error('[CeleryMonitor] WebSocket ошибка:', err);
+            ws.close();
+        };
+    }
+
+    // =========================================================================
+    // Dashboard Telemetry Updater
+    // =========================================================================
+    function updateDashboard(data) {
+        if (!data) return;
+
+        // KPI
+        if (data.kpi) {
+            $('#kpiWorkersOnline').text(data.kpi.workers_online || 0);
+            $('#kpiActiveTasks').text(data.kpi.active_tasks_count || 0);
+            $('#kpiQueueLength').text(data.kpi.redis_queue_length || 0);
+            $('#kpiBeatTotal').text(data.kpi.beat_tasks_total || 0);
+            $('#kpiSuccessCount').text(data.kpi.history_success_count || 0);
+            $('#kpiFailureCount').text(data.kpi.history_failure_count || 0);
+
+            $('#tabBadgeActive').text(data.kpi.active_tasks_count || 0);
+            $('#tabBadgeHistory').text((data.history && data.history.length) || 0);
+
+            if (data.kpi.is_workers_alive) {
+                $('#kpiWorkersStatus').html('<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bx bx-check-circle me-1"></i>Воркеры активны</span>');
+            } else {
+                $('#kpiWorkersStatus').html('<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bx bx-x-circle me-1"></i>Воркеры оффлайн</span>');
+            }
+        }
+
+        if (data.redis_stats) {
+            $('#kpiBrokerMemory').html('Память Redis: <strong>' + (data.redis_stats.used_memory_human || '—') + '</strong>');
+        }
+
+        // Active Tasks
+        renderActiveTasks(data.active_tasks || []);
+    }
+
+    function renderActiveTasks(tasks) {
+        var tbody = $('#activeTasksTbody');
+        if (!tasks || tasks.length === 0) {
+            tbody.html('<tr id="noActiveTasksRow"><td colspan="6" class="text-center py-5 text-muted">' +
+                '<i class="bx bx-check-double fs-1 text-success d-block mb-2"></i>' +
+                '<h6 class="font-weight-bold">В данный момент активных задач нет</h6>' +
+                '<p class="small mb-0">Все воркеры свободны и ожидают поступления заданий из очередей</p>' +
+                '</td></tr>');
+            return;
+        }
+
+        var html = '';
+        tasks.forEach(function(t) {
+            html += '<tr data-task-id="' + t.id + '" data-start-ts="' + (t.time_start_ts || 0) + '">' +
+                '<td><div class="d-flex align-items-center gap-2">' +
+                '<i class="' + (t.icon || 'bx bx-task') + ' text-primary fs-5"></i>' +
+                '<div><strong class="text-dark d-block">' + (t.title || t.name) + '</strong>' +
+                '<small class="text-muted font-monospace">' + t.name + '</small></div>' +
+                '</div></td>' +
+                '<td><span class="font-monospace text-muted small d-inline-flex align-items-center gap-1">' +
+                t.id +
+                '<button class="btn btn-sm btn-link p-0 text-muted" onclick="copyToClipboard(\'' + t.id + '\')" title="Скопировать ID">' +
+                '<i class="bx bx-copy"></i></button></span></td>' +
+                '<td><span class="badge bg-light text-dark border">' + t.worker + '</span></td>' +
+                '<td><span class="font-monospace small">' + (t.time_start_iso || '—') + '</span></td>' +
+                '<td><span class="badge bg-primary text-white font-monospace runtime-ticker">' + t.runtime_sec + 's</span></td>' +
+                '<td class="text-center">' +
+                '<button class="btn btn-sm btn-outline-danger btn-touch" onclick="revokeTask(\'' + t.id + '\')" title="Прервать выполнение задачи">' +
+                '<i class="bx bx-stop-circle me-1"></i> Снять</button>' +
+                '</td></tr>';
+        });
+        tbody.html(html);
+    }
+
+    // =========================================================================
+    // Actions: Run, Revoke, Purge, Ping, Detail
+    // =========================================================================
+    function openTaskRunModal(preselectedTaskName) {
+        if (preselectedTaskName) {
+            $('#taskSelect').val(preselectedTaskName);
+        }
+        var modal = new bootstrap.Modal(document.getElementById('modalRunTask'));
+        modal.show();
+    }
+
+    function submitRunTask() {
+        var taskName = $('#taskSelect').val();
+        var argsVal = $('#taskArgsInput').val().trim() || '[]';
+        var kwargsVal = $('#taskKwargsInput').val().trim() || '{}';
+
+        var btn = $('#btnSubmitRunTask');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Запуск...');
+
+        $.ajax({
+            url: '{% url "administration_app:celery_api_run" %}',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrftoken },
+            data: JSON.stringify({
+                task_name: taskName,
+                args: argsVal,
+                kwargs: kwargsVal
+            }),
+            success: function(resp) {
+                btn.prop('disabled', false).html('<i class="bx bx-play me-1"></i> Поставить в очередь');
+                if (resp.success) {
+                    showToast(resp.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('modalRunTask')).hide();
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ action: 'refresh' }));
+                    }
+                } else {
+                    showToast(resp.error || resp.message, 'danger');
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html('<i class="bx bx-play me-1"></i> Поставить в очередь');
+                var err = xhr.responseJSON ? xhr.responseJSON.error : 'Сетевая ошибка запуска';
+                showToast(err, 'danger');
+            }
+        });
+    }
+
+    function quickRunTask(taskName, btnEl) {
+        if (!confirm('Запустить задачу «' + taskName + '» сейчас?')) return;
+        var btn = $(btnEl);
+        var origHtml = btn.html();
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+        $.ajax({
+            url: '{% url "administration_app:celery_api_run" %}',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrftoken },
+            data: JSON.stringify({ task_name: taskName, args: [], kwargs: {} }),
+            success: function(resp) {
+                btn.prop('disabled', false).html(origHtml);
+                if (resp.success) {
+                    showToast(resp.message, 'success');
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ action: 'refresh' }));
+                    }
+                } else {
+                    showToast(resp.error || resp.message, 'danger');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html(origHtml);
+                showToast('Ошибка вызова API запуска', 'danger');
+            }
+        });
+    }
+
+    function revokeTask(taskId) {
+        if (!confirm('Прервать выполнение задачи ' + taskId + '?')) return;
+
+        $.ajax({
+            url: '{% url "administration_app:celery_api_revoke" %}',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrftoken },
+            data: JSON.stringify({ task_id: taskId, terminate: true }),
+            success: function(resp) {
+                if (resp.success) {
+                    showToast(resp.message, 'warning');
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ action: 'refresh' }));
+                    }
+                } else {
+                    showToast(resp.error || resp.message, 'danger');
+                }
+            },
+            error: function() {
+                showToast('Ошибка при отправке команды отмены', 'danger');
+            }
+        });
+    }
+
+    function openTaskDetailModal(taskId) {
+        var modalEl = document.getElementById('modalTaskDetail');
+        var modal = new bootstrap.Modal(modalEl);
+        $('#taskDetailBody').html('<div class="text-center py-4 text-muted"><div class="spinner-border text-primary" role="status"></div><div class="mt-2">Загрузка сведений...</div></div>');
+        $('#taskDetailFooterActions').empty();
+        modal.show();
+
+        $.ajax({
+            url: '/portal/celery/api/detail/' + taskId + '/',
+            type: 'GET',
+            success: function(resp) {
+                if (!resp.success || !resp.details) {
+                    $('#taskDetailBody').html('<div class="alert alert-danger">Не удалось загрузить данные задачи.</div>');
+                    return;
+                }
+                var d = resp.details;
+                var statusBadge = '<span class="badge bg-light text-dark border">' + d.status + '</span>';
+                if (d.status === 'SUCCESS') statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle">SUCCESS</span>';
+                if (d.status === 'FAILURE') statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">FAILURE</span>';
+
+                var html = '<div class="row g-3 mb-3">' +
+                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Task UUID:</span><strong class="font-monospace small text-dark">' + d.task_id + '</strong></div>' +
+                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Статус:</span>' + statusBadge + '</div>' +
+                    '</div>';
+
+                if (d.result_pretty) {
+                    html += '<div class="mb-3"><span class="text-muted small font-weight-bold d-block mb-1">Результат выполнения:</span>' +
+                        '<div class="p-3 bg-light rounded border font-monospace small" style="max-height: 180px; overflow-y: auto;">' +
+                        escapeHtml(d.result_pretty) + '</div></div>';
+                }
+
+                if (d.traceback) {
+                    html += '<div class="mb-3"><div class="d-flex justify-content-between align-items-center mb-1">' +
+                        '<span class="text-danger font-weight-bold small"><i class="bx bx-bug me-1"></i>Стек вызовов ошибки (Traceback):</span>' +
+                        '<button class="btn btn-sm btn-outline-danger" onclick="copyToClipboard(decodeURIComponent(\'' + encodeURIComponent(d.traceback) + '\'))"><i class="bx bx-copy me-1"></i>Копировать Traceback</button>' +
+                        '</div><div class="traceback-container">' + escapeHtml(d.traceback) + '</div></div>';
+                }
+
+                $('#taskDetailBody').html(html);
+            },
+            error: function() {
+                $('#taskDetailBody').html('<div class="alert alert-danger">Ошибка сети при получении деталей.</div>');
+            }
+        });
+    }
+
+    function openPurgeModal() {
+        var modal = new bootstrap.Modal(document.getElementById('modalPurgeConfirm'));
+        modal.show();
+    }
+
+    function submitPurgeQueue() {
+        $.ajax({
+            url: '{% url "administration_app:celery_api_purge" %}',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrftoken },
+            data: JSON.stringify({ queue_name: 'celery' }),
+            success: function(resp) {
+                bootstrap.Modal.getInstance(document.getElementById('modalPurgeConfirm')).hide();
+                if (resp.success) {
+                    showToast(resp.message, 'success');
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ action: 'refresh' }));
+                    }
+                } else {
+                    showToast(resp.error || resp.message, 'danger');
+                }
+            },
+            error: function() {
+                showToast('Ошибка при очистке очереди', 'danger');
+            }
+        });
+    }
+
+    function pingWorkers() {
+        $.ajax({
+            url: '{% url "administration_app:celery_api_ping" %}',
+            type: 'POST',
+            headers: { 'X-CSRFToken': csrftoken },
+            success: function(resp) {
+                if (resp.success && resp.data) {
+                    var p = resp.data;
+                    showToast('Пинг завершен: ответило воркеров: ' + p.total_responded, 'info');
+                }
+            },
+            error: function() {
+                showToast('Ошибка пинга воркеров', 'danger');
+            }
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // Client-side search filters
+    $(document).ready(function() {
+        initWebSocket();
+
+        // Search Active Tasks
+        $('#searchActiveTasks').on('keyup', function() {
+            var val = $(this).val().toLowerCase();
+            $('#activeTasksTbody tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(val) > -1);
+            });
+        });
+
+        // Search Beat Tasks
+        $('#searchBeatTasks').on('keyup', function() {
+            var val = $(this).val().toLowerCase();
+            $('#beatTasksTbody tr').filter(function() {
+                var searchData = ($(this).data('search') || '').toLowerCase();
+                $(this).toggle(searchData.indexOf(val) > -1 || $(this).text().toLowerCase().indexOf(val) > -1);
+            });
+        });
+
+        // Search & Filter History Tasks
+        function filterHistory() {
+            var searchVal = $('#searchHistoryTasks').val().toLowerCase();
+            var statusVal = $('#filterHistoryStatus').val();
+
+            $('#historyTasksTbody tr').filter(function() {
+                var textMatch = $(this).text().toLowerCase().indexOf(searchVal) > -1;
+                var rowStatus = $(this).data('status');
+                var statusMatch = (statusVal === 'ALL') || (rowStatus === statusVal);
+                $(this).toggle(textMatch && statusMatch);
+            });
+        }
+        $('#searchHistoryTasks').on('keyup', filterHistory);
+        $('#filterHistoryStatus').on('change', filterHistory);
+    });
+</script>
+{% endblock %}

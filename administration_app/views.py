@@ -20,6 +20,7 @@ from django.views.generic import ListView
 from administration_app.models import PortalProperty
 from administration_app.security_service import unban_ip_address, get_security_monitor_data
 from administration_app.system_monitor_service import get_system_monitor_payload
+from administration_app.celery_monitor_service import CeleryMonitorService
 from administration_app.utils import get_client_ip, get_device_info
 from contracts_app.models import Contract
 from contracts_app.views import update_contract_dates_from_comment
@@ -1478,5 +1479,236 @@ def web_terminal_view(request):
         'title': 'Веб-терминал управления сервером',
         'server_info': server_info,
     })
+
+
+# ==============================================================================
+# МОНИТОРИНГ И ИНТЕРАКТИВНОЕ УПРАВЛЕНИЕ ЗАДАЧАМИ CELERY
+# ==============================================================================
+
+@login_required
+def celery_monitor_view(request):
+    """Главная страница центра мониторинга и управления фоновыми задачами Celery.
+
+    Отображает интерактивный дашборд с активными задачами, воркерами,
+    расписанием Celery Beat, очередями Redis и журналом ошибок.
+
+    Args:
+        request: Объект входящего HTTP-запроса (HttpRequest).
+
+    Returns:
+        HttpResponse: Отрендеренная страница дашборда administration_app/celery_monitor.html.
+
+    Raises:
+        PermissionDenied: Если пользователь не является персоналом или суперпользователем.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied("Доступ к мониторингу задач Celery разрешен только администраторам.")
+
+    initial_payload = CeleryMonitorService.get_comprehensive_payload()
+    client_ip = get_client_ip(request)
+
+    context = {
+        "title": "Управление и мониторинг задач Celery",
+        "initial_data": initial_payload,
+        "initial_data_json": json.dumps(initial_payload, ensure_ascii=False),
+        "client_ip": client_ip,
+    }
+    return render(request, "administration_app/celery_monitor.html", context)
+
+
+@login_required
+def celery_monitor_data_api(request):
+    """REST API эндпоинт для получения актуального среза телеметрии Celery (AJAX fallback).
+
+    Args:
+        request: Объект входящего HTTP-запроса.
+
+    Returns:
+        JsonResponse: Срез данных в формате JSON.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    payload = CeleryMonitorService.get_comprehensive_payload()
+    return JsonResponse(payload)
+
+
+@login_required
+@require_POST
+def celery_task_run_api(request):
+    """REST API эндпоинт для принудительного запуска задачи с заданными параметрами.
+
+    Поддерживает передачу позиционных (args) и именованных (kwargs) аргументов в формате JSON.
+
+    Args:
+        request: Входящий HTTP-запрос (HttpRequest, POST).
+
+    Returns:
+        JsonResponse: Статус запуска и идентификатор созданной задачи (task_id).
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({"success": False, "error": "Доступ запрещен"}, status=403)
+
+    try:
+        data = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        data = request.POST
+
+    task_name = data.get("task_name", "").strip()
+    if not task_name:
+        return JsonResponse({"success": False, "error": "Не указано наименование задачи."}, status=400)
+
+    raw_args = data.get("args", [])
+    raw_kwargs = data.get("kwargs", {})
+
+    # Валидация типов параметров
+    if isinstance(raw_args, str):
+        try:
+            raw_args = json.loads(raw_args) if raw_args.strip() else []
+        except Exception:
+            return JsonResponse({"success": False, "error": "Некорректный JSON в позиционных аргументах (args)."}, status=400)
+
+    if isinstance(raw_kwargs, str):
+        try:
+            raw_kwargs = json.loads(raw_kwargs) if raw_kwargs.strip() else {}
+        except Exception:
+            return JsonResponse({"success": False, "error": "Некорректный JSON в именованных аргументах (kwargs)."}, status=400)
+
+    if not isinstance(raw_args, list):
+        raw_args = [raw_args]
+    if not isinstance(raw_kwargs, dict):
+        raw_kwargs = {}
+
+    admin_username = request.user.username
+    client_ip = get_client_ip(request)
+
+    success, message, task_id = CeleryMonitorService.run_task_manually(
+        task_name=task_name,
+        args=raw_args,
+        kwargs=raw_kwargs,
+        admin_username=admin_username,
+        ip_address=client_ip,
+    )
+
+    return JsonResponse({
+        "success": success,
+        "message": message,
+        "task_id": task_id,
+        "task_name": task_name,
+    })
+
+
+@login_required
+@require_POST
+def celery_task_revoke_api(request):
+    """REST API эндпоинт для отзыва или экстренного прерывания выполнения активной задачи.
+
+    Args:
+        request: Входящий HTTP-запрос (HttpRequest, POST).
+
+    Returns:
+        JsonResponse: Результат отзыва задачи.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({"success": False, "error": "Доступ запрещен"}, status=403)
+
+    try:
+        data = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        data = request.POST
+
+    task_id = data.get("task_id", "").strip()
+    terminate = bool(data.get("terminate", True))
+    signal = data.get("signal", "SIGTERM")
+
+    admin_username = request.user.username
+    client_ip = get_client_ip(request)
+
+    success, message = CeleryMonitorService.revoke_task(
+        task_id=task_id,
+        terminate=terminate,
+        signal=signal,
+        admin_username=admin_username,
+        ip_address=client_ip,
+    )
+
+    return JsonResponse({
+        "success": success,
+        "message": message,
+        "task_id": task_id,
+    })
+
+
+@login_required
+def celery_task_detail_api(request, task_id):
+    """REST API эндпоинт для получения расширенных деталей задачи и стека ошибки (Traceback).
+
+    Args:
+        request: Объект входящего HTTP-запроса.
+        task_id (str): UUID задачи Celery.
+
+    Returns:
+        JsonResponse: Детальные данные задачи.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    details = CeleryMonitorService.get_task_details(task_id)
+    return JsonResponse({"success": True, "details": details})
+
+
+@login_required
+@require_POST
+def celery_queue_purge_api(request):
+    """REST API эндпоинт для очистки необработанных задач из очереди брокера.
+
+    Args:
+        request: Входящий HTTP-запрос (HttpRequest, POST).
+
+    Returns:
+        JsonResponse: Количество сброшенных задач и статус выполнения.
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Очистка очереди брокера разрешена только суперпользователям."}, status=403)
+
+    try:
+        data = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        data = request.POST
+
+    queue_name = data.get("queue_name", "celery")
+    admin_username = request.user.username
+    client_ip = get_client_ip(request)
+
+    success, message, purged_count = CeleryMonitorService.purge_queue(
+        queue_name=queue_name,
+        admin_username=admin_username,
+        ip_address=client_ip,
+    )
+
+    return JsonResponse({
+        "success": success,
+        "message": message,
+        "purged_count": purged_count,
+    })
+
+
+@login_required
+@require_POST
+def celery_workers_ping_api(request):
+    """REST API эндпоинт для проверки времени отклика (RTT) воркеров Celery.
+
+    Args:
+        request: Входящий HTTP-запрос (HttpRequest, POST).
+
+    Returns:
+        JsonResponse: Результаты пинга воркеров с latency в миллисекундах.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    results = CeleryMonitorService.ping_workers()
+    return JsonResponse({"success": True, "data": results})
+
 
 

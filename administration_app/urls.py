@@ -23,4 +23,11 @@ urlpatterns = [
     path('ssl-converter/demo/', views.ssl_cert_demo_api, name='ssl_cert_demo_api'),
     path('my-ip/', views.check_my_ip, name='check_my_ip'),
     path('terminal/', views.web_terminal_view, name='web_terminal'),
+    path('celery/', views.celery_monitor_view, name='celery_monitor'),
+    path('celery/api/data/', views.celery_monitor_data_api, name='celery_monitor_api_data'),
+    path('celery/api/run/', views.celery_task_run_api, name='celery_api_run'),
+    path('celery/api/revoke/', views.celery_task_revoke_api, name='celery_api_revoke'),
+    path('celery/api/detail/<str:task_id>/', views.celery_task_detail_api, name='celery_api_detail'),
+    path('celery/api/purge/', views.celery_queue_purge_api, name='celery_api_purge'),
+    path('celery/api/ping/', views.celery_workers_ping_api, name='celery_api_ping'),
 ]
