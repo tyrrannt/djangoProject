@@ -291,6 +291,86 @@ def estimate_next_run(sched: Any) -> Tuple[Optional[str], str]:
     return None, "По расписанию"
 
 
+def parse_schedule_hourly_distribution(schedule_obj: Any) -> Tuple[Set[int], int]:
+    """Анализирует расписание задачи и вычисляет активные часы суток и частоту запусков в час.
+
+    Args:
+        schedule_obj (Any): Объект расписания (crontab, int, float).
+
+    Returns:
+        Tuple[Set[int], int]: Кортеж из множества часов суток (0..23) и количества запусков в каждый активный час.
+    """
+    all_hours = set(range(24))
+
+    if isinstance(schedule_obj, (int, float)):
+        sec = int(schedule_obj)
+        runs_per_hour = max(1, 3600 // max(1, sec))
+        return all_hours, runs_per_hour
+
+    # Извлечение множества часов
+    active_hours = set(range(24))
+    if hasattr(schedule_obj, "hour"):
+        raw_hour = getattr(schedule_obj, "_orig_hour", schedule_obj.hour)
+        if isinstance(raw_hour, (set, list, tuple)):
+            active_hours = {int(h) for h in raw_hour if str(h).isdigit() and 0 <= int(h) <= 23}
+        elif isinstance(raw_hour, int):
+            active_hours = {raw_hour} if 0 <= raw_hour <= 23 else all_hours
+        elif isinstance(raw_hour, str):
+            clean_h = raw_hour.strip("{}'\" ")
+            if clean_h.startswith("*/"):
+                try:
+                    step = int(clean_h.replace("*/", ""))
+                    active_hours = {h for h in range(24) if h % step == 0}
+                except Exception:
+                    active_hours = all_hours
+            elif clean_h.isdigit():
+                active_hours = {int(clean_h)}
+            elif "," in clean_h:
+                active_hours = {int(h.strip()) for h in clean_h.split(",") if h.strip().isdigit() and 0 <= int(h.strip()) <= 23}
+            elif "-" in clean_h:
+                try:
+                    s_part, e_part = clean_h.split("-", 1)
+                    active_hours = {h for h in range(int(s_part), int(e_part) + 1) if 0 <= h <= 23}
+                except Exception:
+                    active_hours = all_hours
+            elif clean_h in ("*", "*/*"):
+                active_hours = all_hours
+
+    if not active_hours:
+        active_hours = all_hours
+
+    # Извлечение количества запусков в час (по минутам)
+    runs_per_hour = 1
+    if hasattr(schedule_obj, "minute"):
+        raw_min = getattr(schedule_obj, "_orig_minute", schedule_obj.minute)
+        if isinstance(raw_min, (set, list, tuple)):
+            runs_per_hour = max(1, len(raw_min))
+        elif isinstance(raw_min, int):
+            runs_per_hour = 1
+        elif isinstance(raw_min, str):
+            clean_m = raw_min.strip("{}'\" ")
+            if clean_m.startswith("*/"):
+                try:
+                    step = int(clean_m.replace("*/", ""))
+                    runs_per_hour = max(1, 60 // max(1, step))
+                except Exception:
+                    runs_per_hour = 1
+            elif clean_m == "*":
+                runs_per_hour = 60
+            elif "," in clean_m:
+                runs_per_hour = max(1, len(clean_m.split(",")))
+            elif "-" in clean_m:
+                try:
+                    s_part, e_part = clean_m.split("-", 1)
+                    runs_per_hour = max(1, int(e_part) - int(s_part) + 1)
+                except Exception:
+                    runs_per_hour = 1
+            else:
+                runs_per_hour = 1
+
+    return active_hours, runs_per_hour
+
+
 class CeleryMonitorService:
     """Сервис сбора телеметрии, инспекции и интерактивного управления задачами Celery."""
 
@@ -717,18 +797,65 @@ class CeleryMonitorService:
         success_count = sum(1 for t in task_history if t["status"] == "SUCCESS")
         failure_count = sum(1 for t in task_history if t["status"] == "FAILURE")
 
-        # Расчет распределения периодических задач по часам суток (Workload Timeline Matrix)
-        hourly_matrix: Dict[int, int] = {h: 0 for h in range(24)}
-        for item in beat_schedule:
-            raw = item["schedule_raw"]
-            if "hour=" in raw:
-                # Примерный подсчет для графика
-                try:
-                    h_val = raw.split("hour=")[1].split(",")[0].strip("'\" }")
-                    if h_val.isdigit():
-                        hourly_matrix[int(h_val)] += 1
-                except Exception:
-                    pass
+        # Расчет распределения периодических задач по часам суток (Workload Timeline 24h Matrix)
+        schedule_conf = getattr(current_app.conf, "beat_schedule", {})
+        hourly_data: Dict[int, Dict[str, Any]] = {
+            h: {
+                "hour": f"{h:02d}:00",
+                "hour_num": h,
+                "runs_count": 0,
+                "tasks": [],
+                "unique_tasks_count": 0,
+            }
+            for h in range(24)
+        }
+
+        for key, entry in schedule_conf.items():
+            task_name = entry.get("task", "")
+            schedule_obj = entry.get("schedule")
+            meta = get_task_meta(task_name)
+            sched_human = format_crontab_human(schedule_obj)
+            active_hours, runs_per_hour = parse_schedule_hourly_distribution(schedule_obj)
+
+            for h in active_hours:
+                hourly_data[h]["runs_count"] += runs_per_hour
+                hourly_data[h]["tasks"].append({
+                    "key": key,
+                    "title": meta["title"],
+                    "task_name": task_name,
+                    "category": meta["category"],
+                    "icon": meta["icon"],
+                    "schedule_human": sched_human,
+                    "runs_per_hour": runs_per_hour,
+                })
+
+        for h in range(24):
+            hourly_data[h]["unique_tasks_count"] = len(hourly_data[h]["tasks"])
+
+        max_hourly_runs = max((d["runs_count"] for d in hourly_data.values()), default=1) or 1
+        total_daily_runs = sum(d["runs_count"] for d in hourly_data.values())
+
+        hourly_workload_list: List[Dict[str, Any]] = []
+        for h in range(24):
+            d = hourly_data[h]
+            count = d["runs_count"]
+            if count == 0:
+                intensity = "intensity-none"
+            elif count >= max_hourly_runs:
+                intensity = "intensity-peak"
+            elif count >= max_hourly_runs * 0.7:
+                intensity = "intensity-high"
+            elif count >= max_hourly_runs * 0.35:
+                intensity = "intensity-medium"
+            else:
+                intensity = "intensity-low"
+
+            d["intensity_class"] = intensity
+            # Для обратной совместимости со старым шаблоном
+            d["count"] = count
+            hourly_workload_list.append(d)
+
+        peak_hours = [d["hour"] for d in hourly_workload_list if d["runs_count"] == max_hourly_runs]
 
         return {
             "timestamp": timezone.now().strftime("%d.%m.%Y %H:%M:%S"),
@@ -744,6 +871,8 @@ class CeleryMonitorService:
                 "history_success_count": success_count,
                 "history_failure_count": failure_count,
                 "broker_connected": redis_stats["connected"],
+                "total_daily_runs": total_daily_runs,
+                "max_hourly_runs": max_hourly_runs,
             },
             "workers": workers_info["workers"],
             "active_tasks": active_tasks,
@@ -752,9 +881,13 @@ class CeleryMonitorService:
             "beat_schedule": beat_schedule,
             "history": task_history,
             "redis_stats": redis_stats,
-            "hourly_workload": [
-                {"hour": f"{h:02d}:00", "count": hourly_matrix[h]} for h in range(24)
-            ],
+            "hourly_workload": hourly_workload_list,
+            "analytics": {
+                "total_daily_runs": total_daily_runs,
+                "max_hourly_runs": max_hourly_runs,
+                "peak_hours_str": ", ".join(peak_hours) if peak_hours else "—",
+                "hourly_workload": hourly_workload_list,
+            },
         }
 
     @classmethod

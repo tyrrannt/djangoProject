@@ -162,19 +162,66 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 6px 4px;
+        padding: 8px 6px;
         background: #f8fafc;
         border: 1px solid var(--border-slate-200);
-        border-radius: 6px;
-        min-width: 42px;
-        font-size: 0.75rem;
+        border-radius: 8px;
+        min-width: 54px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        user-select: none;
+        text-align: center;
     }
 
-    .workload-hour-box.has-tasks {
+    .workload-hour-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 43, 73, 0.12);
+    }
+
+    .workload-hour-box.selected {
+        outline: 2px solid var(--sed-brand-navy);
+        box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.3) !important;
+        transform: translateY(-2px);
+    }
+
+    .workload-hour-box.intensity-peak {
+        background: #002b49;
+        color: #ffffff;
+        border-color: #002b49;
+    }
+    .workload-hour-box.intensity-peak span { color: #93c5fd; }
+    .workload-hour-box.intensity-peak strong { color: #ffffff; font-size: 0.95rem; }
+
+    .workload-hour-box.intensity-high {
+        background: #0284c7;
+        color: #ffffff;
+        border-color: #0284c7;
+    }
+    .workload-hour-box.intensity-high span { color: #e0f2fe; }
+    .workload-hour-box.intensity-high strong { color: #ffffff; font-size: 0.95rem; }
+
+    .workload-hour-box.intensity-medium {
         background: #e0f2fe;
-        border-color: #7dd3fc;
-        font-weight: 700;
+        border-color: #bae6fd;
         color: #0369a1;
+    }
+    .workload-hour-box.intensity-medium span { color: #0284c7; }
+    .workload-hour-box.intensity-medium strong { color: #0c4a6e; font-size: 0.95rem; }
+
+    .workload-hour-box.intensity-low {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+    .workload-hour-box.intensity-low span { color: #15803d; }
+    .workload-hour-box.intensity-low strong { color: #14532d; font-size: 0.95rem; }
+
+    .workload-hour-box.intensity-none {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+        opacity: 0.65;
     }
 
     .toast-container-custom {
@@ -688,19 +735,151 @@
 
                 <!-- 5. TAB: Analytics & Timeline -->
                 <div class="tab-pane fade" id="tab-analytics" role="tabpanel" aria-labelledby="tab-analytics-btn">
-                    <h5 class="h6 font-weight-bold text-dark mb-2">Распределение регулярных задач по часам суток (24h Matrix)</h5>
-                    <p class="text-muted small mb-4">Помогает оценить пиковые интервалы планировщика и избежать взаимных задержек тяжелых задач</p>
-
-                    <div class="d-flex flex-wrap gap-2 mb-4 p-3 bg-light rounded border">
-                        {% for item in initial_data.hourly_workload %}
-                            <div class="workload-hour-box {% if item.count > 0 %}has-tasks{% endif %}">
-                                <span>{{ item.hour }}</span>
-                                <strong>{{ item.count }}</strong>
-                            </div>
-                        {% endfor %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h5 class="h6 font-weight-bold text-dark mb-1">Распределение регулярных задач по часам суток (24h Matrix & Heatmap)</h5>
+                            <p class="text-muted small mb-0">Интерактивная карта плотности запусков планировщика Celery Beat в течение 24 часов</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 small">
+                            <span class="badge bg-light text-dark border"><i class="bx bx-info-circle me-1 text-primary"></i>Кликните на любой час для просмотра задач</span>
+                        </div>
                     </div>
 
-                    <div class="border rounded p-3 bg-white">
+                    <!-- Summary KPI Banner -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 border rounded bg-light d-flex align-items-center gap-3">
+                                <div class="p-2 rounded bg-primary text-white fs-4">
+                                    <i class="bx bx-rocket"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Всего запусков в сутки:</span>
+                                    <h4 class="h5 font-weight-bold text-dark mb-0" id="analyticsTotalDaily">
+                                        {{ initial_data.analytics.total_daily_runs|default:"0" }} запусков
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 border rounded bg-light d-flex align-items-center gap-3">
+                                <div class="p-2 rounded bg-danger text-white fs-4">
+                                    <i class="bx bx-timer"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Пиковый интервал нагрузки:</span>
+                                    <h4 class="h5 font-weight-bold text-dark mb-0" id="analyticsPeakHours">
+                                        {{ initial_data.analytics.peak_hours_str|default:"—" }}
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 border rounded bg-light d-flex align-items-center gap-3">
+                                <div class="p-2 rounded bg-info text-white fs-4">
+                                    <i class="bx bx-bar-chart-alt-2"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Макс. часовая плотность:</span>
+                                    <h4 class="h5 font-weight-bold text-dark mb-0" id="analyticsMaxHourly">
+                                        {{ initial_data.analytics.max_hourly_runs|default:"0" }} запусков/час
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 24h Heatmap Grid -->
+                    <div class="card border mb-4">
+                        <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <span class="font-weight-bold small text-dark"><i class="bx bx-grid-alt text-primary me-1"></i>Суточная сетка планировщика (00:00 — 23:00)</span>
+                            <div class="d-flex align-items-center gap-2 small">
+                                <span class="d-inline-flex align-items-center gap-1"><span class="badge px-2" style="background:#002b49; color:#fff;">■</span> Пик</span>
+                                <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-primary px-2">■</span> Высокая</span>
+                                <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-info-subtle text-info border px-2">■</span> Средняя</span>
+                                <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-success-subtle text-success border px-2">■</span> Низкая</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex flex-wrap gap-2 justify-content-between" id="hourlyMatrixContainer">
+                                {% for item in initial_data.hourly_workload %}
+                                    <div class="workload-hour-box {{ item.intensity_class }} {% if forloop.first %}selected{% endif %}"
+                                         id="workloadHourBox_{{ item.hour_num }}"
+                                         onclick="selectWorkloadHour({{ item.hour_num }})"
+                                         title="{{ item.hour }}: {{ item.runs_count }} запусков ({{ item.unique_tasks_count }} уникальных задач)">
+                                        <span>{{ item.hour }}</span>
+                                        <strong>{{ item.runs_count }}</strong>
+                                        <small style="font-size:0.68rem; opacity:0.85;">{{ item.unique_tasks_count }} зад.</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Hour Tasks Inspector -->
+                    <div class="card border shadow-sm mb-4" id="hourTasksInspectorCard">
+                        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-time text-primary fs-5"></i>
+                                <h6 class="font-weight-bold text-dark mb-0" id="selectedHourTitle">
+                                    Задачи, выполняемые в интервале 00:00 — 00:59
+                                </h6>
+                            </div>
+                            <span class="badge bg-primary px-3 py-2" id="selectedHourBadge">
+                                {{ initial_data.hourly_workload.0.runs_count|default:"0" }} запусков в этот час
+                            </span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 38%;">Задача / Назначение</th>
+                                            <th style="width: 18%;">Категория</th>
+                                            <th style="width: 20%;">График</th>
+                                            <th style="width: 14%;">Частота в этот час</th>
+                                            <th style="width: 10%;" class="text-center">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selectedHourTasksTbody">
+                                        {% if initial_data.hourly_workload.0.tasks %}
+                                            {% for t in initial_data.hourly_workload.0.tasks %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <i class="{{ t.icon|default:'bx bx-task' }} text-primary fs-5"></i>
+                                                            <div>
+                                                                <strong class="text-dark d-block">{{ t.title }}</strong>
+                                                                <small class="text-muted font-monospace">{{ t.task_name }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td><span class="badge bg-light text-dark border">{{ t.category }}</span></td>
+                                                    <td><span class="small text-muted">{{ t.schedule_human }}</span></td>
+                                                    <td>
+                                                        <strong class="text-primary font-monospace">{{ t.runs_per_hour }} раз(а)</strong>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <button class="btn btn-sm btn-primary btn-touch" onclick="quickRunTask('{{ t.task_name }}', this)" title="Запустить немедленно">
+                                                            <i class="bx bx-play"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4 text-muted">
+                                                    В этот час нет запланированных запусков
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations Box -->
+                    <div class="border rounded p-3 bg-light">
                         <h6 class="font-weight-bold text-dark mb-2"><i class="bx bx-info-circle text-primary me-1"></i>Рекомендации по балансировке очереди:</h6>
                         <ul class="text-muted small mb-0 ps-3">
                             <li>Тяжелые синхронизации 1С рекомендуется разносить по времени с интервалом не менее 10 минут.</li>
@@ -874,6 +1053,96 @@
     }
 
     // =========================================================================
+    // Initial Data & State
+    // =========================================================================
+    var initialPayload = {{ initial_data_json|safe }};
+    window.celeryHourlyWorkload = initialPayload.hourly_workload || (initialPayload.analytics && initialPayload.analytics.hourly_workload) || [];
+    var currentSelectedHour = 0;
+    var runtimeTickerTimer = null;
+
+    function formatHourRange(h) {
+        var s = (h < 10 ? '0' : '') + h + ':00';
+        var e = (h < 10 ? '0' : '') + h + ':59';
+        return s + ' — ' + e;
+    }
+
+    // =========================================================================
+    // Workload 24h Matrix & Inspector
+    // =========================================================================
+    function selectWorkloadHour(hourNum) {
+        currentSelectedHour = parseInt(hourNum, 10);
+        if (isNaN(currentSelectedHour) || currentSelectedHour < 0 || currentSelectedHour > 23) {
+            currentSelectedHour = 0;
+        }
+
+        $('.workload-hour-box').removeClass('selected');
+        $('#workloadHourBox_' + currentSelectedHour).addClass('selected');
+
+        $('#selectedHourTitle').text('Задачи, выполняемые в интервале ' + formatHourRange(currentSelectedHour));
+
+        var hourData = null;
+        if (window.celeryHourlyWorkload && window.celeryHourlyWorkload.length) {
+            for (var i = 0; i < window.celeryHourlyWorkload.length; i++) {
+                if (window.celeryHourlyWorkload[i].hour_num === currentSelectedHour) {
+                    hourData = window.celeryHourlyWorkload[i];
+                    break;
+                }
+            }
+        }
+
+        var runsCount = hourData ? (hourData.runs_count || 0) : 0;
+        $('#selectedHourBadge').text(runsCount + ' запусков в этот час');
+
+        var tbody = $('#selectedHourTasksTbody');
+        if (hourData && hourData.tasks && hourData.tasks.length > 0) {
+            var html = '';
+            hourData.tasks.forEach(function(t) {
+                html += '<tr>' +
+                    '<td><div class="d-flex align-items-center gap-2">' +
+                    '<i class="' + escapeHtml(t.icon || 'bx bx-task') + ' text-primary fs-5"></i>' +
+                    '<div><strong class="text-dark d-block">' + escapeHtml(t.title || t.task_name) + '</strong>' +
+                    '<small class="text-muted font-monospace">' + escapeHtml(t.task_name) + '</small>' +
+                    '</div></div></td>' +
+                    '<td><span class="badge bg-light text-dark border">' + escapeHtml(t.category || 'Общее') + '</span></td>' +
+                    '<td><span class="small text-muted">' + escapeHtml(t.schedule_human || '—') + '</span></td>' +
+                    '<td><strong class="text-primary font-monospace">' + (t.runs_per_hour || 1) + ' раз(а)</strong></td>' +
+                    '<td class="text-center">' +
+                    '<button class="btn btn-sm btn-primary btn-touch" onclick="quickRunTask(\'' + escapeHtml(t.task_name) + '\', this)" title="Запустить немедленно">' +
+                    '<i class="bx bx-play"></i>' +
+                    '</button>' +
+                    '</td></tr>';
+            });
+            tbody.html(html);
+        } else {
+            tbody.html('<tr><td colspan="5" class="text-center py-4 text-muted">' +
+                '<i class="bx bx-calendar-x fs-2 d-block mb-1 text-muted"></i>' +
+                'В этот час нет запланированных запусков' +
+                '</td></tr>');
+        }
+    }
+
+    function renderHourlyMatrix(hourlyList) {
+        if (!hourlyList || !hourlyList.length) return;
+        window.celeryHourlyWorkload = hourlyList;
+        var container = $('#hourlyMatrixContainer');
+        var html = '';
+        hourlyList.forEach(function(item) {
+            var isSelected = (item.hour_num === currentSelectedHour) ? ' selected' : '';
+            var intensity = item.intensity_class || 'intensity-none';
+            html += '<div class="workload-hour-box ' + intensity + isSelected + '" ' +
+                'id="workloadHourBox_' + item.hour_num + '" ' +
+                'onclick="selectWorkloadHour(' + item.hour_num + ')" ' +
+                'title="' + escapeHtml(item.hour) + ': ' + item.runs_count + ' запусков (' + item.unique_tasks_count + ' уникальных задач)">' +
+                '<span>' + escapeHtml(item.hour) + '</span>' +
+                '<strong>' + item.runs_count + '</strong>' +
+                '<small style="font-size:0.68rem; opacity:0.85;">' + item.unique_tasks_count + ' зад.</small>' +
+                '</div>';
+        });
+        container.html(html);
+        selectWorkloadHour(currentSelectedHour);
+    }
+
+    // =========================================================================
     // WebSocket Real-time Connection
     // =========================================================================
     var ws = null;
@@ -942,6 +1211,7 @@
             $('#kpiFailureCount').text(data.kpi.history_failure_count || 0);
 
             $('#tabBadgeActive').text(data.kpi.active_tasks_count || 0);
+            $('#tabBadgeBeat').text(data.kpi.beat_tasks_total || 0);
             $('#tabBadgeHistory').text((data.history && data.history.length) || 0);
 
             if (data.kpi.is_workers_alive) {
@@ -957,6 +1227,27 @@
 
         // Active Tasks
         renderActiveTasks(data.active_tasks || []);
+
+        // Analytics & 24h Workload Matrix
+        if (data.analytics) {
+            $('#analyticsTotalDaily').text((data.analytics.total_daily_runs || 0) + ' запусков');
+            $('#analyticsPeakHours').text(data.analytics.peak_hours_str || '—');
+            $('#analyticsMaxHourly').text((data.analytics.max_hourly_runs || 0) + ' запусков/час');
+        }
+
+        if (data.hourly_workload && data.hourly_workload.length) {
+            renderHourlyMatrix(data.hourly_workload);
+        }
+
+        // Workers & Redis
+        if (data.workers) {
+            renderWorkers(data.workers);
+        }
+
+        // Beat Schedule
+        if (data.beat_schedule) {
+            renderBeatSchedule(data.beat_schedule);
+        }
     }
 
     function renderActiveTasks(tasks) {
@@ -972,25 +1263,107 @@
 
         var html = '';
         tasks.forEach(function(t) {
-            html += '<tr data-task-id="' + t.id + '" data-start-ts="' + (t.time_start_ts || 0) + '">' +
+            html += '<tr data-task-id="' + escapeHtml(t.id) + '" data-start-ts="' + (t.time_start_ts || 0) + '">' +
                 '<td><div class="d-flex align-items-center gap-2">' +
-                '<i class="' + (t.icon || 'bx bx-task') + ' text-primary fs-5"></i>' +
-                '<div><strong class="text-dark d-block">' + (t.title || t.name) + '</strong>' +
-                '<small class="text-muted font-monospace">' + t.name + '</small></div>' +
+                '<i class="' + escapeHtml(t.icon || 'bx bx-task') + ' text-primary fs-5"></i>' +
+                '<div><strong class="text-dark d-block">' + escapeHtml(t.title || t.name) + '</strong>' +
+                '<small class="text-muted font-monospace">' + escapeHtml(t.name) + '</small></div>' +
                 '</div></td>' +
                 '<td><span class="font-monospace text-muted small d-inline-flex align-items-center gap-1">' +
-                t.id +
-                '<button class="btn btn-sm btn-link p-0 text-muted" onclick="copyToClipboard(\'' + t.id + '\')" title="Скопировать ID">' +
+                escapeHtml(t.id) +
+                '<button class="btn btn-sm btn-link p-0 text-muted" onclick="copyToClipboard(\'' + escapeHtml(t.id) + '\')" title="Скопировать ID">' +
                 '<i class="bx bx-copy"></i></button></span></td>' +
-                '<td><span class="badge bg-light text-dark border">' + t.worker + '</span></td>' +
-                '<td><span class="font-monospace small">' + (t.time_start_iso || '—') + '</span></td>' +
+                '<td><span class="badge bg-light text-dark border">' + escapeHtml(t.worker) + '</span></td>' +
+                '<td><span class="font-monospace small">' + escapeHtml(t.time_start_iso || '—') + '</span></td>' +
                 '<td><span class="badge bg-primary text-white font-monospace runtime-ticker">' + t.runtime_sec + 's</span></td>' +
                 '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-danger btn-touch" onclick="revokeTask(\'' + t.id + '\')" title="Прервать выполнение задачи">' +
+                '<button class="btn btn-sm btn-outline-danger btn-touch" onclick="revokeTask(\'' + escapeHtml(t.id) + '\')" title="Прервать выполнение задачи">' +
                 '<i class="bx bx-stop-circle me-1"></i> Снять</button>' +
                 '</td></tr>';
         });
         tbody.html(html);
+    }
+
+    function renderBeatSchedule(beatTasks) {
+        var tbody = $('#beatTasksTbody');
+        var searchVal = $('#searchBeatTasks').val().toLowerCase();
+        var html = '';
+
+        beatTasks.forEach(function(item) {
+            var searchData = (item.title + ' ' + item.task_name + ' ' + item.category).toLowerCase();
+            var isVisible = !searchVal || searchData.indexOf(searchVal) > -1;
+            var displayStyle = isVisible ? '' : 'style="display:none;"';
+
+            html += '<tr data-search="' + escapeHtml(item.title + ' ' + item.task_name + ' ' + item.category) + '" ' + displayStyle + '>' +
+                '<td>' +
+                '<div class="d-flex align-items-center gap-2">' +
+                '<div class="p-2 rounded bg-light text-primary">' +
+                '<i class="' + escapeHtml(item.icon || 'bx bx-task') + ' fs-5"></i>' +
+                '</div>' +
+                '<div>' +
+                '<strong class="text-dark d-block">' + escapeHtml(item.title) + '</strong>' +
+                '<small class="text-muted d-block">' + escapeHtml(item.description) + '</small>' +
+                '<small class="text-muted font-monospace opacity-75">' + escapeHtml(item.task_name) + '</small>' +
+                '</div>' +
+                '</div>' +
+                '</td>' +
+                '<td><span class="badge bg-light text-dark border">' + escapeHtml(item.category) + '</span></td>' +
+                '<td>' +
+                '<span class="badge bg-primary-subtle text-primary border border-primary-subtle font-weight-bold">' +
+                '<i class="bx bx-time-five me-1"></i>' + escapeHtml(item.schedule_human) +
+                '</span>' +
+                '</td>' +
+                '<td>' +
+                '<div class="small">' +
+                '<div class="font-monospace text-dark">' + escapeHtml(item.next_run_iso || '—') + '</div>' +
+                '<small class="text-muted">' + escapeHtml(item.countdown) + '</small>' +
+                '</div>' +
+                '</td>' +
+                '<td class="text-center">' +
+                '<div class="d-flex justify-content-center gap-1">' +
+                '<button class="btn btn-sm btn-primary btn-touch font-weight-bold" onclick="quickRunTask(\'' + escapeHtml(item.task_name) + '\', this)" title="Запустить немедленно">' +
+                '<i class="bx bx-play me-1"></i> Запустить' +
+                '</button>' +
+                '<button class="btn btn-sm btn-outline-secondary btn-touch" onclick="openTaskRunModal(\'' + escapeHtml(item.task_name) + '\')" title="Запуск с кастомными аргументами JSON">' +
+                '<i class="bx bx-slider"></i>' +
+                '</button>' +
+                '</div>' +
+                '</td>' +
+                '</tr>';
+        });
+        tbody.html(html);
+    }
+
+    function renderWorkers(workers) {
+        var container = $('#workersCardsContainer');
+        if (!workers || workers.length === 0) {
+            container.html('<div class="alert alert-warning">' +
+                '<i class="bx bx-error me-2"></i>Нет доступных запущенных воркеров Celery. Убедитесь, что служба <code>celery.service</code> активна.' +
+                '</div>');
+            return;
+        }
+
+        var html = '';
+        workers.forEach(function(w) {
+            var statusBadge = w.online ?
+                '<span class="badge bg-success-subtle text-success border border-success-subtle">ONLINE</span>' :
+                '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">OFFLINE</span>';
+
+            html += '<div class="p-3 border rounded bg-white shadow-sm mb-3">' +
+                '<div class="d-flex justify-content-between align-items-start mb-2">' +
+                '<div>' +
+                '<h6 class="font-weight-bold text-dark mb-1"><i class="bx bx-server text-primary me-1"></i>' + escapeHtml(w.name) + '</h6>' +
+                statusBadge +
+                '</div>' +
+                '<span class="badge bg-light text-dark border font-monospace">PID: ' + (w.pid || '—') + '</span>' +
+                '</div>' +
+                '<div class="row g-2 mt-2 pt-2 border-top small">' +
+                '<div class="col-6 col-md-4"><span class="text-muted d-block">Concurrency:</span><strong>' + (w.concurrency || 0) + ' потоков</strong></div>' +
+                '<div class="col-6 col-md-4"><span class="text-muted d-block">Выполняется сейчас:</span><strong class="text-primary">' + (w.active_tasks_count || 0) + ' задач</strong></div>' +
+                '<div class="col-6 col-md-4"><span class="text-muted d-block">Обработано всего:</span><strong>' + (w.total_processed_tasks || 0) + '</strong></div>' +
+                '</div></div>';
+        });
+        container.html(html);
     }
 
     // =========================================================================
@@ -1195,9 +1568,27 @@
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
-    // Client-side search filters
+    // Live Runtime Ticker (smooth per-second ticker)
+    function startRuntimeTickers() {
+        if (runtimeTickerTimer) {
+            clearInterval(runtimeTickerTimer);
+        }
+        runtimeTickerTimer = setInterval(function() {
+            var nowSec = Date.now() / 1000;
+            $('#activeTasksTbody tr[data-start-ts]').each(function() {
+                var startTs = parseFloat($(this).attr('data-start-ts'));
+                if (startTs > 0) {
+                    var diff = Math.max(0, (nowSec - startTs)).toFixed(1);
+                    $(this).find('.runtime-ticker').text(diff + 's');
+                }
+            });
+        }, 1000);
+    }
+
+    // Client-side search filters & initialization
     $(document).ready(function() {
         initWebSocket();
+        startRuntimeTickers();
 
         // Search Active Tasks
         $('#searchActiveTasks').on('keyup', function() {
