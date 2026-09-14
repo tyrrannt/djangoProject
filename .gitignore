@@ -23,3 +23,4 @@ celerybeat-schedule
 # JetBrains IDE (IntelliJ, PyCharm, WebStorm, etc.)
 .idea/
 /db.sqlite3-journal
+/TECHNICAL_DOCUMENTATION/

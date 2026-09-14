@@ -5,6 +5,7 @@ from . import views
 from . import api_views
 from . import webauthn_views
 from . import cades_views
+from . import views_org_structure
 from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
     BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
     BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView, \
@@ -143,6 +144,16 @@ urlpatterns = [
     # API
     path('api/employee/<int:employee_id>/consent-status/', ApiGetEmployeeConsentStatusView.as_view(),
          name='api_consent_status'),
+
+    # Организационная структура компании (Конструктор блок-схемы & API)
+    path('org-structure/', views_org_structure.OrgStructureBuilderView.as_view(), name='org_structure_builder'),
+    path('api/org-structure/data/', views_org_structure.OrgStructureDataApiView.as_view(), name='api_org_structure_data'),
+    path('api/org-structure/save-layout/', views_org_structure.OrgStructureSaveLayoutApiView.as_view(), name='api_org_structure_save_layout'),
+    path('api/org-structure/node/save/', views_org_structure.OrgStructureNodeSaveApiView.as_view(), name='api_org_structure_node_save'),
+    path('api/org-structure/node/delete/', views_org_structure.OrgStructureNodeDeleteApiView.as_view(), name='api_org_structure_node_delete'),
+    path('api/org-structure/node/assign-leader/', views_org_structure.OrgStructureAssignLeaderApiView.as_view(), name='api_org_structure_assign_leader'),
+    path('api/org-structure/node/<int:node_id>/history/', views_org_structure.OrgStructureNodeHistoryApiView.as_view(), name='api_org_structure_node_history'),
+    path('api/org-structure/create-version/', views_org_structure.OrgStructureCreateVersionApiView.as_view(), name='api_org_structure_create_version'),
 
     # path(
     #     "password/<int:pk>/update/",

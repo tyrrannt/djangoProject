@@ -14,6 +14,7 @@ from django.views.generic import RedirectView, TemplateView
 
 import library_app.views as library_views
 import administration_app.views as administration_views
+from customers_app import views_org_structure
 
 handler403 = library_views.show_403
 handler404 = library_views.show_404
@@ -43,6 +44,15 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # Direct Org Structure API Routes
+    path('api/org-structure/data/', views_org_structure.OrgStructureDataApiView.as_view(), name='api_org_structure_data_direct'),
+    path('api/org-structure/save-layout/', views_org_structure.OrgStructureSaveLayoutApiView.as_view(), name='api_org_structure_save_layout_direct'),
+    path('api/org-structure/node/save/', views_org_structure.OrgStructureNodeSaveApiView.as_view(), name='api_org_structure_node_save_direct'),
+    path('api/org-structure/node/delete/', views_org_structure.OrgStructureNodeDeleteApiView.as_view(), name='api_org_structure_node_delete_direct'),
+    path('api/org-structure/node/assign-leader/', views_org_structure.OrgStructureAssignLeaderApiView.as_view(), name='api_org_structure_assign_leader_direct'),
+    path('api/org-structure/node/<int:node_id>/history/', views_org_structure.OrgStructureNodeHistoryApiView.as_view(), name='api_org_structure_node_history_direct'),
+    path('api/org-structure/create-version/', views_org_structure.OrgStructureCreateVersionApiView.as_view(), name='api_org_structure_create_version_direct'),
 
     path('users/', include('customers_app.urls')),
     path('contracts/', include('contracts_app.urls')),

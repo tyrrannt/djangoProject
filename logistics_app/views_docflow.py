@@ -89,6 +89,26 @@ class DocFlowDocumentListView(LoginRequiredMixin, ListView):
             .order_by("-created_at")
         )
 
+        # Базовое разграничение прав доступа по организационной иерархии подразделений
+        if not (user.is_superuser or user.is_staff):
+            from customers_app.services.org_structure_service import OrgStructureService
+            accessible_div_ids = OrgStructureService.get_user_accessible_division_ids(user)
+
+            hierarchy_filter = (
+                Q(initiator__user_work_profile__divisions__in=accessible_div_ids)
+                | Q(responsible__user_work_profile__divisions__in=accessible_div_ids)
+                | Q(related_waybill__place_division__in=accessible_div_ids)
+                | Q(route_steps__assigned_division__in=accessible_div_ids)
+            )
+            personal_filter = (
+                Q(initiator=user)
+                | Q(responsible=user)
+                | Q(route_steps__assigned_user=user)
+                | Q(route_steps__assigned_users=user)
+                | Q(approval_logs__user=user)
+            )
+            qs = qs.filter(hierarchy_filter | personal_filter).distinct()
+
         # 1. Фильтрация по выбранной вкладке
         if tab == "pending":
             # Активный шаг назначен на текущего пользователя, его подразделение или группу
@@ -155,7 +175,26 @@ class DocFlowDocumentListView(LoginRequiredMixin, ListView):
         )
         context["pending_count"] = DocFlowDocument.objects.filter(pending_filter).distinct().count()
         context["my_count"] = DocFlowDocument.objects.filter(Q(initiator=user) | Q(responsible=user)).distinct().count()
-        context["all_count"] = DocFlowDocument.objects.count()
+
+        if not (user.is_superuser or user.is_staff):
+            from customers_app.services.org_structure_service import OrgStructureService
+            accessible_div_ids = OrgStructureService.get_user_accessible_division_ids(user)
+            hierarchy_q = (
+                Q(initiator__user_work_profile__divisions__in=accessible_div_ids)
+                | Q(responsible__user_work_profile__divisions__in=accessible_div_ids)
+                | Q(related_waybill__place_division__in=accessible_div_ids)
+                | Q(route_steps__assigned_division__in=accessible_div_ids)
+            )
+            personal_q = (
+                Q(initiator=user)
+                | Q(responsible=user)
+                | Q(route_steps__assigned_user=user)
+                | Q(route_steps__assigned_users=user)
+                | Q(approval_logs__user=user)
+            )
+            context["all_count"] = DocFlowDocument.objects.filter(hierarchy_q | personal_q).distinct().count()
+        else:
+            context["all_count"] = DocFlowDocument.objects.count()
 
         context["current_tab"] = self.request.GET.get("tab", "pending")
         context["doc_types"] = DocFlowDocumentType.objects.filter(is_active=True)
@@ -378,6 +417,53 @@ class DocFlowDocumentDetailView(LoginRequiredMixin, DetailView):
     model = DocFlowDocument
     template_name = "logistics_app/docflow_detail.html"
     context_object_name = "document"
+
+    def get_object(self, queryset: Optional[QuerySet[DocFlowDocument]] = None) -> DocFlowDocument:
+        """Получает документ и выполняет иерархическую проверку прав доступа."""
+        obj: DocFlowDocument = super().get_object(queryset)
+        user = self.request.user
+
+        if user.is_superuser or user.is_staff:
+            return obj
+
+        # 1. Личный доступ участника процесса
+        if (
+            user == obj.initiator
+            or user == obj.responsible
+            or obj.route_steps.filter(Q(assigned_user=user) | Q(assigned_users=user) | Q(approved_users=user)).exists()
+            or obj.approval_logs.filter(user=user).exists()
+        ):
+            return obj
+
+        # 2. Иерархический доступ по подразделению
+        from customers_app.services.org_structure_service import OrgStructureService
+        accessible_div_ids = OrgStructureService.get_user_accessible_division_ids(user)
+
+        initiator_div_id = None
+        if hasattr(obj.initiator, "user_work_profile") and obj.initiator.user_work_profile:
+            initiator_div_id = obj.initiator.user_work_profile.divisions_id
+
+        responsible_div_id = None
+        if obj.responsible and hasattr(obj.responsible, "user_work_profile") and obj.responsible.user_work_profile:
+            responsible_div_id = obj.responsible.user_work_profile.divisions_id
+
+        waybill_div_id = None
+        if obj.related_waybill and obj.related_waybill.place_division_id:
+            waybill_div_id = obj.related_waybill.place_division_id
+
+        route_step_div_ids = set(
+            obj.route_steps.exclude(assigned_division__isnull=True).values_list("assigned_division_id", flat=True)
+        )
+
+        if (
+            (initiator_div_id and initiator_div_id in accessible_div_ids)
+            or (responsible_div_id and responsible_div_id in accessible_div_ids)
+            or (waybill_div_id and waybill_div_id in accessible_div_ids)
+            or bool(route_step_div_ids.intersection(accessible_div_ids))
+        ):
+            return obj
+
+        raise PermissionDenied("У вас нет прав для просмотра документов данного подразделения.")
 
     def get_queryset(self) -> QuerySet[DocFlowDocument]:
         """Оптимизированная выборка документа со всеми связями."""

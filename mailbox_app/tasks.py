@@ -1,6 +1,8 @@
 """Фоновые задачи Celery для приложения корпоративной почты mailbox_app."""
 
 import logging
+from typing import Any, Dict, List, Optional
+
 from celery import shared_task
 
 from mailbox_app.services.scheduled_mail_service import (
@@ -108,4 +110,69 @@ def poll_mailboxes_unread_task(self) -> dict:
         except self.MaxRetriesExceededError:
             logger.critical("[Celery:MailPoller] Исчерпан лимит повторных попыток для poll_mailboxes_unread_task.")
             return {"status": "error", "error": str(exc)}
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_universal_email_task(
+    self,
+    subject: str,
+    recipient_list: List[str],
+    html_message: str,
+    plain_message: Optional[str] = None,
+    from_email: Optional[str] = None,
+    attachments: Optional[List[Dict[str, Any]]] = None,
+) -> int:
+    """Универсальная фоновая задача Celery для отправки email-сообщений во всех приложениях проекта.
+
+    Позволяет любому сервису или представлению асинхронно отправлять email-уведомления
+    в фоновом воркере Celery, исключая блокировку веб-потока и зависание интерфейса.
+
+    Args:
+        self: Экземпляр запущенной задачи Celery.
+        subject (str): Тема электронного письма.
+        recipient_list (List[str]): Список адресов получателей.
+        html_message (str): HTML-разметка тела письма.
+        plain_message (Optional[str]): Текстовая версия письма. Defaults to None.
+        from_email (Optional[str]): Email отправителя. Defaults to settings.EMAIL_HOST_USER.
+        attachments (Optional[List[Dict[str, Any]]]): Список вложений формата
+            [{'filename': '...', 'content': base64_str|bytes, 'mimetype': '...'}].
+
+    Returns:
+        int: Количество успешно отправленных писем.
+    """
+    logger.info(
+        "[Celery:UniversalEmail] Старт фоновой отправки email '%s' для %d адресатов.",
+        subject,
+        len(recipient_list),
+    )
+    try:
+        from mailbox_app.services.email_service import UniversalEmailService
+
+        sent_count, failed = UniversalEmailService.send_email_sync(
+            subject=subject,
+            recipient_list=recipient_list,
+            html_message=html_message,
+            plain_message=plain_message,
+            from_email=from_email,
+            attachments=attachments,
+            fail_silently=True,
+        )
+        logger.info(
+            "[Celery:UniversalEmail] Фоновая отправка завершена: отправлено %d, ошибок %d.",
+            sent_count,
+            len(failed),
+        )
+        return sent_count
+    except Exception as exc:
+        logger.error("[Celery:UniversalEmail] Ошибка при отправке email '%s': %s", subject, exc, exc_info=True)
+        try:
+            raise self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            logger.critical(
+                "[Celery:UniversalEmail] Превышен лимит повторов отправки email '%s' на %s.",
+                subject,
+                recipient_list,
+            )
+            return 0
+
 

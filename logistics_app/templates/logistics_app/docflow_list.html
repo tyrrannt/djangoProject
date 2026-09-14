@@ -83,7 +83,11 @@
                 Реестр входящих, исходящих и внутренних документов, маршруты согласования и аудит
             </p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'customers_app:org_structure_builder' %}" class="btn btn-outline-primary btn-touch" title="Организационная структура компании">
+                <i class="bx bx-sitemap me-1"></i>
+                <span class="d-none d-sm-inline">Оргструктура</span>
+            </a>
             <a href="{% url 'logistics_app:docflow_type_list' %}" class="btn btn-outline-secondary btn-touch" title="Виды документов">
                 <i class="bx bx-category me-1"></i>
                 <span class="d-none d-sm-inline">Виды документов</span>

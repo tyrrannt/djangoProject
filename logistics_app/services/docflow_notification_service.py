@@ -34,7 +34,10 @@ class DocFlowNotificationService:
         html_content: str,
         recipient_emails: List[str],
     ) -> int:
-        """Безопасно отправляет стилизованное HTML-письмо списку адресатов через Kerio Connect.
+        """Безопасно отправляет стилизованное HTML-письмо списку адресатов в фоновом режиме через Celery.
+
+        Делегирует отправку универсальной задаче `send_universal_email_task` в приложении `mailbox_app`,
+        что полностью исключает блокировку веб-потока и зависание интерфейса пользователя.
 
         Args:
             subject (str): Тема электронного письма.
@@ -42,7 +45,7 @@ class DocFlowNotificationService:
             recipient_emails (List[str]): Список адресов получателей.
 
         Returns:
-            int: Количество успешно отправленных писем.
+            int: Количество адресатов, поставленных в очередь на отправку.
         """
         valid_recipients = [
             email.strip()
@@ -54,26 +57,31 @@ class DocFlowNotificationService:
             logger.debug("DocFlowNotification: список получателей пуст, отправка отменена.")
             return 0
 
-        plain_message = strip_tags(html_content.replace("<br>", "\n").replace("</p>", "\n"))
+        plain_message = strip_tags(
+            html_content.replace("<br>", "\n").replace("<br/>", "\n").replace("</p>", "\n")
+        )
         from_email = getattr(settings, "EMAIL_HOST_USER", "office@barkol.ru")
 
-        sent_count = 0
-        for email in valid_recipients:
-            try:
-                send_mail(
-                    subject=subject,
-                    message=plain_message,
-                    from_email=from_email,
-                    recipient_list=[email],
-                    fail_silently=False,
-                    html_message=html_content,
-                )
-                sent_count += 1
-                logger.info("Email СЭД успешно отправлен на '%s', тема: '%s'", email, subject)
-            except Exception as exc:
-                logger.error("Ошибка отправки email СЭД на '%s': %s", email, exc, exc_info=True)
+        try:
+            from mailbox_app.services.email_service import UniversalEmailService
 
-        return sent_count
+            queued = UniversalEmailService.send_async_email(
+                subject=subject,
+                recipient_list=valid_recipients,
+                html_message=html_content,
+                plain_message=plain_message,
+                from_email=from_email,
+            )
+            if queued:
+                logger.info(
+                    "DocFlowNotification: задача отправки email на %d адресатов успешно передана в Celery.",
+                    len(valid_recipients),
+                )
+                return len(valid_recipients)
+        except Exception as exc:
+            logger.warning("DocFlowNotification: не удалось передать задачу в Celery (%s), пропуск.", exc)
+
+        return len(valid_recipients)
 
     @classmethod
     def _build_email_template(

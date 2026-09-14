@@ -1,0 +1,579 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load static_version %}
+
+{% block title %}Организационная структура компании // БАРКОЛ{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/org_structure_builder.css' %}">
+{% endblock %}
+
+{% block content %}
+<section role="main" class="content-body" style="padding: 10px 15px;">
+    {% csrf_token %}
+    
+    <!-- Хлебные крошки и заголовок -->
+    <header class="page-header d-flex align-items-center justify-content-between mb-2" style="background: transparent; box-shadow: none; border: none;">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-0">
+                <i class="fas fa-sitemap text-primary me-2"></i>Организационная структура ООО «Авиакомпания «БАРКОЛ»
+            </h2>
+            <div class="text-muted small">
+                Иерархическая блок-схема подчиненности подразделений и учет руководителей
+            </div>
+        </div>
+        <div class="right-wrapper d-flex align-items-center gap-2">
+            <ol class="breadcrumbs mb-0 me-3">
+                <li><a href="{% url 'customers_app:index' %}"><i class="fas fa-home"></i></a></li>
+                <li><a href="{% url 'logistics_app:docflow_list' %}">СЭД</a></li>
+                <li><span>Оргструктура</span></li>
+            </ol>
+        </div>
+    </header>
+
+    <!-- Основной контейнер конструктора -->
+    <div class="org-builder-wrapper" id="orgBuilderApp">
+        <!-- Тулбар управления -->
+        <div class="org-toolbar">
+            <div class="org-toolbar-left">
+                <!-- Селектор версий структуры -->
+                <div class="input-group input-group-sm" style="width: 260px;">
+                    <span class="input-group-text bg-light"><i class="fas fa-code-branch"></i></span>
+                    <select class="form-select" id="orgStructureSelect">
+                        {% for s in all_structures %}
+                            <option value="{{ s.id }}" {% if s.id == structure.id %}selected{% endif %}>
+                                {{ s.version_code|default:s.title }} (с {{ s.start_date|date:"d.m.Y" }}) {% if s.is_active %}★{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Срез на дату -->
+                <div class="input-group input-group-sm" style="width: 210px;" title="Просмотр действующих руководителей на выбранную дату">
+                    <span class="input-group-text bg-light"><i class="fas fa-calendar-alt"></i> Срез</span>
+                    <input type="date" class="form-control" id="orgTargetDateInput" value="{{ target_date }}">
+                </div>
+
+                <span class="badge bg-primary" id="orgStructureDateBadge">Введена: {{ structure.start_date|date:"d.m.Y"|default:"-" }}</span>
+                <span class="badge bg-light text-dark border" id="orgStructureApprovedBadge">{{ structure.approved_by|default:"Генеральный директор" }}</span>
+            </div>
+
+            <div class="org-toolbar-right">
+                <!-- Управление масштабом -->
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary" id="btnZoomOut" title="Уменьшить (Zoom Out)"><i class="fas fa-search-minus"></i></button>
+                    <span class="btn btn-outline-secondary disabled px-2" id="zoomLevelValue" style="min-width: 55px;">85%</span>
+                    <button type="button" class="btn btn-outline-secondary" id="btnZoomIn" title="Увеличить (Zoom In)"><i class="fas fa-search-plus"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnZoomReset" title="Сбросить масштаб"><i class="fas fa-compress-arrows-alt"></i></button>
+                </div>
+
+                <!-- Автовыравнивание и действия -->
+                {% if can_edit %}
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAutoLayout" title="Автоматическая раскладка по уровням подчиненности">
+                        <i class="fas fa-magic me-1"></i> Автовыравнивание
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="btnAddNewNode" title="Создать новый узел">
+                        <i class="fas fa-plus me-1"></i> Добавить блок
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnSaveLayout" title="Сохранить текущую расстановку">
+                        <i class="fas fa-save me-1"></i> Сохранить схему
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#newVersionModal" title="Создать новую редакцию структуры">
+                        <i class="fas fa-code-branch me-1"></i> Новая редакция
+                    </button>
+                {% endif %}
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPrintChart" title="Печать схемы">
+                    <i class="fas fa-print"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Рабочая область -->
+        <div class="org-workspace">
+            <!-- Палитра подразделений слева -->
+            <div class="org-palette-sidebar">
+                <div class="org-palette-header">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control" id="paletteSearchInput" placeholder="Поиск подразделения...">
+                    </div>
+                </div>
+                <div class="org-palette-body" id="paletteItemsContainer">
+                    <div class="text-muted small mb-2 fw-bold px-1">ПОДРАЗДЕЛЕНИЯ (DIVISION)</div>
+                    {% for div in divisions %}
+                        <div class="palette-item" data-id="{{ div.id }}" data-name="{{ div.name }}" title="Нажмите, чтобы добавить на схему">
+                            <div class="d-flex align-items-center text-truncate">
+                                <i class="fas fa-building text-primary me-2"></i>
+                                <span class="text-truncate">{{ div.name }}</span>
+                            </div>
+                            <button class="btn btn-xs btn-outline-primary btn-quick-add" data-id="{{ div.id }}" data-name="{{ div.name }}" title="Добавить на схему">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    {% empty %}
+                        <div class="text-muted small p-2">Справочник подразделений пуст</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Интерактивный холст -->
+            <div class="org-canvas-container" id="orgCanvasContainer">
+                <div class="org-canvas" id="orgCanvas">
+                    <!-- SVG-слой соединительных линий -->
+                    <svg class="org-svg-layer" id="orgSvgLayer"></svg>
+                    <!-- Контейнер блоков -->
+                    <div class="org-nodes-container" id="orgNodesContainer"></div>
+                </div>
+
+                <!-- Лоадер -->
+                <div class="org-builder-loader" id="orgBuilderLoader">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="mt-2 text-dark font-weight-bold">Загрузка структуры...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= МОДАЛЬНЫЕ ОКНА ================= -->
+
+<!-- 1. Модальное окно: Назначение руководителя -->
+<div class="modal fade" id="assignLeaderModal" tabindex="-1" aria-labelledby="assignLeaderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="assignLeaderModalLabel">
+                    <i class="fas fa-user-tie me-2"></i>Назначение руководителя
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form id="assignLeaderForm">
+                <div class="modal-body">
+                    <input type="hidden" id="assignLeaderNodeId">
+                    
+                    <div class="alert alert-light border mb-3">
+                        <div class="small text-muted">Подразделение / Блок:</div>
+                        <div class="fw-bold text-dark" id="assignLeaderNodeTitle">-</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Руководитель (Сотрудник) <span class="text-danger">*</span></label>
+                        <select class="form-select" id="assignLeaderEmployeeSelect" required>
+                            <option value="">-- Выберите сотрудника --</option>
+                        </select>
+                        <div class="form-text">Даже если на должности числится несколько человек, выберите ответственное лицо.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Должность руководителя</label>
+                        <select class="form-select" id="assignLeaderJobSelect">
+                            <option value="">-- Должность по умолчанию --</option>
+                            {% for j in jobs %}
+                                <option value="{{ j.id }}">{{ j.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Дата начала <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="assignLeaderDateFrom" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Дата окончания</label>
+                            <input type="date" class="form-control" id="assignLeaderDateTo">
+                            <div class="form-text">Пусто = по настоящее время</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Приказ / Основание</label>
+                        <input type="text" class="form-control" id="assignLeaderOrder" placeholder="Например: Приказ № 45-к от 01.09.2026">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Примечание</label>
+                        <input type="text" class="form-control" id="assignLeaderComment" placeholder="Например: Перевод на повышение, и.о.">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveLeader"><i class="fas fa-check me-1"></i> Сохранить назначение</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Модальное окно: Свойства узла -->
+<div class="modal fade" id="editNodeModal" tabindex="-1" aria-labelledby="editNodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editNodeModalLabel">
+                    <i class="fas fa-cog me-2"></i>Параметры блока структуры
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form id="editNodeForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editNodeId">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Пользовательское наименование блока</label>
+                        <input type="text" class="form-control" id="editNodeCustomName" placeholder="Оставьте пустым для автонаименования из Division">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Подразделение из справочника (Division)</label>
+                        <select class="form-select" id="editNodeDivisionSelect">
+                            <option value="">-- Без привязки к Division --</option>
+                            {% for div in divisions %}
+                                <option value="{{ div.id }}">{{ div.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Вышестоящее звено (Родитель)</label>
+                        <select class="form-select" id="editNodeParentSelect">
+                            <option value="">-- Без родителя (Корень) --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Руководящая должность (Job)</label>
+                        <select class="form-select" id="editNodeHeadJobSelect">
+                            <option value="">-- Не указана --</option>
+                            {% for j in jobs %}
+                                <option value="{{ j.id }}">{{ j.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Тип узла</label>
+                            <select class="form-select" id="editNodeTypeSelect">
+                                <option value="TOP_MANAGEMENT">Высшее руководство</option>
+                                <option value="SERVICE">Служба</option>
+                                <option value="DETACHMENT">Летный отряд</option>
+                                <option value="DIVISION" selected>Отдел / Подразделение</option>
+                                <option value="GROUP">Группа / Участок</option>
+                                <option value="SUBDIVISION">Обособленное подразделение (ОП МПД)</option>
+                                <option value="ADVISORY">Совещательный орган</option>
+                                <option value="ASSISTANT">Аппарат руководства</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Цветовая тема</label>
+                            <select class="form-select" id="editNodeColorSelect">
+                                <option value="dark">Темно-синий (Руководство)</option>
+                                <option value="blue" selected>Синий (Исполнительный)</option>
+                                <option value="indigo">Индиго (Летная служба)</option>
+                                <option value="cyan">Циан (ИАС)</option>
+                                <option value="teal">Бирюзовый (Безопасность)</option>
+                                <option value="purple">Фиолетовый (Бухгалтерия)</option>
+                                <option value="lime">Лайм (Склад)</option>
+                                <option value="orange">Оранжевый (Транспортная БП)</option>
+                                <option value="red">Красный (Кадры и право)</option>
+                                <option value="amber">Янтарный (Летный отряд)</option>
+                                <option value="green">Зеленый (ОП МПД)</option>
+                                <option value="gray">Серый (Аппарат/Совет)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-dark" id="btnSaveNodeProps"><i class="fas fa-save me-1"></i> Сохранить блок</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Модальное окно: История руководства -->
+<div class="modal fade" id="historyLeaderModal" tabindex="-1" aria-labelledby="historyLeaderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="historyLeaderModalLabel">
+                    <i class="fas fa-history me-2"></i>История руководства подразделения
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light border mb-3">
+                    <div class="small text-muted">Подразделение:</div>
+                    <div class="fw-bold text-dark fs-6" id="historyModalNodeTitle">-</div>
+                </div>
+                <div id="historyTimelineContainer">
+                    <!-- Заполняется динамически -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Модальное окно: Новая редакция оргструктуры -->
+<div class="modal fade" id="newVersionModal" tabindex="-1" aria-labelledby="newVersionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="newVersionModalLabel">
+                    <i class="fas fa-code-branch me-2"></i>Создание новой редакции оргструктуры
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form id="newVersionForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Наименование схемы <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newVersionTitle" value="Общая структурная схема ООО Авиакомпания «БАРКОЛ»" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Код редакции</label>
+                            <input type="text" class="form-control" id="newVersionCode" placeholder="Например: 2026-10">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Дата ввода в действие <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="newVersionStartDate" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Гриф утверждения</label>
+                        <input type="text" class="form-control" id="newVersionApprovedBy" value="Генеральный директор В.С. Бархотов">
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="newVersionCopyFromCurrent" checked>
+                        <label class="form-check-label" for="newVersionCopyFromCurrent">
+                            Скопировать узлы и действующих руководителей из текущей схемы
+                        </label>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Основание / Примечание</label>
+                        <textarea class="form-control" id="newVersionDescription" rows="2" placeholder="Номер приказа или основание изменений..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="btnCreateVersionSubmit"><i class="fas fa-check me-1"></i> Создать редакцию</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static_version 'customers_app/js/org_structure_builder.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const builder = new OrgStructureBuilder('orgBuilderApp', {
+                structureId: '{{ structure.id|default:"" }}',
+                targetDate: '{{ target_date }}',
+                canEdit: {{ can_edit|yesno:"true,false" }},
+                apiUrls: {
+                    data: "{% url 'customers_app:api_org_structure_data' %}",
+                    saveLayout: "{% url 'customers_app:api_org_structure_save_layout' %}",
+                    nodeSave: "{% url 'customers_app:api_org_structure_node_save' %}",
+                    nodeDelete: "{% url 'customers_app:api_org_structure_node_delete' %}",
+                    assignLeader: "{% url 'customers_app:api_org_structure_assign_leader' %}",
+                    createVersion: "{% url 'customers_app:api_org_structure_create_version' %}",
+                    nodeHistory: (nodeId) => `{% url 'customers_app:api_org_structure_assign_leader' %}`.replace('assign-leader/', `${nodeId}/history/`)
+                }
+            });
+
+            // Заполнение селектора сотрудников
+            function populateEmployeeSelect(users) {
+                const empSelect = document.getElementById('assignLeaderEmployeeSelect');
+                if (!empSelect) return;
+                empSelect.innerHTML = '<option value="">-- Выберите сотрудника --</option>';
+                users.forEach(u => {
+                    const name = u.title || `${u.last_name || ''} ${u.first_name || ''} (${u.username})`;
+                    empSelect.innerHTML += `<option value="${u.id}">${name}</option>`;
+                });
+            }
+
+            // Наблюдаем за загрузкой данных
+            const origLoadData = builder.loadData.bind(builder);
+            builder.loadData = async function(sid, d) {
+                await origLoadData(sid, d);
+                if (builder.data && builder.data.users) {
+                    populateEmployeeSelect(builder.data.users);
+                }
+            };
+
+            // Кнопки добавления из палитры
+            document.querySelectorAll('.btn-quick-add').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const divId = this.getAttribute('data-id');
+                    const divName = this.getAttribute('data-name');
+                    builder.openEditNodeModal({
+                        division_id: divId,
+                        custom_name: divName,
+                        node_type: 'DIVISION',
+                        color_scheme: 'blue'
+                    });
+                });
+            });
+
+            document.getElementById('btnAddNewNode')?.addEventListener('click', function() {
+                builder.openEditNodeModal(null);
+            });
+
+            // Отправка формы назначения руководителя
+            document.getElementById('assignLeaderForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const nodeId = document.getElementById('assignLeaderNodeId').value;
+                const empId = document.getElementById('assignLeaderEmployeeSelect').value;
+                const jobId = document.getElementById('assignLeaderJobSelect').value;
+                const dateFrom = document.getElementById('assignLeaderDateFrom').value;
+                const dateTo = document.getElementById('assignLeaderDateTo').value;
+                const order = document.getElementById('assignLeaderOrder').value;
+                const comment = document.getElementById('assignLeaderComment').value;
+
+                try {
+                    builder.showLoader(true);
+                    const resp = await fetch(builder.apiUrls.assignLeader, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': builder.getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            node_id: nodeId,
+                            employee_id: empId,
+                            job_id: jobId,
+                            date_from: dateFrom,
+                            date_to: dateTo,
+                            order_number: order,
+                            comment: comment
+                        })
+                    });
+                    const res = await resp.json();
+                    if (res.status === 'success') {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('assignLeaderModal'));
+                        if (modal) modal.hide();
+                        if (window.toastr) toastr.success('Руководитель успешно назначен!');
+                        await builder.loadData(builder.structureId, builder.targetDate);
+                        builder.render();
+                    } else {
+                        throw new Error(res.message);
+                    }
+                } catch (err) {
+                    if (window.toastr) toastr.error('Ошибка: ' + err.message);
+                } finally {
+                    builder.showLoader(false);
+                }
+            });
+
+            // Отправка формы свойств узла
+            document.getElementById('editNodeForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const nodeId = document.getElementById('editNodeId').value;
+                const customName = document.getElementById('editNodeCustomName').value;
+                const divisionId = document.getElementById('editNodeDivisionSelect').value;
+                const headJobId = document.getElementById('editNodeHeadJobSelect').value;
+                const parentId = document.getElementById('editNodeParentSelect').value;
+                const nodeType = document.getElementById('editNodeTypeSelect').value;
+                const colorScheme = document.getElementById('editNodeColorSelect').value;
+
+                try {
+                    builder.showLoader(true);
+                    const resp = await fetch(builder.apiUrls.nodeSave, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': builder.getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            structure_id: builder.structureId,
+                            node_data: {
+                                id: nodeId || null,
+                                custom_name: customName,
+                                division_id: divisionId || null,
+                                head_job_id: headJobId || null,
+                                parent_id: parentId || null,
+                                node_type: nodeType,
+                                color_scheme: colorScheme,
+                                pos_x: 200,
+                                pos_y: 200
+                            }
+                        })
+                    });
+                    const res = await resp.json();
+                    if (res.status === 'success') {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editNodeModal'));
+                        if (modal) modal.hide();
+                        if (window.toastr) toastr.success('Блок структуры сохранен!');
+                        await builder.loadData(builder.structureId, builder.targetDate);
+                        builder.render();
+                    } else {
+                        throw new Error(res.message);
+                    }
+                } catch (err) {
+                    if (window.toastr) toastr.error('Ошибка: ' + err.message);
+                } finally {
+                    builder.showLoader(false);
+                }
+            });
+
+            // Отправка формы создания новой редакции структуры
+            document.getElementById('newVersionForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const title = document.getElementById('newVersionTitle').value;
+                const code = document.getElementById('newVersionCode').value;
+                const startDate = document.getElementById('newVersionStartDate').value;
+                const approvedBy = document.getElementById('newVersionApprovedBy').value;
+                const copyCurrent = document.getElementById('newVersionCopyFromCurrent').checked;
+                const desc = document.getElementById('newVersionDescription').value;
+
+                try {
+                    builder.showLoader(true);
+                    const resp = await fetch(builder.apiUrls.createVersion, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': builder.getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            title: title,
+                            version_code: code,
+                            start_date: startDate,
+                            approved_by: approvedBy,
+                            copy_from_id: copyCurrent ? builder.structureId : null,
+                            description: desc
+                        })
+                    });
+                    const res = await resp.json();
+                    if (res.status === 'success') {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('newVersionModal'));
+                        if (modal) modal.hide();
+                        if (window.toastr) toastr.success('Новая редакция оргструктуры успешно создана!');
+                        window.location.href = `{% url 'customers_app:org_structure_builder' %}?structure_id=${res.structure.id}`;
+                    } else {
+                        throw new Error(res.message);
+                    }
+                } catch (err) {
+                    if (window.toastr) toastr.error('Ошибка: ' + err.message);
+                } finally {
+                    builder.showLoader(false);
+                }
+            });
+        });
+    </script>
+{% endblock %}

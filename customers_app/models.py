@@ -1,6 +1,7 @@
 import datetime
 import pathlib
 import uuid
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.apps import apps
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -1872,4 +1873,356 @@ class UserCertificate(models.Model):
         """
         owner = self.cn or self.user.get_full_name() or self.user.username
         return f"{self.name} — {owner} ({self.thumbprint[:10]}...)"
+
+
+class OrgStructure(models.Model):
+    """Схема организационной структуры компании с версионированием и датой ввода в действие.
+
+    Хранит официальную редакцию структуры компании с реквизитами утверждения,
+    датой ввода в действие и сохраненной разметкой визуального конструктора.
+
+    Attributes:
+        title (CharField): Наименование схемы структуры (например, "Общая структурная схема ООО Авиакомпания БАРКОЛ").
+        version_code (CharField): Код / номер версии (например, "2026-09").
+        start_date (DateField): Дата ввода схемы в действие.
+        end_date (DateField, optional): Дата окончания действия редакции структуры.
+        is_active (BooleanField): Флаг актуальной действующей структуры.
+        approved_by (CharField): Гриф утверждения (например, "Генеральный директор В.С. Бархотов").
+        approval_date (DateField, optional): Дата утверждения схемы.
+        description (TextField, optional): Описание или обоснование (приказ/распоряжение).
+        raw_layout_json (JSONField): Сохраненная конфигурация визуального конструктора (координаты узлов, масштаб).
+        created_at (DateTimeField): Дата создания записи.
+        updated_at (DateTimeField): Дата последнего обновления.
+    """
+
+    class Meta:
+        verbose_name = "Организационная структура"
+        verbose_name_plural = "Организационные структуры"
+        ordering = ["-start_date", "-created_at"]
+
+    title = models.CharField(
+        verbose_name="Наименование структуры",
+        max_length=255,
+        default="Общая структурная схема ООО Авиакомпания «БАРКОЛ»",
+    )
+    version_code = models.CharField(
+        verbose_name="Код версии",
+        max_length=50,
+        default="2026-09",
+        blank=True,
+    )
+    start_date = models.DateField(
+        verbose_name="Дата ввода в действие",
+        default=timezone.now,
+    )
+    end_date = models.DateField(
+        verbose_name="Дата окончания действия",
+        null=True,
+        blank=True,
+    )
+    is_active = models.BooleanField(
+        verbose_name="Актуальная действующая структура",
+        default=True,
+    )
+    approved_by = models.CharField(
+        verbose_name="Кем утверждено",
+        max_length=255,
+        default="Генеральный директор В.С. Бархотов",
+        blank=True,
+    )
+    approval_date = models.DateField(
+        verbose_name="Дата утверждения",
+        null=True,
+        blank=True,
+    )
+    description = models.TextField(
+        verbose_name="Описание / основание",
+        blank=True,
+        default="",
+    )
+    raw_layout_json = models.JSONField(
+        verbose_name="Разметка холста конструктора (JSON)",
+        default=dict,
+        blank=True,
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        verbose_name="Дата обновления",
+        auto_now=True,
+    )
+
+    def __str__(self) -> str:
+        """Строковое представление схемы оргструктуры.
+
+        Returns:
+            str: Название схемы с датой ввода и признаком актуальности.
+        """
+        status_label = " (Актуальная)" if self.is_active else ""
+        date_str = self.start_date.strftime("%d.%m.%Y") if self.start_date else "-"
+        return f"{self.title} [с {date_str}]{status_label}"
+
+
+class OrgStructureNode(models.Model):
+    """Узел организационной структуры (подразделение, орган управления или служба).
+
+    Attributes:
+        structure (ForeignKey): Ссылка на схему оргструктуры.
+        division (ForeignKey, optional): Связанное подразделение из справочника Division.
+        custom_name (CharField, optional): Пользовательское наименование узла.
+        parent (ForeignKey, optional): Вышестоящий узел в иерархии подчинения.
+        head_job (ForeignKey, optional): Руководящая должность данного узла из справочника Job.
+        node_type (CharField): Тип узла (TOP_MANAGEMENT, SERVICE, DIVISION, DETACHMENT, GROUP, SUBDIVISION, ADVISORY, ASSISTANT).
+        level (PositiveIntegerField): Уровень иерархии (0 - Гендиректор, 1 - Заместители, 2 - Службы/Отделы, 3 - Секторы/Группы, 4 - ОП МПД).
+        order (PositiveIntegerField): Порядковый номер сортировки среди соседних узлов.
+        pos_x (IntegerField): Координата X на холсте блок-схемы.
+        pos_y (IntegerField): Координата Y на холсте блок-схемы.
+        color_scheme (CharField): Цветовая тема узла.
+        is_active (BooleanField): Флаг активности узла.
+    """
+
+    class NodeType(models.TextChoices):
+        TOP_MANAGEMENT = "TOP_MANAGEMENT", "Высшее руководство"
+        SERVICE = "SERVICE", "Служба"
+        DETACHMENT = "DETACHMENT", "Летный отряд"
+        DIVISION = "DIVISION", "Отдел / Подразделение"
+        GROUP = "GROUP", "Группа / Участок / Сектор"
+        SUBDIVISION = "SUBDIVISION", "Обособленное подразделение (ОП МПД)"
+        ADVISORY = "ADVISORY", "Совещательный орган / Совет"
+        ASSISTANT = "ASSISTANT", "Аппарат руководства / Секретариат"
+
+    class Meta:
+        verbose_name = "Узел оргструктуры"
+        verbose_name_plural = "Узлы оргструктуры"
+        ordering = ["level", "order", "id"]
+
+    structure = models.ForeignKey(
+        OrgStructure,
+        on_delete=models.CASCADE,
+        related_name="nodes",
+        verbose_name="Схема оргструктуры",
+    )
+    division = models.ForeignKey(
+        Division,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="org_nodes",
+        verbose_name="Подразделение",
+    )
+    custom_name = models.CharField(
+        verbose_name="Наименование блока",
+        max_length=255,
+        blank=True,
+        default="",
+    )
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name="Вышестоящее звено (Родитель)",
+    )
+    head_job = models.ForeignKey(
+        Job,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="org_head_nodes",
+        verbose_name="Руководящая должность",
+    )
+    node_type = models.CharField(
+        verbose_name="Тип узла",
+        max_length=30,
+        choices=NodeType.choices,
+        default=NodeType.DIVISION,
+    )
+    level = models.PositiveIntegerField(
+        verbose_name="Уровень иерархии",
+        default=1,
+    )
+    order = models.PositiveIntegerField(
+        verbose_name="Порядок сортировки",
+        default=0,
+    )
+    pos_x = models.IntegerField(
+        verbose_name="Координата X на холсте",
+        default=100,
+    )
+    pos_y = models.IntegerField(
+        verbose_name="Координата Y на холсте",
+        default=100,
+    )
+    color_scheme = models.CharField(
+        verbose_name="Цветовая тема",
+        max_length=30,
+        default="blue",
+        blank=True,
+    )
+    is_active = models.BooleanField(
+        verbose_name="Активен",
+        default=True,
+    )
+
+    def get_display_name(self) -> str:
+        """Возвращает отображаемое имя узла.
+
+        Returns:
+            str: Пользовательское наименование, имя подразделения или руководящей должности.
+        """
+        if self.custom_name:
+            return self.custom_name
+        if self.division:
+            return self.division.name
+        if self.head_job:
+            return self.head_job.name
+        return f"Узел #{self.id}"
+
+    def get_current_leader(self) -> Optional["OrgNodeLeadershipHistory"]:
+        """Возвращает действующего руководителя узла.
+
+        Returns:
+            Optional[OrgNodeLeadershipHistory]: Активная запись руководителя или None.
+        """
+        return self.leadership_history.filter(is_current=True).select_related("employee", "job").first()
+
+    def get_leader_on_date(self, target_date: Optional[datetime.date] = None) -> Optional["OrgNodeLeadershipHistory"]:
+        """Возвращает руководителя, занимавшего должность на указанную дату.
+
+        Args:
+            target_date (Optional[datetime.date]): Дата, на которую запрашивается руководитель.
+
+        Returns:
+            Optional[OrgNodeLeadershipHistory]: Запись руководителя на указанную дату или None.
+        """
+        if not target_date:
+            return self.get_current_leader()
+        return (
+            self.leadership_history.filter(date_from__lte=target_date)
+            .filter(Q(date_to__gte=target_date) | Q(date_to__isnull=True))
+            .select_related("employee", "job")
+            .first()
+        )
+
+    def get_all_descendant_division_ids(self) -> Set[int]:
+        """Рекурсивно возвращает множество ID всех подразделений (Division.id) текущего узла и всех его потомков.
+
+        Returns:
+            Set[int]: Множество первичных ключей подразделений поддерева.
+        """
+        result: Set[int] = set()
+        if self.division_id:
+            result.add(self.division_id)
+        for child in self.children.filter(is_active=True):
+            result.update(child.get_all_descendant_division_ids())
+        return result
+
+    def get_all_descendant_node_ids(self) -> Set[int]:
+        """Рекурсивно возвращает множество ID всех узлов (OrgStructureNode.id) текущего узла и всех его потомков.
+
+        Returns:
+            Set[int]: Множество первичных ключей узлов поддерева.
+        """
+        result: Set[int] = {self.id}
+        for child in self.children.filter(is_active=True):
+            result.update(child.get_all_descendant_node_ids())
+        return result
+
+    def __str__(self) -> str:
+        """Строковое представление узла оргструктуры.
+
+        Returns:
+            str: Отображаемое название узла.
+        """
+        return self.get_display_name()
+
+
+class OrgNodeLeadershipHistory(models.Model):
+    """Исторический реестр назначения руководителей на узлы оргструктуры.
+
+    Фиксирует персоналии руководителей с привязкой к должности и временному периоду,
+    позволяя точно определять руководителя подразделения на любую дату в прошлом или настоящем.
+
+    Attributes:
+        node (ForeignKey): Узел оргструктуры.
+        job (ForeignKey, optional): Должность руководителя из справочника Job.
+        employee (ForeignKey): Назначенный сотрудник (DataBaseUser).
+        date_from (DateField): Дата начала руководства.
+        date_to (DateField, optional): Дата окончания руководства (null = бессрочно).
+        is_current (BooleanField): Признак действующего руководителя на текущий момент.
+        order_number (CharField, optional): Реквизиты приказа о назначении/переводе.
+        comment (CharField, optional): Служебные примечания (и.о., совмещение, повышение).
+        created_at (DateTimeField): Дата создания записи.
+    """
+
+    class Meta:
+        verbose_name = "История руководства узла"
+        verbose_name_plural = "История руководства узлов"
+        ordering = ["-is_current", "-date_from", "-created_at"]
+
+    node = models.ForeignKey(
+        OrgStructureNode,
+        on_delete=models.CASCADE,
+        related_name="leadership_history",
+        verbose_name="Узел оргструктуры",
+    )
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="leadership_records",
+        verbose_name="Должность руководителя",
+    )
+    employee = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.CASCADE,
+        related_name="leadership_records",
+        verbose_name="Руководитель (Сотрудник)",
+    )
+    date_from = models.DateField(
+        verbose_name="Дата начала руководства",
+        default=timezone.now,
+    )
+    date_to = models.DateField(
+        verbose_name="Дата окончания руководства",
+        null=True,
+        blank=True,
+    )
+    is_current = models.BooleanField(
+        verbose_name="Действующий руководитель",
+        default=True,
+    )
+    order_number = models.CharField(
+        verbose_name="Приказ / основание",
+        max_length=150,
+        blank=True,
+        default="",
+    )
+    comment = models.CharField(
+        verbose_name="Примечание",
+        max_length=255,
+        blank=True,
+        default="",
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата фиксации записи",
+        auto_now_add=True,
+    )
+
+    def __str__(self) -> str:
+        """Строковое представление исторической записи руководства.
+
+        Returns:
+            str: ФИО сотрудника, должность и период руководства.
+        """
+        date_to_str = self.date_to.strftime("%d.%m.%Y") if self.date_to else "н.в."
+        date_from_str = self.date_from.strftime("%d.%m.%Y") if self.date_from else "-"
+        job_title = self.job.name if self.job else "Руководитель"
+        user_name = self.employee.title or self.employee.get_full_name() or self.employee.username
+        return f"{user_name} ({job_title}) [{date_from_str} — {date_to_str}]"
+
 
