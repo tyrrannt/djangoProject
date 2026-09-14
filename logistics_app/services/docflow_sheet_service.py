@@ -420,14 +420,21 @@ class DocFlowSheetGenerator:
                 if current_ver:
                     u_name = (current_ver.uploaded_by.title or current_ver.uploaded_by.get_full_name()) if current_ver.uploaded_by else "—"
                     u_date = current_ver.uploaded_at.strftime("%d.%m.%Y %H:%M")
-                    h_sha = current_ver.file_hash[:24] + "..." if current_ver.file_hash else "—"
+                    if current_ver.file_hash:
+                        raw_hash = current_ver.file_hash
+                        if len(raw_hash) == 64:
+                            h_sha = f"{raw_hash[:32]}<br/>{raw_hash[32:]}"
+                        else:
+                            h_sha = raw_hash
+                    else:
+                        h_sha = "—"
 
                     file_rows.append([
                         Paragraph(doc_file.title, style_table_cell),
                         Paragraph(f"v{current_ver.version_number}", style_table_cell),
                         Paragraph(u_name, style_table_cell),
                         Paragraph(u_date, style_table_cell),
-                        Paragraph(f"<font name='DejaVuSans' size=6>{h_sha}</font>", style_table_cell),
+                        Paragraph(f"<font name='DejaVuSans' size=5.5>{h_sha}</font>", style_table_cell),
                     ])
 
             file_table = Table(file_rows, colWidths=[140, 45, 110, 75, 140])

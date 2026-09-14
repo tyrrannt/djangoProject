@@ -489,9 +489,15 @@
                         <div class="tab-pane fade show active" id="filesTabPane" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold mb-0 text-dark">Документы и история правок</h6>
-                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadVersionModal">
-                                    <i class="bx bx-upload me-1"></i>Загрузить версию
-                                </button>
+                                {% if can_upload_file %}
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadVersionModal">
+                                        <i class="bx bx-upload me-1"></i>Загрузить версию
+                                    </button>
+                                {% elif document.is_finalized %}
+                                    <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.75rem;">
+                                        <i class="bx bx-lock-alt me-1 text-danger"></i>Документ зафиксирован (файлы защищены от изменений)
+                                    </span>
+                                {% endif %}
                             </div>
 
                             {% for doc_file in document.files.all %}
@@ -538,14 +544,28 @@
                                                             {{ ver.file_size_formatted }}
                                                         </td>
                                                         <td>
-                                                            {{ ver.change_comment|default:ver.comment|default:"—" }}
+                                                            <div>{{ ver.change_comment|default:ver.comment|default:"—" }}</div>
                                                             {% if ver.file_hash %}
-                                                                <div class="text-muted" style="font-size: 0.7rem;" title="SHA-256: {{ ver.file_hash }}">
-                                                                    <i class="bx bx-fingerprint me-1"></i>{{ ver.file_hash|slice:":16" }}...
+                                                                <div class="d-inline-flex align-items-center gap-1 mt-1 p-1 bg-light rounded border" style="font-size: 0.72rem;">
+                                                                    <span class="text-secondary font-monospace text-nowrap" title="Полный SHA-256: {{ ver.file_hash }}">
+                                                                        <i class="bx bx-fingerprint text-primary me-1"></i>SHA-256: {{ ver.file_hash|slice:":10" }}...{{ ver.file_hash|slice:"-6:" }}
+                                                                    </span>
+                                                                    <button type="button" class="btn btn-sm btn-link p-0 text-secondary text-decoration-none" 
+                                                                            title="Скопировать полный SHA-256 хэш"
+                                                                            onclick="copySha256('{{ ver.file_hash }}', this)">
+                                                                        <i class="bx bx-copy"></i>
+                                                                    </button>
                                                                 </div>
                                                             {% endif %}
                                                         </td>
-                                                        <td class="text-end">
+                                                        <td class="text-end text-nowrap">
+                                                            {% if ver.file_hash %}
+                                                                <button type="button" class="btn btn-sm btn-outline-success py-1 px-2 me-1" 
+                                                                        title="Проверить подлинность локального файла по SHA-256"
+                                                                        onclick="openVerifyModal('{{ doc_file.title|escapejs }}', '{{ ver.version_number|escapejs }}', '{{ ver.file_hash|escapejs }}')">
+                                                                    <i class="bx bx-check-shield me-1"></i>Проверить
+                                                                </button>
+                                                            {% endif %}
                                                             <a href="{% url 'logistics_app:docflow_version_download' ver.id %}" class="btn btn-sm btn-outline-primary py-1 px-2" title="Скачать файл">
                                                                 <i class="bx bx-download me-1"></i>Скачать
                                                             </a>
@@ -1031,6 +1051,7 @@
 {% endif %}
 
 <!-- 7. Модальное окно загрузки новой версии файла -->
+{% if can_upload_file %}
 <div class="modal fade" id="uploadVersionModal" tabindex="-1" aria-labelledby="uploadVersionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -1081,6 +1102,106 @@
         </div>
     </div>
 </div>
+<!-- 8. Модальное окно онлайн-проверки подлинности файла (SHA-256) -->
+<div class="modal fade" id="verifyChecksumModal" tabindex="-1" aria-labelledby="verifyChecksumModalLabel" aria-hidden="true" data-expected-hash="">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title font-weight-bold" id="verifyChecksumModalLabel">
+                    <i class="bx bx-shield-quarter me-2 text-success"></i>Проверка подлинности файла (SHA-256)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Карточка реквизитов версии -->
+                <div class="alert alert-light border mb-3 p-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-7">
+                            <span class="text-muted small d-block">Целевой файл:</span>
+                            <strong id="verifyModalFileTitle" class="text-dark"></strong>
+                            <span id="verifyModalVersion" class="badge bg-primary ms-2"></span>
+                        </div>
+                        <div class="col-md-5 text-md-end">
+                            <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+                                <i class="bx bx-lock-alt me-1"></i>Криптографическая защита
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-top">
+                        <span class="text-muted small d-block mb-1">Ожидаемая контрольная сумма (из базы СЭД):</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <code id="verifyModalExpectedHash" class="font-monospace text-break user-select-all p-2 bg-white border rounded small text-dark flex-grow-1" style="font-size: 0.78rem;"></code>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyExpectedHashFromModal(this)" title="Скопировать хэш">
+                                <i class="bx bx-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Зона Drag and Drop -->
+                <div id="verifyDropZone" class="border rounded p-4 text-center bg-light mb-3 position-relative" 
+                     style="border: 2px dashed #94a3b8 !important; cursor: pointer; transition: all 0.2s ease;">
+                    <input type="file" id="verifyFileInput" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;">
+                    <div id="verifyDropZoneContent">
+                        <i class="bx bx-cloud-upload display-4 text-primary d-block mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-1">Перетащите локальный файл сюда для мгновенной проверки</h6>
+                        <p class="text-muted small mb-0">или <span class="text-primary text-decoration-underline font-weight-bold">выберите файл на диске</span></p>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            <i class="bx bx-check-circle text-success me-1"></i>Проверка выполняется локально в браузере через Web Crypto API без передачи файла на сервер
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Индикатор вычисления -->
+                <div id="verifyLoadingState" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary mb-2" role="status">
+                        <span class="visually-hidden">Вычисление...</span>
+                    </div>
+                    <p class="fw-semibold text-secondary mb-0">Вычисление криптографической контрольной суммы SHA-256...</p>
+                </div>
+
+                <!-- Результат: СОВПАДЕНИЕ -->
+                <div id="verifyResultSuccess" class="alert alert-success border-success d-none mb-0 p-3">
+                    <div class="d-flex align-items-start">
+                        <i class="bx bxs-check-shield display-6 text-success me-3"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading fw-bold mb-1">✅ Контрольная сумма полностью совпадает!</h6>
+                            <p class="small mb-2 text-dark">
+                                Файл на 100% подлинный и идентичен зарегистрированной версии в СЭД. Ни один байт данных, структура и метаданные не подвергались изменениям.
+                            </p>
+                            <div class="p-2 bg-white rounded border small font-monospace text-break" style="font-size: 0.75rem;">
+                                <strong>Рассчитанный SHA-256:</strong> <span id="successCalculatedHash" class="text-success font-weight-bold"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Результат: НЕСОВПАДЕНИЕ -->
+                <div id="verifyResultMismatch" class="alert alert-danger border-danger d-none mb-0 p-3">
+                    <div class="d-flex align-items-start">
+                        <i class="bx bxs-x-circle display-6 text-danger me-3"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading fw-bold mb-1">❌ Контрольная сумма не совпадает!</h6>
+                            <p class="small mb-2 text-dark">
+                                <strong>Внимание!</strong> Содержимое проверяемого файла отличается от зарегистрированной редакции в СЭД. Файл был изменен, поврежден или выбран не тот документ.
+                            </p>
+                            <div class="p-2 bg-white rounded border small font-monospace mb-1 text-break" style="font-size: 0.75rem;">
+                                <div class="text-secondary"><strong>Ожидаемый:</strong> <span id="mismatchExpectedHash"></span></div>
+                                <div class="text-danger mt-1"><strong>Полученный:</strong> <span id="mismatchCalculatedHash" class="fw-bold"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnResetVerify" onclick="resetVerifyForm()">
+                    <i class="bx bx-refresh me-1"></i>Проверить другой файл
+                </button>
+                <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block custom_script %}
@@ -1102,6 +1223,89 @@
         document.getElementById('replyToNotice').classList.add('d-none');
     }
 
+    // Копирование полного хэша SHA-256 в буфер обмена
+    function copySha256(hashText, btnElement) {
+        if (!hashText) return;
+        navigator.clipboard.writeText(hashText).then(function() {
+            if (btnElement) {
+                const icon = btnElement.querySelector('i');
+                if (icon) {
+                    const origClass = icon.className;
+                    icon.className = 'bx bx-check text-success';
+                    setTimeout(() => { icon.className = origClass; }, 1500);
+                }
+            }
+        }).catch(function(err) {
+            console.error('Не удалось скопировать хэш: ', err);
+        });
+    }
+
+    function copyExpectedHashFromModal(btnElement) {
+        const text = document.getElementById('verifyModalExpectedHash').textContent.trim();
+        if (text) copySha256(text, btnElement);
+    }
+
+    // Открытие модального окна проверки подлинности файла
+    function openVerifyModal(fileTitle, versionNum, expectedHash) {
+        document.getElementById('verifyModalFileTitle').textContent = fileTitle;
+        document.getElementById('verifyModalVersion').textContent = 'v' + versionNum;
+        document.getElementById('verifyModalExpectedHash').textContent = expectedHash;
+        document.getElementById('verifyChecksumModal').dataset.expectedHash = (expectedHash || '').toLowerCase().trim();
+        resetVerifyForm();
+        const modalEl = document.getElementById('verifyChecksumModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+
+    // Сброс формы верификации
+    function resetVerifyForm() {
+        const fileInput = document.getElementById('verifyFileInput');
+        if (fileInput) fileInput.value = '';
+        const dropZone = document.getElementById('verifyDropZone');
+        if (dropZone) {
+            dropZone.classList.remove('d-none');
+            dropZone.style.borderColor = '#94a3b8';
+            dropZone.style.backgroundColor = '#f8fafc';
+        }
+        document.getElementById('verifyLoadingState').classList.add('d-none');
+        document.getElementById('verifyResultSuccess').classList.add('d-none');
+        document.getElementById('verifyResultMismatch').classList.add('d-none');
+    }
+
+    // Вычисление SHA-256 хэша через Web Crypto API и сравнение
+    async function processVerificationFile(file) {
+        if (!file) return;
+        const expectedHash = (document.getElementById('verifyChecksumModal').dataset.expectedHash || '').toLowerCase().trim();
+
+        document.getElementById('verifyDropZone').classList.add('d-none');
+        document.getElementById('verifyResultSuccess').classList.add('d-none');
+        document.getElementById('verifyResultMismatch').classList.add('d-none');
+        document.getElementById('verifyLoadingState').classList.remove('d-none');
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const calculatedHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+
+            document.getElementById('verifyLoadingState').classList.add('d-none');
+
+            if (calculatedHex === expectedHash) {
+                document.getElementById('successCalculatedHash').textContent = calculatedHex;
+                document.getElementById('verifyResultSuccess').classList.remove('d-none');
+            } else {
+                document.getElementById('mismatchExpectedHash').textContent = expectedHash;
+                document.getElementById('mismatchCalculatedHash').textContent = calculatedHex;
+                document.getElementById('verifyResultMismatch').classList.remove('d-none');
+            }
+        } catch (err) {
+            console.error('Ошибка вычисления хэша:', err);
+            document.getElementById('verifyLoadingState').classList.add('d-none');
+            alert('Ошибка при чтении файла или вычислении хэша: ' + err.message);
+            resetVerifyForm();
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const nextActionSelect = document.getElementById("id_next_step_action");
         const assignSection = document.getElementById("assignExecutorSection");
@@ -1116,6 +1320,44 @@
             }
             nextActionSelect.addEventListener("change", toggleAssignSection);
             toggleAssignSection();
+        }
+
+        // Обработчики Drag and Drop для зоны проверки файлов
+        const dropZone = document.getElementById("verifyDropZone");
+        const fileInput = document.getElementById("verifyFileInput");
+
+        if (dropZone && fileInput) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#0d6efd';
+                    dropZone.style.backgroundColor = '#e8f0fe';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#94a3b8';
+                    dropZone.style.backgroundColor = '#f8fafc';
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    processVerificationFile(files[0]);
+                }
+            }, false);
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    processVerificationFile(e.target.files[0]);
+                }
+            }, false);
         }
     });
 </script>

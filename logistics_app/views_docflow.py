@@ -449,6 +449,15 @@ class DocFlowDocumentDetailView(LoginRequiredMixin, DetailView):
             user == doc.initiator or user == doc.responsible or user.is_superuser
         ) and doc.status in [DocFlowDocument.Status.DRAFT, DocFlowDocument.Status.ON_REWORK]
 
+        # Права на загрузку новой версии файла (заблокировано для завершенных документов)
+        can_upload_file = False
+        if not doc.is_finalized:
+            if doc.status in [DocFlowDocument.Status.DRAFT, DocFlowDocument.Status.ON_REWORK]:
+                can_upload_file = (user == doc.initiator or user == doc.responsible or user.is_superuser)
+            elif doc.status == DocFlowDocument.Status.ON_APPROVAL:
+                can_upload_file = (can_approve and active_step and active_step.allow_reviewer_file_edit) or user.is_superuser
+        context["can_upload_file"] = can_upload_file
+
         # Инициализация модальных форм действий
         context["approval_form"] = DocFlowApprovalActionForm()
         context["rollback_form"] = (
@@ -457,7 +466,7 @@ class DocFlowDocumentDetailView(LoginRequiredMixin, DetailView):
             else None
         )
         context["rework_form"] = DocFlowReworkActionForm()
-        context["file_upload_form"] = DocFlowFileUploadForm()
+        context["file_upload_form"] = DocFlowFileUploadForm() if can_upload_file else None
         context["comment_form"] = DocFlowCommentForm()
         context["add_step_form"] = DocFlowRouteStepForm()
 
@@ -743,8 +752,36 @@ class DocFlowUploadVersionView(LoginRequiredMixin, View):
     """Загрузка новой версии файла к документу."""
 
     def post(self, request: HttpRequest, pk: Any) -> HttpResponse:
-        """Загрузка версии."""
+        """Загрузка версии файла с обязательной проверкой неизменяемости документа."""
         doc = get_object_or_404(DocFlowDocument, pk=pk)
+
+        # 1. Защита завершенных / архивных / отклоненных документов от любых модификаций
+        if doc.is_finalized:
+            messages.error(
+                request,
+                f"Документ находится в завершенном статусе «{doc.get_status_display()}» и защищен от изменения файлов и загрузки новых версий."
+            )
+            return redirect("logistics_app:docflow_detail", pk=pk)
+
+        # 2. Проверка прав пользователя на загрузку на текущем этапе
+        user = request.user
+        can_upload = False
+        if doc.status in [DocFlowDocument.Status.DRAFT, DocFlowDocument.Status.ON_REWORK]:
+            can_upload = (user == doc.initiator or user == doc.responsible or user.is_superuser)
+        elif doc.status == DocFlowDocument.Status.ON_APPROVAL:
+            active_step = doc.active_steps.first()
+            if active_step:
+                is_assigned = (
+                    active_step.assigned_user == user
+                    or active_step.assigned_users.filter(id=user.id).exists()
+                    or (hasattr(user, "user_work_profile") and user.user_work_profile.divisions and active_step.assigned_division == user.user_work_profile.divisions)
+                )
+                can_upload = (is_assigned and active_step.allow_reviewer_file_edit) or user.is_superuser
+
+        if not can_upload:
+            messages.error(request, "У вас нет прав на загрузку новой редакции файла для данного документа на текущем этапе.")
+            return redirect("logistics_app:docflow_detail", pk=pk)
+
         file_id = request.POST.get("doc_file_id")
 
         if file_id:

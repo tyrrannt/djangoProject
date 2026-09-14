@@ -127,6 +127,13 @@ class DocFlowVersionService:
         if not file_obj:
             raise ValueError("Файл для загрузки новой версии не может быть пустым.")
 
+        document = doc_file.document
+        if document and document.is_finalized:
+            raise ValueError(
+                f"Документ {document.reg_number or document.id} находится в завершенном статусе "
+                f"«{document.get_status_display()}» и защищен от изменения файлов и загрузки новых версий."
+            )
+
         file_hash, file_size = cls.calculate_file_hash_and_size(file_obj)
 
         if not version_number:

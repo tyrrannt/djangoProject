@@ -540,6 +540,22 @@ class DocFlowDocument(models.Model):
         return self.status in [self.Status.APPROVED, self.Status.SIGNED, self.Status.EXECUTED]
 
     @property
+    def is_finalized(self) -> bool:
+        """Возвращает True, если документ находится в финальном неизменяемом статусе."""
+        return self.status in [
+            self.Status.APPROVED,
+            self.Status.SIGNED,
+            self.Status.EXECUTED,
+            self.Status.REJECTED,
+            self.Status.ARCHIVED,
+        ]
+
+    @property
+    def can_modify_files(self) -> bool:
+        """Возвращает True, если разрешено изменение файлов или загрузка новых версий."""
+        return not self.is_finalized
+
+    @property
     def is_on_rework(self) -> bool:
         """Возвращает True, если документ возвращен на доработку."""
         return self.status == self.Status.ON_REWORK
