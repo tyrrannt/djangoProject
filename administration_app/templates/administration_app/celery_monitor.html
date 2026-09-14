@@ -1056,7 +1056,6 @@
     // Initial Data & State
     // =========================================================================
     var initialPayload = {{ initial_data_json|safe }};
-    window.celeryHourlyWorkload = initialPayload.hourly_workload || (initialPayload.analytics && initialPayload.analytics.hourly_workload) || [];
     var currentSelectedHour = 0;
     var runtimeTickerTimer = null;
 
@@ -1067,8 +1066,84 @@
     }
 
     // =========================================================================
-    // Workload 24h Matrix & Inspector
+    // Workload 24h Matrix Normalizer & Inspector
     // =========================================================================
+    function normalizeHourlyList(hourlyList) {
+        if (!hourlyList) return [];
+        var rawArr = [];
+        if (Array.isArray(hourlyList)) {
+            rawArr = hourlyList;
+        } else if (typeof hourlyList === 'object') {
+            for (var k in hourlyList) {
+                if (hourlyList.hasOwnProperty(k)) {
+                    var obj = hourlyList[k];
+                    if (obj && typeof obj === 'object') {
+                        if (obj.hour_num === undefined) {
+                            obj.hour_num = parseInt(k, 10);
+                        }
+                        rawArr.push(obj);
+                    }
+                }
+            }
+        }
+
+        var mapByHour = {};
+        rawArr.forEach(function(rawItem, idx) {
+            var hourNum = (rawItem.hour_num !== undefined && rawItem.hour_num !== null) ? parseInt(rawItem.hour_num, 10) : idx;
+            if (isNaN(hourNum) || hourNum < 0 || hourNum > 23) {
+                hourNum = idx % 24;
+            }
+            var hourStr = rawItem.hour || ((hourNum < 10 ? '0' : '') + hourNum + ':00');
+            var runsCount = (rawItem.runs_count !== undefined && rawItem.runs_count !== null) ? parseInt(rawItem.runs_count, 10) :
+                           ((rawItem.count !== undefined && rawItem.count !== null) ? parseInt(rawItem.count, 10) : 0);
+            if (isNaN(runsCount)) runsCount = 0;
+            var tasks = Array.isArray(rawItem.tasks) ? rawItem.tasks : [];
+            var uniqueCount = (rawItem.unique_tasks_count !== undefined && rawItem.unique_tasks_count !== null) ? parseInt(rawItem.unique_tasks_count, 10) :
+                             tasks.length;
+            if (isNaN(uniqueCount)) uniqueCount = 0;
+
+            var intensity = rawItem.intensity_class;
+            if (!intensity) {
+                if (runsCount === 0) intensity = 'intensity-none';
+                else if (runsCount >= 20) intensity = 'intensity-peak';
+                else if (runsCount >= 10) intensity = 'intensity-high';
+                else if (runsCount >= 4) intensity = 'intensity-medium';
+                else intensity = 'intensity-low';
+            }
+
+            mapByHour[hourNum] = {
+                hour: hourStr,
+                hour_num: hourNum,
+                runs_count: runsCount,
+                count: runsCount,
+                tasks: tasks,
+                unique_tasks_count: uniqueCount,
+                intensity_class: intensity
+            };
+        });
+
+        // Always construct full 24 hours strictly ordered 00:00 .. 23:00
+        var full24 = [];
+        for (var h = 0; h < 24; h++) {
+            if (mapByHour[h]) {
+                full24.push(mapByHour[h]);
+            } else {
+                full24.push({
+                    hour: (h < 10 ? '0' : '') + h + ':00',
+                    hour_num: h,
+                    runs_count: 0,
+                    count: 0,
+                    tasks: [],
+                    unique_tasks_count: 0,
+                    intensity_class: 'intensity-none'
+                });
+            }
+        }
+        return full24;
+    }
+
+    window.celeryHourlyWorkload = normalizeHourlyList(initialPayload.hourly_workload || (initialPayload.analytics && initialPayload.analytics.hourly_workload) || []);
+
     function selectWorkloadHour(hourNum) {
         currentSelectedHour = parseInt(hourNum, 10);
         if (isNaN(currentSelectedHour) || currentSelectedHour < 0 || currentSelectedHour > 23) {
@@ -1090,24 +1165,25 @@
             }
         }
 
-        var runsCount = hourData ? (hourData.runs_count || 0) : 0;
+        var runsCount = hourData ? ((hourData.runs_count !== undefined && hourData.runs_count !== null) ? hourData.runs_count : (hourData.count || 0)) : 0;
         $('#selectedHourBadge').text(runsCount + ' запусков в этот час');
 
         var tbody = $('#selectedHourTasksTbody');
-        if (hourData && hourData.tasks && hourData.tasks.length > 0) {
+        var tasks = (hourData && Array.isArray(hourData.tasks)) ? hourData.tasks : [];
+        if (tasks.length > 0) {
             var html = '';
-            hourData.tasks.forEach(function(t) {
+            tasks.forEach(function(t) {
                 html += '<tr>' +
                     '<td><div class="d-flex align-items-center gap-2">' +
                     '<i class="' + escapeHtml(t.icon || 'bx bx-task') + ' text-primary fs-5"></i>' +
-                    '<div><strong class="text-dark d-block">' + escapeHtml(t.title || t.task_name) + '</strong>' +
-                    '<small class="text-muted font-monospace">' + escapeHtml(t.task_name) + '</small>' +
+                    '<div><strong class="text-dark d-block">' + escapeHtml(t.title || t.task_name || 'Без названия') + '</strong>' +
+                    '<small class="text-muted font-monospace">' + escapeHtml(t.task_name || '—') + '</small>' +
                     '</div></div></td>' +
                     '<td><span class="badge bg-light text-dark border">' + escapeHtml(t.category || 'Общее') + '</span></td>' +
                     '<td><span class="small text-muted">' + escapeHtml(t.schedule_human || '—') + '</span></td>' +
                     '<td><strong class="text-primary font-monospace">' + (t.runs_per_hour || 1) + ' раз(а)</strong></td>' +
                     '<td class="text-center">' +
-                    '<button class="btn btn-sm btn-primary btn-touch" onclick="quickRunTask(\'' + escapeHtml(t.task_name) + '\', this)" title="Запустить немедленно">' +
+                    '<button class="btn btn-sm btn-primary btn-touch" onclick="quickRunTask(\'' + escapeHtml(t.task_name || '') + '\', this)" title="Запустить немедленно">' +
                     '<i class="bx bx-play"></i>' +
                     '</button>' +
                     '</td></tr>';
@@ -1122,11 +1198,12 @@
     }
 
     function renderHourlyMatrix(hourlyList) {
-        if (!hourlyList || !hourlyList.length) return;
-        window.celeryHourlyWorkload = hourlyList;
+        var normalized = normalizeHourlyList(hourlyList);
+        if (!normalized || !normalized.length) return;
+        window.celeryHourlyWorkload = normalized;
         var container = $('#hourlyMatrixContainer');
         var html = '';
-        hourlyList.forEach(function(item) {
+        normalized.forEach(function(item) {
             var isSelected = (item.hour_num === currentSelectedHour) ? ' selected' : '';
             var intensity = item.intensity_class || 'intensity-none';
             html += '<div class="workload-hour-box ' + intensity + isSelected + '" ' +
@@ -1235,8 +1312,9 @@
             $('#analyticsMaxHourly').text((data.analytics.max_hourly_runs || 0) + ' запусков/час');
         }
 
-        if (data.hourly_workload && data.hourly_workload.length) {
-            renderHourlyMatrix(data.hourly_workload);
+        var workload = data.hourly_workload || (data.analytics && data.analytics.hourly_workload);
+        if (workload) {
+            renderHourlyMatrix(workload);
         }
 
         // Workers & Redis

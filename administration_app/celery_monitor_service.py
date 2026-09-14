@@ -561,6 +561,12 @@ class CeleryMonitorService:
         """
         beat_tasks: List[Dict[str, Any]] = []
         schedule_conf = getattr(current_app.conf, "beat_schedule", {})
+        if not schedule_conf:
+            try:
+                from djangoProject.celery import app as direct_celery_app
+                schedule_conf = getattr(direct_celery_app.conf, "beat_schedule", {})
+            except Exception:
+                schedule_conf = {}
 
         for key, entry in schedule_conf.items():
             task_name = entry.get("task", "")
@@ -799,6 +805,13 @@ class CeleryMonitorService:
 
         # Расчет распределения периодических задач по часам суток (Workload Timeline 24h Matrix)
         schedule_conf = getattr(current_app.conf, "beat_schedule", {})
+        if not schedule_conf:
+            try:
+                from djangoProject.celery import app as direct_celery_app
+                schedule_conf = getattr(direct_celery_app.conf, "beat_schedule", {})
+            except Exception:
+                schedule_conf = {}
+
         hourly_data: Dict[int, Dict[str, Any]] = {
             h: {
                 "hour": f"{h:02d}:00",
