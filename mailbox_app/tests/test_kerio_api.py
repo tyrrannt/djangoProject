@@ -950,6 +950,57 @@ class SmtpDeliveryManagerTestCase(TestCase):
         val = get_django_setting("NON_EXISTING_SETTING_12345", "fallback_val")
         self.assertEqual(val, "fallback_val")
 
+    def test_verify_smtp_auth_success(self) -> None:
+        """Тест успешной верификации учетных данных SMTP AUTH через прямое SMTP соединение."""
+        with patch("smtplib.SMTP") as mock_smtp_class:
+            mock_smtp = MagicMock()
+            mock_smtp_class.return_value = mock_smtp
+            mock_smtp.has_extn.return_value = True
+
+            result = self.manager.verify_smtp_auth(
+                sender_email="a.administrator@barkol.ru",
+                password="correctPassword123",
+                relay_host="smtp.barkol.ru",
+                relay_port=587,
+            )
+
+            self.assertTrue(result["success"])
+            self.assertEqual(result["code"], 235)
+            self.assertEqual(result["auth_user"], "a.administrator@barkol.ru")
+            mock_smtp.starttls.assert_called_once()
+            mock_smtp.login.assert_called_once_with("a.administrator@barkol.ru", "correctPassword123")
+            mock_smtp.quit.assert_called_once()
+
+    def test_verify_smtp_auth_auth_error(self) -> None:
+        """Тест обработки ошибки аутентификации SMTP AUTH (535 5.7.8 Error: authentication failed)."""
+        import smtplib
+
+        with patch("smtplib.SMTP") as mock_smtp_class:
+            mock_smtp = MagicMock()
+            mock_smtp_class.return_value = mock_smtp
+            mock_smtp.has_extn.return_value = True
+            mock_smtp.login.side_effect = smtplib.SMTPAuthenticationError(535, b"5.7.8 Error: authentication failed")
+
+            result = self.manager.verify_smtp_auth(
+                sender_email="a.administrator@barkol.ru",
+                password="wrongPassword",
+                relay_host="smtp.barkol.ru",
+                relay_port=587,
+            )
+
+            self.assertFalse(result["success"])
+            self.assertEqual(result["code"], 535)
+            self.assertIn("535", result["error"])
+
+    def test_get_relay_rules_raises_on_api_error(self) -> None:
+        """Тест проброса KerioAPIError при сбое API Smtp.getRelayDeliveryRuleList (защита от затирания списка)."""
+        from mailbox_app.services.kerio.exceptions import KerioAPIError
+
+        self.client.call.side_effect = Exception("Internal Server Error in Kerio API")
+
+        with self.assertRaises(KerioAPIError):
+            self.manager.get_relay_rules()
+
     def test_get_users_list_individual_vs_global_smtp(self) -> None:
         """Тест корректной классификации индивидуального и серверного SMTP Relay в get_users_list."""
         from mailbox_app.services.kerio.exceptions import KerioObjectNotFoundError

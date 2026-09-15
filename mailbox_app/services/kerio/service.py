@@ -872,10 +872,13 @@ class KerioAdminService:
 
         report: Dict[str, Any] = {"login": clean_login, "success": False, "steps": {}}
 
-        # 1. Внешний провайдер
+        # 1. Внешний провайдер (ISPmanager / Reg.ru)
         try:
-            self.external_provider.change_password(full_email, new_password)
-            report["steps"]["external_server"] = "ok"
+            ext_success = self.external_provider.change_password(full_email, new_password)
+            if ext_success:
+                report["steps"]["external_server"] = "ok"
+            else:
+                report["steps"]["external_server"] = "warning: не удалось обновить пароль на внешнем сервере ISPmanager"
         except Exception as err:
             report["steps"]["external_server"] = f"warning: {err}"
 
@@ -902,6 +905,16 @@ class KerioAdminService:
         except Exception as smtp_exc:
             logger.warning(f"[KerioAdminService] Ошибка обновления пароля в правиле Доставка SMTP: {smtp_exc}")
             report["steps"]["kerio_smtp_delivery"] = f"warning: {smtp_exc}"
+
+        # 4.1 Прямая верификация SMTP AUTH через соединение с ретранслятором
+        try:
+            auth_res = self.smtp_delivery.verify_smtp_auth(full_email, new_password)
+            if auth_res.get("success"):
+                report["steps"]["smtp_auth_verification"] = "ok"
+            else:
+                report["steps"]["smtp_auth_verification"] = f"warning: {auth_res.get('error')}"
+        except Exception as v_exc:
+            report["steps"]["smtp_auth_verification"] = f"skipped: {v_exc}"
 
         # 5. Django MailAccount и DataBaseUserWorkProfile.work_email_password
         if update_django:
@@ -1474,6 +1487,16 @@ class KerioAdminService:
         except Exception as smtp_exc:
             logger.warning(f"[KerioAdminService] Ошибка обновления Доставки SMTP для {full_email}: {smtp_exc}")
             report["steps"]["kerio_smtp_delivery"] = f"warning: {smtp_exc}"
+
+        # 2.1 Прямая верификация SMTP AUTH через соединение с ретранслятором
+        try:
+            auth_res = self.smtp_delivery.verify_smtp_auth(full_email, new_password)
+            if auth_res.get("success"):
+                report["steps"]["smtp_auth_verification"] = "ok"
+            else:
+                report["steps"]["smtp_auth_verification"] = f"warning: {auth_res.get('error')}"
+        except Exception as v_exc:
+            report["steps"]["smtp_auth_verification"] = f"skipped: {v_exc}"
 
         # 3. Правило сбора почты Kerio Connect «Загрузка POP3»
         try:

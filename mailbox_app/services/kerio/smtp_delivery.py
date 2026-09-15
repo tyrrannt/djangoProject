@@ -1,695 +1,8 @@
-# ToDo Вариант ChatGPT
-"""
-Управление правилами «Доставка SMTP» (SMTP Relay Delivery Rules)
-в Kerio Connect через Administration API.
-
-Используется официальный API Kerio Connect:
-
-    Smtp.getRelayDeliveryRuleList
-    Smtp.setRelayDeliveryRuleList
-
-Официальная модель RelayDeliveryRule:
-    id              - READ-ONLY, назначается Kerio
-    isEnabled
-    description
-    hostName
-    port
-    authentication
-    condition
-"""
-
-# from __future__ import annotations
-#
-# import logging
-# from typing import Any, Dict, List, Optional
-#
-# from mailbox_app.services.kerio.client import KerioConnectAdminClient
-# from mailbox_app.services.kerio.exceptions import KerioValidationError
-# from mailbox_app.services.kerio.utils import get_django_setting
-#
-# logger = logging.getLogger(__name__)
-#
-#
-# class SmtpDeliveryManager:
-#     """Менеджер правил исходящей SMTP-ретрансляции Kerio Connect.
-#
-#     В отличие от старой реализации, здесь не используются выдуманные
-#     методы Delivery.addRouteList / SmtpDelivery.addRouteList и не
-#     модифицируется Smtp.get/Smtp.set.
-#
-#     Kerio предоставляет отдельный список RelayDeliveryRule:
-#         Smtp.getRelayDeliveryRuleList
-#         Smtp.setRelayDeliveryRuleList
-#     """
-#
-#     GET_METHOD = "Smtp.getRelayDeliveryRuleList"
-#     SET_METHOD = "Smtp.setRelayDeliveryRuleList"
-#
-#     def __init__(self, client: KerioConnectAdminClient) -> None:
-#         self.client = client
-#
-#     # ------------------------------------------------------------------
-#     # Настройки по умолчанию
-#     # ------------------------------------------------------------------
-#
-#     def _get_default_smtp_params(self) -> tuple[str, int, str]:
-#         """Возвращает настройки SMTP relay из Django settings."""
-#
-#         host = str(
-#             get_django_setting(
-#                 "KERIO_DEFAULT_SMTP_RELAY_HOST",
-#                 "smtp.barkol.ru",
-#             )
-#             or "smtp.barkol.ru"
-#         )
-#
-#         port = int(
-#             get_django_setting(
-#                 "KERIO_DEFAULT_SMTP_RELAY_PORT",
-#                 587,
-#             )
-#             or 587
-#         )
-#
-#         mode = str(
-#             get_django_setting(
-#                 "KERIO_DEFAULT_SMTP_RELAY_MODE",
-#                 "StlsCommand",
-#             )
-#             or "StlsCommand"
-#         )
-#
-#         return host, port, mode
-#
-#     # ------------------------------------------------------------------
-#     # Низкоуровневое получение/сохранение списка Kerio
-#     # ------------------------------------------------------------------
-#
-#     def _get_raw_rules(self) -> List[Dict[str, Any]]:
-#         """Получает реальный список RelayDeliveryRule из Kerio."""
-#
-#         result = self.client.call(
-#             self.GET_METHOD,
-#             params={},
-#         )
-#
-#         if isinstance(result, dict):
-#             rules = result.get("list", [])
-#         elif isinstance(result, list):
-#             # На случай, если клиент уже распаковывает out-sequence.
-#             rules = result
-#         else:
-#             raise KerioValidationError(
-#                 f"Kerio вернул неожиданный ответ от {self.GET_METHOD}: "
-#                 f"{type(result).__name__}"
-#             )
-#
-#         if not isinstance(rules, list):
-#             raise KerioValidationError(
-#                 f"Поле 'list' в ответе {self.GET_METHOD} "
-#                 f"имеет неверный тип: {type(rules).__name__}"
-#             )
-#
-#         return [
-#             rule for rule in rules
-#             if isinstance(rule, dict)
-#         ]
-#
-#     def _set_raw_rules(self, rules: List[Dict[str, Any]]) -> Any:
-#         """Полностью сохраняет список RelayDeliveryRule в Kerio."""
-#
-#         return self.client.call(
-#             self.SET_METHOD,
-#             params={"list": rules},
-#         )
-#
-#     # ------------------------------------------------------------------
-#     # Нормализация
-#     # ------------------------------------------------------------------
-#
-#     @staticmethod
-#     def _normalize_route(raw_route: Dict[str, Any]) -> Dict[str, Any]:
-#         """Преобразует RelayDeliveryRule Kerio в совместимый плоский формат.
-#
-#         Формат сохранён максимально совместимым со старым service.py/views.py.
-#         """
-#
-#         condition = raw_route.get("condition") or {}
-#         authentication = raw_route.get("authentication") or {}
-#
-#         condition_type = str(
-#             condition.get("test", "RelayCondNone")
-#         )
-#         comparator = str(
-#             condition.get("comparator", "RelayCompEqual")
-#         )
-#         pattern = str(
-#             condition.get("pattern", "")
-#         ).strip().lower()
-#
-#         auth_username = str(
-#             authentication.get("userName", "")
-#         )
-#
-#         password = authentication.get("password")
-#         has_password = bool(password)
-#
-#         # Kerio может не возвращать пароль при чтении правила.
-#         # Сам факт isRequired означает, что правило использует SMTP AUTH.
-#         if authentication.get("isRequired"):
-#             has_password = True
-#
-#         host = str(raw_route.get("hostName", ""))
-#         port = int(raw_route.get("port", 0) or 0)
-#
-#         return {
-#             "id": str(raw_route.get("id", "")),
-#             "isEnabled": bool(raw_route.get("isEnabled", True)),
-#             "isActive": bool(raw_route.get("isEnabled", True)),
-#             "description": str(raw_route.get("description", "")),
-#
-#             # Официальная структура Kerio.
-#             "hostName": host,
-#             "port": port,
-#             "authentication": authentication,
-#             "condition": condition,
-#
-#             # Совместимость со старым кодом приложения.
-#             "conditionType": condition_type,
-#             "matchPattern": pattern,
-#             "sender": pattern,
-#             "actionType": "ActionRelayServer",
-#             "server": host,
-#             "userName": auth_username,
-#             "authUsername": auth_username,
-#             "hasPassword": has_password,
-#             "sslMode": "StlsCommand" if port == 587 else "",
-#             "isGlobal": False,
-#
-#             # Полный оригинальный объект Kerio.
-#             "raw": raw_route,
-#         }
-#
-#     # ------------------------------------------------------------------
-#     # Public read API
-#     # ------------------------------------------------------------------
-#
-#     def get_routes(
-#             self,
-#             query: Optional[Dict[str, Any]] = None,
-#     ) -> List[Dict[str, Any]]:
-#         """Возвращает реальные правила SMTP Delivery из Kerio.
-#
-#         query оставлен для совместимости со старым кодом.
-#         Фильтрация выполняется локально.
-#         """
-#
-#         routes = [
-#             self._normalize_route(rule)
-#             for rule in self._get_raw_rules()
-#         ]
-#
-#         if not query:
-#             return routes
-#
-#         result = routes
-#
-#         for key, value in query.items():
-#             if value in (None, ""):
-#                 continue
-#
-#             value_str = str(value).lower()
-#
-#             if key in {"sender", "matchPattern", "userName", "authUsername"}:
-#                 result = [
-#                     route
-#                     for route in result
-#                     if value_str in {
-#                         str(route.get("sender", "")).lower(),
-#                         str(route.get("matchPattern", "")).lower(),
-#                         str(route.get("userName", "")).lower(),
-#                         str(route.get("authUsername", "")).lower(),
-#                     }
-#                 ]
-#             elif key in {"isEnabled", "isActive"}:
-#                 result = [
-#                     route
-#                     for route in result
-#                     if bool(route.get(key)) == bool(value)
-#                 ]
-#             else:
-#                 result = [
-#                     route
-#                     for route in result
-#                     if str(route.get(key, "")).lower() == value_str
-#                 ]
-#
-#         return result
-#
-#     def get_smtp_server_settings(self) -> Dict[str, Any]:
-#         """Получает общие настройки SMTP сервера.
-#
-#         Метод сохранён для обратной совместимости.
-#         """
-#
-#         try:
-#             result = self.client.call("Smtp.get", params={})
-#
-#             if isinstance(result, dict):
-#                 return result.get(
-#                     "server",
-#                     result.get("settings", result),
-#                 )
-#
-#         except Exception as exc:
-#             logger.warning(
-#                 "[SmtpDeliveryManager] Smtp.get failed: %s",
-#                 exc,
-#             )
-#
-#         return {}
-#
-#     def get_route_for_sender(
-#             self,
-#             sender_email_or_login: str,
-#     ) -> Optional[Dict[str, Any]]:
-#         """Находит только реальное индивидуальное правило отправителя.
-#
-#         Важное отличие от старой реализации:
-#         глобальное/виртуальное правило больше НЕ создаётся и НЕ
-#         возвращается как будто это индивидуальная запись пользователя.
-#         """
-#
-#         target = sender_email_or_login.strip().lower()
-#
-#         if not target:
-#             return None
-#
-#         if "@" not in target:
-#             target = f"{target}@barkol.ru"
-#
-#         login = target.split("@", 1)[0]
-#
-#         for route in self.get_routes():
-#             pattern = str(route.get("matchPattern", "")).lower()
-#             sender = str(route.get("sender", "")).lower()
-#             username = str(route.get("userName", "")).lower()
-#
-#             if target in {pattern, sender, username}:
-#                 return route
-#
-#             if login in {
-#                 pattern.split("@", 1)[0],
-#                 sender.split("@", 1)[0],
-#                 username.split("@", 1)[0],
-#             }:
-#                 return route
-#
-#         return None
-#
-#     # ------------------------------------------------------------------
-#     # Формирование официального RelayDeliveryRule
-#     # ------------------------------------------------------------------
-#
-#     @staticmethod
-#     def _build_rule(
-#             sender_email: str,
-#             password: str,
-#             relay_host: str,
-#             relay_port: int,
-#             auth_username: str,
-#             is_enabled: bool,
-#             description: str,
-#     ) -> Dict[str, Any]:
-#         """Формирует RelayDeliveryRule согласно Kerio Smtp.idl."""
-#
-#         return {
-#             "isEnabled": bool(is_enabled),
-#             "description": description,
-#             "hostName": relay_host,
-#             "port": int(relay_port),
-#
-#             "authentication": {
-#                 "isRequired": True,
-#                 "userName": auth_username,
-#                 "password": password,
-#                 "authType": "Auth",
-#             },
-#
-#             "condition": {
-#                 "test": "RelayCondSender",
-#                 "comparator": "RelayCompEqual",
-#                 "pattern": sender_email,
-#             },
-#         }
-#
-#     # ------------------------------------------------------------------
-#     # Create
-#     # ------------------------------------------------------------------
-#
-#     def create_delivery_route(
-#             self,
-#             sender_email: str,
-#             password: str,
-#             relay_host: Optional[str] = None,
-#             relay_port: Optional[int] = None,
-#             auth_username: Optional[str] = None,
-#             is_enabled: bool = True,
-#             description: Optional[str] = None,
-#             ssl_mode: str = "StlsCommand",
-#     ) -> Dict[str, Any]:
-#         """Создаёт индивидуальное правило SMTP Delivery.
-#
-#         ssl_mode оставлен в сигнатуре для совместимости со старым
-#         service.py. Официальный RelayDeliveryRule Kerio не содержит
-#         отдельного поля mode/ssl. Для текущей конфигурации используется
-#         relay_host + порт 587 + SMTP AUTH.
-#         """
-#
-#         clean_sender = sender_email.strip().lower()
-#
-#         if not clean_sender:
-#             raise KerioValidationError(
-#                 "sender_email обязателен."
-#             )
-#
-#         if "@" not in clean_sender:
-#             clean_sender = f"{clean_sender}@barkol.ru"
-#
-#         if not password:
-#             raise KerioValidationError(
-#                 f"Пароль SMTP AUTH для {clean_sender} обязателен."
-#             )
-#
-#         default_host, default_port, _default_mode = (
-#             self._get_default_smtp_params()
-#         )
-#
-#         host = relay_host or default_host
-#         port = int(relay_port or default_port)
-#         username = auth_username or clean_sender
-#         desc = description or (
-#             f"Ретрансляция SMTP для {clean_sender}"
-#         )
-#
-#         # ssl_mode намеренно не добавляется в payload:
-#         # его нет в RelayDeliveryRule из официального Smtp.idl.
-#         if ssl_mode:
-#             logger.debug(
-#                 "[SmtpDeliveryManager] ssl_mode=%s принят для "
-#                 "совместимости, но не передаётся в RelayDeliveryRule.",
-#                 ssl_mode,
-#             )
-#
-#         existing = self.get_route_for_sender(clean_sender)
-#
-#         if existing:
-#             logger.info(
-#                 "[SmtpDeliveryManager] Правило для %s уже существует "
-#                 "(id=%s), выполняется update.",
-#                 clean_sender,
-#                 existing.get("id"),
-#             )
-#
-#             return self.update_delivery_route(
-#                 route_id=str(existing["id"]),
-#                 password=password,
-#                 is_enabled=is_enabled,
-#                 relay_host=host,
-#                 relay_port=port,
-#                 auth_username=username,
-#             )
-#
-#         rule = self._build_rule(
-#             sender_email=clean_sender,
-#             password=password,
-#             relay_host=host,
-#             relay_port=port,
-#             auth_username=username,
-#             is_enabled=is_enabled,
-#             description=desc,
-#         )
-#
-#         rules = self._get_raw_rules()
-#         rules.append(rule)
-#
-#         self._set_raw_rules(rules)
-#
-#         # Обязательная верификация после записи.
-#         created = self.get_route_for_sender(clean_sender)
-#
-#         if not created:
-#             raise KerioValidationError(
-#                 f"Kerio принял {self.SET_METHOD}, но правило "
-#                 f"для {clean_sender} не найдено после повторного чтения."
-#             )
-#
-#         logger.info(
-#             "[SmtpDeliveryManager] Создано правило SMTP Delivery: "
-#             "sender=%s, id=%s, relay=%s:%s",
-#             clean_sender,
-#             created.get("id"),
-#             host,
-#             port,
-#         )
-#
-#         return {
-#             "success": True,
-#             "method": self.SET_METHOD,
-#             "sender": clean_sender,
-#             "relay_host": host,
-#             "relay_port": port,
-#             "auth_username": username,
-#             "id": created.get("id"),
-#             "route": created,
-#         }
-#
-#     # ------------------------------------------------------------------
-#     # Update
-#     # ------------------------------------------------------------------
-#
-#     def update_delivery_route(
-#             self,
-#             route_id: str,
-#             password: Optional[str] = None,
-#             is_enabled: Optional[bool] = None,
-#             relay_host: Optional[str] = None,
-#             relay_port: Optional[int] = None,
-#             auth_username: Optional[str] = None,
-#     ) -> Dict[str, Any]:
-#         """Обновляет существующее RelayDeliveryRule.
-#
-#         Kerio использует setRelayDeliveryRuleList, поэтому отправляется
-#         весь актуальный список правил с изменённым элементом.
-#         """
-#
-#         if not route_id:
-#             raise KerioValidationError(
-#                 "route_id обязателен для обновления."
-#             )
-#
-#         rules = self._get_raw_rules()
-#
-#         target: Optional[Dict[str, Any]] = None
-#
-#         for rule in rules:
-#             if str(rule.get("id", "")) == str(route_id):
-#                 target = rule
-#                 break
-#
-#         if target is None:
-#             raise KerioValidationError(
-#                 f"Правило SMTP Delivery с id={route_id} не найдено."
-#             )
-#
-#         if is_enabled is not None:
-#             target["isEnabled"] = bool(is_enabled)
-#
-#         if relay_host:
-#             target["hostName"] = relay_host
-#
-#         if relay_port:
-#             target["port"] = int(relay_port)
-#
-#         authentication = target.get("authentication")
-#
-#         if not isinstance(authentication, dict):
-#             authentication = {}
-#
-#         if auth_username:
-#             authentication["userName"] = auth_username
-#
-#         if password:
-#             authentication["password"] = password
-#
-#         # Если пользователь обновляет SMTP-параметры, AUTH должен
-#         # оставаться включённым.
-#         if auth_username or password:
-#             authentication["isRequired"] = True
-#             authentication.setdefault("authType", "Auth")
-#
-#         target["authentication"] = authentication
-#
-#         self._set_raw_rules(rules)
-#
-#         # Верификация.
-#         updated = None
-#         for route in self.get_routes():
-#             if str(route.get("id", "")) == str(route_id):
-#                 updated = route
-#                 break
-#
-#         if updated is None:
-#             raise KerioValidationError(
-#                 f"Правило {route_id} исчезло после {self.SET_METHOD}."
-#             )
-#
-#         logger.info(
-#             "[SmtpDeliveryManager] Обновлено правило SMTP Delivery: id=%s",
-#             route_id,
-#         )
-#
-#         return {
-#             "success": True,
-#             "method": self.SET_METHOD,
-#             "id": route_id,
-#             "route": updated,
-#         }
-#
-#     # ------------------------------------------------------------------
-#     # Password helper
-#     # ------------------------------------------------------------------
-#
-#     def set_route_password_for_sender(
-#             self,
-#             sender_email_or_login: str,
-#             new_password: str,
-#     ) -> bool:
-#         """Устанавливает новый SMTP AUTH пароль для отправителя."""
-#
-#         if not new_password:
-#             return False
-#
-#         route = self.get_route_for_sender(sender_email_or_login)
-#
-#         if route:
-#             result = self.update_delivery_route(
-#                 route_id=str(route["id"]),
-#                 password=new_password,
-#             )
-#             return bool(result.get("success"))
-#
-#         try:
-#             result = self.create_delivery_route(
-#                 sender_email=sender_email_or_login,
-#                 password=new_password,
-#             )
-#             return bool(result.get("success"))
-#         except Exception as exc:
-#             logger.exception(
-#                 "[SmtpDeliveryManager] Не удалось создать правило "
-#                 "для %s: %s",
-#                 sender_email_or_login,
-#                 exc,
-#             )
-#             return False
-#
-#     # ------------------------------------------------------------------
-#     # Delete
-#     # ------------------------------------------------------------------
-#
-#     def remove_delivery_route(
-#             self,
-#             route_id: str,
-#     ) -> Dict[str, Any]:
-#         """Удаляет RelayDeliveryRule через setRelayDeliveryRuleList."""
-#
-#         if not route_id:
-#             raise KerioValidationError(
-#                 "route_id обязателен для удаления."
-#             )
-#
-#         rules = self._get_raw_rules()
-#
-#         filtered = [
-#             rule
-#             for rule in rules
-#             if str(rule.get("id", "")) != str(route_id)
-#         ]
-#
-#         if len(filtered) == len(rules):
-#             raise KerioValidationError(
-#                 f"Правило SMTP Delivery с id={route_id} не найдено."
-#             )
-#
-#         self._set_raw_rules(filtered)
-#
-#         # Верификация удаления.
-#         remaining = self._get_raw_rules()
-#
-#         if any(
-#                 str(rule.get("id", "")) == str(route_id)
-#                 for rule in remaining
-#         ):
-#             raise KerioValidationError(
-#                 f"Kerio не удалил правило {route_id}."
-#             )
-#
-#         logger.info(
-#             "[SmtpDeliveryManager] Удалено правило SMTP Delivery: id=%s",
-#             route_id,
-#         )
-#
-#         return {
-#             "success": True,
-#             "method": self.SET_METHOD,
-#             "id": route_id,
-#         }
-#
-#     def remove_route_for_sender(
-#             self,
-#             sender_email_or_login: str,
-#     ) -> bool:
-#         """Находит и удаляет правило указанного отправителя."""
-#
-#         route = self.get_route_for_sender(sender_email_or_login)
-#
-#         if not route or not route.get("id"):
-#             return False
-#
-#         result = self.remove_delivery_route(
-#             str(route["id"])
-#         )
-#
-#         return bool(result.get("success"))
-#
-#     # ------------------------------------------------------------------
-#     # Enable / disable
-#     # ------------------------------------------------------------------
-#
-#     def toggle_route_for_sender(
-#             self,
-#             sender_email_or_login: str,
-#             is_enabled: bool,
-#     ) -> bool:
-#         """Включает/выключает реальное правило отправителя."""
-#
-#         route = self.get_route_for_sender(sender_email_or_login)
-#
-#         if not route or not route.get("id"):
-#             return False
-#
-#         result = self.update_delivery_route(
-#             route_id=str(route["id"]),
-#             is_enabled=is_enabled,
-#         )
-#
-#         return bool(result.get("success"))
-
-# ToDo Вариант Gemini
 """Менеджер правил исходящей маршрутизации «Доставка SMTP» (RelayDeliveryRule / Smtp.getRelayDeliveryRuleList) в Kerio Connect."""
 
 import logging
+import smtplib
+import ssl
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from mailbox_app.services.kerio.client import KerioConnectAdminClient
@@ -733,11 +46,15 @@ class SmtpDeliveryManager:
     - Создание/добавление индивидуального правила: `create_delivery_route()` по модели «read-modify-write» с обязательной верификацией;
     - Обновление параметров и пароля в правиле: `update_delivery_route()` и `set_route_password_for_sender()`;
     - Удаление индивидуальных правил: `remove_delivery_route()` и `remove_route_for_sender()`;
-    - Переключение активности: `toggle_route_for_sender()`.
+    - Переключение активности: `toggle_route_for_sender()`;
+    - Прямую верификацию SMTP AUTH через SMTP-соединение: `verify_smtp_auth()`.
 
     Attributes:
         client (KerioConnectAdminClient): Экземпляр низкоуровневого клиента JSON-RPC API.
     """
+
+    GET_METHOD = "Smtp.getRelayDeliveryRuleList"
+    SET_METHOD = "Smtp.setRelayDeliveryRuleList"
 
     def __init__(self, client: KerioConnectAdminClient) -> None:
         """Инициализирует менеджер правил Доставки SMTP.
@@ -763,9 +80,12 @@ class SmtpDeliveryManager:
 
         Returns:
             List[Dict[str, Any]]: Список сырых структур RelayDeliveryRule из Kerio Connect.
+
+        Raises:
+            KerioAPIError: При ошибке обращения к API Kerio Connect (за исключением отсутствия метода -32601).
         """
         try:
-            result = self.client.call("Smtp.getRelayDeliveryRuleList", params={})
+            result = self.client.call(self.GET_METHOD, params={})
             if isinstance(result, dict):
                 if "list" in result and isinstance(result["list"], list):
                     return result["list"]
@@ -774,7 +94,13 @@ class SmtpDeliveryManager:
             elif isinstance(result, list):
                 return result
         except Exception as exc:
-            logger.debug(f"[SmtpDeliveryManager] Smtp.getRelayDeliveryRuleList: {exc}")
+            err_msg = str(exc)
+            logger.debug(f"[SmtpDeliveryManager] {self.GET_METHOD}: {err_msg}")
+            # Если метод не поддерживается сервером (-32601), возвращаем пустой список для fallback
+            if "-32601" in err_msg or "Method not found" in err_msg:
+                return []
+            # При реальной ошибке сети или авторизации пробрасываем исключение во избежание повреждения списка правил
+            raise KerioAPIError(f"Ошибка получения списка правил Доставки SMTP ({self.GET_METHOD}): {err_msg}") from exc
         return []
 
     def get_routes(self, query: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -789,7 +115,11 @@ class SmtpDeliveryManager:
         Returns:
             List[Dict[str, Any]]: Список нормализованных словарей параметров правил доставки SMTP.
         """
-        raw_list = self.get_relay_rules()
+        try:
+            raw_list = self.get_relay_rules()
+        except Exception as exc:
+            logger.warning(f"[SmtpDeliveryManager] Не удалось получить правила через {self.GET_METHOD}: {exc}")
+            raw_list = []
 
         # Fallback для устаревших версий или нестандартных ответов
         if not raw_list:
@@ -864,8 +194,7 @@ class SmtpDeliveryManager:
         relay_server = str(
             raw_route.get("hostName")
             or raw_route.get("server")
-            or (raw_route.get("relayServer", {}).get("server") if isinstance(raw_route.get("relayServer"),
-                                                                             dict) else "")
+            or (raw_route.get("relayServer", {}).get("server") if isinstance(raw_route.get("relayServer"), dict) else "")
             or "smtp.barkol.ru"
         )
         relay_port = int(
@@ -886,8 +215,7 @@ class SmtpDeliveryManager:
             if isinstance(relay_obj, dict) and isinstance(relay_obj.get("authentication"), dict):
                 sub_auth = relay_obj["authentication"]
                 auth_username = str(sub_auth.get("userName", ""))
-                has_password = bool(
-                    sub_auth.get("password") or sub_auth.get("hasPassword") or sub_auth.get("isEnabled"))
+                has_password = bool(sub_auth.get("password") or sub_auth.get("hasPassword") or sub_auth.get("isEnabled"))
             else:
                 auth_username = str(raw_route.get("userName", raw_route.get("authUsername", "")))
                 has_password = bool(raw_route.get("password") or raw_route.get("hasPassword"))
@@ -955,24 +283,23 @@ class SmtpDeliveryManager:
 
         # 2. Поиск по глобальным/серверным правилам (*@barkol.ru / isGlobal)
         for r in routes:
-            if r.get("isGlobal") or r.get("matchPattern") in ("*@barkol.ru", "*", "") or r.get(
-                    "id") == "kerio_smtp_relay_server":
+            if r.get("isGlobal") or r.get("matchPattern") in ("*@barkol.ru", "*", "") or r.get("id") == "kerio_smtp_relay_server":
                 return r
 
         return None
 
     def create_delivery_route(
-            self,
-            sender_email: str,
-            password: str,
-            relay_host: Optional[str] = None,
-            relay_port: Optional[int] = None,
-            auth_username: Optional[str] = None,
-            is_enabled: bool = True,
-            description: Optional[str] = None,
-            ssl_mode: str = "StlsCommand",
+        self,
+        sender_email: str,
+        password: str,
+        relay_host: Optional[str] = None,
+        relay_port: Optional[int] = None,
+        auth_username: Optional[str] = None,
+        is_enabled: bool = True,
+        description: Optional[str] = None,
+        ssl_mode: str = "StlsCommand",
     ) -> Dict[str, Any]:
-        """Создает правило ретрансляции «Доставка SMTP» для исходящих писем сотрудника.
+        """Создает или перезаписывает правило ретрансляции «Доставка SMTP» для исходящих писем сотрудника.
 
         Использует официальный метод Kerio Connect API `Smtp.setRelayDeliveryRuleList`:
         1. Запрашивает текущий список правил через `Smtp.getRelayDeliveryRuleList`;
@@ -1001,7 +328,8 @@ class SmtpDeliveryManager:
         clean_sender = sender_email.strip().lower()
         if not clean_sender or not password:
             raise KerioValidationError(
-                "Адрес отправителя (sender_email) и пароль обязательны для создания правила SMTP доставки.")
+                "Адрес отправителя (sender_email) и пароль обязательны для создания правила SMTP доставки."
+            )
 
         if "@" not in clean_sender:
             clean_sender = f"{clean_sender}@barkol.ru"
@@ -1056,8 +384,8 @@ class SmtpDeliveryManager:
             if not found_existing:
                 updated_list.append(new_rule)
 
-            self.client.call("Smtp.setRelayDeliveryRuleList", params={"list": updated_list})
-            logger.info(f"[SmtpDeliveryManager] Успешно вызван Smtp.setRelayDeliveryRuleList для '{clean_sender}'")
+            self.client.call(self.SET_METHOD, params={"list": updated_list})
+            logger.info(f"[SmtpDeliveryManager] Успешно вызван {self.SET_METHOD} для '{clean_sender}'")
 
             # Верификация создания
             refetched_rules = self.get_relay_rules()
@@ -1074,7 +402,7 @@ class SmtpDeliveryManager:
                 norm_rule = self._normalize_route(verified_rule)
                 return {
                     "success": True,
-                    "method": "Smtp.setRelayDeliveryRuleList",
+                    "method": self.SET_METHOD,
                     "id": verified_rule.get("id"),
                     "sender": clean_sender,
                     "relay_host": host,
@@ -1084,10 +412,9 @@ class SmtpDeliveryManager:
                     "is_global": False,
                 }
             elif refetched_rules or not current_rules:
-                # Список успешно записан без ошибок
                 return {
                     "success": True,
-                    "method": "Smtp.setRelayDeliveryRuleList",
+                    "method": self.SET_METHOD,
                     "sender": clean_sender,
                     "relay_host": host,
                     "relay_port": port,
@@ -1096,9 +423,10 @@ class SmtpDeliveryManager:
                     "is_global": False,
                 }
         except Exception as primary_exc:
-            logger.warning(f"[SmtpDeliveryManager] Smtp.setRelayDeliveryRuleList: {primary_exc}")
-            if "-32601" not in str(primary_exc):
-                # Если метод существует, но вернул ошибку, пробрасываем её дальше
+            err_str = str(primary_exc)
+            logger.warning(f"[SmtpDeliveryManager] {self.SET_METHOD}: {err_str}")
+            if "-32601" not in err_str and "Method not found" not in err_str:
+                # Если метод поддерживается, но вызов завершился ошибкой, пробрасываем её
                 raise
 
         # 2. Fallback для серверов без Smtp.setRelayDeliveryRuleList
@@ -1114,13 +442,13 @@ class SmtpDeliveryManager:
         )
 
     def update_delivery_route(
-            self,
-            route_id: str,
-            password: Optional[str] = None,
-            is_enabled: Optional[bool] = None,
-            relay_host: Optional[str] = None,
-            relay_port: Optional[int] = None,
-            auth_username: Optional[str] = None,
+        self,
+        route_id: str,
+        password: Optional[str] = None,
+        is_enabled: Optional[bool] = None,
+        relay_host: Optional[str] = None,
+        relay_port: Optional[int] = None,
+        auth_username: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Обновляет параметры существующего правила «Доставка SMTP».
 
@@ -1172,13 +500,15 @@ class SmtpDeliveryManager:
                     break
 
             if updated:
-                self.client.call("Smtp.setRelayDeliveryRuleList", params={"list": current_rules})
+                self.client.call(self.SET_METHOD, params={"list": current_rules})
                 logger.info(
-                    f"[SmtpDeliveryManager] Успешно обновлено правило {route_id} через Smtp.setRelayDeliveryRuleList")
-                return {"success": True, "method": "Smtp.setRelayDeliveryRuleList", "id": route_id}
+                    f"[SmtpDeliveryManager] Успешно обновлено правило {route_id} через {self.SET_METHOD}"
+                )
+                return {"success": True, "method": self.SET_METHOD, "id": route_id}
         except Exception as exc:
-            logger.warning(f"[SmtpDeliveryManager] Ошибка обновления через Smtp.setRelayDeliveryRuleList: {exc}")
-            if "-32601" not in str(exc):
+            err_str = str(exc)
+            logger.warning(f"[SmtpDeliveryManager] Ошибка обновления через {self.SET_METHOD}: {err_str}")
+            if "-32601" not in err_str and "Method not found" not in err_str:
                 raise
 
         # 2. Fallback
@@ -1192,13 +522,14 @@ class SmtpDeliveryManager:
         )
 
     def set_route_password_for_sender(
-            self,
-            sender_email_or_login: str,
-            new_password: str,
+        self,
+        sender_email_or_login: str,
+        new_password: str,
     ) -> bool:
         """Обновляет пароль авторизации SMTP AUTH для правила указанного отправителя.
 
-        Если индивидуальное правило отсутствует, создает его.
+        Если индивидуальное правило отсутствует или является глобальным серверным правилом,
+        создает персональное правило для отправителя.
 
         Args:
             sender_email_or_login (str): Email или логин сотрудника.
@@ -1210,7 +541,8 @@ class SmtpDeliveryManager:
         route = self.get_route_for_sender(sender_email_or_login)
         if not route or not route.get("id") or route.get("isGlobal"):
             logger.info(
-                f"[SmtpDeliveryManager] Создание правила Доставки SMTP при установке пароля для '{sender_email_or_login}'...")
+                f"[SmtpDeliveryManager] Создание персонального правила Доставки SMTP при установке пароля для '{sender_email_or_login}'..."
+            )
             try:
                 res = self.create_delivery_route(
                     sender_email=sender_email_or_login,
@@ -1223,6 +555,101 @@ class SmtpDeliveryManager:
 
         res = self.update_delivery_route(route_id=route["id"], password=new_password)
         return bool(res.get("success"))
+
+    def verify_smtp_auth(
+        self,
+        sender_email: str,
+        password: str,
+        relay_host: Optional[str] = None,
+        relay_port: Optional[int] = None,
+        timeout: int = 10,
+    ) -> Dict[str, Any]:
+        """Проверяет учетные данные SMTP AUTH против реального SMTP relay сервера через прямое соединение smtplib.
+
+        Выполняет подключение к SMTP relay серверу (например, smtp.barkol.ru:587 с STARTTLS
+        или порту 465 с SSL), отправляет EHLO и выполняет команду AUTH LOGIN/PLAIN.
+
+        Args:
+            sender_email (str): Email сотрудника для аутентификации.
+            password (str): Проверяемый пароль учетной записи.
+            relay_host (Optional[str]): Хост SMTP relay (по умолчанию из Django settings).
+            relay_port (Optional[int]): Порт SMTP relay (по умолчанию 587).
+            timeout (int): Таймаут сетевого соединения в секундах (по умолчанию 10).
+
+        Returns:
+            Dict[str, Any]: Результат проверки:
+                - success (bool): True при успешной аутентификации (код 235 2.7.0 Authentication successful).
+                - host (str): Проверенный хост.
+                - port (int): Проверенный порт.
+                - auth_user (str): Логин аутентификации.
+                - code (Optional[int]): Код ответа SMTP сервера.
+                - error (Optional[str]): Описание ошибки при сбое.
+        """
+        default_host, default_port, _ = self._get_default_smtp_params()
+        host = relay_host or default_host
+        port = int(relay_port or default_port)
+        auth_user = sender_email.strip().lower()
+        if "@" not in auth_user:
+            auth_user = f"{auth_user}@barkol.ru"
+
+        server: Optional[Union[smtplib.SMTP, smtplib.SMTP_SSL]] = None
+        try:
+            if port == 465:
+                context = ssl.create_default_context()
+                server = smtplib.SMTP_SSL(host, port, timeout=timeout, context=context)
+                server.ehlo()
+            else:
+                server = smtplib.SMTP(host, port, timeout=timeout)
+                server.ehlo()
+                if server.has_extn("STARTTLS"):
+                    context = ssl.create_default_context()
+                    server.starttls(context=context)
+                    server.ehlo()
+
+            server.login(auth_user, password)
+            logger.info(f"[SmtpDeliveryManager] Верификация SMTP AUTH успешна для '{auth_user}' на {host}:{port}")
+            return {
+                "success": True,
+                "host": host,
+                "port": port,
+                "auth_user": auth_user,
+                "code": 235,
+                "error": None,
+            }
+        except smtplib.SMTPAuthenticationError as auth_err:
+            logger.warning(
+                f"[SmtpDeliveryManager] Ошибка SMTP AUTH для '{auth_user}' на {host}:{port} "
+                f"({auth_err.smtp_code}): {auth_err.smtp_error}"
+            )
+            return {
+                "success": False,
+                "host": host,
+                "port": port,
+                "auth_user": auth_user,
+                "code": auth_err.smtp_code,
+                "error": f"Ошибка авторизации SMTP AUTH ({auth_err.smtp_code}): {auth_err.smtp_error}",
+            }
+        except Exception as exc:
+            logger.warning(
+                f"[SmtpDeliveryManager] Сбой подключения/проверки SMTP для '{auth_user}' на {host}:{port}: {exc}"
+            )
+            return {
+                "success": False,
+                "host": host,
+                "port": port,
+                "auth_user": auth_user,
+                "code": None,
+                "error": f"Сбой подключения к SMTP relay ({host}:{port}): {str(exc)}",
+            }
+        finally:
+            if server is not None:
+                try:
+                    server.quit()
+                except Exception:
+                    try:
+                        server.close()
+                    except Exception:
+                        pass
 
     def remove_delivery_route(self, route_id: str) -> Dict[str, Any]:
         """Удаляет правило ретрансляции «Доставка SMTP» по его ID.
@@ -1242,15 +669,16 @@ class SmtpDeliveryManager:
             filtered = [
                 r for r in current_rules
                 if str(r.get("id")) != str(route_id)
-                   and str(r.get("condition", {}).get("pattern", "")).lower() != str(route_id).lower()
+                and str(r.get("condition", {}).get("pattern", "")).lower() != str(route_id).lower()
             ]
             if len(filtered) != len(current_rules):
-                self.client.call("Smtp.setRelayDeliveryRuleList", params={"list": filtered})
-                logger.info(f"[SmtpDeliveryManager] Удалено правило {route_id} через Smtp.setRelayDeliveryRuleList")
-                return {"success": True, "method": "Smtp.setRelayDeliveryRuleList", "id": route_id}
+                self.client.call(self.SET_METHOD, params={"list": filtered})
+                logger.info(f"[SmtpDeliveryManager] Удалено правило {route_id} через {self.SET_METHOD}")
+                return {"success": True, "method": self.SET_METHOD, "id": route_id}
         except Exception as exc:
-            logger.warning(f"[SmtpDeliveryManager] Ошибка удаления через Smtp.setRelayDeliveryRuleList: {exc}")
-            if "-32601" not in str(exc):
+            err_str = str(exc)
+            logger.warning(f"[SmtpDeliveryManager] Ошибка удаления через {self.SET_METHOD}: {err_str}")
+            if "-32601" not in err_str and "Method not found" not in err_str:
                 raise
 
         # 2. Fallback
@@ -1294,7 +722,14 @@ class SmtpDeliveryManager:
     # =========================================================================
 
     def _fallback_get_routes(self, query: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        """Fallback опрос устаревших табличных методов при отсутствии Smtp.getRelayDeliveryRuleList."""
+        """Fallback опрос устаревших табличных методов при отсутствии Smtp.getRelayDeliveryRuleList.
+
+        Args:
+            query (Optional[Dict[str, Any]]): Параметры поискового запроса.
+
+        Returns:
+            List[Dict[str, Any]]: Список сырых правил.
+        """
         params = {"query": query or {}}
         probe_methods = [
             ("Delivery.getDeliveryRouteList", params),
@@ -1330,9 +765,16 @@ class SmtpDeliveryManager:
         return []
 
     def _extract_routes_from_smtp_cfg(
-            self, smtp_cfg: Dict[str, Any]
+        self, smtp_cfg: Dict[str, Any]
     ) -> Tuple[List[Dict[str, Any]], Optional[str], Optional[str]]:
-        """Извлекает список правил таблицы «Доставка SMTP» и путь к ним из конфигурации Smtp.get."""
+        """Извлекает список правил таблицы «Доставка SMTP» и путь к ним из конфигурации Smtp.get.
+
+        Args:
+            smtp_cfg (Dict[str, Any]): Словарь настроек Smtp.get.
+
+        Returns:
+            Tuple[List[Dict[str, Any]], Optional[str], Optional[str]]: (список правил, parent_key, list_key).
+        """
         if not isinstance(smtp_cfg, dict):
             return [], None, None
 
@@ -1359,17 +801,34 @@ class SmtpDeliveryManager:
         return [], None, None
 
     def _fallback_create_delivery_route(
-            self,
-            clean_sender: str,
-            password: str,
-            host: str,
-            port: int,
-            auth_user: str,
-            desc: str,
-            is_enabled: bool,
-            ssl_mode: str,
+        self,
+        clean_sender: str,
+        password: str,
+        host: str,
+        port: int,
+        auth_user: str,
+        desc: str,
+        is_enabled: bool,
+        ssl_mode: str,
     ) -> Dict[str, Any]:
-        """Fallback создание правила через Smtp.get -> Smtp.set или legacy методы."""
+        """Fallback создание правила через Smtp.get -> Smtp.set или legacy методы.
+
+        Args:
+            clean_sender (str): Email отправителя.
+            password (str): Пароль SMTP AUTH.
+            host (str): Адрес SMTP сервера.
+            port (int): Порт SMTP.
+            auth_user (str): Имя пользователя SMTP AUTH.
+            desc (str): Описание правила.
+            is_enabled (bool): Флаг активности.
+            ssl_mode (str): Режим SSL.
+
+        Returns:
+            Dict[str, Any]: Результат создания.
+
+        Raises:
+            KerioAPIError: Если создание не удалось ни одним методом.
+        """
         route_payload: Dict[str, Any] = {
             "isEnabled": is_enabled,
             "description": desc,
@@ -1440,15 +899,27 @@ class SmtpDeliveryManager:
         )
 
     def _fallback_update_delivery_route(
-            self,
-            route_id: str,
-            password: Optional[str] = None,
-            is_enabled: Optional[bool] = None,
-            relay_host: Optional[str] = None,
-            relay_port: Optional[int] = None,
-            auth_username: Optional[str] = None,
+        self,
+        route_id: str,
+        password: Optional[str] = None,
+        is_enabled: Optional[bool] = None,
+        relay_host: Optional[str] = None,
+        relay_port: Optional[int] = None,
+        auth_username: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Fallback обновление правила через Smtp.get -> Smtp.set."""
+        """Fallback обновление правила через Smtp.get -> Smtp.set.
+
+        Args:
+            route_id (str): Идентификатор правила.
+            password (Optional[str]): Пароль.
+            is_enabled (Optional[bool]): Флаг активности.
+            relay_host (Optional[str]): Хост.
+            relay_port (Optional[int]): Порт.
+            auth_username (Optional[str]): Логин.
+
+        Returns:
+            Dict[str, Any]: Результат обновления.
+        """
         try:
             full_resp = self.client.call("Smtp.get", params={})
             if isinstance(full_resp, dict):
@@ -1459,8 +930,7 @@ class SmtpDeliveryManager:
                     existing_rules, parent_key, list_key = self._extract_routes_from_smtp_cfg(smtp_cfg)
                     updated = False
                     for r in existing_rules:
-                        if str(r.get("id", "")) == str(route_id) or str(r.get("matchPattern", "")).lower() == str(
-                                route_id).lower():
+                        if str(r.get("id", "")) == str(route_id) or str(r.get("matchPattern", "")).lower() == str(route_id).lower():
                             if is_enabled is not None:
                                 r["isEnabled"] = is_enabled
                             if relay_host or relay_port or auth_username or password:
@@ -1489,7 +959,14 @@ class SmtpDeliveryManager:
         return {"success": False, "error": f"Не удалось обновить правило {route_id}"}
 
     def _fallback_remove_delivery_route(self, route_id: str) -> Dict[str, Any]:
-        """Fallback удаление правила через Smtp.get -> Smtp.set."""
+        """Fallback удаление правила через Smtp.get -> Smtp.set.
+
+        Args:
+            route_id (str): Идентификатор правила.
+
+        Returns:
+            Dict[str, Any]: Результат удаления.
+        """
         try:
             full_resp = self.client.call("Smtp.get", params={})
             if isinstance(full_resp, dict):
@@ -1501,8 +978,8 @@ class SmtpDeliveryManager:
                     filtered = [
                         r for r in existing_rules
                         if str(r.get("id", "")) != str(route_id)
-                           and str(r.get("matchPattern", "")).lower() != str(route_id).lower()
-                           and str(r.get("sender", "")).lower() != str(route_id).lower()
+                        and str(r.get("matchPattern", "")).lower() != str(route_id).lower()
+                        and str(r.get("sender", "")).lower() != str(route_id).lower()
                     ]
                     if len(filtered) != len(existing_rules):
                         if parent_key:
