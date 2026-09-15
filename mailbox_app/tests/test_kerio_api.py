@@ -1464,11 +1464,11 @@ class KerioUserContactAndSecurityTestCase(TestCase):
             mobile_phone="+7 (999) 111-22-33",
             can_change_password=False,
         )
-        self.assertEqual(res, "u-new-1")
+        self.assertEqual(res, {"ids": ["u-new-1"]})
         self.client.call.assert_called_once()
-        call_args = self.client.call.call_args[0]
+        call_args, call_kwargs = self.client.call.call_args
         self.assertEqual(call_args[0], "Users.create")
-        user_param = call_args[1]["users"][0]
+        user_param = call_kwargs["params"]["users"][0]
         self.assertEqual(user_param["loginName"], "i.ivanov")
         self.assertEqual(user_param["canChangePassword"], False)
         self.assertIn("contact", user_param)

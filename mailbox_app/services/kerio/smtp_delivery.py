@@ -75,11 +75,11 @@ class SmtpDeliveryManager:
         default_mode = str(get_django_setting("KERIO_DEFAULT_SMTP_RELAY_MODE", "StlsCommand") or "StlsCommand")
         return default_host, default_port, default_mode
 
-    def get_relay_rules(self) -> List[Dict[str, Any]]:
+    def get_relay_rules(self) -> Optional[List[Dict[str, Any]]]:
         """Получает список правил ретрансляции напрямую через метод API Smtp.getRelayDeliveryRuleList.
 
         Returns:
-            List[Dict[str, Any]]: Список сырых структур RelayDeliveryRule из Kerio Connect.
+            Optional[List[Dict[str, Any]]]: Список сырых структур RelayDeliveryRule или None при отсутствии метода (-32601).
 
         Raises:
             KerioAPIError: При ошибке обращения к API Kerio Connect (за исключением отсутствия метода -32601).
@@ -91,14 +91,19 @@ class SmtpDeliveryManager:
                     return result["list"]
                 elif "rules" in result and isinstance(result["rules"], list):
                     return result["rules"]
+                elif "smtp" in result and isinstance(result["smtp"], dict) and "deliveryRules" in result["smtp"]:
+                    return result["smtp"]["deliveryRules"]
+                elif "deliveryRules" in result and isinstance(result["deliveryRules"], list):
+                    return result["deliveryRules"]
+                return []
             elif isinstance(result, list):
                 return result
         except Exception as exc:
             err_msg = str(exc)
             logger.debug(f"[SmtpDeliveryManager] {self.GET_METHOD}: {err_msg}")
-            # Если метод не поддерживается сервером (-32601), возвращаем пустой список для fallback
+            # Если метод не поддерживается сервером (-32601), возвращаем None для fallback
             if "-32601" in err_msg or "Method not found" in err_msg:
-                return []
+                return None
             # При реальной ошибке сети или авторизации пробрасываем исключение во избежание повреждения списка правил
             raise KerioAPIError(f"Ошибка получения списка правил Доставки SMTP ({self.GET_METHOD}): {err_msg}") from exc
         return []
@@ -119,42 +124,17 @@ class SmtpDeliveryManager:
             raw_list = self.get_relay_rules()
         except Exception as exc:
             logger.warning(f"[SmtpDeliveryManager] Не удалось получить правила через {self.GET_METHOD}: {exc}")
-            raw_list = []
+            raw_list = None
 
         # Fallback для устаревших версий или нестандартных ответов
-        if not raw_list:
+        if raw_list is None:
             raw_list = self._fallback_get_routes(query)
 
         # Нормализация структуры каждого полученного правила
         normalized: List[Dict[str, Any]] = []
-        for r in raw_list:
+        for r in (raw_list or []):
             norm_item = self._normalize_route(r)
             normalized.append(norm_item)
-
-        # Добавляем серверную ретрансляцию по умолчанию, если нет явного глобального правила
-        default_host, default_port, default_mode = self._get_default_smtp_params()
-        has_global = any(r.get("isGlobal") for r in normalized)
-        if not has_global:
-            server_default_rule = {
-                "id": "kerio_smtp_relay_server",
-                "isEnabled": True,
-                "isActive": True,
-                "description": f"Серверная ретрансляция SMTP Kerio Connect ({default_host}:{default_port})",
-                "conditionType": "RelayCondNone",
-                "conditionComparator": "RelayCompEqual",
-                "matchPattern": "*@barkol.ru",
-                "sender": "*@barkol.ru",
-                "actionType": "ActionRelayServer",
-                "server": default_host,
-                "port": default_port,
-                "userName": "SMTP AUTH (аккаунты сотрудников)",
-                "authUsername": "",
-                "hasPassword": True,
-                "sslMode": default_mode,
-                "isGlobal": True,
-                "raw": {},
-            }
-            normalized.append(server_default_rule)
 
         return normalized
 
@@ -251,7 +231,7 @@ class SmtpDeliveryManager:
         """Находит настроенное правило ретрансляции SMTP для конкретного отправителя (email или логин).
 
         Сначала выполняет строгий поиск персонального правила (RelayCondSender).
-        Если персонального правила нет — возвращает найденное серверное правило (isGlobal=True).
+        Если персонального правила нет — возвращает найденное серверное правило или синтетический fallback (isGlobal=True).
 
         Args:
             sender_email_or_login (str): Email сотрудника (например, a.administrator@barkol.ru) или логин.
@@ -286,7 +266,27 @@ class SmtpDeliveryManager:
             if r.get("isGlobal") or r.get("matchPattern") in ("*@barkol.ru", "*", "") or r.get("id") == "kerio_smtp_relay_server":
                 return r
 
-        return None
+        # 3. Серверный fallback по умолчанию (isGlobal=True)
+        default_host, default_port, default_mode = self._get_default_smtp_params()
+        return {
+            "id": "kerio_smtp_relay_server",
+            "isEnabled": True,
+            "isActive": True,
+            "description": f"Серверная ретрансляция SMTP Kerio Connect ({default_host}:{default_port})",
+            "conditionType": "RelayCondNone",
+            "conditionComparator": "RelayCompEqual",
+            "matchPattern": "*@barkol.ru",
+            "sender": "*@barkol.ru",
+            "actionType": "ActionRelayServer",
+            "server": default_host,
+            "port": default_port,
+            "userName": "SMTP AUTH (аккаунты сотрудников)",
+            "authUsername": "",
+            "hasPassword": True,
+            "sslMode": default_mode,
+            "isGlobal": True,
+            "raw": {},
+        }
 
     def create_delivery_route(
         self,
@@ -362,66 +362,67 @@ class SmtpDeliveryManager:
         # 1. Основной путь: Smtp.getRelayDeliveryRuleList -> Smtp.setRelayDeliveryRuleList
         try:
             current_rules = self.get_relay_rules()
-            updated_list: List[Dict[str, Any]] = []
-            found_existing = False
+            if current_rules is not None:
+                updated_list: List[Dict[str, Any]] = []
+                found_existing = False
 
-            for r in current_rules:
-                cond = r.get("condition", {}) if isinstance(r.get("condition"), dict) else {}
-                patt = str(cond.get("pattern", r.get("matchPattern", r.get("sender", "")))).strip().lower()
-                test = str(cond.get("test", r.get("conditionType", "")))
-                r_desc = str(r.get("description", ""))
+                for r in current_rules:
+                    cond = r.get("condition", {}) if isinstance(r.get("condition"), dict) else {}
+                    patt = str(cond.get("pattern", r.get("matchPattern", r.get("sender", "")))).strip().lower()
+                    test = str(cond.get("test", r.get("conditionType", "")))
+                    r_desc = str(r.get("description", ""))
 
-                if (patt == clean_sender and test == "RelayCondSender") or (r_desc == desc):
-                    # Обновляем существующее правило, сохраняя назначенный Kerio ID
-                    rule_to_put = dict(new_rule)
-                    if r.get("id"):
-                        rule_to_put["id"] = r["id"]
-                    updated_list.append(rule_to_put)
-                    found_existing = True
-                else:
-                    updated_list.append(r)
+                    if (patt == clean_sender and test == "RelayCondSender") or (r_desc == desc):
+                        # Обновляем существующее правило, сохраняя назначенный Kerio ID
+                        rule_to_put = dict(new_rule)
+                        if r.get("id"):
+                            rule_to_put["id"] = r["id"]
+                        updated_list.append(rule_to_put)
+                        found_existing = True
+                    else:
+                        updated_list.append(r)
 
-            if not found_existing:
-                updated_list.append(new_rule)
+                if not found_existing:
+                    updated_list.append(new_rule)
 
-            self.client.call(self.SET_METHOD, params={"list": updated_list})
-            logger.info(f"[SmtpDeliveryManager] Успешно вызван {self.SET_METHOD} для '{clean_sender}'")
+                self.client.call(self.SET_METHOD, params={"list": updated_list})
+                logger.info(f"[SmtpDeliveryManager] Успешно вызван {self.SET_METHOD} для '{clean_sender}'")
 
-            # Верификация создания
-            refetched_rules = self.get_relay_rules()
-            verified_rule: Optional[Dict[str, Any]] = None
-            for r in refetched_rules:
-                cond = r.get("condition", {}) if isinstance(r.get("condition"), dict) else {}
-                patt = str(cond.get("pattern", r.get("matchPattern", r.get("sender", "")))).strip().lower()
-                test = str(cond.get("test", r.get("conditionType", "")))
-                if patt == clean_sender and (not test or test == "RelayCondSender"):
-                    verified_rule = r
-                    break
+                # Верификация создания
+                refetched_rules = self.get_relay_rules() or []
+                verified_rule: Optional[Dict[str, Any]] = None
+                for r in refetched_rules:
+                    cond = r.get("condition", {}) if isinstance(r.get("condition"), dict) else {}
+                    patt = str(cond.get("pattern", r.get("matchPattern", r.get("sender", "")))).strip().lower()
+                    test = str(cond.get("test", r.get("conditionType", "")))
+                    if patt == clean_sender and (not test or test == "RelayCondSender"):
+                        verified_rule = r
+                        break
 
-            if verified_rule:
-                norm_rule = self._normalize_route(verified_rule)
-                return {
-                    "success": True,
-                    "method": self.SET_METHOD,
-                    "id": verified_rule.get("id"),
-                    "sender": clean_sender,
-                    "relay_host": host,
-                    "relay_port": port,
-                    "auth_username": auth_user,
-                    "route": norm_rule,
-                    "is_global": False,
-                }
-            elif refetched_rules or not current_rules:
-                return {
-                    "success": True,
-                    "method": self.SET_METHOD,
-                    "sender": clean_sender,
-                    "relay_host": host,
-                    "relay_port": port,
-                    "auth_username": auth_user,
-                    "route": self._normalize_route(new_rule),
-                    "is_global": False,
-                }
+                if verified_rule:
+                    norm_rule = self._normalize_route(verified_rule)
+                    return {
+                        "success": True,
+                        "method": self.SET_METHOD,
+                        "id": verified_rule.get("id"),
+                        "sender": clean_sender,
+                        "relay_host": host,
+                        "relay_port": port,
+                        "auth_username": auth_user,
+                        "route": norm_rule,
+                        "is_global": False,
+                    }
+                elif refetched_rules or not current_rules:
+                    return {
+                        "success": True,
+                        "method": self.SET_METHOD,
+                        "sender": clean_sender,
+                        "relay_host": host,
+                        "relay_port": port,
+                        "auth_username": auth_user,
+                        "route": self._normalize_route(new_rule),
+                        "is_global": False,
+                    }
         except Exception as primary_exc:
             err_str = str(primary_exc)
             logger.warning(f"[SmtpDeliveryManager] {self.SET_METHOD}: {err_str}")
@@ -473,38 +474,39 @@ class SmtpDeliveryManager:
         # 1. Основной путь через Smtp.setRelayDeliveryRuleList
         try:
             current_rules = self.get_relay_rules()
-            updated = False
-            for r in current_rules:
-                cond = r.get("condition", {}) if isinstance(r.get("condition"), dict) else {}
-                patt = str(cond.get("pattern", r.get("matchPattern", r.get("sender", "")))).strip().lower()
+            if current_rules is not None:
+                updated = False
+                for r in current_rules:
+                    cond = r.get("condition", {}) if isinstance(r.get("condition"), dict) else {}
+                    patt = str(cond.get("pattern", r.get("matchPattern", r.get("sender", "")))).strip().lower()
 
-                if str(r.get("id")) == str(route_id) or patt == str(route_id).lower():
-                    if is_enabled is not None:
-                        r["isEnabled"] = is_enabled
-                    if relay_host:
-                        r["hostName"] = relay_host
-                    if relay_port:
-                        r["port"] = int(relay_port)
+                    if str(r.get("id")) == str(route_id) or patt == str(route_id).lower():
+                        if is_enabled is not None:
+                            r["isEnabled"] = is_enabled
+                        if relay_host:
+                            r["hostName"] = relay_host
+                        if relay_port:
+                            r["port"] = int(relay_port)
 
-                    auth = r.get("authentication")
-                    if not isinstance(auth, dict):
-                        auth = {"isRequired": True, "authType": "Auth"}
-                        r["authentication"] = auth
+                        auth = r.get("authentication")
+                        if not isinstance(auth, dict):
+                            auth = {"isRequired": True, "authType": "Auth"}
+                            r["authentication"] = auth
 
-                    if auth_username:
-                        auth["userName"] = auth_username
-                    if password:
-                        auth["password"] = password
-                    auth["isRequired"] = True
-                    updated = True
-                    break
+                        if auth_username:
+                            auth["userName"] = auth_username
+                        if password:
+                            auth["password"] = password
+                        auth["isRequired"] = True
+                        updated = True
+                        break
 
-            if updated:
-                self.client.call(self.SET_METHOD, params={"list": current_rules})
-                logger.info(
-                    f"[SmtpDeliveryManager] Успешно обновлено правило {route_id} через {self.SET_METHOD}"
-                )
-                return {"success": True, "method": self.SET_METHOD, "id": route_id}
+                if updated:
+                    self.client.call(self.SET_METHOD, params={"list": current_rules})
+                    logger.info(
+                        f"[SmtpDeliveryManager] Успешно обновлено правило {route_id} через {self.SET_METHOD}"
+                    )
+                    return {"success": True, "method": self.SET_METHOD, "id": route_id}
         except Exception as exc:
             err_str = str(exc)
             logger.warning(f"[SmtpDeliveryManager] Ошибка обновления через {self.SET_METHOD}: {err_str}")
@@ -592,17 +594,23 @@ class SmtpDeliveryManager:
         if "@" not in auth_user:
             auth_user = f"{auth_user}@barkol.ru"
 
+        def _build_ssl_context() -> ssl.SSLContext:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            return ctx
+
         server: Optional[Union[smtplib.SMTP, smtplib.SMTP_SSL]] = None
         try:
             if port == 465:
-                context = ssl.create_default_context()
+                context = _build_ssl_context()
                 server = smtplib.SMTP_SSL(host, port, timeout=timeout, context=context)
                 server.ehlo()
             else:
                 server = smtplib.SMTP(host, port, timeout=timeout)
                 server.ehlo()
                 if server.has_extn("STARTTLS"):
-                    context = ssl.create_default_context()
+                    context = _build_ssl_context()
                     server.starttls(context=context)
                     server.ehlo()
 
@@ -666,15 +674,17 @@ class SmtpDeliveryManager:
         # 1. Основной путь через Smtp.setRelayDeliveryRuleList
         try:
             current_rules = self.get_relay_rules()
-            filtered = [
-                r for r in current_rules
-                if str(r.get("id")) != str(route_id)
-                and str(r.get("condition", {}).get("pattern", "")).lower() != str(route_id).lower()
-            ]
-            if len(filtered) != len(current_rules):
-                self.client.call(self.SET_METHOD, params={"list": filtered})
-                logger.info(f"[SmtpDeliveryManager] Удалено правило {route_id} через {self.SET_METHOD}")
-                return {"success": True, "method": self.SET_METHOD, "id": route_id}
+            if current_rules is not None:
+                filtered = [
+                    r for r in current_rules
+                    if str(r.get("id")) != str(route_id)
+                    and str(r.get("condition", {}).get("pattern", "")).lower() != str(route_id).lower()
+                ]
+                if len(filtered) != len(current_rules):
+                    self.client.call(self.SET_METHOD, params={"list": filtered})
+                    logger.info(f"[SmtpDeliveryManager] Удалено правило {route_id} через {self.SET_METHOD}")
+                    return {"success": True, "method": self.SET_METHOD, "id": route_id}
+                return {"success": True, "id": route_id, "message": "Правило не найдено или уже удалено."}
         except Exception as exc:
             err_str = str(exc)
             logger.warning(f"[SmtpDeliveryManager] Ошибка удаления через {self.SET_METHOD}: {err_str}")

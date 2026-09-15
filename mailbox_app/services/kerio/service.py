@@ -365,12 +365,13 @@ class KerioAdminService:
                 smtp_rule = indiv_smtp_rule
                 is_individual = True
             else:
-                # 2. Поиск общего серверного правила ретрансляции
+                # 2. Поиск общего серверного правила ретрансляции или синтетического fallback
                 server_smtp_rule = (
                     smtp_map.get("*@barkol.ru")
                     or smtp_map.get(f"*@{domain_name or 'barkol.ru'}")
                     or smtp_map.get("*")
                     or next((r for r in smtp_routes if r.get("isGlobal")), None)
+                    or self.smtp_delivery.get_route_for_sender(clean_email)
                 )
                 smtp_rule = server_smtp_rule
                 is_individual = False

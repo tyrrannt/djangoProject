@@ -189,31 +189,49 @@ class ISPmanagerExternalMailProvider(BaseExternalMailProvider):
             verify_ssl (Optional[bool]): Флаг проверки SSL (из настроек ISPMANAGER_API_VERIFY_SSL).
             timeout (Optional[int]): Таймаут сетевого соединения в секундах (из ISPMANAGER_API_TIMEOUT).
         """
-        self.panel_url = panel_url or str(
-            get_django_setting("ISPMANAGER_API_URL", "https://mail.barkol.ru:1500/ispmgr")
-            or "https://mail.barkol.ru:1500/ispmgr"
-        ).strip()
-        self.api_username = api_username or str(
-            get_django_setting("ISPMANAGER_API_USER", "")
-            or get_django_setting("ISPMANAGER_USER", "")
-            or ""
-        ).strip()
-        self.api_password = api_password or str(
-            get_django_setting("ISPMANAGER_API_PASSWORD", "")
-            or get_django_setting("ISPMANAGER_PASSWORD", "")
-            or ""
-        ).strip()
+        if panel_url is not None:
+            self.panel_url = str(panel_url).strip()
+        else:
+            self.panel_url = str(
+                get_django_setting("ISPMANAGER_API_URL", "https://mail.barkol.ru:1500/ispmgr")
+                or "https://mail.barkol.ru:1500/ispmgr"
+            ).strip()
+
+        if api_username is not None:
+            self.api_username = str(api_username).strip()
+        else:
+            self.api_username = str(
+                get_django_setting("ISPMANAGER_API_USER", "")
+                or get_django_setting("ISPMANAGER_USER", "")
+                or ""
+            ).strip()
+
+        if api_password is not None:
+            self.api_password = str(api_password).strip()
+        else:
+            self.api_password = str(
+                get_django_setting("ISPMANAGER_API_PASSWORD", "")
+                or get_django_setting("ISPMANAGER_PASSWORD", "")
+                or ""
+            ).strip()
 
         ssl_setting = get_django_setting("ISPMANAGER_API_VERIFY_SSL", False)
         self.verify_ssl = bool(verify_ssl if verify_ssl is not None else ssl_setting)
 
         timeout_setting = get_django_setting("ISPMANAGER_API_TIMEOUT", 10)
         self.timeout = int(timeout if timeout is not None else (timeout_setting or 10))
+        self._is_configured_override: Optional[bool] = None
 
     @property
     def is_configured(self) -> bool:
         """Проверяет, заданы ли учетные данные для обращения к ISPmanager API."""
+        if self._is_configured_override is not None:
+            return self._is_configured_override
         return bool(self.panel_url and self.api_username and self.api_password)
+
+    @is_configured.setter
+    def is_configured(self, value: bool) -> None:
+        self._is_configured_override = bool(value)
 
     def _call_api(self, func: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Выполняет HTTP-запрос к API панели ISPmanager.
