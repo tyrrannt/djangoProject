@@ -9,6 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
@@ -84,6 +85,11 @@ class OrgStructureBuilderView(LoginRequiredMixin, TemplateView):
 
         can_edit = user_can_edit_org_structure(user)
 
+        context["title"] = "Организационная структура ООО «Авиакомпания «БАРКОЛ»"
+        context["breadcrumbs"] = [
+            {"name": "СЭД", "url": reverse("logistics_app:docflow_list")},
+            {"name": "Оргструктура", "url": None},
+        ]
         context["structure"] = structure
         context["all_structures"] = OrgStructure.objects.all().order_by("-start_date")
         context["can_edit"] = can_edit
