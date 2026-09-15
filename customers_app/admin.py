@@ -1,5 +1,6 @@
 # Register your models here.
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, GroupAdmin as BaseGroupAdmin
+from django.contrib.auth.models import Group
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
@@ -38,18 +39,24 @@ from .models import (
     UserStats,
     Apartments, ApartmentBooking, BiometricConsent, ConsentType,
     PushSubscription, UserPasskey, UserCertificate,
+    OrgStructure, OrgStructureNode, OrgNodeLeadershipHistory,
 )
 from unfold.admin import ModelAdmin, TabularInline
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 
 # Register your models here.
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
     """
     Расширяем модель UserAdmin
     fieldsets: исходный набор полей формы
     *UserAdmin.fieldsets: добавляем расширенный набор полей формы,
         тип: кортеж содержащий ('заголовок группы по вашему выбору', {словарь c новыми полями})
     """
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
+
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': (
@@ -72,7 +79,7 @@ class CustomUserAdmin(UserAdmin):
 
     list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email",
                     "is_active", 'is_staff', 'is_superuser', 'is_ppa')
-    search_fields = ('pk', 'title', 'ref_key', 'person_ref_key')
+    search_fields = ('pk', 'title', 'ref_key', 'person_ref_key', 'username', 'last_name', 'first_name')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', 'is_ppa')
     list_editable = ('is_active', 'is_ppa')
     list_per_page = 50
@@ -93,10 +100,22 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.register(DataBaseUser, CustomUserAdmin)
 
+try:
+    admin.site.unregister(Group)
+except admin.sites.NotRegistered:
+    pass
+
+
+@admin.register(Group)
+class CustomGroupAdmin(BaseGroupAdmin, ModelAdmin):
+    """Административное представление групп и прав доступа."""
+    pass
+
 
 @admin.register(Job)
 class JobAdmin(ModelAdmin):
-    pass
+    list_display = ("pk", "name")
+    search_fields = ("name",)
 
 
 @admin.register(AccessLevel)
@@ -775,3 +794,101 @@ class UserCertificateAdmin(ModelAdmin):
     search_fields = ("name", "cn", "user__username", "user__last_name", "user__first_name", "snils", "inn", "thumbprint", "serial_number", "subject_name")
     list_filter = ("is_active", "valid_to", "created_at", "last_used_at")
     readonly_fields = ("thumbprint", "serial_number", "subject_name", "issuer_name", "snils", "inn", "cn", "valid_from", "valid_to", "certificate_data", "created_at", "last_used_at")
+
+
+class OrgNodeLeadershipHistoryInline(TabularInline):
+    """Встроенная история руководства внутри карточки узла оргструктуры."""
+
+    model = OrgNodeLeadershipHistory
+    extra = 1
+    autocomplete_fields = ["employee", "job"]
+    fields = ("employee", "job", "date_from", "date_to", "is_current", "order_number", "comment")
+
+
+class OrgStructureNodeInline(TabularInline):
+    """Встроенные узлы внутри схемы оргструктуры."""
+
+    model = OrgStructureNode
+    extra = 0
+    fields = ("title", "node_type", "level", "order", "head_job", "is_active", "pos_x", "pos_y")
+    readonly_fields = ("pos_x", "pos_y")
+    show_change_link = True
+
+
+@admin.register(OrgStructure)
+class OrgStructureAdmin(ModelAdmin):
+    """Административная панель для управления редакциями организационной структуры компании."""
+
+    list_display = ("title", "version_code", "start_date", "end_date", "is_active", "approved_by", "created_at")
+    list_filter = ("is_active", "start_date")
+    search_fields = ("title", "version_code", "approved_by", "description")
+    readonly_fields = ("created_at", "updated_at")
+    inlines = [OrgStructureNodeInline]
+    fieldsets = (
+        (
+            "Основная информация",
+            {
+                "fields": (
+                    "title",
+                    "version_code",
+                    "is_active",
+                    "description",
+                )
+            },
+        ),
+        (
+            "Ввод в действие и утверждение",
+            {
+                "fields": (
+                    "start_date",
+                    "end_date",
+                    "approved_by",
+                    "approval_date",
+                )
+            },
+        ),
+        (
+            "Конфигурация холста и метаданные",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "raw_layout_json",
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+    )
+
+
+@admin.register(OrgStructureNode)
+class OrgStructureNodeAdmin(ModelAdmin):
+    """Административная панель для управления узлами оргструктуры (подразделениями и службами)."""
+
+    list_display = ("get_title", "structure", "node_type", "level", "order", "head_job", "current_leader_display", "is_active")
+    list_filter = ("structure", "node_type", "level", "is_active")
+    search_fields = ("custom_name", "division__name", "head_job__name")
+    autocomplete_fields = ["division", "parent", "head_job"]
+    inlines = [OrgNodeLeadershipHistoryInline]
+
+    @admin.display(description="Наименование узла")
+    def get_title(self, obj: OrgStructureNode) -> str:
+        return obj.title
+
+    @admin.display(description="Текущий руководитель")
+    def current_leader_display(self, obj: OrgStructureNode) -> str:
+        leader = obj.get_current_leader()
+        if leader and leader.employee:
+            return f"{leader.employee.title} ({leader.job.name if leader.job else '—'})"
+        return "—"
+
+
+@admin.register(OrgNodeLeadershipHistory)
+class OrgNodeLeadershipHistoryAdmin(ModelAdmin):
+    """Административная панель для управления историей назначений руководителей."""
+
+    list_display = ("node", "employee", "job", "date_from", "date_to", "is_current", "order_number")
+    list_filter = ("is_current", "date_from", "node__structure")
+    search_fields = ("employee__username", "employee__last_name", "employee__first_name", "node__custom_name", "order_number")
+    autocomplete_fields = ["node", "employee", "job"]
+    readonly_fields = ("created_at",)
