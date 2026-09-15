@@ -947,7 +947,8 @@ class OrgStructureNodeInline(TabularInline):
 
     model = OrgStructureNode
     extra = 0
-    fields = ("title", "node_type", "level", "order", "head_job", "is_active", "pos_x", "pos_y")
+    fields = ("custom_name", "division", "node_type", "level", "order", "head_job", "is_active", "pos_x", "pos_y")
+    autocomplete_fields = ["division", "head_job"]
     readonly_fields = ("pos_x", "pos_y")
     show_change_link = True
 
@@ -1015,44 +1016,122 @@ class OrgStructureAdmin(ModelAdmin):
 class OrgStructureNodeAdmin(ModelAdmin):
     """Административная панель для управления узлами оргструктуры."""
 
-    list_display = ("get_title", "structure", "display_node_type", "level", "order", "head_job", "current_leader_display", "display_active")
+    list_display = (
+        "get_title",
+        "structure",
+        "display_node_type",
+        "level",
+        "order",
+        "head_job",
+        "current_leader_display",
+        "display_active",
+    )
     list_filter = ("structure", "node_type", "is_active")
     search_fields = ("custom_name", "division__name", "head_job__name")
-    autocomplete_fields = ["division", "parent", "head_job"]
+    autocomplete_fields = ["structure", "division", "parent", "head_job"]
     inlines = [OrgNodeLeadershipHistoryInline]
     compressed_fields = True
     warn_unsaved_form = True
 
+    fieldsets = (
+        (
+            "Основная информация",
+            {
+                "fields": (
+                    "structure",
+                    "custom_name",
+                    "division",
+                    "parent",
+                    "head_job",
+                )
+            },
+        ),
+        (
+            "Иерархия и тип",
+            {
+                "fields": (
+                    "node_type",
+                    "level",
+                    "order",
+                    "is_active",
+                )
+            },
+        ),
+        (
+            "Параметры холста",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "color_scheme",
+                    "pos_x",
+                    "pos_y",
+                ),
+            },
+        ),
+    )
+
     @display(description="Наименование узла", header=True)
     def get_title(self, obj: OrgStructureNode) -> Tuple[str, str]:
-        """Возвращает наименование узла и подразделение."""
+        """Возвращает наименование узла и связанное подразделение.
+
+        Args:
+            obj (OrgStructureNode): Экземпляр узла оргструктуры.
+
+        Returns:
+            Tuple[str, str]: Кортеж (отображаемое имя узла, наименование подразделения 1С).
+        """
         div_name = obj.division.name if obj.division else "Без подразделения 1С"
-        return obj.title, div_name
+        return obj.get_display_name(), div_name
 
     @display(
         description="Тип узла",
         label={
-            "company": "danger",
-            "branch": "warning",
-            "service": "primary",
-            "department": "info",
-            "section": "secondary",
+            "TOP_MANAGEMENT": "danger",
+            "SERVICE": "primary",
+            "DETACHMENT": "info",
+            "DIVISION": "secondary",
+            "GROUP": "warning",
+            "SUBDIVISION": "success",
+            "ADVISORY": "primary",
+            "ASSISTANT": "info",
         },
     )
     def display_node_type(self, obj: OrgStructureNode) -> Tuple[str, str]:
-        """Возвращает тип узла с бейджем."""
+        """Возвращает тип узла со стилизованным бейджем.
+
+        Args:
+            obj (OrgStructureNode): Экземпляр узла оргструктуры.
+
+        Returns:
+            Tuple[str, str]: Кортеж (код типа, читаемое название типа).
+        """
         return obj.node_type, obj.get_node_type_display()
 
     @display(description="Активен", boolean=True)
     def display_active(self, obj: OrgStructureNode) -> bool:
-        """Флаг активности узла."""
+        """Возвращает флаг активности узла оргструктуры.
+
+        Args:
+            obj (OrgStructureNode): Экземпляр узла оргструктуры.
+
+        Returns:
+            bool: True, если узел активен.
+        """
         return obj.is_active
 
-    @admin.display(description="Текущий руководитель")
+    @display(description="Текущий руководитель")
     def current_leader_display(self, obj: OrgStructureNode) -> str:
+        """Возвращает строку с текущим действующим руководителем узла.
+
+        Args:
+            obj (OrgStructureNode): Экземпляр узла оргструктуры.
+
+        Returns:
+            str: ФИО и должность руководителя либо прочерк при отсутствии.
+        """
         leader = obj.get_current_leader()
         if leader and leader.employee:
-            return f"{leader.employee.title} ({leader.job.name if leader.job else '—'})"
+            return f"{leader.employee.title or leader.employee.get_full_name() or leader.employee.username} ({leader.job.name if leader.job else '—'})"
         return "—"
 
 
@@ -1062,13 +1141,46 @@ class OrgNodeLeadershipHistoryAdmin(ModelAdmin):
 
     list_display = ("node", "employee", "job", "date_from", "date_to", "display_current", "order_number")
     list_filter = ("is_current", ("date_from", RangeDateFilter), "node__structure")
-    search_fields = ("employee__username", "employee__last_name", "employee__first_name", "node__custom_name", "order_number")
+    search_fields = ("employee__username", "employee__last_name", "employee__first_name", "employee__title", "node__custom_name", "order_number")
     autocomplete_fields = ["node", "employee", "job"]
     readonly_fields = ("created_at",)
     compressed_fields = True
     warn_unsaved_form = True
 
+    fieldsets = (
+        (
+            "Назначение",
+            {
+                "fields": (
+                    "node",
+                    "employee",
+                    "job",
+                    "is_current",
+                )
+            },
+        ),
+        (
+            "Период и основание",
+            {
+                "fields": (
+                    "date_from",
+                    "date_to",
+                    "order_number",
+                    "comment",
+                    "created_at",
+                )
+            },
+        ),
+    )
+
     @display(description="Текущий", boolean=True)
     def display_current(self, obj: OrgNodeLeadershipHistory) -> bool:
-        """Флаг актуального руководства."""
+        """Флаг актуального руководства.
+
+        Args:
+            obj (OrgNodeLeadershipHistory): Экземпляр истории руководства.
+
+        Returns:
+            bool: True, если руководство действует в настоящее время.
+        """
         return obj.is_current
