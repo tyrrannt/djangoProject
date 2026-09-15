@@ -13,10 +13,34 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
 
-from customers_app.models import DataBaseUser, Division, Job, OrgStructure, OrgStructureNode
+from customers_app.models import (
+    DataBaseUser,
+    Division,
+    Job,
+    OrgNodeLeadershipHistory,
+    OrgStructure,
+    OrgStructureNode,
+)
 from customers_app.services.org_structure_service import OrgStructureService
 
 logger = logging.getLogger(__name__)
+
+
+def user_can_edit_org_structure(user: Any) -> bool:
+    """Проверяет права пользователя на редактирование организационной структуры компании.
+
+    Полный доступ имеют суперпользователи (администраторы), а доступ к редактированию —
+    пользователи с явно выданным разрешением 'customers_app.change_orgstructure'.
+
+    Args:
+        user (Any): Экземпляр текущего пользователя.
+
+    Returns:
+        bool: True, если у пользователя есть права на редактирование, иначе False.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    return bool(user.is_superuser or user.has_perm("customers_app.change_orgstructure"))
 
 
 class OrgStructureBuilderView(LoginRequiredMixin, TemplateView):
@@ -31,6 +55,9 @@ class OrgStructureBuilderView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
         """Формирует контекст для конструктора оргструктуры.
+
+        Args:
+            **kwargs (Any): Дополнительные именованные аргументы контекста.
 
         Returns:
             Dict[str, Any]: Контекст с текущей структурой, списком версий и правами редактирования.
@@ -55,7 +82,7 @@ class OrgStructureBuilderView(LoginRequiredMixin, TemplateView):
         else:
             structure = OrgStructureService.get_active_org_structure(target_date)
 
-        can_edit = user.is_staff or user.is_superuser or user.has_perm("customers_app.change_orgstructure")
+        can_edit = user_can_edit_org_structure(user)
 
         context["structure"] = structure
         context["all_structures"] = OrgStructure.objects.all().order_by("-start_date")
@@ -109,7 +136,7 @@ class OrgStructureSaveLayoutApiView(LoginRequiredMixin, View):
         Returns:
             JsonResponse: Статус сохранения.
         """
-        if not (request.user.is_staff or request.user.is_superuser):
+        if not user_can_edit_org_structure(request.user):
             return JsonResponse({"status": "error", "message": "Недостаточно прав для редактирования структуры."}, status=403)
 
         try:
@@ -141,7 +168,7 @@ class OrgStructureNodeSaveApiView(LoginRequiredMixin, View):
         Returns:
             JsonResponse: JSON-объект сохраненного узла.
         """
-        if not (request.user.is_staff or request.user.is_superuser):
+        if not user_can_edit_org_structure(request.user):
             return JsonResponse({"status": "error", "message": "Недостаточно прав для редактирования узлов."}, status=403)
 
         try:
@@ -201,7 +228,7 @@ class OrgStructureNodeDeleteApiView(LoginRequiredMixin, View):
         Returns:
             JsonResponse: Статус удаления.
         """
-        if not (request.user.is_staff or request.user.is_superuser):
+        if not user_can_edit_org_structure(request.user):
             return JsonResponse({"status": "error", "message": "Недостаточно прав для удаления узлов."}, status=403)
 
         try:
@@ -232,7 +259,7 @@ class OrgStructureAssignLeaderApiView(LoginRequiredMixin, View):
         Returns:
             JsonResponse: Данные созданной записи назначения.
         """
-        if not (request.user.is_staff or request.user.is_superuser):
+        if not user_can_edit_org_structure(request.user):
             return JsonResponse({"status": "error", "message": "Недостаточно прав для назначения руководства."}, status=403)
 
         try:
@@ -313,7 +340,7 @@ class OrgStructureCreateVersionApiView(LoginRequiredMixin, View):
         Returns:
             JsonResponse: Данные созданной схемы структуры.
         """
-        if not (request.user.is_staff or request.user.is_superuser):
+        if not user_can_edit_org_structure(request.user):
             return JsonResponse({"status": "error", "message": "Недостаточно прав для создания версий структуры."}, status=403)
 
         try:
