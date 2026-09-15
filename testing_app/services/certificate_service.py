@@ -3,6 +3,7 @@
 import io
 from typing import Dict, Any, Optional
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 from django.core.files.base import ContentFile
 from django.urls import reverse
 from django.utils import timezone
@@ -237,8 +238,8 @@ def get_certificate_context(attempt: TestingAttempt, request=None) -> Dict[str, 
     testing = assignment.testing
     finished_at = attempt.finished_at or timezone.now()
 
-    # Срок действия результатов проверки (уведомления): полгода со дня успешной сдачи
-    valid_until = finished_at + timedelta(days=180)
+    # Срок действия результатов проверки (уведомления): полгода (6 месяцев) со дня успешной сдачи
+    valid_until = finished_at + relativedelta(months=6)
 
     qr_url = generate_certificate_qr_code(attempt, request=request)
     verify_url = reverse("testing_app:certificate_verify", kwargs={"certificate_uuid": attempt.certificate_uuid})
@@ -303,7 +304,7 @@ def verify_certificate_by_uuid(certificate_uuid: str) -> Optional[Dict[str, Any]
     assignment = attempt.assignment
     testing = assignment.testing
     finished_at = attempt.finished_at or timezone.now()
-    valid_until = finished_at + timedelta(days=365)
+    valid_until = finished_at + relativedelta(months=6)
     is_expired = timezone.now() > valid_until
 
     employee_full_nom = get_user_full_name_with_patronymic(assignment.employee)

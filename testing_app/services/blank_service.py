@@ -1,13 +1,11 @@
 """Сервисы формирования и почтовой отправки персонализированных бланков итогового тестирования АТП."""
 
-import html
 import io
 import logging
 import pathlib
-import re
-import zipfile
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
+from docxtpl import DocxTemplate
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.utils import timezone
@@ -47,125 +45,14 @@ def get_template_path_for_assignment(assignment: TestingAssignment) -> Tuple[pat
     return primary_path, template_name, is_with_permit
 
 
-def replace_docx_placeholders_in_xml(
-    xml_bytes: bytes,
-    context: Dict[str, Any],
-) -> bytes:
-    """Заменяет все переменные вида {переменная} в XML-файлах документа Word (.docx).
-
-    Сохраняет 100% исходной OpenXML разметки, пространств имен (namespaces)
-    и форматирования документа без их перегенерации через DOM-парсеры (ElementTree),
-    что гарантирует полную совместимость с Microsoft Office Word (Word 2013-2024 / Office 365)
-    и LibreOffice Writer.
-    Корректно обрабатывает ситуации, когда текстовый процессор Word разбивает
-    конструкцию {переменная} на несколько смежных XML-узлов <w:r>/<w:t>.
-
-    Args:
-        xml_bytes (bytes): Исходный XML-фрагмент (word/document.xml, word/header*.xml, word/footer*.xml и др.).
-        context (Dict[str, Any]): Словарь подстановок ({переменная: значение}).
-
-    Returns:
-        bytes: Модифицированный XML-поток в кодировке UTF-8 с сохраненной структурой и пространствами имен.
-    """
-    if not xml_bytes or not context:
-        return xml_bytes
-
-    xml_text = xml_bytes.decode("utf-8", errors="ignore")
-    normalized_context = {
-        str(k).strip().lower(): str(v) if v is not None else ""
-        for k, v in context.items()
-    }
-
-    var_pattern = re.compile(r"\{([^{}]+)\}")
-    p_pattern = re.compile(r"(<w:p\b[^>]*>)(.*?)(</w:p>)", re.DOTALL)
-    t_pattern = re.compile(r"(<w:t\b[^>]*>)(.*?)(</w:t>)", re.DOTALL)
-
-    def process_paragraph(p_match: re.Match) -> str:
-        p_open = p_match.group(1)
-        p_body = p_match.group(2)
-        p_close = p_match.group(3)
-
-        t_matches = list(t_pattern.finditer(p_body))
-        if not t_matches:
-            return p_match.group(0)
-
-        full_text = ""
-        spans: List[Tuple[re.Match, str, int, int]] = []
-        for tm in t_matches:
-            raw_text = tm.group(2)
-            unescaped = html.unescape(raw_text)
-            start = len(full_text)
-            end = start + len(unescaped)
-            spans.append((tm, unescaped, start, end))
-            full_text += unescaped
-
-        if "{" not in full_text:
-            return p_match.group(0)
-
-        matches = list(var_pattern.finditer(full_text))
-        if not matches:
-            return p_match.group(0)
-
-        replacements: List[Tuple[int, int, str]] = []
-        for m in matches:
-            key = m.group(1).strip().lower()
-            if key in normalized_context:
-                replacements.append((m.start(), m.end(), normalized_context[key]))
-
-        if not replacements:
-            return p_match.group(0)
-
-        new_p_body: List[str] = []
-        last_end = 0
-
-        for tm, orig_txt, start, end in spans:
-            new_p_body.append(p_body[last_end:tm.start()])
-            last_end = tm.end()
-
-            curr = start
-            node_parts: List[str] = []
-            while curr < end:
-                in_repl = False
-                for r_start, r_end, r_val in replacements:
-                    if r_start <= curr < r_end:
-                        if curr == r_start:
-                            node_parts.append(r_val)
-                        curr = min(r_end, end)
-                        in_repl = True
-                        break
-                if not in_repl:
-                    next_stop = end
-                    for r_start, r_end, _ in replacements:
-                        if curr < r_start < next_stop:
-                            next_stop = r_start
-                    node_parts.append(full_text[curr:next_stop])
-                    curr = next_stop
-
-            new_text_raw = "".join(node_parts)
-            escaped_text = html.escape(new_text_raw, quote=False)
-
-            t_tag_open = tm.group(1)
-            if (" " in new_text_raw or new_text_raw.startswith(" ") or new_text_raw.endswith(" ")) and "xml:space" not in t_tag_open:
-                t_tag_open = t_tag_open[:-1] + ' xml:space="preserve">'
-
-            new_p_body.append(f"{t_tag_open}{escaped_text}{tm.group(3)}")
-
-        new_p_body.append(p_body[last_end:])
-        return p_open + "".join(new_p_body) + p_close
-
-    result_text = p_pattern.sub(process_paragraph, xml_text)
-    return result_text.encode("utf-8")
-
-
 def generate_filled_testing_blank_bytes(
     assignment: TestingAssignment,
     user: Optional[Any] = None,
 ) -> Tuple[bytes, str]:
-    """Генерирует бинарный поток заполненного файла бланка Word (.docx).
+    """Генерирует бинарный поток заполненного файла бланка Word (.docx) через DocxTemplate.
 
-    Заменяет исключительно переменные в формате {переменная} (например: {ФИО},
-    {Должность}, {Дата}, {fio}, {job_title}, {date} и др.) в шаблоне документа Word.
-    Все остальные элементы форматирования, шрифты, границы таблиц и текст остаются неизменными.
+    Заполняет официальный шаблон документа Word (DocxTemplate) реквизитами сотрудника
+    (ФИО, должность и дата) аналогично модулю медицинских направлений.
 
     Args:
         assignment (TestingAssignment): Назначение сотрудника на мероприятие.
@@ -225,12 +112,6 @@ def generate_filled_testing_blank_bytes(
     event_start_val = testing.actual_event_start_datetime
     event_start_str = event_start_val.strftime("%d.%m.%Y") if event_start_val else ""
 
-    start_date_val = testing.start_datetime
-    start_date_str = start_date_val.strftime("%d.%m.%Y") if start_date_val else ""
-
-    end_date_val = testing.end_datetime
-    end_date_str = end_date_val.strftime("%d.%m.%Y") if end_date_val else ""
-
     today_str = timezone.now().strftime("%d.%m.%Y")
     default_date_str = order_date_str or event_start_str or today_str
 
@@ -241,99 +122,50 @@ def generate_filled_testing_blank_bytes(
     type_suffix = "с_допуском" if is_with_permit else "без_допуска"
     download_filename = f"Бланк_итогового_тестирования_{type_suffix}_{file_fio_suffix}.docx"
 
-    # Словарь контекста для подстановки в {переменная}
+    # Словарь контекста для подстановки в шаблон DocxTemplate
     context: Dict[str, Any] = {
         # ФИО
+        "FIO": fio_full,
         "fio": fio_full,
         "ФИО": fio_full,
         "фио": fio_full,
-        "Ф.И.О.": fio_full,
-        "fio_full": fio_full,
-        "employee_name": fio_full,
-        "сотрудник": fio_full,
         "short_fio": short_fio,
-        "инициалы": short_fio,
-        "фио_инициалы": short_fio,
+        "employee_name": fio_full,
         "last_name": last_name,
-        "фамилия": last_name,
         "first_name": first_name,
-        "имя": first_name,
         "surname": surname,
-        "отчество": surname,
         "service_number": service_number,
-        "табельный_номер": service_number,
         # Должность и подразделение
         "job": job_title,
         "job_title": job_title,
-        "должность": job_title,
         "Должность": job_title,
-        "position": job_title,
+        "должность": job_title,
         "division": division,
         "подразделение": division,
-        "Подразделение": division,
         # Даты
         "date": default_date_str,
         "дата": default_date_str,
         "Дата": default_date_str,
         "order_date": order_date_str,
         "дата_приказа": order_date_str,
-        "event_start_date": event_start_str,
-        "дата_начала_обучения": event_start_str,
-        "start_date": start_date_str,
-        "дата_начала": start_date_str,
-        "end_date": end_date_str,
-        "дата_окончания": end_date_str,
         "today": today_str,
-        "сегодня": today_str,
         # Приказ и мероприятие
         "order_number": testing.order_number or "",
         "номер_приказа": testing.order_number or "",
-        "Номер_приказа": testing.order_number or "",
         "order_name": testing.order_name or "",
-        "наименование_приказа": testing.order_name or "",
         "event_title": testing.title,
-        "мероприятие": testing.title,
-        "наименование_мероприятия": testing.title,
         "group_name": assignment.group.name,
-        "группа": assignment.group.name,
-        "Группа": assignment.group.name,
         "passing_score": str(testing.passing_score_percentage),
-        "проходной_процент": str(testing.passing_score_percentage),
-        "проходной_балл": str(testing.passing_score_percentage),
         "status": assignment.get_status_display() if hasattr(assignment, "get_status_display") else assignment.status,
-        "статус": assignment.get_status_display() if hasattr(assignment, "get_status_display") else assignment.status,
     }
 
-    with zipfile.ZipFile(template_path, "r") as src_zip:
-        files: Dict[str, bytes] = {}
-        for item in src_zip.infolist():
-            content = src_zip.read(item.filename)
-            if (
-                item.filename in ("word/document.xml", "word/footnotes.xml", "word/endnotes.xml")
-                or item.filename.startswith("word/header")
-                or item.filename.startswith("word/footer")
-            ):
-                content = replace_docx_placeholders_in_xml(content, context)
-            files[item.filename] = content
+    doc = DocxTemplate(template_path)
+    doc.render(context)
 
-        # Гарантируем канонический порядок OPC (Open Packaging Conventions):
-        # [Content_Types].xml должен идти первым, _rels/.rels вторым
-        ordered_names: List[str] = []
-        if "[Content_Types].xml" in files:
-            ordered_names.append("[Content_Types].xml")
-        if "_rels/.rels" in files:
-            ordered_names.append("_rels/.rels")
-        for fname in sorted(files.keys()):
-            if fname not in ordered_names:
-                ordered_names.append(fname)
-
-        out_buffer = io.BytesIO()
-        with zipfile.ZipFile(out_buffer, "w", compression=zipfile.ZIP_DEFLATED) as dst_zip:
-            for fname in ordered_names:
-                dst_zip.writestr(fname, files[fname])
-
-        out_buffer.seek(0)
-        return out_buffer.getvalue(), download_filename
+    out_buffer = io.BytesIO()
+    doc.save(out_buffer)
+    out_buffer.seek(0)
+    return out_buffer.getvalue(), download_filename
 
 
 def send_testing_blank_by_email(
