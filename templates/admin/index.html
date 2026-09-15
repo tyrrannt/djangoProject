@@ -1,0 +1,266 @@
+{% extends "admin/index.html" %}
+{% load i18n unfold %}
+
+{% block content %}
+<div class="flex flex-col gap-6">
+
+    <!-- 1. KPI МЕТРИКИ И ПОКАЗАТЕЛИ -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        
+        <!-- Полеты -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-4 flex flex-col justify-between shadow-xs transition hover:shadow-md">
+            <div class="flex items-center justify-between text-base-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Полеты сегодня</span>
+                <span class="material-symbols-outlined text-primary-600 bg-primary-50 dark:bg-primary-950/40 p-2 rounded-md">flight</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-bold text-base-900 dark:text-base-100">{{ kpi_metrics.active_crews_today }}</span>
+                <span class="text-xs text-base-500 font-medium">На неделю: {{ kpi_metrics.crews_this_week }}</span>
+            </div>
+            <a href="{% url 'admin:flight_planning_flightcrew_changelist' %}" class="mt-3 text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline flex items-center gap-1">
+                К экипажам <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <!-- СЭД -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-4 flex flex-col justify-between shadow-xs transition hover:shadow-md">
+            <div class="flex items-center justify-between text-base-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">СЭД на визировании</span>
+                <span class="material-symbols-outlined text-amber-600 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-md">description</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-bold text-base-900 dark:text-base-100">{{ kpi_metrics.docflow_on_review }}</span>
+                <span class="text-xs text-base-500 font-medium">За месяц: {{ kpi_metrics.docflow_total_month }}</span>
+            </div>
+            <a href="{% url 'admin:logistics_app_docflowdocument_changelist' %}" class="mt-3 text-xs text-amber-600 dark:text-amber-400 font-medium hover:underline flex items-center gap-1">
+                Все документы <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <!-- HR и Служебные записки -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-4 flex flex-col justify-between shadow-xs transition hover:shadow-md">
+            <div class="flex items-center justify-between text-base-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Служебные записки</span>
+                <span class="material-symbols-outlined text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 p-2 rounded-md">approval</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-bold text-base-900 dark:text-base-100">{{ kpi_metrics.pending_memos }}</span>
+                <span class="text-xs text-base-500 font-medium">На согласовании</span>
+            </div>
+            <a href="{% url 'admin:hrdepartment_app_approvaloficialmemoprocess_changelist' %}" class="mt-3 text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1">
+                Согласование <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <!-- Задачи -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-4 flex flex-col justify-between shadow-xs transition hover:shadow-md">
+            <div class="flex items-center justify-between text-base-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Задачи в работе</span>
+                <span class="material-symbols-outlined text-teal-600 bg-teal-50 dark:bg-teal-950/40 p-2 rounded-md">task_alt</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-bold text-base-900 dark:text-base-100">{{ kpi_metrics.in_progress_tasks }}</span>
+                {% if kpi_metrics.overdue_tasks > 0 %}
+                    <span class="text-xs text-red-600 dark:text-red-400 font-semibold">Просрочено: {{ kpi_metrics.overdue_tasks }}</span>
+                {% else %}
+                    <span class="text-xs text-emerald-600 font-medium">Без просрочек</span>
+                {% endif %}
+            </div>
+            <a href="{% url 'admin:tasks_app_task_changelist' %}" class="mt-3 text-xs text-teal-600 dark:text-teal-400 font-medium hover:underline flex items-center gap-1">
+                К задачам <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <!-- Финансы -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-4 flex flex-col justify-between shadow-xs transition hover:shadow-md">
+            <div class="flex items-center justify-between text-base-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Платежи (7 дней)</span>
+                <span class="material-symbols-outlined text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-md">payments</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-bold text-base-900 dark:text-base-100">{{ kpi_metrics.upcoming_payments_count }}</span>
+                <span class="text-xs text-base-500 font-medium">К оплате</span>
+            </div>
+            <a href="{% url 'admin:finance_app_paymentschedule_changelist' %}" class="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium hover:underline flex items-center gap-1">
+                Графики платежей <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <!-- Пользователи и Почта -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-4 flex flex-col justify-between shadow-xs transition hover:shadow-md">
+            <div class="flex items-center justify-between text-base-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Персонал / Почта</span>
+                <span class="material-symbols-outlined text-sky-600 bg-sky-50 dark:bg-sky-950/40 p-2 rounded-md">people</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-bold text-base-900 dark:text-base-100">{{ kpi_metrics.total_active_users }}</span>
+                <span class="text-xs text-base-500 font-medium">Отложено: {{ kpi_metrics.scheduled_emails_count }} писем</span>
+            </div>
+            <a href="{% url 'admin:customers_app_databaseuser_changelist' %}" class="mt-3 text-xs text-sky-600 dark:text-sky-400 font-medium hover:underline flex items-center gap-1">
+                Пользователи <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+    </div>
+
+    <!-- 2. ПАНЕЛЬ БЫСТРЫХ ДЕЙСТВИЙ (QUICK ACTIONS) -->
+    <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-4 shadow-xs">
+        <div class="text-xs font-semibold uppercase tracking-wider text-base-500 mb-3 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">bolt</span> Быстрые действия
+        </div>
+        <div class="flex flex-wrap gap-2.5">
+            <a href="{% url 'admin:flight_planning_flightcrew_add' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-base-100 dark:bg-base-800 text-base-800 dark:text-base-200 hover:bg-primary-50 hover:text-primary-700 transition">
+                <span class="material-symbols-outlined text-sm text-primary-600">add</span> Сформировать экипаж
+            </a>
+            <a href="{% url 'admin:logistics_app_docflowdocument_add' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-base-100 dark:bg-base-800 text-base-800 dark:text-base-200 hover:bg-amber-50 hover:text-amber-700 transition">
+                <span class="material-symbols-outlined text-sm text-amber-600">add</span> Создать документ СЭД
+            </a>
+            <a href="{% url 'admin:tasks_app_task_add' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-base-100 dark:bg-base-800 text-base-800 dark:text-base-200 hover:bg-teal-50 hover:text-teal-700 transition">
+                <span class="material-symbols-outlined text-sm text-teal-600">add</span> Назначить задачу
+            </a>
+            <a href="{% url 'admin:hrdepartment_app_officialmemo_add' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-base-100 dark:bg-base-800 text-base-800 dark:text-base-200 hover:bg-indigo-50 hover:text-indigo-700 transition">
+                <span class="material-symbols-outlined text-sm text-indigo-600">add</span> Служебная записка
+            </a>
+            <a href="{% url 'admin:finance_app_financialcontract_add' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-base-100 dark:bg-base-800 text-base-800 dark:text-base-200 hover:bg-emerald-50 hover:text-emerald-700 transition">
+                <span class="material-symbols-outlined text-sm text-emerald-600">add</span> Финансовый договор
+            </a>
+            <a href="{% url 'admin:customers_app_databaseuser_add' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-base-100 dark:bg-base-800 text-base-800 dark:text-base-200 hover:bg-sky-50 hover:text-sky-700 transition">
+                <span class="material-symbols-outlined text-sm text-sky-600">add</span> Добавить сотрудника
+            </a>
+        </div>
+    </div>
+
+    <!-- 3. ДВЕ КОЛОНКИ ОПЕРАТИВНОЙ АКТИВНОСТИ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Левая колонка: СЭД и Полеты -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Последние документы СЭД -->
+            <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-5 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-sm text-base-900 dark:text-base-100 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-amber-600 text-base">description</span>
+                        Последние документы СЭД
+                    </h3>
+                    <a href="{% url 'admin:logistics_app_docflowdocument_changelist' %}" class="text-xs text-primary-600 hover:underline">Все документы</a>
+                </div>
+                <div class="divide-y divide-base-100 dark:divide-base-800 text-xs">
+                    {% for doc in recent_docflow %}
+                        <div class="py-2.5 flex items-center justify-between">
+                            <div class="flex flex-col">
+                                <a href="{% url 'admin:logistics_app_docflowdocument_change' doc.pk %}" class="font-medium text-base-900 dark:text-base-100 hover:text-primary-600">
+                                    {{ doc.reg_number|default:"б/н" }} — {{ doc.title|truncatechars:45 }}
+                                </a>
+                                <span class="text-base-500 text-[11px]">{{ doc.initiator.get_full_name|default:doc.initiator.username }} • {{ doc.created_at|date:"d.m.Y H:i" }}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950 dark:text-amber-300">
+                                {{ doc.get_status_display }}
+                            </span>
+                        </div>
+                    {% empty %}
+                        <div class="py-4 text-center text-base-400">Нет зарегистрированных документов</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Последние экипажи полетов -->
+            <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-5 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-sm text-base-900 dark:text-base-100 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-600 text-base">flight</span>
+                        Оперативное планирование экипажей
+                    </h3>
+                    <a href="{% url 'admin:flight_planning_flightcrew_changelist' %}" class="text-xs text-primary-600 hover:underline">Все экипажи</a>
+                </div>
+                <div class="divide-y divide-base-100 dark:divide-base-800 text-xs">
+                    {% for crew in recent_crews %}
+                        <div class="py-2.5 flex items-center justify-between">
+                            <div class="flex flex-col">
+                                <a href="{% url 'admin:flight_planning_flightcrew_change' crew.pk %}" class="font-medium text-base-900 dark:text-base-100 hover:text-primary-600">
+                                    ВС: {{ crew.aircraft.registration_number }} • {{ crew.mpd.name|default:"МПД не указано" }}
+                                </a>
+                                <span class="text-base-500 text-[11px]">Дата: {{ crew.date|date:"d.m.Y" }} • {{ crew.name|default:"Основной" }}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-950 dark:text-primary-300">
+                                {{ crew.get_flight_type_display }}
+                            </span>
+                        </div>
+                    {% empty %}
+                        <div class="py-4 text-center text-base-400">Нет запланированных экипажей</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Правая колонка: Служебные записки и Задачи -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Служебные записки на согласовании -->
+            <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-5 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-sm text-base-900 dark:text-base-100 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-indigo-600 text-base">approval</span>
+                        Служебные записки и согласования
+                    </h3>
+                    <a href="{% url 'admin:hrdepartment_app_approvaloficialmemoprocess_changelist' %}" class="text-xs text-primary-600 hover:underline">Все процессы</a>
+                </div>
+                <div class="divide-y divide-base-100 dark:divide-base-800 text-xs">
+                    {% for memo in recent_memos %}
+                        <div class="py-2.5 flex items-center justify-between">
+                            <div class="flex flex-col">
+                                <a href="{% url 'admin:hrdepartment_app_approvaloficialmemoprocess_change' memo.pk %}" class="font-medium text-base-900 dark:text-base-100 hover:text-primary-600">
+                                    {{ memo.document.person.get_full_name|default:memo.document.title }}
+                                </a>
+                                <span class="text-base-500 text-[11px]">Период: {{ memo.start_date_trip|date:"d.m.Y" }} — {{ memo.end_date_trip|date:"d.m.Y" }}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-medium {% if memo.accepted_accounting %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                                {% if memo.accepted_accounting %}Проведено в бухгалтерии{% else %}На согласовании{% endif %}
+                            </span>
+                        </div>
+                    {% empty %}
+                        <div class="py-4 text-center text-base-400">Нет активных служебных записок</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Задачи в работе -->
+            <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-5 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-sm text-base-900 dark:text-base-100 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-teal-600 text-base">task_alt</span>
+                        Задачи и поручения
+                    </h3>
+                    <a href="{% url 'admin:tasks_app_task_changelist' %}" class="text-xs text-primary-600 hover:underline">Все задачи</a>
+                </div>
+                <div class="divide-y divide-base-100 dark:divide-base-800 text-xs">
+                    {% for task in recent_tasks %}
+                        <div class="py-2.5 flex items-center justify-between">
+                            <div class="flex flex-col">
+                                <a href="{% url 'admin:tasks_app_task_change' task.pk %}" class="font-medium text-base-900 dark:text-base-100 hover:text-primary-600">
+                                    {{ task.title|truncatechars:45 }}
+                                </a>
+                                <span class="text-base-500 text-[11px]">Ответственный: {{ task.responsible.get_full_name|default:task.responsible.username }} • Срок: {{ task.end_date|date:"d.m.Y"|default:"не задан" }}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-base-100 text-base-700 border border-base-200 dark:bg-base-800 dark:text-base-300">
+                                {{ task.get_status_display }}
+                            </span>
+                        </div>
+                    {% empty %}
+                        <div class="py-4 text-center text-base-400">Нет активных задач</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- 4. СТАНДАРТНЫЙ СПИСОК ПРИЛОЖЕНИЙ (APP LIST) -->
+    <div class="mt-2">
+        {{ block.super }}
+    </div>
+
+</div>
+{% endblock %}

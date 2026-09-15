@@ -1,11 +1,13 @@
 """Настройка административной панели Django (Unfold) для модуля tasks_app."""
 
-from typing import Any
+from typing import Any, Tuple, Optional
 from django.contrib import admin
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.decorators import display
+from unfold.contrib.filters.admin import RangeDateFilter
 
 from tasks_app.models import (
     Category,
@@ -25,6 +27,8 @@ class CategoryAdmin(ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
     ordering = ('name',)
+    compressed_fields = True
+    warn_unsaved_form = True
 
 
 class TaskFileInline(TabularInline):
@@ -98,21 +102,36 @@ class TaskAdmin(ModelAdmin):
     """Административный интерфейс для управления задачами и поручениями."""
 
     list_display = (
-        'id', 'title', 'user', 'responsible', 'status_badge',
-        'priority_badge', 'category', 'start_date', 'end_date', 'has_files'
+        'display_task_header',
+        'user',
+        'responsible',
+        'display_status',
+        'display_priority',
+        'start_date',
+        'end_date',
+        'has_files',
     )
     list_filter = (
-        'status', 'priority', 'category', 'user', 'responsible',
-        'requires_eds', 'repeat', 'created_at'
+        'status',
+        'priority',
+        'category',
+        'requires_eds',
+        'repeat',
+        ('start_date', RangeDateFilter),
+        ('end_date', RangeDateFilter),
+        ('created_at', RangeDateFilter),
     )
     search_fields = (
         'title', 'description', 'user__username', 'user__first_name',
-        'user__last_name', 'responsible__username'
+        'user__last_name', 'responsible__username', 'responsible__last_name'
     )
+    autocomplete_fields = ['user', 'responsible', 'category']
     list_select_related = ('user', 'responsible', 'category')
     ordering = ('-created_at',)
     save_as = True
     actions = ['mark_completed', 'mark_in_progress']
+    compressed_fields = True
+    warn_unsaved_form = True
 
     fieldsets = (
         ('Основная информация', {
@@ -143,40 +162,47 @@ class TaskAdmin(ModelAdmin):
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         return super().get_queryset(request).annotate(files_count=Count('files', distinct=True))
 
-    @admin.display(description='Статус', ordering='status')
-    def status_badge(self, obj: Task) -> str:
-        colors = {
-            TaskStatus.NEW: '#0dcaf0',
-            TaskStatus.ASSIGNED: '#6f42c1',
-            TaskStatus.IN_PROGRESS: '#0d6efd',
-            TaskStatus.ON_REVIEW: '#ffc107',
-            TaskStatus.RETURNED: '#fd7e14',
-            TaskStatus.COMPLETED: '#198754',
-            TaskStatus.CANCELLED: '#6c757d',
-            TaskStatus.OVERDUE: '#dc3545',
-            TaskStatus.DRAFT: '#adb5bd',
-        }
-        bg = colors.get(obj.status, '#6c757d')
-        text = '#000' if obj.status in (TaskStatus.ON_REVIEW, TaskStatus.NEW, TaskStatus.DRAFT) else '#fff'
-        return format_html(
-            '<span style="background: {}; color: {}; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">{}</span>',
-            bg, text, obj.get_status_display()
-        )
+    @display(description='Задача', header=True)
+    def display_task_header(self, obj: Task) -> Tuple[str, str]:
+        """Возвращает заголовок задачи и категорию."""
+        category_name = obj.category.name if obj.category else "Без категории"
+        return obj.title, f"Категория: {category_name}"
 
-    @admin.display(description='Приоритет', ordering='priority')
-    def priority_badge(self, obj: Task) -> str:
-        colors = {
-            'primary': '#0d6efd', 'warning': '#ffc107', 'info': '#0dcaf0',
-            'danger': '#dc3545', 'dark': '#212529'
-        }
-        bg = colors.get(obj.priority, '#6c757d')
-        text = '#fff' if obj.priority not in ('warning', 'info') else '#000'
-        return format_html(
-            '<span style="background: {}; color: {}; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">{}</span>',
-            bg, text, obj.get_priority_display()
-        )
+    @display(
+        description='Статус',
+        ordering='status',
+        label={
+            TaskStatus.NEW: "info",
+            TaskStatus.ASSIGNED: "secondary",
+            TaskStatus.IN_PROGRESS: "primary",
+            TaskStatus.ON_REVIEW: "warning",
+            TaskStatus.RETURNED: "warning",
+            TaskStatus.COMPLETED: "success",
+            TaskStatus.CANCELLED: "secondary",
+            TaskStatus.OVERDUE: "danger",
+            TaskStatus.DRAFT: "secondary",
+        },
+    )
+    def display_status(self, obj: Task) -> Tuple[str, str]:
+        """Возвращает статус задачи с бейджем."""
+        return obj.status, obj.get_status_display()
 
-    @admin.display(description='Файлы', boolean=True)
+    @display(
+        description='Приоритет',
+        ordering='priority',
+        label={
+            'primary': 'info',
+            'warning': 'warning',
+            'info': 'info',
+            'danger': 'danger',
+            'dark': 'secondary',
+        },
+    )
+    def display_priority(self, obj: Task) -> Tuple[str, str]:
+        """Возвращает приоритет задачи с бейджем."""
+        return obj.priority, obj.get_priority_display()
+
+    @display(description='Файлы', boolean=True)
     def has_files(self, obj: Task) -> bool:
         return obj.files_count > 0 if hasattr(obj, 'files_count') else obj.files.exists()
 
@@ -194,17 +220,26 @@ class TaskAdmin(ModelAdmin):
 @admin.register(SubTask)
 class SubTaskAdmin(ModelAdmin):
     """Админка для подзадач."""
-    list_display = ('title', 'task', 'assigned_to', 'is_completed', 'completed_by', 'completed_at')
-    list_filter = ('is_completed', 'created_at')
+    list_display = ('title', 'task', 'assigned_to', 'display_completed', 'completed_by', 'completed_at')
+    list_filter = ('is_completed', ('created_at', RangeDateFilter))
     search_fields = ('title', 'task__title')
+    autocomplete_fields = ['task', 'assigned_to']
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description='Выполнено', boolean=True)
+    def display_completed(self, obj: SubTask) -> bool:
+        return obj.is_completed
 
 
 @admin.register(TaskComment)
 class TaskCommentAdmin(ModelAdmin):
     """Админка для комментариев."""
     list_display = ('author', 'task', 'short_text', 'created_at')
-    list_filter = ('created_at',)
+    list_filter = (('created_at', RangeDateFilter),)
     search_fields = ('text', 'author__username', 'task__title')
+    autocomplete_fields = ['author', 'task']
+    compressed_fields = True
 
     @admin.display(description='Текст')
     def short_text(self, obj: TaskComment) -> str:
@@ -215,17 +250,21 @@ class TaskCommentAdmin(ModelAdmin):
 class TaskAssignmentAdmin(ModelAdmin):
     """Админка для поручений."""
     list_display = ('task', 'assigned_by', 'assigned_to', 'role', 'status', 'assigned_at')
-    list_filter = ('role', 'status', 'assigned_at')
+    list_filter = ('role', 'status', ('assigned_at', RangeDateFilter))
     search_fields = ('task__title', 'assigned_to__username', 'assigned_by__username')
+    autocomplete_fields = ['task', 'assigned_to', 'assigned_by']
+    compressed_fields = True
+    warn_unsaved_form = True
 
 
 @admin.register(TaskHistory)
 class TaskHistoryAdmin(ModelAdmin):
     """Админка для журнала аудита."""
     list_display = ('created_at', 'task', 'user', 'action', 'comment')
-    list_filter = ('action', 'created_at')
+    list_filter = ('action', ('created_at', RangeDateFilter))
     search_fields = ('task__title', 'user__username', 'comment', 'new_value')
     readonly_fields = ('task', 'user', 'action', 'old_value', 'new_value', 'comment', 'created_at')
+    compressed_fields = True
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
@@ -235,12 +274,13 @@ class TaskHistoryAdmin(ModelAdmin):
 class TaskFileAdmin(ModelAdmin):
     """Админка для файлов задач."""
     list_display = ('task_title', 'display_filename', 'uploaded_by', 'uploaded_at', 'display_file_size')
-    list_filter = ('uploaded_at',)
+    list_filter = (('uploaded_at', RangeDateFilter),)
     search_fields = ('task__title', 'original_filename', 'file')
     list_select_related = ('task', 'uploaded_by')
     ordering = ('-uploaded_at',)
     date_hierarchy = 'uploaded_at'
     readonly_fields = ('uploaded_at', 'display_file_size', 'display_filename')
+    compressed_fields = True
 
     @admin.display(description='Задача', ordering='task__title')
     def task_title(self, obj: TaskFile) -> str:

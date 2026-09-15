@@ -1,4 +1,4 @@
-# Register your models here.
+from typing import Optional, Tuple, Dict, Any, List
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.models import Group
 from django.contrib import admin
@@ -42,16 +42,14 @@ from .models import (
     OrgStructure, OrgStructureNode, OrgNodeLeadershipHistory,
 )
 from unfold.admin import ModelAdmin, TabularInline
+from unfold.decorators import display
+from unfold.contrib.filters.admin import RangeDateFilter
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 
-# Register your models here.
 class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
     """
-    Расширяем модель UserAdmin
-    fieldsets: исходный набор полей формы
-    *UserAdmin.fieldsets: добавляем расширенный набор полей формы,
-        тип: кортеж содержащий ('заголовок группы по вашему выбору', {словарь c новыми полями})
+    Расширенное администрирование пользователей с интеграцией Django Unfold.
     """
     form = UserChangeForm
     add_form = UserCreationForm
@@ -77,15 +75,87 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
         }),
     )
 
-    list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email",
-                    "is_active", 'is_staff', 'is_superuser', 'is_ppa')
+    list_display = (
+        "display_user_header",
+        "birthday",
+        "email",
+        "display_role",
+        "display_status",
+        "is_ppa",
+    )
     search_fields = ('pk', 'title', 'ref_key', 'person_ref_key', 'username', 'last_name', 'first_name')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', 'is_ppa')
-    list_editable = ('is_active', 'is_ppa')
+    list_filter = (
+        'is_active',
+        'is_staff',
+        'is_superuser',
+        'is_ppa',
+        'groups',
+    )
     list_per_page = 50
     ordering = ('last_name', 'first_name')
-    empty_value_display = '-empty-'
+    compressed_fields = True
+    warn_unsaved_form = True
     actions = ['activate_users', 'deactivate_users']
+
+    @display(description="Пользователь", header=True)
+    def display_user_header(self, obj: DataBaseUser) -> Tuple[str, str]:
+        """Возвращает ФИО и логин с должностью сотрудника.
+
+        Args:
+            obj: Экземпляр DataBaseUser.
+
+        Returns:
+            Кортеж (ФИО, логин и должность).
+        """
+        full_name = f"{obj.last_name} {obj.first_name} {obj.surname}".strip()
+        display_name = full_name or obj.username
+        subtitle = f"@{obj.username}"
+        if obj.title:
+            subtitle += f" | {obj.title}"
+        return display_name, subtitle
+
+    @display(
+        description="Роль",
+        label={
+            "superuser": "danger",
+            "staff": "warning",
+            "user": "info",
+        },
+    )
+    def display_role(self, obj: DataBaseUser) -> Tuple[str, str]:
+        """Возвращает роль пользователя в системе с бейджем.
+
+        Args:
+            obj: Экземпляр DataBaseUser.
+
+        Returns:
+            Кортеж (тип роли, наименование).
+        """
+        if obj.is_superuser:
+            return "superuser", "Суперпользователь"
+        if obj.is_staff:
+            return "staff", "Администратор"
+        return "user", "Пользователь"
+
+    @display(
+        description="Статус",
+        label={
+            "active": "success",
+            "blocked": "danger",
+        },
+    )
+    def display_status(self, obj: DataBaseUser) -> Tuple[str, str]:
+        """Возвращает статус активности пользователя.
+
+        Args:
+            obj: Экземпляр DataBaseUser.
+
+        Returns:
+            Кортеж (код статуса, наименование).
+        """
+        if obj.is_active:
+            return "active", "Активен"
+        return "blocked", "Заблокирован"
 
     def activate_users(self, request, queryset):
         queryset.update(is_active=True)
@@ -200,20 +270,29 @@ class PostsAdmin(ModelAdmin):
 
 
 @admin.register(Division)
-class CounteragentAdmin(ModelAdmin):
-    list_display = ("pk", "code", "name", "active",)
-    search_fields = ("name", "code",)
+class DivisionAdmin(ModelAdmin):
+    """Администрирование подразделений компании."""
+    list_display = ("pk", "code", "name", "display_active")
+    search_fields = ("name", "code")
     ordering = ('code',)
+    list_filter = ("active",)
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Активно", boolean=True)
+    def display_active(self, obj: Division) -> bool:
+        """Флаг активности подразделения."""
+        return obj.active
 
 
 @admin.register(UserStats)
 class UserStatsAdmin(ModelAdmin):
     list_display = ("pk", "score", "level", "lines_cleared", "games_played")
-    # search_fields = ("name", "code",)
     ordering = ('created_at',)
+    compressed_fields = True
 
 
-class ApartmentBookingInline(admin.TabularInline):
+class ApartmentBookingInline(TabularInline):
     model = ApartmentBooking
     extra = 0
     readonly_fields = ['date_created']
@@ -221,7 +300,11 @@ class ApartmentBookingInline(admin.TabularInline):
 
 @admin.register(Apartments)
 class ApartmentsAdmin(ModelAdmin):
+    """Администрирование квартир для командированных сотрудников."""
     list_display = ['title', 'place', 'beds_number', 'get_current_occupancy']
+    search_fields = ['title', 'place', 'address']
+    compressed_fields = True
+    warn_unsaved_form = True
 
     def get_current_occupancy(self, obj):
         from datetime import date
@@ -233,16 +316,35 @@ class ApartmentsAdmin(ModelAdmin):
 @admin.register(ApartmentBooking)
 class ApartmentBookingAdmin(ModelAdmin):
     """
-    Админ-класс для модели бронирования квартир с использованием django-unfold
+    Админ-класс для модели бронирования квартир с использованием django-unfold.
     """
 
     # Основные настройки
-    list_display = ['id', 'apartment', 'date_start', 'date_end', 'is_active', 'process_info']
-    list_display_links = ['id', 'apartment']
-    list_filter = ['is_active', 'apartment', 'date_start']
-    search_fields = ['apartment__address', 'apartment__title']  # Замените на реальные поля
+    list_display = ['display_booking_header', 'display_active', 'process_info']
+    list_display_links = ['display_booking_header']
+    list_filter = [
+        'is_active',
+        'apartment',
+        ('date_start', RangeDateFilter),
+        ('date_end', RangeDateFilter),
+    ]
+    search_fields = ['apartment__address', 'apartment__title']
     list_per_page = 25
     date_hierarchy = 'date_start'
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Бронирование", header=True)
+    def display_booking_header(self, obj: ApartmentBooking) -> Tuple[str, str]:
+        """Возвращает заголовок бронирования и период."""
+        apt_title = obj.apartment.title if obj.apartment else "Квартира не указана"
+        period = f"{obj.date_start} — {obj.date_end}"
+        return f"Бронь #{obj.id}", f"{apt_title} ({period})"
+
+    @display(description="Активно", boolean=True)
+    def display_active(self, obj: ApartmentBooking) -> bool:
+        """Флаг активности бронирования."""
+        return obj.is_active
 
     # Поля для формы редактирования
     fieldsets = [
@@ -356,11 +458,22 @@ class ApartmentBookingAdmin(ModelAdmin):
 
 @admin.register(Counteragent)
 class CounteragentAdmin(ModelAdmin):
-    list_display = ["pk", 'short_name', 'inn', 'kpp', 'type_counteragent', 'duplicates_info', 'related_objects_count']
+    list_display = ["display_counteragent_header", 'inn', 'kpp', 'type_counteragent', 'duplicates_info', 'related_objects_count']
     list_filter = ['type_counteragent']
-    search_fields = ['short_name', 'inn', 'kpp']
+    search_fields = ['short_name', 'full_name', 'inn', 'kpp']
     actions = ['find_and_mark_duplicates', 'merge_duplicates']
     ordering = ('pk',)
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Контрагент", header=True)
+    def display_counteragent_header(self, obj: Counteragent) -> Tuple[str, str]:
+        """Возвращает наименование и реквизиты контрагента."""
+        name = obj.short_name or obj.full_name or "Без наименования"
+        details = f"ИНН: {obj.inn or '—'}"
+        if obj.kpp:
+            details += f" | КПП: {obj.kpp}"
+        return name, details
 
     def duplicates_info(self, obj):
         """Отображает информацию о дубликатах в списке"""
@@ -662,12 +775,27 @@ class CounteragentAdmin(ModelAdmin):
 
 @admin.register(BiometricConsent)
 class BiometricConsentAdmin(ModelAdmin):
-    list_display = ['consent_number', 'employee_link', 'consent_type', 'consent_date',  'is_active',
-                    'scanned_copy_link']
-    list_filter = ['is_active', 'consent_type', 'consent_date',]
+    list_display = ['display_consent_header', 'consent_type', 'consent_date', 'display_active', 'scanned_copy_link']
+    list_filter = [
+        'is_active',
+        'consent_type',
+        ('consent_date', RangeDateFilter),
+    ]
     search_fields = ['consent_number', 'employee__last_name', 'employee__first_name', 'employee_full_name']
     date_hierarchy = 'consent_date'
     readonly_fields = ['created_at', 'updated_at', 'created_by']
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Согласие", header=True)
+    def display_consent_header(self, obj: BiometricConsent) -> Tuple[str, str]:
+        """Возвращает номер согласия и ФИО сотрудника."""
+        return f"№ {obj.consent_number or 'б/н'}", obj.employee_full_name
+
+    @display(description="Активно", boolean=True)
+    def display_active(self, obj: BiometricConsent) -> bool:
+        """Флаг активности согласия."""
+        return obj.is_active
 
     fieldsets = (
         ('Основная информация', {
@@ -709,11 +837,18 @@ class BiometricConsentAdmin(ModelAdmin):
 
 @admin.register(ConsentType)
 class ConsentTypeAdmin(ModelAdmin):
-    list_display = ['name', 'code', 'template_link', 'is_active', 'sort_order', 'consents_count']
-    list_filter = ['is_active', 'created_at']
+    list_display = ['name', 'code', 'template_link', 'display_active', 'sort_order', 'consents_count']
+    list_filter = ['is_active', ('created_at', RangeDateFilter)]
     search_fields = ['name', 'code', 'description']
-    list_editable = ['sort_order', 'is_active']
+    list_editable = ['sort_order']
     readonly_fields = ['created_at', 'updated_at']
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Активно", boolean=True)
+    def display_active(self, obj: ConsentType) -> bool:
+        """Флаг активности типа согласия."""
+        return obj.is_active
 
     fieldsets = (
         ('Основная информация', {
@@ -759,18 +894,12 @@ class PushSubscriptionAdmin(ModelAdmin):
 
     list_display = ("user", "device_info", "created_at", "updated_at")
     search_fields = ("user__username", "user__last_name", "user__first_name", "user_agent", "endpoint")
-    list_filter = ("created_at", "updated_at")
+    list_filter = (("created_at", RangeDateFilter), ("updated_at", RangeDateFilter))
     readonly_fields = ("created_at", "updated_at")
+    compressed_fields = True
 
     def device_info(self, obj):
-        """Отображение краткой информации об устройстве.
-
-        Args:
-            obj (PushSubscription): Экземпляр подписки.
-
-        Returns:
-            str: Краткая строка устройства или браузера.
-        """
+        """Отображение краткой информации об устройстве."""
         return obj.user_agent[:60] if obj.user_agent else "—"
 
     device_info.short_description = "Устройство"
@@ -778,22 +907,30 @@ class PushSubscriptionAdmin(ModelAdmin):
 
 @admin.register(UserPasskey)
 class UserPasskeyAdmin(ModelAdmin):
-    """Административная панель для управления криптографическими ключами доступа Passkey (Face ID / Биометрия)."""
+    """Административная панель для управления криптографическими ключами доступа Passkey."""
 
     list_display = ("name", "user", "device_type", "sign_count", "created_at", "last_used_at")
     search_fields = ("name", "user__username", "user__last_name", "user__first_name", "credential_id", "user_agent")
-    list_filter = ("device_type", "created_at", "last_used_at")
+    list_filter = ("device_type", ("created_at", RangeDateFilter), ("last_used_at", RangeDateFilter))
     readonly_fields = ("credential_id", "public_key", "aaguid", "sign_count", "created_at", "last_used_at", "user_agent")
+    compressed_fields = True
 
 
 @admin.register(UserCertificate)
 class UserCertificateAdmin(ModelAdmin):
-    """Административная панель для управления квалифицированными сертификатами ЭЦП (КЭП / ГОСТ / КриптоПро)."""
+    """Административная панель для управления квалифицированными сертификатами ЭЦП."""
 
-    list_display = ("name", "cn", "user", "snils", "inn", "is_active", "valid_to", "created_at", "last_used_at")
+    list_display = ("name", "cn", "user", "snils", "inn", "display_active", "valid_to", "created_at", "last_used_at")
     search_fields = ("name", "cn", "user__username", "user__last_name", "user__first_name", "snils", "inn", "thumbprint", "serial_number", "subject_name")
-    list_filter = ("is_active", "valid_to", "created_at", "last_used_at")
+    list_filter = ("is_active", ("valid_to", RangeDateFilter), ("created_at", RangeDateFilter), ("last_used_at", RangeDateFilter))
     readonly_fields = ("thumbprint", "serial_number", "subject_name", "issuer_name", "snils", "inn", "cn", "valid_from", "valid_to", "certificate_data", "created_at", "last_used_at")
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Активен", boolean=True)
+    def display_active(self, obj: UserCertificate) -> bool:
+        """Флаг активности сертификата."""
+        return obj.is_active
 
 
 class OrgNodeLeadershipHistoryInline(TabularInline):
@@ -819,11 +956,24 @@ class OrgStructureNodeInline(TabularInline):
 class OrgStructureAdmin(ModelAdmin):
     """Административная панель для управления редакциями организационной структуры компании."""
 
-    list_display = ("title", "version_code", "start_date", "end_date", "is_active", "approved_by", "created_at")
-    list_filter = ("is_active", "start_date")
+    list_display = ("display_structure_header", "start_date", "end_date", "display_active", "approved_by", "created_at")
+    list_filter = ("is_active", ("start_date", RangeDateFilter))
     search_fields = ("title", "version_code", "approved_by", "description")
     readonly_fields = ("created_at", "updated_at")
     inlines = [OrgStructureNodeInline]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Оргструктура", header=True)
+    def display_structure_header(self, obj: OrgStructure) -> Tuple[str, str]:
+        """Возвращает наименование редакции оргструктуры."""
+        return obj.title, f"Версия: {obj.version_code or '—'}"
+
+    @display(description="Активна", boolean=True)
+    def display_active(self, obj: OrgStructure) -> bool:
+        """Флаг активности редакции."""
+        return obj.is_active
+
     fieldsets = (
         (
             "Основная информация",
@@ -863,17 +1013,40 @@ class OrgStructureAdmin(ModelAdmin):
 
 @admin.register(OrgStructureNode)
 class OrgStructureNodeAdmin(ModelAdmin):
-    """Административная панель для управления узлами оргструктуры (подразделениями и службами)."""
+    """Административная панель для управления узлами оргструктуры."""
 
-    list_display = ("get_title", "structure", "node_type", "level", "order", "head_job", "current_leader_display", "is_active")
-    list_filter = ("structure", "node_type", "level", "is_active")
+    list_display = ("get_title", "structure", "display_node_type", "level", "order", "head_job", "current_leader_display", "display_active")
+    list_filter = ("structure", "node_type", "is_active")
     search_fields = ("custom_name", "division__name", "head_job__name")
     autocomplete_fields = ["division", "parent", "head_job"]
     inlines = [OrgNodeLeadershipHistoryInline]
+    compressed_fields = True
+    warn_unsaved_form = True
 
-    @admin.display(description="Наименование узла")
-    def get_title(self, obj: OrgStructureNode) -> str:
-        return obj.title
+    @display(description="Наименование узла", header=True)
+    def get_title(self, obj: OrgStructureNode) -> Tuple[str, str]:
+        """Возвращает наименование узла и подразделение."""
+        div_name = obj.division.name if obj.division else "Без подразделения 1С"
+        return obj.title, div_name
+
+    @display(
+        description="Тип узла",
+        label={
+            "company": "danger",
+            "branch": "warning",
+            "service": "primary",
+            "department": "info",
+            "section": "secondary",
+        },
+    )
+    def display_node_type(self, obj: OrgStructureNode) -> Tuple[str, str]:
+        """Возвращает тип узла с бейджем."""
+        return obj.node_type, obj.get_node_type_display()
+
+    @display(description="Активен", boolean=True)
+    def display_active(self, obj: OrgStructureNode) -> bool:
+        """Флаг активности узла."""
+        return obj.is_active
 
     @admin.display(description="Текущий руководитель")
     def current_leader_display(self, obj: OrgStructureNode) -> str:
@@ -887,8 +1060,15 @@ class OrgStructureNodeAdmin(ModelAdmin):
 class OrgNodeLeadershipHistoryAdmin(ModelAdmin):
     """Административная панель для управления историей назначений руководителей."""
 
-    list_display = ("node", "employee", "job", "date_from", "date_to", "is_current", "order_number")
-    list_filter = ("is_current", "date_from", "node__structure")
+    list_display = ("node", "employee", "job", "date_from", "date_to", "display_current", "order_number")
+    list_filter = ("is_current", ("date_from", RangeDateFilter), "node__structure")
     search_fields = ("employee__username", "employee__last_name", "employee__first_name", "node__custom_name", "order_number")
     autocomplete_fields = ["node", "employee", "job"]
     readonly_fields = ("created_at",)
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Текущий", boolean=True)
+    def display_current(self, obj: OrgNodeLeadershipHistory) -> bool:
+        """Флаг актуального руководства."""
+        return obj.is_current

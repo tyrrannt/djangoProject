@@ -532,6 +532,7 @@ UNFOLD = {
     "SITE_HEADER": "ООО АК 'БАРКОЛ'",  # Большой текст вверху сайдбара
     "SITE_SUBHEADER": "Внутренняя система",  # Подзаголовок под SITE_HEADER
     "SITE_URL": "/",  # Куда ведёт клик по логотипу (обычно "/")
+    "DASHBOARD_CALLBACK": "administration_app.dashboard_service.dashboard_callback",
 
     "BORDER_RADIUS": "8px",
     "COLORS": {
@@ -572,7 +573,7 @@ UNFOLD = {
     },
     "SIDEBAR": {
         "show_search": True,  # Поиск по всем пунктам сайдбара
-        "command_search": False,  # Можно включить позже (как командная строка)
+        "command_search": True,  # Командная строка / глобальный поиск (Ctrl+K)
         "show_all_applications": True,
         # ОЧЕНЬ ВАЖНО! Внизу автоматически появятся все модели, которые не вошли в ручной navigation
 
