@@ -1131,20 +1131,19 @@ class DownloadTestingBlankView(LoginRequiredMixin, View):
             return redirect("testing_app:my_tests")
 
         try:
-            docx_bytes = generate_filled_testing_blank_bytes(assignment)
+            docx_bytes, filename = generate_filled_testing_blank_bytes(assignment, user=request.user)
         except Exception as exc:
             messages.error(request, f"Ошибка формирования бланка DOCX: {str(exc)}")
             return redirect("testing_app:my_tests")
-
-        employee_name = f"{assignment.employee.last_name}_{assignment.employee.first_name}"
-        order_num = assignment.testing.order_number or f"id_{assignment.testing_id}"
-        filename = f"Бланк_тестирования_{employee_name}_{order_num}.docx"
 
         response = HttpResponse(
             docx_bytes,
             content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         )
-        response["Content-Disposition"] = f'attachment; filename="{escape_uri_path(filename)}"'
+        ascii_fallback = "blank_testing.docx"
+        encoded_filename = quote(filename)
+        response["Content-Disposition"] = f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{encoded_filename}'
+        response["Content-Length"] = str(len(docx_bytes))
 
         TestingAuditLog.objects.create(
             user=request.user,

@@ -126,37 +126,10 @@ def generate_filled_testing_blank_bytes(
     context: Dict[str, Any] = {
         # ФИО
         "FIO": fio_full,
-        "fio": fio_full,
-        "ФИО": fio_full,
-        "фио": fio_full,
-        "short_fio": short_fio,
-        "employee_name": fio_full,
-        "last_name": last_name,
-        "first_name": first_name,
-        "surname": surname,
-        "service_number": service_number,
         # Должность и подразделение
         "job": job_title,
-        "job_title": job_title,
-        "Должность": job_title,
-        "должность": job_title,
-        "division": division,
-        "подразделение": division,
         # Даты
         "date": default_date_str,
-        "дата": default_date_str,
-        "Дата": default_date_str,
-        "order_date": order_date_str,
-        "дата_приказа": order_date_str,
-        "today": today_str,
-        # Приказ и мероприятие
-        "order_number": testing.order_number or "",
-        "номер_приказа": testing.order_number or "",
-        "order_name": testing.order_name or "",
-        "event_title": testing.title,
-        "group_name": assignment.group.name,
-        "passing_score": str(testing.passing_score_percentage),
-        "status": assignment.get_status_display() if hasattr(assignment, "get_status_display") else assignment.status,
     }
 
     doc = DocxTemplate(template_path)
