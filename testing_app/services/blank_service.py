@@ -1,10 +1,10 @@
 """Сервисы формирования и почтовой отправки персонализированных бланков итогового тестирования АТП."""
 
+import html
 import io
 import logging
 import pathlib
 import re
-import xml.etree.ElementTree as ET
 import zipfile
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -51,11 +51,12 @@ def replace_docx_placeholders_in_xml(
     xml_bytes: bytes,
     context: Dict[str, Any],
 ) -> bytes:
-    """Заменяет все переменные вида {переменная} в XML-дереве документа Word.
+    """Заменяет все переменные вида {переменная} в XML-файлах документа Word (.docx).
 
-    Сохраняет 100% форматирования, стилей, таблиц, границ и шрифтов документа.
-    Заменяет исключительно содержимое фигурных скобок {...}, оставляя
-    весь окружающий текст и структуру неизменными.
+    Сохраняет 100% исходной OpenXML разметки, пространств имен (namespaces)
+    и форматирования документа без их перегенерации через DOM-парсеры (ElementTree),
+    что гарантирует полную совместимость с Microsoft Office Word (Word 2013-2024 / Office 365)
+    и LibreOffice Writer.
     Корректно обрабатывает ситуации, когда текстовый процессор Word разбивает
     конструкцию {переменная} на несколько смежных XML-узлов <w:r>/<w:t>.
 
@@ -64,69 +65,71 @@ def replace_docx_placeholders_in_xml(
         context (Dict[str, Any]): Словарь подстановок ({переменная: значение}).
 
     Returns:
-        bytes: Модифицированный XML-поток в кодировке UTF-8.
+        bytes: Модифицированный XML-поток в кодировке UTF-8 с сохраненной структурой и пространствами имен.
     """
     if not xml_bytes or not context:
         return xml_bytes
 
-    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-    try:
-        root = ET.fromstring(xml_bytes)
-    except ET.ParseError:
-        return xml_bytes
-
-    # Нормализуем словарь подстановок (регистронезависимый поиск)
+    xml_text = xml_bytes.decode("utf-8", errors="ignore")
     normalized_context = {
         str(k).strip().lower(): str(v) if v is not None else ""
         for k, v in context.items()
     }
 
     var_pattern = re.compile(r"\{([^{}]+)\}")
-    modified = False
+    p_pattern = re.compile(r"(<w:p\b[^>]*>)(.*?)(</w:p>)", re.DOTALL)
+    t_pattern = re.compile(r"(<w:t\b[^>]*>)(.*?)(</w:t>)", re.DOTALL)
 
-    for p in root.findall(".//w:p", ns):
-        text_nodes = p.findall(".//w:t", ns)
-        if not text_nodes:
-            continue
+    def process_paragraph(p_match: re.Match) -> str:
+        p_open = p_match.group(1)
+        p_body = p_match.group(2)
+        p_close = p_match.group(3)
 
-        # Собираем полный текст абзаца и интервалы символов каждого узла
+        t_matches = list(t_pattern.finditer(p_body))
+        if not t_matches:
+            return p_match.group(0)
+
         full_text = ""
-        node_spans = []  # (index, start_offset, end_offset)
-        for idx, node in enumerate(text_nodes):
-            txt = node.text or ""
+        spans: List[Tuple[re.Match, str, int, int]] = []
+        for tm in t_matches:
+            raw_text = tm.group(2)
+            unescaped = html.unescape(raw_text)
             start = len(full_text)
-            end = start + len(txt)
-            node_spans.append((idx, start, end))
-            full_text += txt
+            end = start + len(unescaped)
+            spans.append((tm, unescaped, start, end))
+            full_text += unescaped
 
         if "{" not in full_text:
-            continue
+            return p_match.group(0)
 
         matches = list(var_pattern.finditer(full_text))
         if not matches:
-            continue
+            return p_match.group(0)
 
-        # Составляем список непересекающихся замен: (start, end, repl_val)
-        replacements = []
+        replacements: List[Tuple[int, int, str]] = []
         for m in matches:
             key = m.group(1).strip().lower()
             if key in normalized_context:
                 replacements.append((m.start(), m.end(), normalized_context[key]))
 
         if not replacements:
-            continue
+            return p_match.group(0)
 
-        # Восстанавливаем текст каждого узла <w:t>, распределяя подстановки
-        new_node_texts = []
-        for idx, start, end in node_spans:
+        new_p_body: List[str] = []
+        last_end = 0
+
+        for tm, orig_txt, start, end in spans:
+            new_p_body.append(p_body[last_end:tm.start()])
+            last_end = tm.end()
+
             curr = start
-            new_txt = []
+            node_parts: List[str] = []
             while curr < end:
                 in_repl = False
                 for r_start, r_end, r_val in replacements:
                     if r_start <= curr < r_end:
                         if curr == r_start:
-                            new_txt.append(r_val)
+                            node_parts.append(r_val)
                         curr = min(r_end, end)
                         in_repl = True
                         break
@@ -135,22 +138,23 @@ def replace_docx_placeholders_in_xml(
                     for r_start, r_end, _ in replacements:
                         if curr < r_start < next_stop:
                             next_stop = r_start
-                    new_txt.append(full_text[curr:next_stop])
+                    node_parts.append(full_text[curr:next_stop])
                     curr = next_stop
 
-            new_node_texts.append("".join(new_txt))
+            new_text_raw = "".join(node_parts)
+            escaped_text = html.escape(new_text_raw, quote=False)
 
-        # Записываем обновленные строки обратно в узлы <w:t>
-        for idx, txt in enumerate(new_node_texts):
-            text_nodes[idx].text = txt
-            if " " in txt or txt.startswith(" ") or txt.endswith(" "):
-                text_nodes[idx].set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+            t_tag_open = tm.group(1)
+            if (" " in new_text_raw or new_text_raw.startswith(" ") or new_text_raw.endswith(" ")) and "xml:space" not in t_tag_open:
+                t_tag_open = t_tag_open[:-1] + ' xml:space="preserve">'
 
-        modified = True
+            new_p_body.append(f"{t_tag_open}{escaped_text}{tm.group(3)}")
 
-    if modified:
-        return ET.tostring(root, encoding="utf-8", xml_declaration=True)
-    return xml_bytes
+        new_p_body.append(p_body[last_end:])
+        return p_open + "".join(new_p_body) + p_close
+
+    result_text = p_pattern.sub(process_paragraph, xml_text)
+    return result_text.encode("utf-8")
 
 
 def generate_filled_testing_blank_bytes(
@@ -301,13 +305,32 @@ def generate_filled_testing_blank_bytes(
     }
 
     with zipfile.ZipFile(template_path, "r") as src_zip:
+        files: Dict[str, bytes] = {}
+        for item in src_zip.infolist():
+            content = src_zip.read(item.filename)
+            if (
+                item.filename in ("word/document.xml", "word/footnotes.xml", "word/endnotes.xml")
+                or item.filename.startswith("word/header")
+                or item.filename.startswith("word/footer")
+            ):
+                content = replace_docx_placeholders_in_xml(content, context)
+            files[item.filename] = content
+
+        # Гарантируем канонический порядок OPC (Open Packaging Conventions):
+        # [Content_Types].xml должен идти первым, _rels/.rels вторым
+        ordered_names: List[str] = []
+        if "[Content_Types].xml" in files:
+            ordered_names.append("[Content_Types].xml")
+        if "_rels/.rels" in files:
+            ordered_names.append("_rels/.rels")
+        for fname in sorted(files.keys()):
+            if fname not in ordered_names:
+                ordered_names.append(fname)
+
         out_buffer = io.BytesIO()
         with zipfile.ZipFile(out_buffer, "w", compression=zipfile.ZIP_DEFLATED) as dst_zip:
-            for item in src_zip.infolist():
-                content = src_zip.read(item.filename)
-                if item.filename.endswith(".xml") and item.filename.startswith("word/"):
-                    content = replace_docx_placeholders_in_xml(content, context)
-                dst_zip.writestr(item, content)
+            for fname in ordered_names:
+                dst_zip.writestr(fname, files[fname])
 
         out_buffer.seek(0)
         return out_buffer.getvalue(), download_filename

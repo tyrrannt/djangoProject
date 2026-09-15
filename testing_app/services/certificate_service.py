@@ -237,8 +237,8 @@ def get_certificate_context(attempt: TestingAttempt, request=None) -> Dict[str, 
     testing = assignment.testing
     finished_at = attempt.finished_at or timezone.now()
 
-    # Срок действия результатов проверки (уведомления): 1 год со дня успешной сдачи
-    valid_until = finished_at + timedelta(days=365)
+    # Срок действия результатов проверки (уведомления): полгода со дня успешной сдачи
+    valid_until = finished_at + timedelta(days=180)
 
     qr_url = generate_certificate_qr_code(attempt, request=request)
     verify_url = reverse("testing_app:certificate_verify", kwargs={"certificate_uuid": attempt.certificate_uuid})
