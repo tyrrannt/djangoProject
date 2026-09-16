@@ -1543,6 +1543,137 @@ class KerioUserContactAndSecurityTestCase(TestCase):
         self.assertEqual(user_param["contact"]["mobilePhone"], "+7 (999) 111-22-33")
 
 
+class KerioBatchPasswordCeleryTestCase(TestCase):
+    """Тестирование генерации паролей, единой пакетной записи Доставки SMTP и фоновой задачи Celery."""
+
+    def test_generate_random_password_custom_options(self) -> None:
+        """Тест генератора паролей с различными параметрами длины и наборов символов."""
+        from mailbox_app.services.kerio.utils import generate_random_password
+
+        # Тест длины 20
+        pwd20 = generate_random_password(length=20)
+        self.assertEqual(len(pwd20), 20)
+
+        # Тест только цифры
+        pwd_digits = generate_random_password(
+            length=10,
+            use_lowercase=False,
+            use_uppercase=False,
+            use_digits=True,
+            use_special=False,
+        )
+        self.assertEqual(len(pwd_digits), 10)
+        self.assertTrue(pwd_digits.isdigit())
+
+        # Тест кастомные спецсимволы
+        pwd_custom = generate_random_password(
+            length=12,
+            use_lowercase=False,
+            use_uppercase=False,
+            use_digits=False,
+            use_special=True,
+            special_chars="@#$",
+        )
+        self.assertEqual(len(pwd_custom), 12)
+        for ch in pwd_custom:
+            self.assertIn(ch, "@#$")
+
+        # Исключение при отключении всех наборов
+        with self.assertRaises(ValueError):
+            generate_random_password(
+                use_lowercase=False,
+                use_uppercase=False,
+                use_digits=False,
+                use_special=False,
+            )
+
+    def test_smtp_delivery_sanitize_rules_and_batch_write(self) -> None:
+        """Тест санитизации правил SMTP и единой пакетной записи batch_update_delivery_routes."""
+        from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
+
+        mock_client = MagicMock()
+        mock_client.call.side_effect = [
+            # Smtp.getRelayDeliveryRuleList
+            {
+                "rules": [
+                    {
+                        "id": "rule-1",
+                        "sender": {"type": "Single", "pattern": "u1@barkol.ru"},
+                        "authentication": {"auth": "AuthTypeManual", "userName": "u1@barkol.ru", "password": ""},
+                        "target": {"mode": "RelaySingle", "host": "smtp.barkol.ru", "port": 587},
+                        "enabled": True,
+                    },
+                    {
+                        "id": "rule-global",
+                        "sender": {"type": "All"},
+                        "authentication": {"auth": "AuthTypeManual", "userName": "global@barkol.ru", "password": ""},
+                        "target": {"mode": "RelaySingle", "host": "smtp.barkol.ru", "port": 587},
+                        "enabled": True,
+                    },
+                ]
+            },
+            # Smtp.setRelayDeliveryRuleList
+            {"result": True},
+        ]
+
+        mgr = SmtpDeliveryManager(mock_client)
+        passwords_map = {
+            "u1@barkol.ru": "NewSecretPass1!",
+            "u2@barkol.ru": "NewSecretPass2!",
+        }
+        report = mgr.batch_update_delivery_routes(passwords_map=passwords_map, default_domain="barkol.ru")
+
+        self.assertTrue(report["success"])
+        self.assertEqual(report["updated_count"], 1)  # u1@barkol.ru обновлен
+        self.assertEqual(report["created_count"], 1)  # u2@barkol.ru создан
+        self.assertEqual(report["total_rules_sent"], 3)  # rule-1 + rule-global + rule-new-u2
+
+        # Проверяем параметры вызова Smtp.setRelayDeliveryRuleList
+        self.assertEqual(mock_client.call.call_count, 2)
+        set_call = mock_client.call.call_args_list[1]
+        self.assertEqual(set_call[0][0], "Smtp.setRelayDeliveryRuleList")
+        sent_rules = set_call[1]["params"]["rules"]
+
+        # 1. Для u1@barkol.ru пароль должен быть "NewSecretPass1!"
+        u1_rule = next(r for r in sent_rules if r.get("id") == "rule-1")
+        self.assertEqual(u1_rule["authentication"]["password"], "NewSecretPass1!")
+
+        # 2. Для глобального правила (не в map) ключ 'password' должен быть удален во избежание затирания D3S хэша
+        global_rule = next(r for r in sent_rules if r.get("id") == "rule-global")
+        self.assertNotIn("password", global_rule["authentication"])
+
+        # 3. Для нового ящика u2@barkol.ru создано правило с "NewSecretPass2!"
+        u2_rule = next(r for r in sent_rules if r.get("sender", {}).get("pattern") == "u2@barkol.ru")
+        self.assertEqual(u2_rule["authentication"]["password"], "NewSecretPass2!")
+
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.batch_change_isp_passwords")
+    def test_batch_change_isp_passwords_task_execution(self, mock_batch_service: MagicMock) -> None:
+        """Тест выполнения фоновой задачи Celery batch_change_isp_passwords_task."""
+        from mailbox_app.tasks import batch_change_isp_passwords_task
+
+        mock_batch_service.return_value = {
+            "success": True,
+            "total": 5,
+            "success_count": 5,
+            "error_count": 0,
+            "message": "Пакетная смена успешно выполнена",
+        }
+
+        task = batch_change_isp_passwords_task.apply(kwargs={
+            "logins_or_emails": ["u1@barkol.ru", "u2@barkol.ru"],
+            "domain_name": "barkol.ru",
+            "generate_passwords": True,
+            "password_length": 18,
+        })
+        res = task.result
+
+        self.assertTrue(res["success"])
+        self.assertEqual(res["total"], 5)
+        self.assertEqual(res["success_count"], 5)
+        mock_batch_service.assert_called_once()
+
+
+
 
 
 

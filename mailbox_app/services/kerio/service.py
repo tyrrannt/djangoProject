@@ -1536,30 +1536,44 @@ class KerioAdminService:
         domain_name: str = "barkol.ru",
         explicit_password: Optional[str] = None,
         generate_passwords: bool = True,
+        password_length: int = 16,
+        use_lowercase: bool = True,
+        use_uppercase: bool = True,
+        use_digits: bool = True,
+        use_special: bool = True,
+        special_chars: str = "!@#$%&*-_=+",
+        progress_callback: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """Выполняет пакетную смену паролей ISPManager и Доставки SMTP для группы или всех пользователей домена.
 
-        Для каждого пользователя:
-        - Либо генерирует надежный 16-значный случайный пароль (`generate_passwords=True`);
-        - Либо устанавливает единый пароль (`explicit_password`);
-        - Синхронно обновляет пароль в ISPManager, Kerio «Доставка SMTP», Kerio «Загрузка POP3» и `work_application_password` в профиле сотрудника на портале.
+        Архитектура процедуры:
+        1. Формирует карту паролей {email: password} на основе переданных настроек генерации.
+        2. Поочередно обновляет пароль в ISPManager (Reg.ru), Kerio «Загрузка POP3» и профиле портала.
+        3. Выполняет ЕДИНУЮ пакетную запись всех новых паролей в таблицу Kerio «Доставка SMTP»
+           через SmtpDeliveryManager.batch_update_delivery_routes за один вызов API Smtp.setRelayDeliveryRuleList.
+        4. Выполняет проверку SMTP AUTH для всех ящиков.
+        5. Ведет детальное протоколирование и вызывает progress_callback для отображения прогресса в реальном времени.
 
         Args:
-            logins_or_emails (Optional[List[str]]): Список логинов или email-адресов. Если None или пуст, обрабатываются все пользователи указанного домена в Kerio Connect.
-            domain_name (str): Почтовый домен (по умолчанию 'barkol.ru').
-            explicit_password (Optional[str]): Единый пароль для всех (если `generate_passwords=False`).
-            generate_passwords (bool): Генерировать ли уникальный надежный пароль для каждого пользователя (по умолчанию True).
+            logins_or_emails: Список логинов или email. Если None, обрабатываются все пользователи домена.
+            domain_name: Почтовый домен (по умолчанию 'barkol.ru').
+            explicit_password: Общий пароль (если generate_passwords=False).
+            generate_passwords: Генерировать ли уникальные пароли (по умолчанию True).
+            password_length: Длина генерируемых паролей (по умолчанию 16).
+            use_lowercase: Включать строчные буквы (a-z).
+            use_uppercase: Включать прописные буквы (A-Z).
+            use_digits: Включать цифры (0-9).
+            use_special: Включать спецсимволы.
+            special_chars: Набор спецсимволов (по умолчанию '!@#$%&*-_=+').
+            progress_callback: Функция обратного вызова callback(info_dict) для обновления прогресса.
 
         Returns:
-            Dict[str, Any]: Сводный отчет о результатах пакетного обновления:
-                - success (bool): True при успешном завершении процедуры.
-                - total (int): Общее количество обработанных ящиков.
-                - success_count (int): Количество успешно обновленных.
-                - error_count (int): Количество ящиков с ошибками.
-                - domain (str): Имя домена.
-                - results (List[Dict[str, Any]]): Детальные отчеты по каждому пользователю.
-                - message (str): Человекопонятное резюме.
+            Dict[str, Any]: Сводный отчет о пакетной смене паролей.
         """
+        import datetime
+        from pathlib import Path
+
+        target_domain = str(domain_name or "barkol.ru").strip().lower()
         target_logins: List[str] = []
 
         if logins_or_emails and isinstance(logins_or_emails, (list, tuple, set)):
@@ -1570,7 +1584,7 @@ class KerioAdminService:
         if not target_logins:
             # Получаем всех пользователей домена из Kerio Connect
             try:
-                users_res = self.get_users_list(domain_name=domain_name, limit=1000)
+                users_res = self.get_users_list(domain_name=target_domain, limit=1000)
                 user_list = users_res.get("list", [])
                 target_logins = [u.get("loginName") for u in user_list if u.get("loginName")]
             except Exception as e_fetch:
@@ -1580,50 +1594,214 @@ class KerioAdminService:
                     "total": 0,
                     "success_count": 0,
                     "error_count": 0,
-                    "domain": domain_name,
+                    "domain": target_domain,
                     "results": [],
-                    "message": f"Не удалось получить список пользователей домена '{domain_name}': {e_fetch}",
+                    "message": f"Не удалось получить список пользователей домена '{target_domain}': {e_fetch}",
                 }
 
+        total_users = len(target_logins)
+        logger.info(
+            f"[KerioAdminService] Старт пакетной смены паролей для {total_users} пользователей домена '@{target_domain}'."
+        )
+
+        # -------------------------------------------------------------
+        # Шаг 1. Формирование карты паролей для всех целевых ящиков
+        # -------------------------------------------------------------
+        passwords_map: Dict[str, str] = {}
+        for raw_login in target_logins:
+            clean_login = raw_login.split("@")[0].strip().lower()
+            full_email = f"{clean_login}@{target_domain}"
+            if generate_passwords or not explicit_password:
+                pwd = generate_random_password(
+                    length=password_length,
+                    use_lowercase=use_lowercase,
+                    use_uppercase=use_uppercase,
+                    use_digits=use_digits,
+                    use_special=use_special,
+                    special_chars=special_chars,
+                )
+            else:
+                pwd = str(explicit_password).strip()
+            passwords_map[full_email] = pwd
+
         results: List[Dict[str, Any]] = []
+        log_lines: List[str] = []
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_lines.append(f"[{now_str}] Старт пакетной смены паролей. Всего ящиков: {total_users}, домен: @{target_domain}")
+
+        # -------------------------------------------------------------
+        # Шаг 2. Поочередное обновление: ISPManager, POP3, Профили
+        # -------------------------------------------------------------
+        for idx, (full_email, new_password) in enumerate(passwords_map.items(), start=1):
+            clean_login = full_email.split("@")[0]
+            item_report: Dict[str, Any] = {
+                "login": clean_login,
+                "email": full_email,
+                "new_password": new_password,
+                "steps": {},
+                "success": False,
+            }
+
+            log_prefix = f"[{idx}/{total_users}] {full_email}"
+            if progress_callback and callable(progress_callback):
+                try:
+                    pct = int((idx / (total_users + 2)) * 80)
+                    progress_callback({
+                        "stage": "isp_pop3_sync",
+                        "current": idx,
+                        "total": total_users,
+                        "percent": pct,
+                        "email": full_email,
+                        "message": f"{log_prefix}: обновление ISPManager и POP3...",
+                    })
+                except Exception:
+                    pass
+
+            # 2.1 ISPManager
+            try:
+                ext_ok = self.external_provider.change_password(full_email, new_password)
+                item_report["steps"]["external_server"] = "ok" if ext_ok else "warning: не обновлен в ISPManager"
+            except Exception as ext_err:
+                item_report["steps"]["external_server"] = f"error: {ext_err}"
+
+            # 2.2 Kerio POP3
+            try:
+                pop3_rule = self.pop3.get_account_for_user(clean_login)
+                if pop3_rule and "id" in pop3_rule:
+                    self.pop3.update_pop3_account(pop3_rule["id"], password=new_password)
+                    item_report["steps"]["kerio_pop3_download"] = "ok"
+                else:
+                    item_report["steps"]["kerio_pop3_download"] = "not_found"
+            except Exception as pop_err:
+                item_report["steps"]["kerio_pop3_download"] = f"error: {pop_err}"
+
+            # 2.3 Django Профиль
+            if User and models:
+                try:
+                    matched_users = User.objects.filter(
+                        models.Q(email__iexact=full_email) | models.Q(username__iexact=clean_login)
+                    ).select_related("user_work_profile")
+                    for u in matched_users:
+                        _sync_user_work_profile_application_password(u, new_password)
+                    item_report["steps"]["user_work_profile"] = "ok"
+                except Exception as p_err:
+                    item_report["steps"]["user_work_profile"] = f"error: {p_err}"
+
+            results.append(item_report)
+            log_lines.append(
+                f"{log_prefix} -> ISP: {item_report['steps'].get('external_server')}, "
+                f"POP3: {item_report['steps'].get('kerio_pop3_download')}, "
+                f"Профиль: {item_report['steps'].get('user_work_profile')}"
+            )
+
+        # -------------------------------------------------------------
+        # Шаг 3. ЕДИНАЯ ПАКЕТНАЯ ЗАПИСЬ В «ДОСТАВКА SMTP» ЗА ОДИН ЗАПРОС
+        # -------------------------------------------------------------
+        if progress_callback and callable(progress_callback):
+            try:
+                progress_callback({
+                    "stage": "smtp_relay_batch",
+                    "current": total_users,
+                    "total": total_users,
+                    "percent": 85,
+                    "message": "Пакетная запись всех правил в Kerio Connect «Доставка SMTP»...",
+                })
+            except Exception:
+                pass
+
+        smtp_batch_report = {}
+        try:
+            smtp_batch_report = self.smtp_delivery.batch_update_delivery_routes(
+                passwords_map=passwords_map,
+                default_domain=target_domain,
+            )
+            log_lines.append(
+                f"[SMTP Relay] Пакетная запись в Kerio Connect успешно выполнена: "
+                f"всего={smtp_batch_report.get('total_rules_sent')}, "
+                f"обновлено={smtp_batch_report.get('updated_count')}, "
+                f"создано={smtp_batch_report.get('created_count')}."
+            )
+            for r in results:
+                r["steps"]["kerio_smtp_delivery"] = "ok"
+        except Exception as smtp_err:
+            logger.error(f"[KerioAdminService] Ошибка пакетной записи в Доставку SMTP: {smtp_err}")
+            log_lines.append(f"[SMTP Relay] ОШИБКА пакетной записи в Kerio Connect: {smtp_err}")
+            for r in results:
+                r["steps"]["kerio_smtp_delivery"] = f"error: {smtp_err}"
+
+        # -------------------------------------------------------------
+        # Шаг 4. Прямая верификация SMTP AUTH для каждого ящика
+        # -------------------------------------------------------------
         success_count = 0
         error_count = 0
 
-        for login in target_logins:
-            pwd = generate_random_password(16) if (generate_passwords or not explicit_password) else explicit_password.strip()
+        for idx, r in enumerate(results, start=1):
+            full_email = r["email"]
+            pwd = r["new_password"]
+
+            if progress_callback and callable(progress_callback):
+                try:
+                    pct = 85 + int((idx / total_users) * 15)
+                    progress_callback({
+                        "stage": "smtp_auth_verify",
+                        "current": idx,
+                        "total": total_users,
+                        "percent": min(100, pct),
+                        "email": full_email,
+                        "message": f"Проверка SMTP AUTH [{idx}/{total_users}] {full_email}...",
+                    })
+                except Exception:
+                    pass
+
             try:
-                res = self.change_user_isp_password(
-                    login_name=login,
-                    new_password=pwd,
-                    domain_name=domain_name,
-                )
-                if res.get("success"):
+                auth_res = self.smtp_delivery.verify_smtp_auth(full_email, pwd, timeout=5)
+                if auth_res.get("success"):
+                    r["steps"]["smtp_auth_verification"] = "ok"
+                    r["success"] = True
+                    success_count += 1
+                else:
+                    r["steps"]["smtp_auth_verification"] = f"warning: {auth_res.get('error')}"
+                    r["success"] = r["steps"].get("external_server") == "ok" and r["steps"].get("kerio_smtp_delivery") == "ok"
+                    if r["success"]:
+                        success_count += 1
+                    else:
+                        error_count += 1
+            except Exception as v_exc:
+                r["steps"]["smtp_auth_verification"] = f"skipped: {v_exc}"
+                r["success"] = r["steps"].get("external_server") == "ok" and r["steps"].get("kerio_smtp_delivery") == "ok"
+                if r["success"]:
                     success_count += 1
                 else:
                     error_count += 1
-                results.append(res)
-            except Exception as item_err:
-                logger.error(f"[KerioAdminService] Ошибка смены пароля ISP для '{login}': {item_err}")
-                error_count += 1
-                results.append({
-                    "login": login,
-                    "email": f"{login}@{domain_name}" if "@" not in login else login,
-                    "new_password": pwd,
-                    "success": False,
-                    "error": str(item_err),
-                    "steps": {"error": str(item_err)},
-                })
+
+        # -------------------------------------------------------------
+        # Шаг 5. Запись сводного лог-файла в cplogs
+        # -------------------------------------------------------------
+        try:
+            log_dir = Path("/home/agy/djangoProject/cplogs")
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file = log_dir / "kerio_batch_passwords.log"
+            with open(log_file, "a", encoding="utf-8") as lf:
+                lf.write("\n".join(log_lines) + "\n")
+                lf.write(
+                    f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Завершено. "
+                    f"Успешно: {success_count}, с замечаниями: {error_count}\n" + ("=" * 80) + "\n"
+                )
+        except Exception as log_write_err:
+            logger.warning(f"[KerioAdminService] Не удалось записать лог-файл: {log_write_err}")
 
         return {
             "success": True,
-            "total": len(target_logins),
+            "total": total_users,
             "success_count": success_count,
             "error_count": error_count,
-            "domain": domain_name,
+            "domain": target_domain,
+            "smtp_batch_report": smtp_batch_report,
             "results": results,
+            "log": log_lines,
             "message": (
-                f"Пакетная смена паролей ISPManager / Доставка SMTP завершена. "
-                f"Всего обработано: {len(target_logins)}, успешно: {success_count}, ошибок: {error_count}."
+                f"Пакетная смена паролей завершена. Всего ящиков: {total_users}, "
+                f"успешно: {success_count}, ошибок/замечаний: {error_count}."
             ),
         }
 

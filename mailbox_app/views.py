@@ -3592,6 +3592,10 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
         - `create_isp_mailbox`: Создание отсутствующего ящика в ISPmanager.
         - `sync_smtp_route`: Создание/проверка правила исходящей ретрансляции Доставка SMTP.
         - `sync_1c`: Синхронизация email адреса пользователя с моделью DataBaseUser и 1С (ЗУП).
+        - `change_isp_password`: Одиночная смена внешнего пароля ISPManager, POP3 и Доставка SMTP.
+        - `batch_change_isp_passwords`: Синхронная пакетная смена паролей ISPManager и Доставка SMTP.
+        - `start_batch_password_change`: Запуск асинхронной Celery-задачи пакетной смены паролей.
+        - `get_batch_password_task_status`: Получение статуса, прогресса и логов запущенной Celery-задачи.
 
         Args:
             request: Входящий HTTP POST запрос с JSON или form payload.
@@ -3806,16 +3810,106 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
             explicit_password = data.get("explicit_password", "").strip() or None
             generate_passwords_raw = data.get("generate_passwords", True)
             generate_passwords = generate_passwords_raw in (True, "true", "True", "1", 1)
+            password_length = int(data.get("password_length", 16) or 16)
+            use_lowercase = data.get("use_lowercase", True) in (True, "true", "True", "1", 1)
+            use_uppercase = data.get("use_uppercase", True) in (True, "true", "True", "1", 1)
+            use_digits = data.get("use_digits", True) in (True, "true", "True", "1", 1)
+            use_special = data.get("use_special", True) in (True, "true", "True", "1", 1)
+            special_chars = data.get("special_chars", "!@#$%&*-_=+") or "!@#$%&*-_=+"
             try:
                 res = service.batch_change_isp_passwords(
                     logins_or_emails=logins,
                     domain_name=domain_name,
                     explicit_password=explicit_password,
                     generate_passwords=generate_passwords,
+                    password_length=password_length,
+                    use_lowercase=use_lowercase,
+                    use_uppercase=use_uppercase,
+                    use_digits=use_digits,
+                    use_special=use_special,
+                    special_chars=special_chars,
                 )
                 return JsonResponse(res)
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка пакетной смены паролей ISPManager: {err}", exc_info=True)
                 return JsonResponse({"success": False, "message": str(err)}, status=500)
+
+        elif action == "start_batch_password_change":
+            domain_name = data.get("domain_name", "barkol.ru").strip()
+            logins = data.get("logins")
+            explicit_password = data.get("explicit_password", "").strip() or None
+            generate_passwords_raw = data.get("generate_passwords", True)
+            generate_passwords = generate_passwords_raw in (True, "true", "True", "1", 1)
+            password_length = int(data.get("password_length", 16) or 16)
+            use_lowercase = data.get("use_lowercase", True) in (True, "true", "True", "1", 1)
+            use_uppercase = data.get("use_uppercase", True) in (True, "true", "True", "1", 1)
+            use_digits = data.get("use_digits", True) in (True, "true", "True", "1", 1)
+            use_special = data.get("use_special", True) in (True, "true", "True", "1", 1)
+            special_chars = data.get("special_chars", "!@#$%&*-_=+") or "!@#$%&*-_=+"
+
+            try:
+                from mailbox_app.tasks import batch_change_isp_passwords_task
+
+                task = batch_change_isp_passwords_task.delay(
+                    logins_or_emails=logins,
+                    domain_name=domain_name,
+                    explicit_password=explicit_password,
+                    generate_passwords=generate_passwords,
+                    password_length=password_length,
+                    use_lowercase=use_lowercase,
+                    use_uppercase=use_uppercase,
+                    use_digits=use_digits,
+                    use_special=use_special,
+                    special_chars=special_chars,
+                )
+                return JsonResponse({
+                    "success": True,
+                    "task_id": task.id,
+                    "message": "Фоновая задача пакетной смены паролей успешно запущена в Celery.",
+                })
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка запуска Celery-задачи пакетной смены паролей: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": f"Ошибка запуска фоновой задачи: {err}"}, status=500)
+
+        elif action == "get_batch_password_task_status":
+            task_id = data.get("task_id", "").strip()
+            if not task_id:
+                return JsonResponse({"success": False, "message": "Параметр task_id обязателен."}, status=400)
+
+            try:
+                from celery.result import AsyncResult
+
+                task_result = AsyncResult(task_id)
+                state = task_result.state
+                if state == "PROGRESS":
+                    meta = task_result.info or {}
+                    return JsonResponse({
+                        "success": True,
+                        "state": "PROGRESS",
+                        "progress": meta,
+                    })
+                elif state == "SUCCESS":
+                    res = task_result.result or {}
+                    return JsonResponse({
+                        "success": True,
+                        "state": "SUCCESS",
+                        "result": res,
+                        "message": res.get("message", "Пакетная смена паролей успешно завершена."),
+                    })
+                elif state == "FAILURE":
+                    return JsonResponse({
+                        "success": False,
+                        "state": "FAILURE",
+                        "error": str(task_result.result or "Сбой выполнения фоновой задачи Celery"),
+                    })
+                else:
+                    return JsonResponse({
+                        "success": True,
+                        "state": state,
+                        "progress": {"percent": 0, "message": "Ожидание выполнения задачи воркером Celery..."},
+                    })
+            except Exception as err:
+                logger.error(f"[KerioAdmin] Ошибка проверки статуса задачи Celery {task_id}: {err}", exc_info=True)
+                return JsonResponse({"success": False, "message": f"Ошибка проверки статуса: {err}"}, status=500)
 
         return JsonResponse({"success": False, "message": f"Неизвестное действие: '{action}'"}, status=400)

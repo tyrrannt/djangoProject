@@ -930,6 +930,140 @@ class SmtpDeliveryManager:
             result.get("success")
         )
 
+    def batch_update_delivery_routes(
+        self,
+        passwords_map: Dict[str, str],
+        relay_host: Optional[str] = None,
+        relay_port: Optional[int] = None,
+        default_domain: str = "barkol.ru",
+    ) -> Dict[str, Any]:
+        """Пакетно обновляет пароли в правилах исходящей ретрансляции «Доставка SMTP» за один вызов API.
+
+        Вместо выполнения сотен последовательных GET/SET запросов, метод:
+        1. Получает текущий реестр всех правил Kerio Connect (Smtp.getRelayDeliveryRuleList).
+        2. Нормализует ключи словаря passwords_map (email -> пароль).
+        3. Обновляет пароль и параметры для каждого существующего правила, чей email есть в passwords_map.
+        4. Создает новые персональные правила RelayDeliveryRule для ящиков из passwords_map, у которых правила еще не было.
+        5. Выполняет ровно ОДИН вызов Smtp.setRelayDeliveryRuleList с санитизацией _sanitize_rules_for_set.
+        6. Возвращает детальную статистику обновления.
+
+        Args:
+            passwords_map: Словарь сопоставления {email_или_логин: новый_пароль}.
+            relay_host: Хост сервера ретрансляции (по умолчанию из настроек, 'smtp.barkol.ru').
+            relay_port: Порт сервера ретрансляции (по умолчанию из настроек, 587).
+            default_domain: Почтовый домен по умолчанию ('barkol.ru').
+
+        Returns:
+            Словарь с отчетом:
+                - success (bool): True при успешной пакетной записи.
+                - total_rules_sent (int): Общее число правил в реестре Kerio.
+                - updated_count (int): Число обновленных существующих правил.
+                - created_count (int): Число созданных новых правил.
+                - unchanged_count (int): Число нетронутых правил.
+                - method (str): 'Smtp.setRelayDeliveryRuleList'.
+
+        Raises:
+            KerioValidationError: Если passwords_map пуст.
+            KerioAPIError: При ошибке API Kerio Connect.
+        """
+        if not passwords_map or not isinstance(passwords_map, dict):
+            raise KerioValidationError("passwords_map должен быть непустым словарем {email: password}.")
+
+        default_host, default_port, _ = self._get_default_smtp_params()
+        effective_host = str(relay_host or default_host).strip()
+        effective_port = int(relay_port or default_port)
+
+        # Нормализуем ключи в passwords_map
+        normalized_map: Dict[str, str] = {}
+        for raw_k, raw_v in passwords_map.items():
+            clean_pwd = str(raw_v or "").strip()
+            if not clean_pwd:
+                continue
+            clean_email = self._normalize_email(str(raw_k))
+            if clean_email:
+                normalized_map[clean_email] = clean_pwd
+
+        if not normalized_map:
+            raise KerioValidationError("В passwords_map нет валидных пар email/пароль.")
+
+        current_rules = self.get_relay_rules()
+        updated_list: List[Dict[str, Any]] = []
+        handled_emails: set = set()
+        updated_count = 0
+        unchanged_count = 0
+
+        for rule in current_rules:
+            if not isinstance(rule, dict):
+                continue
+
+            rule_copy = dict(rule)
+            pattern = self._get_rule_pattern(rule_copy)
+
+            if pattern in normalized_map:
+                new_pwd = normalized_map[pattern]
+                auth = self._get_authentication(rule_copy)
+                auth["password"] = new_pwd
+                auth["userName"] = pattern
+                auth["isRequired"] = True
+                auth["authType"] = "Auth"
+                rule_copy["authentication"] = auth
+                rule_copy["hostName"] = effective_host
+                rule_copy["port"] = effective_port
+                rule_copy["isEnabled"] = True
+                handled_emails.add(pattern)
+                updated_count += 1
+            else:
+                unchanged_count += 1
+
+            updated_list.append(rule_copy)
+
+        # Создаем правила для ящиков из passwords_map, которых еще не было в списке
+        created_count = 0
+        for email, pwd in normalized_map.items():
+            if email not in handled_emails:
+                new_rule: Dict[str, Any] = {
+                    "isEnabled": True,
+                    "description": f"Ретрансляция SMTP для {email}",
+                    "hostName": effective_host,
+                    "port": effective_port,
+                    "authentication": {
+                        "isRequired": True,
+                        "userName": email,
+                        "password": pwd,
+                        "authType": "Auth",
+                    },
+                    "condition": {
+                        "test": "RelayCondSender",
+                        "comparator": "RelayCompEqual",
+                        "pattern": email,
+                    },
+                }
+                updated_list.append(new_rule)
+                created_count += 1
+                handled_emails.add(email)
+
+        # Выполняем ровно ОДНУ пакетную запись всех правил
+        self._set_relay_rules(updated_list)
+
+        logger.info(
+            "[SmtpDeliveryManager] Пакетное обновление правил «Доставка SMTP» успешно завершено: "
+            "всего=%d, обновлено=%d, создано=%d, без изменений=%d.",
+            len(updated_list),
+            updated_count,
+            created_count,
+            unchanged_count,
+        )
+
+        return {
+            "success": True,
+            "method": self.SET_METHOD,
+            "total_rules_sent": len(updated_list),
+            "updated_count": updated_count,
+            "created_count": created_count,
+            "unchanged_count": unchanged_count,
+            "processed_emails_count": len(normalized_map),
+        }
+
     # =========================================================================
     # Удаление
     # =========================================================================

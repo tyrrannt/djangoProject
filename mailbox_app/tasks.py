@@ -176,3 +176,91 @@ def send_universal_email_task(
             return 0
 
 
+@shared_task(bind=True, max_retries=1, default_retry_delay=10)
+def batch_change_isp_passwords_task(
+    self,
+    logins_or_emails: Optional[List[str]] = None,
+    domain_name: str = "barkol.ru",
+    explicit_password: Optional[str] = None,
+    generate_passwords: bool = True,
+    password_length: int = 16,
+    use_lowercase: bool = True,
+    use_uppercase: bool = True,
+    use_digits: bool = True,
+    use_special: bool = True,
+    special_chars: str = "!@#$%&*-_=+",
+) -> Dict[str, Any]:
+    """Фоновая задача Celery для пакетной смены паролей ящиков в ISPManager и Kerio Connect Доставка SMTP.
+
+    Запускает комплексный процесс смены паролей:
+    1. Поочередно обновляет пароль в ISPManager (Reg.ru), Kerio «Загрузка POP3» и профиле портала.
+    2. Выполняет единую пакетную запись всех новых паролей в таблицу Kerio Connect «Доставка SMTP» (Smtp.setRelayDeliveryRuleList).
+    3. Проверяет авторизацию SMTP AUTH для всех ящиков.
+    4. Транслирует статус и процент выполнения через self.update_state(state="PROGRESS", meta=...).
+
+    Args:
+        self: Экземпляр запущенной задачи Celery.
+        logins_or_emails (Optional[List[str]]): Список логинов или email для обработки.
+        domain_name (str): Почтовый домен (по умолчанию 'barkol.ru').
+        explicit_password (Optional[str]): Явный общий пароль (если generate_passwords=False).
+        generate_passwords (bool): Генерировать ли уникальные случайные пароли.
+        password_length (int): Длина генерируемых паролей (по умолчанию 16).
+        use_lowercase (bool): Включать ли строчные буквы (a-z).
+        use_uppercase (bool): Включать ли заглавные буквы (A-Z).
+        use_digits (bool): Включать ли цифры (0-9).
+        use_special (bool): Включать ли спецсимволы.
+        special_chars (str): Набор спецсимволов.
+
+    Returns:
+        Dict[str, Any]: Полный сводный отчет о пакетной смене паролей.
+    """
+    logger.info(
+        f"[Celery:BatchPasswords] Старт фоновой задачи пакетной смены паролей для домена '@{domain_name}'. "
+        f"Количество целевых пользователей: {len(logins_or_emails) if logins_or_emails else 'все в домене'}."
+    )
+    accumulated_logs: List[str] = []
+
+    def progress_callback(meta: Dict[str, Any]) -> None:
+        msg = meta.get("message", "")
+        if msg and (not accumulated_logs or accumulated_logs[-1] != msg):
+            accumulated_logs.append(msg)
+        meta_with_logs = dict(meta)
+        meta_with_logs["logs"] = list(accumulated_logs[-30:])
+        self.update_state(state="PROGRESS", meta=meta_with_logs)
+
+    try:
+        from mailbox_app.services.kerio.service import KerioAdminService
+
+        service = KerioAdminService()
+        result = service.batch_change_isp_passwords(
+            logins_or_emails=logins_or_emails,
+            domain_name=domain_name,
+            explicit_password=explicit_password,
+            generate_passwords=generate_passwords,
+            password_length=password_length,
+            use_lowercase=use_lowercase,
+            use_uppercase=use_uppercase,
+            use_digits=use_digits,
+            use_special=use_special,
+            special_chars=special_chars,
+            progress_callback=progress_callback,
+        )
+        logger.info(
+            f"[Celery:BatchPasswords] Задача пакетной смены паролей завершена. "
+            f"Всего: {result.get('total')}, успешно: {result.get('success_count')}, ошибок: {result.get('error_count')}."
+        )
+        return result
+    except Exception as exc:
+        logger.error(f"[Celery:BatchPasswords] Ошибка выполнения задачи: {exc}", exc_info=True)
+        try:
+            raise self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            logger.critical("[Celery:BatchPasswords] Исчерпан лимит повторных попыток для batch_change_isp_passwords_task.")
+            return {
+                "success": False,
+                "error": str(exc),
+                "message": f"Критический сбой пакетной смены паролей: {exc}",
+            }
+
+
+

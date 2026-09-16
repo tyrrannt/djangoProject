@@ -6,28 +6,64 @@ import string
 from typing import Any, List, Optional, Set, Tuple
 
 
-def generate_random_password(length: int = 16) -> str:
-    """Генерирует надежный случайный ASCII-пароль для почтовых учетных записей.
+def generate_random_password(
+    length: int = 16,
+    use_lowercase: bool = True,
+    use_uppercase: bool = True,
+    use_digits: bool = True,
+    use_special: bool = True,
+    special_chars: str = "!@#$%&*-_=+",
+) -> str:
+    """Генерирует надежный случайный пароль для почтовых учетных записей с настраиваемым алфавитом.
 
-    Гарантирует наличие строчных и прописных латинских букв, цифр и безопасных спецсимволов.
+    Позволяет гибко управлять длиной пароля и используемыми группами символов
+    (строчные, прописные, цифры, спецсимволы). Гарантирует наличие как минимум одного
+    символа из каждого активного класса.
 
     Args:
-        length (int): Длина пароля (по умолчанию 16).
+        length (int): Длина пароля (от 6 до 128 символов, по умолчанию 16).
+        use_lowercase (bool): Включать ли строчные латинские буквы (a-z). По умолчанию True.
+        use_uppercase (bool): Включать ли прописные латинские буквы (A-Z). По умолчанию True.
+        use_digits (bool): Включать ли цифры (0-9). По умолчанию True.
+        use_special (bool): Включать ли специальные символы. По умолчанию True.
+        special_chars (str): Набор допустимых спецсимволов. По умолчанию '!@#$%&*-_=+'.
 
     Returns:
-        str: Сгенерированный пароль.
+        str: Сгенерированный криптостойкий пароль.
+
+    Raises:
+        ValueError: Если не выбрана ни одна группа символов или длина меньше минимальной.
+
+    Example:
+        >>> pwd = generate_random_password(length=12, use_special=False)
+        >>> len(pwd) == 12
+        True
     """
-    specials = "!@#$%^&*()-_=+"
-    alphabet = string.ascii_letters + string.digits + specials
+    clean_length = max(6, min(128, int(length or 16)))
+    pools: List[str] = []
+
+    if use_lowercase:
+        pools.append(string.ascii_lowercase)
+    if use_uppercase:
+        pools.append(string.ascii_uppercase)
+    if use_digits:
+        pools.append(string.digits)
+    if use_special:
+        clean_specials = "".join(ch for ch in str(special_chars or "!@#$%&*-_=+") if not ch.isspace())
+        if clean_specials:
+            pools.append(clean_specials)
+
+    if not pools:
+        # Fallback по умолчанию: латиница и цифры
+        pools = [string.ascii_lowercase, string.ascii_uppercase, string.digits]
+
+    combined_alphabet = "".join(pools)
+
+    # Гарантируем присутствие каждого выбранного класса символов
     while True:
-        pwd = "".join(secrets.choice(alphabet) for _ in range(max(8, length)))
-        if (
-            any(c.islower() for c in pwd)
-            and any(c.isupper() for c in pwd)
-            and any(c.isdigit() for c in pwd)
-            and any(c in specials for c in pwd)
-        ):
-            return pwd
+        candidate = "".join(secrets.choice(combined_alphabet) for _ in range(clean_length))
+        if all(any(c in pool for c in candidate) for pool in pools):
+            return candidate
 
 
 

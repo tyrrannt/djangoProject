@@ -737,6 +737,7 @@
     </div>
 
     <!-- Модальное окно пакетной смены паролей ISPManager / Доставка SMTP -->
+    <!-- Модальное окно пакетной смены паролей ISPManager / Доставка SMTP -->
     <div class="modal fade" id="batchChangeIspPasswordModal" tabindex="-1" aria-labelledby="batchChangeIspPasswordModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
@@ -751,7 +752,7 @@
                         <i class="bx bx-info-circle font-size-20 flex-shrink-0"></i>
                         <div>
                             <strong>Что делает эта операция:</strong>
-                            <div class="mt-1">Для всех выбранных пользователей одновременно меняет пароль на хостинге ISPManager (Reg.ru), обновляет пароль в Kerio Connect «Доставка SMTP» (SMTP AUTH), в правиле «Загрузка POP3» и сохраняет новый пароль в профиле каждого сотрудника (<code>work_application_password</code>).</div>
+                            <div class="mt-1">Для всех выбранных пользователей асинхронно меняет пароль на хостинге ISPManager (Reg.ru), в фоновом режиме выполняет пакетную запись в Kerio Connect «Доставка SMTP» (SMTP AUTH), обновляет правило «Загрузка POP3» и сохраняет новый пароль в профиле каждого сотрудника (<code>work_application_password</code>).</div>
                         </div>
                     </div>
 
@@ -770,10 +771,52 @@
                                     <div class="col-12 col-md-6">
                                         <label class="form-label font-size-13 fw-semibold">Режим генерации паролей</label>
                                         <select class="form-select form-select-sm" id="batchIspModeSelect" onchange="toggleBatchPasswordMode(this.value)">
-                                            <option value="generate" selected>Сгенерировать уникальные случайные пароли (16 символов)</option>
+                                            <option value="generate" selected>Сгенерировать случайные надежные пароли</option>
                                             <option value="explicit">Задать один общий пароль для всех</option>
                                         </select>
                                     </div>
+
+                                    <!-- Настройки генератора случайных паролей -->
+                                    <div class="col-12" id="batchGeneratorOptionsGroup">
+                                        <div class="p-2.5 bg-light rounded border">
+                                            <div class="row g-2 align-items-center">
+                                                <div class="col-12 col-md-3">
+                                                    <label class="form-label font-size-12 fw-semibold mb-1" for="batchPasswordLength">Длина пароля</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" class="form-control font-monospace" id="batchPasswordLength" value="16" min="8" max="64">
+                                                        <span class="input-group-text font-size-11 text-muted">симв.</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 col-md-9">
+                                                    <label class="form-label font-size-12 fw-semibold mb-1">Используемые наборы символов</label>
+                                                    <div class="d-flex flex-wrap gap-3 font-size-12 pt-1">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="batchOptLowercase" checked>
+                                                            <label class="form-check-label font-monospace" for="batchOptLowercase">a-z <span class="text-muted font-sans-serif">(строчные)</span></label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="batchOptUppercase" checked>
+                                                            <label class="form-check-label font-monospace" for="batchOptUppercase">A-Z <span class="text-muted font-sans-serif">(прописные)</span></label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="batchOptDigits" checked>
+                                                            <label class="form-check-label font-monospace" for="batchOptDigits">0-9 <span class="text-muted font-sans-serif">(цифры)</span></label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="batchOptSpecial" checked onchange="toggleBatchSpecialChars(this.checked)">
+                                                            <label class="form-check-label font-monospace" for="batchOptSpecial">!@#$ <span class="text-muted font-sans-serif">(спецсимволы)</span></label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 mt-2" id="batchSpecialCharsGroup">
+                                                    <label class="form-label font-size-11 text-muted mb-1" for="batchSpecialChars">Набор спецсимволов для генерации:</label>
+                                                    <input type="text" class="form-control form-control-sm font-monospace font-size-12" id="batchSpecialChars" value="!@#$%&*-_=+">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Поле для ввода единого общего пароля -->
                                     <div class="col-12 d-none" id="batchExplicitPassGroup">
                                         <label class="form-label font-size-13 fw-semibold">Общий пароль для всех выбранных ящиков</label>
                                         <div class="input-group input-group-sm">
@@ -816,36 +859,58 @@
                         </div>
                     </div>
 
-                    <!-- Блок прогресса / выполнения -->
-                    <div id="batchProgressSection" class="d-none text-center py-4">
-                        <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;" role="status">
-                            <span class="visually-hidden">Выполнение...</span>
+                    <!-- Блок прогресса / выполнения задачи Celery -->
+                    <div id="batchProgressSection" class="d-none text-center py-3">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                            <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                            <h5 class="fw-bold text-dark mb-0 font-size-16">Выполняется пакетная смена паролей в фоне...</h5>
                         </div>
-                        <h5 class="fw-bold text-dark">Выполняется пакетная смена паролей...</h5>
-                        <p class="text-muted font-size-13">Пожалуйста, не закрывайте страницу до завершения синхронизации.</p>
+                        <p class="text-muted font-size-12 mb-3">Задача выполняется воркером Celery. Прогресс и протокол действий обновляются в реальном времени.</p>
+
+                        <!-- Прогресс-бар -->
+                        <div class="progress mb-2" style="height: 22px; border-radius: 8px;">
+                            <div id="batchProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning text-dark fw-bold font-size-12" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <div id="batchProgressStatus" class="fw-semibold text-dark font-size-13 mb-3">Инициализация задачи Celery...</div>
+
+                        <!-- Окно живого лога -->
+                        <div class="card border bg-dark text-light text-start shadow-sm mb-2" style="border-radius: 8px; overflow: hidden;">
+                            <div class="card-header py-1 px-3 bg-secondary bg-opacity-25 text-white font-size-12 d-flex justify-content-between align-items-center">
+                                <span class="d-flex align-items-center gap-1"><i class="bx bx-terminal text-warning"></i> <span>Протокол выполнения (Live Log)</span></span>
+                                <span id="batchLogCounter" class="badge bg-dark font-monospace text-muted">0 записей</span>
+                            </div>
+                            <div class="card-body p-2" style="max-height: 180px; min-height: 110px; overflow-y: auto; font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, monospace; font-size: 11px; background: #1a1e24;" id="batchLiveLogsContainer">
+                                <div id="batchLiveLogs" class="text-light opacity-90" style="white-space: pre-wrap; word-break: break-all;"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Блок результатов -->
                     <div id="batchResultsSection" class="d-none">
-                        <div class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center justify-content-between font-size-13" id="batchSuccessSummary">
+                        <div class="alert alert-success py-2 px-3 mb-2 d-flex align-items-center justify-content-between font-size-13" id="batchSuccessSummary">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bx bx-check-circle font-size-22"></i>
+                                <i class="bx bx-check-circle font-size-22 flex-shrink-0"></i>
                                 <span id="batchResultsSummaryText">Операция успешно завершена!</span>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-dark" onclick="copyBatchResultsToClipboard()">
                                 <i class="bx bx-copy me-1"></i> Скопировать отчет с паролями
                             </button>
                         </div>
-                        <div class="table-responsive bg-white rounded border" style="max-height: 300px; overflow-y: auto;">
+                        <div class="alert alert-light border py-1.5 px-3 mb-3 font-size-11 text-muted d-flex align-items-center justify-content-between">
+                            <span><i class="bx bx-file me-1"></i> Полный журнал сохранен на сервере: <code>cplogs/kerio_batch_passwords.log</code></span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">1-shot SMTP Relay OK</span>
+                        </div>
+                        <div class="table-responsive bg-white rounded border" style="max-height: 280px; overflow-y: auto;">
                             <table class="table table-sm table-hover align-middle mb-0 font-size-12">
-                                <thead class="table-light">
+                                <thead class="table-light sticky-top">
                                     <tr>
                                        <th>Логин / Email</th>
                                        <th>Новый пароль ISP</th>
                                        <th>ISPManager</th>
-                                       <th>SMTP Relay</th>
+                                       <th>Доставка SMTP</th>
                                        <th>POP3</th>
                                        <th>Профиль</th>
+                                       <th>SMTP AUTH</th>
                                     </tr>
                                 </thead>
                                 <tbody id="batchResultsTableBody"></tbody>
@@ -1301,6 +1366,32 @@
         }
 
         // Модальное окно пакетной смены паролей ISP / SMTP
+        var _lastBatchResults = [];
+        var _batchPollInterval = null;
+
+        function toggleBatchSpecialChars(checked) {
+            var group = document.getElementById("batchSpecialCharsGroup");
+            if (group) {
+                if (checked) {
+                    group.classList.remove("d-none");
+                } else {
+                    group.classList.add("d-none");
+                }
+            }
+        }
+
+        function toggleBatchPasswordMode(val) {
+            var genGroup = document.getElementById("batchGeneratorOptionsGroup");
+            var explicitGroup = document.getElementById("batchExplicitPassGroup");
+            if (val === "explicit") {
+                if (genGroup) genGroup.classList.add("d-none");
+                if (explicitGroup) explicitGroup.classList.remove("d-none");
+            } else {
+                if (genGroup) genGroup.classList.remove("d-none");
+                if (explicitGroup) explicitGroup.classList.add("d-none");
+            }
+        }
+
         function openBatchChangeIspPasswordModal() {
             var formSection = document.getElementById("batchFormSection");
             var progSection = document.getElementById("batchProgressSection");
@@ -1314,19 +1405,12 @@
                 btnRun.disabled = false;
                 btnRun.classList.remove("d-none");
             }
+            if (_batchPollInterval) {
+                clearInterval(_batchPollInterval);
+                _batchPollInterval = null;
+            }
             updateBatchSelectedCount();
             showKerioModal("batchChangeIspPasswordModal");
-        }
-
-        function toggleBatchPasswordMode(val) {
-            var group = document.getElementById("batchExplicitPassGroup");
-            if (group) {
-                if (val === "explicit") {
-                    group.classList.remove("d-none");
-                } else {
-                    group.classList.add("d-none");
-                }
-            }
         }
 
         function toggleAllBatchUsers(checked) {
@@ -1341,7 +1425,24 @@
             if (countEl) countEl.innerText = checked.length;
         }
 
-        var _lastBatchResults = [];
+        function appendBatchLiveLog(msg) {
+            var container = document.getElementById("batchLiveLogs");
+            var box = document.getElementById("batchLiveLogsContainer");
+            var counter = document.getElementById("batchLogCounter");
+            if (!container || !msg) return;
+
+            var line = document.createElement("div");
+            line.className = "py-0.5 border-bottom border-secondary border-opacity-10";
+            line.textContent = msg;
+            container.appendChild(line);
+
+            if (box) {
+                box.scrollTop = box.scrollHeight;
+            }
+            if (counter) {
+                counter.innerText = container.children.length + " записей";
+            }
+        }
 
         function submitBatchChangeIspPasswords() {
             var checkedBoxes = document.querySelectorAll(".batch-user-checkbox:checked");
@@ -1357,12 +1458,24 @@
             var mode = document.getElementById("batchIspModeSelect") ? document.getElementById("batchIspModeSelect").value : "generate";
             var explicitPass = document.getElementById("batchExplicitPassword") ? document.getElementById("batchExplicitPassword").value.trim() : "";
 
+            var pwdLength = parseInt(document.getElementById("batchPasswordLength") ? document.getElementById("batchPasswordLength").value : 16) || 16;
+            var optLower = document.getElementById("batchOptLowercase") ? document.getElementById("batchOptLowercase").checked : true;
+            var optUpper = document.getElementById("batchOptUppercase") ? document.getElementById("batchOptUppercase").checked : true;
+            var optDigits = document.getElementById("batchOptDigits") ? document.getElementById("batchOptDigits").checked : true;
+            var optSpecial = document.getElementById("batchOptSpecial") ? document.getElementById("batchOptSpecial").checked : true;
+            var specialChars = document.getElementById("batchSpecialChars") ? document.getElementById("batchSpecialChars").value : "!@#$%&*-_=+";
+
+            if (mode === "generate" && !optLower && !optUpper && !optDigits && !optSpecial) {
+                alert("Пожалуйста, выберите хотя бы один набор символов для генерации паролей.");
+                return;
+            }
+
             if (mode === "explicit" && !explicitPass) {
                 alert("Пожалуйста, введите общий пароль или выберите режим автоматической генерации.");
                 return;
             }
 
-            if (!confirm("Вы действительно хотите сменить пароли ISPManager и Доставки SMTP для " + logins.length + " пользователей?")) {
+            if (!confirm("Вы действительно хотите запустить пакетную смену паролей ISPManager и Доставки SMTP для " + logins.length + " пользователей?")) {
                 return;
             }
 
@@ -1371,10 +1484,27 @@
             var resSection = document.getElementById("batchResultsSection");
             var btnRun = document.getElementById("btnRunBatchChangeIsp");
 
+            var progressBar = document.getElementById("batchProgressBar");
+            var progressStatus = document.getElementById("batchProgressStatus");
+            var liveLogs = document.getElementById("batchLiveLogs");
+            var logCounter = document.getElementById("batchLogCounter");
+
             if (formSection) formSection.classList.add("d-none");
             if (progSection) progSection.classList.remove("d-none");
             if (resSection) resSection.classList.add("d-none");
             if (btnRun) btnRun.disabled = true;
+
+            if (progressBar) {
+                progressBar.style.width = "0%";
+                progressBar.innerText = "0%";
+            }
+            if (progressStatus) {
+                progressStatus.innerText = "Постановка фоновой задачи в очередь Celery...";
+            }
+            if (liveLogs) liveLogs.innerHTML = "";
+            if (logCounter) logCounter.innerText = "0 записей";
+
+            appendBatchLiveLog("Запуск фоновой задачи Celery для " + logins.length + " ящиков...");
 
             fetch("{% url 'mailbox_app:api_kerio_action' %}", {
                 method: "POST",
@@ -1383,53 +1513,134 @@
                     "X-CSRFToken": getCsrfToken()
                 },
                 body: JSON.stringify({
-                    action: "batch_change_isp_passwords",
+                    action: "start_batch_password_change",
                     domain_name: domain,
                     logins: logins,
                     generate_passwords: mode === "generate",
-                    explicit_password: explicitPass
+                    explicit_password: explicitPass,
+                    password_length: pwdLength,
+                    use_lowercase: optLower,
+                    use_uppercase: optUpper,
+                    use_digits: optDigits,
+                    use_special: optSpecial,
+                    special_chars: specialChars
                 })
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                if (progSection) progSection.classList.add("d-none");
-                if (resSection) resSection.classList.remove("d-none");
-                if (btnRun) btnRun.classList.add("d-none");
-
-                _lastBatchResults = data.results || [];
-
-                var summaryText = document.getElementById("batchResultsSummaryText");
-                if (summaryText) {
-                    summaryText.innerText = data.message || "Пакетная смена завершена.";
+                if (!data.success || !data.task_id) {
+                    throw new Error(data.message || "Не удалось запустить фоновую задачу Celery.");
                 }
 
-                var tbody = document.getElementById("batchResultsTableBody");
-                if (tbody) {
-                    tbody.innerHTML = "";
-                    _lastBatchResults.forEach(function(item) {
-                        var tr = document.createElement("tr");
-                        var steps = item.steps || {};
-                        var ispBadge = steps.external_server === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-warning text-dark">' + (steps.external_server || '—') + '</span>';
-                        var smtpBadge = steps.kerio_smtp_delivery === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-warning text-dark">' + (steps.kerio_smtp_delivery || '—') + '</span>';
-                        var pop3Badge = steps.kerio_pop3_download === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-light text-dark">' + (steps.kerio_pop3_download || '—') + '</span>';
-                        var profBadge = (steps.user_work_profile && steps.user_work_profile.indexOf('updated') !== -1) ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-light text-dark">' + (steps.user_work_profile || '—') + '</span>';
+                var taskId = data.task_id;
+                appendBatchLiveLog("Задача Celery успешно принята в очередь: Task ID=" + taskId);
 
-                        tr.innerHTML = '<td><strong>' + item.login + '</strong><br><small class="text-muted">' + item.email + '</small></td>' +
-                                       '<td><code class="user-select-all fw-bold text-dark font-monospace">' + (item.new_password || '—') + '</code></td>' +
-                                       '<td>' + ispBadge + '</td>' +
-                                       '<td>' + smtpBadge + '</td>' +
-                                       '<td>' + pop3Badge + '</td>' +
-                                       '<td>' + profBadge + '</td>';
-                        tbody.appendChild(tr);
+                if (_batchPollInterval) clearInterval(_batchPollInterval);
+                var lastLogCount = 0;
+
+                _batchPollInterval = setInterval(function() {
+                    fetch("{% url 'mailbox_app:api_kerio_action' %}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            action: "get_batch_password_task_status",
+                            task_id: taskId
+                        })
+                    })
+                    .then(function(sRes) { return sRes.json(); })
+                    .then(function(sData) {
+                        var state = sData.state;
+                        var progress = sData.progress || {};
+
+                        if (state === "PROGRESS" || state === "PENDING") {
+                            var pct = progress.percent || 0;
+                            if (progressBar) {
+                                progressBar.style.width = pct + "%";
+                                progressBar.innerText = pct + "%";
+                            }
+                            if (progressStatus && progress.message) {
+                                progressStatus.innerText = progress.message;
+                            }
+
+                            var logs = progress.logs || [];
+                            if (logs.length > lastLogCount) {
+                                for (var i = lastLogCount; i < logs.length; i++) {
+                                    appendBatchLiveLog(logs[i]);
+                                }
+                                lastLogCount = logs.length;
+                            }
+                        } else if (state === "SUCCESS") {
+                            clearInterval(_batchPollInterval);
+                            _batchPollInterval = null;
+
+                            if (progressBar) {
+                                progressBar.style.width = "100%";
+                                progressBar.innerText = "100%";
+                            }
+                            renderBatchResults(sData.result || {});
+                        } else if (state === "FAILURE") {
+                            clearInterval(_batchPollInterval);
+                            _batchPollInterval = null;
+                            if (progSection) progSection.classList.add("d-none");
+                            if (formSection) formSection.classList.remove("d-none");
+                            if (btnRun) btnRun.disabled = false;
+                            alert("Сбой задачи Celery: " + (sData.error || "Неизвестная ошибка"));
+                        }
+                    })
+                    .catch(function(pollErr) {
+                        console.warn("Ошибка опроса статуса задачи Celery:", pollErr);
                     });
-                }
+                }, 1000);
             })
             .catch(function(err) {
                 if (progSection) progSection.classList.add("d-none");
                 if (formSection) formSection.classList.remove("d-none");
                 if (btnRun) btnRun.disabled = false;
-                alert("Сетевая ошибка при выполнении пакетной смены паролей: " + err);
+                alert("Ошибка запуска пакетной смены паролей: " + err);
             });
+        }
+
+        function renderBatchResults(result) {
+            var progSection = document.getElementById("batchProgressSection");
+            var resSection = document.getElementById("batchResultsSection");
+            var btnRun = document.getElementById("btnRunBatchChangeIsp");
+
+            if (progSection) progSection.classList.add("d-none");
+            if (resSection) resSection.classList.remove("d-none");
+            if (btnRun) btnRun.classList.add("d-none");
+
+            _lastBatchResults = result.results || [];
+
+            var summaryText = document.getElementById("batchResultsSummaryText");
+            if (summaryText) {
+                summaryText.innerText = result.message || "Пакетная смена завершена.";
+            }
+
+            var tbody = document.getElementById("batchResultsTableBody");
+            if (tbody) {
+                tbody.innerHTML = "";
+                _lastBatchResults.forEach(function(item) {
+                    var tr = document.createElement("tr");
+                    var steps = item.steps || {};
+                    var ispBadge = steps.external_server === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-warning text-dark">' + (steps.external_server || '—') + '</span>';
+                    var smtpBadge = steps.kerio_smtp_delivery === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-danger">' + (steps.kerio_smtp_delivery || '—') + '</span>';
+                    var pop3Badge = steps.kerio_pop3_download === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-light text-dark">' + (steps.kerio_pop3_download || '—') + '</span>';
+                    var profBadge = (steps.user_work_profile && steps.user_work_profile.indexOf('updated') !== -1) || steps.user_work_profile === 'ok' ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-light text-dark">' + (steps.user_work_profile || '—') + '</span>';
+                    var authBadge = steps.smtp_auth_verification === 'ok' ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-warning text-dark">' + (steps.smtp_auth_verification || '—') + '</span>';
+
+                    tr.innerHTML = '<td><strong>' + item.login + '</strong><br><small class="text-muted">' + item.email + '</small></td>' +
+                                   '<td><code class="user-select-all fw-bold text-dark font-monospace">' + (item.new_password || '—') + '</code></td>' +
+                                   '<td>' + ispBadge + '</td>' +
+                                   '<td>' + smtpBadge + '</td>' +
+                                   '<td>' + pop3Badge + '</td>' +
+                                   '<td>' + profBadge + '</td>' +
+                                   '<td>' + authBadge + '</td>';
+                    tbody.appendChild(tr);
+                });
+            }
         }
 
         function copyBatchResultsToClipboard() {
