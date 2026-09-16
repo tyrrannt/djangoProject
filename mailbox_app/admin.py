@@ -188,6 +188,14 @@ class MailboxAdmin(ModelAdmin):
             },
         ),
         (
+            "Внешний сервер (ISPManager / Доставка SMTP)",
+            {
+                "fields": (
+                    "work_application_password",
+                )
+            },
+        ),
+        (
             "Подпись и метаданные",
             {
                 "fields": (

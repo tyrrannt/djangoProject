@@ -1672,6 +1672,50 @@ class KerioBatchPasswordCeleryTestCase(TestCase):
         self.assertEqual(res["success_count"], 5)
         mock_batch_service.assert_called_once()
 
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.external_provider")
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.pop3")
+    @patch("mailbox_app.services.kerio.service.KerioAdminService.smtp_delivery")
+    def test_batch_change_isp_passwords_updates_mailbox_model(
+        self,
+        mock_smtp_delivery: MagicMock,
+        mock_pop3: MagicMock,
+        mock_external: MagicMock,
+    ) -> None:
+        """Тест синхронизации поля work_application_password модели Mailbox при пакетной смене паролей."""
+        from mailbox_app.models import Mailbox
+        from mailbox_app.services.kerio.service import KerioAdminService
+
+        mb, _ = Mailbox.objects.get_or_create(
+            email="dispatch@barkol.ru",
+            defaults={"name": "Диспетчерская служба", "domain": "barkol.ru"},
+        )
+        mb.work_application_password = "OldPass"
+        mb.save()
+
+        mock_external.change_password.return_value = True
+        mock_pop3.get_account_for_user.return_value = {"id": "pop-1"}
+        mock_pop3.update_pop3_account.return_value = True
+        mock_smtp_delivery.batch_update_delivery_routes.return_value = {
+            "success": True,
+            "updated_count": 1,
+            "created_count": 0,
+            "total_rules_sent": 1,
+        }
+        mock_smtp_delivery.verify_smtp_auth.return_value = True
+
+        service = KerioAdminService()
+        res = service.batch_change_isp_passwords(
+            logins_or_emails=["dispatch@barkol.ru"],
+            domain_name="barkol.ru",
+            explicit_password="NewSecurePass999!",
+            generate_passwords=False,
+        )
+
+        self.assertTrue(res["success"])
+        mb.refresh_from_db()
+        self.assertEqual(mb.work_application_password, "NewSecurePass999!")
+
+
 
 
 
