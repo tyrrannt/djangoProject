@@ -1715,6 +1715,172 @@ class KerioBatchPasswordCeleryTestCase(TestCase):
         mb.refresh_from_db()
         self.assertEqual(mb.work_application_password, "NewSecurePass999!")
 
+    @patch("customers_app.models.DataBaseUserWorkProfile.objects")
+    @patch("mailbox_app.models.Mailbox.objects")
+    @patch("mailbox_app.models.MailAccount.objects")
+    def test_collect_all_portal_smtp_passwords(
+        self,
+        mock_mailaccount_objects: MagicMock,
+        mock_mailbox_objects: MagicMock,
+        mock_profile_objects: MagicMock,
+    ) -> None:
+        """Тест агрегации внешних паролей со всех источников портала (профили, общие ящики, аккаунты)."""
+        from mailbox_app.services.kerio.utils import collect_all_portal_smtp_passwords
+
+        # 1. Мокаем профили пользователей
+        p1 = MagicMock()
+        p1.user.email = "user1@barkol.ru"
+        p1.user.username = "user1"
+        p1.work_application_password = "User1Pass"
+
+        p2 = MagicMock()
+        p2.user.email = ""
+        p2.user.username = "user2"
+        p2.work_application_password = "User2Pass"
+
+        mock_profile_objects.exclude.return_value.filter.return_value.select_related.return_value = [p1, p2]
+
+        # 2. Мокаем общие корпоративные ящики (Mailbox)
+        mb1 = MagicMock()
+        mb1.email = "dispatch@barkol.ru"
+        mb1.work_application_password = "DispatchPass"
+
+        mock_mailbox_objects.exclude.return_value.filter.return_value = [mb1]
+
+        # 3. Мокаем MailAccount
+        acc1 = MagicMock()
+        acc1.smtp_username = "info@barkol.ru"
+        acc1.smtp_password = "InfoPass"
+
+        mock_mailaccount_objects.exclude.return_value.filter.return_value = [acc1]
+
+        passwords = collect_all_portal_smtp_passwords(default_domain="barkol.ru")
+
+        self.assertEqual(passwords.get("user1@barkol.ru"), "User1Pass")
+        self.assertEqual(passwords.get("user2@barkol.ru"), "User2Pass")
+        self.assertEqual(passwords.get("dispatch@barkol.ru"), "DispatchPass")
+        self.assertEqual(passwords.get("info@barkol.ru"), "InfoPass")
+
+    @patch("mailbox_app.services.kerio.smtp_delivery.collect_all_portal_smtp_passwords")
+    def test_single_route_update_enriches_with_database_passwords(
+        self,
+        mock_collect_passwords: MagicMock,
+    ) -> None:
+        """Тест обогащения одиночного обновления пароля правилами и паролями остальных ящиков из БД."""
+        from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
+
+        # В БД есть пароль для user2@barkol.ru и dispatch@barkol.ru
+        mock_collect_passwords.return_value = {
+            "user2@barkol.ru": "DbPassUser2!",
+            "dispatch@barkol.ru": "DbPassDispatch!",
+        }
+
+        mock_client = MagicMock()
+        mock_client.call.side_effect = [
+            # 1. Smtp.getRelayDeliveryRuleList
+            {
+                "rules": [
+                    {
+                        "id": "rule-user1",
+                        "sender": {"type": "Single", "pattern": "user1@barkol.ru"},
+                        "authentication": {"auth": "AuthTypeManual", "userName": "user1@barkol.ru", "password": ""},
+                        "target": {"mode": "RelaySingle", "host": "smtp.barkol.ru", "port": 587},
+                        "enabled": True,
+                    },
+                    {
+                        "id": "rule-user2",
+                        "sender": {"type": "Single", "pattern": "user2@barkol.ru"},
+                        "authentication": {"auth": "AuthTypeManual", "userName": "user2@barkol.ru", "password": ""},
+                        "target": {"mode": "RelaySingle", "host": "smtp.barkol.ru", "port": 587},
+                        "enabled": True,
+                    },
+                ]
+            },
+            # 2. Smtp.setRelayDeliveryRuleList
+            {"result": True},
+        ]
+
+        mgr = SmtpDeliveryManager(mock_client)
+
+        # Вызываем одиночное обновление для user1@barkol.ru
+        res = mgr.set_route_password_for_sender("user1@barkol.ru", "ExplicitNewUser1Pass!")
+
+        self.assertTrue(res)
+        self.assertEqual(mock_client.call.call_count, 2)
+
+        set_call = mock_client.call.call_args_list[1]
+        self.assertEqual(set_call[0][0], "Smtp.setRelayDeliveryRuleList")
+        sent_rules = set_call[1]["params"]["rules"]
+
+        # 1. Правило user1 должно содержать явно переданный пароль "ExplicitNewUser1Pass!"
+        user1_rule = next(r for r in sent_rules if r.get("id") == "rule-user1")
+        self.assertEqual(user1_rule["authentication"]["password"], "ExplicitNewUser1Pass!")
+
+        # 2. Правило user2 должно быть обогащено паролем из БД "DbPassUser2!", а не остаться пустым/затереться
+        user2_rule = next(r for r in sent_rules if r.get("id") == "rule-user2")
+        self.assertEqual(user2_rule["authentication"]["password"], "DbPassUser2!")
+
+        # 3. Для dispatch@barkol.ru (которого не было в Kerio) должно автоматически создаться новое правило с паролем из БД
+        dispatch_rule = next((r for r in sent_rules if r.get("sender", {}).get("pattern") == "dispatch@barkol.ru"), None)
+        self.assertIsNotNone(dispatch_rule)
+        self.assertEqual(dispatch_rule["authentication"]["password"], "DbPassDispatch!")
+
+    @patch("mailbox_app.services.kerio.smtp_delivery.collect_all_portal_smtp_passwords")
+    def test_create_delivery_route_preserves_other_passwords_from_db(
+        self,
+        mock_collect_passwords: MagicMock,
+    ) -> None:
+        """Тест сохранения паролей других пользователей из БД при создании нового маршрута через create_delivery_route."""
+        from mailbox_app.services.kerio.smtp_delivery import SmtpDeliveryManager
+
+        mock_collect_passwords.return_value = {
+            "existing@barkol.ru": "ExistingSavedPass123!",
+        }
+
+        mock_client = MagicMock()
+        mock_client.call.side_effect = [
+            # Smtp.getRelayDeliveryRuleList
+            {
+                "rules": [
+                    {
+                        "id": "rule-existing",
+                        "sender": {"type": "Single", "pattern": "existing@barkol.ru"},
+                        "authentication": {"auth": "AuthTypeManual", "userName": "existing@barkol.ru", "password": ""},
+                        "target": {"mode": "RelaySingle", "host": "smtp.barkol.ru", "port": 587},
+                        "enabled": True,
+                    },
+                ]
+            },
+            # Smtp.setRelayDeliveryRuleList
+            {"result": True},
+        ]
+
+        mgr = SmtpDeliveryManager(mock_client)
+
+        created_rule = mgr.create_delivery_route(
+            description="Новый сотрудник",
+            sender_pattern="newguy@barkol.ru",
+            target_host="smtp.barkol.ru",
+            target_port=587,
+            auth_username="newguy@barkol.ru",
+            auth_password="NewGuyPassword777!",
+        )
+
+        self.assertIsNotNone(created_rule)
+        self.assertEqual(mock_client.call.call_count, 2)
+
+        set_call = mock_client.call.call_args_list[1]
+        sent_rules = set_call[1]["params"]["rules"]
+
+        # Существующее правило обогащено паролем из БД
+        existing_rule = next(r for r in sent_rules if r.get("id") == "rule-existing")
+        self.assertEqual(existing_rule["authentication"]["password"], "ExistingSavedPass123!")
+
+        # Новое правило создано с переданным паролем
+        new_rule = next(r for r in sent_rules if r.get("sender", {}).get("pattern") == "newguy@barkol.ru")
+        self.assertEqual(new_rule["authentication"]["password"], "NewGuyPassword777!")
+
+
 
 
 

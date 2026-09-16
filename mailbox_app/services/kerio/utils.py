@@ -1,9 +1,12 @@
 """Вспомогательные утилиты транслитерации и генерации логинов корпоративной почты BARKOL."""
 
+import logging
 import re
 import secrets
 import string
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 def generate_random_password(
@@ -482,3 +485,86 @@ def find_portal_user_by_kerio_identity(
                 return matched_candidates[0]
 
     return None
+
+
+def collect_all_portal_smtp_passwords(default_domain: str = "barkol.ru") -> Dict[str, str]:
+    """Формирует полную карту всех сохраненных внешних паролей (ISPManager / Доставка SMTP) из базы данных портала.
+
+    Собирает пароли из трех источников:
+    1. Профилей сотрудников DataBaseUserWorkProfile (work_application_password, с fallback на work_email_password);
+    2. Корпоративных и ведомственных почтовых ящиков Mailbox (work_application_password, с fallback на get_smtp_password);
+    3. Персональных почтовых аккаунтов MailAccount (get_password).
+
+    Args:
+        default_domain (str): Почтовый домен по умолчанию для логинов без символа '@'. По умолчанию 'barkol.ru'.
+
+    Returns:
+        Dict[str, str]: Словарь сопоставления {email: пароль} для всех обнаруженных ящиков.
+
+    Example:
+        >>> passwords = collect_all_portal_smtp_passwords()
+        >>> isinstance(passwords, dict)
+        True
+    """
+    passwords_map: Dict[str, str] = {}
+    clean_default_domain = str(default_domain or "barkol.ru").strip().lower()
+
+    # 1. Профили сотрудников DataBaseUserWorkProfile
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        users_qs = User.objects.select_related("user_work_profile").all()
+        for u in users_qs:
+            email = str(getattr(u, "email", "") or "").strip().lower()
+            username = str(getattr(u, "username", "") or "").strip().lower()
+            if not email and username:
+                email = f"{username}@{clean_default_domain}"
+            if not email or "@" not in email:
+                continue
+            wp = getattr(u, "user_work_profile", None)
+            if wp:
+                ext_pwd = str(getattr(wp, "work_application_password", "") or "").strip()
+                if not ext_pwd:
+                    ext_pwd = str(getattr(wp, "work_email_password", "") or "").strip()
+                if ext_pwd:
+                    passwords_map[email] = ext_pwd
+                    if username and f"{username}@{clean_default_domain}" not in passwords_map:
+                        passwords_map[f"{username}@{clean_default_domain}"] = ext_pwd
+    except Exception as u_err:
+        logger.debug(f"[collect_all_portal_smtp_passwords] Ошибка сбора паролей пользователей: {u_err}")
+
+    # 2. Корпоративные и ведомственные почтовые ящики Mailbox
+    try:
+        from mailbox_app.models import Mailbox
+        for mb in Mailbox.objects.all():
+            email = str(getattr(mb, "email", "") or "").strip().lower()
+            if not email:
+                continue
+            mb_pwd = str(getattr(mb, "work_application_password", "") or "").strip()
+            if not mb_pwd:
+                try:
+                    mb_pwd = str(mb.get_smtp_password() or "").strip()
+                except Exception:
+                    mb_pwd = ""
+            if mb_pwd:
+                passwords_map[email] = mb_pwd
+    except Exception as mb_err:
+        logger.debug(f"[collect_all_portal_smtp_passwords] Ошибка сбора паролей Mailbox: {mb_err}")
+
+    # 3. Персональные ящики MailAccount
+    try:
+        from mailbox_app.models import MailAccount
+        for acc in MailAccount.objects.all():
+            email = str(getattr(acc, "email", "") or "").strip().lower()
+            if not email:
+                continue
+            try:
+                acc_pwd = str(acc.get_password() or "").strip()
+            except Exception:
+                acc_pwd = ""
+            if acc_pwd and email not in passwords_map:
+                passwords_map[email] = acc_pwd
+    except Exception as acc_err:
+        logger.debug(f"[collect_all_portal_smtp_passwords] Ошибка сбора паролей MailAccount: {acc_err}")
+
+    return passwords_map

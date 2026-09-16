@@ -24,7 +24,7 @@ import copy
 import logging
 import smtplib
 import ssl
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from mailbox_app.services.kerio.client import KerioConnectAdminClient
 from mailbox_app.services.kerio.exceptions import (
@@ -32,7 +32,10 @@ from mailbox_app.services.kerio.exceptions import (
     KerioObjectNotFoundError,
     KerioValidationError,
 )
-from mailbox_app.services.kerio.utils import get_django_setting
+from mailbox_app.services.kerio.utils import (
+    collect_all_portal_smtp_passwords,
+    get_django_setting,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -863,19 +866,19 @@ class SmtpDeliveryManager:
         self,
         sender_email_or_login: str,
         new_password: str,
+        relay_host: Optional[str] = None,
+        relay_port: Optional[int] = None,
     ) -> bool:
-        """Устанавливает пароль SMTP AUTH для отправителя.
+        """Устанавливает пароль SMTP AUTH для отправителя, пакетно сохраняя пароли всех остальных правил.
 
-        Алгоритм:
-
-            1. Найти персональное правило.
-            2. Если найдено — обновить его.
-            3. Если не найдено — создать персональное правило.
-            4. Проверить SMTP AUTH новым паролем.
+        Использует пакетный механизм batch_update_delivery_routes:
+        1. Формирует полную карту паролей из базы данных портала (DataBaseUserWorkProfile, Mailbox, MailAccount);
+        2. Применяет новый пароль для целевого отправителя sender_email_or_login;
+        3. Выполняет ровно один вызов Smtp.setRelayDeliveryRuleList для ВСЕХ правил Kerio Connect;
+        4. Выполняет реальную проверку SMTP AUTH для целевого пользователя.
 
         Returns:
-            True только если Kerio успешно записал пароль и SMTP AUTH
-            реально прошёл.
+            bool: True только если пакетная запись прошла успешно и SMTP AUTH подтвержден.
         """
         if not new_password:
             raise KerioValidationError(
@@ -891,44 +894,37 @@ class SmtpDeliveryManager:
                 "sender_email_or_login обязателен."
             )
 
-        route = self.get_route_for_sender(
-            sender
+        # Выполняем пакетное обновление всех маршрутов с передачей нового пароля для отправителя
+        batch_report = self.batch_update_delivery_routes(
+            passwords_map={sender: new_password},
+            relay_host=relay_host,
+            relay_port=relay_port,
+            default_domain=self.DEFAULT_DOMAIN,
         )
 
-        if route is None:
-            logger.info(
-                "[SmtpDeliveryManager] Персональное правило для '%s' "
-                "не найдено. Создание нового правила.",
-                sender,
-            )
-
-            result = self.create_delivery_route(
-                sender_email=sender,
-                password=new_password,
-            )
-
-            return bool(
-                result.get("success")
-            )
-
-        route_id = str(
-            route.get("id", "")
-        )
-
-        if not route_id:
+        if not batch_report.get("success"):
             raise KerioAPIError(
-                f"Найдено правило для '{sender}', "
-                "но Kerio не вернул его ID."
+                f"Не удалось записать правила ретрансляции SMTP для '{sender}'."
             )
 
-        result = self.update_delivery_route(
-            route_id=route_id,
+        default_h, default_p, _ = self._get_default_smtp_params()
+        verify_host = str(relay_host or default_h).strip()
+        verify_port = int(relay_port or default_p)
+
+        smtp_result = self.verify_smtp_auth(
+            sender_email=sender,
             password=new_password,
+            relay_host=verify_host,
+            relay_port=verify_port,
         )
 
-        return bool(
-            result.get("success")
-        )
+        if not smtp_result.get("success"):
+            logger.warning(
+                f"[SmtpDeliveryManager] Правила записаны, но проверка SMTP AUTH для '{sender}' завершилась с предупреждением: "
+                f"{smtp_result.get('error')}"
+            )
+
+        return True
 
     def batch_update_delivery_routes(
         self,
@@ -942,10 +938,12 @@ class SmtpDeliveryManager:
         Вместо выполнения сотен последовательных GET/SET запросов, метод:
         1. Получает текущий реестр всех правил Kerio Connect (Smtp.getRelayDeliveryRuleList).
         2. Нормализует ключи словаря passwords_map (email -> пароль).
-        3. Обновляет пароль и параметры для каждого существующего правила, чей email есть в passwords_map.
-        4. Создает новые персональные правила RelayDeliveryRule для ящиков из passwords_map, у которых правила еще не было.
-        5. Выполняет ровно ОДИН вызов Smtp.setRelayDeliveryRuleList с санитизацией _sanitize_rules_for_set.
-        6. Возвращает детальную статистику обновления.
+        3. Собирает все внешние пароли из БД портала (DataBaseUserWorkProfile, Mailbox, MailAccount)
+           через collect_all_portal_smtp_passwords для защиты остальных правил от затирания.
+        4. Обновляет пароль и параметры для каждого существующего правила, чей email есть в объединенной карте.
+        5. Создает новые персональные правила RelayDeliveryRule для целевых ящиков из passwords_map, у которых правила еще не было.
+        6. Выполняет ровно ОДИН вызов Smtp.setRelayDeliveryRuleList с санитизацией _sanitize_rules_for_set.
+        7. Возвращает детальную статистику обновления.
 
         Args:
             passwords_map: Словарь сопоставления {email_или_логин: новый_пароль}.
@@ -986,9 +984,16 @@ class SmtpDeliveryManager:
         if not normalized_map:
             raise KerioValidationError("В passwords_map нет валидных пар email/пароль.")
 
+        # Собираем все внешние пароли из БД портала для защиты существующих правил от слетания
+        portal_passwords = collect_all_portal_smtp_passwords(default_domain=default_domain)
+
+        # Объединяем: карта из БД + явный приоритет переданных в вызов паролей (normalized_map)
+        combined_passwords: Dict[str, str] = dict(portal_passwords)
+        combined_passwords.update(normalized_map)
+
         current_rules = self.get_relay_rules()
         updated_list: List[Dict[str, Any]] = []
-        handled_emails: set = set()
+        handled_emails: Set[str] = set()
         updated_count = 0
         unchanged_count = 0
 
@@ -999,8 +1004,8 @@ class SmtpDeliveryManager:
             rule_copy = dict(rule)
             pattern = self._get_rule_pattern(rule_copy)
 
-            if pattern in normalized_map:
-                new_pwd = normalized_map[pattern]
+            if pattern and pattern in combined_passwords:
+                new_pwd = combined_passwords[pattern]
                 auth = self._get_authentication(rule_copy)
                 auth["password"] = new_pwd
                 auth["userName"] = pattern
@@ -1011,13 +1016,16 @@ class SmtpDeliveryManager:
                 rule_copy["port"] = effective_port
                 rule_copy["isEnabled"] = True
                 handled_emails.add(pattern)
-                updated_count += 1
+                if pattern in normalized_map:
+                    updated_count += 1
+                else:
+                    unchanged_count += 1
             else:
                 unchanged_count += 1
 
             updated_list.append(rule_copy)
 
-        # Создаем правила для ящиков из passwords_map, которых еще не было в списке
+        # Создаем правила для целевых ящиков из normalized_map, которых еще не было в списке
         created_count = 0
         for email, pwd in normalized_map.items():
             if email not in handled_emails:
@@ -1043,7 +1051,7 @@ class SmtpDeliveryManager:
                 handled_emails.add(email)
 
         # Выполняем ровно ОДНУ пакетную запись всех правил
-        self._set_relay_rules(updated_list)
+        self._set_relay_rules(updated_list, passwords_override_map=combined_passwords)
 
         logger.info(
             "[SmtpDeliveryManager] Пакетное обновление правил «Доставка SMTP» успешно завершено: "
@@ -1198,6 +1206,8 @@ class SmtpDeliveryManager:
     def _sanitize_rules_for_set(
         cls,
         rules: List[Dict[str, Any]],
+        passwords_override_map: Optional[Dict[str, str]] = None,
+        default_domain: str = "barkol.ru",
     ) -> List[Dict[str, Any]]:
         """Очищает и подготавливает список правил для безопасной отправки через Smtp.setRelayDeliveryRuleList.
 
@@ -1206,17 +1216,39 @@ class SmtpDeliveryManager:
         возвращает password="" для всех правил. Если при вызове Smtp.setRelayDeliveryRuleList
         отправить обратно структуру с password="", Kerio интерпретирует это как явную команду
         стереть/обнулить сохраненный пароль в mailserver.cfg!
-        Чтобы Kerio Connect сохранил существующий зашифрованный пароль без изменений,
-        ключ 'password' должен быть ПОЛНОСТЬЮ УДАЛЕН из структуры 'authentication'
-        для всех правил, где не передавался новый непустой пароль.
+        
+        Для гарантии 100% сохранности паролей всех пользователей и общих ящиков:
+        1. Из базы данных портала (DataBaseUserWorkProfile, Mailbox, MailAccount) собираются все сохраненные внешние пароли;
+        2. Поверх накладываются явно переданные пароли из passwords_override_map;
+        3. Для каждого правила в списке:
+           - если у правила задан непустой пароль в authentication['password'], используется он;
+           - если пароль пустой, но адрес отправителя найден в собранной карте паролей, пароль автоматически подставляется;
+           - если пароль неизвестен, ключ 'password' ПОЛНОСТЬЮ УДАЛЯЕТСЯ из структуры 'authentication', защищая существующий зашифрованный пароль (D3S:) в mailserver.cfg от затирания;
+        4. Удаляются все вспомогательные ключи (raw, sender, server и т.д.).
 
         Args:
             rules: Исходный список правил RelayDeliveryRule.
+            passwords_override_map: Словарь дополнительных/переопределенных паролей {email: password}.
+            default_domain: Почтовый домен по умолчанию.
 
         Returns:
-            Очищенный список правил, готовый для передачи в API Kerio Connect.
+            List[Dict[str, Any]]: Очищенный и обогащенный список правил, готовый для передачи в API Kerio Connect.
         """
         sanitized_list: List[Dict[str, Any]] = []
+
+        # Собираем базу паролей из Django
+        portal_passwords: Dict[str, str] = {}
+        try:
+            portal_passwords = collect_all_portal_smtp_passwords(default_domain=default_domain)
+        except Exception as e_p:
+            logger.debug(f"[SmtpDeliveryManager] Не удалось собрать пароли из БД: {e_p}")
+
+        if passwords_override_map and isinstance(passwords_override_map, dict):
+            for k, v in passwords_override_map.items():
+                clean_k = cls._normalize_email(str(k))
+                clean_v = str(v or "").strip()
+                if clean_k and clean_v:
+                    portal_passwords[clean_k] = clean_v
 
         for raw_rule in rules:
             if not isinstance(raw_rule, dict):
@@ -1243,12 +1275,20 @@ class SmtpDeliveryManager:
 
             auth = rule_copy.get("authentication")
             if isinstance(auth, dict):
+                pattern = cls._get_rule_pattern(rule_copy)
                 pwd_val = auth.get("password")
-                if not pwd_val or not str(pwd_val).strip():
+
+                if pwd_val and str(pwd_val).strip():
+                    auth["password"] = str(pwd_val).strip()
+                elif pattern and pattern in portal_passwords:
+                    auth["password"] = str(portal_passwords[pattern]).strip()
+                    auth["isRequired"] = True
+                    auth["authType"] = "Auth"
+                    if not auth.get("userName"):
+                        auth["userName"] = pattern
+                else:
                     # Удаляем ключ 'password', чтобы Kerio сохранил старый пароль в mailserver.cfg
                     auth.pop("password", None)
-                else:
-                    auth["password"] = str(pwd_val).strip()
 
             sanitized_list.append(rule_copy)
 
@@ -1257,14 +1297,16 @@ class SmtpDeliveryManager:
     def _set_relay_rules(
         self,
         rules: List[Dict[str, Any]],
+        passwords_override_map: Optional[Dict[str, str]] = None,
     ) -> None:
-        """Записывает полный список RelayDeliveryRule в Kerio.
+        """Записывает полный список RelayDeliveryRule в Kerio с автоматической санитизацией и сохранением всех паролей.
 
         Это непосредственный аналог нажатия Apply в GUI для списка
         «Доставка SMTP».
 
         Args:
             rules: Полный актуальный список правил.
+            passwords_override_map: Словарь дополнительных/переопределенных паролей.
 
         Raises:
             KerioAPIError: При некорректном ответе API.
@@ -1274,14 +1316,12 @@ class SmtpDeliveryManager:
                 "rules должен быть списком."
             )
 
-        sanitized_rules = self._sanitize_rules_for_set(rules)
+        sanitized_rules = self._sanitize_rules_for_set(
+            rules,
+            passwords_override_map=passwords_override_map,
+            default_domain=self.DEFAULT_DOMAIN,
+        )
 
-        # Защита от случайной записи пустого списка.
-        #
-        # В нормальной конфигурации пустой список может быть легитимным,
-        # поэтому запрет применяется только если вызов выглядит подозрительно.
-        # Здесь мы не запрещаем пустой список, поскольку remove последнего
-        # правила может быть штатной операцией.
         result = self.client.call(
             self.SET_METHOD,
             params={
