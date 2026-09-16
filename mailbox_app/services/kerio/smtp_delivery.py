@@ -20,6 +20,7 @@
 дополнительная реальная проверка SMTP AUTH через smtplib.
 """
 
+import copy
 import logging
 import smtplib
 import ssl
@@ -1059,6 +1060,66 @@ class SmtpDeliveryManager:
     # Низкоуровневый SET
     # =========================================================================
 
+    @classmethod
+    def _sanitize_rules_for_set(
+        cls,
+        rules: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Очищает и подготавливает список правил для безопасной отправки через Smtp.setRelayDeliveryRuleList.
+
+        Критически важная логика сохранения паролей:
+        Kerio Connect Administration API при вызове Smtp.getRelayDeliveryRuleList
+        возвращает password="" для всех правил. Если при вызове Smtp.setRelayDeliveryRuleList
+        отправить обратно структуру с password="", Kerio интерпретирует это как явную команду
+        стереть/обнулить сохраненный пароль в mailserver.cfg!
+        Чтобы Kerio Connect сохранил существующий зашифрованный пароль без изменений,
+        ключ 'password' должен быть ПОЛНОСТЬЮ УДАЛЕН из структуры 'authentication'
+        для всех правил, где не передавался новый непустой пароль.
+
+        Args:
+            rules: Исходный список правил RelayDeliveryRule.
+
+        Returns:
+            Очищенный список правил, готовый для передачи в API Kerio Connect.
+        """
+        sanitized_list: List[Dict[str, Any]] = []
+
+        for raw_rule in rules:
+            if not isinstance(raw_rule, dict):
+                continue
+
+            rule_copy = copy.deepcopy(raw_rule)
+
+            # Удаляем любые временные служебные поля (например, raw, sender, server и т.д.),
+            # если они попали из нормализованного представления
+            for helper_key in (
+                "raw",
+                "sender",
+                "server",
+                "isActive",
+                "hasPassword",
+                "sslMode",
+                "isGlobal",
+                "authUsername",
+                "conditionType",
+                "conditionComparator",
+                "matchPattern",
+            ):
+                rule_copy.pop(helper_key, None)
+
+            auth = rule_copy.get("authentication")
+            if isinstance(auth, dict):
+                pwd_val = auth.get("password")
+                if not pwd_val or not str(pwd_val).strip():
+                    # Удаляем ключ 'password', чтобы Kerio сохранил старый пароль в mailserver.cfg
+                    auth.pop("password", None)
+                else:
+                    auth["password"] = str(pwd_val).strip()
+
+            sanitized_list.append(rule_copy)
+
+        return sanitized_list
+
     def _set_relay_rules(
         self,
         rules: List[Dict[str, Any]],
@@ -1079,6 +1140,8 @@ class SmtpDeliveryManager:
                 "rules должен быть списком."
             )
 
+        sanitized_rules = self._sanitize_rules_for_set(rules)
+
         # Защита от случайной записи пустого списка.
         #
         # В нормальной конфигурации пустой список может быть легитимным,
@@ -1088,7 +1151,7 @@ class SmtpDeliveryManager:
         result = self.client.call(
             self.SET_METHOD,
             params={
-                "list": rules,
+                "list": sanitized_rules,
             },
         )
 
@@ -1096,7 +1159,7 @@ class SmtpDeliveryManager:
             "[SmtpDeliveryManager] %s успешно выполнен. "
             "Количество правил: %d",
             self.SET_METHOD,
-            len(rules),
+            len(sanitized_rules),
         )
 
         # Некоторые версии API могут вернуть None/{} при успешном SET.

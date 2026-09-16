@@ -950,6 +950,67 @@ class SmtpDeliveryManagerTestCase(TestCase):
         val = get_django_setting("NON_EXISTING_SETTING_12345", "fallback_val")
         self.assertEqual(val, "fallback_val")
 
+    def test_sanitize_rules_for_set_removes_empty_passwords(self) -> None:
+        """Тест удаления пустых паролей из правил для защиты существующих паролей в mailserver.cfg."""
+        rules = [
+            {
+                "id": "keriodb://relaydeliveryrule/1",
+                "isEnabled": True,
+                "description": "user1",
+                "hostName": "smtp.barkol.ru",
+                "port": 587,
+                "authentication": {
+                    "isRequired": True,
+                    "userName": "user1@barkol.ru",
+                    "password": "",  # Пустой пароль от GET
+                    "authType": "Auth",
+                },
+                "condition": {"test": "RelayCondSender", "pattern": "user1@barkol.ru"},
+            },
+            {
+                "id": "keriodb://relaydeliveryrule/2",
+                "isEnabled": True,
+                "description": "user2",
+                "hostName": "smtp.barkol.ru",
+                "port": 587,
+                "authentication": {
+                    "isRequired": True,
+                    "userName": "user2@barkol.ru",
+                    "password": "NewSecretPassword123",  # Явно переданный новый пароль
+                    "authType": "Auth",
+                },
+                "condition": {"test": "RelayCondSender", "pattern": "user2@barkol.ru"},
+            },
+        ]
+
+        sanitized = self.manager._sanitize_rules_for_set(rules)
+        self.assertEqual(len(sanitized), 2)
+        # У user1 ключ password должен быть удален
+        self.assertNotIn("password", sanitized[0]["authentication"])
+        # У user2 пароль должен сохраниться
+        self.assertEqual(sanitized[1]["authentication"]["password"], "NewSecretPassword123")
+
+    def test_set_relay_rules_calls_sanitize(self) -> None:
+        """Тест вызова _sanitize_rules_for_set при выполнении _set_relay_rules."""
+        rules = [
+            {
+                "id": "keriodb://relaydeliveryrule/1",
+                "isEnabled": True,
+                "authentication": {
+                    "isRequired": True,
+                    "userName": "user1@barkol.ru",
+                    "password": "",
+                    "authType": "Auth",
+                },
+            }
+        ]
+        self.client.call.return_value = {"result": {}}
+        self.manager._set_relay_rules(rules)
+
+        called_params = self.client.call.call_args[1]["params"]["list"]
+        self.assertEqual(len(called_params), 1)
+        self.assertNotIn("password", called_params[0]["authentication"])
+
     def test_verify_smtp_auth_success(self) -> None:
         """Тест успешной верификации учетных данных SMTP AUTH через прямое SMTP соединение."""
         with patch("smtplib.SMTP") as mock_smtp_class:
