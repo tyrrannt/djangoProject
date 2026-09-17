@@ -382,6 +382,7 @@ class MailboxAdminForm(forms.ModelForm):
             "smtp_security",
             "smtp_username",
             "display_name",
+            "work_application_password",
             "signature_html",
             "users",
         ]
@@ -401,6 +402,7 @@ class MailboxAdminForm(forms.ModelForm):
             "smtp_security": forms.Select(attrs={"class": "form-select", "id": "id_smtp_security"}),
             "smtp_username": forms.TextInput(attrs={"class": "form-control", "id": "id_smtp_username", "placeholder": "hr@barkol.ru"}),
             "display_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Отдел кадров ООО 'Баркол'"}),
+            "work_application_password": forms.TextInput(attrs={"class": "form-control", "id": "id_work_application_password", "placeholder": "Пароль внешнего ящика ISPManager (Reg.ru)...", "autocomplete": "off"}),
             "signature_html": CKEditor5Widget(
                 attrs={"class": "django_ckeditor_5"},
                 config_name="mailbox",

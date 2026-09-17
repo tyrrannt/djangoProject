@@ -618,6 +618,15 @@ class KerioAdminService:
             _sync_user_work_profile_password(portal_user, password)
             _sync_user_work_profile_application_password(portal_user, effective_isp_password)
 
+            # Также синхронизируем общий ящик Mailbox при наличии
+            try:
+                from mailbox_app.models import Mailbox
+                Mailbox.objects.filter(email__iexact=full_email).update(
+                    work_application_password=effective_isp_password
+                )
+            except Exception as mb_sync_err:
+                logger.debug(f"[KerioAdminService] Ошибка сохранения пароля в Mailbox: {mb_sync_err}")
+
             # 4.2 Записываем созданный email в модель DataBaseUser
             if save_email_to_user:
                 try:
@@ -765,6 +774,15 @@ class KerioAdminService:
             if acc:
                 target_password = acc.get_password()
 
+        if not target_password:
+            try:
+                from mailbox_app.models import Mailbox
+                mb_obj = Mailbox.objects.filter(email__iexact=full_email).first()
+                if mb_obj and mb_obj.work_application_password:
+                    target_password = mb_obj.work_application_password.strip()
+            except Exception:
+                pass
+
         existing_route = self.smtp_delivery.get_route_for_sender(full_email)
         is_individual_existing = bool(existing_route and existing_route.get("id") and not existing_route.get("isGlobal"))
 
@@ -793,7 +811,7 @@ class KerioAdminService:
                 f"Не удалось определить пароль для '{full_email}'. Укажите пароль учетной записи для привязки SMTP AUTH."
             )
 
-        # Синхронизируем внешний пароль (work_application_password) в рабочем профиле сотрудника
+        # Синхронизируем внешний пароль (work_application_password) в рабочем профиле сотрудника и Mailbox
         if target_password:
             matched_u = find_portal_user_by_kerio_identity(
                 login_name=clean_login,
@@ -803,6 +821,14 @@ class KerioAdminService:
             )
             if matched_u:
                 _sync_user_work_profile_application_password(matched_u, target_password)
+
+            try:
+                from mailbox_app.models import Mailbox
+                Mailbox.objects.filter(email__iexact=full_email).update(
+                    work_application_password=target_password
+                )
+            except Exception:
+                pass
 
         if MailAccount and target_password:
             try:
@@ -1511,7 +1537,7 @@ class KerioAdminService:
             logger.warning(f"[KerioAdminService] Ошибка обновления POP3 для {clean_login}: {pop_exc}")
             report["steps"]["kerio_pop3_download"] = f"warning: {pop_exc}"
 
-        # 4. Профиль сотрудника DataBaseUserWorkProfile.work_application_password
+        # 4. Профиль сотрудника DataBaseUserWorkProfile.work_application_password и ящик Mailbox
         updated_profiles_count = 0
         if User and models:
             try:
@@ -1521,6 +1547,19 @@ class KerioAdminService:
                 for u in matched_users:
                     _sync_user_work_profile_application_password(u, new_password)
                     updated_profiles_count += 1
+
+                try:
+                    from mailbox_app.models import Mailbox
+                    mb_updated = Mailbox.objects.filter(email__iexact=full_email).update(
+                        work_application_password=new_password
+                    )
+                    if mb_updated > 0:
+                        logger.info(
+                            f"[KerioAdminService] work_application_password обновлен в {mb_updated} объектах Mailbox для {full_email}."
+                        )
+                except Exception as mb_exc:
+                    logger.debug(f"[KerioAdminService] Ошибка обновления Mailbox для {full_email}: {mb_exc}")
+
                 report["steps"]["user_work_profile"] = f"updated {updated_profiles_count} profiles"
             except Exception as db_exc:
                 logger.warning(f"[KerioAdminService] Ошибка сохранения work_application_password для {full_email}: {db_exc}")
@@ -1548,7 +1587,7 @@ class KerioAdminService:
 
         Архитектура процедуры:
         1. Формирует карту паролей {email: password} на основе переданных настроек генерации.
-        2. Поочередно обновляет пароль в ISPManager (Reg.ru), Kerio «Загрузка POP3» и профиле портала.
+        2. Поочередно обновляет пароль в ISPManager (Reg.ru), Kerio «Загрузка POP3», профиле портала и корпоративных ящиках Mailbox.
         3. Выполняет ЕДИНУЮ пакетную запись всех новых паролей в таблицу Kerio «Доставка SMTP»
            через SmtpDeliveryManager.batch_update_delivery_routes за один вызов API Smtp.setRelayDeliveryRuleList.
         4. Выполняет проверку SMTP AUTH для всех ящиков.
@@ -1630,7 +1669,7 @@ class KerioAdminService:
         log_lines.append(f"[{now_str}] Старт пакетной смены паролей. Всего ящиков: {total_users}, домен: @{target_domain}")
 
         # -------------------------------------------------------------
-        # Шаг 2. Поочередное обновление: ISPManager, POP3, Профили
+        # Шаг 2. Поочередное обновление: ISPManager, POP3, Профили, Mailbox
         # -------------------------------------------------------------
         for idx, (full_email, new_password) in enumerate(passwords_map.items(), start=1):
             clean_login = full_email.split("@")[0]
@@ -1675,7 +1714,7 @@ class KerioAdminService:
             except Exception as pop_err:
                 item_report["steps"]["kerio_pop3_download"] = f"error: {pop_err}"
 
-            # 2.3 Django Профиль
+            # 2.3 Django Профиль и Корпоративные ящики Mailbox
             if User and models:
                 try:
                     matched_users = User.objects.filter(
@@ -1683,6 +1722,19 @@ class KerioAdminService:
                     ).select_related("user_work_profile")
                     for u in matched_users:
                         _sync_user_work_profile_application_password(u, new_password)
+
+                    try:
+                        from mailbox_app.models import Mailbox
+                        mb_count = Mailbox.objects.filter(email__iexact=full_email).update(
+                            work_application_password=new_password
+                        )
+                        if mb_count > 0:
+                            logger.info(
+                                f"[KerioAdminService] work_application_password обновлен в {mb_count} объектах Mailbox для {full_email}."
+                            )
+                    except Exception as mb_err:
+                        logger.debug(f"[KerioAdminService] Ошибка обновления Mailbox для {full_email}: {mb_err}")
+
                     item_report["steps"]["user_work_profile"] = "ok"
                 except Exception as p_err:
                     item_report["steps"]["user_work_profile"] = f"error: {p_err}"
@@ -1691,7 +1743,7 @@ class KerioAdminService:
             log_lines.append(
                 f"{log_prefix} -> ISP: {item_report['steps'].get('external_server')}, "
                 f"POP3: {item_report['steps'].get('kerio_pop3_download')}, "
-                f"Профиль: {item_report['steps'].get('user_work_profile')}"
+                f"Профиль/Mailbox: {item_report['steps'].get('user_work_profile')}"
             )
 
         # -------------------------------------------------------------

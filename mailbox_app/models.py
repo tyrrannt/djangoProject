@@ -185,6 +185,7 @@ class Mailbox(models.Model):
         smtp_security (CharField): Тип шифрования SMTP ('ssl', 'starttls', 'plain').
         smtp_username (CharField): Логин SMTP.
         encrypted_smtp_password (CharField): Зашифрованный пароль SMTP.
+        work_application_password (CharField): Пароль от почтового ящика на внешнем хостинге ISPManager (Reg.ru).
         display_name (CharField): Имя отправителя для поля From.
         signature_html (TextField): HTML-подпись к письмам.
         users (ManyToManyField): Сотрудники, имеющие доступ к ящику.
@@ -241,6 +242,13 @@ class Mailbox(models.Model):
     is_active = models.BooleanField(
         verbose_name="Активен",
         default=True,
+    )
+    work_application_password = models.CharField(
+        verbose_name="Внешний пароль (ISPManager / Доставка SMTP)",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Пароль от почтового ящика на внешнем хостинге ISPManager (Reg.ru), используемый для авторизации в «Доставка SMTP» (SMTP AUTH) и «Загрузка POP3»",
     )
 
     # Параметры входящей почты

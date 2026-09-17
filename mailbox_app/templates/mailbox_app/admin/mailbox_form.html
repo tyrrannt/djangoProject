@@ -253,7 +253,35 @@
                             </div>
                         </div>
 
-                        <!-- Блок 4: Назначение сотрудников с доступом (Many-to-Many) -->
+                        <!-- Блок 4: Внешний сервер ISPManager (Reg.ru / Доставка SMTP) -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px;">
+                            <div class="card-body p-4">
+                                <div class="form-section-header">
+                                    <i class="bx bx-server text-primary font-size-18"></i>
+                                    <span>Внешний сервер (ISPManager / Доставка SMTP)</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-8">
+                                        <label class="form-label fw-bold font-size-13">Внешний пароль ящика (ISPManager / Reg.ru)</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.work_application_password }}
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_work_application_password', this)" title="Показать/скрыть пароль">
+                                                <i class="bx bx-show"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="copyFieldValue('id_work_application_password')" title="Скопировать пароль">
+                                                <i class="bx bx-copy"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted font-size-11">
+                                            Пароль учетной записи на внешнем хостинге ISPManager (Reg.ru), используемый почтовым сервером Kerio для авторизации в «Доставка SMTP» (SMTP AUTH) и «Загрузка POP3». Автоматически обновляется при пакетной смене паролей.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 5: Назначение сотрудников с доступом (Many-to-Many) -->
                         <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px;">
                             <div class="card-body p-4">
                                 <div class="form-section-header">
@@ -369,6 +397,35 @@
             } else {
                 input.type = "password";
                 btn.innerHTML = '<i class="bx bx-show"></i>';
+            }
+        }
+
+        // Копирование значения поля в буфер обмена
+        function copyFieldValue(fieldId) {
+            var input = document.getElementById(fieldId);
+            if (!input || !input.value) {
+                alert('Поле не содержит значения для копирования.');
+                return;
+            }
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(input.value).then(() => {
+                    alert('Пароль успешно скопирован в буфер обмена!');
+                }).catch(() => {
+                    copyFallback(input);
+                });
+            } else {
+                copyFallback(input);
+            }
+        }
+
+        function copyFallback(input) {
+            input.focus();
+            input.select();
+            try {
+                document.execCommand('copy');
+                alert('Пароль успешно скопирован в буфер обмена!');
+            } catch (err) {
+                alert('Не удалось скопировать пароль автоматически.');
             }
         }
 
