@@ -2665,6 +2665,29 @@ class TimeSheet(models.Model):
             "status": "Черновик" if self.is_draft else "Утвержден",
         }
 
+    def get_report_card_reason(self) -> str:
+        """Формирует структурированную запись причины корректировки для строк ReportCard.
+
+        Returns:
+            str: Текст с реквизитами табеля (номер, дата смены, старший бригады, МПД, статус).
+        """
+        date_str = f"{self.date:%d.%m.%Y} г." if self.date else "—"
+        emp_name = "Не указан"
+        if self.employee:
+            title = getattr(self.employee, "title", "") or getattr(self.employee, "username", "")
+            emp_name = format_name_initials(title) if title else str(self.employee)
+        place_name = str(self.time_sheets_place) if self.time_sheets_place else "Не указано"
+        status_name = "Черновик" if self.is_draft else "Утвержден"
+        ts_id = f" №{self.pk}" if self.pk else ""
+
+        return (
+            f"Табель учета рабочего времени на МПД{ts_id}\n"
+            f"Дата табеля: {date_str}\n"
+            f"Старший бригады: {emp_name}\n"
+            f"Место деятельности (МПД): {place_name}\n"
+            f"Статус: {status_name}"
+        )
+
 
 class OperationalWork(models.Model):
     """

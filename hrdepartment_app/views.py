@@ -5311,14 +5311,21 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
 
         return super().form_valid(form)
 
-    def save_formset(self, formset):
-        """Сохраняет строки табеля с привязкой параметров МПД и типа записи."""
+    def save_formset(self, formset) -> None:
+        """Сохраняет строки табеля с привязкой параметров МПД, типа записи и причины корректировки.
+
+        Args:
+            formset: Формсет строк учета рабочего времени ReportCard.
+        """
         instances = formset.save(commit=False)
+        reason_text = self.object.get_report_card_reason()
         for instance in instances:
             instance.report_card_day = self.object.date
             instance.sign_report_card = True
+            instance.manual_input = True
             if not instance.record_type:
                 instance.record_type = "13"
+            instance.reason_adjustment = reason_text
             instance.save()
             if self.object.time_sheets_place:
                 instance.place_report_card.set([self.object.time_sheets_place.pk])
@@ -5326,12 +5333,34 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
             deleted_obj.delete()
         formset.save_m2m()
 
+        # Гарантируем актуализацию реквизитов для всех сохраненных строк табеля
+        self.object.report_cards.all().update(
+            report_card_day=self.object.date,
+            sign_report_card=True,
+            manual_input=True,
+            reason_adjustment=reason_text,
+        )
+        if self.object.time_sheets_place:
+            for rc in self.object.report_cards.all():
+                rc.place_report_card.set([self.object.time_sheets_place.pk])
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GetUserEventsView(View):
-    """Возвращает список отметок сотрудников на МПД за указанную дату."""
+    """Возвращает список отметок сотрудников на МПД за указанную дату из СКУД."""
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> JsonResponse:
+        """Обрабатывает AJAX-запрос на получение отметок сотрудников за дату и МПД.
+
+        Args:
+            request: Объект HTTP-запроса с параметрами 'date' (строка даты) и 'place_id' (ID МПД).
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            JsonResponse: Список словарей с отметками сотрудников (person_id, user_id, person_name,
+                person_fio, road, checked).
+        """
         date_str = request.POST.get("date")
         place_id = request.POST.get("place_id")
 
@@ -5351,8 +5380,8 @@ class GetUserEventsView(View):
                 "user_id": e.person_id,
                 "person_name": str(e.person),
                 "person_fio": format_name_initials(person_title) if person_title else str(e.person),
-                "road": e.road,
-                "checked": e.checked,
+                "road": bool(e.road),
+                "checked": bool(e.checked),
             })
         return JsonResponse(data, safe=False)
 
@@ -5361,14 +5390,34 @@ class GetUserEventsView(View):
 class GetTeamMembersView(View):
     """Возвращает список сотрудников действующей бригады на данном МПД из приказов CreatingTeam."""
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> JsonResponse:
+        """Обрабатывает AJAX-запрос на получение состава бригады строго в интервале приказа.
+
+        Ищет неотмененные приказы CreatingTeam для указанного МПД, период действия которых
+        (date_start <= target_date <= date_end) строго покрывает дату смены. Если приказ
+        на указанную дату отсутствует, возвращает пустой список без неточных приближений.
+
+        Args:
+            request: Объект HTTP-запроса с параметрами 'date' (строка даты) и 'place_id' (ID МПД).
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            JsonResponse: Словарь с полями 'senior_id', 'senior_name' и 'members'.
+        """
         date_str = request.POST.get("date")
         place_id = request.POST.get("place_id")
 
         logger.info("[GetTeamMembersView] POST received date_str=%r, place_id=%r", date_str, place_id)
 
+        empty_response = {
+            "senior_id": None,
+            "senior_name": "",
+            "members": [],
+        }
+
         if not date_str or not place_id:
-            return JsonResponse([], safe=False)
+            return JsonResponse(empty_response, safe=False)
 
         target_date = None
         clean_date_str = date_str.replace("г.", "").replace("г", "").strip() if date_str else ""
@@ -5379,6 +5428,10 @@ class GetTeamMembersView(View):
             except (ValueError, TypeError, AttributeError):
                 continue
 
+        if not target_date:
+            logger.warning("[GetTeamMembersView] Could not parse date_str=%r", date_str)
+            return JsonResponse(empty_response, safe=False)
+
         # Формируем условие поиска по МПД (поддерживаем ID и имя)
         place_filter = Q(place_id=place_id)
         if str(place_id).isdigit():
@@ -5386,28 +5439,21 @@ class GetTeamMembersView(View):
         else:
             place_filter |= Q(place__name__icontains=place_id)
 
-        teams = CreatingTeam.objects.none()
+        # Поиск приказа, действующего СТРОГО на указанную дату смены (date_start <= target_date <= date_end)
+        # Исключаем отмененные приказы (cancellation=False)
+        teams = CreatingTeam.objects.filter(
+            place_filter,
+            Q(cancellation=False),
+            Q(date_start__lte=target_date),
+            Q(date_end__gte=target_date),
+        ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_create", "-id")
 
-        if target_date:
-            # 1. Поиск приказа, действующего строго на указанную дату смены
-            teams = CreatingTeam.objects.filter(
-                place_filter &
-                Q(cancellation=False) &
-                (Q(date_start__lte=target_date) | Q(date_start__isnull=True)) &
-                (Q(date_end__gte=target_date) | Q(date_end__isnull=True))
-            ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")
-
-        # 2. Если на точную дату приказ не найден, берем последний актуальный приказ по данному МПД
         if not teams.exists():
-            teams = CreatingTeam.objects.filter(
-                place_filter & Q(cancellation=False)
-            ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")[:1]
-
-        # 3. Fallback: если приказ все еще не найден, проверяем без фильтра cancellation
-        if not teams.exists():
-            teams = CreatingTeam.objects.filter(
-                place_filter
-            ).prefetch_related("team_brigade", "senior_brigade").order_by("-date_start", "-id")[:1]
+            logger.info(
+                "[GetTeamMembersView] No active CreatingTeam found strictly covering date=%s for place_id=%r",
+                target_date, place_id
+            )
+            return JsonResponse(empty_response, safe=False)
 
         senior_id = None
         senior_name = ""
@@ -5438,11 +5484,11 @@ class GetTeamMembersView(View):
         }
 
         logger.info(
-            "[GetTeamMembersView] Returning senior_id=%r, %d members for place_id=%r (teams_found=%d)",
+            "[GetTeamMembersView] Returning senior_id=%r, %d members for target_date=%s, place_id=%r",
             senior_id,
             len(data),
+            target_date,
             place_id,
-            teams.count() if hasattr(teams, "count") else len(teams),
         )
         return JsonResponse(response_data, safe=False)
 
@@ -5529,20 +5575,38 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
 
         return super().form_valid(form)
 
-    def save_formset(self, formset):
-        """Сохраняет строки табеля с привязкой параметров МПД и типа записи."""
+    def save_formset(self, formset) -> None:
+        """Сохраняет строки табеля с привязкой параметров МПД, типа записи и причины корректировки.
+
+        Args:
+            formset: Формсет строк учета рабочего времени ReportCard.
+        """
         instances = formset.save(commit=False)
+        reason_text = self.object.get_report_card_reason()
         for instance in instances:
             instance.report_card_day = self.object.date
             instance.sign_report_card = True
+            instance.manual_input = True
             if not instance.record_type:
                 instance.record_type = "13"
+            instance.reason_adjustment = reason_text
             instance.save()
             if self.object.time_sheets_place:
                 instance.place_report_card.set([self.object.time_sheets_place.pk])
         for deleted_obj in formset.deleted_objects:
             deleted_obj.delete()
         formset.save_m2m()
+
+        # Гарантируем актуализацию реквизитов для всех сохраненных строк табеля
+        self.object.report_cards.all().update(
+            report_card_day=self.object.date,
+            sign_report_card=True,
+            manual_input=True,
+            reason_adjustment=reason_text,
+        )
+        if self.object.time_sheets_place:
+            for rc in self.object.report_cards.all():
+                rc.place_report_card.set([self.object.time_sheets_place.pk])
 
 
 @require_POST

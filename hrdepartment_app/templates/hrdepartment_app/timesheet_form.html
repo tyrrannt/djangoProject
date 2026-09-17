@@ -217,9 +217,7 @@
                 if (outfitCardId) {
                     $newRow.find('select[name$="-outfit_card"]').val(outfitCardId);
                 }
-                if (additionalWork) {
-                    $newRow.find('input[name$="-additional_work"]').val(additionalWork);
-                }
+                $newRow.find('input[name$="-additional_work"]').val(additionalWork || '');
 
                 initSelect2($newRow);
                 return $newRow;
@@ -303,7 +301,7 @@
                         var data = safeParseArray(raw);
 
                         if (data.length === 0) {
-                            showAlert("За указанную дату на данном МПД отметки сотрудников не найдены.", "warning");
+                            showAlert("За указанную дату (" + date + ") на данном МПД отметки сотрудников не найдены.", "warning");
                             return;
                         }
 
@@ -314,13 +312,12 @@
                             var personId = (event.person_id || event.user_id).toString();
                             if (existingIds.indexOf(personId) === -1) {
                                 var reusableRow = (addedCount === 0) ? getReusableEmptyRow() : null;
-                                var addWork = event.road ? "В пути" : "";
+                                var isRoad = Boolean(event.road === true || event.road === "true" || event.road === 1 || event.road === "1" || event.road === "Да");
+                                var addWork = isRoad ? "В пути" : "";
 
                                 if (reusableRow) {
                                     reusableRow.find('select[name$="-employee"]').val(personId).trigger('change');
-                                    if (addWork) {
-                                        reusableRow.find('input[name$="-additional_work"]').val(addWork);
-                                    }
+                                    reusableRow.find('input[name$="-additional_work"]').val(addWork);
                                 } else {
                                     addReportCardRow(personId, '', '', 0, '', '', addWork);
                                 }
@@ -393,7 +390,7 @@
                         console.log("[fill-from-team] Received seniorId:", seniorId, "members:", data);
 
                         if (data.length === 0 && !seniorId) {
-                            showAlert("За указанную дату на данном МПД действующий приказ о создании бригады не найден.", "warning");
+                            showAlert("На указанную дату (" + date + ") действующий приказ о создании бригады на данном МПД не найден.", "warning");
                             return;
                         }
 
@@ -407,6 +404,7 @@
 
                                 if (reusableRow) {
                                     reusableRow.find('select[name$="-employee"]').val(personId).trigger('change');
+                                    reusableRow.find('input[name$="-additional_work"]').val('');
                                 } else {
                                     addReportCardRow(personId, '', '', 0, '', '', '');
                                 }
