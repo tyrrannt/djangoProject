@@ -79,6 +79,7 @@ urlpatterns = [
     path('place/', PlaceProductionActivityList.as_view(), name='place_list'),
     path('place/add/', PlaceProductionActivityAdd.as_view(), name='place_add'),
     path('place/<int:pk>/', PlaceProductionActivityDetail.as_view(), name='place'),
+    path('place/<int:pk>/detail/', PlaceProductionActivityDetail.as_view(), name='place_detail'),
     path('place/<int:pk>/update/', PlaceProductionActivityUpdate.as_view(), name='place_update'),
     path('report/', ReportCardList.as_view(), name='reportcard_list'),
     path('report/list/', ReportCardListManual.as_view(), name='reportcard_listmanual'),
