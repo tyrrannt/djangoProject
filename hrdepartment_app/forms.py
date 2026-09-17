@@ -64,13 +64,57 @@ class MedicalOrganisationUpdateForm(forms.ModelForm):
 
 
 class MedicalExaminationAddForm(forms.ModelForm):
+    """Форма добавления медицинского направления.
+
+    Включает выбор сотрудника, медицинской организации, статуса (работающий / поступающий),
+    вида осмотра (медицинский осмотр / психиатрическое освидетельствование) и типа осмотра
+    (предварительный, периодический, внеплановый).
+    """
+
     class Meta:
         model = Medical
-        fields = ("number", "person", "organisation", "working_status")
+        fields = (
+            "number",
+            "person",
+            "organisation",
+            "working_status",
+            "view_inspection",
+            "type_inspection",
+        )
+        widgets = {
+            "number": forms.TextInput(
+                attrs={"class": "form-control form-control-modern font-weight-bold", "placeholder": "Номер направления"}
+            ),
+            "person": forms.Select(
+                attrs={"class": "form-control form-control-modern data-plugin-selectTwo", "data-plugin-selectTwo": True}
+            ),
+            "organisation": forms.Select(
+                attrs={"class": "form-control form-control-modern data-plugin-selectTwo", "data-plugin-selectTwo": True}
+            ),
+            "working_status": forms.Select(
+                attrs={"class": "form-control form-control-modern"}
+            ),
+            "view_inspection": forms.Select(
+                attrs={"class": "form-control form-control-modern"}
+            ),
+            "type_inspection": forms.Select(
+                attrs={"class": "form-control form-control-modern"}
+            ),
+        }
 
 
 class MedicalExaminationUpdateForm(forms.ModelForm):
-    harmful = forms.ModelMultipleChoiceField(HarmfulWorkingConditions.objects.all())
+    """Форма редактирования медицинского направления.
+
+    Позволяет изменять номер направления, статус, вид осмотра, тип осмотра,
+    а также список вредных производственных факторов с автогенерацией документов.
+    """
+
+    harmful = forms.ModelMultipleChoiceField(
+        queryset=HarmfulWorkingConditions.objects.all(),
+        required=False,
+        label="Вредные условия труда",
+    )
     harmful.widget.attrs.update(
         {
             "class": "form-control form-control-modern data-plugin-selectTwo",
@@ -80,7 +124,27 @@ class MedicalExaminationUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Medical
-        fields = ("number", "harmful")
+        fields = (
+            "number",
+            "working_status",
+            "view_inspection",
+            "type_inspection",
+            "harmful",
+        )
+        widgets = {
+            "number": forms.TextInput(
+                attrs={"class": "form-control form-control-modern font-weight-bold", "placeholder": "Номер направления"}
+            ),
+            "working_status": forms.Select(
+                attrs={"class": "form-control form-control-modern"}
+            ),
+            "view_inspection": forms.Select(
+                attrs={"class": "form-control form-control-modern"}
+            ),
+            "type_inspection": forms.Select(
+                attrs={"class": "form-control form-control-modern"}
+            ),
+        }
 
 
 class OfficialMemoAddForm(forms.ModelForm):

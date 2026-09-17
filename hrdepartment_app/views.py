@@ -244,6 +244,12 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
 
 class MedicalExaminationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """Представление создания нового медицинского направления.
+
+    Формирует контекст со списками сотрудников, контрагентов, статусов работы,
+    видов осмотра и типов осмотра.
+    """
+
     model = Medical
     form_class = MedicalExaminationAddForm
     permission_required = "hrdepartment_app.add_medical"
@@ -253,17 +259,24 @@ class MedicalExaminationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateV
         content["all_person"] = DataBaseUser.objects.filter(type_users="staff_member")
         content["all_contragent"] = Counteragent.objects.all()
         content["all_status"] = Medical.type_of
+        content["all_view_inspection"] = Medical.inspection_view
+        content["all_type_inspection"] = Medical.inspection_type
         content["all_harmful"] = ""
-        content["title"] = f"Добавить медицинское направление"
+        content["title"] = "Добавить медицинское направление"
         return content
 
     def get_success_url(self):
         return reverse_lazy("hrdepartment_app:medical_list")
-        # return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
 
 
 @method_decorator(never_cache, name='dispatch')
 class MedicalExaminationUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """Представление редактирования существующего медицинского направления.
+
+    Позволяет актуализировать номер, статус, вид и тип осмотра, а также вредные факторы.
+    При сохранении автоматически запускается регенерация бланков ПМО/ПО.
+    """
+
     model = Medical
     form_class = MedicalExaminationUpdateForm
     template_name = "hrdepartment_app/medical_form_update.html"

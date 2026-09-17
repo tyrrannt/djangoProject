@@ -93,58 +93,83 @@
                         {% endif %}
 
                         <div class="row g-3">
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_number">Номер направления <span class="text-danger">*</span></label>
                                 <input type="text" id="id_number" class="form-control form-control-modern font-weight-bold"
                                        name="number" value="{{ object.number }}" required/>
+                                {% if form.number.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.number.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_view_inspection">Вид осмотра</label>
+                                {{ form.view_inspection }}
+                                {% if form.view_inspection.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.view_inspection.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_type_inspection">Тип осмотра</label>
+                                {{ form.type_inspection }}
+                                {% if form.type_inspection.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.type_inspection.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_working_status">Статус</label>
-                                <input type="text" id="id_working_status" class="form-control form-control-modern" disabled
-                                       name="working_status" value="{{ object.get_working_status_display }}"/>
+                                {{ form.working_status }}
+                                {% if form.working_status.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.working_status.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_person">Сотрудник</label>
                                 <div class="input-group">
                                     <input type="text" id="id_person" class="form-control form-control-modern" disabled
                                            name="person" value="{{ object.person }}"/>
-                                    <a href="{% url 'customers_app:staff_update' object.person.pk %}" class="btn btn-outline-secondary" title="Профиль сотрудника">
-                                        <i class="bx bx-user text-4"></i>
-                                    </a>
+                                    {% if object.person %}
+                                        <a href="{% url 'customers_app:staff_update' object.person.pk %}" class="btn btn-outline-secondary" title="Профиль сотрудника">
+                                            <i class="bx bx-user text-4"></i>
+                                        </a>
+                                    {% endif %}
                                 </div>
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_organisation">Медицинская организация</label>
                                 <div class="input-group">
                                     <input type="text" id="id_organisation" class="form-control form-control-modern" disabled
                                            name="organisation" value="{{ object.organisation }}"/>
-                                    <a href="{% url 'hrdepartment_app:medicalorg_update' object.organisation.pk %}" class="btn btn-outline-secondary" title="Карточка организации">
-                                        <i class="bx bx-building text-4"></i>
-                                    </a>
+                                    {% if object.organisation %}
+                                        <a href="{% url 'hrdepartment_app:medicalorg_update' object.organisation.pk %}" class="btn btn-outline-secondary" title="Карточка организации">
+                                            <i class="bx bx-building text-4"></i>
+                                        </a>
+                                    {% endif %}
                                 </div>
                             </div>
+
                             <div class="col-12">
                                 <label class="form-label" for="{{ form.harmful.id_for_label }}">Вредные условия труда</label>
                                 {{ form.harmful }}
+                                {% if form.harmful.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.harmful.errors.0 }}</div>
+                                {% endif %}
                             </div>
 
-                            {% if object.view_inspection == '1' and object.medical_direction %}
-                                <div class="col-12">
-                                    <label class="form-label">Файл ПМО</label>
-                                    <div>
-                                        <a href="{{ object.medical_direction.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-outline-primary btn-touch">
-                                            <i class="bx bx-file me-1"></i> Открыть документ ПМО
-                                        </a>
-                                    </div>
-                                </div>
-                            {% endif %}
-                            {% if object.view_inspection == '2' and object.medical_direction2 %}
-                                <div class="col-12">
-                                    <label class="form-label">Файл ПО</label>
-                                    <div>
-                                        <a href="{{ object.medical_direction2.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-outline-primary btn-touch">
-                                            <i class="bx bx-file me-1"></i> Открыть документ ПО
-                                        </a>
+                            {% if object.medical_direction or object.medical_direction2 %}
+                                <div class="col-12 mt-3 pt-3 border-top">
+                                    <label class="form-label d-block mb-2 font-weight-bold text-dark">Сформированные документы направления:</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% if object.medical_direction %}
+                                            <a href="{{ object.medical_direction.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-outline-primary btn-touch">
+                                                <i class="bx bx-file me-1"></i> Открыть документ ПМО (Медосмотр)
+                                            </a>
+                                        {% endif %}
+                                        {% if object.medical_direction2 %}
+                                            <a href="{{ object.medical_direction2.url }}?v={{ object.updated_at.timestamp }}" target="_blank" class="btn btn-outline-primary btn-touch">
+                                                <i class="bx bx-file me-1"></i> Открыть документ ПО (Психосвидетельствование)
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endif %}

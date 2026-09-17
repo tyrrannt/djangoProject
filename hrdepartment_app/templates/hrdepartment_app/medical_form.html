@@ -93,34 +93,71 @@
                         {% endif %}
 
                         <div class="row g-3">
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_number">Номер направления <span class="text-danger">*</span></label>
                                 <input type="text" id="id_number" class="form-control form-control-modern font-weight-bold"
-                                       name="number" value="{{ object.number|default:'' }}" required/>
+                                       name="number" value="{{ object.number|default:form.number.value|default:'' }}" required placeholder="Номер направления"/>
+                                {% if form.number.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.number.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label" for="id_working_status">Статус</label>
-                                <select class="form-control form-control-modern" name="working_status" data-plugin-selectTwo id="id_working_status">
-                                    {% for key, value in all_status %}
-                                        <option value="{{ key }}">{{ value }}</option>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_view_inspection">Вид осмотра</label>
+                                <select class="form-control form-control-modern" name="view_inspection" id="id_view_inspection">
+                                    {% for key, value in all_view_inspection %}
+                                        <option value="{{ key }}" {% if object.view_inspection == key or form.view_inspection.value == key %}selected{% endif %}>{{ value }}</option>
                                     {% endfor %}
                                 </select>
+                                {% if form.view_inspection.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.view_inspection.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_type_inspection">Тип осмотра</label>
+                                <select class="form-control form-control-modern" name="type_inspection" id="id_type_inspection">
+                                    {% for key, value in all_type_inspection %}
+                                        <option value="{{ key }}" {% if object.type_inspection == key or form.type_inspection.value == key %}selected{% endif %}>{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.type_inspection.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.type_inspection.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="id_working_status">Статус</label>
+                                <select class="form-control form-control-modern" name="working_status" id="id_working_status">
+                                    {% for key, value in all_status %}
+                                        <option value="{{ key }}" {% if object.working_status == key or form.working_status.value == key %}selected{% endif %}>{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.working_status.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.working_status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_person">Сотрудник <span class="text-danger">*</span></label>
                                 <select class="form-control form-control-modern" name="person" id="id_person" data-plugin-selectTwo required>
+                                    <option value="">Выберите сотрудника</option>
                                     {% for item in all_person.iterator %}
-                                        <option value="{{ item.pk }}" {% if object.person.pk == item.pk %}selected{% endif %}>{{ item }}</option>
+                                        <option value="{{ item.pk }}" {% if object.person.pk == item.pk or form.person.value|stringformat:"s" == item.pk|stringformat:"s" %}selected{% endif %}>{{ item }}</option>
                                     {% endfor %}
                                 </select>
+                                {% if form.person.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.person.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label" for="id_organisation">Медицинская организация <span class="text-danger">*</span></label>
                                 <select class="form-control form-control-modern" name="organisation" data-plugin-selectTwo id="id_organisation" required>
+                                    <option value="">Выберите организацию</option>
                                     {% for item in all_contragent.iterator %}
-                                        <option value="{{ item.pk }}" {% if object.organisation.pk == item.pk %}selected{% endif %}>{{ item }}</option>
+                                        <option value="{{ item.pk }}" {% if object.organisation.pk == item.pk or form.organisation.value|stringformat:"s" == item.pk|stringformat:"s" %}selected{% endif %}>{{ item }}</option>
                                     {% endfor %}
                                 </select>
+                                {% if form.organisation.errors %}
+                                    <div class="text-danger font-size-12 mt-1">{{ form.organisation.errors.0 }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

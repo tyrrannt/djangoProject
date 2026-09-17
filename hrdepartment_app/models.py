@@ -377,7 +377,10 @@ class MedicalOrganisation(models.Model):
         verbose_name="Уникальный номер", max_length=37, default=""
     )
     description = models.CharField(
-        verbose_name="Наименование", max_length=200, default=""
+        verbose_name="Наименование", max_length=250, default=""
+    )
+    alternative_name = models.CharField(
+        verbose_name="Наименование", max_length=300, default=""
     )
     ogrn = models.CharField(verbose_name="ОГРН", max_length=13, default="")
     address = models.CharField(verbose_name="Адрес", max_length=250, default="")
@@ -402,7 +405,22 @@ class MedicalOrganisation(models.Model):
             "address": self.address,
         }
 
-def Med(obj_model, filepath, filename_pmo, filename_po, request_user_id):
+def Med(obj_model, filepath: str, filename_pmo: str, filename_po: str, request_user_id: int) -> bool:
+    """Генерирует файлы направлений на медицинский осмотр (ПМО) и психиатрическое освидетельствование (ПО).
+
+    Заполняет docx-шаблоны данными сотрудника, организации, вредными факторами,
+    типом и видом осмотра, и сохраняет готовые документы в медиа-хранилище.
+
+    Args:
+        obj_model (Medical): Экземпляр модели медицинского направления.
+        filepath (str): Относительный путь к директории сохранения файлов.
+        filename_pmo (str): Имя файла для направления на медосмотр (DOCX).
+        filename_po (str): Имя файла для психиатрического освидетельствования (DOCX).
+        request_user_id (int): Идентификатор пользователя-инициатора для логирования.
+
+    Returns:
+        bool: True при успешной генерации и сохранении файлов, False при возникновении ошибки.
+    """
     # Преобразуем в словарь для быстрого и безопасного поиска (O(1))
     inspection_type = {
         "1": "Предварительный",
@@ -649,7 +667,13 @@ class Medical(models.Model):
     )
     updated_at = models.DateTimeField(auto_now=True)
 
-    def get_data(self):
+    def get_data(self) -> dict:
+        """Возвращает структурированные данные медицинского направления для AJAX/DataTables.
+
+        Returns:
+            dict: Словарь с форматированными полями направления (pk, number, date_entry,
+                person, organisation, working_status, view_inspection, type_inspection).
+        """
         return {
             "pk": self.pk,
             "number": self.number,
@@ -661,10 +685,20 @@ class Medical(models.Model):
             "type_inspection": self.get_type_inspection_display(),
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Строковое представление медицинского направления.
+
+        Returns:
+            str: Строка формата '<номер> <сотрудник>'.
+        """
         return f"{self.number} {self.person}"
 
-    def generate_med_files(self):
+    def generate_med_files(self) -> None:
+        """Генерирует файлы бланков ПМО и ПО на основе текущих атрибутов направления.
+
+        Формирует пути сохранения, вызывает функцию Med() и обновляет поля
+        medical_direction и medical_direction2.
+        """
         uid = f"{self.pk:07}"
         user_uid = f"{self.person.pk:07}"
         filename_pmo = f"MED-{uid}-{self.working_status}-{self.date_entry}-{uid}.docx"
@@ -677,7 +711,13 @@ class Medical(models.Model):
         self.medical_direction = f"hr/medical/{user_uid}/{filename_pmo}"
         self.medical_direction2 = f"hr/medical/{user_uid}/{filename_po}"
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
+        """Сохраняет запись медицинского направления и перегенерирует сопутствующие документы.
+
+        Args:
+            *args: Позиционные аргументы сохранения.
+            **kwargs: Именованные аргументы сохранения.
+        """
         is_new = self.pk is None
         super().save(*args, **kwargs)  # сначала сохраняем, чтобы был pk
         self.generate_med_files()
