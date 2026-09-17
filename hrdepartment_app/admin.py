@@ -240,9 +240,18 @@ class MedicalOrganisationAdmin(ModelAdmin):
 @admin.register(PlaceProductionActivity)
 class PlaceProductionActivityAdmin(ModelAdmin):
     """Администрирование мест производственной деятельности."""
-    list_display = ("name", "address", "short_name", "use_team_orders", "additional_payment", "email")
-    list_filter = ("use_team_orders",)
-    search_fields = ["name", "short_name"]
+    list_display = (
+        "name",
+        "short_name",
+        "address",
+        "email",
+        "additional_payment",
+        "use_team_orders",
+        "in_planning",
+        "ticket_control",
+    )
+    list_filter = ("use_team_orders", "in_planning", "ticket_control")
+    search_fields = ["name", "short_name", "address", "email"]
     compressed_fields = True
     warn_unsaved_form = True
 

@@ -780,18 +780,40 @@ class PlaceProductionActivity(models.Model):
     in_planning = models.BooleanField(verbose_name='Используется в планировании', default=False)
     ticket_control = models.BooleanField(verbose_name='Вести контроль билетов', default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Строковое представление места производственной деятельности.
+
+        Returns:
+            str: Полное наименование объекта.
+        """
         return str(self.name)
 
-    def get_data(self):
+    def get_data(self) -> dict:
+        """Возвращает сериализованные данные МПД для AJAX DataTables.
+
+        Returns:
+            dict: Словарь с полями МПД (pk, name, short_name, address, email,
+                additional_payment, use_team_orders, in_planning, ticket_control).
+        """
         return {
             "pk": self.pk,
             "name": self.name,
-            "address": self.address,
+            "short_name": self.short_name or "—",
+            "address": self.address or "—",
+            "email": self.email or "—",
+            "additional_payment": f"{self.additional_payment:.2f} ₽" if self.additional_payment else "0.00 ₽",
+            "use_team_orders": "Да" if self.use_team_orders else "Нет",
+            "in_planning": "Да" if self.in_planning else "Нет",
+            "ticket_control": "Да" if self.ticket_control else "Нет",
         }
 
     @staticmethod
-    def get_absolute_url():
+    def get_absolute_url() -> str:
+        """Возвращает канонический URL реестра мест производственной деятельности.
+
+        Returns:
+            str: URL-путь к списку МПД.
+        """
         return reverse("hrdepartment_app:place_list")
 
 

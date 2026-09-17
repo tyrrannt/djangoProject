@@ -1135,22 +1135,173 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
 
 
 class PlaceProductionActivityAddForm(forms.ModelForm):
+    """Форма добавления нового места производственной деятельности (МПД).
+
+    Включает все реквизиты объекта, контактный email и пароль корпоративной почты,
+    сумму дополнительной оплаты и системные переключатели интеграции
+    (приказы бригад, планирование, контроль билетов).
+    """
+
     class Meta:
         model = PlaceProductionActivity
-        fields = '__all__'
+        fields = (
+            "name",
+            "short_name",
+            "address",
+            "email",
+            "work_email_password",
+            "additional_payment",
+            "use_team_orders",
+            "in_planning",
+            "ticket_control",
+        )
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Введите полное наименование места деятельности",
+                }
+            ),
+            "short_name": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Краткое наименование (МПД ...)",
+                }
+            ),
+            "address": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Фактический адрес объекта",
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "mpd_name@barkol.ru",
+                }
+            ),
+            "work_email_password": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Пароль корпоративной почты",
+                    "autocomplete": "new-password",
+                }
+            ),
+            "additional_payment": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.01",
+                    "placeholder": "0.00",
+                }
+            ),
+            "use_team_orders": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+            "in_planning": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+            "ticket_control": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
+        """Инициализация формы с применением единых стилей к полям."""
         super().__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
 
 
 class PlaceProductionActivityUpdateForm(forms.ModelForm):
+    """Форма редактирования места производственной деятельности (МПД).
+
+    Позволяет изменять все реквизиты объекта, контактные данные корпоративной почты,
+    дополнительную оплату и флаги использования объекта в бизнес-процессах.
+    """
+
     class Meta:
         model = PlaceProductionActivity
-        fields = '__all__'
+        fields = (
+            "name",
+            "short_name",
+            "address",
+            "email",
+            "work_email_password",
+            "additional_payment",
+            "use_team_orders",
+            "in_planning",
+            "ticket_control",
+        )
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Введите полное наименование места деятельности",
+                }
+            ),
+            "short_name": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Краткое наименование (МПД ...)",
+                }
+            ),
+            "address": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Фактический адрес объекта",
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "mpd_name@barkol.ru",
+                }
+            ),
+            "work_email_password": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "placeholder": "Пароль корпоративной почты",
+                    "autocomplete": "new-password",
+                }
+            ),
+            "additional_payment": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.01",
+                    "placeholder": "0.00",
+                }
+            ),
+            "use_team_orders": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+            "in_planning": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+            "ticket_control": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
+        """Инициализация формы с применением единых стилей к полям."""
         super().__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])

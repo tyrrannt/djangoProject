@@ -25,34 +25,49 @@
         .btn-touch:hover {
             transform: translateY(-1px);
         }
-        .action-buttons {
-            position: static !important;
-            width: 100% !important;
-            background: transparent !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            z-index: auto !important;
-        }
         .form-label {
             font-weight: 600;
             color: #1e293b;
             font-size: 0.85rem;
             margin-bottom: 0.25rem;
         }
+        .section-header {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .form-switch .form-check-input {
+            cursor: pointer;
+            width: 2.75em;
+            height: 1.4em;
+        }
     </style>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
 {% endblock %}
 
 {% block custom_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+    <script>
+        function togglePasswordVisibility(fieldId, btn) {
+            var input = document.getElementById(fieldId);
+            var icon = btn.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.className = "bx bx-hide";
+            } else {
+                input.type = "password";
+                icon.className = "bx bx-show";
+            }
+        }
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -92,23 +107,133 @@
                             </div>
                         {% endif %}
 
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label" for="{{ form.name.id_for_label }}">Полное наименование <span class="text-danger">*</span></label>
-                                {{ form.name }}
-                            </div>
+                        <!-- Секция 1: Основные реквизиты -->
+                        <div class="section-header">
+                            <i class="bx bx-building-house text-primary"></i> Основные реквизиты
+                        </div>
+                        <div class="row g-3 mb-4">
                             <div class="col-12 col-md-8">
-                                <label class="form-label" for="{{ form.address.id_for_label }}">Адрес</label>
-                                {{ form.address }}
+                                <label class="form-label" for="{{ form.name.id_for_label }}">
+                                    {{ form.name.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label" for="{{ form.short_name.id_for_label }}">Краткое наименование</label>
+                                <label class="form-label" for="{{ form.short_name.id_for_label }}">
+                                    {{ form.short_name.label }}
+                                </label>
                                 {{ form.short_name }}
+                                {% if form.short_name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.short_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.address.id_for_label }}">
+                                    {{ form.address.label }}
+                                </label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.address.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Секция 2: Корпоративная почта и оплата -->
+                        <div class="section-header">
+                            <i class="bx bx-envelope text-primary"></i> Корпоративная почта и дополнительная оплата
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.email.id_for_label }}">
+                                    {{ form.email.label }}
+                                </label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.work_email_password.id_for_label }}">
+                                    {{ form.work_email_password.label }}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.work_email_password }}
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('{{ form.work_email_password.id_for_label }}', this)" title="Показать/скрыть пароль">
+                                        <i class="bx bx-hide"></i>
+                                    </button>
+                                </div>
+                                {% if form.work_email_password.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.work_email_password.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.additional_payment.id_for_label }}">
+                                    {{ form.additional_payment.label }} (₽)
+                                </label>
+                                {{ form.additional_payment }}
+                                {% if form.additional_payment.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.additional_payment.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Секция 3: Параметры и флаги использования -->
+                        <div class="section-header">
+                            <i class="bx bx-slider-alt text-primary"></i> Параметры и флаги использования
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <div class="card bg-light border-0 p-3 h-100 rounded-3">
+                                    <label class="form-label font-weight-bold mb-2">{{ form.use_team_orders.label }}</label>
+                                    <div class="form-check form-switch mt-1">
+                                        {{ form.use_team_orders }}
+                                        <label class="form-check-label ms-2" for="{{ form.use_team_orders.id_for_label }}">
+                                            Включать в состав приказов
+                                        </label>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Используется при формировании приказов по личному составу бригады</small>
+                                    {% if form.use_team_orders.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.use_team_orders.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="card bg-light border-0 p-3 h-100 rounded-3">
+                                    <label class="form-label font-weight-bold mb-2">{{ form.in_planning.label }}</label>
+                                    <div class="form-check form-switch mt-1">
+                                        {{ form.in_planning }}
+                                        <label class="form-check-label ms-2" for="{{ form.in_planning.id_for_label }}">
+                                            Доступно в планировании
+                                        </label>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Отображать объект в модулях суточного и стратегического планирования</small>
+                                    {% if form.in_planning.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.in_planning.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="card bg-light border-0 p-3 h-100 rounded-3">
+                                    <label class="form-label font-weight-bold mb-2">{{ form.ticket_control.label }}</label>
+                                    <div class="form-check form-switch mt-1">
+                                        {{ form.ticket_control }}
+                                        <label class="form-check-label ms-2" for="{{ form.ticket_control.id_for_label }}">
+                                            Вести учет билетов
+                                        </label>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Контролировать проездные билеты сотрудников при командировках</small>
+                                    {% if form.ticket_control.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.ticket_control.errors }}</div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Панель кнопок строго в футере карточки -->
+                    <!-- Панель кнопок в футере карточки -->
                     <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <div class="d-flex flex-wrap gap-2 align-items-center">

@@ -3,46 +3,80 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        #datatable-ecommerce-list tbody tr {
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        #datatable-ecommerce-list tbody tr:hover {
+            background-color: #f1f5f9 !important;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-
     <!-- start: page -->
     <div class="row">
         <div class="col">
+            <div class="card card-modern shadow-sm border-0">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-buildings text-primary me-2"></i>Места производственной деятельности (МПД)
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Реестр объектов, баз и филиалов компании</p>
+                    </div>
+                    <div>
+                        {% if perms.hrdepartment_app.add_placeproductionactivity %}
+                            <a href="{% url 'hrdepartment_app:place_add' %}"
+                               class="btn btn-primary btn-touch font-weight-semibold">
+                                <i class="bx bx-plus-circle me-1"></i> Добавить место деятельности
+                            </a>
+                        {% endif %}
+                    </div>
+                </header>
 
-            <div class="card card-modern">
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="datatables-header-footer-wrapper">
-                        <div class="datatable-header">
-                            <div class="row align-items-center mb-3">
-
-                                <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                    <a href="{% url 'hrdepartment_app:place_add' %}"
-                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                        <i class='bx bx-list-plus text-4 me-2'></i> Добавить место назначения </a>
-                                </div>
-
-                            </div>
-                        </div>
-                        <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                               style="min-width: 750px;">
-
+                        <table class="table table-ecommerce-simple table-striped table-hover mb-0"
+                               id="datatable-ecommerce-list"
+                               style="min-width: 900px; width: 100%;">
                             <thead>
                             <tr>
-                                <th width="20%">Наименование</th>
-                                <th width="80%">Адрес</th>
+                                <th>Наименование</th>
+                                <th>Краткое</th>
+                                <th>Адрес</th>
+                                <th>Корп. почта</th>
+                                <th>Доп. оплата</th>
+                                <th>Приказы</th>
+                                <th>Планирование</th>
+                                <th>Билеты</th>
                             </tr>
                             </thead>
-
                         </table>
-
-                        <hr class="solid mt-5 opacity-4">
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -54,11 +88,11 @@
         $(document).ready(function () {
             $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+                $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm fs-7" />');
             });
+
             var table = $('#datatable-ecommerce-list').DataTable({
                 "initComplete": function () {
-                    // Apply the search
                     this.api()
                         .columns()
                         .every(function () {
@@ -82,15 +116,61 @@
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
                     $(nRow).attr("href", id + '/update/');
-                    $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {
                         window.location = $(this).attr('href');
                         return false;
                     });
                 },
                 "columns": [
-                    {"data": "name"},
+                    {
+                        "data": "name",
+                        "render": function (data, type, row) {
+                            return '<strong>' + data + '</strong>';
+                        }
+                    },
+                    {
+                        "data": "short_name",
+                        "render": function (data, type, row) {
+                            return data !== '—' ? '<span class="badge bg-primary text-white">' + data + '</span>' : '<span class="text-muted">—</span>';
+                        }
+                    },
                     {"data": "address"},
+                    {
+                        "data": "email",
+                        "render": function (data, type, row) {
+                            return data !== '—' ? '<a href="mailto:' + data + '" class="text-primary" onclick="event.stopPropagation();">' + data + '</a>' : '<span class="text-muted">—</span>';
+                        }
+                    },
+                    {
+                        "data": "additional_payment",
+                        "render": function (data, type, row) {
+                            return '<span class="text-success font-weight-semibold">' + data + '</span>';
+                        }
+                    },
+                    {
+                        "data": "use_team_orders",
+                        "render": function (data, type, row) {
+                            return data === 'Да'
+                                ? '<span class="badge bg-success">Да</span>'
+                                : '<span class="badge bg-light text-muted border">Нет</span>';
+                        }
+                    },
+                    {
+                        "data": "in_planning",
+                        "render": function (data, type, row) {
+                            return data === 'Да'
+                                ? '<span class="badge bg-info text-dark">Да</span>'
+                                : '<span class="badge bg-light text-muted border">Нет</span>';
+                        }
+                    },
+                    {
+                        "data": "ticket_control",
+                        "render": function (data, type, row) {
+                            return data === 'Да'
+                                ? '<span class="badge bg-warning text-dark">Да</span>'
+                                : '<span class="badge bg-light text-muted border">Нет</span>';
+                        }
+                    },
                 ],
             });
         });
