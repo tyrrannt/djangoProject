@@ -20,6 +20,17 @@
             padding: 8px 20px;
             font-weight: 600;
         }
+
+        .section-header {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
     </style>
 {% endblock %}
 
@@ -29,27 +40,42 @@
         <div class="col-12 col-xl-10">
             <div class="card card-modern shadow-sm border-0 mb-4">
                 <header class="card-header bg-light">
-                    <h2 class="card-title text-primary mb-0">
-                        <i class="fas fa-briefcase me-2"></i>{{ object.name }}
-                    </h2>
-                    <p class="card-subtitle text-muted mb-0">Сведения о должности компании</p>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h2 class="card-title text-primary mb-0">
+                                <i class="fas fa-briefcase me-2"></i>{{ object.name }}
+                            </h2>
+                            <p class="card-subtitle text-muted mb-0">Сведения о должности компании</p>
+                        </div>
+                        <div>
+                            {% if object.excluded_standard_spelling %}
+                                <span class="badge bg-danger fs-6">
+                                    <i class="bx bx-x me-1"></i> Исключена из штатного расписания
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success fs-6">
+                                    <i class="bx bx-check me-1"></i> Актуальная штатная единица
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </header>
                 <div class="card-body p-4">
-                    <div class="row g-4">
-                        <div class="col-12 col-md-6">
-                            <label class="form-label text-muted small mb-1">Код должности</label>
+                    <!-- Секция 1: Основные реквизиты -->
+                    <div class="section-header">
+                        <i class="bx bx-id-card text-primary me-1"></i> Основные реквизиты должности
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-8">
+                            <label class="form-label text-muted small mb-1">Наименование должности</label>
+                            <div class="p-2 bg-light rounded fw-bold text-dark fs-6">{{ object.name }}</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-muted small mb-1">Номер по ОК (ОКПДТР)</label>
                             <div class="p-2 bg-light rounded fw-semibold text-dark">{{ object.code|default:"—" }}</div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-muted small mb-1">Уникальный номер (GUID)</label>
-                            <div class="p-2 bg-light rounded text-dark small font-monospace">{{ object.ref_key|default:"—" }}</div>
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label text-muted small mb-1">Наименование должности</label>
-                            <div class="p-2 bg-light rounded fw-bold text-dark">{{ object.name }}</div>
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label text-muted small mb-1">Принадлежность</label>
+                            <label class="form-label text-muted small mb-1">Принадлежность к составу</label>
                             <div class="p-2 bg-light rounded text-dark">{{ object.get_type_of_job_display|default:"—" }}</div>
                         </div>
                         <div class="col-12 col-md-6">
@@ -63,26 +89,69 @@
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-muted small mb-1">Дата ввода</label>
+                            <label class="form-label text-muted small mb-1">Дата ввода в штатное расписание</label>
                             <div class="p-2 bg-light rounded text-dark">{{ object.date_entry|date:'d.m.Y'|default:"—" }}</div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-muted small mb-1">Исключена из штатного расписания</label>
+                            <label class="form-label text-muted small mb-1">Дата исключения</label>
+                            <div class="p-2 bg-light rounded text-dark">{{ object.date_exclusions|date:'d.m.Y'|default:"—" }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Секция 2: Интеграция с 1С -->
+                    <div class="section-header">
+                        <i class="bx bx-transfer text-primary me-1"></i> Идентификаторы 1С (OData Sync)
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Уникальный номер (Ref_Key в 1С:ЗУП)</label>
+                            <div class="p-2 bg-light rounded text-dark small font-monospace">{{ object.ref_key|default:"—" }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Трудовая функция (ТрудоваяФункция_Key в 1С:ЗУП)</label>
+                            <div class="p-2 bg-light rounded text-dark small font-monospace">{{ object.employment_function|default:"—" }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Секция 3: Условия труда и группы доступа -->
+                    <div class="section-header">
+                        <i class="bx bx-shield-quarter text-primary me-1"></i> Условия труда и группы доступа
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Вредные условия труда (СОУТ)</label>
                             <div class="p-2 bg-light rounded">
-                                {% if object.excluded %}
-                                    <span class="badge bg-danger">Да (с {{ object.date_exclusions|date:'d.m.Y'|default:"—" }})</span>
-                                {% else %}
-                                    <span class="badge bg-success">Действует</span>
-                                {% endif %}
+                                {% for h in object.harmful.all %}
+                                    <span class="badge bg-warning text-dark me-1 mb-1">{{ h.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted small">Вредные факторы не установлены</span>
+                                {% endfor %}
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-muted small mb-1">Вредные условия труда</label>
-                            <div class="p-2 bg-light rounded text-dark">
-                                {% if object.harmful %}
-                                    <span class="badge bg-warning text-dark">{{ object.harmful.name }}</span>
+                            <label class="form-label text-muted small mb-1">Группы доступа должности</label>
+                            <div class="p-2 bg-light rounded">
+                                {% for g in object.group.all %}
+                                    <span class="badge bg-info text-dark me-1 mb-1">{{ g.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted small">Группы не назначены</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция 4: Права и согласование -->
+                    <div class="section-header">
+                        <i class="bx bx-slider-alt text-primary me-1"></i> Полномочия и согласование
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Право на согласование документов</label>
+                            <div class="p-2 bg-light rounded">
+                                {% if object.right_to_approval %}
+                                    <span class="badge bg-success"><i class="bx bx-check me-1"></i> Имеет право на согласование</span>
                                 {% else %}
-                                    <span class="text-muted">Отсутствуют</span>
+                                    <span class="badge bg-secondary"><i class="bx bx-x me-1"></i> Без права согласования</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -90,22 +159,17 @@
 
                     <hr class="my-4">
 
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div class="d-flex gap-2">
-                            {% if user.access_level.guide_access_edit %}
+                            {% if perms.customers_app.change_job or user.access_level.guide_access_edit %}
                                 <a href="{% url 'customers_app:jobs_update' object.pk %}" class="btn btn-primary btn-touch">
-                                    <i class="bx bx-pencil me-1"></i> Изменить
+                                    <i class="bx bx-pencil me-1"></i> Редактировать
                                 </a>
                             {% endif %}
                             <a href="{% url 'customers_app:jobs_list' %}" class="btn btn-outline-secondary btn-touch">
                                 <i class="bx bx-arrow-back me-1"></i> К списку
                             </a>
                         </div>
-                        {% if user.is_superuser %}
-                            <a href="#" class="btn btn-outline-danger btn-touch">
-                                <i class="bx bx-trash me-1"></i> Удалить
-                            </a>
-                        {% endif %}
                     </div>
                 </div>
             </div>

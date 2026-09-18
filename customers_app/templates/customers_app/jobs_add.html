@@ -5,6 +5,7 @@
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <style>
         :root {
             --touch-target-size: 44px;
@@ -18,11 +19,23 @@
             padding: 8px 20px;
             font-weight: 600;
         }
+
+        .section-header {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
     </style>
 {% endblock %}
 
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
 {% block title %}
@@ -57,34 +70,146 @@
                         </div>
                     {% endif %}
 
-                    <form action="#" method="post">
+                    <form action="{% url 'customers_app:jobs_add' %}" method="post">
                         {% csrf_token %}
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <label class="form-label font-weight-semibold" for="id_code">Номер по ОК</label>
-                                <input type="text" id="id_code" class="form-control" name="code" value="" placeholder="Код ОКПДТР..."/>
+
+                        <!-- Секция 1: Основные реквизиты -->
+                        <div class="section-header">
+                            <i class="bx bx-id-card text-primary me-1"></i> Основные реквизиты должности
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label font-weight-semibold" for="{{ form.name.id_for_label }}">
+                                    {{ form.name.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label font-weight-semibold" for="{{ form.code.id_for_label }}">
+                                    {{ form.code.label }}
+                                </label>
+                                {{ form.code }}
+                                {% if form.code.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.code.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label font-weight-semibold" for="id_name">Наименование <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="name" id="id_name" value="" required placeholder="Название должности..."/>
+                                <label class="form-label font-weight-semibold" for="{{ form.type_of_job.id_for_label }}">
+                                    {{ form.type_of_job.label }}
+                                </label>
+                                {{ form.type_of_job }}
+                                {% if form.type_of_job.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.type_of_job.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label font-weight-semibold" for="{{ form.right_to_approval.id_for_label }}">Право на согласование</label>
-                                <div>{{ form.right_to_approval }}</div>
+                                <label class="form-label font-weight-semibold" for="{{ form.division_affiliation.id_for_label }}">
+                                    {{ form.division_affiliation.label }}
+                                </label>
+                                {{ form.division_affiliation }}
+                                {% if form.division_affiliation.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.division_affiliation.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Секция 2: Интеграция с 1С -->
+                        <div class="section-header">
+                            <i class="bx bx-transfer text-primary me-1"></i> Идентификаторы 1С (OData Sync)
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-semibold" for="{{ form.ref_key.id_for_label }}">
+                                    {{ form.ref_key.label }}
+                                </label>
+                                {{ form.ref_key }}
+                                <small class="text-muted d-block mt-1">Уникальный GUID справочника «Должности» (Ref_Key в 1С:ЗУП)</small>
+                                {% if form.ref_key.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.ref_key.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label font-weight-semibold" for="{{ form.harmful.id_for_label }}">Вредные условия труда</label>
-                                <div>{{ form.harmful }}</div>
+                                <label class="form-label font-weight-semibold" for="{{ form.employment_function.id_for_label }}">
+                                    {{ form.employment_function.label }}
+                                </label>
+                                {{ form.employment_function }}
+                                <small class="text-muted d-block mt-1">GUID справочника «ТрудовыеФункции» (ТрудоваяФункция_Key в 1С:ЗУП)</small>
+                                {% if form.employment_function.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.employment_function.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Секция 3: Условия труда и группы -->
+                        <div class="section-header">
+                            <i class="bx bx-shield-quarter text-primary me-1"></i> Условия труда и группы доступа
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label font-weight-semibold" for="{{ form.harmful.id_for_label }}">
+                                    {{ form.harmful.label }}
+                                </label>
+                                {{ form.harmful }}
+                                <small class="text-muted d-block mt-1">Факторы вредности по результатам СОУТ</small>
+                                {% if form.harmful.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.harmful.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label font-weight-semibold" for="{{ form.group.id_for_label }}">Группа доступа</label>
-                                <div>{{ form.group }}</div>
+                                <label class="form-label font-weight-semibold" for="{{ form.group.id_for_label }}">
+                                    {{ form.group.label }}
+                                </label>
+                                {{ form.group }}
+                                <small class="text-muted d-block mt-1">Группы доступа сотрудников данной должности</small>
+                                {% if form.group.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.group.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Секция 4: Настройки и параметры -->
+                        <div class="section-header">
+                            <i class="bx bx-slider-alt text-primary me-1"></i> Дополнительные параметры
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <div class="card bg-light border-0 p-3 rounded-3 h-100">
+                                    <label class="form-label font-weight-bold mb-2">{{ form.right_to_approval.label }}</label>
+                                    <div class="form-check form-switch mt-1">
+                                        {{ form.right_to_approval }}
+                                        <label class="form-check-label ms-2" for="{{ form.right_to_approval.id_for_label }}">
+                                            Право на согласование документов
+                                        </label>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Позволяет сотрудникам должности участвовать в маршрутах согласования служебных записок и приказов</small>
+                                    {% if form.right_to_approval.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.right_to_approval.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="card bg-light border-0 p-3 rounded-3 h-100">
+                                    <label class="form-label font-weight-bold mb-2">{{ form.excluded_standard_spelling.label }}</label>
+                                    <div class="form-check form-switch mt-1">
+                                        {{ form.excluded_standard_spelling }}
+                                        <label class="form-check-label ms-2" for="{{ form.excluded_standard_spelling.id_for_label }}">
+                                            Исключена из штатного расписания
+                                        </label>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Отметьте, если должность выведена из актуального штатного расписания</small>
+                                    {% if form.excluded_standard_spelling.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.excluded_standard_spelling.errors }}</div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
 
                         <hr class="my-4">
 
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <button type="submit" class="btn btn-primary btn-touch">
                                 <i class="bx bx-save me-1"></i> Сохранить
                             </button>

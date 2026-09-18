@@ -322,51 +322,269 @@ class DivisionsUpdateForm(forms.ModelForm):
 
 
 class JobsAddForm(forms.ModelForm):
-    group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all())
-    group.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    """Форма добавления новой должности."""
+
+    name = forms.CharField(
+        label="Наименование должности",
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern",
+                "placeholder": "Введите наименование должности...",
+            }
+        ),
+    )
+    code = forms.CharField(
+        label="Номер по ОК (ОКПДТР)",
+        max_length=5,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern",
+                "placeholder": "Код ОКПДТР (напр. 26541)",
+            }
+        ),
+    )
+    ref_key = forms.CharField(
+        label="Уникальный номер (1С GUID)",
+        max_length=37,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern font-monospace",
+                "placeholder": "00000000-0000-0000-0000-000000000000",
+            }
+        ),
+    )
+    employment_function = forms.CharField(
+        label="Трудовая функция (1С GUID)",
+        max_length=37,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern font-monospace",
+                "placeholder": "00000000-0000-0000-0000-000000000000",
+            }
+        ),
+    )
+    type_of_job = forms.ChoiceField(
+        label="Принадлежность к составу",
+        choices=Job.job_type,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "form-control form-control-modern",
+            }
+        ),
+    )
+    division_affiliation = forms.ModelChoiceField(
+        label="Подразделение",
+        queryset=Affiliation.objects.all(),
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "form-control form-control-modern",
+                "data-plugin-selectTwo": True,
+            }
+        ),
+    )
+    group = forms.ModelMultipleChoiceField(
+        label="Группы должности",
+        queryset=Groups.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(
+            attrs={
+                "class": "form-control form-control-modern",
+                "data-plugin-selectTwo": True,
+            }
+        ),
     )
     harmful = forms.ModelMultipleChoiceField(
-        queryset=HarmfulWorkingConditions.objects.all(), required=False
+        label="Вредные условия труда",
+        queryset=HarmfulWorkingConditions.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(
+            attrs={
+                "class": "form-control form-control-modern",
+                "data-plugin-selectTwo": True,
+            }
+        ),
     )
-    harmful.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    right_to_approval = forms.BooleanField(
+        label="Имеет право на согласование",
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "role": "switch",
+            }
+        ),
+    )
+    excluded_standard_spelling = forms.BooleanField(
+        label="Исключена из штатного расписания",
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "role": "switch",
+            }
+        ),
     )
 
     class Meta:
         model = Job
         fields = (
-            "code",
             "name",
-            "harmful",
+            "code",
             "ref_key",
-            "excluded_standard_spelling",
-            "right_to_approval",
+            "employment_function",
+            "type_of_job",
+            "division_affiliation",
+            "harmful",
             "group",
+            "right_to_approval",
+            "excluded_standard_spelling",
         )
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы с настройкой виджетов."""
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class JobsUpdateForm(forms.ModelForm):
-    division_affiliation = forms.ModelChoiceField(queryset=Affiliation.objects.all())
+    """Форма редактирования существующей должности."""
+
+    name = forms.CharField(
+        label="Наименование должности",
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern",
+                "placeholder": "Введите наименование должности...",
+            }
+        ),
+    )
+    code = forms.CharField(
+        label="Номер по ОК (ОКПДТР)",
+        max_length=5,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern",
+                "placeholder": "Код ОКПДТР (напр. 26541)",
+            }
+        ),
+    )
+    ref_key = forms.CharField(
+        label="Уникальный номер (1С GUID)",
+        max_length=37,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern font-monospace",
+                "placeholder": "00000000-0000-0000-0000-000000000000",
+            }
+        ),
+    )
+    employment_function = forms.CharField(
+        label="Трудовая функция (1С GUID)",
+        max_length=37,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-modern font-monospace",
+                "placeholder": "00000000-0000-0000-0000-000000000000",
+            }
+        ),
+    )
+    type_of_job = forms.ChoiceField(
+        label="Принадлежность к составу",
+        choices=Job.job_type,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "form-control form-control-modern",
+            }
+        ),
+    )
+    division_affiliation = forms.ModelChoiceField(
+        label="Подразделение",
+        queryset=Affiliation.objects.all(),
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "form-control form-control-modern",
+                "data-plugin-selectTwo": True,
+            }
+        ),
+    )
     group = forms.ModelMultipleChoiceField(
-        queryset=Groups.objects.all(), required=False
+        label="Группы должности",
+        queryset=Groups.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(
+            attrs={
+                "class": "form-control form-control-modern",
+                "data-plugin-selectTwo": True,
+            }
+        ),
     )
     harmful = forms.ModelMultipleChoiceField(
-        queryset=HarmfulWorkingConditions.objects.all(), required=False
+        label="Вредные условия труда",
+        queryset=HarmfulWorkingConditions.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(
+            attrs={
+                "class": "form-control form-control-modern",
+                "data-plugin-selectTwo": True,
+            }
+        ),
+    )
+    right_to_approval = forms.BooleanField(
+        label="Имеет право на согласование",
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "role": "switch",
+            }
+        ),
+    )
+    excluded_standard_spelling = forms.BooleanField(
+        label="Исключена из штатного расписания",
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "role": "switch",
+            }
+        ),
     )
 
     class Meta:
         model = Job
-        fields = "__all__"
+        fields = (
+            "name",
+            "code",
+            "ref_key",
+            "employment_function",
+            "type_of_job",
+            "division_affiliation",
+            "harmful",
+            "group",
+            "right_to_approval",
+            "excluded_standard_spelling",
+        )
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
-        super(JobsUpdateForm, self).__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        """Инициализация формы с настройкой виджетов."""
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class StaffUpdateForm(forms.ModelForm):

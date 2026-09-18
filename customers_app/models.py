@@ -211,10 +211,10 @@ class Job(models.Model):
         verbose_name_plural = "Должности"
 
     ref_key = models.CharField(
-        verbose_name="Уникальный номер", max_length=37, default=""
+        verbose_name="Уникальный номер", max_length=37, default="", blank=True
     )
     code = models.CharField(
-        verbose_name="Код должности", max_length=5, help_text="", default=""
+        verbose_name="Код должности", max_length=5, help_text="", default="", blank=True
     )
     name = models.CharField(verbose_name="Должность", max_length=200, help_text="")
     type_of_job = models.CharField(
@@ -241,7 +241,7 @@ class Job(models.Model):
         verbose_name="Исключена из штатного расписания", default=True
     )
     employment_function = models.CharField(
-        verbose_name="Трудовая функция", max_length=37, default=""
+        verbose_name="Трудовая функция", max_length=37, default="", blank=True
     )
     harmful = models.ManyToManyField(
         HarmfulWorkingConditions, verbose_name="Вредные условия труда", blank=True
@@ -249,7 +249,9 @@ class Job(models.Model):
     right_to_approval = models.BooleanField(
         verbose_name="Имеет право на согласование", default=False
     )
-    group = models.ManyToManyField(Groups, verbose_name="Группы должности")
+    group = models.ManyToManyField(
+        Groups, verbose_name="Группы должности", blank=True
+    )
 
     def __str__(self):
         return f"{self.name}"
