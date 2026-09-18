@@ -363,6 +363,105 @@
                 }
             });
         })();
+
+        // ========================================================
+        // ДИАГНОСТИКА / ТЕСТЕР ICAO СВОДОК METAR/TAF
+        // ========================================================
+        window.openIcaoTesterModal = function(defaultCode) {
+            if (defaultCode) {
+                $('#icaoTesterInput').val(defaultCode);
+            }
+            $('#icaoTesterResults').hide();
+            $('#icaoTesterOverlay').show();
+            $('#icaoTesterModal').show();
+            $('#icaoTesterInput').focus();
+            if (defaultCode) {
+                window.runIcaoTest();
+            }
+        };
+
+        window.closeIcaoTesterModal = function() {
+            $('#icaoTesterOverlay').hide();
+            $('#icaoTesterModal').hide();
+        };
+
+        window.runIcaoTest = function() {
+            var rawCode = $('#icaoTesterInput').val().trim();
+            if (!rawCode) {
+                alert('Пожалуйста, введите 4-буквенный ICAO код (например, URWW, USRR, UNNT)');
+                $('#icaoTesterInput').focus();
+                return;
+            }
+
+            var $btn = $('#icaoTesterRunBtn');
+            $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Запрос к NOAA...');
+            $('#icaoTesterResults').show();
+            $('#icaoTesterStatusBanner').removeClass('alert-success alert-warning alert-danger alert-info')
+                .addClass('alert-info').html('<i class="bx bx-loader-alt bx-spin me-1"></i> Выполняется прямой HTTP-запрос к NOAA Aviation Weather Center...');
+            $('#icaoTesterMetricsRow').hide();
+            $('#diagRawMetar').text('Загрузка...');
+            $('#diagRawTaf').text('Загрузка...');
+            $('#diagConclusionMsg').text('');
+
+            $.ajax({
+                url: '{% url "flight_planning:diagnose_icao_api" %}',
+                type: 'GET',
+                data: { icao: rawCode },
+                success: function(resp) {
+                    $btn.prop('disabled', false).html('<i class="bx bx-search-alt me-1"></i> Проверить в NOAA');
+                    
+                    var statusClass = 'alert-info';
+                    var statusIcon = 'bx-info-circle';
+                    if (resp.diagnostic_status === 'ok') {
+                        statusClass = 'alert-success';
+                        statusIcon = 'bx-check-circle';
+                    } else if (resp.diagnostic_status === 'partial') {
+                        statusClass = 'alert-warning';
+                        statusIcon = 'bx-error';
+                    } else {
+                        statusClass = 'alert-danger';
+                        statusIcon = 'bx-x-circle';
+                    }
+
+                    $('#icaoTesterStatusBanner').removeClass('alert-success alert-warning alert-danger alert-info')
+                        .addClass(statusClass)
+                        .html('<i class="bx ' + statusIcon + ' me-1 fs-5 align-middle"></i> <strong>' + (resp.normalized_icao || rawCode) + '</strong>: ' + (resp.message || ''));
+
+                    $('#diagRawMetar').text(resp.metar_raw || 'Сводка METAR не получена (станция не публикует данные)');
+                    $('#diagRawTaf').text(resp.taf_raw || 'Прогноз TAF не получен (не опубликован метеоцентром)');
+
+                    if (resp.parsed_metar) {
+                        var pm = resp.parsed_metar;
+                        $('#diagFlightCat').html('<span class="badge bg-primary">' + (pm.flight_category || '—') + '</span>');
+                        
+                        var windStr = (pm.wind_direction || 0) + '° ' + (pm.wind_speed || 0) + ' м/с';
+                        if (pm.wind_gust) windStr += ' (G' + pm.wind_gust + ')';
+                        $('#diagWind').text(windStr);
+
+                        var visStr = pm.visibility_meters ? (pm.visibility_meters >= 10000 ? '>10 км' : (pm.visibility_meters + ' м')) : '—';
+                        if (pm.cavok) visStr = 'CAVOK';
+                        var cloudStr = pm.cloud_base_meters ? (' / НГО ' + pm.cloud_base_meters + 'м') : '';
+                        $('#diagVis').text(visStr + cloudStr);
+
+                        var tempStr = pm.temperature !== null && pm.temperature !== undefined ? ((pm.temperature > 0 ? '+' : '') + pm.temperature + '°C') : '—';
+                        var pressStr = pm.pressure_mmhg ? (' / ' + pm.pressure_mmhg.toFixed(1) + ' мм') : '';
+                        $('#diagTempPress').text(tempStr + pressStr);
+
+                        $('#icaoTesterMetricsRow').show();
+                    } else {
+                        $('#icaoTesterMetricsRow').hide();
+                    }
+
+                    $('#diagConclusionMsg').html('<strong>Итог:</strong> Нормализованный код: <code>' + resp.normalized_icao + '</code> | METAR: ' + (resp.has_metar ? '<span class="text-success fw-bold">✓ Получен</span>' : '<span class="text-danger fw-bold">✗ Нет</span>') + ' | TAF: ' + (resp.has_taf ? '<span class="text-success fw-bold">✓ Получен</span>' : '<span class="text-muted">✗ Нет</span>'));
+                },
+                error: function() {
+                    $btn.prop('disabled', false).html('<i class="bx bx-search-alt me-1"></i> Проверить в NOAA');
+                    $('#icaoTesterStatusBanner').removeClass('alert-success alert-warning alert-danger alert-info')
+                        .addClass('alert-danger')
+                        .html('<i class="bx bx-error-circle me-1"></i> Ошибка сетевого соединения при отправке запроса к серверу');
+                }
+            });
+        };
     </script>
 {% endblock %}
 
@@ -443,6 +542,11 @@
                                 <i class="bx bx-calendar-event me-1"></i> Сегодня
                             </a>
                         {% endif %}
+
+                        <!-- Кнопка тестера ICAO -->
+                        <button type="button" class="btn btn-outline-info btn-touch" onclick="openIcaoTesterModal('{{ mpd.icao_code|default:'' }}')" title="Проверить ответ метеошлюза NOAA для любого ICAO кода">
+                            <i class="bx bx-vial me-1"></i> <span class="d-none d-sm-inline">Тестер ICAO</span>
+                        </button>
 
                         <!-- Кнопка обновления погоды -->
                         <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}"
@@ -823,4 +927,74 @@
             </div>
         </div>
     </section>
+
+    <!-- Модальное окно тестера / диагностики ICAO кодов -->
+    <div class="modal-overlay" id="icaoTesterOverlay" onclick="closeIcaoTesterModal()" style="display: none; z-index: 10090;"></div>
+    <div class="modal-window large-modal" id="icaoTesterModal" style="display: none; z-index: 10100; max-width: 760px; width: 95%;">
+        <div class="modal-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span class="font-weight-bold"><i class="bx bx-vial text-warning me-2"></i> Диагностика метеостанции (Проверка ICAO)</span>
+            <button type="button" class="btn-close btn-close-white" onclick="closeIcaoTesterModal()" style="cursor: pointer;"></button>
+        </div>
+        <div class="modal-body p-3">
+            <p class="text-muted small mb-3">
+                Введите 4-буквенный международный код ICAO (или русский индекс, напр. <code>URWW</code>, <code>USRR</code>, <code>UNNT</code>, <code>УРВВ</code>, <code>USTR</code>) для прямого онлайн-запроса к международному метеошлюзу NOAA Aviation Weather Center.
+            </p>
+            <div class="input-group mb-3">
+                <span class="input-group-text font-monospace fw-bold bg-light">ICAO:</span>
+                <input type="text" id="icaoTesterInput" class="form-control font-monospace text-uppercase fw-bold"
+                       placeholder="например: URWW или УРВВ" maxlength="10" value="{{ mpd.icao_code|default:'' }}"
+                       onkeydown="if(event.key === 'Enter') runIcaoTest();">
+                <button type="button" class="btn btn-primary fw-bold" id="icaoTesterRunBtn" onclick="runIcaoTest()">
+                    <i class="bx bx-search-alt me-1"></i> Проверить в NOAA
+                </button>
+            </div>
+
+            <!-- Контейнер вывода результатов диагностики -->
+            <div id="icaoTesterResults" style="display: none;">
+                <div id="icaoTesterStatusBanner" class="alert mb-3 py-2"></div>
+
+                <div class="row g-2 mb-3" id="icaoTesterMetricsRow" style="display: none;">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Условия</small>
+                            <span class="fw-bold fs-6" id="diagFlightCat">—</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Ветер</small>
+                            <span class="fw-bold fs-6" id="diagWind">—</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Видимость / НГО</small>
+                            <span class="fw-bold fs-6" id="diagVis">—</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Темп / Давление</small>
+                            <span class="fw-bold fs-6" id="diagTempPress">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label font-weight-bold small text-uppercase mb-1"><i class="bx bx-terminal me-1 text-primary"></i> Исходная сводка METAR:</label>
+                    <div class="p-2 border rounded bg-dark text-info font-monospace small" id="diagRawMetar" style="word-break: break-all;">—</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label font-weight-bold small text-uppercase mb-1"><i class="bx bx-notepad me-1 text-success"></i> Исходный прогноз TAF:</label>
+                    <div class="p-2 border rounded bg-dark text-warning font-monospace small" id="diagRawTaf" style="word-break: break-all; max-height: 120px; overflow-y: auto;">—</div>
+                </div>
+
+                <div class="alert alert-info py-2 px-3 small mb-0" id="diagConclusionMsg"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeIcaoTesterModal()">Закрыть</button>
+        </div>
+    </div>
 {% endblock %}

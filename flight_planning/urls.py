@@ -61,6 +61,7 @@ urlpatterns = [
     path('weather/widget/<int:mpd_id>/', views.mpd_weather_widget_view, name='mpd_weather_widget'),
     path('weather/modal/<int:mpd_id>/', views.mpd_weather_modal_view, name='mpd_weather_modal'),
     path('weather/api/timeline/<int:mpd_id>/', views.mpd_weather_timeline_api, name='mpd_weather_timeline_api'),
+    path('weather/api/diagnose-icao/', views.diagnose_icao_api, name='diagnose_icao_api'),
 
     # Служебный раздел настроек и импорта данных
     path('settings/', views.settings_view, name='settings'),

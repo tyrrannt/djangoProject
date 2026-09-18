@@ -30,6 +30,49 @@ WEATHER_INTENSITY = {
     "VC": "В окрестностях",
 }
 
+CYRILLIC_ICAO_MAP = {
+    'А': 'A', 'Б': 'B', 'В': 'W', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ж': 'V',
+    'З': 'Z', 'И': 'I', 'Й': 'J', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N',
+    'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F',
+    'Х': 'H', 'Ц': 'C', 'Ч': 'CH', 'Ш': 'SH', 'Щ': 'SCH', 'Ы': 'Y', 'Э': 'E',
+    'Ю': 'YU', 'Я': 'Q', 'Ь': 'X', 'Ъ': 'X',
+}
+
+
+def normalize_icao_code(code_str: Optional[str]) -> str:
+    """Нормализует 4-буквенный ICAO код метеостанции или аэродрома.
+
+    Очищает пробелы, переводит в верхний регистр и транслитерирует кириллические
+    символы по стандарту ИКАО/АФТН РФ (например: 'УРВВ' -> 'URWW', 'УСРР' -> 'USRR', 'УННТ' -> 'UNNT').
+
+    Args:
+        code_str (Optional[str]): Исходный код или строка ввода.
+
+    Returns:
+        str: 4-буквенный код латиницей в верхнем регистре (или пустая строка/исходная при невозможности).
+    """
+    if not code_str:
+        return ""
+    code = code_str.strip().upper()
+    if not code:
+        return ""
+
+    if re.match(r"^[A-Z0-9]{4}$", code):
+        return code
+
+    result = []
+    for ch in code:
+        if ch in CYRILLIC_ICAO_MAP:
+            result.append(CYRILLIC_ICAO_MAP[ch])
+        else:
+            result.append(ch)
+
+    translit_code = "".join(result)
+    if len(translit_code) == 4 and re.match(r"^[A-Z0-9]{4}$", translit_code):
+        return translit_code
+
+    return code
+
 WEATHER_DESCRIPTORS = {
     "MI": "тонкий",
     "PR": "частичный",
@@ -519,10 +562,17 @@ class AviationWeatherService:
         if not icao_codes:
             return {}
 
-        clean_codes = [c.strip().upper() for c in icao_codes if len(c.strip()) == 4]
+        clean_codes_map = {}
+        for c in icao_codes:
+            norm = normalize_icao_code(c)
+            if norm and len(norm) == 4:
+                clean_codes_map[norm] = norm
+
+        clean_codes = list(clean_codes_map.keys())
         if not clean_codes:
             return {}
 
+        clean_codes_set = set(clean_codes)
         base_url = cls.NOAA_METAR_URL if data_type == "metar" else cls.NOAA_TAF_URL
         query_params = urllib.parse.urlencode({
             "ids": ",".join(clean_codes),
@@ -551,13 +601,13 @@ class AviationWeatherService:
                     if not line_clean:
                         continue
 
-                    # Проверяем начало новой сводки
-                    match = re.search(r"\b([A-Z]{4})\b", line_clean)
+                    # Проверяем, содержится ли целевой код ИКАО среди отдельных слов строки
+                    tokens = [re.sub(r"[^A-Z0-9]", "", tok) for tok in line_clean.split()]
                     found_code = None
-                    if match:
-                        code_candidate = match.group(1)
-                        if code_candidate in clean_codes:
-                            found_code = code_candidate
+                    for tok in tokens:
+                        if tok in clean_codes_set:
+                            found_code = tok
+                            break
 
                     if found_code:
                         if current_code and current_lines:
@@ -583,6 +633,78 @@ class AviationWeatherService:
             )
 
         return result
+
+    @classmethod
+    def diagnose_icao(cls, icao_input: str) -> Dict[str, Any]:
+        """Выполняет полную диагностику доступности сводок METAR/TAF для заданного кода.
+
+        Args:
+            icao_input (str): Введенная строка ICAO (латиница или кириллица, например 'URWW' или 'УРВВ').
+
+        Returns:
+            Dict[str, Any]: Диагностический отчет с сырыми данными, расшифровкой и рекомендациями.
+        """
+        raw_input = (icao_input or "").strip()
+        normalized = normalize_icao_code(raw_input)
+        is_valid_format = bool(normalized and len(normalized) == 4 and normalized.isalnum())
+
+        if not is_valid_format:
+            return {
+                "raw_input": raw_input,
+                "normalized_icao": normalized,
+                "is_valid_format": False,
+                "has_metar": False,
+                "has_taf": False,
+                "metar_raw": None,
+                "taf_raw": None,
+                "parsed_metar": None,
+                "diagnostic_status": "invalid_format",
+                "message": f"Некорректный формат кода '{raw_input}'. Код ICAO должен состоять ровно из 4 букв (например, URWW, USRR, UNNT, USTR).",
+            }
+
+        metar_dict = cls.fetch_noaa_raw([normalized], data_type="metar", timeout=8)
+        taf_dict = cls.fetch_noaa_raw([normalized], data_type="taf", timeout=8)
+
+        metar_raw = metar_dict.get(normalized)
+        taf_raw = taf_dict.get(normalized)
+
+        parsed_metar = None
+        if metar_raw:
+            try:
+                parsed_metar = MetarParser.parse_metar(metar_raw)
+            except Exception as exc:
+                logger.warning("Ошибка парсинга тестового METAR %s: %s", normalized, exc)
+
+        if metar_raw and taf_raw:
+            status = "ok"
+            msg = f"Метеостанция {normalized} активна: получены актуальная сводка METAR и прогноз TAF."
+        elif metar_raw:
+            status = "partial"
+            msg = f"Для {normalized} получена фактическая сводка METAR. Прогноз TAF в данный момент отсутствует."
+        elif taf_raw:
+            status = "partial"
+            msg = f"Для {normalized} получен прогноз TAF. Фактическая сводка METAR в данный момент отсутствует."
+        else:
+            status = "no_data"
+            msg = (
+                f"Шлюз NOAA не вернул данных по коду {normalized}. "
+                f"Возможные причины: метеостанция не публикует сводки в международный шлюз AFTN/NOAA, "
+                f"либо объект является ведомственной вертолетной площадкой / посадочной полосой. "
+                f"Рекомендация: укажите код ближайшего узлового аэродрома с действующей метеостанцией (например, для объектов ХМАО — USRR (Сургут), USNN (Нижневартовск), USTR (Тюмень))."
+            )
+
+        return {
+            "raw_input": raw_input,
+            "normalized_icao": normalized,
+            "is_valid_format": True,
+            "has_metar": bool(metar_raw),
+            "has_taf": bool(taf_raw),
+            "metar_raw": metar_raw,
+            "taf_raw": taf_raw,
+            "parsed_metar": parsed_metar,
+            "diagnostic_status": status,
+            "message": msg,
+        }
 
     @classmethod
     def sync_mpd_weather(

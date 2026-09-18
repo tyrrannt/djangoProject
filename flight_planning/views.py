@@ -3946,6 +3946,36 @@ def mpd_weather_widget_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
     return render(request, 'flight_planning/weather/mpd_weather_widget_partial.html', context)
 
 
+@login_required
+@require_http_methods(["GET", "POST"])
+def diagnose_icao_api(request: HttpRequest) -> JsonResponse:
+    """Диагностический API для проверки доступности данных METAR/TAF по любому ICAO коду.
+
+    Позволяет проверить, публикует ли метеостанция сводки в открытый международный шлюз NOAA,
+    получить исходный текст телеграмм и расшифрованные метеорологические параметры.
+
+    Args:
+        request (HttpRequest): HTTP GET/POST запрос с параметром 'icao' (в query string, form data или JSON body).
+
+    Returns:
+        JsonResponse: Результаты запроса к метеошлюзу NOAA, сырые строки и расшифровка параметров.
+    """
+    from .weather_services import AviationWeatherService
+
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body.decode('utf-8'))
+            icao_input = body.get('icao', '')
+        except Exception:
+            icao_input = request.POST.get('icao', '')
+    else:
+        icao_input = request.GET.get('icao', '')
+
+    result = AviationWeatherService.diagnose_icao(icao_input)
+    return JsonResponse(result)
+
+
+
 
 
 

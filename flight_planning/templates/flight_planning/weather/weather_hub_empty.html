@@ -55,6 +55,37 @@
                     </table>
                 </div>
 
+                <!-- Блок онлайн проверки ICAO кода -->
+                <div class="card bg-light border text-start p-4 mb-4 rounded-3">
+                    <h5 class="font-weight-bold text-dark mb-2">
+                        <i class="bx bx-vial text-primary me-2"></i>Онлайн проверка и диагностика ICAO кода
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        Проверьте, возвращает ли международный метеошлюз NOAA Aviation Weather Center сводки METAR/TAF по интересующему аэродрому:
+                    </p>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text font-monospace fw-bold bg-white">Код ICAO:</span>
+                        <input type="text" id="emptyIcaoInput" class="form-control font-monospace text-uppercase fw-bold"
+                               placeholder="например: URWW, USRR, UNNT, УРВВ" maxlength="10"
+                               onkeydown="if(event.key === 'Enter') runEmptyIcaoTest();">
+                        <button type="button" class="btn btn-primary fw-bold" id="emptyIcaoRunBtn" onclick="runEmptyIcaoTest()">
+                            <i class="bx bx-search-alt me-1"></i> Проверить в NOAA
+                        </button>
+                    </div>
+
+                    <div id="emptyIcaoResults" style="display: none;">
+                        <div id="emptyIcaoStatusBanner" class="alert mb-3 py-2"></div>
+                        <div class="mb-2">
+                            <label class="form-label font-weight-bold small text-uppercase mb-1"><i class="bx bx-terminal me-1 text-primary"></i> Исходная сводка METAR:</label>
+                            <div class="p-2 border rounded bg-dark text-info font-monospace small" id="emptyDiagRawMetar" style="word-break: break-all;">—</div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label font-weight-bold small text-uppercase mb-1"><i class="bx bx-notepad me-1 text-success"></i> Исходный прогноз TAF:</label>
+                            <div class="p-2 border rounded bg-dark text-warning font-monospace small" id="emptyDiagRawTaf" style="word-break: break-all;">—</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <a href="{% url 'flight_planning:planning_table' %}" class="btn btn-outline-secondary">
                         <i class="bx bx-arrow-back me-1"></i> К шахматке планирования
@@ -63,4 +94,49 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        function runEmptyIcaoTest() {
+            var rawCode = $('#emptyIcaoInput').val().trim();
+            if (!rawCode) {
+                alert('Пожалуйста, введите 4-буквенный ICAO код (например, URWW, USRR, UNNT)');
+                $('#emptyIcaoInput').focus();
+                return;
+            }
+
+            var $btn = $('#emptyIcaoRunBtn');
+            $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Запрос...');
+            $('#emptyIcaoResults').show();
+            $('#emptyIcaoStatusBanner').removeClass('alert-success alert-warning alert-danger alert-info')
+                .addClass('alert-info').html('<i class="bx bx-loader-alt bx-spin me-1"></i> Выполняется прямой HTTP-запрос к NOAA Aviation Weather Center...');
+            $('#emptyDiagRawMetar').text('Загрузка...');
+            $('#emptyDiagRawTaf').text('Загрузка...');
+
+            $.ajax({
+                url: '{% url "flight_planning:diagnose_icao_api" %}',
+                type: 'GET',
+                data: { icao: rawCode },
+                success: function(resp) {
+                    $btn.prop('disabled', false).html('<i class="bx bx-search-alt me-1"></i> Проверить в NOAA');
+                    var statusClass = resp.diagnostic_status === 'ok' ? 'alert-success' : (resp.diagnostic_status === 'partial' ? 'alert-warning' : 'alert-danger');
+                    var statusIcon = resp.diagnostic_status === 'ok' ? 'bx-check-circle' : (resp.diagnostic_status === 'partial' ? 'bx-error' : 'bx-x-circle');
+
+                    $('#emptyIcaoStatusBanner').removeClass('alert-success alert-warning alert-danger alert-info')
+                        .addClass(statusClass)
+                        .html('<i class="bx ' + statusIcon + ' me-1 fs-5 align-middle"></i> <strong>' + (resp.normalized_icao || rawCode) + '</strong>: ' + (resp.message || ''));
+
+                    $('#emptyDiagRawMetar').text(resp.metar_raw || 'Сводка METAR не получена');
+                    $('#emptyDiagRawTaf').text(resp.taf_raw || 'Прогноз TAF не получен');
+                },
+                error: function() {
+                    $btn.prop('disabled', false).html('<i class="bx bx-search-alt me-1"></i> Проверить в NOAA');
+                    $('#emptyIcaoStatusBanner').removeClass('alert-success alert-warning alert-danger alert-info')
+                        .addClass('alert-danger')
+                        .html('<i class="bx bx-error-circle me-1"></i> Ошибка сетевого соединения при отправке запроса к серверу');
+                }
+            });
+        }
+    </script>
 {% endblock %}
