@@ -395,9 +395,14 @@
                             </button>
                         </div>
                     {% elif active_tab == 'types' %}
-                        <a href="{% url 'flight_planning:periodic_check_type_create' %}" class="btn btn-outline-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" aria-label="Добавить вид мероприятия" title="Добавить вид мероприятия">
-                            <i class='bx bx-plus me-1'></i> <span class="d-none d-md-inline">Добавить вид мероприятия</span><span class="d-md-none">Добавить вид</span>
-                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-warning btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openMergeTypesBtn" aria-label="Объединить виды мероприятий" title="Объединить дубликаты видов мероприятий">
+                                <i class='bx bx-git-merge me-1'></i> <span class="d-none d-md-inline">Объединить дубликаты</span><span class="d-md-none">Объединить</span>
+                            </button>
+                            <a href="{% url 'flight_planning:periodic_check_type_create' %}" class="btn btn-outline-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" aria-label="Добавить вид мероприятия" title="Добавить вид мероприятия">
+                                <i class='bx bx-plus me-1'></i> <span class="d-none d-md-inline">Добавить вид мероприятия</span><span class="d-md-none">Добавить вид</span>
+                            </a>
+                        </div>
                     {% endif %}
                 {% endif %}
             </div>
@@ -725,6 +730,9 @@
                                 </td>
                                 {% if is_planner %}
                                     <td class="text-end text-nowrap">
+                                        <button type="button" class="btn btn-sm btn-outline-warning btn-merge-type py-1 px-2 btn-touch" data-id="{{ ct.id }}" data-name="{{ ct.name }}" title="Объединить (перенести записи в другой вид)" aria-label="Объединить дубликат">
+                                            <i class='bx bx-git-merge'></i>
+                                        </button>
                                         <a href="{% url 'flight_planning:periodic_check_type_update' ct.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2 btn-touch" title="Редактировать" aria-label="Редактировать">
                                             <i class='bx bx-edit-alt'></i>
                                         </a>
@@ -855,6 +863,84 @@
             <button type="button" class="btn btn-secondary btn-sm btn-touch px-3" id="cancelAssignChecksBtn">Отмена</button>
             <button type="submit" class="btn btn-primary btn-sm font-weight-bold btn-touch px-3" id="submitAssignChecksBtn">
                 <i class='bx bx-save me-1'></i> Сохранить закрепление
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Модальное окно объединения дубликатов видов мероприятий -->
+<div class="modal-custom-overlay" id="mergeTypesOverlay"></div>
+<div class="modal-custom-box p-4" id="mergeTypesModal" style="max-width: 650px;">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <div>
+            <h5 class="m-0 font-weight-bold text-dark" id="mergeTypesModalTitle">
+                <i class='bx bx-git-merge text-warning me-2'></i> Объединение дубликатов мероприятий
+            </h5>
+            <small class="text-muted">Перенос всех записей журнала и закреплений с дубликата на единый вид</small>
+        </div>
+        <button type="button" class="btn-close" id="closeMergeTypesBtn" aria-label="Закрыть"></button>
+    </div>
+    <form id="mergeTypesForm" method="post" action="{% url 'flight_planning:periodic_check_type_merge' %}">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label class="form-label font-weight-bold mb-1">
+                    <span class="badge bg-danger me-1">1. Исходный вид (Дубликат)</span>
+                    <span class="text-muted small">Откуда переносить:</span>
+                </label>
+                <select name="source_type_id" id="mergeSourceTypeSelect" class="form-select" required>
+                    <option value="">-- Выберите дубликат для переноса --</option>
+                    {% for ct in check_types %}
+                        <option value="{{ ct.id }}" data-name="{{ ct.name }}">
+                            {{ ct.name }} ({{ ct.aircraft_display }}, {{ ct.validity_months }} мес.)
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text small text-muted">Записи и закрепления этого вида будут перенесены на целевой вид.</div>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label font-weight-bold mb-1">
+                    <span class="badge bg-success me-1">2. Целевой вид (Основной)</span>
+                    <span class="text-muted small">Куда объединить:</span>
+                </label>
+                <select name="target_type_id" id="mergeTargetTypeSelect" class="form-select" required>
+                    <option value="">-- Выберите основной вид мероприятия --</option>
+                    {% for ct in check_types %}
+                        <option value="{{ ct.id }}" data-name="{{ ct.name }}">
+                            {{ ct.name }} ({{ ct.aircraft_display }}, {{ ct.validity_months }} мес.)
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text small text-muted">В этот вид вольются все записи и закрепления.</div>
+            </div>
+
+            <div class="col-12" id="mergePreviewContainer" style="display: none;">
+                <div class="border rounded p-3 bg-light">
+                    <h6 class="font-weight-bold mb-2 text-primary">
+                        <i class='bx bx-info-circle me-1'></i> Предпросмотр объединения:
+                    </h6>
+                    <div id="mergePreviewContent" class="small">
+                        <!-- Динамическая информация о количестве переносимых записей -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" name="delete_source" id="mergeDeleteSourceCheckbox" value="true" checked>
+                    <label class="form-check-label font-weight-bold small" for="mergeDeleteSourceCheckbox">
+                        Удалить исходный вид-дубликат после успешного переноса
+                    </label>
+                    <div class="form-text small text-muted">Если выключить — исходный вид останется в справочнике без привязанных записей.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end flex-wrap gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-secondary btn-sm btn-touch px-3" id="cancelMergeTypesBtn">Отмена</button>
+            <button type="submit" class="btn btn-warning btn-sm font-weight-bold btn-touch px-3" id="submitMergeTypesBtn" disabled>
+                <i class='bx bx-git-merge me-1'></i> Выполнить объединение
             </button>
         </div>
     </form>
@@ -1306,6 +1392,199 @@ $(document).ready(function() {
         if (confirm(`Вы действительно хотите удалить вид мероприятия «${typeName}»?`)) {
             window.location.href = `/flight/checks/types/${typeId}/delete/`;
         }
+    });
+
+    // ========================================================
+    // ОБЪЕДИНЕНИЕ ДУБЛИКАТОВ ВИДОВ МЕРОПРИЯТИЙ (MERGE TYPES)
+    // ========================================================
+    function openMergeTypesModal(preselectedSourceId = null) {
+        $('#historyModalOverlay').hide();
+        $('#historyModalBox').hide();
+        $('#assignChecksOverlay').hide();
+        $('#assignChecksModal').hide();
+        $('#addRecordOverlay').hide();
+        $('#addRecordModal').hide();
+
+        $('#mergeTypesForm')[0].reset();
+        $('#mergeDeleteSourceCheckbox').prop('checked', true);
+        $('#mergePreviewContainer').hide();
+        $('#mergePreviewContent').empty();
+        $('#submitMergeTypesBtn').prop('disabled', true);
+
+        if (preselectedSourceId) {
+            $('#mergeSourceTypeSelect').val(preselectedSourceId);
+        }
+
+        $('#mergeTypesOverlay').show();
+        $('#mergeTypesModal').show();
+
+        checkAndFetchMergePreview();
+    }
+
+    function checkAndFetchMergePreview() {
+        const sourceId = $('#mergeSourceTypeSelect').val();
+        const targetId = $('#mergeTargetTypeSelect').val();
+        const previewContainer = $('#mergePreviewContainer');
+        const previewContent = $('#mergePreviewContent');
+        const submitBtn = $('#submitMergeTypesBtn');
+
+        if (!sourceId || !targetId) {
+            previewContainer.hide();
+            previewContent.empty();
+            submitBtn.prop('disabled', true);
+            return;
+        }
+
+        if (sourceId === targetId) {
+            previewContainer.show();
+            previewContent.html(`
+                <div class="alert alert-warning py-2 mb-0">
+                    <i class='bx bx-error me-1'></i> Исходный и целевой виды мероприятий не могут быть одинаковыми. Выберите разные виды.
+                </div>
+            `);
+            submitBtn.prop('disabled', true);
+            return;
+        }
+
+        previewContainer.show();
+        previewContent.html(`
+            <div class="text-muted py-1">
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                Загрузка информации о переносимых записях...
+            </div>
+        `);
+        submitBtn.prop('disabled', true);
+
+        $.ajax({
+            url: '{% url "flight_planning:periodic_check_type_merge" %}',
+            method: 'GET',
+            data: {
+                source_id: sourceId,
+                target_id: targetId
+            },
+            success: function(res) {
+                if (res.status === 'success') {
+                    let conflictInfo = '';
+                    if (res.conflicting_assignments_count > 0) {
+                        conflictInfo = `<span class="badge bg-warning text-dark ms-1">Пересекаются у ${res.conflicting_assignments_count} сотр. (будут объединены без дублей)</span>`;
+                    }
+
+                    let duplicateRecordsBadge = '';
+                    if (res.records_duplicate_count > 0) {
+                        duplicateRecordsBadge = `<span class="badge bg-secondary ms-1">из них ${res.records_duplicate_count} точных дублей будут склеены</span>`;
+                    }
+
+                    let newRecordsBadge = '';
+                    if (res.records_new_count > 0) {
+                        newRecordsBadge = `<span class="badge bg-success ms-1">${res.records_new_count} новых / продлений</span>`;
+                    }
+
+                    previewContent.html(`
+                        <ul class="list-unstyled mb-0 lh-lg">
+                            <li><i class='bx bx-right-arrow-alt text-primary'></i> Исходный дубликат: <strong>${res.source_type.name}</strong> (${res.source_type.aircraft_display})</li>
+                            <li><i class='bx bx-check-double text-success'></i> Целевой основной вид: <strong>${res.target_type.name}</strong> (${res.target_type.aircraft_display})</li>
+                            <li class="mt-1">
+                                <i class='bx bx-file text-info'></i> Записей в журнале: <strong>${res.records_count}</strong>
+                                ${newRecordsBadge} ${duplicateRecordsBadge}
+                            </li>
+                            <li><i class='bx bx-user-check text-secondary'></i> Закреплений за сотрудниками: <strong>${res.assignments_count}</strong> ${conflictInfo}</li>
+                        </ul>
+                    `);
+                    submitBtn.prop('disabled', false);
+                } else {
+                    previewContent.html(`
+                        <div class="alert alert-danger py-2 mb-0">
+                            ${res.error || 'Ошибка при получении данных предпросмотра.'}
+                        </div>
+                    `);
+                    submitBtn.prop('disabled', true);
+                }
+            },
+            error: function(xhr) {
+                let errText = 'Ошибка при обращении к серверу.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errText = xhr.responseJSON.error;
+                }
+                previewContent.html(`
+                    <div class="alert alert-danger py-2 mb-0">${errText}</div>
+                `);
+                submitBtn.prop('disabled', true);
+            }
+        });
+    }
+
+    // Открытие модального окна объединения из панели инструментов
+    $('#openMergeTypesBtn').on('click', function(e) {
+        e.preventDefault();
+        openMergeTypesModal();
+    });
+
+    // Открытие модального окна объединения из строки таблицы видов
+    $(document).on('click', '.btn-merge-type', function(e) {
+        e.preventDefault();
+        const typeId = $(this).data('id');
+        openMergeTypesModal(typeId);
+    });
+
+    // Закрытие модального окна объединения
+    $('#closeMergeTypesBtn, #cancelMergeTypesBtn, #mergeTypesOverlay').on('click', function(e) {
+        e.preventDefault();
+        $('#mergeTypesOverlay').hide();
+        $('#mergeTypesModal').hide();
+    });
+
+    // Реакция на изменение выбранных видов
+    $('#mergeSourceTypeSelect, #mergeTargetTypeSelect').on('change', function() {
+        checkAndFetchMergePreview();
+    });
+
+    // Отправка формы объединения
+    $('#mergeTypesForm').on('submit', function(e) {
+        e.preventDefault();
+        const sourceName = $('#mergeSourceTypeSelect option:selected').data('name') || $('#mergeSourceTypeSelect option:selected').text().trim();
+        const targetName = $('#mergeTargetTypeSelect option:selected').data('name') || $('#mergeTargetTypeSelect option:selected').text().trim();
+        const deleteSource = $('#mergeDeleteSourceCheckbox').is(':checked');
+
+        const confirmMsg = `ВНИМАНИЕ! Все записи журнала и закрепления сотрудников по виду «${sourceName}» будут перенесены на вид «${targetName}».` +
+            (deleteSource ? ` Исходный вид «${sourceName}» будет удален.` : '') +
+            `\n\nВы подтверждаете объединение?`;
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        const submitBtn = $('#submitMergeTypesBtn');
+        submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Объединение...');
+
+        const formData = new FormData(this);
+
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(res) {
+                if (res.status === 'success') {
+                    $('#mergeTypesOverlay').hide();
+                    $('#mergeTypesModal').hide();
+                    alert(res.message || 'Виды мероприятий успешно объединены!');
+                    window.location.href = window.location.pathname + '?tab=types';
+                } else {
+                    alert(res.error || 'Произошла ошибка при объединении видов мероприятий.');
+                    submitBtn.prop('disabled', false).html('<i class="bx bx-git-merge me-1"></i> Выполнить объединение');
+                }
+            },
+            error: function(xhr) {
+                let errText = 'Ошибка при выполнении объединения.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errText = xhr.responseJSON.error;
+                }
+                alert(errText);
+                submitBtn.prop('disabled', false).html('<i class="bx bx-git-merge me-1"></i> Выполнить объединение');
+            }
+        });
     });
 });
 </script>

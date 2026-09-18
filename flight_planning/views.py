@@ -1,11 +1,11 @@
 # flight_planning/views.py
 import json
 from datetime import datetime, timedelta, date
-from typing import List, Dict, Any, Optional, Tuple, Union
+from typing import List, Dict, Any, Optional, Tuple, Union, Set
 
 from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, HttpRequest
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
@@ -82,7 +82,9 @@ from .services import (
     FLIGHT_CREW_JOB_NAMES,
     ENGINEERING_STAFF_JOB_NAMES,
     ALL_STAFF_JOB_NAMES,
-    format_short_job
+    format_short_job,
+    get_periodic_check_type_merge_preview_service,
+    merge_periodic_check_types_service
 )
 from .importers import PeriodicCheckImporter
 from contracts_app.templatetags.custom import FIO_format
@@ -2719,6 +2721,71 @@ def periodic_check_type_delete_view(request, pk: int):
         check_type.delete()
         messages.success(request, f"Вид мероприятия «{name}» успешно удален.")
     return redirect(f"{reverse('flight_planning:periodic_check_list')}?tab=types")
+
+
+@login_required
+@flight_planner_required
+def periodic_check_type_merge_view(request: HttpRequest) -> HttpResponse:
+    """Объединение видов периодических мероприятий (слияние дубликатов).
+
+    Поддерживает:
+    - GET (AJAX / preview): Предварительный просмотр объема переносимых данных (`?source_id=...&target_id=...`).
+    - POST (AJAX / Form): Выполнение транзакционного переноса записей и закреплений с удалением дубликата.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+
+    Returns:
+        HttpResponse: JsonResponse при AJAX-запросах или перенаправление на справочник видов.
+    """
+    if request.method == 'GET':
+        source_id = request.GET.get('source_id') or request.GET.get('source_type_id')
+        target_id = request.GET.get('target_id') or request.GET.get('target_type_id')
+        if source_id and target_id:
+            try:
+                res = get_periodic_check_type_merge_preview_service(
+                    source_type_id=int(source_id),
+                    target_type_id=int(target_id)
+                )
+                return JsonResponse(res)
+            except (ValueError, TypeError):
+                return JsonResponse({'status': 'error', 'error': 'Некорректные идентификаторы видов мероприятий.'}, status=400)
+        return JsonResponse({'status': 'error', 'error': 'Не указаны source_id и target_id.'}, status=400)
+
+    elif request.method == 'POST':
+        source_id = request.POST.get('source_type_id') or request.POST.get('source_id')
+        target_id = request.POST.get('target_type_id') or request.POST.get('target_id')
+        delete_source_val = request.POST.get('delete_source', 'true')
+        delete_source = delete_source_val in ['true', '1', 'on', True]
+
+        if not source_id or not target_id:
+            msg = "Необходимо выбрать исходный (дубликат) и целевой вид мероприятия."
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'error': msg}, status=400)
+            messages.error(request, msg)
+            return redirect(f"{reverse('flight_planning:periodic_check_list')}?tab=types")
+
+        try:
+            res = merge_periodic_check_types_service(
+                source_type_id=int(source_id),
+                target_type_id=int(target_id),
+                delete_source=delete_source,
+                user=request.user
+            )
+        except Exception as exc:
+            res = {'status': 'error', 'error': f'Внутренняя ошибка слияния: {exc}'}
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            status_code = 200 if res.get('status') == 'success' else 400
+            return JsonResponse(res, status=status_code)
+
+        if res.get('status') == 'success':
+            messages.success(request, res.get('message', 'Виды мероприятий успешно объединены!'))
+        else:
+            messages.error(request, res.get('error', 'Ошибка при объединении видов мероприятий.'))
+
+        return redirect(f"{reverse('flight_planning:periodic_check_list')}?tab=types")
+
 
 
 @login_required

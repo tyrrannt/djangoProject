@@ -2249,3 +2249,255 @@ def format_short_job(job_name: Any, mode: str = 'standard') -> str:
         result = re.sub(pattern, repl, result, flags=re.IGNORECASE)
 
     return result.strip()
+
+
+def get_periodic_check_type_merge_preview_service(
+        source_type_id: int,
+        target_type_id: int
+) -> Dict[str, Any]:
+    """Формирует предварительную сводку данных для объединения двух видов мероприятий.
+
+    Args:
+        source_type_id (int): Идентификатор исходного вида мероприятия (дубликата).
+        target_type_id (int): Идентификатор целевого эталонного вида мероприятия.
+
+    Returns:
+        Dict[str, Any]: Словарь с метаданными и количеством затронутых записей:
+            - 'status' (str): 'success' или 'error'.
+            - 'source_type' (Dict[str, Any]): Параметры исходного вида.
+            - 'target_type' (Dict[str, Any]): Параметры целевого вида.
+            - 'records_count' (int): Количество переносимых записей в журнале.
+            - 'assignments_count' (int): Количество индивидуальных закреплений за сотрудниками.
+            - 'conflicting_assignments_count' (int): Количество уже существующих закреплений целевого вида.
+    """
+    from .models import PeriodicCheckType, PeriodicCheckRecord, EmployeeRequiredCheck
+
+    if source_type_id == target_type_id:
+        return {
+            'status': 'error',
+            'error': 'Нельзя объединить вид мероприятия сам с собой. Выберите разные виды.'
+        }
+
+    source_type = PeriodicCheckType.objects.select_related('aircraft_type').filter(id=source_type_id).first()
+    target_type = PeriodicCheckType.objects.select_related('aircraft_type').filter(id=target_type_id).first()
+
+    if not source_type:
+        return {'status': 'error', 'error': f'Исходный вид мероприятия с ID #{source_type_id} не найден.'}
+    if not target_type:
+        return {'status': 'error', 'error': f'Целевой вид мероприятия с ID #{target_type_id} не найден.'}
+
+    source_records = list(PeriodicCheckRecord.objects.filter(check_type=source_type))
+    target_records_map = {
+        (r.employee_id, r.aircraft_type_id, r.start_date, r.end_date): r
+        for r in PeriodicCheckRecord.objects.filter(check_type=target_type)
+    }
+
+    records_count = len(source_records)
+    records_duplicate_count = 0
+    records_new_count = 0
+
+    for src_rec in source_records:
+        sig = (src_rec.employee_id, src_rec.aircraft_type_id, src_rec.start_date, src_rec.end_date)
+        if sig in target_records_map:
+            records_duplicate_count += 1
+        else:
+            records_new_count += 1
+
+    source_assignments = set(EmployeeRequiredCheck.objects.filter(check_type=source_type).values_list('employee_id', flat=True))
+    target_assignments = set(EmployeeRequiredCheck.objects.filter(check_type=target_type).values_list('employee_id', flat=True))
+
+    conflicting_count = len(source_assignments.intersection(target_assignments))
+    assignments_count = len(source_assignments)
+
+    return {
+        'status': 'success',
+        'source_type': {
+            'id': source_type.id,
+            'name': source_type.name,
+            'code': source_type.code or '',
+            'aircraft_display': source_type.aircraft_display,
+            'validity_months': source_type.validity_months,
+            'validity_days': source_type.validity_days,
+            'applies_to_display': source_type.get_applies_to_display(),
+            'is_active': source_type.is_active
+        },
+        'target_type': {
+            'id': target_type.id,
+            'name': target_type.name,
+            'code': target_type.code or '',
+            'aircraft_display': target_type.aircraft_display,
+            'validity_months': target_type.validity_months,
+            'validity_days': target_type.validity_days,
+            'applies_to_display': target_type.get_applies_to_display(),
+            'is_active': target_type.is_active
+        },
+        'records_count': records_count,
+        'records_new_count': records_new_count,
+        'records_duplicate_count': records_duplicate_count,
+        'assignments_count': assignments_count,
+        'conflicting_assignments_count': conflicting_count
+    }
+
+
+def merge_periodic_check_types_service(
+        source_type_id: int,
+        target_type_id: int,
+        delete_source: bool = True,
+        user: Optional[Any] = None
+) -> Dict[str, Any]:
+    """Выполняет безопасное транзакционное объединение двух видов периодических мероприятий.
+
+    Переносит все записи журнала (`PeriodicCheckRecord`) и индивидуальные
+    закрепления (`EmployeeRequiredCheck`) с исходного вида (дубликата) на целевой эталонный вид.
+    Интеллектуально дедуплицирует записи прохождения мероприятий:
+    - Точные дубликаты записей (сотрудник, тип ВС, даты начала и окончания) склеиваются с дополнением
+      отсутствующих реквизитов (номера документов, кем выдано, сканы) в целевую запись, а клон удаляется.
+    - Новые сдачи и продления (отличные даты сдачи/срока действия) переносятся в целевой вид,
+      автоматически становясь действующим статусом квалификации (по наивысшей дате окончания).
+    Разрешает конфликты `unique_together` при переносе закреплений и удаляет/деактивирует дубликат.
+
+    Args:
+        source_type_id (int): Идентификатор объединяемого вида (дубликата).
+        target_type_id (int): Идентификатор целевого эталонного вида мероприятия.
+        delete_source (bool, optional): Флаг удаления исходного вида после слияния. Defaults to True.
+        user (Optional[Any], optional): Пользователь, выполняющий операцию (для логирования).
+
+    Returns:
+        Dict[str, Any]: Результат слияния со статистикой:
+            - 'status' (str): 'success' или 'error'.
+            - 'source_name' (str): Наименование исходного вида.
+            - 'target_name' (str): Наименование целевого вида.
+            - 'records_transferred' (int): Количество перенесенных уникальных записей и продлений.
+            - 'records_deduplicated' (int): Количество отброшенных/склеенных дубликатов записей.
+            - 'assignments_transferred' (int): Количество перенесенных закреплений.
+            - 'source_deleted' (bool): Флаг фактического удаления исходного вида.
+            - 'message' (str): Описание успешного завершения.
+
+    Raises:
+        ValueError: При совпадении ID исходного и целевого вида.
+    """
+    import logging
+    from django.db import transaction
+    from .models import PeriodicCheckType, PeriodicCheckRecord, EmployeeRequiredCheck
+
+    logger = logging.getLogger(__name__)
+
+    if source_type_id == target_type_id:
+        return {
+            'status': 'error',
+            'error': 'Нельзя объединить вид мероприятия сам с собой. Выберите разные виды.'
+        }
+
+    source_type = PeriodicCheckType.objects.filter(id=source_type_id).first()
+    target_type = PeriodicCheckType.objects.filter(id=target_type_id).first()
+
+    if not source_type:
+        return {'status': 'error', 'error': f'Исходный вид мероприятия с ID #{source_type_id} не найден.'}
+    if not target_type:
+        return {'status': 'error', 'error': f'Целевой вид мероприятия с ID #{target_type_id} не найден.'}
+
+    source_name = source_type.name
+    target_name = target_type.name
+
+    with transaction.atomic():
+        # 1. Интеллектуальный перенос и дедупликация записей журнала мероприятий
+        source_records = list(PeriodicCheckRecord.objects.filter(check_type=source_type))
+        target_records_map = {
+            (r.employee_id, r.aircraft_type_id, r.start_date, r.end_date): r
+            for r in PeriodicCheckRecord.objects.filter(check_type=target_type)
+        }
+
+        records_transferred = 0
+        records_deduplicated = 0
+
+        for src_rec in source_records:
+            sig = (src_rec.employee_id, src_rec.aircraft_type_id, src_rec.start_date, src_rec.end_date)
+            if sig in target_records_map:
+                # Точный дубликат: обогащаем целевую запись недостающими данными
+                tgt_rec = target_records_map[sig]
+                fields_to_update = []
+                if not tgt_rec.document_number and src_rec.document_number:
+                    tgt_rec.document_number = src_rec.document_number
+                    fields_to_update.append('document_number')
+                if not tgt_rec.issued_by and src_rec.issued_by:
+                    tgt_rec.issued_by = src_rec.issued_by
+                    fields_to_update.append('issued_by')
+                if not tgt_rec.notes and src_rec.notes:
+                    tgt_rec.notes = src_rec.notes
+                    fields_to_update.append('notes')
+                if not tgt_rec.scan_file and src_rec.scan_file:
+                    tgt_rec.scan_file = src_rec.scan_file
+                    fields_to_update.append('scan_file')
+
+                if fields_to_update:
+                    tgt_rec.save(update_fields=fields_to_update)
+
+                # Удаляем избыточный дубликат
+                src_rec.delete()
+                records_deduplicated += 1
+            else:
+                # Новая запись / продление: перенаправляем на целевой вид
+                src_rec.check_type = target_type
+                src_rec.save(update_fields=['check_type'])
+                target_records_map[sig] = src_rec
+                records_transferred += 1
+
+        # 2. Перенос индивидуальных закреплений за сотрудниками с защитой от unique_together
+        source_assignments = list(EmployeeRequiredCheck.objects.filter(check_type=source_type))
+        target_assignments_map = {
+            a.employee_id: a for a in EmployeeRequiredCheck.objects.filter(check_type=target_type)
+        }
+
+        assignments_transferred = 0
+        for src_assign in source_assignments:
+            emp_id = src_assign.employee_id
+            if emp_id in target_assignments_map:
+                # У сотрудника уже есть закрепление целевого вида
+                tgt_assign = target_assignments_map[emp_id]
+                if src_assign.is_required and not tgt_assign.is_required:
+                    tgt_assign.is_required = True
+                    tgt_assign.save(update_fields=['is_required'])
+                # Удаляем дублирующее закрепление
+                src_assign.delete()
+            else:
+                # Перенаправляем закрепление на целевой вид
+                src_assign.check_type = target_type
+                src_assign.save(update_fields=['check_type'])
+                target_assignments_map[emp_id] = src_assign
+
+            assignments_transferred += 1
+
+        # 3. Удаление или деактивация дубликата вида мероприятия
+        if delete_source:
+            source_type.delete()
+            source_deleted = True
+        else:
+            source_type.is_active = False
+            source_type.save(update_fields=['is_active'])
+            source_deleted = False
+
+    user_info = user.username if user else "system"
+    logger.info(
+        "Успешное объединение видов мероприятий [user=%s]: «%s» (#%s) -> «%s» (#%s). "
+        "Перенесено/продлений: %s, склеено дублей: %s, закреплений: %s, удален: %s",
+        user_info, source_name, source_type_id, target_name, target_type_id,
+        records_transferred, records_deduplicated, assignments_transferred, source_deleted
+    )
+
+    msg = (
+        f"Вид мероприятия «{source_name}» успешно объединен с «{target_name}». "
+        f"Перенесено записей/продлений: {records_transferred}, исключено дубликатов: {records_deduplicated}, "
+        f"закреплений сотрудников: {assignments_transferred}."
+    )
+
+    return {
+        'status': 'success',
+        'source_name': source_name,
+        'target_name': target_name,
+        'records_transferred': records_transferred,
+        'records_deduplicated': records_deduplicated,
+        'assignments_transferred': assignments_transferred,
+        'source_deleted': source_deleted,
+        'message': msg
+    }
+

@@ -39,6 +39,7 @@ urlpatterns = [
     path('checks/<int:pk>/update/', views.periodic_check_update_view, name='periodic_check_update'),
     path('checks/<int:pk>/delete/', views.periodic_check_delete_view, name='periodic_check_delete'),
     path('checks/types/add/', views.periodic_check_type_create_view, name='periodic_check_type_create'),
+    path('checks/types/merge/', views.periodic_check_type_merge_view, name='periodic_check_type_merge'),
     path('checks/types/<int:pk>/update/', views.periodic_check_type_update_view, name='periodic_check_type_update'),
     path('checks/types/<int:pk>/delete/', views.periodic_check_type_delete_view, name='periodic_check_type_delete'),
 
