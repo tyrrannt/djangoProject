@@ -243,15 +243,17 @@ class PlaceProductionActivityAdmin(ModelAdmin):
     list_display = (
         "name",
         "short_name",
+        "icao_code",
         "address",
         "email",
         "additional_payment",
         "use_team_orders",
         "in_planning",
         "ticket_control",
+        "weather_monitoring_enabled",
     )
-    list_filter = ("use_team_orders", "in_planning", "ticket_control")
-    search_fields = ["name", "short_name", "address", "email"]
+    list_filter = ("in_planning", "weather_monitoring_enabled", "use_team_orders", "ticket_control")
+    search_fields = ["name", "short_name", "icao_code", "address", "email"]
     compressed_fields = True
     warn_unsaved_form = True
 

@@ -791,6 +791,41 @@ UNFOLD = {
                         "icon": "note_alt",
                         "link": reverse_lazy("admin:flight_planning_flightcrewnote_changelist"),
                     },
+                    {
+                        "title": _("Архив метеонаблюдений (METAR)"),
+                        "icon": "cloud_sync",
+                        "link": reverse_lazy("admin:flight_planning_aviationweatherobservation_changelist"),
+                    },
+                    {
+                        "title": _("Прогнозы погоды (TAF)"),
+                        "icon": "airwave",
+                        "link": reverse_lazy("admin:flight_planning_aviationweatherforecast_changelist"),
+                    },
+                    {
+                        "title": _("Виды проверок"),
+                        "icon": "checklist",
+                        "link": reverse_lazy("admin:flight_planning_periodicchecktype_changelist"),
+                    },
+                    {
+                        "title": _("Журнал проверок"),
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:flight_planning_periodiccheckrecord_changelist"),
+                    },
+                    {
+                        "title": _("Закрепления проверок"),
+                        "icon": "assignment_ind",
+                        "link": reverse_lazy("admin:flight_planning_employeerequiredcheck_changelist"),
+                    },
+                    {
+                        "title": _("Виды статусов"),
+                        "icon": "label",
+                        "link": reverse_lazy("admin:flight_planning_employeestatustype_changelist"),
+                    },
+                    {
+                        "title": _("Статусы сотрудников"),
+                        "icon": "event_busy",
+                        "link": reverse_lazy("admin:flight_planning_employeestatusrecord_changelist"),
+                    },
                 ],
             },
 
@@ -1630,6 +1665,13 @@ UNFOLD = {
                 "flight_planning.pilotassignment",
                 "flight_planning.aircraftmovement",
                 "flight_planning.flightcrewnote",
+                "flight_planning.aviationweatherobservation",
+                "flight_planning.aviationweatherforecast",
+                "flight_planning.periodicchecktype",
+                "flight_planning.periodiccheckrecord",
+                "flight_planning.employeerequiredcheck",
+                "flight_planning.employeestatustype",
+                "flight_planning.employeestatusrecord",
                 # Finance
                 "finance_app.organization",
                 "finance_app.financialcontract",

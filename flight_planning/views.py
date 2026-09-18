@@ -3690,6 +3690,133 @@ def download_check_template_view(request):
     return response
 
 
+@login_required
+def mpd_weather_history_view(request, mpd_id: int):
+    """Отображение истории метеонаблюдений (METAR) и прогнозов (TAF) по МПД за выбранную дату.
+
+    Позволяет диспетчерам, пилотам и руководству просматривать фактическую погоду
+    в хронологическом порядке за любой день, анализировать графики параметров
+    (ветер, видимость, НГО, давление, температура) и изучать официальные прогнозы TAF.
+
+    Args:
+        request (HttpRequest): HTTP GET запрос с опциональным параметром 'date' (YYYY-MM-DD).
+        mpd_id (int): Идентификатор места производственной деятельности.
+
+    Returns:
+        HttpResponse: Отрендеренная страница метеоцентра МПД или partial-шаблон при HTMX.
+    """
+    from .weather_services import AviationWeatherService
+
+    mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
+    date_str = request.GET.get('date', '').strip()
+
+    today = timezone.now().date()
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            target_date = today
+    else:
+        target_date = today
+
+    timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
+
+    # Если за сегодняшний день данных еще нет, пробуем получить их на лету
+    if target_date == today and not timeline_data['observations'] and mpd.icao_code:
+        AviationWeatherService.sync_mpd_weather(mpd)
+        timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
+
+    latest_weather = AviationWeatherService.get_mpd_current_weather(mpd)
+
+    # Список всех МПД с ICAO-кодами для быстрого переключения в шапке
+    all_weather_mpds = PlaceProductionActivity.objects.filter(
+        in_planning=True,
+    ).exclude(icao_code="").exclude(icao_code__isnull=True).order_by('name')
+
+    prev_date = target_date - timedelta(days=1)
+    next_date = target_date + timedelta(days=1)
+
+    context = {
+        'mpd': mpd,
+        'target_date': target_date,
+        'target_date_str': target_date.strftime('%Y-%m-%d'),
+        'target_date_formatted': target_date.strftime('%d.%m.%Y'),
+        'prev_date_str': prev_date.strftime('%Y-%m-%d'),
+        'next_date_str': next_date.strftime('%Y-%m-%d'),
+        'is_today': target_date == today,
+        'observations': timeline_data['observations'],
+        'forecast': timeline_data['forecast'],
+        'stats': timeline_data['stats'],
+        'latest_observation': latest_weather.get('latest_observation'),
+        'latest_forecast': latest_weather.get('latest_forecast'),
+        'all_weather_mpds': all_weather_mpds,
+    }
+
+    if request.headers.get('HX-Request') == 'true' and request.GET.get('partial') == 'timeline':
+        return render(request, 'flight_planning/weather/partials/_timeline_table.html', context)
+
+    return render(request, 'flight_planning/weather/mpd_weather_history.html', context)
+
+
+@login_required
+def mpd_weather_refresh_view(request, mpd_id: int):
+    """Оперативное принудительное обновление метеосводки (METAR / TAF) по МПД.
+
+    Args:
+        request (HttpRequest): HTTP POST/GET запрос.
+        mpd_id (int): Идентификатор места производственной деятельности.
+
+    Returns:
+        HttpResponse | JsonResponse: Перенаправление на страницу истории или JSON ответ.
+    """
+    from .weather_services import AviationWeatherService
+
+    mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
+    obs, fc = AviationWeatherService.sync_mpd_weather(mpd)
+
+    if request.headers.get('Accept') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'icao_code': mpd.icao_code,
+            'has_metar': bool(obs),
+            'has_taf': bool(fc),
+            'observation_time': obs.observation_time.strftime('%H:%M UTC') if obs else None,
+            'flight_category': obs.flight_category if obs else None,
+        })
+
+    target_date = request.GET.get('date', timezone.now().date().strftime('%Y-%m-%d'))
+    return redirect(f"{reverse('flight_planning:mpd_weather_history', args=[mpd.pk])}?date={target_date}")
+
+
+@login_required
+def mpd_weather_widget_view(request, mpd_id: int):
+    """Возвращает компактный HTML-виджет текущей погоды по МПД.
+
+    Предназначен для асинхронной загрузки через HTMX в карточках МПД и матрице полетов.
+
+    Args:
+        request (HttpRequest): HTTP GET запрос.
+        mpd_id (int): Идентификатор места производственной деятельности.
+
+    Returns:
+        HttpResponse: Отрендеренный партиал виджета погоды.
+    """
+    from .weather_services import AviationWeatherService
+
+    mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
+    weather_data = AviationWeatherService.get_mpd_current_weather(mpd)
+
+    context = {
+        'mpd': mpd,
+        'latest_observation': weather_data.get('latest_observation'),
+        'latest_forecast': weather_data.get('latest_forecast'),
+        'has_weather': weather_data.get('has_weather', False),
+    }
+
+    return render(request, 'flight_planning/weather/mpd_weather_widget_partial.html', context)
+
+
+
 
 
 

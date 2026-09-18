@@ -86,6 +86,10 @@ app.conf.beat_schedule = {
         'task': 'tasks_app.tasks.create_recurring_tasks_task',
         'schedule': crontab(minute='*/30'),
     },
+    'flight_sync_aviation_weather': {
+        'task': 'flight_planning.tasks.sync_all_aviation_weather_task',
+        'schedule': crontab(minute='*/30'),
+    },
 
 
     # 'sync_finance_directories': {

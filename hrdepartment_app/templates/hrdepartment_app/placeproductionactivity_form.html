@@ -184,7 +184,7 @@
                         <div class="section-header">
                             <i class="bx bx-slider-alt text-primary"></i> Параметры и флаги использования
                         </div>
-                        <div class="row g-3">
+                        <div class="row g-3 mb-4">
                             <div class="col-12 col-md-4">
                                 <div class="card bg-light border-0 p-3 h-100 rounded-3">
                                     <label class="form-label font-weight-bold mb-2">{{ form.use_team_orders.label }}</label>
@@ -227,6 +227,58 @@
                                     <small class="text-muted mt-2 d-block">Контролировать проездные билеты сотрудников при командировках</small>
                                     {% if form.ticket_control.errors %}
                                         <div class="invalid-feedback d-block">{{ form.ticket_control.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Секция 4: Авиационная метеорология (METAR / TAF) -->
+                        <div class="section-header">
+                            <i class="bx bx-cloud-lightning text-primary"></i> Авиационная метеорология (METAR / TAF)
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.icao_code.id_for_label }}">
+                                    {{ form.icao_code.label }}
+                                </label>
+                                {{ form.icao_code }}
+                                <small class="text-muted d-block mt-1">4 латинские буквы (напр. UNNT, USRR)</small>
+                                {% if form.icao_code.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.icao_code.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.latitude.id_for_label }}">
+                                    {{ form.latitude.label }}
+                                </label>
+                                {{ form.latitude }}
+                                <small class="text-muted d-block mt-1">Координата в градусах</small>
+                                {% if form.latitude.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.latitude.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.longitude.id_for_label }}">
+                                    {{ form.longitude.label }}
+                                </label>
+                                {{ form.longitude }}
+                                <small class="text-muted d-block mt-1">Координата в градусах</small>
+                                {% if form.longitude.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.longitude.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <div class="card bg-light border-0 p-3 h-100 rounded-3">
+                                    <label class="form-label font-weight-bold mb-2">{{ form.weather_monitoring_enabled.label }}</label>
+                                    <div class="form-check form-switch mt-1">
+                                        {{ form.weather_monitoring_enabled }}
+                                        <label class="form-check-label ms-2" for="{{ form.weather_monitoring_enabled.id_for_label }}">
+                                            Автосбор погоды
+                                        </label>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Фоновый сбор сводок METAR и TAF</small>
+                                    {% if form.weather_monitoring_enabled.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.weather_monitoring_enabled.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>

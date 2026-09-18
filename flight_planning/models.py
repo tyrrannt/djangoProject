@@ -1080,6 +1080,331 @@ class EmployeeRequiredCheck(models.Model):
         return f"{emp_name} — {self.check_type.name} ({req_str})"
 
 
+class AviationWeatherObservation(models.Model):
+    """Архив фактических метеонаблюдений (METAR / SPECI) по аэродромам и МПД.
+
+    Сохраняет хронологические замеры погоды (тайм-серии) с автоматической расшифровкой
+    параметров ветра, видимости, нижней кромки облачности (НГО), температуры,
+    давления QNH и летной категории условий (VFR / MVFR / IFR / LIFR).
+
+    Attributes:
+        mpd (PlaceProductionActivity): Место производственной деятельности (опционально).
+        icao_code (str): 4-буквенный международный код метеостанции/аэродрома ICAO.
+        observation_time (datetime): Дата и время фиксации метеонаблюдения (UTC).
+        report_type (str): Тип сводки ('METAR' - регулярная, 'SPECI' - специальная штормовая).
+        raw_text (str): Исходная телеграмма METAR/SPECI без изменений.
+        flight_category (str): Летная категория ('VFR', 'MVFR', 'IFR', 'LIFR').
+        wind_direction (int): Направление ветра в градусах (0-360, None для штиля/VRB).
+        wind_speed (float): Скорость ветра в м/с.
+        wind_gust (float): Порывы ветра в м/с (если зафиксированы).
+        wind_variable (bool): Флаг переменного направления ветра (VRB).
+        visibility_meters (int): Горизонтальная видимость в метрах.
+        cavok (bool): Флаг условий CAVOK (видимость >10 км, нет облаков ниже 1500м, нет опасных явлений).
+        cloud_base_meters (int): Нижняя граница облачности (НГО) в метрах.
+        cloud_coverage (str): Тип покрытия облачностью ('FEW', 'SCT', 'BKN', 'OVC', 'VV', 'NSC/CLR').
+        temperature (float): Температура воздуха в градусах Цельсия.
+        dew_point (float): Точка росы в градусах Цельсия.
+        pressure_hpa (float): Атмосферное давление QNH в гектопаскалях (hPa).
+        pressure_mmhg (float): Атмосферное давление QNH в миллиметрах ртутного столба (мм рт. ст.).
+        weather_phenomena (str): Расшифрованные погодные явления на русском языке.
+        created_at (datetime): Дата и время сохранения записи в БД.
+    """
+
+    REPORT_TYPES = (
+        ("METAR", "Регулярная сводка (METAR)"),
+        ("SPECI", "Специальная сводка (SPECI)"),
+    )
+
+    FLIGHT_CATEGORIES = (
+        ("VFR", "ПВП (VFR) — Визуальные метеоусловия"),
+        ("MVFR", "ОПВП (MVFR) — Ухудшенные визуальные"),
+        ("IFR", "ППП (IFR) — Приборные метеоусловия"),
+        ("LIFR", "НППП (LIFR) — Низкие приборные"),
+    )
+
+    mpd = models.ForeignKey(
+        PlaceProductionActivity,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="weather_observations",
+        verbose_name="МПД базирования",
+    )
+    icao_code = models.CharField(
+        max_length=4,
+        db_index=True,
+        verbose_name="Код ICAO",
+        help_text="4-буквенный код ICAO (например, UNNT, USRR, ULLI, UUEE)",
+    )
+    observation_time = models.DateTimeField(
+        db_index=True,
+        verbose_name="Время наблюдения (UTC)",
+    )
+    report_type = models.CharField(
+        max_length=10,
+        choices=REPORT_TYPES,
+        default="METAR",
+        verbose_name="Тип сводки",
+    )
+    raw_text = models.TextField(
+        verbose_name="Исходная телеграмма (METAR/SPECI)",
+    )
+    flight_category = models.CharField(
+        max_length=10,
+        choices=FLIGHT_CATEGORIES,
+        default="VFR",
+        verbose_name="Летные условия",
+    )
+    wind_direction = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Направление ветра (°)",
+    )
+    wind_speed = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Скорость ветра (м/с)",
+    )
+    wind_gust = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Порывы ветра (м/с)",
+    )
+    wind_variable = models.BooleanField(
+        default=False,
+        verbose_name="Переменное направление ветра (VRB)",
+    )
+    visibility_meters = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Видимость (м)",
+    )
+    cavok = models.BooleanField(
+        default=False,
+        verbose_name="CAVOK (Хорошая погода)",
+    )
+    cloud_base_meters = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Нижняя граница облачности (м)",
+    )
+    cloud_coverage = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        verbose_name="Покрытие облачностью",
+    )
+    temperature = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Температура (°C)",
+    )
+    dew_point = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Точка росы (°C)",
+    )
+    pressure_hpa = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Давление QNH (гПа)",
+    )
+    pressure_mmhg = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Давление QNH (мм рт. ст.)",
+    )
+    weather_phenomena = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        verbose_name="Погодные явления",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Сохранено в системе",
+    )
+
+    class Meta:
+        verbose_name = "Метеонаблюдение (METAR)"
+        verbose_name_plural = "Архив метеонаблюдений (METAR)"
+        ordering = ["-observation_time"]
+        unique_together = [["icao_code", "observation_time"]]
+        indexes = [
+            models.Index(fields=["icao_code", "observation_time"]),
+            models.Index(fields=["mpd", "observation_time"]),
+            models.Index(fields=["flight_category", "observation_time"]),
+        ]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление метеонаблюдения.
+
+        Returns:
+            str: Код ICAO, время наблюдения и летная категория.
+        """
+        obs_str = self.observation_time.strftime("%d.%m.%Y %H:%M") if self.observation_time else "—"
+        return f"{self.icao_code} [{obs_str} UTC] — {self.flight_category}"
+
+    def get_flight_category_color(self) -> str:
+        """Возвращает цвет бейджа летных условий для UI.
+
+        Returns:
+            str: Bootstrap/CSS класс цвета ('success', 'info', 'danger', 'dark').
+        """
+        mapping = {
+            "VFR": "success",
+            "MVFR": "info",
+            "IFR": "danger",
+            "LIFR": "dark",
+        }
+        return mapping.get(self.flight_category, "secondary")
+
+    def get_flight_category_name_ru(self) -> str:
+        """Возвращает русское обозначение летных правил.
+
+        Returns:
+            str: ПВП, ОПВП, ППП или НППП.
+        """
+        mapping = {
+            "VFR": "ПВП",
+            "MVFR": "ОПВП",
+            "IFR": "ППП",
+            "LIFR": "НППП",
+        }
+        return mapping.get(self.flight_category, self.flight_category)
+
+    def get_wind_display(self) -> str:
+        """Возвращает форматированное описание ветра.
+
+        Returns:
+            str: Направление и скорость с порывами (например, '240° 6 м/с (порывы 12)').
+        """
+        if self.wind_speed is None or self.wind_speed == 0:
+            return "Штиль (0 м/с)"
+        dir_str = "VRB" if self.wind_variable or self.wind_direction is None else f"{self.wind_direction:03d}°"
+        spd_str = f"{self.wind_speed:.0f} м/с"
+        gust_str = f" (порывы {self.wind_gust:.0f} м/с)" if self.wind_gust else ""
+        return f"{dir_str} {spd_str}{gust_str}"
+
+    def get_visibility_display(self) -> str:
+        """Возвращает форматированное значение видимости.
+
+        Returns:
+            str: Видимость в км/метрах.
+        """
+        if self.cavok:
+            return "> 10 км (CAVOK)"
+        if self.visibility_meters is None:
+            return "—"
+        if self.visibility_meters >= 10000:
+            return "≥ 10 км"
+        if self.visibility_meters >= 1000:
+            return f"{self.visibility_meters / 1000:.1f} км"
+        return f"{self.visibility_meters} м"
+
+    def get_cloud_display(self) -> str:
+        """Возвращает форматированное значение облачности и НГО.
+
+        Returns:
+            str: Описание облачности с высотой НГО в метрах.
+        """
+        if self.cavok:
+            return "Ясно / CAVOK"
+        if self.cloud_base_meters is None:
+            return self.cloud_coverage or "Ясно (NSC)"
+        cov = self.cloud_coverage or "НГО"
+        return f"{cov} ({self.cloud_base_meters} м)"
+
+
+class AviationWeatherForecast(models.Model):
+    """Архив авиационных прогнозов погоды по аэродромам (TAF).
+
+    Хранит официальные телеграммы TAF со сроками действия (горизонт 24-30 часов)
+    и структурированными периодами прогноза изменений (TEMPO, BECMG, PROB).
+
+    Attributes:
+        mpd (PlaceProductionActivity): Место производственной деятельности (опционально).
+        icao_code (str): 4-буквенный международный код метеостанции/аэродрома ICAO.
+        issued_at (datetime): Время выпуска прогноза (UTC).
+        valid_from (datetime): Начало периода действия прогноза (UTC).
+        valid_to (datetime): Окончание периода действия прогноза (UTC).
+        raw_text (str): Исходная телеграмма TAF без изменений.
+        forecast_json (dict): Структурированные периоды и тренды прогноза в формате JSON.
+        created_at (datetime): Дата и время сохранения записи в БД.
+    """
+
+    mpd = models.ForeignKey(
+        PlaceProductionActivity,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="weather_forecasts",
+        verbose_name="МПД базирования",
+    )
+    icao_code = models.CharField(
+        max_length=4,
+        db_index=True,
+        verbose_name="Код ICAO",
+        help_text="4-буквенный код ICAO аэродрома",
+    )
+    issued_at = models.DateTimeField(
+        db_index=True,
+        verbose_name="Время выпуска (UTC)",
+    )
+    valid_from = models.DateTimeField(
+        db_index=True,
+        verbose_name="Действует с (UTC)",
+    )
+    valid_to = models.DateTimeField(
+        db_index=True,
+        verbose_name="Действует по (UTC)",
+    )
+    raw_text = models.TextField(
+        verbose_name="Исходная телеграмма TAF",
+    )
+    forecast_json = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Расшифрованные периоды (JSON)",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Сохранено в системе",
+    )
+
+    class Meta:
+        verbose_name = "Прогноз погоды (TAF)"
+        verbose_name_plural = "Архив прогнозов погоды (TAF)"
+        ordering = ["-issued_at"]
+        unique_together = [["icao_code", "issued_at"]]
+        indexes = [
+            models.Index(fields=["icao_code", "issued_at"]),
+            models.Index(fields=["valid_from", "valid_to"]),
+            models.Index(fields=["mpd", "issued_at"]),
+        ]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление прогноза TAF.
+
+        Returns:
+            str: Код ICAO и интервал действия прогноза.
+        """
+        from_str = self.valid_from.strftime("%d.%m %H:%M") if self.valid_from else "—"
+        to_str = self.valid_to.strftime("%d.%m %H:%M") if self.valid_to else "—"
+        return f"TAF {self.icao_code} [{from_str} – {to_str} UTC]"
+
+    def is_currently_valid(self) -> bool:
+        """Проверяет, действует ли прогноз в текущий момент времени.
+
+        Returns:
+            bool: True, если текущее время UTC входит в интервал [valid_from, valid_to].
+        """
+        now = timezone.now()
+        if self.valid_from and self.valid_to:
+            return self.valid_from <= now <= self.valid_to
+        return False
+
+
 
 
 

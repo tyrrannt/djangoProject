@@ -66,6 +66,7 @@
                             <tr>
                                 <th>Наименование</th>
                                 <th>Краткое</th>
+                                <th>ICAO</th>
                                 <th>Адрес</th>
                                 <th>Корп. почта</th>
                                 <th>Доп. оплата</th>
@@ -132,6 +133,12 @@
                         "data": "short_name",
                         "render": function (data, type, row) {
                             return data !== '—' ? '<span class="badge bg-primary text-white">' + data + '</span>' : '<span class="text-muted">—</span>';
+                        }
+                    },
+                    {
+                        "data": "icao_code",
+                        "render": function (data, type, row) {
+                            return data !== '—' ? '<span class="badge bg-dark font-monospace text-uppercase">' + data + '</span>' : '<span class="text-muted">—</span>';
                         }
                     },
                     {"data": "address"},

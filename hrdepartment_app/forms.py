@@ -1138,8 +1138,8 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
     """Форма добавления нового места производственной деятельности (МПД).
 
     Включает все реквизиты объекта, контактный email и пароль корпоративной почты,
-    сумму дополнительной оплаты и системные переключатели интеграции
-    (приказы бригад, планирование, контроль билетов).
+    сумму дополнительной оплаты, авиационные метеорологические параметры (код ICAO, координаты)
+    и системные переключатели интеграции (приказы бригад, планирование, контроль билетов, мониторинг погоды).
     """
 
     class Meta:
@@ -1148,12 +1148,16 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
             "name",
             "short_name",
             "address",
+            "icao_code",
+            "latitude",
+            "longitude",
             "email",
             "work_email_password",
             "additional_payment",
             "use_team_orders",
             "in_planning",
             "ticket_control",
+            "weather_monitoring_enabled",
         )
         widgets = {
             "name": forms.TextInput(
@@ -1172,6 +1176,28 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
                 attrs={
                     "class": "form-control form-control-modern",
                     "placeholder": "Фактический адрес объекта",
+                }
+            ),
+            "icao_code": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern text-uppercase font-monospace",
+                    "placeholder": "UNNT",
+                    "maxlength": "4",
+                    "style": "letter-spacing: 2px;",
+                }
+            ),
+            "latitude": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.000001",
+                    "placeholder": "55.012345",
+                }
+            ),
+            "longitude": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.000001",
+                    "placeholder": "82.654321",
                 }
             ),
             "email": forms.EmailInput(
@@ -1207,6 +1233,12 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
                 }
             ),
             "ticket_control": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+            "weather_monitoring_enabled": forms.CheckboxInput(
                 attrs={
                     "class": "form-check-input",
                     "role": "switch",
@@ -1225,7 +1257,8 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
     """Форма редактирования места производственной деятельности (МПД).
 
     Позволяет изменять все реквизиты объекта, контактные данные корпоративной почты,
-    дополнительную оплату и флаги использования объекта в бизнес-процессах.
+    дополнительную оплату, метеорологические настройки (код ICAO, координаты)
+    и флаги использования объекта в бизнес-процессах.
     """
 
     class Meta:
@@ -1234,12 +1267,16 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
             "name",
             "short_name",
             "address",
+            "icao_code",
+            "latitude",
+            "longitude",
             "email",
             "work_email_password",
             "additional_payment",
             "use_team_orders",
             "in_planning",
             "ticket_control",
+            "weather_monitoring_enabled",
         )
         widgets = {
             "name": forms.TextInput(
@@ -1258,6 +1295,28 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
                 attrs={
                     "class": "form-control form-control-modern",
                     "placeholder": "Фактический адрес объекта",
+                }
+            ),
+            "icao_code": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-modern text-uppercase font-monospace",
+                    "placeholder": "UNNT",
+                    "maxlength": "4",
+                    "style": "letter-spacing: 2px;",
+                }
+            ),
+            "latitude": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.000001",
+                    "placeholder": "55.012345",
+                }
+            ),
+            "longitude": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.000001",
+                    "placeholder": "82.654321",
                 }
             ),
             "email": forms.EmailInput(
@@ -1293,6 +1352,12 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
                 }
             ),
             "ticket_control": forms.CheckboxInput(
+                attrs={
+                    "class": "form-check-input",
+                    "role": "switch",
+                }
+            ),
+            "weather_monitoring_enabled": forms.CheckboxInput(
                 attrs={
                     "class": "form-check-input",
                     "role": "switch",

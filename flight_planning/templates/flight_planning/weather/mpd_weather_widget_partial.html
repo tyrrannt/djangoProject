@@ -1,0 +1,26 @@
+{% load custom %}
+{% if latest_observation %}
+    <div class="d-inline-flex align-items-center gap-2 px-2 py-1 bg-light rounded border">
+        <span class="badge bg-{{ latest_observation.get_flight_category_color }} text-white font-weight-bold">
+            {{ latest_observation.get_flight_category_name_ru }}
+        </span>
+        <span class="fs-7 font-weight-semibold text-dark">
+            {% if latest_observation.temperature is not None %}
+                {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
+            {% endif %}
+        </span>
+        <span class="fs-7 text-muted">
+            <i class="bx bx-wind text-primary"></i> {{ latest_observation.get_wind_display }}
+        </span>
+        <span class="fs-7 text-muted d-none d-md-inline">
+            <i class="bx bx-show"></i> {{ latest_observation.get_visibility_display }}
+        </span>
+        <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}" class="text-primary ms-1" title="Открыть полный метеоцентр">
+            <i class="bx bx-link-external"></i>
+        </a>
+    </div>
+{% else %}
+    <span class="badge bg-light text-muted border">
+        <i class="bx bx-cloud text-secondary me-1"></i> Метео нет
+    </span>
+{% endif %}

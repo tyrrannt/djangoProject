@@ -779,6 +779,30 @@ class PlaceProductionActivity(models.Model):
     )
     in_planning = models.BooleanField(verbose_name='Используется в планировании', default=False)
     ticket_control = models.BooleanField(verbose_name='Вести контроль билетов', default=False)
+    icao_code = models.CharField(
+        verbose_name="Код ICAO метеостанции",
+        max_length=4,
+        blank=True,
+        default="",
+        help_text="4-буквенный ICAO код ближайшего аэродрома/метеостанции (например, UNNT, USRR, ULLI, UUEE)",
+    )
+    latitude = models.FloatField(
+        verbose_name="Широта",
+        null=True,
+        blank=True,
+        help_text="Географическая широта объекта в градусах",
+    )
+    longitude = models.FloatField(
+        verbose_name="Долгота",
+        null=True,
+        blank=True,
+        help_text="Географическая долгота объекта в градусах",
+    )
+    weather_monitoring_enabled = models.BooleanField(
+        verbose_name="Мониторинг погоды",
+        default=False,
+        help_text="Автоматический сбор и архивирование METAR/TAF сводок",
+    )
 
     def __str__(self) -> str:
         """Строковое представление места производственной деятельности.
@@ -793,7 +817,8 @@ class PlaceProductionActivity(models.Model):
 
         Returns:
             dict: Словарь с полями МПД (pk, name, short_name, address, email,
-                additional_payment, use_team_orders, in_planning, ticket_control).
+                additional_payment, use_team_orders, in_planning, ticket_control,
+                icao_code, weather_monitoring_enabled).
         """
         return {
             "pk": self.pk,
@@ -805,6 +830,8 @@ class PlaceProductionActivity(models.Model):
             "use_team_orders": "Да" if self.use_team_orders else "Нет",
             "in_planning": "Да" if self.in_planning else "Нет",
             "ticket_control": "Да" if self.ticket_control else "Нет",
+            "icao_code": self.icao_code.upper() if self.icao_code else "—",
+            "weather_monitoring_enabled": "Да" if self.weather_monitoring_enabled else "Нет",
         }
 
     @staticmethod

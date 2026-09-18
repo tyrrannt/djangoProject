@@ -5,7 +5,20 @@ from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.filters.admin import RangeDateFilter
 from unfold.decorators import display
 
-from .models import AircraftMovement, CrewMember, FlightCrew, FlightCrewNote, PilotAssignment
+from .models import (
+    AircraftMovement,
+    AviationWeatherForecast,
+    AviationWeatherObservation,
+    CrewMember,
+    EmployeeRequiredCheck,
+    EmployeeStatusRecord,
+    EmployeeStatusType,
+    FlightCrew,
+    FlightCrewNote,
+    PeriodicCheckRecord,
+    PeriodicCheckType,
+    PilotAssignment,
+)
 
 
 class FlightCrewNoteInline(TabularInline):
@@ -189,3 +202,175 @@ class AircraftMovementAdmin(ModelAdmin):
     autocomplete_fields = ["aircraft", "mpd", "created_by"]
     compressed_fields = True
     warn_unsaved_form = True
+
+
+@admin.register(AviationWeatherObservation)
+class AviationWeatherObservationAdmin(ModelAdmin):
+    """Панель архива фактических метеонаблюдений (METAR / SPECI)."""
+
+    list_display = [
+        "get_header",
+        "flight_category_badge",
+        "get_wind",
+        "get_vis",
+        "get_cloud",
+        "get_temp",
+        "get_pressure",
+        "weather_phenomena",
+        "observation_time",
+        "report_type",
+    ]
+    list_filter = [
+        "flight_category",
+        "report_type",
+        "cavok",
+        ("observation_time", RangeDateFilter),
+        "mpd",
+    ]
+    search_fields = ["icao_code", "raw_text", "mpd__name", "weather_phenomena"]
+    date_hierarchy = "observation_time"
+    autocomplete_fields = ["mpd"]
+    readonly_fields = ["created_at"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(header=True, description="Станция / МПД")
+    def get_header(self, obj: AviationWeatherObservation) -> list:
+        """Двухстрочный заголовок: Код ICAO + Название МПД."""
+        mpd_name = obj.mpd.name if obj.mpd else "Без привязки к МПД"
+        return [obj.icao_code, mpd_name]
+
+    @display(
+        description="Условия",
+        label={
+            "VFR": "success",
+            "MVFR": "info",
+            "IFR": "danger",
+            "LIFR": "dark",
+        },
+    )
+    def flight_category_badge(self, obj: AviationWeatherObservation) -> str:
+        """Цветной бейдж летной категории."""
+        return obj.flight_category
+
+    @display(description="Ветер")
+    def get_wind(self, obj: AviationWeatherObservation) -> str:
+        """Форматированное описание ветра."""
+        return obj.get_wind_display()
+
+    @display(description="Видимость")
+    def get_vis(self, obj: AviationWeatherObservation) -> str:
+        """Форматированная видимость."""
+        return obj.get_visibility_display()
+
+    @display(description="НГО")
+    def get_cloud(self, obj: AviationWeatherObservation) -> str:
+        """Форматированная облачность."""
+        return obj.get_cloud_display()
+
+    @display(description="Температура")
+    def get_temp(self, obj: AviationWeatherObservation) -> str:
+        """Температура воздуха."""
+        if obj.temperature is None:
+            return "—"
+        prefix = "+" if obj.temperature > 0 else ""
+        return f"{prefix}{obj.temperature:.0f}°C"
+
+    @display(description="Давление QNH")
+    def get_pressure(self, obj: AviationWeatherObservation) -> str:
+        """Давление QNH."""
+        if not obj.pressure_mmhg:
+            return "—"
+        return f"{obj.pressure_mmhg:.1f} мм"
+
+
+@admin.register(AviationWeatherForecast)
+class AviationWeatherForecastAdmin(ModelAdmin):
+    """Панель архива авиационных прогнозов погоды (TAF)."""
+
+    list_display = ["get_header", "issued_at", "valid_from", "valid_to", "is_valid_badge", "created_at"]
+    list_filter = [
+        ("issued_at", RangeDateFilter),
+        ("valid_from", RangeDateFilter),
+        "mpd",
+    ]
+    search_fields = ["icao_code", "raw_text", "mpd__name"]
+    date_hierarchy = "issued_at"
+    autocomplete_fields = ["mpd"]
+    readonly_fields = ["created_at"]
+    compressed_fields = True
+
+    @display(header=True, description="Аэродром")
+    def get_header(self, obj: AviationWeatherForecast) -> list:
+        """Двухстрочный заголовок: TAF ICAO + МПД."""
+        mpd_name = obj.mpd.name if obj.mpd else "—"
+        return [f"TAF {obj.icao_code}", mpd_name]
+
+    @display(description="Статус действия", boolean=True)
+    def is_valid_badge(self, obj: AviationWeatherForecast) -> bool:
+        """Флаг актуальности прогноза в текущий момент."""
+        return obj.is_currently_valid()
+
+
+@admin.register(PeriodicCheckType)
+class PeriodicCheckTypeAdmin(ModelAdmin):
+    """Панель видов периодических проверок и мероприятий."""
+
+    list_display = ["name", "code", "aircraft_type", "validity_months", "validity_days", "applies_to", "order", "is_active"]
+    list_filter = ["is_active", "aircraft_type", "applies_to"]
+    search_fields = ["name", "code", "description"]
+    autocomplete_fields = ["aircraft_type"]
+    compressed_fields = True
+
+
+@admin.register(PeriodicCheckRecord)
+class PeriodicCheckRecordAdmin(ModelAdmin):
+    """Панель журнала периодических проверок персонала."""
+
+    list_display = ["employee", "check_type", "start_date", "end_date", "is_active_record", "created_at"]
+    list_filter = ["check_type", "aircraft_type", ("end_date", RangeDateFilter)]
+    search_fields = ["employee__username", "employee__first_name", "employee__last_name", "check_type__name"]
+    date_hierarchy = "end_date"
+    autocomplete_fields = ["employee", "check_type", "aircraft_type", "created_by"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Действительно", boolean=True)
+    def is_active_record(self, obj: PeriodicCheckRecord) -> bool:
+        """Флаг актуальности проверки."""
+        return obj.is_currently_valid
+
+
+@admin.register(EmployeeStatusType)
+class EmployeeStatusTypeAdmin(ModelAdmin):
+    """Панель видов статусов сотрудников."""
+
+    list_display = ["name", "code", "color", "is_blocking", "order", "is_active"]
+    list_filter = ["is_blocking", "is_active"]
+    search_fields = ["name", "code", "description"]
+    compressed_fields = True
+
+
+@admin.register(EmployeeStatusRecord)
+class EmployeeStatusRecordAdmin(ModelAdmin):
+    """Панель записей о статусах и отсутствиях сотрудников."""
+
+    list_display = ["employee", "status_type", "start_date", "end_date", "created_at"]
+    list_filter = ["status_type", ("start_date", RangeDateFilter)]
+    search_fields = ["employee__username", "employee__first_name", "employee__last_name"]
+    date_hierarchy = "start_date"
+    autocomplete_fields = ["employee", "status_type", "created_by"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+
+@admin.register(EmployeeRequiredCheck)
+class EmployeeRequiredCheckAdmin(ModelAdmin):
+    """Панель закрепления обязательных проверок за персоналом."""
+
+    list_display = ["employee", "check_type", "is_required", "created_at"]
+    list_filter = ["is_required", "check_type"]
+    search_fields = ["employee__username", "employee__first_name", "employee__last_name", "check_type__name"]
+    autocomplete_fields = ["employee", "check_type", "assigned_by"]
+    compressed_fields = True
+
