@@ -23,6 +23,9 @@
                     <option value="theme-classic">Классическая тема</option>
                     <option value="theme-corporate">Корпоративная тема</option>
                 </select>
+                <a href="{% url 'flight_planning:weather_hub' %}" class="nav-btn btn-planner-action" style="background-color: #0ea5e9; text-decoration: none; cursor: pointer;" title="Метеоцентр аэродромов базирования (METAR / TAF)">
+                    <i class='bx bx-cloud-sun me-1'></i> Метеоцентр
+                </a>
                 {% if is_planner %}
                 <button type="button" class="nav-btn btn-planner-action" id="openCrewBuilderBtn" style="background-color: #6f42c1; cursor: pointer;">
                     <i class='bx bx-group me-1'></i> Собрать экипаж
@@ -122,7 +125,20 @@
                     {% for mpd in mpds %}
                         <tr data-mpd-id="{{ mpd.id }}" data-mpd-name="{{ mpd.name }}">
                             <td class="mpd-name" title="{{ mpd.code|default:'' }}">
-                                <strong>{{ mpd.name }}</strong>
+                                <div class="d-flex align-items-center justify-content-between gap-1">
+                                    <span><strong>{{ mpd.name }}</strong></span>
+                                    {% if mpd.icao_code %}
+                                        <button type="button" class="btn btn-sm btn-outline-info btn-weather-quick py-0 px-1"
+                                                data-mpd-id="{{ mpd.id }}"
+                                                data-mpd-name="{{ mpd.name }}"
+                                                data-icao="{{ mpd.icao_code }}"
+                                                onclick="openQuickWeatherModal({{ mpd.id }}, '{{ mpd.name|escapejs }}')"
+                                                title="Метеоинформер {{ mpd.icao_code }} (нажмите для просмотра)"
+                                                style="font-size: 0.70rem; line-height: 1.2; border-radius: 4px; font-weight: 600; white-space: nowrap; cursor: pointer;">
+                                            ⛅ {{ mpd.icao_code }}
+                                        </button>
+                                    {% endif %}
+                                </div>
                             </td>
                             {% for date in dates %}
                                 {% with date_str=date|date:"Y-m-d" %}
@@ -629,6 +645,31 @@
             <button type="button" class="btn btn-secondary" id="closePilotCheckDetailsBtn">Закрыть</button>
         </div>
     </div>
+
+    <!-- Модальное окно быстрого просмотра погоды МПД (METAR / TAF) -->
+    <div class="modal-overlay" id="quickWeatherOverlay" onclick="closeQuickWeatherModal()" style="display: none; z-index: 10090;"></div>
+    <div class="modal-window large-modal" id="quickWeatherModal" style="display: none; z-index: 10100; max-width: 900px; width: 95%;">
+        <div class="modal-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span class="font-weight-bold" id="quickWeatherModalTitle">
+                <i class='bx bx-cloud-lightning text-warning me-2'></i> Метеоинформер МПД
+            </span>
+            <button type="button" class="btn-close btn-close-white" id="closeQuickWeatherCross" onclick="closeQuickWeatherModal()" style="cursor: pointer;"></button>
+        </div>
+        <div class="modal-body p-3" id="quickWeatherModalBody" style="max-height: 80vh; overflow-y: auto;">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <div class="text-muted mt-2">Загрузка метеоданных...</div>
+            </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+            <a href="#" id="quickWeatherFullHubLink" class="btn btn-sm btn-outline-primary" target="_blank">
+                <i class='bx bx-link-external me-1'></i> Открыть в Метеоцентре
+            </a>
+            <button type="button" class="btn btn-secondary" id="closeQuickWeatherBtn" onclick="closeQuickWeatherModal()">Закрыть</button>
+        </div>
+    </div>
 {% endblock %}
 
 {% block custom_script %}
@@ -643,6 +684,99 @@
         window.ALL_AIRCRAFT = {{ all_aircraft_json|safe }};
         window.PILOTS_CHECK_STATUS_MAP = {{ pilots_check_status_json|safe }};
         window.EMPLOYEE_STATUS_MAP = {{ employee_statuses_json|safe }};
+
+        window.openQuickWeatherModal = function(mpdId, mpdName) {
+            $('#quickWeatherModalTitle').html('<i class="bx bx-cloud-lightning text-warning me-2"></i> Метеоинформер — ' + (mpdName || 'МПД'));
+            $('#quickWeatherFullHubLink').attr('href', '/flight/weather/history/' + mpdId + '/');
+            $('#quickWeatherModalBody').html(
+                '<div class="text-center py-5">' +
+                    '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>' +
+                    '<div class="text-muted mt-2">Загрузка метеоданных...</div>' +
+                '</div>'
+            );
+            $('#quickWeatherOverlay').show();
+            $('#quickWeatherModal').show();
+            window.loadWeatherModalContent(mpdId, '');
+        };
+
+        window.closeQuickWeatherModal = function() {
+            $('#quickWeatherOverlay').hide();
+            $('#quickWeatherModal').hide();
+        };
+
+        window.loadWeatherModalContent = function(mpdId, dateStr) {
+            var url = '/flight/weather/modal/' + mpdId + '/';
+            if (dateStr) {
+                url += '?date=' + encodeURIComponent(dateStr);
+            }
+            $.ajax({
+                url: url,
+                type: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(response) {
+                    $('#quickWeatherModalBody').html(response);
+                },
+                error: function() {
+                    $('#quickWeatherModalBody').html(
+                        '<div class="alert alert-danger text-center p-3">' +
+                            '<i class="bx bx-error-circle me-1"></i> Ошибка загрузки метеорологических данных. Пожалуйста, попробуйте позже.' +
+                        '</div>'
+                    );
+                }
+            });
+        };
+
+        window.loadWeatherModalDate = function(mpdId, dateStr) {
+            $('#quickWeatherModalBody').html(
+                '<div class="text-center py-5">' +
+                    '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>' +
+                    '<div class="text-muted mt-2">Загрузка архива...</div>' +
+                '</div>'
+            );
+            window.loadWeatherModalContent(mpdId, dateStr);
+        };
+
+        window.refreshModalWeather = function(mpdId, dateStr, btn) {
+            var $btn = $(btn);
+            var origHtml = $btn.html();
+            $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Запрос...');
+
+            var csrfToken = (function() {
+                var cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                        var cookie = cookies[i].trim();
+                        if (cookie.substring(0, 10) === 'csrftoken=') {
+                            cookieValue = decodeURIComponent(cookie.substring(10));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            })();
+
+            $.ajax({
+                url: '/flight/weather/refresh/' + mpdId + '/',
+                type: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(resp) {
+                    if (resp.status === 'ok') {
+                        window.loadWeatherModalContent(mpdId, dateStr);
+                    } else {
+                        alert('Не удалось обновить METAR: ' + (resp.error || 'Ошибка'));
+                        $btn.prop('disabled', false).html(origHtml);
+                    }
+                },
+                error: function() {
+                    alert('Ошибка сети при запросе к серверу погоды');
+                    $btn.prop('disabled', false).html(origHtml);
+                }
+            });
+        };
     </script>
     <script src="{% static_version 'admin_templates/js/flight_planning.js' %}"></script>
 {% endblock %}

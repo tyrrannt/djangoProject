@@ -1,0 +1,66 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Метеоцентр // Планирование полетов
+{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center p-3">
+        <div class="col-12 col-xl-8">
+            <div class="card card-modern shadow-sm border-0 text-center p-5">
+                <div class="mb-3">
+                    <div class="bg-primary-subtle text-primary d-inline-flex p-3 rounded-circle">
+                        <i class="bx bx-cloud-sun fs-1"></i>
+                    </div>
+                </div>
+                <h3 class="card-title font-weight-bold text-dark mb-2">Авиационный метеоцентр</h3>
+                <p class="text-muted fs-6 mb-4">
+                    Для активации мониторинга фактической погоды (METAR) и прогнозов (TAF) необходимо назначить 4-буквенный международный код ICAO для мест производственной деятельности (МПД).
+                </p>
+
+                <div class="table-responsive text-start border rounded mb-4">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>МПД базирования</th>
+                                <th>Код ICAO</th>
+                                <th class="text-end">Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in all_mpds %}
+                                <tr>
+                                    <td class="fw-bold">{{ m.name }}</td>
+                                    <td>
+                                        {% if m.icao_code %}
+                                            <span class="badge bg-dark font-monospace">{{ m.icao_code }}</span>
+                                        {% else %}
+                                            <span class="text-muted small">Не задан</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'hrdepartment_app:place_update' m.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bx bx-edit me-1"></i> Указать ICAO
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">Площадки МПД не найдены</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <a href="{% url 'flight_planning:planning_table' %}" class="btn btn-outline-secondary">
+                        <i class="bx bx-arrow-back me-1"></i> К шахматке планирования
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

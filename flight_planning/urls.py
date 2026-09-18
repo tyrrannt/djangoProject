@@ -55,9 +55,12 @@ urlpatterns = [
     path('api/employee-statuses/<int:pilot_id>/', views.get_pilot_employee_statuses_api, name='get_pilot_employee_statuses_api'),
 
     # Авиационная метеорология (METAR / TAF / Метеоцентр МПД)
+    path('weather/', views.weather_hub_view, name='weather_hub'),
     path('weather/mpd/<int:mpd_id>/', views.mpd_weather_history_view, name='mpd_weather_history'),
     path('weather/mpd/<int:mpd_id>/refresh/', views.mpd_weather_refresh_view, name='mpd_weather_refresh'),
     path('weather/widget/<int:mpd_id>/', views.mpd_weather_widget_view, name='mpd_weather_widget'),
+    path('weather/modal/<int:mpd_id>/', views.mpd_weather_modal_view, name='mpd_weather_modal'),
+    path('weather/api/timeline/<int:mpd_id>/', views.mpd_weather_timeline_api, name='mpd_weather_timeline_api'),
 
     # Служебный раздел настроек и импорта данных
     path('settings/', views.settings_view, name='settings'),

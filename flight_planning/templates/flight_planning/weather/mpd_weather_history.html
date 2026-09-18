@@ -155,10 +155,44 @@
             padding: 4px 8px;
             border-radius: 4px;
         }
+        .mpd-pills-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+        }
+        .mpd-pill-btn {
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .mpd-pill-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+        .mpd-pill-btn.active {
+            background: #002b49;
+            color: #ffffff;
+            border-color: #002b49;
+            box-shadow: 0 2px 6px rgba(0, 43, 73, 0.25);
+        }
     </style>
 {% endblock %}
 
 {% block custom_script %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script>
         function copyRawMetar(text, btn) {
             navigator.clipboard.writeText(text).then(function() {
@@ -169,12 +203,196 @@
                 }, 2000);
             });
         }
+
+        (function() {
+            var chartInstanceSmall = null;
+            var chartInstanceLarge = null;
+
+            function buildConfig(chartData, isLarge) {
+                var singlePoint = chartData.labels && chartData.labels.length === 1;
+
+                return {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels || [],
+                        datasets: [
+                            {
+                                label: 'Температура (°C)',
+                                data: chartData.temperatures || [],
+                                borderColor: '#f97316',
+                                backgroundColor: 'rgba(249, 115, 22, 0.12)',
+                                borderWidth: 2.5,
+                                pointRadius: singlePoint ? 6 : 4,
+                                pointHoverRadius: 7,
+                                tension: 0.3,
+                                fill: true,
+                                yAxisID: 'yTemp'
+                            },
+                            {
+                                label: 'Скорость ветра (м/с)',
+                                data: chartData.wind_speeds || [],
+                                borderColor: '#0284c7',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                borderDash: [3, 3],
+                                pointRadius: singlePoint ? 6 : 4,
+                                pointHoverRadius: 7,
+                                tension: 0.3,
+                                yAxisID: 'yWind'
+                            },
+                            {
+                                label: 'Порывы ветра (м/с)',
+                                data: chartData.wind_gusts || [],
+                                borderColor: '#ef4444',
+                                backgroundColor: 'transparent',
+                                borderWidth: 1.5,
+                                pointRadius: 5,
+                                pointBackgroundColor: '#ef4444',
+                                showLine: false,
+                                yAxisID: 'yWind'
+                            },
+                            {
+                                label: 'Давление (мм рт. ст.)',
+                                data: chartData.pressures || [],
+                                borderColor: '#8b5cf6',
+                                backgroundColor: 'transparent',
+                                borderWidth: 1.5,
+                                borderDash: [1, 2],
+                                pointRadius: singlePoint ? 6 : 3,
+                                tension: 0.2,
+                                yAxisID: 'yPress'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { boxWidth: 14, font: { size: 12, weight: '600' } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var label = context.dataset.label || '';
+                                        return label + ': ' + context.parsed.y;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(0,0,0,0.04)' },
+                                ticks: { font: { size: 11, weight: '600' } }
+                            },
+                            yTemp: {
+                                type: 'linear',
+                                position: 'left',
+                                title: { display: true, text: 'Температура (°C)', font: { size: 11, weight: '600' } },
+                                ticks: { font: { size: 11 } }
+                            },
+                            yWind: {
+                                type: 'linear',
+                                position: 'right',
+                                title: { display: true, text: 'Ветер (м/с)', font: { size: 11, weight: '600' } },
+                                grid: { display: false },
+                                ticks: { font: { size: 11 } }
+                            },
+                            yPress: {
+                                type: 'linear',
+                                position: 'right',
+                                display: isLarge,
+                                title: isLarge ? { display: true, text: 'Давление (мм рт.ст.)', font: { size: 11, weight: '600' } } : undefined,
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                };
+            }
+
+            function renderAllCharts() {
+                if (typeof Chart === 'undefined') {
+                    setTimeout(renderAllCharts, 100);
+                    return;
+                }
+
+                var rawChartData = '{{ chart_data_json|escapejs }}';
+                if (!rawChartData) return;
+
+                try {
+                    var chartData = JSON.parse(rawChartData);
+                    if (!chartData.labels || chartData.labels.length === 0) return;
+
+                    var ctxSmall = document.getElementById('dailyWeatherChart');
+                    if (ctxSmall && !chartInstanceSmall) {
+                        chartInstanceSmall = new Chart(ctxSmall, buildConfig(chartData, false));
+                    }
+
+                    var ctxLarge = document.getElementById('dailyWeatherChartLarge');
+                    if (ctxLarge && !chartInstanceLarge) {
+                        chartInstanceLarge = new Chart(ctxLarge, buildConfig(chartData, true));
+                    }
+                } catch(e) {
+                    console.warn('Daily weather chart init error:', e);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', renderAllCharts);
+            } else {
+                renderAllCharts();
+            }
+
+            document.addEventListener('shown.bs.tab', function(event) {
+                if (event.target && (event.target.id === 'chart-tab' || event.target.getAttribute('data-bs-target') === '#chart-panel')) {
+                    if (!chartInstanceLarge) {
+                        renderAllCharts();
+                    } else {
+                        chartInstanceLarge.resize();
+                    }
+                }
+                if (event.target && (event.target.id === 'timeline-tab' || event.target.getAttribute('data-bs-target') === '#timeline-panel')) {
+                    if (chartInstanceSmall) {
+                        chartInstanceSmall.resize();
+                    }
+                }
+            });
+        })();
     </script>
 {% endblock %}
 
 {% block content %}
     <section class="content-body p-2 p-md-3">
-        <!-- Верхняя панель навигации и действий -->
+        <!-- ЛЕНТА ПЕРЕКЛЮЧЕНИЯ ВСЕХ МПД -->
+        {% if all_weather_mpds %}
+            <div class="card card-modern shadow-sm border-0 mb-3">
+                <div class="card-body p-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small fw-bold text-uppercase d-none d-md-inline flex-shrink-0">
+                            <i class="bx bx-buildings me-1"></i> Площадки:
+                        </span>
+                        <div class="mpd-pills-bar flex-grow-1">
+                            {% for item in all_weather_mpds %}
+                                <a href="{% url 'flight_planning:mpd_weather_history' item.pk %}?date={{ target_date_str }}"
+                                   class="mpd-pill-btn {% if item.pk == mpd.pk %}active{% endif %}">
+                                    <span>{{ item.name }}</span>
+                                    <span class="badge {% if item.pk == mpd.pk %}bg-light text-dark{% else %}bg-secondary{% endif %} font-monospace">
+                                        {{ item.icao_code }}
+                                    </span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- ВЕРХНЯЯ ПАНЕЛЬ: НАВИГАЦИЯ И ДЕЙСТВИЯ -->
         <div class="card card-modern shadow-sm border-0 mb-3">
             <div class="card-body p-3">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -199,33 +417,13 @@
                         </div>
                     </div>
 
-                    <!-- Выбор площадки и даты -->
+                    <!-- Выбор даты и действия -->
                     <div class="d-flex flex-wrap align-items-center gap-2">
-                        <!-- Быстрое переключение МПД -->
-                        {% if all_weather_mpds|length > 1 %}
-                            <div class="dropdown">
-                                <button class="btn btn-outline-secondary btn-touch dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bx bx-buildings me-1"></i> Сменить МПД
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                    {% for other_mpd in all_weather_mpds %}
-                                        <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center {% if other_mpd.pk == mpd.pk %}active{% endif %}"
-                                               href="{% url 'flight_planning:mpd_weather_history' other_mpd.pk %}?date={{ target_date_str }}">
-                                                <span>{{ other_mpd.name }}</span>
-                                                <span class="badge bg-secondary font-monospace ms-2">{{ other_mpd.icao_code }}</span>
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        {% endif %}
-
                         <!-- Навигатор по дате -->
                         <div class="btn-group" role="group" aria-label="Навигация по датам">
                             <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}?date={{ prev_date_str }}"
                                class="btn btn-outline-secondary btn-touch" title="Предыдущий день">
-                                <i class="bx bx-chevron-left"></i>
+                                <i class="bx bx-chevron-left"></i> <span class="d-none d-sm-inline">Вчера</span>
                             </a>
                             <form method="get" action="{% url 'flight_planning:mpd_weather_history' mpd.pk %}" class="d-inline-flex m-0">
                                 <input type="date" name="date" value="{{ target_date_str }}"
@@ -235,7 +433,7 @@
                             </form>
                             <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}?date={{ next_date_str }}"
                                class="btn btn-outline-secondary btn-touch" title="Следующий день">
-                                <i class="bx bx-chevron-right"></i>
+                                <span class="d-none d-sm-inline">Вперед</span> <i class="bx bx-chevron-right"></i>
                             </a>
                         </div>
 
@@ -250,12 +448,12 @@
                         <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}"
                            class="btn btn-success btn-touch" title="Запросить свежие сводки METAR/TAF">
                             <i class="bx bx-refresh me-1"></i>
-                            <span class="d-none d-md-inline">Обновить сейчас</span>
+                            <span>Обновить METAR</span>
                         </a>
 
-                        <a href="{% url 'hrdepartment_app:place_detail' mpd.pk %}" class="btn btn-outline-dark btn-touch" title="К карточке МПД">
-                            <i class="bx bx-arrow-back me-1"></i>
-                            <span class="d-none d-lg-inline">К карточке МПД</span>
+                        <a href="{% url 'flight_planning:planning_table' %}" class="btn btn-outline-dark btn-touch" title="К шахматке планирования">
+                            <i class="bx bx-calendar me-1"></i>
+                            <span class="d-none d-lg-inline">К планированию</span>
                         </a>
                     </div>
                 </div>
@@ -302,7 +500,7 @@
                                 <span>Без опасных явлений</span>
                             {% endif %}
                             {% if latest_observation.cavok %}
-                                <span class="badge bg-success fs-7">CAVOK</span>
+                                <span class="badge bg-success fs-7 ms-1">CAVOK</span>
                             {% endif %}
                         </div>
                     </div>
@@ -409,13 +607,18 @@
             </div>
         </div>
 
-        <!-- ОСНОВНОЙ БЛОК: ВКЛАДКИ (ХРОНОЛОГИЯ METAR / ПРОГНОЗ TAF) -->
+        <!-- ОСНОВНОЙ БЛОК: ВКЛАДКИ (ХРОНОЛОГИЯ METAR / СУТОЧНЫЙ ГРАФИК / ПРОГНОЗ TAF) -->
         <div class="card card-modern shadow-sm border-0">
             <div class="card-header bg-light p-2 border-bottom">
                 <ul class="nav nav-tabs card-header-tabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active font-weight-semibold text-dark" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-panel" type="button" role="tab">
                             <i class="bx bx-time text-primary me-1"></i> Почасовая хронология METAR ({{ observations|length }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link font-weight-semibold text-dark" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-panel" type="button" role="tab">
+                            <i class="bx bx-line-chart text-success me-1"></i> Суточный график параметров
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -430,6 +633,21 @@
                 <div class="tab-content">
                     <!-- Вкладка 1: Почасовая таблица METAR -->
                     <div class="tab-pane fade show active p-3" id="timeline-panel" role="tabpanel">
+                        <!-- Мини-график над таблицей -->
+                        {% if observations|length > 0 %}
+                            <div class="card border p-3 rounded-3 mb-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-dark small text-uppercase">
+                                        <i class="bx bx-line-chart me-1 text-primary"></i> Динамика температуры и ветра за {{ target_date_formatted }}
+                                    </span>
+                                    <span class="badge bg-secondary font-monospace small">Почасовые точки</span>
+                                </div>
+                                <div style="position: relative; height: 180px; width: 100%;">
+                                    <canvas id="dailyWeatherChart"></canvas>
+                                </div>
+                            </div>
+                        {% endif %}
+
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0 timeline-table">
                                 <thead class="table-light">
@@ -456,7 +674,7 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-{{ obs.get_flight_category_color }} fs-7">
-                                                    {{ obs.get_flight_category_name_ru }}
+                                                    {{ obs.get_flight_category_name_ru }} ({{ obs.flight_category }})
                                                 </span>
                                             </td>
                                             <td class="font-weight-semibold">
@@ -514,7 +732,7 @@
                                             <td colspan="9" class="text-center py-5 text-muted">
                                                 <i class="bx bx-cloud-rain fs-1 d-block mb-2 text-secondary"></i>
                                                 <div class="font-weight-bold mb-1">За выбранную дату ({{ target_date_formatted }}) метеонаблюдений не обнаружено</div>
-                                                <small>Нажмите «Обновить сейчас», чтобы запросить актуальные сводки из метеосети.</small>
+                                                <small>Нажмите «Обновить METAR», чтобы запросить актуальные сводки из метеосети.</small>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -523,7 +741,30 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка 2: Прогноз погоды TAF -->
+                    <!-- Вкладка 2: Отдельный график параметров -->
+                    <div class="tab-pane fade p-3" id="chart-panel" role="tabpanel">
+                        <div class="card border p-4 rounded-3 bg-light">
+                            <h5 class="font-weight-bold text-dark mb-3">
+                                <i class="bx bx-line-chart text-success me-2"></i>Суточные графики метеорологических параметров
+                            </h5>
+                            <p class="text-muted small mb-4">
+                                График отражает почасовую динамику температуры окружающего воздуха (°C), скорости ветра и порывов (м/с), а также барометрического давления QNH (мм рт. ст.) на аэродроме {{ mpd.name }} ({{ mpd.icao_code }}).
+                            </p>
+                            {% if observations|length > 0 %}
+                                <div style="position: relative; height: 340px; width: 100%;">
+                                    <canvas id="dailyWeatherChartLarge"></canvas>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-secondary text-center py-4 mb-0">
+                                    <i class="bx bx-line-chart fs-1 text-muted d-block mb-2"></i>
+                                    <strong>За выбранную дату ({{ target_date_formatted }}) метеонаблюдений не обнаружено</strong>
+                                    <p class="text-muted small mb-0 mt-1">График сформируется автоматически по мере поступления метеосводок METAR.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Вкладка 3: Прогноз погоды TAF -->
                     <div class="tab-pane fade p-3" id="taf-panel" role="tabpanel">
                         {% if forecast %}
                             <div class="d-flex justify-content-between align-items-center mb-3">

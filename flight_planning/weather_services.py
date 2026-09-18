@@ -780,6 +780,24 @@ class AviationWeatherService:
             "max_pressure_mmhg": max(pressures) if pressures else None,
         }
 
+        # Данные для построения почасового графика (в хронологическом порядке)
+        chronological_obs = list(reversed(observations))
+        chart_labels = [o.observation_time.strftime("%H:%M") for o in chronological_obs]
+        chart_temps = [round(o.temperature, 1) if o.temperature is not None else None for o in chronological_obs]
+        chart_winds = [round(o.wind_speed, 1) if o.wind_speed is not None else None for o in chronological_obs]
+        chart_gusts = [round(o.wind_gust, 1) if o.wind_gust is not None else None for o in chronological_obs]
+        chart_pressures = [round(o.pressure_mmhg, 1) if o.pressure_mmhg is not None else None for o in chronological_obs]
+        chart_categories = [o.flight_category for o in chronological_obs]
+
+        chart_data = {
+            "labels": chart_labels,
+            "temperatures": chart_temps,
+            "wind_speeds": chart_winds,
+            "wind_gusts": chart_gusts,
+            "pressures": chart_pressures,
+            "categories": chart_categories,
+        }
+
         # Ищем прогноз, действовавший на эту дату
         forecast = AviationWeatherForecast.objects.filter(
             icao_code=icao,
@@ -793,4 +811,5 @@ class AviationWeatherService:
             "observations": observations,
             "forecast": forecast,
             "stats": stats,
+            "chart_data": chart_data,
         }

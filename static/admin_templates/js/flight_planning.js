@@ -2135,6 +2135,103 @@ $(function () {
         $('#pilotCheckDetailsOverlay').hide();
         $('#pilotCheckDetailsModal').hide();
     });
+
+    // ========================================================
+    // МЕТЕОИНФОРМЕР МПД (METAR / TAF)
+    // ========================================================
+    window.openQuickWeatherModal = function(mpdId, mpdName) {
+        $('#quickWeatherModalTitle').html(`<i class='bx bx-cloud-lightning text-warning me-2'></i> Метеоинформер — ${mpdName}`);
+        $('#quickWeatherFullHubLink').attr('href', `/flight/weather/history/${mpdId}/`);
+        $('#quickWeatherModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <div class="text-muted mt-2">Загрузка метеоданных...</div>
+            </div>
+        `);
+        $('#quickWeatherOverlay').show();
+        $('#quickWeatherModal').show();
+
+        window.loadWeatherModalContent(mpdId, '');
+    };
+
+    window.closeQuickWeatherModal = function() {
+        $('#quickWeatherOverlay').hide();
+        $('#quickWeatherModal').hide();
+    };
+
+    window.loadWeatherModalContent = function(mpdId, dateStr) {
+        let url = `/flight/weather/modal/${mpdId}/`;
+        if (dateStr) {
+            url += `?date=${encodeURIComponent(dateStr)}`;
+        }
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(response) {
+                $('#quickWeatherModalBody').html(response);
+            },
+            error: function() {
+                $('#quickWeatherModalBody').html(`
+                    <div class="alert alert-danger text-center p-3">
+                        <i class='bx bx-error-circle me-1'></i> Ошибка загрузки метеорологических данных. Пожалуйста, попробуйте позже.
+                    </div>
+                `);
+            }
+        });
+    };
+
+    window.loadWeatherModalDate = function(mpdId, dateStr) {
+        $('#quickWeatherModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <div class="text-muted mt-2">Загрузка архива за ${dateStr || 'сегодня'}...</div>
+            </div>
+        `);
+        window.loadWeatherModalContent(mpdId, dateStr);
+    };
+
+    window.refreshModalWeather = function(mpdId, dateStr, btn) {
+        const $btn = $(btn);
+        const origHtml = $btn.html();
+        $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Запрос...');
+
+        $.ajax({
+            url: `/flight/weather/refresh/${mpdId}/`,
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(resp) {
+                if (resp.status === 'ok') {
+                    window.loadWeatherModalContent(mpdId, dateStr);
+                } else {
+                    alert('Не удалось обновить METAR: ' + (resp.error || 'Ошибка'));
+                    $btn.prop('disabled', false).html(origHtml);
+                }
+            },
+            error: function() {
+                alert('Ошибка сети при запросе к серверу погоды');
+                $btn.prop('disabled', false).html(origHtml);
+            }
+        });
+    };
+
+    $(document).on('click', '.btn-weather-quick', function (e) {
+        e.stopPropagation();
+        const mpdId = $(this).data('mpd-id');
+        const mpdName = $(this).data('mpd-name');
+        window.openQuickWeatherModal(mpdId, mpdName);
+    });
+
+    $('#closeQuickWeatherCross, #closeQuickWeatherBtn, #quickWeatherOverlay').on('click', function () {
+        window.closeQuickWeatherModal();
+    });
 });
 
 

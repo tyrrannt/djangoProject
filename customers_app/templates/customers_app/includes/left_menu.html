@@ -485,6 +485,12 @@
                                         <span>Состояния сотрудников</span>
                                     </a>
                                 </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'flight_planning:weather_hub' %}">
+                                        <i class="bx bx-cloud-sun me-1" aria-hidden="true"></i>
+                                        <span>Метеоцентр (METAR/TAF)</span>
+                                    </a>
+                                </li>
                                 {% if request.user|can_view_flight_reports %}
                                     <li class="nav-parent">
                                         <a class="nav-link" href="#">

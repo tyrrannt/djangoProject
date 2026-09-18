@@ -1,0 +1,337 @@
+{% load static %}
+{% load custom %}
+
+<div class="weather-modal-wrapper" data-mpd-id="{{ mpd.pk }}" data-current-date="{{ target_date_str }}">
+    <!-- Заголовок информера -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center pb-2 mb-3 border-bottom gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fs-4">📍</span>
+            <div>
+                <h5 class="font-weight-bold text-dark mb-0">
+                    МПД "{{ mpd.name }}" {% if mpd.icao_code %}<span class="badge bg-dark font-monospace text-uppercase">{{ mpd.icao_code }}</span>{% endif %}
+                </h5>
+                <small class="text-muted">Оперативный метеоинформер и суточный архив</small>
+            </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button type="button" class="btn btn-sm btn-success" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this)">
+                <i class="bx bx-refresh me-1"></i> <span>Обновить METAR</span>
+            </button>
+            <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}?date={{ target_date_str }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Открыть в новой вкладке">
+                <i class="bx bx-fullscreen me-1"></i> Метеоцентр
+            </a>
+        </div>
+    </div>
+
+    <!-- ТЕКУЩАЯ ПОГОДА (HERO КАРТОЧКА) -->
+    {% if latest_observation %}
+        <div class="card bg-dark text-white border-0 shadow-sm p-3 mb-3" style="border-radius: 10px; background: linear-gradient(135deg, #002b49 0%, #0c4a6e 100%) !important;">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge {% if latest_observation.flight_category == 'VFR' %}bg-success{% elif latest_observation.flight_category == 'MVFR' %}bg-info text-dark{% elif latest_observation.flight_category == 'IFR' %}bg-danger{% else %}bg-dark border border-danger{% endif %} fs-6 px-2 py-1">
+                        {{ latest_observation.flight_category }} ({{ latest_observation.get_flight_category_name_ru }})
+                    </span>
+                    <span class="text-white-50 small">
+                        <i class="bx bx-time-five me-1"></i>{{ latest_observation.observation_time|date:"H:i" }} UTC ({{ latest_observation.observation_time|date:"d.m.Y" }})
+                    </span>
+                </div>
+                <div>
+                    {% if latest_observation.weather_phenomena %}
+                        <span class="badge bg-warning text-dark">{{ latest_observation.weather_phenomena }}</span>
+                    {% else %}
+                        <span class="badge bg-success-subtle text-success">Без опасных явлений</span>
+                    {% endif %}
+                    {% if latest_observation.cavok %}
+                        <span class="badge bg-success ms-1">CAVOK</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Сетка параметров текущей погоды -->
+            <div class="row g-2 text-center text-md-start">
+                <div class="col-6 col-md-3">
+                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Температура</small>
+                        <span class="fw-bold fs-5 text-white">
+                            {% if latest_observation.temperature is not None %}
+                                {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
+                            {% else %}—{% endif %}
+                        </span>
+                        {% if latest_observation.dew_point is not None %}
+                            <small class="text-white-50 d-block" style="font-size: 0.7rem;">Td: {{ latest_observation.dew_point|floatformat:0 }}°C</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Ветер</small>
+                        <span class="fw-bold fs-6 text-white">{{ latest_observation.get_wind_display }}</span>
+                        {% if latest_observation.wind_gust %}
+                            <small class="text-danger-subtle d-block font-weight-bold" style="font-size: 0.7rem;">Порывы {{ latest_observation.wind_gust|floatformat:0 }} м/с</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Видимость / НГО</small>
+                        <span class="fw-bold fs-6 text-white">{{ latest_observation.get_visibility_display }}</span>
+                        <small class="text-white-50 d-block" style="font-size: 0.7rem;">НГО: {{ latest_observation.get_cloud_display }}</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Давление QNH</small>
+                        <span class="fw-bold fs-6 text-white">
+                            {% if latest_observation.pressure_mmhg %}{{ latest_observation.pressure_mmhg|floatformat:1 }} мм{% else %}—{% endif %}
+                        </span>
+                        {% if latest_observation.pressure_hpa %}
+                            <small class="text-white-50 d-block" style="font-size: 0.7rem;">{{ latest_observation.pressure_hpa|floatformat:0 }} гПа</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Исходный METAR -->
+            <div class="mt-2 pt-2 border-top border-secondary d-flex justify-content-between align-items-center gap-2">
+                <div class="font-monospace small text-truncate text-info" title="{{ latest_observation.raw_text }}">
+                    <i class="bx bx-terminal me-1"></i>{{ latest_observation.raw_text }}
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 flex-shrink-0"
+                        onclick="navigator.clipboard.writeText('{{ latest_observation.raw_text|escapejs }}'); this.innerText='Скопировано!'; setTimeout(() => this.innerText='Копия', 1500);"
+                        style="font-size: 0.75rem;">
+                    Копия
+                </button>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-secondary text-center p-3 mb-3">
+            <i class="bx bx-info-circle me-1"></i> Метеосводки METAR для <strong>{{ mpd.name }}</strong> ({{ mpd.icao_code|default:"без ICAO" }}) еще не зафиксированы.
+            {% if mpd.icao_code %}
+                <button type="button" class="btn btn-sm btn-primary ms-2" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this)">
+                    <i class="bx bx-download me-1"></i> Запросить сводку с метеостанции
+                </button>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- НАВИГАТОР ПО ДАТАМ (ПРОСМОТР ИСТОРИИ И АРХИВА) -->
+    <div class="card bg-light border-0 p-2 mb-3 rounded-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-1">
+                <span class="fw-bold text-dark small text-uppercase"><i class="bx bx-calendar me-1"></i> Архив за:</span>
+                <span class="badge bg-primary fs-7">{{ target_date_formatted }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadWeatherModalDate({{ mpd.pk }}, '{{ prev_date_str }}')">
+                    <i class="bx bx-chevron-left"></i> Вчера
+                </button>
+                <input type="date" value="{{ target_date_str }}" class="form-control form-control-sm text-center font-weight-semibold"
+                       style="width: 135px;" onchange="loadWeatherModalDate({{ mpd.pk }}, this.value)">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadWeatherModalDate({{ mpd.pk }}, '{{ next_date_str }}')">
+                    Вперед <i class="bx bx-chevron-right"></i>
+                </button>
+                {% if not is_today %}
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadWeatherModalDate({{ mpd.pk }}, '')">
+                        Сегодня
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ТАБЛИЦА ХРОНОЛОГИИ НАБЛЮДЕНИЙ ЗА СУТКИ -->
+    <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <h6 class="font-weight-bold text-dark mb-0 small text-uppercase">
+                <i class="bx bx-list-ul me-1 text-primary"></i> Хронология замеров ({{ observations|length }} сводок)
+            </h6>
+            {% if stats.min_temp is not None %}
+                <small class="text-muted">
+                    Мин: {{ stats.min_temp|floatformat:0 }}°C | Макс: {{ stats.max_temp|floatformat:0 }}°C | Макс. ветер: {{ stats.max_wind|floatformat:0 }} м/с
+                </small>
+            {% endif %}
+        </div>
+        <div class="table-responsive border rounded" style="max-height: 220px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th>Время UTC</th>
+                        <th>Условия</th>
+                        <th>Ветер (м/с)</th>
+                        <th>Видимость</th>
+                        <th>НГО</th>
+                        <th>Темп</th>
+                        <th>Давление</th>
+                        <th>Метеоявления</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for obs in observations %}
+                        <tr>
+                            <td class="font-monospace fw-bold">{{ obs.observation_time|date:"H:i" }}</td>
+                            <td>
+                                <span class="badge {% if obs.flight_category == 'VFR' %}bg-success{% elif obs.flight_category == 'MVFR' %}bg-info text-dark{% elif obs.flight_category == 'IFR' %}bg-danger{% else %}bg-dark text-white{% endif %} py-1 px-2">
+                                    {{ obs.flight_category }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ obs.get_wind_display }}
+                                {% if obs.wind_gust %}<span class="text-danger fw-bold ms-1">G{{ obs.wind_gust|floatformat:0 }}</span>{% endif %}
+                            </td>
+                            <td>{{ obs.get_visibility_display }}</td>
+                            <td>{{ obs.get_cloud_display }}</td>
+                            <td>
+                                {% if obs.temperature is not None %}
+                                    {% if obs.temperature > 0 %}+{% endif %}{{ obs.temperature|floatformat:0 }}°C
+                                {% else %}—{% endif %}
+                            </td>
+                            <td>{% if obs.pressure_mmhg %}{{ obs.pressure_mmhg|floatformat:0 }} мм{% else %}—{% endif %}</td>
+                            <td>
+                                {% if obs.weather_phenomena %}
+                                    <span class="badge bg-warning-subtle text-dark">{{ obs.weather_phenomena }}</span>
+                                {% else %}
+                                    <span class="text-muted small">Без явлений</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">
+                                <i class="bx bx-calendar-x me-1"></i> За {{ target_date_formatted }} метеорологические наблюдения не зафиксированы
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ИНТЕРАКТИВНЫЙ ГРАФИК ЗА ВЫБРАННЫЕ СУТКИ -->
+    {% if observations|length > 0 %}
+        <div class="card border p-3 rounded-3 mb-2 bg-light">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-dark small text-uppercase">
+                    <i class="bx bx-line-chart me-1 text-info"></i> График параметров (Температура, Ветер, Давление)
+                </span>
+                <span class="badge bg-secondary font-monospace small">Chart.js</span>
+            </div>
+            <div style="position: relative; height: 160px; width: 100%;">
+                <canvas id="quickWeatherModalChart"></canvas>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Скрипт инициализации графика модального окна -->
+<script>
+(function() {
+    var rawData = '{{ chart_data_json|escapejs }}';
+    if (!rawData) return;
+    try {
+        var chartData = JSON.parse(rawData);
+        if (!chartData.labels || chartData.labels.length === 0) return;
+
+        var ctx = document.getElementById('quickWeatherModalChart');
+        if (!ctx) return;
+
+        // Если Chart.js еще не загружен на странице, динамически подключаем его
+        function renderChart() {
+            if (window.quickModalChartInstance) {
+                window.quickModalChartInstance.destroy();
+            }
+
+            window.quickModalChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Температура (°C)',
+                            data: chartData.temperatures,
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'yTemp'
+                        },
+                        {
+                            label: 'Скорость ветра (м/с)',
+                            data: chartData.wind_speeds,
+                            borderColor: '#0284c7',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [2, 2],
+                            tension: 0.3,
+                            yAxisID: 'yWind'
+                        },
+                        {
+                            label: 'Порывы (м/с)',
+                            data: chartData.wind_gusts,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#ef4444',
+                            showLine: false,
+                            yAxisID: 'yWind'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { boxWidth: 12, font: { size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var label = context.dataset.label || '';
+                                    return label + ': ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        },
+                        yTemp: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: '°C', font: { size: 10 } },
+                            ticks: { font: { size: 10 } }
+                        },
+                        yWind: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'м/с', font: { size: 10 } },
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (typeof Chart !== 'undefined') {
+            renderChart();
+        } else {
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';
+            script.onload = renderChart;
+            document.head.appendChild(script);
+        }
+    } catch(e) {
+        console.warn('Weather modal chart init error:', e);
+    }
+})();
+</script>
