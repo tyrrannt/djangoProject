@@ -911,5 +911,92 @@ class EmployeeStatusTests(TestCase):
         self.assertIn(user_eng, qs_gen)
 
 
+class PeriodicChecksPDFReportTests(TestCase):
+    """Тестирование формирования и выгрузки PDF-отчета по периодическим мероприятиям."""
+
+    def setUp(self):
+        """Подготовка тестовых данных для генерации отчета."""
+        self.planner = DataBaseUser.objects.create_user(
+            username='planner_pdf',
+            password='password123',
+            last_name='Иванов',
+            first_name='Иван'
+        )
+        self.planner_group, _ = Group.objects.get_or_create(name=GROUP_FLIGHT_PLANNERS)
+        self.planner.groups.add(self.planner_group)
+
+        self.pilot = DataBaseUser.objects.create_user(
+            username='pilot_pdf',
+            password='password123',
+            last_name='Сидоров',
+            first_name='Сергей'
+        )
+
+        from flight_planning.models import PeriodicCheckType, PeriodicCheckRecord
+        from flight_planning.pdf_services import generate_periodic_checks_issues_pdf
+
+        self.mi8_type = TypeProperty.objects.create(type_property='МИ-8')
+        self.check_type = PeriodicCheckType.objects.create(
+            name='Тренажер КВП',
+            validity_months=12,
+            aircraft_type=self.mi8_type
+        )
+
+        today = datetime.date.today()
+        # Создаем истекающую запись (через 10 дней)
+        self.rec_warning = PeriodicCheckRecord.objects.create(
+            employee=self.pilot,
+            check_type=self.check_type,
+            aircraft_type=self.mi8_type,
+            start_date=today - datetime.timedelta(days=355),
+            end_date=today + datetime.timedelta(days=10),
+            document_number='ТР-12345',
+            issued_by='АУЦ Баркол'
+        )
+
+    def test_generate_pdf_service_returns_valid_pdf_bytes(self):
+        """Проверяет, что сервис generate_periodic_checks_issues_pdf возвращает валидный PDF (заголовок %PDF-)."""
+        from flight_planning.pdf_services import generate_periodic_checks_issues_pdf
+
+        records_data = [{
+            'employee_name': 'Сидоров Сергей',
+            'job_title': 'КВС',
+            'check_name': 'Тренажер КВП',
+            'aircraft_display': 'МИ-8',
+            'start_date': '01.01.2026',
+            'end_date': '10.05.2026',
+            'status': 'warning',
+            'status_label': 'Истекает (10 дн.)',
+            'document_number': 'ТР-12345',
+            'issued_by': 'АУЦ Баркол'
+        }]
+        meta = {
+            'report_title': 'ТЕСТОВЫЙ ОТЧЕТ',
+            'generated_by': 'Диспетчер',
+            'total_count': 1,
+            'warning_count': 1,
+            'expired_count': 0
+        }
+
+        pdf_bytes = generate_periodic_checks_issues_pdf(records_data, meta)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(len(pdf_bytes) > 1000)
+        self.assertTrue(pdf_bytes.startswith(b'%PDF-'))
+
+    def test_pdf_report_view_response(self):
+        """Проверяет успешную отдачу PDF-отчета контроллером periodic_checks_pdf_report."""
+        client = Client()
+        client.login(username='planner_pdf', password='password123')
+
+        url = reverse('flight_planning:periodic_checks_pdf_report')
+        response = client.get(url + '?status=warning')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment;', response['Content-Disposition'])
+        self.assertTrue(response.content.startswith(b'%PDF-'))
+
+
+
 
 

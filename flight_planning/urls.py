@@ -35,6 +35,7 @@ urlpatterns = [
 
     # Периодические мероприятия персонала (Журнал, Матрица, Справочники)
     path('checks/', views.periodic_check_list_view, name='periodic_check_list'),
+    path('checks/report/pdf/', views.periodic_checks_pdf_report_view, name='periodic_checks_pdf_report'),
     path('checks/add/', views.periodic_check_create_view, name='periodic_check_create'),
     path('checks/<int:pk>/update/', views.periodic_check_update_view, name='periodic_check_update'),
     path('checks/<int:pk>/delete/', views.periodic_check_delete_view, name='periodic_check_delete'),

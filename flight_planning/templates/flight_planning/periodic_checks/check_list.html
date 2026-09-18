@@ -40,6 +40,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            padding-right: 48px;
         }
         .kpi-value {
             font-size: 1.75rem;
@@ -54,6 +55,36 @@
             font-size: 2.8rem;
             opacity: 0.15;
             pointer-events: none;
+        }
+        .kpi-pdf-btn {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s ease;
+            z-index: 5;
+            cursor: pointer;
+        }
+        .kpi-pdf-btn:hover {
+            background: #ffffff;
+            color: #0f172a;
+            border-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.25);
+            transform: scale(1.05);
+        }
+        .kpi-pdf-btn i {
+            font-size: 0.95rem;
         }
 
         .filter-panel {
@@ -268,11 +299,21 @@
                 border-radius: 6px;
                 min-height: 62px;
             }
+            .kpi-pdf-btn {
+                top: 6px;
+                right: 6px;
+                padding: 2px 6px;
+                font-size: 0.62rem;
+            }
+            .kpi-pdf-btn span {
+                display: none;
+            }
             .kpi-title {
                 font-size: 0.68rem;
                 line-height: 1.2;
                 letter-spacing: 0.2px;
                 opacity: 0.95;
+                padding-right: 28px;
             }
             .kpi-value {
                 font-size: 1.25rem;
@@ -324,6 +365,7 @@
             .kpi-title {
                 font-size: 0.62rem;
                 letter-spacing: 0;
+                padding-right: 24px;
             }
             .kpi-value {
                 font-size: 1.15rem;
@@ -336,28 +378,37 @@
     <!-- KPI карточки: 2x2 на смартфонах/планшетах, 4 в ряд на десктопах -->
     <div class="row g-2 g-md-3 mb-3 mb-md-4">
         <div class="col-6 col-lg-3">
-            <div class="kpi-card kpi-total">
+            <div class="kpi-card kpi-total position-relative">
+                <a href="{% url 'flight_planning:periodic_checks_pdf_report' %}?status=all" class="kpi-pdf-btn" title="Скачать полный PDF реестр мероприятий" aria-label="Скачать PDF реестр">
+                    <i class='bx bxs-file-pdf'></i> <span>PDF</span>
+                </a>
                 <div class="kpi-title">Всего записей</div>
                 <div class="kpi-value">{{ total_records_count }}</div>
                 <i class='bx bx-file kpi-icon'></i>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="kpi-card kpi-valid">
+            <div class="kpi-card kpi-valid position-relative">
                 <div class="kpi-title">Действуют</div>
                 <div class="kpi-value">{{ valid_records_count }}</div>
                 <i class='bx bx-check-shield kpi-icon'></i>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="kpi-card kpi-warning">
+            <div class="kpi-card kpi-warning position-relative">
+                <a href="{% url 'flight_planning:periodic_checks_pdf_report' %}?status=warning" class="kpi-pdf-btn" title="Скачать PDF отчет по истекающим мероприятиям (до 30 дн.)" aria-label="Скачать PDF отчет по истекающим">
+                    <i class='bx bxs-file-pdf'></i> <span>PDF</span>
+                </a>
                 <div class="kpi-title">Истекают (до 30 дн.)</div>
                 <div class="kpi-value">{{ warning_records_count }}</div>
                 <i class='bx bx-time-five kpi-icon'></i>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="kpi-card kpi-expired">
+            <div class="kpi-card kpi-expired position-relative">
+                <a href="{% url 'flight_planning:periodic_checks_pdf_report' %}?status=expired" class="kpi-pdf-btn" title="Скачать PDF отчет по просроченным мероприятиям" aria-label="Скачать PDF отчет по просроченным">
+                    <i class='bx bxs-file-pdf'></i> <span>PDF</span>
+                </a>
                 <div class="kpi-title">Просрочены</div>
                 <div class="kpi-value">{{ expired_records_count }}</div>
                 <i class='bx bx-error-circle kpi-icon'></i>
@@ -387,24 +438,27 @@
                     </li>
                 </ul>
 
-                {% if is_planner %}
+                <div class="d-flex gap-2 flex-wrap">
                     {% if active_tab == 'records' or active_tab == 'matrix' %}
-                        <div class="d-flex gap-2">
+                        <a href="{% url 'flight_planning:periodic_checks_pdf_report' %}?status=issues{% if filter_employee_id %}&employee_id={{ filter_employee_id }}{% endif %}{% if filter_check_type_id %}&check_type_id={{ filter_check_type_id }}{% endif %}{% if filter_aircraft_type_id %}&aircraft_type_id={{ filter_aircraft_type_id }}{% endif %}" class="btn btn-outline-danger btn-sm px-3 btn-touch d-inline-flex align-items-center" title="Скачать PDF отчет по проблемным мероприятиям (просроченные и истекающие)" aria-label="Скачать PDF отчет">
+                            <i class='bx bxs-file-pdf me-1'></i> <span class="d-none d-md-inline">Отчет PDF (Проблемные)</span><span class="d-md-none">PDF</span>
+                        </a>
+                        {% if is_planner %}
                             <button type="button" class="btn btn-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openAddRecordBtn" aria-label="Внести запись о мероприятии" title="Внести запись о мероприятии">
                                 <i class='bx bx-plus-circle me-1'></i> <span class="d-none d-md-inline">Внести запись о мероприятии</span><span class="d-md-none">Внести запись</span>
                             </button>
-                        </div>
+                        {% endif %}
                     {% elif active_tab == 'types' %}
-                        <div class="d-flex gap-2">
+                        {% if is_planner %}
                             <button type="button" class="btn btn-outline-warning btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openMergeTypesBtn" aria-label="Объединить виды мероприятий" title="Объединить дубликаты видов мероприятий">
                                 <i class='bx bx-git-merge me-1'></i> <span class="d-none d-md-inline">Объединить дубликаты</span><span class="d-md-none">Объединить</span>
                             </button>
                             <a href="{% url 'flight_planning:periodic_check_type_create' %}" class="btn btn-outline-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" aria-label="Добавить вид мероприятия" title="Добавить вид мероприятия">
                                 <i class='bx bx-plus me-1'></i> <span class="d-none d-md-inline">Добавить вид мероприятия</span><span class="d-md-none">Добавить вид</span>
                             </a>
-                        </div>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
+                </div>
             </div>
         </div>
 

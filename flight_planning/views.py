@@ -86,6 +86,7 @@ from .services import (
     get_periodic_check_type_merge_preview_service,
     merge_periodic_check_types_service
 )
+from .pdf_services import generate_periodic_checks_issues_pdf
 from .importers import PeriodicCheckImporter
 from contracts_app.templatetags.custom import FIO_format
 
@@ -2786,6 +2787,164 @@ def periodic_check_type_merge_view(request: HttpRequest) -> HttpResponse:
 
         return redirect(f"{reverse('flight_planning:periodic_check_list')}?tab=types")
 
+
+@login_required
+@flight_planning_view_required
+def periodic_checks_pdf_report_view(request: HttpRequest) -> HttpResponse:
+    """Генерирует и скачивает официальный PDF-отчет по периодическим мероприятиям персонала на лету.
+
+    Поддерживает фильтрацию по статусам ('warning', 'expired', 'issues', 'all'),
+    сотруднику, типу ВС, мероприятию и текстовому поиску.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса с параметрами:
+            - status (str, optional): 'warning' (истекающие), 'expired' (просроченные),
+              'issues' (истекающие + просроченные, по умолчанию), 'all' (все активные);
+            - employee_id (int, optional): фильтр по сотруднику;
+            - check_type_id (int, optional): фильтр по виду мероприятия;
+            - aircraft_type_id (int, optional): фильтр по типу ВС;
+            - q (str, optional): строка поиска по ФИО.
+
+    Returns:
+        HttpResponse: Поток PDF-файла с заголовком Content-Disposition: attachment.
+    """
+    status_filter = request.GET.get('status', 'issues')
+    employee_id = request.GET.get('employee_id')
+    aircraft_type_id = request.GET.get('aircraft_type_id')
+    check_type_id = request.GET.get('check_type_id')
+    search_query = request.GET.get('q', '').strip()
+
+    today = timezone.now().date()
+    warning_threshold_date = today + timedelta(days=30)
+
+    # Список доступных сотрудников с учетом прав доступа
+    pilots_list = get_allowed_staff_queryset(user=request.user)
+
+    # Выборка всех записей для доступного состава сотрудников
+    all_records = PeriodicCheckRecord.objects.filter(
+        employee__in=pilots_list
+    ).select_related(
+        'employee', 'employee__user_work_profile__job',
+        'check_type', 'aircraft_type', 'created_by'
+    ).order_by('-end_date', '-start_date', '-id')
+
+    # Группировка для выявления актуальных (последних) записей vs продленных архивных
+    grouped_by_emp_check: Dict[tuple, List[PeriodicCheckRecord]] = {}
+    for r in all_records:
+        key = (r.employee_id, r.check_type_id, r.aircraft_type_id or 0)
+        if key not in grouped_by_emp_check:
+            grouped_by_emp_check[key] = []
+        grouped_by_emp_check[key].append(r)
+
+    latest_record_ids = {rec_list[0].id for rec_list in grouped_by_emp_check.values() if rec_list}
+
+    # Фильтрация по статусу
+    if status_filter == 'expired':
+        records_qs = [r for r in all_records if r.id in latest_record_ids and r.end_date < today]
+        report_title = "ОТЧЕТ ПО ПРОСРОЧЕННЫМ ПЕРИОДИЧЕСКИМ МЕРОПРИЯТИЯМ ПЕРСОНАЛА"
+        report_subtitle = f"Выгрузка недействительных мероприятий, требующих срочного прохождения (на {today.strftime('%d.%m.%Y')})"
+    elif status_filter == 'warning':
+        records_qs = [r for r in all_records if r.id in latest_record_ids and today <= r.end_date <= warning_threshold_date]
+        report_title = "ОТЧЕТ ПО ИСТЕКАЮЩИМ ПЕРИОДИЧЕСКИМ МЕРОПРИЯТИЯМ ПЕРСОНАЛА"
+        report_subtitle = f"Выгрузка мероприятий со сроком окончания в ближайшие 30 дней (на {today.strftime('%d.%m.%Y')})"
+    elif status_filter == 'all':
+        records_qs = [r for r in all_records if r.id in latest_record_ids]
+        report_title = "СВОДНЫЙ РЕЕСТР ПЕРИОДИЧЕСКИХ МЕРОПРИЯТИЙ ПЕРСОНАЛА"
+        report_subtitle = f"Полный список актуальных мероприятий персонала авиакомпании (на {today.strftime('%d.%m.%Y')})"
+    else:  # issues (default)
+        records_qs = [r for r in all_records if r.id in latest_record_ids and r.end_date <= warning_threshold_date]
+        report_title = "ОТЧЕТ ПО ПРОСРОЧЕННЫМ И ИСТЕКАЮЩИМ МЕРОПРИЯТИЯМ ПЕРСОНАЛА"
+        report_subtitle = f"Сводная ведомость мероприятий, требующих внимания диспетчера (на {today.strftime('%d.%m.%Y')})"
+
+    # Дополнительные фильтры
+    if employee_id:
+        try:
+            emp_id_int = int(employee_id)
+            records_qs = [r for r in records_qs if r.employee_id == emp_id_int]
+        except (ValueError, TypeError):
+            pass
+
+    if aircraft_type_id:
+        try:
+            ac_id_int = int(aircraft_type_id)
+            records_qs = [r for r in records_qs if r.aircraft_type_id == ac_id_int]
+        except (ValueError, TypeError):
+            pass
+
+    if check_type_id:
+        try:
+            ct_id_int = int(check_type_id)
+            records_qs = [r for r in records_qs if r.check_type_id == ct_id_int]
+        except (ValueError, TypeError):
+            pass
+
+    if search_query:
+        sq_lower = search_query.lower()
+        records_qs = [
+            r for r in records_qs
+            if (
+                sq_lower in (r.employee.title or '').lower() or
+                sq_lower in r.employee.last_name.lower() or
+                sq_lower in r.employee.first_name.lower() or
+                sq_lower in (r.document_number or '').lower() or
+                sq_lower in (r.issued_by or '').lower()
+            )
+        ]
+
+    # Сортировка: сначала самые критичные просроченные, затем истекающие, затем по ФИО
+    records_qs.sort(key=lambda r: (r.end_date, r.employee.last_name, r.employee.first_name))
+
+    records_data = []
+    for r in records_qs:
+        emp = r.employee
+        emp_name = emp.title or f"{emp.last_name} {emp.first_name} {emp.patronymic or ''}".strip()
+        job_name = ""
+        if hasattr(emp, 'user_work_profile') and emp.user_work_profile and emp.user_work_profile.job:
+            job_name = emp.user_work_profile.job.name
+
+        if r.end_date < today:
+            st = 'expired'
+            days_overdue = (today - r.end_date).days
+            st_label = f"Просрочено ({days_overdue} дн. назад)"
+        elif today <= r.end_date <= warning_threshold_date:
+            st = 'warning'
+            days_rem = (r.end_date - today).days
+            st_label = f"Истекает ({days_rem} дн.)"
+        else:
+            st = 'valid'
+            days_rem = (r.end_date - today).days
+            st_label = f"Действует ({days_rem} дн.)"
+
+        records_data.append({
+            'employee_name': emp_name,
+            'job_title': job_name,
+            'check_name': r.check_type.name,
+            'aircraft_display': r.aircraft_type.type_property if r.aircraft_type else (r.check_type.aircraft_display),
+            'start_date': r.start_date.strftime('%d.%m.%Y'),
+            'end_date': r.end_date.strftime('%d.%m.%Y'),
+            'status': st,
+            'status_label': st_label,
+            'document_number': r.document_number,
+            'issued_by': r.issued_by
+        })
+
+    user_name = request.user.title or request.user.get_full_name() or request.user.username
+    meta = {
+        'report_title': report_title,
+        'report_subtitle': report_subtitle,
+        'generated_by': user_name,
+        'total_count': len(records_data),
+        'expired_count': sum(1 for d in records_data if d['status'] == 'expired'),
+        'warning_count': sum(1 for d in records_data if d['status'] == 'warning'),
+    }
+
+    pdf_bytes = generate_periodic_checks_issues_pdf(records_data, meta)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    file_status_suffix = status_filter if status_filter in ['warning', 'expired', 'all'] else 'issues'
+    filename = f"periodic_checks_{file_status_suffix}_{today.strftime('%Y%m%d')}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required
