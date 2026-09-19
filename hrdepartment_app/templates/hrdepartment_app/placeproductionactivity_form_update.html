@@ -235,11 +235,11 @@
                             </div>
                         </div>
 
-                        <!-- Секция 4: Авиационная метеорология (METAR / TAF) -->
+                        <!-- Секция 4: Авиационная метеорология и расчет прогноза -->
                         <div class="section-header">
-                            <i class="bx bx-cloud-lightning text-primary"></i> Авиационная метеорология (METAR / TAF)
+                            <i class="bx bx-cloud-lightning text-primary"></i> Авиационная метеорология и прогноз погоды
                         </div>
-                        <div class="row g-3">
+                        <div class="row g-3 mb-3">
                             <div class="col-12 col-md-3">
                                 <label class="form-label" for="{{ form.icao_code.id_for_label }}">
                                     {{ form.icao_code.label }}
@@ -255,7 +255,7 @@
                                     {{ form.latitude.label }}
                                 </label>
                                 {{ form.latitude }}
-                                <small class="text-muted d-block mt-1">Координата в градусах</small>
+                                <small class="text-muted d-block mt-1">Широта (градусы, WGS-84)</small>
                                 {% if form.latitude.errors %}
                                     <div class="invalid-feedback d-block">{{ form.latitude.errors }}</div>
                                 {% endif %}
@@ -265,12 +265,44 @@
                                     {{ form.longitude.label }}
                                 </label>
                                 {{ form.longitude }}
-                                <small class="text-muted d-block mt-1">Координата в градусах</small>
+                                <small class="text-muted d-block mt-1">Долгота (градусы, WGS-84)</small>
                                 {% if form.longitude.errors %}
                                     <div class="invalid-feedback d-block">{{ form.longitude.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.elevation_msl_m.id_for_label }}">
+                                    {{ form.elevation_msl_m.label }}
+                                </label>
+                                {{ form.elevation_msl_m }}
+                                <small class="text-muted d-block mt-1">Высота над уровнем моря (MSL, м)</small>
+                                {% if form.elevation_msl_m.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.elevation_msl_m.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.elevation_source.id_for_label }}">
+                                    {{ form.elevation_source.label }}
+                                </label>
+                                {{ form.elevation_source }}
+                                <small class="text-muted d-block mt-1">Метод определения высоты</small>
+                                {% if form.elevation_source.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.elevation_source.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.weather_source_preference.id_for_label }}">
+                                    {{ form.weather_source_preference.label }}
+                                </label>
+                                {{ form.weather_source_preference }}
+                                <small class="text-muted d-block mt-1">Приоритет источника данных</small>
+                                {% if form.weather_source_preference.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.weather_source_preference.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
                                 <div class="card bg-light border-0 p-3 h-100 rounded-3">
                                     <label class="form-label font-weight-bold mb-2">{{ form.weather_monitoring_enabled.label }}</label>
                                     <div class="form-check form-switch mt-1">
@@ -279,7 +311,7 @@
                                             Автосбор погоды
                                         </label>
                                     </div>
-                                    <small class="text-muted mt-2 d-block">Фоновый сбор сводок METAR и TAF</small>
+                                    <small class="text-muted mt-2 d-block">Фоновый сбор сводок METAR/TAF и ECMWF</small>
                                     {% if form.weather_monitoring_enabled.errors %}
                                         <div class="invalid-feedback d-block">{{ form.weather_monitoring_enabled.errors }}</div>
                                     {% endif %}

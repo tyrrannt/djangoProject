@@ -142,23 +142,17 @@ class WeatherManagerService:
         pref = mpd.weather_source_preference or "AUTO"
         icao = (mpd.icao_code or "").strip().upper()
 
-        use_metar = False
-        metar_observations: List[AviationWeatherObservation] = []
+        now_utc = timezone.now()
 
-        if pref in ("AUTO", "METAR_ONLY") and icao and len(icao) == 4:
+        # 1. Загрузка фактических наблюдений METAR для ICAO кода МПД
+        metar_observations: List[AviationWeatherObservation] = []
+        taf: Optional[AviationWeatherForecast] = None
+        if icao and len(icao) == 4:
             metar_observations = list(
                 AviationWeatherObservation.objects.filter(
                     icao_code=icao,
                     observation_time__range=(start_dt, end_dt),
                 ).order_by("-observation_time")
-            )
-            if metar_observations or pref == "METAR_ONLY":
-                use_metar = True
-
-        # Сценарий 1: Используем фактические наблюдения METAR
-        if use_metar:
-            latest_obs = metar_observations[0] if metar_observations else (
-                AviationWeatherObservation.objects.filter(icao_code=icao).order_by("-observation_time").first()
             )
             taf = AviationWeatherForecast.objects.filter(
                 icao_code=icao,
@@ -166,6 +160,52 @@ class WeatherManagerService:
                 valid_to__gte=start_dt,
             ).order_by("-issued_at").first()
 
+        # 2. Загрузка сеточных координатных прогнозов (ECMWF / GFS)
+        coord_forecasts: List[CoordinateWeatherForecast] = list(
+            CoordinateWeatherForecast.objects.filter(
+                mpd=mpd,
+                forecast_for__range=(start_dt, end_dt),
+            ).order_by("forecast_for")
+        )
+
+        # 3. Поиск опорного аэродрома и его свежего METAR
+        nearest_info = None
+        if mpd.latitude is not None and mpd.longitude is not None:
+            station_match = GeoStationService.find_nearest_station(
+                latitude=float(mpd.latitude),
+                longitude=float(mpd.longitude),
+                mpd_elevation_msl_m=mpd.elevation_msl_m,
+            )
+            if station_match:
+                st = station_match["station"]
+                latest_st_metar = AviationWeatherObservation.objects.filter(icao_code=st.icao_code).order_by("-observation_time").first()
+                freshness_min = None
+                if latest_st_metar and latest_st_metar.observation_time:
+                    freshness_min = int((now_utc - latest_st_metar.observation_time).total_seconds() / 60)
+
+                nearest_info = {
+                    "station": st,
+                    "distance_km": station_match["distance_km"],
+                    "elevation_delta_m": station_match["elevation_delta_m"],
+                    "latest_metar": latest_st_metar,
+                    "latest_metar_raw": latest_st_metar.raw_text if latest_st_metar else "",
+                    "latest_metar_time": latest_st_metar.observation_time if latest_st_metar else None,
+                    "icao_code": st.icao_code,
+                    "name_ru": st.name_ru,
+                    "flight_category": latest_st_metar.flight_category if latest_st_metar else "",
+                    "station_elevation_msl_m": st.elevation_msl_m,
+                    "mpd_elevation_msl_m": mpd.elevation_msl_m,
+                    "elevation_source": mpd.elevation_source,
+                    "freshness_minutes": freshness_min,
+                }
+
+        # Определяем основной источник для Hero-карточки и суточных экстремумов
+        use_metar = (pref != "COORDINATES_ONLY" and bool(metar_observations))
+
+        if use_metar:
+            latest_obs = metar_observations[0] if metar_observations else (
+                AviationWeatherObservation.objects.filter(icao_code=icao).order_by("-observation_time").first()
+            )
             temps = [o.temperature for o in metar_observations if o.temperature is not None]
             winds = [o.wind_speed for o in metar_observations if o.wind_speed is not None]
             gusts = [o.wind_gust for o in metar_observations if o.wind_gust is not None]
@@ -201,50 +241,20 @@ class WeatherManagerService:
                 "badge_label": f"METAR ({icao})",
                 "badge_class": "success",
                 "latest_current": latest_obs,
-                "nearest_station_info": None,
+                "nearest_station_info": nearest_info,
+                "observations": metar_observations,
+                "coordinate_forecasts": coord_forecasts,
                 "hourly_timeline": metar_observations,
                 "stats": stats,
                 "chart_data": chart_data,
                 "forecast_taf": taf,
             }
 
-        # Сценарий 2: Используем сеточный координатный прогноз (ECMWF / GFS)
-        coord_forecasts = list(
-            CoordinateWeatherForecast.objects.filter(
-                mpd=mpd,
-                forecast_for__range=(start_dt, end_dt),
-            ).order_by("forecast_for")
-        )
-
+        # Численный сеточный прогноз (Scenario 2)
         latest_coord = None
-        now_utc = timezone.now()
         if coord_forecasts:
-            # Ищем наиболее близкий к текущему времени прогноз
             closest = min(coord_forecasts, key=lambda f: abs((f.forecast_for - now_utc).total_seconds()))
             latest_coord = closest
-
-        # Поиск опорного аэродрома и его свежего METAR
-        nearest_info = None
-        if mpd.latitude is not None and mpd.longitude is not None:
-            station_match = GeoStationService.find_nearest_station(
-                latitude=float(mpd.latitude),
-                longitude=float(mpd.longitude),
-                mpd_elevation_msl_m=mpd.elevation_msl_m,
-            )
-            if station_match:
-                st = station_match["station"]
-                latest_st_metar = AviationWeatherObservation.objects.filter(icao_code=st.icao_code).order_by("-observation_time").first()
-                freshness_min = None
-                if latest_st_metar and latest_st_metar.observation_time:
-                    freshness_min = int((now_utc - latest_st_metar.observation_time).total_seconds() / 60)
-
-                nearest_info = {
-                    "station": st,
-                    "distance_km": station_match["distance_km"],
-                    "elevation_delta_m": station_match["elevation_delta_m"],
-                    "latest_metar": latest_st_metar,
-                    "freshness_minutes": freshness_min,
-                }
 
         temps = [f.temperature for f in coord_forecasts if f.temperature is not None]
         winds = [f.wind_speed for f in coord_forecasts if f.wind_speed is not None]
@@ -284,10 +294,12 @@ class WeatherManagerService:
             "badge_class": "info",
             "latest_current": latest_coord,
             "nearest_station_info": nearest_info,
-            "hourly_timeline": coord_forecasts,
+            "observations": metar_observations,
+            "coordinate_forecasts": coord_forecasts,
+            "hourly_timeline": coord_forecasts if coord_forecasts else metar_observations,
             "stats": stats,
             "chart_data": chart_data,
-            "forecast_taf": None,
+            "forecast_taf": taf,
         }
 
     build_mpd_weather_bundle = get_mpd_weather_bundle

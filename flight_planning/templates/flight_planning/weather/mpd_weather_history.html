@@ -13,6 +13,14 @@
             --barkol-navy: #002b49;
             --barkol-sky: #0284c7;
         }
+        .content-body {
+            padding-top: 6px !important;
+        }
+        .page-header {
+            margin-bottom: 8px !important;
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
+        }
         .btn-touch {
             min-height: var(--touch-target-size);
             display: inline-flex;
@@ -545,7 +553,7 @@
 {% endblock %}
 
 {% block content %}
-    <section class="content-body p-2 p-md-3">
+    <div class="weather-hub-container">
         <!-- ЛЕНТА ПЕРЕКЛЮЧЕНИЯ ВСЕХ МПД -->
         {% if all_weather_mpds %}
             <div class="card card-modern shadow-sm border-0 mb-3">
@@ -946,12 +954,12 @@
             <div class="card-header bg-light p-2 border-bottom">
                 <ul class="nav nav-tabs card-header-tabs card-header-tabs-scroll border-0" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link {% if observations|length > 0 or not coordinate_forecasts %}active{% endif %} font-weight-semibold text-dark" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-panel" type="button" role="tab">
+                        <button class="nav-link {% if observations|length > 0 or coordinate_forecasts|length == 0 %}active{% endif %} font-weight-semibold text-dark" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-panel" type="button" role="tab">
                             <i class="bx bx-time text-primary me-1"></i> Хронология METAR <span class="badge {% if observations|length > 0 %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ observations|length }}</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link {% if observations|length == 0 and coordinate_forecasts %}active{% endif %} font-weight-semibold text-dark" id="ecmwf-tab" data-bs-toggle="tab" data-bs-target="#ecmwf-panel" type="button" role="tab">
+                        <button class="nav-link {% if observations|length == 0 and coordinate_forecasts|length > 0 %}active{% endif %} font-weight-semibold text-dark" id="ecmwf-tab" data-bs-toggle="tab" data-bs-target="#ecmwf-panel" type="button" role="tab">
                             <i class="bx bx-cube-alt text-info me-1"></i> Прогноз ECMWF <span class="badge {% if coordinate_forecasts|length > 0 %}bg-info text-dark{% else %}bg-secondary{% endif %} ms-1">{{ coordinate_forecasts|length }}</span>
                         </button>
                     </li>
@@ -971,7 +979,7 @@
             <div class="card-body p-0">
                 <div class="tab-content">
                     <!-- Вкладка 1: Почасовая таблица METAR -->
-                    <div class="tab-pane fade show active p-3" id="timeline-panel" role="tabpanel">
+                    <div class="tab-pane fade {% if observations|length > 0 or coordinate_forecasts|length == 0 %}show active{% endif %} p-3" id="timeline-panel" role="tabpanel">
                         <!-- Мини-график над таблицей -->
                         {% if observations|length > 0 %}
                             <div class="card border p-3 rounded-3 mb-3 bg-light">
@@ -1070,8 +1078,8 @@
                                         <tr>
                                             <td colspan="9" class="text-center py-5 text-muted">
                                                 <i class="bx bx-cloud-rain fs-1 d-block mb-2 text-secondary"></i>
-                                                <div class="font-weight-bold mb-1">За выбранную дату ({{ target_date_formatted }}) метеонаблюдений не обнаружено</div>
-                                                <small>Нажмите «Обновить METAR», чтобы запросить актуальные сводки из метеосети.</small>
+                                                <div class="font-weight-bold mb-1">За выбранную дату ({{ target_date_formatted }}) метеонаблюдений METAR не обнаружено</div>
+                                                <small>Нажмите «Обновить METAR», чтобы запросить актуальные сводки из метеосети по коду ICAO {{ mpd.icao_code|default:"(не задан)" }}.</small>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -1081,14 +1089,14 @@
                     </div>
 
                     <!-- Вкладка: Сеточный численный прогноз ECMWF IFS -->
-                    <div class="tab-pane fade {% if observations|length == 0 and coordinate_forecasts %}show active{% endif %} p-3" id="ecmwf-panel" role="tabpanel">
+                    <div class="tab-pane fade {% if observations|length == 0 and coordinate_forecasts|length > 0 %}show active{% endif %} p-3" id="ecmwf-panel" role="tabpanel">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                             <div>
                                 <h5 class="font-weight-bold text-dark mb-0">
                                     <i class="bx bx-cube-alt text-info me-2"></i>Сеточный численный прогноз (ECMWF IFS / GFS)
                                 </h5>
                                 <span class="text-muted small">
-                                    Координаты: <strong>{{ mpd.latitude|floatformat:4 }}, {{ mpd.longitude|floatformat:4 }}</strong> | Высота МПД: <strong>{{ mpd.elevation_msl_m|default:"0" }} м MSL</strong>
+                                    Координаты: <strong>{{ mpd.latitude|floatformat:4|default:"—" }}, {{ mpd.longitude|floatformat:4|default:"—" }}</strong> | Высота МПД: <strong>{{ mpd.elevation_msl_m|default:"0" }} м MSL</strong>
                                 </span>
                             </div>
                             <div class="d-flex gap-2">
@@ -1122,7 +1130,7 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-{{ fc.get_flight_category_color }} fs-7">
-                                                    {{ fc.flight_category }}
+                                                    {{ fc.get_flight_category_name_ru }} ({{ fc.flight_category }})
                                                 </span>
                                             </td>
                                             <td>
@@ -1195,8 +1203,21 @@
                                         <tr>
                                             <td colspan="10" class="text-center py-5 text-muted">
                                                 <i class="bx bx-cube-alt fs-1 d-block mb-2 text-secondary"></i>
-                                                <div class="font-weight-bold mb-1">Сеточный прогноз на выбранную дату ({{ target_date_formatted }}) не загружен</div>
-                                                <small>Нажмите «Обновить ECMWF», чтобы запросить почасовой расчет численной модели Open-Meteo.</small>
+                                                <div class="font-weight-bold mb-1">Сеточный прогноз ECMWF IFS на выбранную дату ({{ target_date_formatted }}) не загружен</div>
+                                                {% if not mpd.latitude or not mpd.longitude %}
+                                                    <div class="alert alert-warning d-inline-block text-start p-3 my-2" style="max-width: 540px;">
+                                                        <strong><i class="bx bx-error-circle me-1"></i> Для МПД не указаны географические координаты!</strong>
+                                                        <p class="small mb-2 mt-1">Численный прогноз Open-Meteo рассчитывается строго по координатам широты и долготы.</p>
+                                                        <a href="{% url 'hrdepartment_app:place_update' mpd.pk %}" class="btn btn-warning btn-sm fw-bold">
+                                                            <i class="bx bx-edit me-1"></i> Указать координаты МПД
+                                                        </a>
+                                                    </div>
+                                                {% else %}
+                                                    <p class="small text-muted mb-2">Координаты МПД: {{ mpd.latitude|floatformat:4 }}, {{ mpd.longitude|floatformat:4 }}. Нажмите кнопку ниже для отправки запроса в Open-Meteo:</p>
+                                                    <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=coordinate" class="btn btn-primary btn-sm fw-bold">
+                                                        <i class="bx bx-cube-alt me-1"></i> Обновить ECMWF
+                                                    </a>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -1286,7 +1307,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 
     <!-- Модальное окно тестера / диагностики ICAO кодов -->
     <div class="modal-overlay" id="icaoTesterOverlay" onclick="closeIcaoTesterModal()" style="display: none; z-index: 10090;"></div>

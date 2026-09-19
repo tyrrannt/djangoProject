@@ -1829,6 +1829,15 @@ class CoordinateWeatherForecast(models.Model):
         }
         return mapping.get(self.model_flight_category, "secondary")
 
+    @property
+    def flight_category(self) -> str:
+        """Возвращает летную категорию условий (VFR, MVFR, IFR, LIFR).
+
+        Returns:
+            str: Код летной категории.
+        """
+        return self.model_flight_category or "VFR"
+
     def get_flight_category_name_ru(self) -> str:
         """Возвращает русское обозначение расчетных условий.
 
@@ -1836,12 +1845,12 @@ class CoordinateWeatherForecast(models.Model):
             str: ПВП, ОПВП, ППП или НППП.
         """
         mapping = {
-            "VFR": "ПВП (модель)",
-            "MVFR": "ОПВП (модель)",
-            "IFR": "ППП (модель)",
-            "LIFR": "НППП (модель)",
+            "VFR": "ПВП",
+            "MVFR": "ОПВП",
+            "IFR": "ППП",
+            "LIFR": "НППП",
         }
-        return mapping.get(self.model_flight_category, self.model_flight_category)
+        return mapping.get(self.model_flight_category, self.model_flight_category or "—")
 
     def get_wind_display(self) -> str:
         """Возвращает форматированное описание ветра.

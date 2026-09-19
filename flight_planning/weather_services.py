@@ -935,7 +935,5 @@ class AviationWeatherService:
         """
         from .weather_providers import WeatherManagerService
         bundle = WeatherManagerService.get_mpd_weather_bundle(mpd, target_date)
-        # Добавляем алиасы для 100% обратной совместимости с существующими шаблонами
-        bundle["observations"] = bundle.get("hourly_timeline", [])
         bundle["forecast"] = bundle.get("forecast_taf")
         return bundle

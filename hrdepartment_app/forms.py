@@ -1151,6 +1151,9 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
             "icao_code",
             "latitude",
             "longitude",
+            "elevation_msl_m",
+            "elevation_source",
+            "weather_source_preference",
             "email",
             "work_email_password",
             "additional_payment",
@@ -1198,6 +1201,23 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
                     "class": "form-control form-control-modern",
                     "step": "0.000001",
                     "placeholder": "82.654321",
+                }
+            ),
+            "elevation_msl_m": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.1",
+                    "placeholder": "150.0",
+                }
+            ),
+            "elevation_source": forms.Select(
+                attrs={
+                    "class": "form-select form-control-modern",
+                }
+            ),
+            "weather_source_preference": forms.Select(
+                attrs={
+                    "class": "form-select form-control-modern",
                 }
             ),
             "email": forms.EmailInput(
@@ -1257,7 +1277,7 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
     """Форма редактирования места производственной деятельности (МПД).
 
     Позволяет изменять все реквизиты объекта, контактные данные корпоративной почты,
-    дополнительную оплату, метеорологические настройки (код ICAO, координаты)
+    дополнительную оплату, метеорологические настройки (код ICAO, координаты, высотные отметки)
     и флаги использования объекта в бизнес-процессах.
     """
 
@@ -1270,6 +1290,9 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
             "icao_code",
             "latitude",
             "longitude",
+            "elevation_msl_m",
+            "elevation_source",
+            "weather_source_preference",
             "email",
             "work_email_password",
             "additional_payment",
@@ -1317,6 +1340,23 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
                     "class": "form-control form-control-modern",
                     "step": "0.000001",
                     "placeholder": "82.654321",
+                }
+            ),
+            "elevation_msl_m": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-modern",
+                    "step": "0.1",
+                    "placeholder": "150.0",
+                }
+            ),
+            "elevation_source": forms.Select(
+                attrs={
+                    "class": "form-select form-control-modern",
+                }
+            ),
+            "weather_source_preference": forms.Select(
+                attrs={
+                    "class": "form-select form-control-modern",
                 }
             ),
             "email": forms.EmailInput(

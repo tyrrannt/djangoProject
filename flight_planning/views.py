@@ -3752,7 +3752,7 @@ def mpd_weather_history_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
     timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
 
     # Если за сегодняшний день данных еще нет, пробуем получить их на лету
-    if target_date == today and not timeline_data.get('observations'):
+    if target_date == today and not timeline_data.get('observations') and not timeline_data.get('coordinate_forecasts'):
         from .weather_providers import WeatherManagerService
         if mpd.icao_code:
             AviationWeatherService.sync_mpd_weather(mpd)
@@ -3787,6 +3787,7 @@ def mpd_weather_history_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         'nearest_station_info': timeline_data.get('nearest_station_info'),
         'latest_current': timeline_data.get('latest_current'),
         'observations': timeline_data.get('observations', []),
+        'coordinate_forecasts': timeline_data.get('coordinate_forecasts', []),
         'forecast': timeline_data.get('forecast'),
         'stats': timeline_data.get('stats', {}),
         'chart_data_json': json.dumps(chart_data),
@@ -3830,7 +3831,7 @@ def mpd_weather_modal_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
 
     timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
 
-    if target_date == today and not timeline_data.get('observations'):
+    if target_date == today and not timeline_data.get('observations') and not timeline_data.get('coordinate_forecasts'):
         if mpd.icao_code:
             AviationWeatherService.sync_mpd_weather(mpd)
         if mpd.latitude is not None and mpd.longitude is not None:
@@ -3859,6 +3860,7 @@ def mpd_weather_modal_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         'nearest_station_info': timeline_data.get('nearest_station_info'),
         'latest_current': timeline_data.get('latest_current'),
         'observations': timeline_data.get('observations', []),
+        'coordinate_forecasts': timeline_data.get('coordinate_forecasts', []),
         'forecast': timeline_data.get('forecast'),
         'stats': timeline_data.get('stats', {}),
         'chart_data_json': json.dumps(chart_data),
