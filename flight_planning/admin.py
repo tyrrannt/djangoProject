@@ -9,6 +9,8 @@ from .models import (
     AircraftMovement,
     AviationWeatherForecast,
     AviationWeatherObservation,
+    AviationWeatherStation,
+    CoordinateWeatherForecast,
     CrewMember,
     EmployeeRequiredCheck,
     EmployeeStatusRecord,
@@ -310,6 +312,103 @@ class AviationWeatherForecastAdmin(ModelAdmin):
     def is_valid_badge(self, obj: AviationWeatherForecast) -> bool:
         """Флаг актуальности прогноза в текущий момент."""
         return obj.is_currently_valid()
+
+
+@admin.register(AviationWeatherStation)
+class AviationWeatherStationAdmin(ModelAdmin):
+    """Панель управления справочником сертифицированных метеостанций (ICAO/АМСГ)."""
+
+    list_display = ["icao_code", "name_ru", "name", "latitude", "longitude", "elevation_msl_m", "country", "is_active"]
+    list_filter = ["is_active", "country"]
+    search_fields = ["icao_code", "name", "name_ru"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+
+@admin.register(CoordinateWeatherForecast)
+class CoordinateWeatherForecastAdmin(ModelAdmin):
+    """Панель архива координатных сеточных прогнозов численных моделей (ECMWF/GFS)."""
+
+    list_display = [
+        "get_header",
+        "forecast_for",
+        "model",
+        "model_flight_category_badge",
+        "get_temp",
+        "get_wind",
+        "get_cloud",
+        "get_pressure",
+        "weather_description_display",
+        "nearest_station_display",
+        "fetched_at",
+    ]
+    list_filter = [
+        ("forecast_for", RangeDateFilter),
+        "model",
+        "model_flight_category",
+        "mpd",
+    ]
+    search_fields = ["mpd__name", "model", "nearest_station__icao_code", "nearest_station__name_ru"]
+    date_hierarchy = "forecast_for"
+    autocomplete_fields = ["mpd", "nearest_station"]
+    readonly_fields = ["fetched_at"]
+    compressed_fields = True
+
+    @display(header=True, description="МПД / Координаты")
+    def get_header(self, obj: CoordinateWeatherForecast) -> list:
+        """Двухстрочный заголовок: МПД + координаты."""
+        coords = f"{obj.latitude:.4f}°N, {obj.longitude:.4f}°E"
+        return [obj.mpd.name, coords]
+
+    @display(
+        description="Условия (модель)",
+        label={
+            "VFR": "success",
+            "MVFR": "info",
+            "IFR": "danger",
+            "LIFR": "dark",
+        },
+    )
+    def model_flight_category_badge(self, obj: CoordinateWeatherForecast) -> str:
+        """Цветной бейдж расчетных летных условий."""
+        return obj.model_flight_category
+
+    @display(description="Температура")
+    def get_temp(self, obj: CoordinateWeatherForecast) -> str:
+        """Температура воздуха."""
+        if obj.temperature is None:
+            return "—"
+        prefix = "+" if obj.temperature > 0 else ""
+        return f"{prefix}{obj.temperature:.0f}°C"
+
+    @display(description="Ветер")
+    def get_wind(self, obj: CoordinateWeatherForecast) -> str:
+        """Форматированное описание ветра."""
+        return obj.get_wind_display()
+
+    @display(description="НГО / Облачность")
+    def get_cloud(self, obj: CoordinateWeatherForecast) -> str:
+        """Форматированная облачность."""
+        return obj.get_cloud_display()
+
+    @display(description="Давление пов.")
+    def get_pressure(self, obj: CoordinateWeatherForecast) -> str:
+        """Давление на поверхности площадки."""
+        if not obj.surface_pressure_mmhg:
+            return "—"
+        return f"{obj.surface_pressure_mmhg:.1f} мм"
+
+    @display(description="Погода")
+    def weather_description_display(self, obj: CoordinateWeatherForecast) -> str:
+        """Явление погоды по WMO."""
+        return obj.weather_description
+
+    @display(description="Опорная станция")
+    def nearest_station_display(self, obj: CoordinateWeatherForecast) -> str:
+        """Опорная метеостанция с кодом."""
+        if not obj.nearest_station:
+            return "—"
+        return str(obj.nearest_station)
 
 
 @admin.register(PeriodicCheckType)

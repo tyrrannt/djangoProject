@@ -736,7 +736,7 @@
             window.loadWeatherModalContent(mpdId, dateStr);
         };
 
-        window.refreshModalWeather = function(mpdId, dateStr, btn) {
+        window.refreshModalWeather = function(mpdId, dateStr, btn, mode) {
             var $btn = $(btn);
             var origHtml = $btn.html();
             $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Запрос...');
@@ -759,6 +759,9 @@
             $.ajax({
                 url: '/flight/weather/refresh/' + mpdId + '/',
                 type: 'POST',
+                data: {
+                    mode: mode || 'auto'
+                },
                 headers: {
                     'X-CSRFToken': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
@@ -767,7 +770,7 @@
                     if (resp.status === 'ok') {
                         window.loadWeatherModalContent(mpdId, dateStr);
                     } else {
-                        alert('Не удалось обновить METAR: ' + (resp.error || 'Ошибка'));
+                        alert('Не удалось обновить погоду: ' + (resp.error || 'Ошибка'));
                         $btn.prop('disabled', false).html(origHtml);
                     }
                 },

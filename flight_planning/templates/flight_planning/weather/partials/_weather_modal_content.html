@@ -13,104 +13,199 @@
                 <small class="text-muted">Оперативный метеоинформер и суточный архив</small>
             </div>
         </div>
-        <div class="d-flex gap-2 align-items-center">
-            <button type="button" class="btn btn-sm btn-success" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this)">
-                <i class="bx bx-refresh me-1"></i> <span>Обновить METAR</span>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button type="button" class="btn btn-sm btn-success" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this, 'metar')" title="Обновить фактический METAR">
+                <i class="bx bx-refresh me-1"></i> <span>METAR</span>
             </button>
-            <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}?date={{ target_date_str }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Открыть в новой вкладке">
+            <button type="button" class="btn btn-sm btn-primary" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this, 'coordinate')" title="Обновить модельный прогноз ECMWF IFS">
+                <i class="bx bx-cube-alt me-1"></i> <span>ECMWF</span>
+            </button>
+            <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}?date={{ target_date_str }}" class="btn btn-sm btn-outline-dark" target="_blank" title="Открыть полный Метеоцентр в новой вкладке">
                 <i class="bx bx-fullscreen me-1"></i> Метеоцентр
             </a>
         </div>
     </div>
 
+    <!-- ОПОРНАЯ МЕТЕОСТАНЦИЯ (ЕСЛИ ЕСТЬ) -->
+    {% if nearest_station_info %}
+        <div class="alert alert-light border py-2 px-3 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2 small">
+            <div>
+                <span class="text-muted text-uppercase fw-bold"><i class="bx bx-radio-circle-marked text-primary me-1"></i>Опорная станция:</span>
+                <span class="badge bg-dark font-monospace">{{ nearest_station_info.icao_code }}</span>
+                <span class="fw-bold">{{ nearest_station_info.name_ru }}</span>
+                <span class="text-muted ms-1">(D: {{ nearest_station_info.distance_km|floatformat:1 }} км, &Delta;H: {% if nearest_station_info.elevation_delta_m > 0 %}+{% endif %}{{ nearest_station_info.elevation_delta_m|floatformat:0 }} м)</span>
+            </div>
+            {% if nearest_station_info.latest_metar_raw %}
+                <div class="font-monospace text-muted small text-truncate" style="max-width: 320px;" title="{{ nearest_station_info.latest_metar_raw }}">
+                    {{ nearest_station_info.latest_metar_raw }}
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
     <!-- ТЕКУЩАЯ ПОГОДА (HERO КАРТОЧКА) -->
     {% if latest_observation %}
-        <div class="card bg-dark text-white border-0 shadow-sm p-3 mb-3" style="border-radius: 10px; background: linear-gradient(135deg, #002b49 0%, #0c4a6e 100%) !important;">
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge {% if latest_observation.flight_category == 'VFR' %}bg-success{% elif latest_observation.flight_category == 'MVFR' %}bg-info text-dark{% elif latest_observation.flight_category == 'IFR' %}bg-danger{% else %}bg-dark border border-danger{% endif %} fs-6 px-2 py-1">
-                        {{ latest_observation.flight_category }} ({{ latest_observation.get_flight_category_name_ru }})
-                    </span>
-                    <span class="text-white-50 small">
-                        <i class="bx bx-time-five me-1"></i>{{ latest_observation.observation_time|date:"H:i" }} UTC ({{ latest_observation.observation_time|date:"d.m.Y" }})
-                    </span>
-                </div>
-                <div>
-                    {% if latest_observation.weather_phenomena %}
-                        <span class="badge bg-warning text-dark">{{ latest_observation.weather_phenomena }}</span>
-                    {% else %}
-                        <span class="badge bg-success-subtle text-success">Без опасных явлений</span>
-                    {% endif %}
-                    {% if latest_observation.cavok %}
-                        <span class="badge bg-success ms-1">CAVOK</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Сетка параметров текущей погоды -->
-            <div class="row g-2 text-center text-md-start">
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
-                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Температура</small>
-                        <span class="fw-bold fs-5 text-white">
-                            {% if latest_observation.temperature is not None %}
-                                {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
-                            {% else %}—{% endif %}
+        {% if latest_observation.is_model_forecast %}
+            <div class="card bg-dark text-white border-0 shadow-sm p-3 mb-3" style="border-radius: 10px; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0369a1 100%) !important;">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-info text-dark font-monospace fw-bold px-2 py-1">
+                            <i class="bx bx-cube-alt me-1"></i> {{ latest_observation.model_name|default:"ECMWF IFS" }}
                         </span>
-                        {% if latest_observation.dew_point is not None %}
-                            <small class="text-white-50 d-block" style="font-size: 0.7rem;">Td: {{ latest_observation.dew_point|floatformat:0 }}°C</small>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
-                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Ветер</small>
-                        <span class="fw-bold fs-6 text-white">{{ latest_observation.get_wind_display }}</span>
-                        {% if latest_observation.wind_gust %}
-                            <small class="text-danger-subtle d-block font-weight-bold" style="font-size: 0.7rem;">Порывы {{ latest_observation.wind_gust|floatformat:0 }} м/с</small>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
-                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Видимость / НГО</small>
-                        <span class="fw-bold fs-6 text-white">{{ latest_observation.get_visibility_display }}</span>
-                        <small class="text-white-50 d-block" style="font-size: 0.7rem;">НГО: {{ latest_observation.get_cloud_display }}</small>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
-                        <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Давление QNH</small>
-                        <span class="fw-bold fs-6 text-white">
-                            {% if latest_observation.pressure_mmhg %}{{ latest_observation.pressure_mmhg|floatformat:1 }} мм{% else %}—{% endif %}
+                        <span class="badge {% if latest_observation.flight_category == 'VFR' %}bg-success{% elif latest_observation.flight_category == 'MVFR' %}bg-info text-dark{% elif latest_observation.flight_category == 'IFR' %}bg-danger{% else %}bg-dark border border-danger{% endif %} fs-6 px-2 py-1">
+                            {{ latest_observation.flight_category }} ({{ latest_observation.get_flight_category_name_ru }})
                         </span>
-                        {% if latest_observation.pressure_hpa %}
-                            <small class="text-white-50 d-block" style="font-size: 0.7rem;">{{ latest_observation.pressure_hpa|floatformat:0 }} гПа</small>
+                        <span class="text-white-50 small">
+                            <i class="bx bx-time-five me-1"></i>{{ latest_observation.forecast_for|date:"H:i" }} UTC ({{ latest_observation.forecast_for|date:"d.m.Y" }})
+                        </span>
+                    </div>
+                    <div>
+                        <span class="badge bg-light text-dark">{{ latest_observation.weather_description }}</span>
+                        {% if latest_observation.precipitation and latest_observation.precipitation > 0 %}
+                            <span class="badge bg-primary text-white ms-1"><i class="bx bx-droplet me-1"></i>{{ latest_observation.precipitation|floatformat:1 }} мм/ч</span>
                         {% endif %}
                     </div>
                 </div>
-            </div>
 
-            <!-- Исходный METAR -->
-            <div class="mt-2 pt-2 border-top border-secondary d-flex justify-content-between align-items-center gap-2">
-                <div class="font-monospace small text-truncate text-info" title="{{ latest_observation.raw_text }}">
-                    <i class="bx bx-terminal me-1"></i>{{ latest_observation.raw_text }}
+                <!-- Сетка параметров численного прогноза -->
+                <div class="row g-2 text-center text-md-start">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Температура</small>
+                            <span class="fw-bold fs-5 text-white">
+                                {% if latest_observation.temperature is not None %}
+                                    {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
+                                {% else %}—{% endif %}
+                            </span>
+                            {% if latest_observation.dew_point is not None %}
+                                <small class="text-white-50 d-block" style="font-size: 0.7rem;">Td: {{ latest_observation.dew_point|floatformat:0 }}°C</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Ветер (10м)</small>
+                            <span class="fw-bold fs-6 text-white">{{ latest_observation.get_wind_display }}</span>
+                            {% if latest_observation.wind_gust %}
+                                <small class="text-warning d-block font-weight-bold" style="font-size: 0.7rem;">Порывы {{ latest_observation.wind_gust|floatformat:0 }} м/с</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">НГО / Изотерма 0°C</small>
+                            <span class="fw-bold fs-6 text-white">{{ latest_observation.get_cloud_display }}</span>
+                            <small class="text-white-50 d-block" style="font-size: 0.7rem;">
+                                0°C MSL: {% if latest_observation.freezing_level_msl_m is not None %}{{ latest_observation.freezing_level_msl_m|floatformat:0 }} м{% else %}—{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Давление MSL / МПД</small>
+                            <span class="fw-bold fs-6 text-white">
+                                {% if latest_observation.pressure_mmhg %}{{ latest_observation.pressure_mmhg|floatformat:0 }} мм{% else %}—{% endif %}
+                            </span>
+                            {% if latest_observation.surface_pressure_hpa %}
+                                <small class="text-white-50 d-block" style="font-size: 0.7rem;">На МПД: {{ latest_observation.surface_pressure_hpa|floatformat:0 }} гПа</small>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 flex-shrink-0"
-                        onclick="navigator.clipboard.writeText('{{ latest_observation.raw_text|escapejs }}'); this.innerText='Скопировано!'; setTimeout(() => this.innerText='Копия', 1500);"
-                        style="font-size: 0.75rem;">
-                    Копия
-                </button>
             </div>
-        </div>
+        {% else %}
+            <div class="card bg-dark text-white border-0 shadow-sm p-3 mb-3" style="border-radius: 10px; background: linear-gradient(135deg, #002b49 0%, #0c4a6e 100%) !important;">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge {% if latest_observation.flight_category == 'VFR' %}bg-success{% elif latest_observation.flight_category == 'MVFR' %}bg-info text-dark{% elif latest_observation.flight_category == 'IFR' %}bg-danger{% else %}bg-dark border border-danger{% endif %} fs-6 px-2 py-1">
+                            {{ latest_observation.flight_category }} ({{ latest_observation.get_flight_category_name_ru }})
+                        </span>
+                        <span class="text-white-50 small">
+                            <i class="bx bx-time-five me-1"></i>{{ latest_observation.observation_time|date:"H:i" }} UTC ({{ latest_observation.observation_time|date:"d.m.Y" }})
+                        </span>
+                    </div>
+                    <div>
+                        {% if latest_observation.weather_phenomena %}
+                            <span class="badge bg-warning text-dark">{{ latest_observation.weather_phenomena }}</span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success">Без опасных явлений</span>
+                        {% endif %}
+                        {% if latest_observation.cavok %}
+                            <span class="badge bg-success ms-1">CAVOK</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Сетка параметров текущей погоды -->
+                <div class="row g-2 text-center text-md-start">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Температура</small>
+                            <span class="fw-bold fs-5 text-white">
+                                {% if latest_observation.temperature is not None %}
+                                    {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
+                                {% else %}—{% endif %}
+                            </span>
+                            {% if latest_observation.dew_point is not None %}
+                                <small class="text-white-50 d-block" style="font-size: 0.7rem;">Td: {{ latest_observation.dew_point|floatformat:0 }}°C</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Ветер</small>
+                            <span class="fw-bold fs-6 text-white">{{ latest_observation.get_wind_display }}</span>
+                            {% if latest_observation.wind_gust %}
+                                <small class="text-danger-subtle d-block font-weight-bold" style="font-size: 0.7rem;">Порывы {{ latest_observation.wind_gust|floatformat:0 }} м/с</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Видимость / НГО</small>
+                            <span class="fw-bold fs-6 text-white">{{ latest_observation.get_visibility_display }}</span>
+                            <small class="text-white-50 d-block" style="font-size: 0.7rem;">НГО: {{ latest_observation.get_cloud_display }}</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded" style="background: rgba(255,255,255,0.08);">
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Давление QNH</small>
+                            <span class="fw-bold fs-6 text-white">
+                                {% if latest_observation.pressure_mmhg %}{{ latest_observation.pressure_mmhg|floatformat:1 }} мм{% else %}—{% endif %}
+                            </span>
+                            {% if latest_observation.pressure_hpa %}
+                                <small class="text-white-50 d-block" style="font-size: 0.7rem;">{{ latest_observation.pressure_hpa|floatformat:0 }} гПа</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Исходный METAR -->
+                <div class="mt-2 pt-2 border-top border-secondary d-flex justify-content-between align-items-center gap-2">
+                    <div class="font-monospace small text-truncate text-info" title="{{ latest_observation.raw_text }}">
+                        <i class="bx bx-terminal me-1"></i>{{ latest_observation.raw_text }}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 flex-shrink-0"
+                            onclick="navigator.clipboard.writeText('{{ latest_observation.raw_text|escapejs }}'); this.innerText='Скопировано!'; setTimeout(() => this.innerText='Копия', 1500);"
+                            style="font-size: 0.75rem;">
+                        Копия
+                    </button>
+                </div>
+            </div>
+        {% endif %}
     {% else %}
         <div class="alert alert-secondary text-center p-3 mb-3">
-            <i class="bx bx-info-circle me-1"></i> Метеосводки METAR для <strong>{{ mpd.name }}</strong> ({{ mpd.icao_code|default:"без ICAO" }}) еще не зафиксированы.
-            {% if mpd.icao_code %}
-                <button type="button" class="btn btn-sm btn-primary ms-2" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this)">
-                    <i class="bx bx-download me-1"></i> Запросить сводку с метеостанции
+            <i class="bx bx-info-circle me-1"></i> Метеосводки для <strong>{{ mpd.name }}</strong> ({{ mpd.icao_code|default:"без ICAO" }}) еще не зафиксированы.
+            <div class="mt-2 d-flex justify-content-center gap-2">
+                {% if mpd.icao_code %}
+                    <button type="button" class="btn btn-sm btn-success" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this, 'metar')">
+                        <i class="bx bx-download me-1"></i> Запросить METAR
+                    </button>
+                {% endif %}
+                <button type="button" class="btn btn-sm btn-primary" onclick="refreshModalWeather({{ mpd.pk }}, '{{ target_date_str }}', this, 'coordinate')">
+                    <i class="bx bx-cube-alt me-1"></i> Запросить ECMWF
                 </button>
-            {% endif %}
+            </div>
         </div>
     {% endif %}
 

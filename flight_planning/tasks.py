@@ -76,7 +76,7 @@ def sync_all_aviation_weather_task(self) -> Dict[str, Any]:
     name="flight_planning.tasks.sync_mpd_weather_task",
 )
 def sync_mpd_weather_task(self, mpd_id: int) -> Dict[str, Any]:
-    """Фоновая задача оперативного обновления погоды для конкретного МПД по запросу пользователя.
+    """Фоновая задача оперативного комплексного обновления погоды для конкретного МПД.
 
     Args:
         self: Экземпляр связанной задачи Celery (bind=True).
@@ -85,6 +85,8 @@ def sync_mpd_weather_task(self, mpd_id: int) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Результат опроса конкретного МПД.
     """
+    from .weather_providers import WeatherManagerService
+
     task_id = self.request.id
     logger.info("Старт задачи sync_mpd_weather_task [task_id=%s, mpd_id=%s]", task_id, mpd_id)
 
@@ -95,12 +97,17 @@ def sync_mpd_weather_task(self, mpd_id: int) -> Dict[str, Any]:
             return {"status": "skipped", "reason": "MPD not found", "mpd_id": mpd_id}
 
         obs, fc = AviationWeatherService.sync_mpd_weather(mpd)
+        coord_count = 0
+        if mpd.latitude is not None and mpd.longitude is not None:
+            coord_count = WeatherManagerService.sync_coordinate_forecasts_for_mpds([mpd])
+
         return {
             "status": "success",
             "mpd_id": mpd_id,
             "icao_code": mpd.icao_code,
             "has_metar": bool(obs),
             "has_taf": bool(fc),
+            "coordinate_records_saved": coord_count,
         }
     except (ConnectionError, TimeoutError, OSError) as exc:
         countdown = 30 * (2 ** self.request.retries)
@@ -109,3 +116,36 @@ def sync_mpd_weather_task(self, mpd_id: int) -> Dict[str, Any]:
     except Exception as exc:
         logger.exception("Критическая ошибка в sync_mpd_weather_task [mpd_id=%s]: %s", mpd_id, exc)
         raise exc
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    acks_late=True,
+    name="flight_planning.tasks.sync_mpd_coordinate_weather_task",
+)
+def sync_mpd_coordinate_weather_task(self, mpd_id: int, force_model: Optional[str] = None) -> Dict[str, Any]:
+    """Фоновая задача оперативного обновления координатного сеточного прогноза для МПД.
+
+    Args:
+        self: Экземпляр связанной задачи Celery.
+        mpd_id (int): Идентификатор МПД.
+        force_model (Optional[str]): Имя модели (ecmwf_ifs, gfs_seamless).
+
+    Returns:
+        Dict[str, Any]: Статистика сохраненных почасовых точек.
+    """
+    from .weather_providers import WeatherManagerService
+
+    try:
+        mpd = PlaceProductionActivity.objects.filter(pk=mpd_id).first()
+        if not mpd:
+            return {"status": "skipped", "reason": "MPD not found", "mpd_id": mpd_id}
+
+        count = WeatherManagerService.sync_coordinate_forecasts_for_mpds([mpd], force_model=force_model)
+        return {"status": "success", "mpd_id": mpd_id, "saved_points": count}
+    except Exception as exc:
+        logger.exception("Ошибка в sync_mpd_coordinate_weather_task [mpd_id=%s]: %s", mpd_id, exc)
+        raise exc
+

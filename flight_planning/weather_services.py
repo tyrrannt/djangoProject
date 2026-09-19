@@ -19,7 +19,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from hrdepartment_app.models import PlaceProductionActivity
-from .models import AviationWeatherForecast, AviationWeatherObservation
+from .models import (
+    AviationWeatherForecast,
+    AviationWeatherObservation,
+    AviationWeatherStation,
+    CoordinateWeatherForecast,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -773,53 +778,114 @@ class AviationWeatherService:
 
     @classmethod
     def sync_all_active_mpds(cls) -> Dict[str, int]:
-        """Выполняет массовую синхронизацию фактической погоды и прогнозов по всем активным МПД.
+        """Выполняет комплексную синхронизацию метеорологии: METAR/TAF опорных станций и координатные расчеты.
+
+        1. Наполняет/актуализирует справочник опорных метеостанций AviationWeatherStation.
+        2. Опрашивает шлюз NOAA по станциям и МПД с ICAO-кодами.
+        3. Пакетно запрашивает сеточную модель Open-Meteo (ECMWF/GFS) для всех координатных МПД.
 
         Returns:
             Dict[str, int]: Статистика синхронизации:
-                - 'total_mpds': Всего активных МПД с ICAO кодом.
-                - 'metar_saved': Сохранено наблюдений METAR.
-                - 'taf_saved': Сохранено прогнозов TAF.
+                - 'total_mpds': Всего активных МПД.
+                - 'metar_saved': Сохранено фактических наблюдений METAR.
+                - 'taf_saved': Сохранено официальных прогнозов TAF.
+                - 'coord_forecasts_saved': Сохранено почасовых модельных прогнозов.
         """
+        from .fixtures_stations import seed_aviation_weather_stations
+        from .weather_providers import WeatherManagerService
+
+        # Проверяем и инициализируем базовые опорные метеостанции РФ
+        if not AviationWeatherStation.objects.exists():
+            seed_aviation_weather_stations()
+
+        # 1. Сбор ICAO кодов со всех активных станций и МПД
+        active_stations = AviationWeatherStation.objects.filter(is_active=True)
+        station_by_icao = {st.icao_code.upper(): st for st in active_stations if st.icao_code}
+
         active_mpds = PlaceProductionActivity.objects.filter(
             in_planning=True,
             weather_monitoring_enabled=True,
-        ).exclude(icao_code="").exclude(icao_code__isnull=True)
+        )
 
         mpd_by_icao: Dict[str, PlaceProductionActivity] = {}
+        coordinate_mpds: List[PlaceProductionActivity] = []
+
         for mpd in active_mpds:
-            code = mpd.icao_code.strip().upper()
+            code = (mpd.icao_code or "").strip().upper()
             if len(code) == 4:
                 mpd_by_icao[code] = mpd
+            if mpd.latitude is not None and mpd.longitude is not None:
+                coordinate_mpds.append(mpd)
 
-        if not mpd_by_icao:
-            return {"total_mpds": 0, "metar_saved": 0, "taf_saved": 0}
+        all_target_icaos = list(set(list(station_by_icao.keys()) + list(mpd_by_icao.keys())))
 
-        all_codes = list(mpd_by_icao.keys())
-        metar_data = cls.fetch_noaa_raw(all_codes, data_type="metar")
-        taf_data = cls.fetch_noaa_raw(all_codes, data_type="taf")
+        metar_data = cls.fetch_noaa_raw(all_target_icaos, data_type="metar")
+        taf_data = cls.fetch_noaa_raw(all_target_icaos, data_type="taf")
 
         metar_count = 0
         taf_count = 0
 
-        for code, mpd in mpd_by_icao.items():
+        # Сохранение METAR/TAF по станциям и МПД
+        for code in all_target_icaos:
             raw_metar = metar_data.get(code)
             raw_taf = taf_data.get(code)
-            obs, fc = cls.sync_mpd_weather(mpd, raw_metar=raw_metar, raw_taf=raw_taf)
-            if obs:
-                metar_count += 1
-            if fc:
-                taf_count += 1
+            station_obj = station_by_icao.get(code)
+            mpd_obj = mpd_by_icao.get(code)
+
+            if raw_metar:
+                try:
+                    parsed_metar = MetarParser.parse_metar(raw_metar)
+                    parsed_metar["icao_code"] = code
+                    parsed_metar["station"] = station_obj
+                    if mpd_obj:
+                        parsed_metar["mpd"] = mpd_obj
+
+                    with transaction.atomic():
+                        AviationWeatherObservation.objects.update_or_create(
+                            icao_code=code,
+                            observation_time=parsed_metar["observation_time"],
+                            defaults=parsed_metar,
+                        )
+                        metar_count += 1
+                except Exception as exc:
+                    logger.error("Ошибка сохранения METAR для %s: %s", code, exc)
+
+            if raw_taf:
+                try:
+                    parsed_taf = TafParser.parse_taf(raw_taf)
+                    parsed_taf["icao_code"] = code
+                    parsed_taf["station"] = station_obj
+                    if mpd_obj:
+                        parsed_taf["mpd"] = mpd_obj
+
+                    with transaction.atomic():
+                        AviationWeatherForecast.objects.update_or_create(
+                            icao_code=code,
+                            issued_at=parsed_taf["issued_at"],
+                            defaults=parsed_taf,
+                        )
+                        taf_count += 1
+                except Exception as exc:
+                    logger.error("Ошибка сохранения TAF для %s: %s", code, exc)
+
+        # 2. Пакетная синхронизация координатных прогнозов
+        coord_saved = 0
+        if coordinate_mpds:
+            try:
+                coord_saved = WeatherManagerService.sync_coordinate_forecasts_for_mpds(coordinate_mpds)
+            except Exception as exc:
+                logger.error("Ошибка фонового расчета координатной погоды: %s", exc)
 
         logger.info(
-            "Завершена синхронизация погоды: обработано МПД %s, METAR %s, TAF %s",
-            len(mpd_by_icao), metar_count, taf_count
+            "Завершена комплексная синхронизация погоды: METAR %s, TAF %s, Coordinate Points %s",
+            metar_count, taf_count, coord_saved
         )
 
         return {
-            "total_mpds": len(mpd_by_icao),
+            "total_mpds": len(active_mpds),
             "metar_saved": metar_count,
             "taf_saved": taf_count,
+            "coord_forecasts_saved": coord_saved,
         }
 
     @classmethod
@@ -833,22 +899,23 @@ class AviationWeatherService:
             Dict[str, Any]: Словарь с текущим метеонаблюдением (METAR) и прогнозом (TAF).
         """
         icao = (mpd.icao_code or "").strip().upper()
-        if not icao:
-            return {
-                "mpd": mpd,
-                "has_weather": False,
-                "latest_observation": None,
-                "latest_forecast": None,
-            }
+        latest_obs = None
+        latest_forecast = None
 
-        latest_obs = AviationWeatherObservation.objects.filter(icao_code=icao).order_by("-observation_time").first()
-        latest_forecast = AviationWeatherForecast.objects.filter(icao_code=icao).order_by("-issued_at").first()
+        if icao:
+            latest_obs = AviationWeatherObservation.objects.filter(icao_code=icao).order_by("-observation_time").first()
+            latest_forecast = AviationWeatherForecast.objects.filter(icao_code=icao).order_by("-issued_at").first()
+
+        latest_coord = None
+        if not latest_obs and mpd.latitude is not None and mpd.longitude is not None:
+            latest_coord = CoordinateWeatherForecast.objects.filter(mpd=mpd).order_by("-forecast_for").first()
 
         return {
             "mpd": mpd,
-            "has_weather": bool(latest_obs or latest_forecast),
+            "has_weather": bool(latest_obs or latest_forecast or latest_coord),
             "latest_observation": latest_obs,
             "latest_forecast": latest_forecast,
+            "latest_coordinate_forecast": latest_coord,
         }
 
     @classmethod
@@ -857,81 +924,18 @@ class AviationWeatherService:
         mpd: PlaceProductionActivity,
         target_date: date,
     ) -> Dict[str, Any]:
-        """Возвращает почасовую хронологию погоды за выбранную дату и суточную статистику.
+        """Возвращает почасовую хронологию погоды за выбранную дату через WeatherManagerService.
 
         Args:
             mpd (PlaceProductionActivity): Объект места деятельности.
             target_date (date): Дата запроса.
 
         Returns:
-            Dict[str, Any]: Словарь с почасовым списком наблюдений, статистикой и действующими прогнозами.
+            Dict[str, Any]: Стандартизированный DTO-пакет метеоданных для шаблонов и API.
         """
-        icao = (mpd.icao_code or "").strip().upper()
-        if not icao:
-            return {
-                "mpd": mpd,
-                "target_date": target_date,
-                "observations": [],
-                "forecast": None,
-                "stats": {},
-            }
-
-        start_dt = datetime(target_date.year, target_date.month, target_date.day, 0, 0, 0, tzinfo=dt_timezone.utc)
-        end_dt = datetime(target_date.year, target_date.month, target_date.day, 23, 59, 59, tzinfo=dt_timezone.utc)
-
-        observations = list(
-            AviationWeatherObservation.objects.filter(
-                icao_code=icao,
-                observation_time__range=(start_dt, end_dt),
-            ).order_by("-observation_time")
-        )
-
-        # Вычисляем суточную статистику
-        temps = [o.temperature for o in observations if o.temperature is not None]
-        winds = [o.wind_speed for o in observations if o.wind_speed is not None]
-        gusts = [o.wind_gust for o in observations if o.wind_gust is not None]
-        pressures = [o.pressure_mmhg for o in observations if o.pressure_mmhg is not None]
-
-        stats = {
-            "total_reports": len(observations),
-            "min_temp": min(temps) if temps else None,
-            "max_temp": max(temps) if temps else None,
-            "max_wind": max(winds) if winds else None,
-            "max_gust": max(gusts) if gusts else None,
-            "min_pressure_mmhg": min(pressures) if pressures else None,
-            "max_pressure_mmhg": max(pressures) if pressures else None,
-        }
-
-        # Данные для построения почасового графика (в хронологическом порядке)
-        chronological_obs = list(reversed(observations))
-        chart_labels = [o.observation_time.strftime("%H:%M") for o in chronological_obs]
-        chart_temps = [round(o.temperature, 1) if o.temperature is not None else None for o in chronological_obs]
-        chart_winds = [round(o.wind_speed, 1) if o.wind_speed is not None else None for o in chronological_obs]
-        chart_gusts = [round(o.wind_gust, 1) if o.wind_gust is not None else None for o in chronological_obs]
-        chart_pressures = [round(o.pressure_mmhg, 1) if o.pressure_mmhg is not None else None for o in chronological_obs]
-        chart_categories = [o.flight_category for o in chronological_obs]
-
-        chart_data = {
-            "labels": chart_labels,
-            "temperatures": chart_temps,
-            "wind_speeds": chart_winds,
-            "wind_gusts": chart_gusts,
-            "pressures": chart_pressures,
-            "categories": chart_categories,
-        }
-
-        # Ищем прогноз, действовавший на эту дату
-        forecast = AviationWeatherForecast.objects.filter(
-            icao_code=icao,
-            valid_from__lte=end_dt,
-            valid_to__gte=start_dt,
-        ).order_by("-issued_at").first()
-
-        return {
-            "mpd": mpd,
-            "target_date": target_date,
-            "observations": observations,
-            "forecast": forecast,
-            "stats": stats,
-            "chart_data": chart_data,
-        }
+        from .weather_providers import WeatherManagerService
+        bundle = WeatherManagerService.get_mpd_weather_bundle(mpd, target_date)
+        # Добавляем алиасы для 100% обратной совместимости с существующими шаблонами
+        bundle["observations"] = bundle.get("hourly_timeline", [])
+        bundle["forecast"] = bundle.get("forecast_taf")
+        return bundle

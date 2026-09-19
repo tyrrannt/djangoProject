@@ -803,6 +803,37 @@ class PlaceProductionActivity(models.Model):
         default=False,
         help_text="Автоматический сбор и архивирование METAR/TAF сводок",
     )
+    elevation_msl_m = models.FloatField(
+        verbose_name="Высота над уровнем моря (MSL, м)",
+        null=True,
+        blank=True,
+        help_text="Абсолютная высота площадки над средним уровнем моря (MSL) в метрах",
+    )
+    ELEVATION_SOURCES = (
+        ("MANUAL", "Ручной ввод"),
+        ("DEM", "Цифровая модель рельефа (DEM)"),
+        ("AERODROME", "Аэродромная съемка"),
+        ("IMPORTED", "Импорт из 1С"),
+    )
+    elevation_source = models.CharField(
+        verbose_name="Источник высоты",
+        max_length=20,
+        choices=ELEVATION_SOURCES,
+        default="MANUAL",
+        help_text="Метод определения высотной отметки площадки",
+    )
+    WEATHER_SOURCE_PREFERENCES = (
+        ("AUTO", "Авто (METAR при наличии, иначе координаты)"),
+        ("METAR_ONLY", "Только METAR"),
+        ("COORDINATES_ONLY", "Только расчёт по координатам"),
+    )
+    weather_source_preference = models.CharField(
+        verbose_name="Приоритет источника погоды",
+        max_length=20,
+        choices=WEATHER_SOURCE_PREFERENCES,
+        default="AUTO",
+        help_text="Правило выбора источника метеоданных для МПД",
+    )
 
     def __str__(self) -> str:
         """Строковое представление места производственной деятельности.
@@ -818,7 +849,7 @@ class PlaceProductionActivity(models.Model):
         Returns:
             dict: Словарь с полями МПД (pk, name, short_name, address, email,
                 additional_payment, use_team_orders, in_planning, ticket_control,
-                icao_code, weather_monitoring_enabled).
+                icao_code, weather_monitoring_enabled, elevation_msl_m, elevation_source).
         """
         return {
             "pk": self.pk,
@@ -832,6 +863,9 @@ class PlaceProductionActivity(models.Model):
             "ticket_control": "Да" if self.ticket_control else "Нет",
             "icao_code": self.icao_code.upper() if self.icao_code else "—",
             "weather_monitoring_enabled": "Да" if self.weather_monitoring_enabled else "Нет",
+            "elevation_msl_m": f"{self.elevation_msl_m:.0f} м" if self.elevation_msl_m is not None else "—",
+            "elevation_source": self.get_elevation_source_display(),
+            "weather_source_preference": self.get_weather_source_preference_display(),
         }
 
     @staticmethod

@@ -15,7 +15,27 @@
         <span class="fs-7 text-muted d-none d-md-inline">
             <i class="bx bx-show"></i> {{ latest_observation.get_visibility_display }}
         </span>
-        <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}" class="text-primary ms-1" title="Открыть полный метеоцентр">
+        <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}" class="text-primary ms-1" title="Открыть полный метеоцентр (METAR)">
+            <i class="bx bx-link-external"></i>
+        </a>
+    </div>
+{% elif latest_coordinate_forecast %}
+    <div class="d-inline-flex align-items-center gap-2 px-2 py-1 bg-light rounded border" title="Сеточная модель {{ latest_coordinate_forecast.model|upper }} (расчет по координатам)">
+        <span class="badge bg-{{ latest_coordinate_forecast.get_flight_category_color }} text-white font-weight-bold">
+            {{ latest_coordinate_forecast.get_flight_category_name_ru }}
+        </span>
+        <span class="fs-7 font-weight-semibold text-dark">
+            {% if latest_coordinate_forecast.temperature is not None %}
+                {% if latest_coordinate_forecast.temperature > 0 %}+{% endif %}{{ latest_coordinate_forecast.temperature|floatformat:0 }}°C
+            {% endif %}
+        </span>
+        <span class="fs-7 text-muted">
+            <i class="bx bx-wind text-primary"></i> {{ latest_coordinate_forecast.get_wind_display }}
+        </span>
+        <span class="badge bg-info text-white fs-8">
+            <i class="bx bx-compass"></i> Модель
+        </span>
+        <a href="{% url 'flight_planning:mpd_weather_history' mpd.pk %}" class="text-primary ms-1" title="Открыть полный метеоцентр (Модель)">
             <i class="bx bx-link-external"></i>
         </a>
     </div>

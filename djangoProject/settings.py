@@ -792,6 +792,11 @@ UNFOLD = {
                         "link": reverse_lazy("admin:flight_planning_flightcrewnote_changelist"),
                     },
                     {
+                        "title": _("Справочник метеостанций (ICAO)"),
+                        "icon": "cell_tower",
+                        "link": reverse_lazy("admin:flight_planning_aviationweatherstation_changelist"),
+                    },
+                    {
                         "title": _("Архив метеонаблюдений (METAR)"),
                         "icon": "cloud_sync",
                         "link": reverse_lazy("admin:flight_planning_aviationweatherobservation_changelist"),
@@ -800,6 +805,11 @@ UNFOLD = {
                         "title": _("Прогнозы погоды (TAF)"),
                         "icon": "airwave",
                         "link": reverse_lazy("admin:flight_planning_aviationweatherforecast_changelist"),
+                    },
+                    {
+                        "title": _("Координатные прогнозы (ECMWF/GFS)"),
+                        "icon": "thermostat",
+                        "link": reverse_lazy("admin:flight_planning_coordinateweatherforecast_changelist"),
                     },
                     {
                         "title": _("Виды проверок"),
@@ -1665,8 +1675,10 @@ UNFOLD = {
                 "flight_planning.pilotassignment",
                 "flight_planning.aircraftmovement",
                 "flight_planning.flightcrewnote",
+                "flight_planning.aviationweatherstation",
                 "flight_planning.aviationweatherobservation",
                 "flight_planning.aviationweatherforecast",
+                "flight_planning.coordinateweatherforecast",
                 "flight_planning.periodicchecktype",
                 "flight_planning.periodiccheckrecord",
                 "flight_planning.employeerequiredcheck",

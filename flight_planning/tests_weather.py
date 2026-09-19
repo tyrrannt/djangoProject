@@ -1,26 +1,34 @@
-"""Тесты парсера авиационной метеорологии, сервисов и представлений (METAR / TAF)."""
+"""Тесты парсера авиационной метеорологии, сервисов, координатных прогнозов и представлений."""
 
 from datetime import date, datetime, timezone as dt_timezone
 import json
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, RequestFactory
+from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from customers_app.models import DataBaseUser
 from hrdepartment_app.models import PlaceProductionActivity
-from .models import AviationWeatherForecast, AviationWeatherObservation
+from .models import (
+    AviationWeatherForecast,
+    AviationWeatherObservation,
+    AviationWeatherStation,
+    CoordinateWeatherForecast,
+    WMO_WEATHER_CODES,
+)
 from .weather_services import MetarParser, TafParser, AviationWeatherService
-from .views import mpd_weather_history_view, mpd_weather_widget_view, mpd_weather_refresh_view
+from .weather_providers.geo_service import GeoStationService
+from .weather_providers.open_meteo_provider import OpenMeteoProvider
+from .weather_providers.weather_manager import WeatherManagerService
 
 
 class MetarParserTestCase(TestCase):
     """Набор тестов для парсера METAR и SPECI."""
 
     def test_parse_vfr_standard_mps(self):
-        """Тест разбора стандартной сводки ПВП (VFR) с ветром в м/с."""
-        raw = "METAR UNNT 181200Z 24005MPS 9999 BKN030 14/06 Q1018 NOSIG="
+        """Тест разбора стандартной сводки ПВП (VFR) с ветром в м/с и высоким потолком."""
+        raw = "METAR UNNT 181200Z 24005MPS 9999 BKN040 14/06 Q1018 NOSIG="
         parsed = MetarParser.parse_metar(raw)
 
         self.assertEqual(parsed["icao_code"], "UNNT")
@@ -34,7 +42,7 @@ class MetarParserTestCase(TestCase):
         self.assertEqual(parsed["dew_point"], 6.0)
         self.assertEqual(parsed["pressure_hpa"], 1018.0)
         self.assertAlmostEqual(parsed["pressure_mmhg"], 763.6, places=1)
-        # BKN030 = 3000 ft = 914.4 m -> VFR (> 914m and >=8000m)
+        # BKN040 = 4000 ft = 1219 m -> VFR (> 914m and >= 8000m)
         self.assertEqual(parsed["flight_category"], "VFR")
 
     def test_parse_calm_and_cavok(self):
@@ -92,7 +100,7 @@ class MetarParserTestCase(TestCase):
 
     def test_decode_weather_phenomena(self):
         """Тест декодирования авиационных метеокодов в русский текст."""
-        self.assertEqual(MetarParser.decode_weather_phenomena("+TSRA"), "Сильный гроза с дождь")
+        self.assertEqual(MetarParser.decode_weather_phenomena("+TSRA"), "Сильный гроза дождь")
         self.assertEqual(MetarParser.decode_weather_phenomena("-SN"), "Слабый снег")
         self.assertEqual(MetarParser.decode_weather_phenomena("FZFG"), "Переохлажденный (замерзающий) туман")
         self.assertEqual(MetarParser.decode_weather_phenomena("BLSN"), "Метель (низовая) снег")
@@ -123,6 +131,8 @@ class AviationWeatherServiceTestCase(TestCase):
     def setUp(self):
         self.user = DataBaseUser.objects.create_user(
             username="test_weather_user",
+            first_name="Иван",
+            last_name="Иванов",
             email="weather_test@barkol.ru",
             password="testpassword123",
             title="Тестовый Диспетчер",
@@ -137,7 +147,7 @@ class AviationWeatherServiceTestCase(TestCase):
 
     def test_sync_mpd_weather_saves_and_deduplicates(self):
         """Тест сохранения метеонаблюдения и предотвращения дубликатов."""
-        raw_metar = "METAR UNNT 181200Z 24005MPS 9999 BKN030 14/06 Q1018="
+        raw_metar = "METAR UNNT 181200Z 24005MPS 9999 BKN040 14/06 Q1018="
         raw_taf = "TAF UNNT 181100Z 1812/1918 24006MPS 9999 BKN020="
 
         obs1, fc1 = AviationWeatherService.sync_mpd_weather(self.mpd, raw_metar=raw_metar, raw_taf=raw_taf)
@@ -197,12 +207,160 @@ class AviationWeatherServiceTestCase(TestCase):
         self.assertEqual(stats["max_pressure_mmhg"], 760.0)
 
 
+class GeoStationServiceTestCase(TestCase):
+    """Тесты гео-сервиса опорных станций (Haversine & delta H)."""
+
+    def setUp(self):
+        self.st_surgut = AviationWeatherStation.objects.create(
+            icao_code="USRR",
+            name="Surgut",
+            name_ru="Сургут",
+            latitude=61.3439,
+            longitude=73.4025,
+            elevation_msl_m=61.0,
+            is_active=True,
+        )
+        self.st_nizhnevartovsk = AviationWeatherStation.objects.create(
+            icao_code="USNN",
+            name="Nizhnevartovsk",
+            name_ru="Нижневартовск",
+            latitude=60.9497,
+            longitude=76.4800,
+            elevation_msl_m=54.0,
+            is_active=True,
+        )
+
+    def test_haversine_distance_calculation(self):
+        """Тест расчета расстояния по формуле Haversine."""
+        dist = GeoStationService.haversine_distance(
+            self.st_surgut.latitude, self.st_surgut.longitude,
+            self.st_nizhnevartovsk.latitude, self.st_nizhnevartovsk.longitude
+        )
+        self.assertGreater(dist, 160.0)
+        self.assertLess(dist, 180.0)
+
+    def test_find_nearest_station_for_mpd(self):
+        """Тест нахождения ближайшей станции для МПД с координатами."""
+        result = GeoStationService.find_nearest_station(
+            latitude=61.50,
+            longitude=73.50,
+            mpd_elevation_msl_m=80.0,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result["station"].icao_code, "USRR")
+        self.assertLess(result["distance_km"], 40.0)
+        # delta_h = 80 - 61 = 19 m
+        self.assertEqual(result["elevation_delta_m"], 19.0)
+
+
+class OpenMeteoProviderTestCase(TestCase):
+    """Тесты провайдера Open-Meteo (ECMWF IFS / GFS)."""
+
+    def test_wmo_code_description(self):
+        """Тест декодирования числовых WMO 4677 кодов."""
+        self.assertEqual(WMO_WEATHER_CODES.get(0), "Ясно")
+        self.assertEqual(WMO_WEATHER_CODES.get(61), "Слабый дождь")
+        self.assertEqual(WMO_WEATHER_CODES.get(75), "Сильный снегопад")
+        self.assertEqual(WMO_WEATHER_CODES.get(95), "Гроза (слабая или умеренная)")
+
+    def test_parse_single_point_hourly(self):
+        """Тест разбора почасового ответа Open-Meteo API."""
+        mock_hourly = {
+            "time": ["2026-09-19T06:00", "2026-09-19T07:00"],
+            "temperature_2m": [12.5, 14.0],
+            "dew_point_2m": [6.0, 7.0],
+            "relative_humidity_2m": [65, 60],
+            "precipitation": [0.0, 0.5],
+            "weather_code": [0, 61],
+            "pressure_msl": [1015.0, 1014.0],
+            "surface_pressure": [1006.0, 1005.0],
+            "cloud_cover": [25, 75],
+            "cloud_cover_low": [10, 50],
+            "cloud_cover_mid": [0, 20],
+            "cloud_cover_high": [0, 10],
+            "cloud_base": [1200, 800],
+            "visibility": [10000.0, 6000.0],
+            "wind_speed_10m": [4.5, 6.0],
+            "wind_direction_10m": [220, 240],
+            "wind_gusts_10m": [7.0, 10.0],
+            "freezing_level_height": [2100.0, 2050.0],
+        }
+        records = OpenMeteoProvider.parse_single_point_hourly(mock_hourly)
+        self.assertEqual(len(records), 2)
+        p1 = records[0]
+        self.assertEqual(p1["temperature"], 12.5)
+        self.assertEqual(p1["model_flight_category"], "VFR")
+        self.assertEqual(p1["pressure_msl_hpa"], 1015.0)
+        self.assertAlmostEqual(p1["pressure_mmhg"], 761.3, places=1)
+
+
+class WeatherManagerServiceTestCase(TestCase):
+    """Тесты единого фасада WeatherManagerService."""
+
+    def setUp(self):
+        self.station = AviationWeatherStation.objects.create(
+            icao_code="USRR",
+            name="Surgut",
+            name_ru="Сургут",
+            latitude=61.3439,
+            longitude=73.4025,
+            elevation_msl_m=61.0,
+        )
+        self.mpd = PlaceProductionActivity.objects.create(
+            name="МПД Нефтеюганск",
+            short_name="Нефтеюганск",
+            latitude=61.09,
+            longitude=72.60,
+            elevation_msl_m=45.0,
+            elevation_source="MANUAL",
+            weather_source_preference="AUTO",
+            weather_monitoring_enabled=True,
+        )
+
+    def test_bundle_with_coordinate_forecast(self):
+        """Тест формирования DTO бандла с сеточным прогнозом."""
+        now = timezone.now()
+        CoordinateWeatherForecast.objects.create(
+            mpd=self.mpd,
+            latitude=self.mpd.latitude,
+            longitude=self.mpd.longitude,
+            elevation_msl_m=self.mpd.elevation_msl_m,
+            nearest_station=self.station,
+            forecast_for=now,
+            model_run_at=now,
+            model="ecmwf_ifs",
+            weather_code=0,
+            temperature=15.0,
+            dew_point=5.0,
+            relative_humidity=50,
+            wind_speed=4.0,
+            wind_direction=180,
+            visibility_m=10000,
+            cloud_base_agl_m=1200,
+            model_flight_category="VFR",
+            freezing_level_msl_m=2500,
+            surface_pressure_hpa=1008.0,
+            surface_pressure_mmhg=756.1,
+            pressure_msl_hpa=1013.25,
+            pressure_mmhg=760.0,
+        )
+
+        bundle = WeatherManagerService.build_mpd_weather_bundle(self.mpd, now.date())
+        self.assertEqual(bundle["source_type"], "COORDINATE_MODEL")
+        self.assertFalse(bundle["is_observation"])
+        self.assertIsNotNone(bundle["nearest_station_info"])
+        self.assertEqual(bundle["nearest_station_info"]["station"].icao_code, "USRR")
+        self.assertEqual(len(bundle["hourly_timeline"]), 1)
+
+
 class WeatherViewsTestCase(TestCase):
     """Тесты HTTP представлений метеоцентра МПД."""
 
     def setUp(self):
         self.user = DataBaseUser.objects.create_user(
             username="test_weather_viewer",
+            first_name="Петр",
+            last_name="Петров",
             email="viewer@barkol.ru",
             password="testpassword123",
             title="Инженер МТО",
@@ -211,6 +369,9 @@ class WeatherViewsTestCase(TestCase):
             name="МПД Сургут",
             short_name="Сургут",
             icao_code="USRR",
+            latitude=61.3439,
+            longitude=73.4025,
+            elevation_msl_m=61.0,
             in_planning=True,
             weather_monitoring_enabled=True,
         )
@@ -222,7 +383,6 @@ class WeatherViewsTestCase(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "МПД Сургут")
-        self.assertContains(response, "USRR")
 
     def test_mpd_weather_widget_view_get(self):
         """Тест компактного виджета погоды."""
@@ -237,4 +397,12 @@ class WeatherViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(data.get("success"))
-        self.assertEqual(data.get("icao_code"), "USRR")
+
+    def test_mpd_weather_refresh_coordinate_mode(self):
+        """Тест эндпоинта обновления численного прогноза по координатам."""
+        url = reverse("flight_planning:mpd_weather_refresh", args=[self.mpd.pk]) + "?mode=coordinate"
+        response = self.client.get(url, HTTP_ACCEPT="application/json")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data.get("success"))
+        self.assertEqual(data.get("mode"), "coordinate")

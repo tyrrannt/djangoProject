@@ -3752,16 +3752,20 @@ def mpd_weather_history_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
     timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
 
     # Если за сегодняшний день данных еще нет, пробуем получить их на лету
-    if target_date == today and not timeline_data['observations'] and mpd.icao_code:
-        AviationWeatherService.sync_mpd_weather(mpd)
+    if target_date == today and not timeline_data.get('observations'):
+        from .weather_providers import WeatherManagerService
+        if mpd.icao_code:
+            AviationWeatherService.sync_mpd_weather(mpd)
+        if mpd.latitude is not None and mpd.longitude is not None:
+            WeatherManagerService.sync_coordinate_forecasts_for_mpds([mpd])
         timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
 
     latest_weather = AviationWeatherService.get_mpd_current_weather(mpd)
 
-    # Список всех МПД с ICAO-кодами для быстрого переключения в шапке
+    # Список всех МПД в планировании для быстрого переключения в шапке
     all_weather_mpds = PlaceProductionActivity.objects.filter(
         in_planning=True,
-    ).exclude(icao_code="").exclude(icao_code__isnull=True).order_by('name')
+    ).order_by('name')
 
     prev_date = target_date - timedelta(days=1)
     next_date = target_date + timedelta(days=1)
@@ -3776,12 +3780,19 @@ def mpd_weather_history_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         'prev_date_str': prev_date.strftime('%Y-%m-%d'),
         'next_date_str': next_date.strftime('%Y-%m-%d'),
         'is_today': target_date == today,
-        'observations': timeline_data['observations'],
-        'forecast': timeline_data['forecast'],
-        'stats': timeline_data['stats'],
+        'source_type': timeline_data.get('source_type', 'METAR'),
+        'is_observation': timeline_data.get('is_observation', True),
+        'badge_label': timeline_data.get('badge_label', 'METAR'),
+        'badge_class': timeline_data.get('badge_class', 'success'),
+        'nearest_station_info': timeline_data.get('nearest_station_info'),
+        'latest_current': timeline_data.get('latest_current'),
+        'observations': timeline_data.get('observations', []),
+        'forecast': timeline_data.get('forecast'),
+        'stats': timeline_data.get('stats', {}),
         'chart_data_json': json.dumps(chart_data),
         'latest_observation': latest_weather.get('latest_observation'),
         'latest_forecast': latest_weather.get('latest_forecast'),
+        'latest_coordinate_forecast': latest_weather.get('latest_coordinate_forecast'),
         'all_weather_mpds': all_weather_mpds,
     }
 
@@ -3803,6 +3814,7 @@ def mpd_weather_modal_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         HttpResponse: Отрендеренный HTML-партиал модального окна.
     """
     from .weather_services import AviationWeatherService
+    from .weather_providers import WeatherManagerService
 
     mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
     date_str = request.GET.get('date', '').strip()
@@ -3818,8 +3830,11 @@ def mpd_weather_modal_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
 
     timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
 
-    if target_date == today and not timeline_data['observations'] and mpd.icao_code:
-        AviationWeatherService.sync_mpd_weather(mpd)
+    if target_date == today and not timeline_data.get('observations'):
+        if mpd.icao_code:
+            AviationWeatherService.sync_mpd_weather(mpd)
+        if mpd.latitude is not None and mpd.longitude is not None:
+            WeatherManagerService.sync_coordinate_forecasts_for_mpds([mpd])
         timeline_data = AviationWeatherService.get_mpd_weather_timeline(mpd, target_date)
 
     latest_weather = AviationWeatherService.get_mpd_current_weather(mpd)
@@ -3837,12 +3852,19 @@ def mpd_weather_modal_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         'prev_date_str': prev_date.strftime('%Y-%m-%d'),
         'next_date_str': next_date.strftime('%Y-%m-%d'),
         'is_today': target_date == today,
-        'observations': timeline_data['observations'],
-        'forecast': timeline_data['forecast'],
-        'stats': timeline_data['stats'],
+        'source_type': timeline_data.get('source_type', 'METAR'),
+        'is_observation': timeline_data.get('is_observation', True),
+        'badge_label': timeline_data.get('badge_label', 'METAR'),
+        'badge_class': timeline_data.get('badge_class', 'success'),
+        'nearest_station_info': timeline_data.get('nearest_station_info'),
+        'latest_current': timeline_data.get('latest_current'),
+        'observations': timeline_data.get('observations', []),
+        'forecast': timeline_data.get('forecast'),
+        'stats': timeline_data.get('stats', {}),
         'chart_data_json': json.dumps(chart_data),
         'latest_observation': latest_weather.get('latest_observation'),
         'latest_forecast': latest_weather.get('latest_forecast'),
+        'latest_coordinate_forecast': latest_weather.get('latest_coordinate_forecast'),
     }
 
     return render(request, 'flight_planning/weather/partials/_weather_modal_content.html', context)
@@ -3881,6 +3903,8 @@ def mpd_weather_timeline_api(request: HttpRequest, mpd_id: int) -> JsonResponse:
         'mpd_id': mpd.id,
         'mpd_name': mpd.name,
         'icao_code': mpd.icao_code,
+        'source_type': timeline_data.get('source_type', 'METAR'),
+        'is_observation': timeline_data.get('is_observation', True),
         'target_date': target_date.strftime('%Y-%m-%d'),
         'stats': timeline_data.get('stats', {}),
         'chart_data': timeline_data.get('chart_data', {}),
@@ -3890,26 +3914,38 @@ def mpd_weather_timeline_api(request: HttpRequest, mpd_id: int) -> JsonResponse:
 
 @login_required
 def mpd_weather_refresh_view(request: HttpRequest, mpd_id: int) -> Union[HttpResponse, JsonResponse]:
-    """Оперативное принудительное обновление метеосводки (METAR / TAF) по МПД.
+    """Оперативное принудительное обновление метеосводки (METAR / TAF или сеточный расчет) по МПД.
 
     Args:
-        request (HttpRequest): HTTP POST/GET запрос.
+        request (HttpRequest): HTTP POST/GET запрос (с опциональным параметром 'mode': 'metar', 'coordinate', 'all').
         mpd_id (int): Идентификатор места производственной деятельности.
 
     Returns:
         Union[HttpResponse, JsonResponse]: Перенаправление на страницу истории или JSON ответ.
     """
     from .weather_services import AviationWeatherService
+    from .weather_providers import WeatherManagerService
 
     mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
-    obs, fc = AviationWeatherService.sync_mpd_weather(mpd)
+    mode = request.GET.get('mode', 'all')
+
+    obs, fc = None, None
+    coord_count = 0
+
+    if mode in ('metar', 'all') and mpd.icao_code:
+        obs, fc = AviationWeatherService.sync_mpd_weather(mpd)
+
+    if mode in ('coordinate', 'all') and mpd.latitude is not None and mpd.longitude is not None:
+        coord_count = WeatherManagerService.sync_coordinate_forecasts_for_mpds([mpd])
 
     if request.headers.get('Accept') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
             'success': True,
+            'mode': mode,
             'icao_code': mpd.icao_code,
             'has_metar': bool(obs),
             'has_taf': bool(fc),
+            'coordinate_points_saved': coord_count,
             'observation_time': obs.observation_time.strftime('%H:%M UTC') if obs else None,
             'flight_category': obs.flight_category if obs else None,
         })
