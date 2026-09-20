@@ -15,6 +15,7 @@ class GeoStationService:
     """
 
     EARTH_RADIUS_KM: float = 6371.0
+    MAX_REPRESENTATIVE_DISTANCE_KM: float = 15.0
 
     @classmethod
     def haversine_distance(
@@ -80,6 +81,9 @@ class GeoStationService:
     ) -> Optional[Dict[str, Any]]:
         """Находит ближайшую активную метеостанцию из справочника AviationWeatherStation.
 
+        Определяет ортодромическое расстояние, перепад высот и проверяет критерий
+        репрезентативности (расстояние не более 15 км от площадки).
+
         Args:
             latitude (float): Широта целевой точки в градусах.
             longitude (float): Долгота целевой точки в градусах.
@@ -91,6 +95,9 @@ class GeoStationService:
                 - 'station': Объект модели AviationWeatherStation.
                 - 'distance_km': Расстояние в км.
                 - 'elevation_delta_m': Перепад высот в метрах (или None).
+                - 'is_representative': True, если расстояние <= 15 км.
+                - 'is_distant': True, если расстояние > 15 км (данные METAR сугубо справочные).
+                - 'max_representative_km': Пороговая граница (15.0 км).
         """
         active_stations = AviationWeatherStation.objects.filter(is_active=True)
         if not active_stations.exists():
@@ -113,8 +120,13 @@ class GeoStationService:
             best_station.elevation_msl_m,
         )
 
+        is_representative = min_distance <= cls.MAX_REPRESENTATIVE_DISTANCE_KM
+
         return {
             "station": best_station,
             "distance_km": min_distance,
             "elevation_delta_m": elevation_delta,
+            "is_representative": is_representative,
+            "is_distant": not is_representative,
+            "max_representative_km": cls.MAX_REPRESENTATIVE_DISTANCE_KM,
         }

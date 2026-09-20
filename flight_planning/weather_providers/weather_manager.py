@@ -104,6 +104,11 @@ class WeatherManagerService:
                     )
                     total_saved += 1
 
+            # Обновляем аудит успешной синхронизации для МПД
+            mpd.weather_last_sync_at = timezone.now()
+            mpd.weather_sync_status = f"OK ({model_name.upper()})"
+            mpd.save(update_fields=["weather_last_sync_at", "weather_sync_status"])
+
         logger.info(
             "Синхронизированы координатные прогнозы: обработано %s МПД, сохранено %s записей",
             len(valid_points), total_saved
@@ -187,6 +192,9 @@ class WeatherManagerService:
                     "station": st,
                     "distance_km": station_match["distance_km"],
                     "elevation_delta_m": station_match["elevation_delta_m"],
+                    "is_representative": station_match.get("is_representative", True),
+                    "is_distant": station_match.get("is_distant", False),
+                    "max_representative_km": station_match.get("max_representative_km", 15.0),
                     "latest_metar": latest_st_metar,
                     "latest_metar_raw": latest_st_metar.raw_text if latest_st_metar else "",
                     "latest_metar_time": latest_st_metar.observation_time if latest_st_metar else None,
@@ -242,6 +250,9 @@ class WeatherManagerService:
                 "badge_class": "success",
                 "latest_current": latest_obs,
                 "nearest_station_info": nearest_info,
+                "is_distant_reference": nearest_info.get("is_distant", False) if nearest_info else False,
+                "weather_last_sync_at": mpd.weather_last_sync_at,
+                "weather_sync_status": mpd.weather_sync_status,
                 "observations": metar_observations,
                 "coordinate_forecasts": coord_forecasts,
                 "hourly_timeline": metar_observations,
@@ -294,6 +305,9 @@ class WeatherManagerService:
             "badge_class": "info",
             "latest_current": latest_coord,
             "nearest_station_info": nearest_info,
+            "is_distant_reference": nearest_info.get("is_distant", False) if nearest_info else False,
+            "weather_last_sync_at": mpd.weather_last_sync_at,
+            "weather_sync_status": mpd.weather_sync_status,
             "observations": metar_observations,
             "coordinate_forecasts": coord_forecasts,
             "hourly_timeline": coord_forecasts if coord_forecasts else metar_observations,

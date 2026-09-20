@@ -671,8 +671,16 @@
                                     <span class="text-muted small text-uppercase fw-bold">Опорная метеостанция (АМСГ):</span>
                                     <span class="badge bg-dark font-monospace">{{ nearest_station_info.icao_code }}</span>
                                     <span class="fw-bold text-dark">{{ nearest_station_info.name_ru }}</span>
+                                    {% if nearest_station_info.station.region %}
+                                        <span class="text-muted small">({{ nearest_station_info.station.region }})</span>
+                                    {% endif %}
                                     {% if nearest_station_info.flight_category %}
                                         <span class="badge bg-{{ nearest_station_info.flight_category|lower }} small">{{ nearest_station_info.flight_category }}</span>
+                                    {% endif %}
+                                    {% if nearest_station_info.is_distant %}
+                                        <span class="badge bg-warning text-dark fw-bold" title="Аэродром удален более чем на 15 км. Замер METAR носит исключительно справочный характер">
+                                            <i class="bx bx-error-circle me-1"></i>Удаленная станция (>15 км)
+                                        </span>
                                     {% endif %}
                                 </div>
                                 <div class="text-muted small d-flex flex-wrap gap-2 gap-md-3 mt-1">
@@ -696,6 +704,14 @@
                             </div>
                         {% endif %}
                     </div>
+                    {% if nearest_station_info.is_distant %}
+                        <div class="mt-2 p-2 rounded bg-warning bg-opacity-10 border border-warning text-warning-emphasis small d-flex align-items-center gap-2">
+                            <i class="bx bx-error-circle fs-5 text-warning flex-shrink-0"></i>
+                            <div>
+                                <strong>Внимание (Удаленный опорный пункт >15 км):</strong> Фактический замер METAR станции <strong>{{ nearest_station_info.icao_code }} ({{ nearest_station_info.name_ru }})</strong> удален на {{ nearest_station_info.distance_km|floatformat:1 }} км и носит <em>исключительно справочный характер</em>. Для посадочной площадки <strong>{{ mpd.name }}</strong> основным источником погоды является сеточный численный прогноз ECMWF IFS по точным координатам.
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         {% endif %}

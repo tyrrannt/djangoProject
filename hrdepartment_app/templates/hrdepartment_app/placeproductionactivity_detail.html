@@ -234,12 +234,12 @@
                         </div>
                     </div>
 
-                    <!-- Секция 4: Авиационная метеорология (METAR / TAF) -->
+                    <!-- Секция 4: Авиационная метеорология (METAR / TAF / ECMWF) -->
                     <div class="section-header d-flex justify-content-between align-items-center">
                         <div>
-                            <i class="bx bx-cloud-lightning text-primary"></i> Авиационная метеорология (METAR / TAF)
+                            <i class="bx bx-cloud-lightning text-primary"></i> Авиационная метеорология (METAR / ECMWF)
                         </div>
-                        {% if object.icao_code %}
+                        {% if object.icao_code or object.latitude and object.longitude %}
                             <a href="{% url 'flight_planning:mpd_weather_history' object.pk %}" class="btn btn-sm btn-outline-primary btn-touch">
                                 <i class="bx bx-history me-1"></i> История метеоусловий и TAF
                             </a>
@@ -253,19 +253,23 @@
                                     {% if object.icao_code %}
                                         <span class="badge bg-dark font-monospace text-uppercase fs-6 px-2 py-1">{{ object.icao_code }}</span>
                                     {% else %}
-                                        <span class="text-muted">Не назначен</span>
+                                        <span class="text-muted">Не назначен (сеточный прогноз)</span>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 col-md-3">
                             <div class="detail-card">
-                                <div class="detail-label">Координаты объекта</div>
+                                <div class="detail-label">Координаты и высота MSL</div>
                                 <div class="detail-value">
                                     {% if object.latitude and object.longitude %}
-                                        <span class="font-monospace fs-7 text-secondary">
+                                        <div class="font-monospace fs-7 text-secondary">
                                             <i class="bx bx-map-pin text-danger me-1"></i>{{ object.latitude|floatformat:4 }}°, {{ object.longitude|floatformat:4 }}°
-                                        </span>
+                                        </div>
+                                        <div class="text-muted small mt-1">
+                                            Высота: <strong>{{ object.elevation_msl_m|default:"0" }} м MSL</strong>
+                                            {% if object.elevation_source %}<span class="badge bg-light text-secondary border ms-1">{{ object.elevation_source }}</span>{% endif %}
+                                        </div>
                                     {% else %}
                                         <span class="text-muted">—</span>
                                     {% endif %}
@@ -273,26 +277,31 @@
                             </div>
                         </div>
                         <div class="col-12 col-md-3">
-                            <div class="detail-card text-center">
-                                <div class="detail-label mb-2">Автосбор сводок погоды</div>
-                                <div>
+                            <div class="detail-card">
+                                <div class="detail-label">Синхронизация погоды</div>
+                                <div class="detail-value">
                                     {% if object.weather_monitoring_enabled %}
-                                        <span class="badge bg-success fs-6"><i class="bx bx-check me-1"></i> Включен</span>
+                                        <span class="badge bg-success fs-7 mb-1"><i class="bx bx-check me-1"></i> Автосбор включен</span>
                                     {% else %}
-                                        <span class="badge bg-secondary fs-6"><i class="bx bx-x me-1"></i> Отключен</span>
+                                        <span class="badge bg-secondary fs-7 mb-1"><i class="bx bx-x me-1"></i> Отключен</span>
+                                    {% endif %}
+                                    {% if object.weather_last_sync_at %}
+                                        <div class="text-muted" style="font-size: 0.75rem;">
+                                            <i class="bx bx-time me-1"></i>{{ object.weather_last_sync_at|date:"d.m.Y H:i" }}
+                                            {% if object.weather_sync_status %}<span class="badge bg-light text-dark border ms-1">{{ object.weather_sync_status }}</span>{% endif %}
+                                        </div>
                                     {% endif %}
                                 </div>
-                                <small class="text-muted mt-2 d-block">Периодический опрос METAR/TAF</small>
                             </div>
                         </div>
                         <div class="col-12 col-md-3">
                             <div class="detail-card text-center d-flex flex-column justify-content-center align-items-center">
-                                {% if object.icao_code %}
+                                {% if object.icao_code or object.latitude and object.longitude %}
                                     <a href="{% url 'flight_planning:mpd_weather_history' object.pk %}" class="btn btn-primary btn-touch w-100">
                                         <i class="bx bx-cloud-sun me-1"></i> Открыть метеоцентр
                                     </a>
                                 {% else %}
-                                    <span class="text-muted small">Укажите код ICAO для сбора погоды</span>
+                                    <span class="text-muted small">Укажите координаты или ICAO код</span>
                                 {% endif %}
                             </div>
                         </div>

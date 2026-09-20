@@ -257,6 +257,7 @@ class MetarParser:
         cavok = False
         cloud_base_meters: Optional[int] = None
         cloud_coverage = ""
+        cloud_layers_list: List[Dict[str, Any]] = []
         temperature: Optional[float] = None
         dew_point: Optional[float] = None
         pressure_hpa: Optional[float] = None
@@ -324,11 +325,19 @@ class MetarParser:
                 continue
 
             # 4. Облачность: FEW010, SCT020, BKN030CB, OVC008, VV002, NSC, NCD, CLR, SKC
-            cloud_match = re.match(r"^(FEW|SCT|BKN|OVC|VV)(\d{3})(?:CB|TCU)?$", t)
+            cloud_match = re.match(r"^(FEW|SCT|BKN|OVC|VV)(\d{3})(CB|TCU)?$", t)
             if cloud_match:
-                cov, height_hundreds = cloud_match.groups()
+                cov, height_hundreds, cloud_type = cloud_match.groups()
                 height_ft = int(height_hundreds) * 100
                 height_m = int(height_ft * 0.3048)
+
+                cloud_layers_list.append({
+                    "coverage": cov,
+                    "altitude_ft": height_ft,
+                    "altitude_m": height_m,
+                    "type": cloud_type or "",
+                    "raw": t,
+                })
 
                 # Потолок (НГО) определяется низшим слоем BKN, OVC или VV
                 if cov in ("BKN", "OVC", "VV"):
@@ -410,6 +419,7 @@ class MetarParser:
             "cavok": cavok,
             "cloud_base_meters": cloud_base_meters,
             "cloud_coverage": cloud_coverage,
+            "cloud_layers": cloud_layers_list,
             "temperature": temperature,
             "dew_point": dew_point,
             "pressure_hpa": pressure_hpa,

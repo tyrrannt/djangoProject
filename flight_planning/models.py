@@ -1138,6 +1138,12 @@ class AviationWeatherStation(models.Model):
         default="Russia",
         verbose_name="Страна",
     )
+    region = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        verbose_name="Регион / Субъект РФ",
+    )
     is_active = models.BooleanField(
         default=True,
         verbose_name="Активна для мониторинга",
@@ -1294,6 +1300,12 @@ class AviationWeatherObservation(models.Model):
         default="",
         verbose_name="Покрытие облачностью",
     )
+    cloud_layers = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Слои облачности (JSON)",
+        help_text="Структурированные слои облачности: [{'coverage': 'FEW', 'altitude_m': 300, 'type': 'CB'}, ...]",
+    )
     temperature = models.FloatField(
         null=True,
         blank=True,
@@ -1412,10 +1424,28 @@ class AviationWeatherObservation(models.Model):
         """Возвращает форматированное значение облачности и НГО.
 
         Returns:
-            str: Описание облачности с высотой НГО в метрах.
+            str: Описание облачности с высотой НГО в метрах и перечислением всех слоев.
         """
         if self.cavok:
             return "Ясно / CAVOK"
+        if self.cloud_layers and isinstance(self.cloud_layers, list):
+            parts = []
+            for layer in self.cloud_layers:
+                if not isinstance(layer, dict):
+                    continue
+                cov = layer.get("coverage", "")
+                alt_m = layer.get("altitude_m")
+                c_type = layer.get("type", "")
+                type_str = f" {c_type}" if c_type else ""
+                if alt_m is not None:
+                    parts.append(f"{cov}{type_str} {alt_m:.0f}м")
+                elif cov:
+                    parts.append(f"{cov}{type_str}")
+            if parts:
+                layers_str = ", ".join(parts)
+                if self.cloud_base_meters is not None:
+                    return f"{layers_str} (НГО: {self.cloud_base_meters} м)"
+                return layers_str
         if self.cloud_base_meters is None:
             return self.cloud_coverage or "Ясно (NSC)"
         cov = self.cloud_coverage or "НГО"
@@ -1730,18 +1760,18 @@ class CoordinateWeatherForecast(models.Model):
         blank=True,
         verbose_name="Верхняя облачность (%)",
     )
-    cloud_base_agl_m = models.PositiveIntegerField(
+    cloud_base_agl_m = models.FloatField(
         null=True,
         blank=True,
         verbose_name="Высота НГО (AGL, м)",
         help_text="Высота нижней границы облачности над поверхностью площадки (AGL) в метрах",
     )
-    visibility_m = models.PositiveIntegerField(
+    visibility_m = models.FloatField(
         null=True,
         blank=True,
         verbose_name="Расчетная видимость (м)",
     )
-    freezing_level_msl_m = models.PositiveIntegerField(
+    freezing_level_msl_m = models.FloatField(
         null=True,
         blank=True,
         verbose_name="Высота нулевой изотермы (MSL, м)",

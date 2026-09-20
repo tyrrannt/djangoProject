@@ -3785,6 +3785,9 @@ def mpd_weather_history_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         'badge_label': timeline_data.get('badge_label', 'METAR'),
         'badge_class': timeline_data.get('badge_class', 'success'),
         'nearest_station_info': timeline_data.get('nearest_station_info'),
+        'is_distant_reference': timeline_data.get('is_distant_reference', False),
+        'weather_last_sync_at': timeline_data.get('weather_last_sync_at', mpd.weather_last_sync_at),
+        'weather_sync_status': timeline_data.get('weather_sync_status', mpd.weather_sync_status),
         'latest_current': timeline_data.get('latest_current'),
         'observations': timeline_data.get('observations', []),
         'coordinate_forecasts': timeline_data.get('coordinate_forecasts', []),
@@ -3858,6 +3861,9 @@ def mpd_weather_modal_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         'badge_label': timeline_data.get('badge_label', 'METAR'),
         'badge_class': timeline_data.get('badge_class', 'success'),
         'nearest_station_info': timeline_data.get('nearest_station_info'),
+        'is_distant_reference': timeline_data.get('is_distant_reference', False),
+        'weather_last_sync_at': timeline_data.get('weather_last_sync_at', mpd.weather_last_sync_at),
+        'weather_sync_status': timeline_data.get('weather_sync_status', mpd.weather_sync_status),
         'latest_current': timeline_data.get('latest_current'),
         'observations': timeline_data.get('observations', []),
         'coordinate_forecasts': timeline_data.get('coordinate_forecasts', []),
@@ -3929,7 +3935,7 @@ def mpd_weather_refresh_view(request: HttpRequest, mpd_id: int) -> Union[HttpRes
     from .weather_providers import WeatherManagerService
 
     mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
-    mode = request.GET.get('mode', 'all')
+    mode = request.POST.get('mode') or request.GET.get('mode', 'all')
 
     obs, fc = None, None
     coord_count = 0
@@ -3978,6 +3984,8 @@ def mpd_weather_widget_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
         'mpd': mpd,
         'latest_observation': weather_data.get('latest_observation'),
         'latest_forecast': weather_data.get('latest_forecast'),
+        'latest_coordinate_forecast': weather_data.get('latest_coordinate_forecast'),
+        'is_distant_reference': weather_data.get('is_distant_reference', False),
         'has_weather': weather_data.get('has_weather', False),
     }
 

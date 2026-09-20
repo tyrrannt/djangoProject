@@ -106,6 +106,20 @@ class MetarParserTestCase(TestCase):
         self.assertEqual(MetarParser.decode_weather_phenomena("BLSN"), "Метель (низовая) снег")
         self.assertEqual(MetarParser.decode_weather_phenomena("BR"), "Дымка")
 
+    def test_parse_multiple_cloud_layers(self):
+        """Тест извлечения множественных слоев облачности в cloud_layers."""
+        raw = "METAR UUEE 181200Z 24005MPS 9999 FEW010 SCT025 BKN040CB 14/06 Q1018="
+        parsed = MetarParser.parse_metar(raw)
+
+        self.assertEqual(len(parsed["cloud_layers"]), 3)
+        self.assertEqual(parsed["cloud_layers"][0]["coverage"], "FEW")
+        self.assertEqual(parsed["cloud_layers"][0]["altitude_ft"], 1000)
+        self.assertEqual(parsed["cloud_layers"][1]["coverage"], "SCT")
+        self.assertEqual(parsed["cloud_layers"][1]["altitude_ft"], 2500)
+        self.assertEqual(parsed["cloud_layers"][2]["coverage"], "BKN")
+        self.assertEqual(parsed["cloud_layers"][2]["altitude_ft"], 4000)
+        self.assertEqual(parsed["cloud_layers"][2]["type"], "CB")
+
 
 class TafParserTestCase(TestCase):
     """Набор тестов для парсера прогнозов TAF."""
@@ -251,6 +265,41 @@ class GeoStationServiceTestCase(TestCase):
         self.assertLess(result["distance_km"], 40.0)
         # delta_h = 80 - 61 = 19 m
         self.assertEqual(result["elevation_delta_m"], 19.0)
+
+    def test_distant_station_threshold(self):
+        """Тест правила 15 км для репрезентативности опорной станции."""
+        # Близкая точка (дистанция < 15 км от Сургута 61.3439, 73.4025)
+        near_res = GeoStationService.find_nearest_station(
+            latitude=61.35,
+            longitude=73.42,
+            mpd_elevation_msl_m=65.0,
+        )
+        self.assertIsNotNone(near_res)
+        self.assertTrue(near_res["is_representative"])
+        self.assertFalse(near_res["is_distant"])
+        self.assertLessEqual(near_res["distance_km"], 15.0)
+
+        # Удаленная точка (дистанция > 15 км от Сургута)
+        far_res = GeoStationService.find_nearest_station(
+            latitude=61.80,
+            longitude=73.40,
+            mpd_elevation_msl_m=80.0,
+        )
+        self.assertIsNotNone(far_res)
+        self.assertFalse(far_res["is_representative"])
+        self.assertTrue(far_res["is_distant"])
+        self.assertGreater(far_res["distance_km"], 15.0)
+
+
+class NoaaWeatherProviderTestCase(TestCase):
+    """Тесты провайдера NOAA Aviation Weather Center."""
+
+    def test_noaa_provider_normalize_icao(self):
+        """Тест нормализации кодов станций ICAO в NoaaWeatherProvider."""
+        from .weather_providers.noaa_provider import NoaaWeatherProvider
+        self.assertEqual(NoaaWeatherProvider.normalize_icao_code("urww"), "URWW")
+        self.assertEqual(NoaaWeatherProvider.normalize_icao_code("УРВВ"), "URWW")
+        self.assertEqual(NoaaWeatherProvider.normalize_icao_code("usrr"), "USRR")
 
 
 class OpenMeteoProviderTestCase(TestCase):

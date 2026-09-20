@@ -687,7 +687,7 @@
 
         window.openQuickWeatherModal = function(mpdId, mpdName) {
             $('#quickWeatherModalTitle').html('<i class="bx bx-cloud-lightning text-warning me-2"></i> Метеоинформер — ' + (mpdName || 'МПД'));
-            $('#quickWeatherFullHubLink').attr('href', '/flight/weather/history/' + mpdId + '/');
+            $('#quickWeatherFullHubLink').attr('href', '/flight/weather/mpd/' + mpdId + '/');
             $('#quickWeatherModalBody').html(
                 '<div class="text-center py-5">' +
                     '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>' +
@@ -757,10 +757,10 @@
             })();
 
             $.ajax({
-                url: '/flight/weather/refresh/' + mpdId + '/',
+                url: '/flight/weather/mpd/' + mpdId + '/refresh/',
                 type: 'POST',
                 data: {
-                    mode: mode || 'auto'
+                    mode: mode || 'all'
                 },
                 headers: {
                     'X-CSRFToken': csrfToken,

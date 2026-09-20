@@ -11,10 +11,12 @@ import urllib.request
 from django.conf import settings
 from django.utils import timezone
 
+from .base import BaseWeatherProvider
+
 logger = logging.getLogger(__name__)
 
 
-class OpenMeteoProvider:
+class OpenMeteoProvider(BaseWeatherProvider):
     """Провайдер получения сеточных численных прогнозов погоды (ECMWF, GFS, ICON).
 
     Поддерживает пакетные запросы нескольких координат (батчинг), отказоустойчивые
@@ -259,23 +261,23 @@ class OpenMeteoProvider:
             c_mid = int(cloud_mids[i]) if (i < len(cloud_mids) and cloud_mids[i] is not None) else None
             c_high = int(cloud_highs[i]) if (i < len(cloud_highs) and cloud_highs[i] is not None) else None
 
-            c_base = int(cloud_bases[i]) if (i < len(cloud_bases) and cloud_bases[i] is not None) else None
-            fz_lvl = int(freezing_levels[i]) if (i < len(freezing_levels) and freezing_levels[i] is not None) else None
+            c_base = float(cloud_bases[i]) if (i < len(cloud_bases) and cloud_bases[i] is not None) else None
+            fz_lvl = float(freezing_levels[i]) if (i < len(freezing_levels) and freezing_levels[i] is not None) else None
             w_code = int(weather_codes[i]) if (i < len(weather_codes) and weather_codes[i] is not None) else None
             precip = float(precips[i]) if (i < len(precips) and precips[i] is not None) else 0.0
             precip_prob = float(precip_probs[i]) if (i < len(precip_probs) and precip_probs[i] is not None) else None
-            vis_m = int(visibilities[i]) if (i < len(visibilities) and visibilities[i] is not None) else None
+            vis_m = float(visibilities[i]) if (i < len(visibilities) and visibilities[i] is not None) else None
 
             # Расчетная модельная оценка условий (VFR / MVFR / IFR / LIFR)
             flight_category = "VFR"
             ceiling = c_base
-            vis = vis_m if vis_m is not None else 10000
+            vis = vis_m if vis_m is not None else 10000.0
 
-            if (ceiling is not None and ceiling < 150) or (vis < 1600):
+            if (ceiling is not None and ceiling < 150.0) or (vis < 1600.0):
                 flight_category = "LIFR"
-            elif (ceiling is not None and ceiling < 305) or (vis < 5000):
+            elif (ceiling is not None and ceiling < 305.0) or (vis < 5000.0):
                 flight_category = "IFR"
-            elif (ceiling is not None and ceiling <= 914) or (vis <= 8000):
+            elif (ceiling is not None and ceiling <= 914.0) or (vis <= 8000.0):
                 flight_category = "MVFR"
             else:
                 flight_category = "VFR"
@@ -307,3 +309,38 @@ class OpenMeteoProvider:
             })
 
         return records
+
+    def fetch_current(self, latitude: float, longitude: float, **kwargs: Any) -> Optional[Dict[str, Any]]:
+        """Получает ближайший почасовой срез прогноза для заданной координаты.
+
+        Args:
+            latitude (float): Широта точки.
+            longitude (float): Долгота точки.
+            **kwargs (Any): Дополнительные параметры (elevation, model_name).
+
+        Returns:
+            Optional[Dict[str, Any]]: Словарь параметров текущего часа или None.
+        """
+        pts = [{"latitude": latitude, "longitude": longitude, "elevation": kwargs.get("elevation")}]
+        batch = self.fetch_coordinate_forecasts_batch(pts, model_name=kwargs.get("model_name"), forecast_days=1)
+        if batch and batch[0].get("hourly_records"):
+            return batch[0]["hourly_records"][0]
+        return None
+
+    def fetch_forecast(self, latitude: float, longitude: float, forecast_days: int = 2, **kwargs: Any) -> List[Dict[str, Any]]:
+        """Получает полный массив почасового прогноза для заданной координаты.
+
+        Args:
+            latitude (float): Широта точки.
+            longitude (float): Долгота точки.
+            forecast_days (int): Горизонт прогноза в днях.
+            **kwargs (Any): Дополнительные параметры (elevation, model_name).
+
+        Returns:
+            List[Dict[str, Any]]: Список почасовых записей прогноза.
+        """
+        pts = [{"latitude": latitude, "longitude": longitude, "elevation": kwargs.get("elevation")}]
+        batch = self.fetch_coordinate_forecasts_batch(pts, model_name=kwargs.get("model_name"), forecast_days=forecast_days)
+        if batch and batch[0].get("hourly_records"):
+            return batch[0]["hourly_records"]
+        return []

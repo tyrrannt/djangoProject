@@ -33,11 +33,25 @@
                 <span class="text-muted text-uppercase fw-bold"><i class="bx bx-radio-circle-marked text-primary me-1"></i>Опорная станция:</span>
                 <span class="badge bg-dark font-monospace">{{ nearest_station_info.icao_code }}</span>
                 <span class="fw-bold">{{ nearest_station_info.name_ru }}</span>
+                {% if nearest_station_info.station.region %}
+                    <span class="text-muted small">({{ nearest_station_info.station.region }})</span>
+                {% endif %}
                 <span class="text-muted ms-1">(D: {{ nearest_station_info.distance_km|floatformat:1 }} км, &Delta;H: {% if nearest_station_info.elevation_delta_m > 0 %}+{% endif %}{{ nearest_station_info.elevation_delta_m|floatformat:0 }} м)</span>
+                {% if nearest_station_info.is_distant %}
+                    <span class="badge bg-warning text-dark ms-1" title="Аэродром удален более чем на 15 км. Данные носят справочный характер">
+                        <i class="bx bx-error-circle me-1"></i>Удаленная станция (>15 км)
+                    </span>
+                {% endif %}
             </div>
             {% if nearest_station_info.latest_metar_raw %}
                 <div class="font-monospace text-muted small text-truncate" style="max-width: 320px;" title="{{ nearest_station_info.latest_metar_raw }}">
                     {{ nearest_station_info.latest_metar_raw }}
+                </div>
+            {% endif %}
+            {% if nearest_station_info.is_distant %}
+                <div class="w-100 text-warning-emphasis bg-warning bg-opacity-10 p-1 px-2 rounded mt-1 small d-flex align-items-center gap-1">
+                    <i class="bx bx-error-circle text-warning flex-shrink-0"></i>
+                    <span>Опорный пункт удален на {{ nearest_station_info.distance_km|floatformat:1 }} км. Замер METAR носит исключительно справочный характер (приоритетен ECMWF).</span>
                 </div>
             {% endif %}
         </div>

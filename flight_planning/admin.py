@@ -318,9 +318,9 @@ class AviationWeatherForecastAdmin(ModelAdmin):
 class AviationWeatherStationAdmin(ModelAdmin):
     """Панель управления справочником сертифицированных метеостанций (ICAO/АМСГ)."""
 
-    list_display = ["icao_code", "name_ru", "name", "latitude", "longitude", "elevation_msl_m", "country", "is_active"]
-    list_filter = ["is_active", "country"]
-    search_fields = ["icao_code", "name", "name_ru"]
+    list_display = ["icao_code", "name_ru", "name", "region", "latitude", "longitude", "elevation_msl_m", "country", "is_active"]
+    list_filter = ["is_active", "region", "country"]
+    search_fields = ["icao_code", "name", "name_ru", "region"]
     compressed_fields = True
     warn_unsaved_form = True
 

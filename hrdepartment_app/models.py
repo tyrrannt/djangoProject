@@ -834,6 +834,19 @@ class PlaceProductionActivity(models.Model):
         default="AUTO",
         help_text="Правило выбора источника метеоданных для МПД",
     )
+    weather_last_sync_at = models.DateTimeField(
+        verbose_name="Время последней синхронизации погоды",
+        null=True,
+        blank=True,
+        help_text="Дата и время последнего успешного опроса метеоданных (UTC)",
+    )
+    weather_sync_status = models.CharField(
+        verbose_name="Статус последней синхронизации",
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Результат последней синхронизации (например, OK, NO_DATA, ERROR)",
+    )
 
     def __str__(self) -> str:
         """Строковое представление места производственной деятельности.
@@ -849,7 +862,8 @@ class PlaceProductionActivity(models.Model):
         Returns:
             dict: Словарь с полями МПД (pk, name, short_name, address, email,
                 additional_payment, use_team_orders, in_planning, ticket_control,
-                icao_code, weather_monitoring_enabled, elevation_msl_m, elevation_source).
+                icao_code, weather_monitoring_enabled, elevation_msl_m, elevation_source,
+                weather_last_sync_at, weather_sync_status).
         """
         return {
             "pk": self.pk,
@@ -866,6 +880,8 @@ class PlaceProductionActivity(models.Model):
             "elevation_msl_m": f"{self.elevation_msl_m:.0f} м" if self.elevation_msl_m is not None else "—",
             "elevation_source": self.get_elevation_source_display(),
             "weather_source_preference": self.get_weather_source_preference_display(),
+            "weather_last_sync_at": self.weather_last_sync_at.strftime("%d.%m.%Y %H:%M") if self.weather_last_sync_at else "—",
+            "weather_sync_status": self.weather_sync_status or "—",
         }
 
     @staticmethod
