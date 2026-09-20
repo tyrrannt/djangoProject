@@ -293,6 +293,7 @@
 
         (function() {
             var chartInstanceSmall = null;
+            var chartInstanceEcmwf = null;
             var chartInstanceLarge = null;
 
             function buildConfig(chartData, isLarge) {
@@ -420,6 +421,11 @@
                         chartInstanceSmall = new Chart(ctxSmall, buildConfig(chartData, false));
                     }
 
+                    var ctxEcmwf = document.getElementById('dailyWeatherChartEcmwf');
+                    if (ctxEcmwf && !chartInstanceEcmwf) {
+                        chartInstanceEcmwf = new Chart(ctxEcmwf, buildConfig(chartData, false));
+                    }
+
                     var ctxLarge = document.getElementById('dailyWeatherChartLarge');
                     if (ctxLarge && !chartInstanceLarge) {
                         chartInstanceLarge = new Chart(ctxLarge, buildConfig(chartData, true));
@@ -444,8 +450,17 @@
                     }
                 }
                 if (event.target && (event.target.id === 'timeline-tab' || event.target.getAttribute('data-bs-target') === '#timeline-panel')) {
-                    if (chartInstanceSmall) {
+                    if (!chartInstanceSmall) {
+                        renderAllCharts();
+                    } else {
                         chartInstanceSmall.resize();
+                    }
+                }
+                if (event.target && (event.target.id === 'ecmwf-tab' || event.target.getAttribute('data-bs-target') === '#ecmwf-panel')) {
+                    if (!chartInstanceEcmwf) {
+                        renderAllCharts();
+                    } else {
+                        chartInstanceEcmwf.resize();
                     }
                 }
             });
@@ -731,42 +746,122 @@
 
         <!-- HERO-БАННЕР: ТЕКУЩАЯ ПОГОДА (САМЫЙ СВЕЖИЙ СРЕЗ) -->
         {% if latest_observation %}
-            {% if latest_observation.is_model_forecast %}
+            <!-- Hero-баннер фактического наблюдения METAR -->
+            <div class="weather-hero-card mb-3">
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-lg-4">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <span class="flight-category-pill {{ latest_observation.flight_category|lower }}">
+                                <i class="bx bx-check-shield"></i> {{ latest_observation.get_flight_category_name_ru }} ({{ latest_observation.flight_category }})
+                            </span>
+                            <span class="text-white-50 small">
+                                <i class="bx bx-time-five me-1"></i>{{ latest_observation.observation_time|date:"d.m.Y H:i" }} UTC
+                            </span>
+                        </div>
+                        <h2 class="h3 font-weight-bold text-white mb-1">
+                            {% if latest_observation.temperature is not None %}
+                                {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
+                            {% else %}
+                                —
+                            {% endif %}
+                        </h2>
+                        <div class="text-white-50">
+                            {% if latest_observation.weather_phenomena %}
+                                <span class="badge bg-warning text-dark fs-7 me-1">{{ latest_observation.weather_phenomena }}</span>
+                            {% else %}
+                                <span>Без опасных явлений</span>
+                            {% endif %}
+                            {% if latest_observation.cavok %}
+                                <span class="badge bg-success fs-7 ms-1">CAVOK</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-8">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <div class="weather-metric-box">
+                                    <div class="weather-metric-label"><i class="bx bx-wind me-1"></i> Ветер</div>
+                                    <div class="weather-metric-value">{{ latest_observation.get_wind_display }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="weather-metric-box">
+                                    <div class="weather-metric-label"><i class="bx bx-show me-1"></i> Видимость</div>
+                                    <div class="weather-metric-value">{{ latest_observation.get_visibility_display }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="weather-metric-box">
+                                    <div class="weather-metric-label"><i class="bx bx-cloud me-1"></i> Облачность / НГО</div>
+                                    <div class="weather-metric-value">{{ latest_observation.get_cloud_display }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="weather-metric-box">
+                                    <div class="weather-metric-label"><i class="bx bx-tachometer me-1"></i> Давление QNH</div>
+                                    <div class="weather-metric-value">
+                                        {% if latest_observation.pressure_mmhg %}
+                                            {{ latest_observation.pressure_mmhg|floatformat:1 }} <span class="fs-7 font-weight-normal">мм</span>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Сырая строка METAR -->
+                    <div class="col-12 mt-2">
+                        <div class="raw-metar-block">
+                            <span><i class="bx bx-terminal me-2"></i>{{ latest_observation.raw_text }}</span>
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-2"
+                                    onclick="copyRawMetar('{{ latest_observation.raw_text|escapejs }}', this)"
+                                    title="Скопировать METAR в буфер">
+                                <i class="bx bx-copy"></i> Скопировать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% elif latest_coordinate_forecast or latest_current %}
+            {% with curr=latest_coordinate_forecast|default:latest_current %}
                 <!-- Hero-баннер численной модели прогноза ECMWF / Open-Meteo -->
                 <div class="weather-hero-card mb-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0369a1 100%);">
                     <div class="row g-3 align-items-center">
                         <div class="col-12 col-lg-4">
                             <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                                 <span class="badge bg-info text-dark font-monospace fw-bold px-2 py-1">
-                                    <i class="bx bx-cube-alt me-1"></i> {{ latest_observation.model_name|default:"ECMWF IFS" }}
+                                    <i class="bx bx-cube-alt me-1"></i> {{ curr.model|upper|default:"ECMWF IFS" }}
                                 </span>
-                                <span class="flight-category-pill {{ latest_observation.flight_category|lower }} py-1 px-2" style="font-size: 0.8rem;">
-                                    <i class="bx bx-shield-quarter me-1"></i> {{ latest_observation.get_flight_category_name_ru }} ({{ latest_observation.flight_category }})
+                                <span class="flight-category-pill {{ curr.flight_category|lower }} py-1 px-2" style="font-size: 0.8rem;">
+                                    <i class="bx bx-shield-quarter me-1"></i> {{ curr.get_flight_category_name_ru }} ({{ curr.flight_category }})
                                 </span>
                                 <span class="text-white-50 small">
-                                    <i class="bx bx-time-five me-1"></i>Срез на {{ latest_observation.forecast_for|date:"d.m.Y H:i" }} UTC
+                                    <i class="bx bx-time-five me-1"></i>Срез на {{ curr.forecast_for|date:"d.m.Y H:i" }} UTC
                                 </span>
                             </div>
                             <h2 class="h3 font-weight-bold text-white mb-1">
-                                {% if latest_observation.temperature is not None %}
-                                    {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
+                                {% if curr.temperature is not None %}
+                                    {% if curr.temperature > 0 %}+{% endif %}{{ curr.temperature|floatformat:0 }}°C
                                 {% else %}
                                     —
                                 {% endif %}
                             </h2>
                             <div class="text-white-50 small mb-1">
-                                Точка росы: {% if latest_observation.dew_point is not None %}{% if latest_observation.dew_point > 0 %}+{% endif %}{{ latest_observation.dew_point|floatformat:0 }}°C{% else %}—{% endif %}
-                                {% if latest_observation.relative_humidity is not None %} • Влажность: {{ latest_observation.relative_humidity }}%{% endif %}
+                                Точка росы: {% if curr.dew_point is not None %}{% if curr.dew_point > 0 %}+{% endif %}{{ curr.dew_point|floatformat:0 }}°C{% else %}—{% endif %}
+                                {% if curr.relative_humidity is not None %} • Влажность: {{ curr.relative_humidity }}%{% endif %}
                             </div>
                             <div class="text-white">
-                                <span class="badge bg-light text-dark fs-7"><i class="bx bx-sun me-1 text-warning"></i>{{ latest_observation.weather_description }}</span>
-                                {% if latest_observation.precipitation and latest_observation.precipitation > 0 %}
-                                    <span class="badge bg-primary text-white fs-7 ms-1"><i class="bx bx-droplet me-1"></i>Осадки: {{ latest_observation.precipitation|floatformat:1 }} мм/ч</span>
+                                <span class="badge bg-light text-dark fs-7"><i class="bx bx-sun me-1 text-warning"></i>{{ curr.weather_description }}</span>
+                                {% if curr.precipitation_mm and curr.precipitation_mm > 0 %}
+                                    <span class="badge bg-primary text-white fs-7 ms-1"><i class="bx bx-droplet me-1"></i>Осадки: {{ curr.precipitation_mm|floatformat:1 }} мм/ч</span>
                                 {% endif %}
                             </div>
-                            {% if latest_observation.model_run_at %}
+                            {% if curr.model_run_at %}
                                 <div class="text-white-50 mt-1" style="font-size: 0.72rem;">
-                                    <i class="bx bx-sync me-1"></i>Инициализация модели: {{ latest_observation.model_run_at|date:"d.m.Y H:i" }} UTC
+                                    <i class="bx bx-sync me-1"></i>Инициализация модели: {{ curr.model_run_at|date:"d.m.Y H:i" }} UTC
                                 </div>
                             {% endif %}
                         </div>
@@ -776,18 +871,18 @@
                                 <div class="col-6 col-md-3">
                                     <div class="weather-metric-box">
                                         <div class="weather-metric-label"><i class="bx bx-wind me-1"></i> Ветер (10м)</div>
-                                        <div class="weather-metric-value">{{ latest_observation.get_wind_display }}</div>
-                                        {% if latest_observation.wind_gust %}
-                                            <small class="text-warning d-block font-weight-bold" style="font-size: 0.72rem;">Порывы {{ latest_observation.wind_gust|floatformat:0 }} м/с</small>
+                                        <div class="weather-metric-value">{{ curr.get_wind_display }}</div>
+                                        {% if curr.wind_gust %}
+                                            <small class="text-warning d-block font-weight-bold" style="font-size: 0.72rem;">Порывы {{ curr.wind_gust|floatformat:0 }} м/с</small>
                                         {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <div class="weather-metric-box">
                                         <div class="weather-metric-label"><i class="bx bx-cloud me-1"></i> НГО (AGL) / Облачность</div>
-                                        <div class="weather-metric-value">{{ latest_observation.get_cloud_display }}</div>
-                                        {% if latest_observation.cloud_cover_total is not None %}
-                                            <small class="text-white-50 d-block" style="font-size: 0.72rem;">Покрытие: {{ latest_observation.cloud_cover_total }}% (низ: {{ latest_observation.cloud_cover_low|default:"0" }}%)</small>
+                                        <div class="weather-metric-value">{{ curr.get_cloud_display }}</div>
+                                        {% if curr.cloud_cover_total is not None %}
+                                            <small class="text-white-50 d-block" style="font-size: 0.72rem;">Покрытие: {{ curr.cloud_cover_total }}% (низ: {{ curr.cloud_cover_low|default:"0" }}%)</small>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -795,8 +890,8 @@
                                     <div class="weather-metric-box">
                                         <div class="weather-metric-label"><i class="bx bx-line-chart-down me-1"></i> Изотерма 0°C (MSL)</div>
                                         <div class="weather-metric-value">
-                                            {% if latest_observation.freezing_level_msl_m is not None %}
-                                                {{ latest_observation.freezing_level_msl_m|floatformat:0 }} <span class="fs-7 font-weight-normal">м</span>
+                                            {% if curr.freezing_level_msl_m is not None %}
+                                                {{ curr.freezing_level_msl_m|floatformat:0 }} <span class="fs-7 font-weight-normal">м</span>
                                             {% else %}
                                                 —
                                             {% endif %}
@@ -808,14 +903,14 @@
                                     <div class="weather-metric-box">
                                         <div class="weather-metric-label"><i class="bx bx-tachometer me-1"></i> Давление MSL / МПД</div>
                                         <div class="weather-metric-value">
-                                            {% if latest_observation.pressure_mmhg %}
-                                                {{ latest_observation.pressure_mmhg|floatformat:0 }} <span class="fs-7 font-weight-normal">мм</span>
+                                            {% if curr.pressure_mmhg %}
+                                                {{ curr.pressure_mmhg|floatformat:0 }} <span class="fs-7 font-weight-normal">мм</span>
                                             {% else %}
                                                 —
                                             {% endif %}
                                         </div>
-                                        {% if latest_observation.surface_pressure_hpa %}
-                                            <small class="text-white-50 d-block" style="font-size: 0.72rem;">На МПД: {{ latest_observation.surface_pressure_hpa|floatformat:0 }} гПа</small>
+                                        {% if curr.surface_pressure_hpa %}
+                                            <small class="text-white-50 d-block" style="font-size: 0.72rem;">На МПД: {{ curr.surface_pressure_hpa|floatformat:0 }} гПа</small>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -830,87 +925,7 @@
                         </div>
                     </div>
                 </div>
-            {% else %}
-                <!-- Hero-баннер фактического наблюдения METAR -->
-                <div class="weather-hero-card mb-3">
-                    <div class="row g-3 align-items-center">
-                        <div class="col-12 col-lg-4">
-                            <div class="d-flex align-items-center gap-3 mb-2">
-                                <span class="flight-category-pill {{ latest_observation.flight_category|lower }}">
-                                    <i class="bx bx-check-shield"></i> {{ latest_observation.get_flight_category_name_ru }} ({{ latest_observation.flight_category }})
-                                </span>
-                                <span class="text-white-50 small">
-                                    <i class="bx bx-time-five me-1"></i>{{ latest_observation.observation_time|date:"d.m.Y H:i" }} UTC
-                                </span>
-                            </div>
-                            <h2 class="h3 font-weight-bold text-white mb-1">
-                                {% if latest_observation.temperature is not None %}
-                                    {% if latest_observation.temperature > 0 %}+{% endif %}{{ latest_observation.temperature|floatformat:0 }}°C
-                                {% else %}
-                                    —
-                                {% endif %}
-                            </h2>
-                            <div class="text-white-50">
-                                {% if latest_observation.weather_phenomena %}
-                                    <span class="badge bg-warning text-dark fs-7 me-1">{{ latest_observation.weather_phenomena }}</span>
-                                {% else %}
-                                    <span>Без опасных явлений</span>
-                                {% endif %}
-                                {% if latest_observation.cavok %}
-                                    <span class="badge bg-success fs-7 ms-1">CAVOK</span>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-lg-8">
-                            <div class="row g-2">
-                                <div class="col-6 col-md-3">
-                                    <div class="weather-metric-box">
-                                        <div class="weather-metric-label"><i class="bx bx-wind me-1"></i> Ветер</div>
-                                        <div class="weather-metric-value">{{ latest_observation.get_wind_display }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <div class="weather-metric-box">
-                                        <div class="weather-metric-label"><i class="bx bx-show me-1"></i> Видимость</div>
-                                        <div class="weather-metric-value">{{ latest_observation.get_visibility_display }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <div class="weather-metric-box">
-                                        <div class="weather-metric-label"><i class="bx bx-cloud me-1"></i> Облачность / НГО</div>
-                                        <div class="weather-metric-value">{{ latest_observation.get_cloud_display }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <div class="weather-metric-box">
-                                        <div class="weather-metric-label"><i class="bx bx-tachometer me-1"></i> Давление QNH</div>
-                                        <div class="weather-metric-value">
-                                            {% if latest_observation.pressure_mmhg %}
-                                                {{ latest_observation.pressure_mmhg|floatformat:1 }} <span class="fs-7 font-weight-normal">мм</span>
-                                            {% else %}
-                                                —
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Сырая строка METAR -->
-                        <div class="col-12 mt-2">
-                            <div class="raw-metar-block">
-                                <span><i class="bx bx-terminal me-2"></i>{{ latest_observation.raw_text }}</span>
-                                <button type="button" class="btn btn-sm btn-outline-light py-0 px-2"
-                                        onclick="copyRawMetar('{{ latest_observation.raw_text|escapejs }}', this)"
-                                        title="Скопировать METAR в буфер">
-                                    <i class="bx bx-copy"></i> Скопировать
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
+            {% endwith %}
         {% endif %}
 
         <!-- СУТОЧНЫЕ KPI И ПОКАЗАТЕЛИ ЗА ВЫБРАННУЮ ДАТУ -->
@@ -1122,6 +1137,21 @@
                             </div>
                         </div>
 
+                        <!-- Мини-график над таблицей ECMWF -->
+                        {% if coordinate_forecasts|length > 0 %}
+                            <div class="card border p-3 rounded-3 mb-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-dark small text-uppercase">
+                                        <i class="bx bx-line-chart me-1 text-info"></i> Динамика температуры и ветра (ECMWF) за {{ target_date_formatted }}
+                                    </span>
+                                    <span class="badge bg-secondary font-monospace small">Почасовые точки</span>
+                                </div>
+                                <div style="position: relative; height: 180px; width: 100%;">
+                                    <canvas id="dailyWeatherChartEcmwf"></canvas>
+                                </div>
+                            </div>
+                        {% endif %}
+
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0 timeline-table">
                                 <thead class="table-light">
@@ -1156,20 +1186,22 @@
                                                 <small class="text-muted font-monospace d-block">WMO {{ fc.weather_code }}</small>
                                             </td>
                                             <td>
-                                                <span class="font-weight-semibold {% if fc.temperature_2m_c > 0 %}text-danger{% elif fc.temperature_2m_c < 0 %}text-primary{% endif %}">
-                                                    {% if fc.temperature_2m_c > 0 %}+{% endif %}{{ fc.temperature_2m_c|floatformat:0 }}°
+                                                <span class="font-weight-semibold {% if fc.temperature > 0 %}text-danger{% elif fc.temperature < 0 %}text-primary{% endif %}">
+                                                    {% if fc.temperature is not None %}
+                                                        {% if fc.temperature > 0 %}+{% endif %}{{ fc.temperature|floatformat:0 }}°
+                                                    {% else %}—{% endif %}
                                                 </span>
-                                                {% if fc.dew_point_2m_c is not None %}
-                                                    <span class="text-muted small">/ {{ fc.dew_point_2m_c|floatformat:0 }}°</span>
+                                                {% if fc.dew_point is not None %}
+                                                    <span class="text-muted small">/ {{ fc.dew_point|floatformat:0 }}°</span>
                                                 {% endif %}
-                                                {% if fc.relative_humidity_2m_pct is not None %}
-                                                    <span class="badge bg-light text-secondary border ms-1">{{ fc.relative_humidity_2m_pct }}%</span>
+                                                {% if fc.relative_humidity is not None %}
+                                                    <span class="badge bg-light text-secondary border ms-1">{{ fc.relative_humidity|floatformat:0 }}%</span>
                                                 {% endif %}
                                             </td>
                                             <td class="font-weight-semibold">
                                                 <i class="bx bx-wind text-primary me-1"></i>{{ fc.get_wind_display }}
-                                                {% if fc.wind_gusts_10m_mps and fc.wind_gusts_10m_mps > fc.wind_speed_10m_mps %}
-                                                    <span class="text-danger small ms-1">(G{{ fc.wind_gusts_10m_mps|floatformat:0 }})</span>
+                                                {% if fc.wind_gust and fc.wind_speed and fc.wind_gust > fc.wind_speed %}
+                                                    <span class="text-danger small ms-1">(G{{ fc.wind_gust|floatformat:0 }})</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -1177,8 +1209,8 @@
                                                     <span class="badge bg-primary text-white">
                                                         <i class="bx bx-droplet me-1"></i>{{ fc.precipitation_mm|floatformat:1 }} мм/ч
                                                     </span>
-                                                    {% if fc.precipitation_probability_pct is not None %}
-                                                        <small class="text-muted d-block">{{ fc.precipitation_probability_pct }}% вер-ть</small>
+                                                    {% if fc.precipitation_probability is not None %}
+                                                        <small class="text-muted d-block">{{ fc.precipitation_probability|floatformat:0 }}% вер-ть</small>
                                                     {% endif %}
                                                 {% else %}
                                                     <span class="text-muted">0 мм</span>
@@ -1186,21 +1218,21 @@
                                             </td>
                                             <td>
                                                 <div>{{ fc.get_cloud_display }}</div>
-                                                {% if fc.cloud_cover_total_pct is not None %}
-                                                    <small class="text-muted">Покрытие: {{ fc.cloud_cover_total_pct }}% (низ: {{ fc.cloud_cover_low_pct|default:"0" }}%)</small>
+                                                {% if fc.cloud_cover_total is not None %}
+                                                    <small class="text-muted">Покрытие: {{ fc.cloud_cover_total }}% (низ: {{ fc.cloud_cover_low|default:"0" }}%)</small>
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if fc.freezing_level_height_msl_m is not None %}
-                                                    <span class="font-weight-semibold">{{ fc.freezing_level_height_msl_m|floatformat:0 }} м</span>
+                                                {% if fc.freezing_level_msl_m is not None %}
+                                                    <span class="font-weight-semibold">{{ fc.freezing_level_msl_m|floatformat:0 }} м</span>
                                                     <small class="text-muted d-block">MSL</small>
                                                 {% else %}
                                                     <span class="text-muted">—</span>
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if fc.pressure_msl_mmhg %}
-                                                    <span class="font-weight-semibold">{{ fc.pressure_msl_mmhg|floatformat:0 }} мм</span>
+                                                {% if fc.pressure_mmhg %}
+                                                    <span class="font-weight-semibold">{{ fc.pressure_mmhg|floatformat:0 }} мм</span>
                                                 {% else %}
                                                     <span class="text-muted">—</span>
                                                 {% endif %}
@@ -1249,17 +1281,17 @@
                                 <i class="bx bx-line-chart text-success me-2"></i>Суточные графики метеорологических параметров
                             </h5>
                             <p class="text-muted small mb-4">
-                                График отражает почасовую динамику температуры окружающего воздуха (°C), скорости ветра и порывов (м/с), а также барометрического давления QNH (мм рт. ст.) на аэродроме {{ mpd.name }} ({{ mpd.icao_code }}).
+                                График отражает почасовую динамику температуры окружающего воздуха (°C), скорости ветра и порывов (м/с), а также барометрического давления QNH (мм рт. ст.) на площадке {{ mpd.name }} {% if mpd.icao_code %}({{ mpd.icao_code }}){% endif %}.
                             </p>
-                            {% if observations|length > 0 %}
+                            {% if observations|length > 0 or coordinate_forecasts|length > 0 %}
                                 <div style="position: relative; height: 340px; width: 100%;">
                                     <canvas id="dailyWeatherChartLarge"></canvas>
                                 </div>
                             {% else %}
                                 <div class="alert alert-secondary text-center py-4 mb-0">
                                     <i class="bx bx-line-chart fs-1 text-muted d-block mb-2"></i>
-                                    <strong>За выбранную дату ({{ target_date_formatted }}) метеонаблюдений не обнаружено</strong>
-                                    <p class="text-muted small mb-0 mt-1">График сформируется автоматически по мере поступления метеосводок METAR.</p>
+                                    <strong>За выбранную дату ({{ target_date_formatted }}) метеоданных не обнаружено</strong>
+                                    <p class="text-muted small mb-0 mt-1">График сформируется автоматически по мере поступления метеосводок METAR или сеточного прогноза ECMWF.</p>
                                 </div>
                             {% endif %}
                         </div>

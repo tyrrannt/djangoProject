@@ -137,6 +137,16 @@
                                                 style="font-size: 0.70rem; line-height: 1.2; border-radius: 4px; font-weight: 600; white-space: nowrap; cursor: pointer;">
                                             ⛅ {{ mpd.icao_code }}
                                         </button>
+                                    {% elif mpd.latitude and mpd.longitude %}
+                                        <button type="button" class="btn btn-sm btn-outline-info btn-weather-quick py-0 px-1"
+                                                data-mpd-id="{{ mpd.id }}"
+                                                data-mpd-name="{{ mpd.name }}"
+                                                data-icao=""
+                                                onclick="openQuickWeatherModal({{ mpd.id }}, '{{ mpd.name|escapejs }}')"
+                                                title="Метеоинформер ECMWF (нажмите для просмотра)"
+                                                style="font-size: 0.70rem; line-height: 1.2; border-radius: 4px; font-weight: 600; white-space: nowrap; cursor: pointer;">
+                                            ⛅ ECMWF
+                                        </button>
                                     {% endif %}
                                 </div>
                             </td>

@@ -455,3 +455,91 @@ class WeatherViewsTestCase(TestCase):
         data = json.loads(response.content)
         self.assertTrue(data.get("success"))
         self.assertEqual(data.get("mode"), "coordinate")
+
+    def test_mpd_weather_modal_view_coordinate_only(self):
+        """Тест быстрого модального информера для посадочной площадки без ICAO с ECMWF прогнозом."""
+        coord_mpd = PlaceProductionActivity.objects.create(
+            name="Вертодром Приобское",
+            short_name="Приобское",
+            icao_code="",
+            latitude=61.12,
+            longitude=70.35,
+            elevation_msl_m=35.0,
+            in_planning=True,
+            weather_monitoring_enabled=True,
+        )
+        now = timezone.now()
+        CoordinateWeatherForecast.objects.create(
+            mpd=coord_mpd,
+            latitude=61.12,
+            longitude=70.35,
+            elevation_msl_m=35.0,
+            forecast_for=now,
+            model_run_at=now,
+            model="ecmwf_ifs",
+            weather_code=1,
+            temperature=18.0,
+            dew_point=7.0,
+            relative_humidity=52,
+            wind_speed=3.5,
+            wind_direction=200,
+            visibility_m=10000,
+            cloud_base_agl_m=1500,
+            model_flight_category="VFR",
+            freezing_level_msl_m=2800,
+            surface_pressure_hpa=1010.0,
+            surface_pressure_mmhg=757.6,
+            pressure_msl_hpa=1014.2,
+            pressure_mmhg=760.7,
+        )
+
+        url = reverse("flight_planning:mpd_weather_modal", args=[coord_mpd.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Вертодром Приобское")
+        self.assertContains(response, "quickWeatherModalChart")
+        self.assertContains(response, "ECMWF")
+
+    def test_mpd_weather_history_view_coordinate_chart(self):
+        """Тест отображения суточных графиков ECMWF на странице Метеоцентра для координатной площадки."""
+        coord_mpd = PlaceProductionActivity.objects.create(
+            name="Вертодром Салым",
+            short_name="Салым",
+            icao_code="",
+            latitude=60.03,
+            longitude=71.48,
+            elevation_msl_m=50.0,
+            in_planning=True,
+            weather_monitoring_enabled=True,
+        )
+        now = timezone.now()
+        CoordinateWeatherForecast.objects.create(
+            mpd=coord_mpd,
+            latitude=60.03,
+            longitude=71.48,
+            elevation_msl_m=50.0,
+            forecast_for=now,
+            model_run_at=now,
+            model="ecmwf_ifs",
+            weather_code=0,
+            temperature=20.0,
+            dew_point=8.0,
+            relative_humidity=45,
+            wind_speed=4.0,
+            wind_direction=170,
+            visibility_m=10000,
+            cloud_base_agl_m=2000,
+            model_flight_category="VFR",
+            freezing_level_msl_m=3000,
+            surface_pressure_hpa=1009.0,
+            surface_pressure_mmhg=756.8,
+            pressure_msl_hpa=1015.0,
+            pressure_mmhg=761.3,
+        )
+
+        url = reverse("flight_planning:mpd_weather_history", args=[coord_mpd.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "dailyWeatherChartEcmwf")
+        self.assertContains(response, "dailyWeatherChartLarge")
+
