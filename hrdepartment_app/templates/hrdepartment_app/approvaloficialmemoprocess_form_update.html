@@ -970,6 +970,12 @@
                                        class="btn btn-outline-warning btn-touch font-weight-semibold">
                                         <i class="bx bx-mail-send me-2"></i> Письмо исполнителю
                                     </a>
+                                    {% if request.user.user_work_profile.job.division_affiliation.name == 'Летный состав' %}
+                                    <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=2"
+                                       class="btn btn-outline-warning btn-touch font-weight-semibold">
+                                        <i class="bx bx-mail-send me-2"></i> Письмо на общую почту
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                             {% if user.is_superuser %}

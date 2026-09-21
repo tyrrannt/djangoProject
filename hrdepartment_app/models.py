@@ -1498,7 +1498,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 )
             return True, mail_to
 
-        if trigger == 1 or trigger == 2:
+        if trigger == 1 or trigger == 2 or trigger == 3:
             # Повторное уведомление об СП или СК
             if not self.process_accepted:
                 return False, "Приказ по служебной поездке еще не издан."
@@ -1559,7 +1559,10 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             if trigger == 2:
                 mail_to = self.person_executor.email if self.person_executor else ""
             else:
-                mail_to = self.document.person.email if (self.document and self.document.person) else ""
+                if trigger == 3:
+                    mail_to = "fly@barkol.ru"
+                else:
+                    mail_to = self.document.person.email if (self.document and self.document.person) else ""
 
             if not mail_to:
                 return False, "У получателя не указан адрес электронной почты в профиле."

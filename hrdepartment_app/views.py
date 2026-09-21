@@ -1123,186 +1123,6 @@ class ApprovalOficialMemoProcessUpdate(
         )
         return qs
 
-    # def get_context_data(self, **kwargs):
-    #     global person_agreement_list
-    #
-    #     users_list = (
-    #         DataBaseUser.objects.all()
-    #         .exclude(username="proxmox")
-    #         .exclude(is_active=False)
-    #     )
-    #     content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(
-    #         **kwargs
-    #     )
-    #     document = self.get_object()
-    #     business_process = BusinessProcessDirection.objects.filter(
-    #         Q(person_executor=document.person_executor.user_work_profile.job) & Q(business_process_type=1)
-    #     )
-    #     content["document"] = document.document
-    #     person_agreement_list = list()
-    #     person_clerk_list = list()
-    #     person_hr_list = list()
-    #     for item in business_process:
-    #         person_agreement_list = [
-    #             items[0] for items in item.person_agreement.values_list()
-    #         ]
-    #         person_clerk_list = [items[0] for items in item.clerk.values_list()]
-    #         person_hr_list = [items[0] for items in item.person_hr.values_list()]
-    #     # Получаем подразделение исполнителя
-    #     # division = document.person_executor.user_work_profile.divisions
-    #     # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
-    #     content["form"].fields["person_executor"].queryset = users_list.filter(
-    #         pk=document.person_executor.pk
-    #     )
-    #     # Если установлен признак согласования документа, то фильтруем поле согласующего лица
-    #     if document.document_not_agreed:
-    #         try:
-    #             content["form"].fields["person_agreement"].queryset = users_list.filter(
-    #                 pk=document.person_agreement.pk
-    #             )
-    #         except AttributeError:
-    #             content["form"].fields["person_agreement"].queryset = users_list.filter(
-    #                 user_work_profile__job__pk__in=person_agreement_list
-    #             )
-    #     else:
-    #         # Иначе по подразделению исполнителя фильтруем руководителей для согласования
-    #         content["form"].fields["person_agreement"].queryset = users_list.filter(
-    #             user_work_profile__job__pk__in=person_agreement_list
-    #         )
-    #         try:
-    #             # Если пользователь = Согласующее лицо
-    #             if self.request.user.user_work_profile.job.pk in person_agreement_list:
-    #                 content["form"].fields[
-    #                     "person_agreement"
-    #                 ].queryset = users_list.filter(
-    #                     Q(user_work_profile__job__pk__in=person_agreement_list)
-    #                     & Q(pk=self.request.user.pk)
-    #                 )
-    #             # Иначе весь список согласующих лиц
-    #             else:
-    #                 content["form"].fields[
-    #                     "person_agreement"
-    #                 ].queryset = users_list.filter(
-    #                     user_work_profile__job__pk__in=person_agreement_list
-    #                 )
-    #         except AttributeError as _ex:
-    #             logger.error(f"У пользователя отсутствует должность")
-    #             # ToDo: Нужно вставить выдачу ошибки
-    #             return {}
-    #
-    #     list_agreement = list()
-    #     for unit in users_list.filter(
-    #             user_work_profile__job__pk__in=person_agreement_list
-    #     ):
-    #         list_agreement.append(unit.pk)
-    #     content["list_agreement"] = list_agreement
-    #
-    #     list_distributor = users_list.filter(
-    #         Q(type_of_role=RoleType.NO)
-    #         & Q(user_work_profile__job__right_to_approval=True)
-    #         # & Q(is_superuser=False)
-    #     )
-    #     content["form"].fields["person_distributor"].queryset = list_distributor
-    #     content["list_distributor"] = list_distributor
-    #
-    #     list_department_staff = users_list.filter(
-    #         Q(type_of_role=RoleType.HR)
-    #         & Q(user_work_profile__job__right_to_approval=True)
-    #         & Q(is_superuser=False)
-    #     )
-    #     content["form"].fields[
-    #         "person_department_staff"
-    #     ].queryset = list_department_staff
-    #     content["list_department_staff"] = list_department_staff
-    #
-    #     list_accounting = users_list.filter(
-    #         Q(type_of_role=RoleType.ACCOUNTING)
-    #         & Q(user_work_profile__job__right_to_approval=True)
-    #         & Q(is_superuser=False)
-    #     )
-    #     content["form"].fields["person_accounting"].queryset = list_accounting
-    #     content["list_accounting"] = list_accounting
-    #
-    #     list_clerk = users_list.filter(user_work_profile__job__pk__in=person_clerk_list)
-    #     if document.originals_received:
-    #         try:
-    #             content["form"].fields["person_clerk"].queryset = users_list.filter(
-    #                 pk=document.person_clerk.pk
-    #             )
-    #         except AttributeError:
-    #             content["form"].fields["person_clerk"].queryset = list_clerk
-    #     else:
-    #         # Иначе по подразделению исполнителя фильтруем делопроизводителя для согласования
-    #         content["form"].fields["person_clerk"].queryset = list_clerk
-    #         try:
-    #             # Если пользователь = Делопроизводитель
-    #             if self.request.user.user_work_profile.job.pk in person_clerk_list:
-    #                 content["form"].fields["person_clerk"].queryset = users_list.filter(
-    #                     Q(user_work_profile__job__pk__in=person_clerk_list)
-    #                     & Q(pk=self.request.user.pk)
-    #                 )
-    #             # Иначе весь список делопроизводителей
-    #             else:
-    #                 content["form"].fields["person_clerk"].queryset = list_clerk
-    #         except AttributeError as _ex:
-    #             logger.error(f"У пользователя отсутствует должность")
-    #             # ToDo: Нужно вставить выдачу ошибки
-    #             return {}
-    #     content["list_clerk"] = list_clerk
-    #
-    #     list_hr = users_list.filter(user_work_profile__job__pk__in=person_hr_list)
-    #     if document.originals_received:
-    #         try:
-    #             content["form"].fields["person_hr"].queryset = users_list.filter(
-    #                 pk=document.person_hr.pk
-    #             )
-    #         except AttributeError:
-    #             content["form"].fields["person_hr"].queryset = list_hr
-    #     else:
-    #         # Иначе по подразделению исполнителя фильтруем сотрудника ОК для согласования
-    #         content["form"].fields["person_hr"].queryset = list_hr
-    #         try:
-    #             # Если пользователь = Сотрудник ОК
-    #             if self.request.user.user_work_profile.job.pk in person_hr_list:
-    #                 content["form"].fields["person_hr"].queryset = users_list.filter(
-    #                     Q(user_work_profile__job__pk__in=person_hr_list)
-    #                     & Q(pk=self.request.user.pk)
-    #                 )
-    #             # Иначе весь список сотрудников ОК
-    #             else:
-    #                 content["form"].fields["person_hr"].queryset = list_hr
-    #         except AttributeError as _ex:
-    #             logger.error(f"У пользователя отсутствует должность")
-    #             # ToDo: Нужно вставить выдачу ошибки
-    #             return {}
-    #     content["list_hr"] = list_hr
-    #
-    #     content["title"] = f"{document.document.title}"
-    #     # Выбираем приказ
-    #     if document.document.official_memo_type == "1":
-    #         content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
-    #             document_foundation__pk=document.document.pk
-    #         ).exclude(cancellation=True)
-    #     elif document.document.official_memo_type == "2":
-    #         content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
-    #             document_foundation__pk=document.document.pk
-    #         ).exclude(cancellation=True)
-    #     else:
-    #         content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
-    #             pk=0
-    #         )
-    #     delta = document.document.period_for - document.document.period_from
-    #     content["ending_day"] = ending_day(int(delta.days) + 1)
-    #     content["change_history"] = get_history(self, ApprovalOficialMemoProcess)
-    #     content["without_departure"] = (
-    #         False if document.document.official_memo_type == "3" else True
-    #     )
-    #     content["extension"] = (
-    #         False if document.document.official_memo_type == "2" else True
-    #     )
-    #     # print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
-    #     return content
-
     def get_context_data(self, **kwargs):
         content = super().get_context_data(**kwargs)
 
@@ -1659,7 +1479,7 @@ class ApprovalOficialMemoProcessUpdate(
             HttpResponse: Отрендеренная страница формы либо перенаправление (redirect).
         """
         send_action = request.GET.get("send")
-        if send_action in ("0", "1"):
+        if send_action in ("0", "1", "2"):
             obj_item = self.get_object()
             if not obj_item.process_accepted:
                 messages.warning(
@@ -1672,8 +1492,12 @@ class ApprovalOficialMemoProcessUpdate(
                 success, info = obj_item.send_mail(title="Повторное уведомление", trigger=1)
                 action_name = "Повторное уведомление"
             else:
-                success, info = obj_item.send_mail(title="Письмо исполнителю", trigger=2)
-                action_name = "Письмо исполнителю"
+                if send_action == "2":
+                    success, info = obj_item.send_mail(title="Письмо на общую почту", trigger=3)
+                    action_name = "Письмо на общую почту"
+                else:
+                    success, info = obj_item.send_mail(title="Письмо исполнителю", trigger=2)
+                    action_name = "Письмо исполнителю"
 
             if success:
                 messages.success(
@@ -2092,8 +1916,10 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 detailed_list.append({
                     'month': str(row['Месяц']),
                     'employee_name': str(row['ФИО']),
-                    'service_number': str(row['document__person__service_number']) if pd.notna(row['document__person__service_number']) else '—',
-                    'job_name': str(row['document__person__user_work_profile__job__name']) if pd.notna(row['document__person__user_work_profile__job__name']) else '—',
+                    'service_number': str(row['document__person__service_number']) if pd.notna(
+                        row['document__person__service_number']) else '—',
+                    'job_name': str(row['document__person__user_work_profile__job__name']) if pd.notna(
+                        row['document__person__user_work_profile__job__name']) else '—',
                     'job_type': str(row['Тип']) if pd.notna(row['Тип']) else memo_type_name,
                     'date_start': p_from.strftime('%d.%m.%Y') if pd.notna(p_from) else '—',
                     'date_end': p_for.strftime('%d.%m.%Y') if pd.notna(p_for) else '—',
@@ -3571,13 +3397,15 @@ def generate_report_card_year_excel(report_year: int, pivot_df: pd.DataFrame) ->
     ws["A2"].font = dept_font
     ws["A4"] = f"СВОДНЫЙ ГОДОВОЙ ОТЧЕТ УЧЕТА РАБОЧЕГО ВРЕМЕНИ ЗА {report_year} ГОД"
     ws["A4"].font = title_font
-    ws["A5"] = f"Сформирован: {datetime.now().strftime('%d.%m.%Y %H:%M')} // Баланс отклонений от производственной нормы (переработка / недоработка)"
+    ws[
+        "A5"] = f"Сформирован: {datetime.now().strftime('%d.%m.%Y %H:%M')} // Баланс отклонений от производственной нормы (переработка / недоработка)"
     ws["A5"].font = meta_font
 
     start_row = 7
 
     if pivot_df is None or pivot_df.empty:
-        ws.cell(row=start_row, column=1, value="Нет данных для построения годового отчета за указанный период.").font = data_font
+        ws.cell(row=start_row, column=1,
+                value="Нет данных для построения годового отчета за указанный период.").font = data_font
         return wb
 
     # 2. Заголовки таблицы
@@ -4358,6 +4186,7 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
         # Возвращаем модифицированную форму
         return form
+
 
 class ProvisionsDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     """Представление для подтверждения и удаления положения организации.
@@ -7924,7 +7753,7 @@ class PSOMemoReportView(LoginRequiredMixin, View):
             # Если 0, то ставим 1.
             days_count = (departure - arrival).days
 
-            date_str = f"с {arrival.strftime('%d.%m.%Y')} по {departure.strftime('%d.%m.%Y')} на {pluralize_days(days_count+1)}"
+            date_str = f"с {arrival.strftime('%d.%m.%Y')} по {departure.strftime('%d.%m.%Y')} на {pluralize_days(days_count + 1)}"
 
             emp = p.document.person
             f_initial = f"{emp.first_name[0]}." if emp.first_name else ""
