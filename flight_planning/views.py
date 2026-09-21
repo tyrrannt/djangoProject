@@ -3704,8 +3704,10 @@ def weather_hub_view(request: HttpRequest) -> HttpResponse:
         HttpResponse: Редирект на карточку погоды МПД или страница метеоцентра.
     """
     first_mpd = PlaceProductionActivity.objects.filter(
-        in_planning=True,
-    ).exclude(icao_code="").exclude(icao_code__isnull=True).order_by('name').first()
+        Q(in_planning=True) | Q(weather_monitoring_enabled=True)
+    ).filter(
+        Q(icao_code__gt="") | Q(latitude__isnull=False, longitude__isnull=False)
+    ).distinct().order_by('name').first()
 
     target_date = request.GET.get('date', '')
     if first_mpd:
@@ -3714,7 +3716,9 @@ def weather_hub_view(request: HttpRequest) -> HttpResponse:
             url += f"?date={target_date}"
         return redirect(url)
 
-    all_mpds = PlaceProductionActivity.objects.filter(in_planning=True).order_by('name')
+    all_mpds = PlaceProductionActivity.objects.filter(
+        Q(in_planning=True) | Q(weather_monitoring_enabled=True)
+    ).distinct().order_by('name')
     return render(request, 'flight_planning/weather/weather_hub_empty.html', {
         'all_mpds': all_mpds,
     })
@@ -3762,10 +3766,10 @@ def mpd_weather_history_view(request: HttpRequest, mpd_id: int) -> HttpResponse:
 
     latest_weather = AviationWeatherService.get_mpd_current_weather(mpd)
 
-    # Список всех МПД в планировании для быстрого переключения в шапке
+    # Список всех МПД в планировании или с активным мониторингом для быстрого переключения в шапке
     all_weather_mpds = PlaceProductionActivity.objects.filter(
-        in_planning=True,
-    ).order_by('name')
+        Q(in_planning=True) | Q(weather_monitoring_enabled=True)
+    ).distinct().order_by('name')
 
     prev_date = target_date - timedelta(days=1)
     next_date = target_date + timedelta(days=1)
