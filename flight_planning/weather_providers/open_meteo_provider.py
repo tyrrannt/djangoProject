@@ -38,7 +38,7 @@ class OpenMeteoProvider(BaseWeatherProvider):
         base_url = getattr(settings, "OPEN_METEO_BASE_URL", cls.DEFAULT_BASE_URL)
         api_key = getattr(settings, "OPEN_METEO_API_KEY", None)
         default_model = getattr(settings, "OPEN_METEO_DEFAULT_MODEL", cls.DEFAULT_MODEL)
-        timeout = getattr(settings, "OPEN_METEO_TIMEOUT", 15)
+        timeout = getattr(settings, "OPEN_METEO_TIMEOUT", 25)
         retries = getattr(settings, "OPEN_METEO_RETRIES", 2)
 
         return {
@@ -72,6 +72,15 @@ class OpenMeteoProvider(BaseWeatherProvider):
         """
         if not points:
             return []
+
+        if len(points) > 5:
+            all_results: List[Dict[str, Any]] = []
+            chunk_size = 5
+            for i in range(0, len(points), chunk_size):
+                chunk_points = points[i : i + chunk_size]
+                chunk_res = cls.fetch_coordinate_forecasts_batch(chunk_points, model_name=model_name, forecast_days=forecast_days)
+                all_results.extend(chunk_res)
+            return all_results
 
         config = cls.get_config()
         selected_model = model_name or config["default_model"]

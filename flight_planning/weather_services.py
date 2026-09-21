@@ -10,12 +10,13 @@ import json
 import logging
 import math
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import urllib.error
 import urllib.parse
 import urllib.request
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from hrdepartment_app.models import PlaceProductionActivity
@@ -562,90 +563,93 @@ class AviationWeatherService:
         cls,
         icao_codes: List[str],
         data_type: str = "metar",
-        timeout: int = 10,
+        timeout: int = 15,
     ) -> Dict[str, str]:
-        """Запрашивает сырые сводки METAR или TAF с открытого шлюза NOAA Aviation Weather Center.
+        """Запрашивает сырые текстовые сводки METAR или TAF с открытого шлюза NOAA/AWC.
+
+        Выполняет пакетный HTTP GET запрос с разбиением на небольшие пачки (batch_size=20),
+        что исключает ошибки HTTP 502 / URI Too Long, и группирует многострочные сводки TAF.
 
         Args:
             icao_codes (List[str]): Список 4-буквенных ICAO кодов.
-            data_type (str): 'metar' или 'taf'.
-            timeout (int): Таймаут сетевого запроса в секундах.
+            data_type (str, optional): Тип данных: 'metar' или 'taf'. Defaults to 'metar'.
+            timeout (int, optional): Таймаут сетевого запроса в секундах. Defaults to 15.
 
         Returns:
-            Dict[str, str]: Отображение {ICAO: raw_text}.
+            Dict[str, str]: Словарь {icao_code: raw_string}.
         """
         if not icao_codes:
             return {}
 
-        clean_codes_map = {}
-        for c in icao_codes:
-            norm = normalize_icao_code(c)
-            if norm and len(norm) == 4:
-                clean_codes_map[norm] = norm
-
-        clean_codes = list(clean_codes_map.keys())
+        clean_codes = [
+            normalize_icao_code(c)
+            for c in icao_codes
+            if c and len(normalize_icao_code(c)) == 4
+        ]
         if not clean_codes:
             return {}
 
         clean_codes_set = set(clean_codes)
         base_url = cls.NOAA_METAR_URL if data_type == "metar" else cls.NOAA_TAF_URL
-        query_params = urllib.parse.urlencode({
-            "ids": ",".join(clean_codes),
-            "format": "raw",
-        })
-        url = f"{base_url}?{query_params}"
-
         headers = {
             "User-Agent": "BarkolAviationPortal/1.0 (Flight Operations Dept; info@barkol.ru)",
             "Accept": "text/plain",
         }
 
-        req = urllib.request.Request(url, headers=headers)
         result: Dict[str, str] = {}
+        batch_size = 20
 
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:
-                content = response.read().decode("utf-8", errors="ignore")
-                lines = content.strip().splitlines()
+        for i in range(0, len(clean_codes), batch_size):
+            chunk = clean_codes[i : i + batch_size]
+            query_params = urllib.parse.urlencode({
+                "ids": ",".join(chunk),
+                "format": "raw",
+            })
+            url = f"{base_url}?{query_params}"
+            req = urllib.request.Request(url, headers=headers)
 
-                current_code = ""
-                current_lines = []
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as response:
+                    content = response.read().decode("utf-8", errors="ignore")
+                    lines = content.strip().splitlines()
 
-                for line in lines:
-                    line_clean = line.strip()
-                    if not line_clean:
-                        continue
+                    current_code = ""
+                    current_lines = []
 
-                    # Проверяем, содержится ли целевой код ИКАО среди отдельных слов строки
-                    tokens = [re.sub(r"[^A-Z0-9]", "", tok) for tok in line_clean.split()]
-                    found_code = None
-                    for tok in tokens:
-                        if tok in clean_codes_set:
-                            found_code = tok
-                            break
+                    for line in lines:
+                        line_clean = line.strip()
+                        if not line_clean:
+                            continue
 
-                    if found_code:
-                        if current_code and current_lines:
-                            result[current_code] = " ".join(current_lines)
-                            current_lines = []
-                        current_code = found_code
-                        current_lines.append(line_clean)
-                    elif current_code:
-                        current_lines.append(line_clean)
+                        tokens = [re.sub(r"[^A-Z0-9]", "", tok) for tok in line_clean.split()]
+                        found_code = None
+                        for tok in tokens:
+                            if tok in clean_codes_set:
+                                found_code = tok
+                                break
 
-                if current_code and current_lines:
-                    result[current_code] = " ".join(current_lines)
+                        if found_code:
+                            if current_code and current_lines:
+                                result[current_code] = " ".join(current_lines)
+                                current_lines = []
+                            current_code = found_code
+                            current_lines.append(line_clean)
+                        elif current_code:
+                            current_lines.append(line_clean)
 
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            logger.warning(
-                "Не удалось загрузить данные погоды NOAA [%s для %s]: %s",
-                data_type, ",".join(clean_codes), exc
-            )
-        except Exception as exc:
-            logger.exception(
-                "Критическая ошибка при запросе NOAA [%s]: %s",
-                data_type, exc
-            )
+                    if current_code and current_lines:
+                        result[current_code] = " ".join(current_lines)
+
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                logger.warning(
+                    "Не удалось загрузить данные погоды NOAA [%s для %s]: %s",
+                    data_type, ",".join(chunk), exc
+                )
+            except Exception as exc:
+                logger.exception(
+                    "Критическая ошибка при запросе NOAA [%s для %s]: %s",
+                    data_type, ",".join(chunk), exc
+                )
 
         return result
 
@@ -731,14 +735,25 @@ class AviationWeatherService:
         """Синхронизирует и сохраняет фактическую погоду и прогноз для конкретного МПД.
 
         Args:
-            mpd (PlaceProductionActivity): Объект МПД с заполненным icao_code.
+            mpd (PlaceProductionActivity): Объект МПД с заполненным icao_code или координатами.
             raw_metar (Optional[str]): Опциональная сырая строка METAR (если уже получена).
             raw_taf (Optional[str]): Опциональная сырая строка TAF (если уже получена).
 
         Returns:
             Tuple[Optional[AviationWeatherObservation], Optional[AviationWeatherForecast]]: Сохраненные объекты.
         """
+        from .weather_providers.geo_service import GeoStationService
+
         icao = (mpd.icao_code or "").strip().upper()
+        if (not icao or len(icao) != 4) and (mpd.latitude is not None and mpd.longitude is not None):
+            nearest_info = GeoStationService.find_nearest_station(
+                latitude=float(mpd.latitude),
+                longitude=float(mpd.longitude),
+                mpd_elevation_msl_m=float(mpd.elevation_msl_m) if mpd.elevation_msl_m is not None else None,
+            )
+            if nearest_info and nearest_info.get("station") and nearest_info["station"].icao_code:
+                icao = nearest_info["station"].icao_code.upper()
+
         if not icao or len(icao) != 4:
             return None, None
 
@@ -784,6 +799,12 @@ class AviationWeatherService:
             except Exception as exc:
                 logger.error("Ошибка сохранения TAF для МПД %s (%s): %s", mpd.name, icao, exc)
 
+        # Обновляем аудит МПД
+        if obs_obj or forecast_obj:
+            mpd.weather_last_sync_at = timezone.now()
+            mpd.weather_sync_status = "OK (METAR)"
+            mpd.save(update_fields=["weather_last_sync_at", "weather_sync_status"])
+
         return obs_obj, forecast_obj
 
     @classmethod
@@ -791,8 +812,9 @@ class AviationWeatherService:
         """Выполняет комплексную синхронизацию метеорологии: METAR/TAF опорных станций и координатные расчеты.
 
         1. Наполняет/актуализирует справочник опорных метеостанций AviationWeatherStation.
-        2. Опрашивает шлюз NOAA по станциям и МПД с ICAO-кодами.
+        2. Опрашивает шлюз NOAA по станциям и всем активным МПД (в планировании или с включенным мониторингом).
         3. Пакетно запрашивает сеточную модель Open-Meteo (ECMWF/GFS) для всех координатных МПД.
+        4. Обновляет аудит времени синхронизации и статус на объектах PlaceProductionActivity.
 
         Returns:
             Dict[str, int]: Статистика синхронизации:
@@ -800,25 +822,28 @@ class AviationWeatherService:
                 - 'metar_saved': Сохранено фактических наблюдений METAR.
                 - 'taf_saved': Сохранено официальных прогнозов TAF.
                 - 'coord_forecasts_saved': Сохранено почасовых модельных прогнозов.
+                - 'mpds_updated': Количество обновленных МПД.
         """
         from .fixtures_stations import seed_aviation_weather_stations
         from .weather_providers import WeatherManagerService
+        from .weather_providers.geo_service import GeoStationService
 
         # Проверяем и инициализируем базовые опорные метеостанции РФ
         if not AviationWeatherStation.objects.exists():
             seed_aviation_weather_stations()
 
-        # 1. Сбор ICAO кодов со всех активных станций и МПД
+        # 1. Сбор ICAO кодов со всех активных станций
         active_stations = AviationWeatherStation.objects.filter(is_active=True)
         station_by_icao = {st.icao_code.upper(): st for st in active_stations if st.icao_code}
 
+        # Выбираем все МПД, участвующие в планировании или с активным мониторингом
         active_mpds = PlaceProductionActivity.objects.filter(
-            in_planning=True,
-            weather_monitoring_enabled=True,
-        )
+            Q(in_planning=True) | Q(weather_monitoring_enabled=True)
+        ).distinct()
 
         mpd_by_icao: Dict[str, PlaceProductionActivity] = {}
         coordinate_mpds: List[PlaceProductionActivity] = []
+        extra_station_icaos: Set[str] = set()
 
         for mpd in active_mpds:
             code = (mpd.icao_code or "").strip().upper()
@@ -826,8 +851,17 @@ class AviationWeatherService:
                 mpd_by_icao[code] = mpd
             if mpd.latitude is not None and mpd.longitude is not None:
                 coordinate_mpds.append(mpd)
+                # Если собственного ICAO кода нет, но есть координаты — находим ближайшую метеостанцию
+                if not code:
+                    nearest_info = GeoStationService.find_nearest_station(
+                        latitude=float(mpd.latitude),
+                        longitude=float(mpd.longitude),
+                        mpd_elevation_msl_m=float(mpd.elevation_msl_m) if mpd.elevation_msl_m is not None else None,
+                    )
+                    if nearest_info and nearest_info.get("station") and nearest_info["station"].icao_code:
+                        extra_station_icaos.add(nearest_info["station"].icao_code.upper())
 
-        all_target_icaos = list(set(list(station_by_icao.keys()) + list(mpd_by_icao.keys())))
+        all_target_icaos = list(set(list(station_by_icao.keys()) + list(mpd_by_icao.keys()) + list(extra_station_icaos)))
 
         metar_data = cls.fetch_noaa_raw(all_target_icaos, data_type="metar")
         taf_data = cls.fetch_noaa_raw(all_target_icaos, data_type="taf")
@@ -886,9 +920,28 @@ class AviationWeatherService:
             except Exception as exc:
                 logger.error("Ошибка фонового расчета координатной погоды: %s", exc)
 
+        # 3. Обновление статусов и времени последней синхронизации на всех МПД
+        mpds_updated = 0
+        now_dt = timezone.now()
+        for mpd in active_mpds:
+            has_icao_data = bool(mpd.icao_code and (metar_data.get(mpd.icao_code.upper()) or taf_data.get(mpd.icao_code.upper())))
+            has_coord_data = bool(mpd.latitude is not None and mpd.longitude is not None)
+
+            status_parts = []
+            if has_icao_data:
+                status_parts.append("METAR")
+            if has_coord_data:
+                status_parts.append("ECMWF")
+
+            sync_status_str = f"OK ({'+'.join(status_parts)})" if status_parts else "NO_DATA"
+            mpd.weather_last_sync_at = now_dt
+            mpd.weather_sync_status = sync_status_str
+            mpd.save(update_fields=["weather_last_sync_at", "weather_sync_status"])
+            mpds_updated += 1
+
         logger.info(
-            "Завершена комплексная синхронизация погоды: METAR %s, TAF %s, Coordinate Points %s",
-            metar_count, taf_count, coord_saved
+            "Завершена комплексная синхронизация погоды: METAR %s, TAF %s, Coordinate Points %s, МПД %s",
+            metar_count, taf_count, coord_saved, mpds_updated
         )
 
         return {
@@ -896,6 +949,7 @@ class AviationWeatherService:
             "metar_saved": metar_count,
             "taf_saved": taf_count,
             "coord_forecasts_saved": coord_saved,
+            "mpds_updated": mpds_updated,
         }
 
     @classmethod
