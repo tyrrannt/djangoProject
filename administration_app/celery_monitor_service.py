@@ -165,6 +165,26 @@ TASK_METADATA_REGISTRY: Dict[str, Dict[str, str]] = {
         "icon": "bx bx-mail-send",
         "description": "Отправка письма с ссылкой на документ при переходе маршрута на следующий шаг.",
     },
+
+    # flight_planning
+    "flight_planning.tasks.sync_all_aviation_weather_task": {
+        "title": "Сбор авиационной метеорологии (METAR/TAF/ECMWF)",
+        "category": "Авиация и полеты",
+        "icon": "bx bx-cloud-rain",
+        "description": "Пакетный сбор сводок METAR/TAF со шлюзов NOAA и расчет координатных прогнозов Open-Meteo (ECMWF) по всем активным МПД.",
+    },
+    "flight_planning.tasks.sync_mpd_weather_task": {
+        "title": "Оперативное обновление погоды площадки МПД",
+        "category": "Авиация и полеты",
+        "icon": "bx bx-sun",
+        "description": "Индивидуальный опрос фактических наблюдений METAR, прогноза TAF и координатной модели для выбранной площадки.",
+    },
+    "flight_planning.tasks.sync_mpd_coordinate_weather_task": {
+        "title": "Расчет координатного сеточного прогноза",
+        "category": "Авиация и полеты",
+        "icon": "bx bx-wind",
+        "description": "Обновление почасовых гидродинамических сеточных прогнозов ECMWF/GFS для географических координат МПД.",
+    },
 }
 
 

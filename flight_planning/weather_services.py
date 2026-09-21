@@ -10,6 +10,7 @@ import json
 import logging
 import math
 import re
+import time
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import urllib.error
 import urllib.parse
@@ -559,21 +560,103 @@ class AviationWeatherService:
     NOAA_TAF_URL = "https://aviationweather.gov/api/data/taf"
 
     @classmethod
+    def _fetch_noaa_subbatch(
+        cls,
+        chunk: List[str],
+        base_url: str,
+        headers: Dict[str, str],
+        clean_codes_set: Set[str],
+        result: Dict[str, str],
+        data_type: str,
+        timeout: int,
+        warnings_list: Optional[List[str]] = None,
+    ) -> None:
+        """Вспомогательный метод загрузки пачки кодов из NOAA с рекурсивным делением при таймауте.
+
+        Args:
+            chunk (List[str]): Список ICAO кодов в текущей подпачке.
+            base_url (str): Базовый URL эндпоинта NOAA.
+            headers (Dict[str, str]): HTTP-заголовки запроса.
+            clean_codes_set (Set[str]): Множество отслеживаемых кодов.
+            result (Dict[str, str]): Словарь для накопления результатов.
+            data_type (str): 'metar' или 'taf'.
+            timeout (int): Таймаут сетевого соединения.
+            warnings_list (Optional[List[str]]): Список для логирования предупреждений.
+        """
+        if not chunk:
+            return
+
+        query_params = urllib.parse.urlencode({
+            "ids": ",".join(chunk),
+            "format": "raw",
+        })
+        url = f"{base_url}?{query_params}"
+        req = urllib.request.Request(url, headers=headers)
+
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                content = response.read().decode("utf-8", errors="ignore")
+                lines = content.strip().splitlines()
+
+                current_code = ""
+                current_lines = []
+
+                for line in lines:
+                    line_clean = line.strip()
+                    if not line_clean:
+                        continue
+
+                    tokens = [re.sub(r"[^A-Z0-9]", "", tok) for tok in line_clean.split()]
+                    found_code = None
+                    for tok in tokens:
+                        if tok in clean_codes_set:
+                            found_code = tok
+                            break
+
+                    if found_code:
+                        if current_code and current_lines:
+                            result[current_code] = " ".join(current_lines)
+                            current_lines = []
+                        current_code = found_code
+                        current_lines.append(line_clean)
+                    elif current_code:
+                        current_lines.append(line_clean)
+
+                if current_code and current_lines:
+                    result[current_code] = " ".join(current_lines)
+
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            if len(chunk) > 1:
+                mid = len(chunk) // 2
+                cls._fetch_noaa_subbatch(chunk[:mid], base_url, headers, clean_codes_set, result, data_type, min(timeout, 12), warnings_list)
+                cls._fetch_noaa_subbatch(chunk[mid:], base_url, headers, clean_codes_set, result, data_type, min(timeout, 12), warnings_list)
+            else:
+                warn_msg = f"Таймаут/сбой NOAA [{data_type} для {chunk[0]}]: {exc}"
+                logger.warning(warn_msg)
+                if warnings_list is not None:
+                    warnings_list.append(warn_msg)
+        except Exception as exc:
+            logger.exception("Критическая ошибка при запросе NOAA [%s для %s]: %s", data_type, ",".join(chunk), exc)
+
+    @classmethod
     def fetch_noaa_raw(
         cls,
         icao_codes: List[str],
         data_type: str = "metar",
-        timeout: int = 15,
+        timeout: int = 25,
+        warnings_list: Optional[List[str]] = None,
     ) -> Dict[str, str]:
         """Запрашивает сырые текстовые сводки METAR или TAF с открытого шлюза NOAA/AWC.
 
-        Выполняет пакетный HTTP GET запрос с разбиением на небольшие пачки (batch_size=20),
+        Выполняет пакетный HTTP GET запрос с адаптивным разбиением (batch_size=10),
         что исключает ошибки HTTP 502 / URI Too Long, и группирует многострочные сводки TAF.
+        При возникновении таймаута пачка делится пополам для изоляции сбойных станций.
 
         Args:
             icao_codes (List[str]): Список 4-буквенных ICAO кодов.
             data_type (str, optional): Тип данных: 'metar' или 'taf'. Defaults to 'metar'.
-            timeout (int, optional): Таймаут сетевого запроса в секундах. Defaults to 15.
+            timeout (int, optional): Таймаут сетевого запроса в секундах. Defaults to 25.
+            warnings_list (Optional[List[str]], optional): Опциональный список предупреждений.
 
         Returns:
             Dict[str, str]: Словарь {icao_code: raw_string}.
@@ -597,59 +680,11 @@ class AviationWeatherService:
         }
 
         result: Dict[str, str] = {}
-        batch_size = 20
+        batch_size = 10
 
         for i in range(0, len(clean_codes), batch_size):
             chunk = clean_codes[i : i + batch_size]
-            query_params = urllib.parse.urlencode({
-                "ids": ",".join(chunk),
-                "format": "raw",
-            })
-            url = f"{base_url}?{query_params}"
-            req = urllib.request.Request(url, headers=headers)
-
-            try:
-                with urllib.request.urlopen(req, timeout=timeout) as response:
-                    content = response.read().decode("utf-8", errors="ignore")
-                    lines = content.strip().splitlines()
-
-                    current_code = ""
-                    current_lines = []
-
-                    for line in lines:
-                        line_clean = line.strip()
-                        if not line_clean:
-                            continue
-
-                        tokens = [re.sub(r"[^A-Z0-9]", "", tok) for tok in line_clean.split()]
-                        found_code = None
-                        for tok in tokens:
-                            if tok in clean_codes_set:
-                                found_code = tok
-                                break
-
-                        if found_code:
-                            if current_code and current_lines:
-                                result[current_code] = " ".join(current_lines)
-                                current_lines = []
-                            current_code = found_code
-                            current_lines.append(line_clean)
-                        elif current_code:
-                            current_lines.append(line_clean)
-
-                    if current_code and current_lines:
-                        result[current_code] = " ".join(current_lines)
-
-            except (urllib.error.URLError, TimeoutError, OSError) as exc:
-                logger.warning(
-                    "Не удалось загрузить данные погоды NOAA [%s для %s]: %s",
-                    data_type, ",".join(chunk), exc
-                )
-            except Exception as exc:
-                logger.exception(
-                    "Критическая ошибка при запросе NOAA [%s для %s]: %s",
-                    data_type, ",".join(chunk), exc
-                )
+            cls._fetch_noaa_subbatch(chunk, base_url, headers, clean_codes_set, result, data_type, timeout, warnings_list)
 
         return result
 
@@ -808,25 +843,33 @@ class AviationWeatherService:
         return obs_obj, forecast_obj
 
     @classmethod
-    def sync_all_active_mpds(cls) -> Dict[str, int]:
+    def sync_all_active_mpds(cls) -> Dict[str, Any]:
         """Выполняет комплексную синхронизацию метеорологии: METAR/TAF опорных станций и координатные расчеты.
 
         1. Наполняет/актуализирует справочник опорных метеостанций AviationWeatherStation.
         2. Опрашивает шлюз NOAA по станциям и всем активным МПД (в планировании или с включенным мониторингом).
         3. Пакетно запрашивает сеточную модель Open-Meteo (ECMWF/GFS) для всех координатных МПД.
         4. Обновляет аудит времени синхронизации и статус на объектах PlaceProductionActivity.
+        5. Формирует детальный диагностический отчет для мониторинга Celery-задач.
 
         Returns:
-            Dict[str, int]: Статистика синхронизации:
+            Dict[str, Any]: Структурированный результат синхронизации:
                 - 'total_mpds': Всего активных МПД.
                 - 'metar_saved': Сохранено фактических наблюдений METAR.
                 - 'taf_saved': Сохранено официальных прогнозов TAF.
                 - 'coord_forecasts_saved': Сохранено почасовых модельных прогнозов.
                 - 'mpds_updated': Количество обновленных МПД.
+                - 'summary': Словарь сводных метрик (длительность, дата, количество).
+                - 'mpd_results': Список детальных статусов по каждому МПД с расшифровкой погоды.
+                - 'noaa_stations_summary': Статистика запроса к открытому шлюзу NOAA.
+                - 'warnings': Список зафиксированных предупреждений и изолированных сбоев.
         """
         from .fixtures_stations import seed_aviation_weather_stations
         from .weather_providers import WeatherManagerService
         from .weather_providers.geo_service import GeoStationService
+
+        start_time = time.time()
+        warnings_list: List[str] = []
 
         # Проверяем и инициализируем базовые опорные метеостанции РФ
         if not AviationWeatherStation.objects.exists():
@@ -846,7 +889,7 @@ class AviationWeatherService:
         extra_station_icaos: Set[str] = set()
 
         for mpd in active_mpds:
-            code = (mpd.icao_code or "").strip().upper()
+            code = normalize_icao_code(mpd.icao_code)
             if len(code) == 4:
                 mpd_by_icao[code] = mpd
             if mpd.latitude is not None and mpd.longitude is not None:
@@ -863,8 +906,8 @@ class AviationWeatherService:
 
         all_target_icaos = list(set(list(station_by_icao.keys()) + list(mpd_by_icao.keys()) + list(extra_station_icaos)))
 
-        metar_data = cls.fetch_noaa_raw(all_target_icaos, data_type="metar")
-        taf_data = cls.fetch_noaa_raw(all_target_icaos, data_type="taf")
+        metar_data = cls.fetch_noaa_raw(all_target_icaos, data_type="metar", timeout=25, warnings_list=warnings_list)
+        taf_data = cls.fetch_noaa_raw(all_target_icaos, data_type="taf", timeout=25, warnings_list=warnings_list)
 
         metar_count = 0
         taf_count = 0
@@ -893,6 +936,7 @@ class AviationWeatherService:
                         metar_count += 1
                 except Exception as exc:
                     logger.error("Ошибка сохранения METAR для %s: %s", code, exc)
+                    warnings_list.append(f"Ошибка сохранения METAR {code}: {exc}")
 
             if raw_taf:
                 try:
@@ -911,6 +955,7 @@ class AviationWeatherService:
                         taf_count += 1
                 except Exception as exc:
                     logger.error("Ошибка сохранения TAF для %s: %s", code, exc)
+                    warnings_list.append(f"Ошибка сохранения TAF {code}: {exc}")
 
         # 2. Пакетная синхронизация координатных прогнозов
         coord_saved = 0
@@ -919,12 +964,16 @@ class AviationWeatherService:
                 coord_saved = WeatherManagerService.sync_coordinate_forecasts_for_mpds(coordinate_mpds)
             except Exception as exc:
                 logger.error("Ошибка фонового расчета координатной погоды: %s", exc)
+                warnings_list.append(f"Сбой координатной гидродинамической модели ECMWF: {exc}")
 
         # 3. Обновление статусов и времени последней синхронизации на всех МПД
         mpds_updated = 0
         now_dt = timezone.now()
+        mpd_results: List[Dict[str, Any]] = []
+
         for mpd in active_mpds:
-            has_icao_data = bool(mpd.icao_code and (metar_data.get(mpd.icao_code.upper()) or taf_data.get(mpd.icao_code.upper())))
+            norm_code = normalize_icao_code(mpd.icao_code)
+            has_icao_data = bool(norm_code and (metar_data.get(norm_code) or taf_data.get(norm_code)))
             has_coord_data = bool(mpd.latitude is not None and mpd.longitude is not None)
 
             status_parts = []
@@ -939,9 +988,78 @@ class AviationWeatherService:
             mpd.save(update_fields=["weather_last_sync_at", "weather_sync_status"])
             mpds_updated += 1
 
+            # Формирование детальной сводки по МПД
+            latest_obs = None
+            ref_icao = norm_code
+            if norm_code:
+                latest_obs = AviationWeatherObservation.objects.filter(icao_code=norm_code).order_by("-observation_time").first()
+            if not latest_obs and mpd.latitude is not None and mpd.longitude is not None:
+                nearest = GeoStationService.find_nearest_station(
+                    float(mpd.latitude),
+                    float(mpd.longitude),
+                    float(mpd.elevation_msl_m) if mpd.elevation_msl_m is not None else None,
+                )
+                if nearest and nearest.get("station") and nearest["station"].icao_code:
+                    ref_icao = f"{nearest['station'].icao_code} (опорный {nearest['distance_km']:.0f} км)"
+                    latest_obs = AviationWeatherObservation.objects.filter(icao_code=nearest["station"].icao_code).order_by("-observation_time").first()
+
+            weather_summary = "Данные не поступили"
+            obs_time_str = None
+            flight_category = "N/A"
+            raw_text = ""
+            if latest_obs:
+                flight_category = latest_obs.flight_category or "VFR"
+                obs_time_str = latest_obs.observation_time.strftime("%d.%m.%Y %H:%M UTC") if latest_obs.observation_time else None
+                raw_text = latest_obs.raw_text or ""
+                summary_parts = []
+                if latest_obs.temperature is not None:
+                    summary_parts.append(f"{latest_obs.temperature:+.0f}°C")
+                if latest_obs.wind_speed is not None:
+                    w_dir = f"{latest_obs.wind_direction:03d}°" if latest_obs.wind_direction is not None else "VRB"
+                    wind_str = f"Ветер {w_dir} {latest_obs.wind_speed:.0f} м/с"
+                    if latest_obs.wind_gust:
+                        wind_str += f" (пор. {latest_obs.wind_gust:.0f} м/с)"
+                    summary_parts.append(wind_str)
+                if latest_obs.visibility_meters is not None:
+                    summary_parts.append(f"Вид. {latest_obs.visibility_meters}м" if latest_obs.visibility_meters < 10000 else "Вид. >10км")
+                if latest_obs.cloud_base_meters is not None:
+                    summary_parts.append(f"ВНГО {latest_obs.cloud_base_meters}м")
+                if latest_obs.pressure_mmhg is not None:
+                    summary_parts.append(f"QNH {latest_obs.pressure_mmhg:.1f} мм")
+                if summary_parts:
+                    weather_summary = ", ".join(summary_parts)
+
+            has_taf = False
+            if norm_code:
+                has_taf = AviationWeatherForecast.objects.filter(icao_code=norm_code).exists()
+
+            mpd_results.append({
+                "mpd_id": mpd.pk,
+                "name": mpd.name,
+                "icao_code": ref_icao or norm_code or "—",
+                "sync_status": sync_status_str,
+                "flight_category": flight_category,
+                "observation_time": obs_time_str,
+                "weather_summary": weather_summary,
+                "has_taf": has_taf,
+                "latest_raw_metar": raw_text,
+            })
+
+        duration_sec = round(time.time() - start_time, 2)
+        summary_payload = {
+            "total_active_mpds": len(active_mpds),
+            "stations_monitored": len(station_by_icao),
+            "metar_saved": metar_count,
+            "taf_saved": taf_count,
+            "coord_forecasts_saved": coord_saved,
+            "mpds_updated": mpds_updated,
+            "duration_sec": duration_sec,
+            "executed_at": now_dt.strftime("%d.%m.%Y %H:%M:%S UTC"),
+        }
+
         logger.info(
-            "Завершена комплексная синхронизация погоды: METAR %s, TAF %s, Coordinate Points %s, МПД %s",
-            metar_count, taf_count, coord_saved, mpds_updated
+            "Завершена комплексная синхронизация погоды за %s сек: METAR %s, TAF %s, Coordinate Points %s, МПД %s",
+            duration_sec, metar_count, taf_count, coord_saved, mpds_updated
         )
 
         return {
@@ -950,6 +1068,14 @@ class AviationWeatherService:
             "taf_saved": taf_count,
             "coord_forecasts_saved": coord_saved,
             "mpds_updated": mpds_updated,
+            "summary": summary_payload,
+            "mpd_results": mpd_results,
+            "noaa_stations_summary": {
+                "total_requested": len(all_target_icaos),
+                "metar_received": len(metar_data),
+                "taf_received": len(taf_data),
+            },
+            "warnings": warnings_list,
         }
 
     @classmethod
