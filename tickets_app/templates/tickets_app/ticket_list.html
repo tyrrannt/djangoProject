@@ -18,19 +18,45 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            border-radius: 6px;
         }
-        .kpi-card {
+        .kpi-card-compact {
             border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0, 43, 73, 0.04);
+            background: #ffffff;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .kpi-card:hover {
+        .kpi-card-compact:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 6px 16px rgba(0, 43, 73, 0.08);
         }
-        .kpi-card .display-5 {
-            font-size: 2.2rem;
+        .kpi-value {
+            font-size: 1.85rem;
             font-weight: 700;
             line-height: 1.1;
+        }
+        @media (max-width: 768px) {
+            .kpi-value {
+                font-size: 1.4rem;
+            }
+            .kpi-title {
+                font-size: 0.72rem !important;
+            }
+            .kpi-icon {
+                display: none !important;
+            }
+        }
+        .tickets-table-card {
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 43, 73, 0.04);
+            background: #ffffff;
+        }
+        .tickets-table-card .card-header {
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 14px 20px;
         }
     </style>
 {% endblock %}
@@ -39,24 +65,24 @@
     <!-- start: page -->
     <div class="row">
         <div class="col-12">
-            <!-- Messages -->
+            <!-- Alert Messages -->
             {% if messages %}
                 {% for message in messages %}
                     <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
                         <i class="bx bx-info-circle me-2 fs-5"></i>
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
                     </div>
                 {% endfor %}
             {% endif %}
 
             <!-- Header -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 mb-md-4 gap-2">
                 <div>
                     <h3 class="font-weight-bold text-dark mb-1">
                         <i class="bx bx-message-square-error text-primary me-2"></i>Добровольные сообщения
                     </h3>
-                    <p class="text-muted small mb-0">Система добровольных сообщений по безопасности полетов и охране труда</p>
+                    <p class="text-muted small mb-0">Система добровольных сообщений по безопасности полетов и охране труда (СДС)</p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{% url 'tickets_app:create' %}" class="btn btn-primary btn-touch font-weight-bold">
@@ -65,127 +91,173 @@
                 </div>
             </div>
 
-            <!-- KPI Cards for Leadership -->
-            {% if request.user|has_group:'Руководство' or user.is_superuser %}
-                <div class="row g-3 mb-4">
-                    <div class="col-12 col-md-4">
-                        <div class="card card-modern shadow-sm border-0 kpi-card">
-                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="text-muted small text-uppercase font-weight-bold mb-1">Всего сообщений</div>
-                                    <div class="display-5 text-primary">{{ tickets.count }}</div>
-                                </div>
-                                <div class="p-3 bg-primary bg-opacity-10 rounded-circle text-primary">
-                                    <i class="bx bx-envelope fs-2"></i>
-                                </div>
+            <!-- KPI Cards Strip (Compact & Mobile-friendly) -->
+            <div class="row g-2 g-md-3 mb-3 mb-md-4">
+                <div class="col-6 col-md-3">
+                    <div class="card kpi-card-compact h-100">
+                        <div class="card-body p-2 p-md-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small text-uppercase font-weight-bold kpi-title mb-1">Всего сообщений</div>
+                                <div class="kpi-value text-primary">{{ total_count|default:"0" }}</div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="card card-modern shadow-sm border-0 kpi-card">
-                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="text-muted small text-uppercase font-weight-bold mb-1">Без ответственного</div>
-                                    <div class="display-5 text-warning">{{ unassigned_count|default:"0" }}</div>
-                                </div>
-                                <div class="p-3 bg-warning bg-opacity-10 rounded-circle text-warning">
-                                    <i class="bx bx-user-x fs-2"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="card card-modern shadow-sm border-0 kpi-card">
-                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="text-muted small text-uppercase font-weight-bold mb-1">В работе / Решено</div>
-                                    <div class="display-5 text-success">{{ done_count|default:"0" }}</div>
-                                </div>
-                                <div class="p-3 bg-success bg-opacity-10 rounded-circle text-success">
-                                    <i class="bx bx-check-double fs-2"></i>
-                                </div>
+                            <div class="p-2 p-md-3 bg-primary bg-opacity-10 rounded-circle text-primary kpi-icon">
+                                <i class="bx bx-envelope fs-3"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-            {% endif %}
+
+                <div class="col-6 col-md-3">
+                    <a href="{% url 'tickets_app:list' %}?unassigned=1" class="text-decoration-none">
+                        <div class="card kpi-card-compact h-100 {% if request.GET.unassigned == '1' %}border-warning bg-warning bg-opacity-10{% endif %}">
+                            <div class="card-body p-2 p-md-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small text-uppercase font-weight-bold kpi-title mb-1">Без ответственного</div>
+                                    <div class="kpi-value text-warning">{{ unassigned_count|default:"0" }}</div>
+                                </div>
+                                <div class="p-2 p-md-3 bg-warning bg-opacity-10 rounded-circle text-warning kpi-icon">
+                                    <i class="bx bx-user-x fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <a href="{% url 'tickets_app:list' %}?status=in_progress" class="text-decoration-none">
+                        <div class="card kpi-card-compact h-100 {% if request.GET.status == 'in_progress' %}border-info bg-info bg-opacity-10{% endif %}">
+                            <div class="card-body p-2 p-md-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small text-uppercase font-weight-bold kpi-title mb-1">В обработке</div>
+                                    <div class="kpi-value text-info">{{ in_progress_count|default:"0" }}</div>
+                                </div>
+                                <div class="p-2 p-md-3 bg-info bg-opacity-10 rounded-circle text-info kpi-icon">
+                                    <i class="bx bx-time fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <a href="{% url 'tickets_app:list' %}?status=resolved" class="text-decoration-none">
+                        <div class="card kpi-card-compact h-100 {% if request.GET.status == 'resolved' %}border-success bg-success bg-opacity-10{% endif %}">
+                            <div class="card-body p-2 p-md-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small text-uppercase font-weight-bold kpi-title mb-1">Решено / Закрыто</div>
+                                    <div class="kpi-value text-success">{{ resolved_count|default:"0" }}</div>
+                                </div>
+                                <div class="p-2 p-md-3 bg-success bg-opacity-10 rounded-circle text-success kpi-icon">
+                                    <i class="bx bx-check-double fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
 
             <!-- Table Card -->
-            <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <div class="card tickets-table-card mb-4">
+                <header class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-list-ul text-primary me-2"></i>
                         {% if request.GET.unassigned == '1' %}
                             Новые сообщения без ответственного
+                        {% elif request.GET.status == 'in_progress' %}
+                            Сообщения в работе
+                        {% elif request.GET.status == 'resolved' %}
+                            Решенные сообщения
                         {% else %}
                             Реестр сообщений
                         {% endif %}
                     </h5>
-                    {% if request.GET.unassigned == '1' %}
+                    {% if request.GET.unassigned or request.GET.status %}
                         <a href="{% url 'tickets_app:list' %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bx bx-x me-1"></i>Сбросить фильтр
+                            <i class="bx bx-x me-1"></i>Сбросить фильтры
                         </a>
                     {% endif %}
                 </header>
-                <div class="card-body p-3">
+                <div class="card-body p-2 p-md-3">
                     <div class="table-responsive">
                         <table id="ticketsTable" class="table table-hover align-middle mb-0" style="width: 100%;">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 8%;">ID</th>
-                                    <th style="width: 32%;">Тема сообщения</th>
-                                    <th style="width: 18%;">Автор</th>
-                                    <th style="width: 18%;">Ответственный</th>
-                                    <th style="width: 12%;" class="text-center">Статус</th>
-                                    <th style="width: 12%;">Дата создания</th>
+                                    <th style="width: 7%;" class="d-none d-md-table-cell">ID</th>
+                                    <th style="width: 40%;">Тема сообщения</th>
+                                    <th style="width: 18%;" class="d-none d-sm-table-cell">Автор</th>
+                                    <th style="width: 17%;">Ответственный</th>
+                                    <th style="width: 10%;" class="text-center">Статус</th>
+                                    <th style="width: 8%;" class="d-none d-lg-table-cell">Создано</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for ticket in tickets %}
                                     <tr class="{% if ticket.parent_ticket %}table-warning{% endif %}">
-                                        <td>
+                                        <!-- ID (Desktop only) -->
+                                        <td class="d-none d-md-table-cell">
                                             <a href="{% url 'tickets_app:detail' ticket.pk %}" class="fw-bold font-monospace text-primary text-decoration-none">
                                                 #{{ ticket.pk }}
                                             </a>
                                         </td>
+
+                                        <!-- Topic & Mobile meta -->
                                         <td>
-                                            <a href="{% url 'tickets_app:detail' ticket.pk %}" class="fw-bold text-dark text-decoration-none d-block">
-                                                {{ ticket.title }}
-                                            </a>
-                                            {% if ticket.appeals.count > 0 %}
+                                            <div class="d-flex align-items-center gap-1">
+                                                <span class="d-md-none badge bg-light text-primary border font-monospace me-1">#{{ ticket.pk }}</span>
+                                                <a href="{% url 'tickets_app:detail' ticket.pk %}" class="fw-bold text-dark text-decoration-none">
+                                                    {{ ticket.title }}
+                                                </a>
+                                            </div>
+
+                                            {% if ticket.appeals_count > 0 %}
                                                 <span class="badge bg-danger small mt-1">
-                                                    <i class="bx bx-error-circle me-1"></i>Обжалований: {{ ticket.appeals.count }}
+                                                    <i class="bx bx-error-circle me-1"></i>Обжалований: {{ ticket.appeals_count }}
                                                 </span>
                                             {% endif %}
+
+                                            <!-- Mobile sub-line -->
+                                            <div class="d-sm-none text-muted small mt-1">
+                                                <i class="bx bx-user me-1"></i>{{ ticket.author|FIO_format|default:ticket.author.username }} &bull; {{ ticket.created_at|date:"d.m.Y" }}
+                                            </div>
                                         </td>
-                                        <td>
+
+                                        <!-- Author -->
+                                        <td class="d-none d-sm-table-cell">
                                             <span class="text-dark">{{ ticket.author|FIO_format|default:ticket.author.username }}</span>
                                         </td>
+
+                                        <!-- Responsible -->
                                         <td>
                                             {% if ticket.responsible %}
-                                                <span class="badge bg-light text-primary border border-primary-subtle">
+                                                <span class="badge bg-light text-primary border border-primary-subtle text-wrap text-start">
                                                     <i class="bx bx-user me-1"></i>{{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
                                                 </span>
                                             {% else %}
                                                 <span class="badge bg-light text-warning border border-warning-subtle">
-                                                    Не назначен
+                                                    <i class="bx bx-time-five me-1"></i>Не назначен
                                                 </span>
                                             {% endif %}
                                         </td>
+
+                                        <!-- Status -->
                                         <td class="text-center">
                                             {% if ticket.status == 'new' %}
-                                                <span class="badge bg-success">Новое</span>
+                                                <span class="badge bg-primary">Новое</span>
                                             {% elif ticket.status == 'in_progress' %}
-                                                <span class="badge bg-primary">В работе</span>
+                                                <span class="badge bg-info text-dark">В работе</span>
                                             {% elif ticket.status == 'redirected' %}
                                                 <span class="badge bg-warning text-dark">Переадресовано</span>
                                             {% elif ticket.status == 'resolved' %}
-                                                <span class="badge bg-info">Решено</span>
+                                                <span class="badge bg-success">Решено</span>
                                             {% elif ticket.status == 'closed' %}
                                                 <span class="badge bg-secondary">Закрыто</span>
                                             {% endif %}
                                         </td>
-                                        <td class="font-monospace small text-muted">{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
+
+                                        <!-- Created At -->
+                                        <td class="font-monospace small text-muted d-none d-lg-table-cell">
+                                            {{ ticket.created_at|date:"d.m.Y" }}
+                                        </td>
                                     </tr>
                                 {% empty %}
                                     <tr>
@@ -208,11 +280,32 @@
 {% block custom_script %}
     <script>
         $(document).ready(function () {
-            if ($('#ticketsTable tbody tr').length > 1 || ($('#ticketsTable tbody tr').length === 1 && $('#ticketsTable tbody tr td').attr('colspan') !== '6')) {
+            if ($('#ticketsTable tbody tr td').attr('colspan') !== '6') {
                 $('#ticketsTable').DataTable({
                     order: [[0, 'desc']],
+                    pageLength: 25,
+                    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Все"]],
                     dom: 'BT<"clear">lrtip',
-                    buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            className: 'btn btn-sm btn-outline-secondary',
+                            text: '<i class="bx bx-file me-1"></i>Excel',
+                            exportOptions: { columns: ':visible' }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            className: 'btn btn-sm btn-outline-secondary',
+                            text: '<i class="bx bxs-file-pdf me-1"></i>PDF',
+                            exportOptions: { columns: ':visible' }
+                        },
+                        {
+                            extend: 'print',
+                            className: 'btn btn-sm btn-outline-secondary',
+                            text: '<i class="bx bx-printer me-1"></i>Печать',
+                            exportOptions: { columns: ':visible' }
+                        }
+                    ],
                     language: {
                         url: "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                     }

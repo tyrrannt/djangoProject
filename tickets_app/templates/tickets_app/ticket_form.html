@@ -17,8 +17,38 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 8px 20px;
+            padding: 9px 20px;
             font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .form-card {
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 43, 73, 0.05);
+            background: #ffffff;
+        }
+        .form-card .card-header {
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 24px;
+        }
+        .form-control-modern {
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-control-modern:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+        .management-box {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 16px;
         }
     </style>
 {% endblock %}
@@ -38,28 +68,34 @@
                             Подача добровольного сообщения
                         {% endif %}
                     </h3>
-                    <p class="text-muted small mb-0">Сообщение по безопасности полетов, технической эксплуатации или условиям труда</p>
+                    <p class="text-muted small mb-0">Система добровольных сообщений (СДС) по безопасности полетов и охране труда</p>
                 </div>
                 <div>
-                    <a href="{% url 'tickets_app:list' %}" class="btn btn-outline-secondary btn-touch">
-                        <i class="bx bx-arrow-back me-1"></i> К списку сообщений
+                    <a href="{% if form.instance.pk %}{% url 'tickets_app:detail' form.instance.pk %}{% else %}{% url 'tickets_app:list' %}{% endif %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-arrow-back me-1"></i> Назад
                     </a>
                 </div>
             </div>
 
             <!-- Form Card -->
-            <div class="card card-modern shadow-sm border-0 mb-4">
-                <header class="card-header bg-light py-3">
+            <div class="card form-card mb-4">
+                <header class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                         <i class="bx bx-edit text-primary me-2"></i>Параметры сообщения
                     </h5>
+                    {% if form.instance.pk %}
+                        <span class="badge {{ form.instance.status_badge_class }} fs-6 px-3 py-1">
+                            {{ form.instance.get_status_display }}
+                        </span>
+                    {% endif %}
                 </header>
                 <div class="card-body p-4">
                     <form method="post" enctype="multipart/form-data" novalidate class="ecommerce-form">
                         {% csrf_token %}
 
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger mb-4">
+                            <div class="alert alert-danger mb-4 shadow-sm border-0">
+                                <i class="bx bx-error-circle me-1 fs-5"></i>
                                 {{ form.non_field_errors }}
                             </div>
                         {% endif %}
@@ -73,7 +109,7 @@
                             {% if form.title.errors %}
                                 <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
                             {% endif %}
-                            <div class="form-text small text-muted">Кратко сформулируйте суть вопроса или события</div>
+                            <div class="form-text small text-muted">Кратко сформулируйте суть вопроса, события или фактора риска</div>
                         </div>
 
                         <!-- Description -->
@@ -85,20 +121,20 @@
                             {% if form.description.errors %}
                                 <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
                             {% endif %}
-                            <div class="form-text small text-muted">Детально опишите обстоятельства, место, время и ваши предложения</div>
+                            <div class="form-text small text-muted">Детально опишите обстоятельства, место, дату, воздушное судно/объект и ваши предложения</div>
                         </div>
 
                         <!-- Parent Ticket (Appeal) -->
                         {% if form.parent_ticket %}
                             <div class="mb-3">
                                 <label for="{{ form.parent_ticket.id_for_label }}" class="form-label font-weight-bold text-dark">
-                                    Обжалование предыдущего сообщения
+                                    Обжалование предыдущего сообщения (апелляция)
                                 </label>
                                 {{ form.parent_ticket|add_class:"form-control form-control-modern" }}
                                 {% if form.parent_ticket.errors %}
                                     <div class="text-danger small mt-1">{{ form.parent_ticket.errors.0 }}</div>
                                 {% endif %}
-                                <div class="form-text small text-muted">Укажите связанное закрытое сообщение, если вы подаете повторную апелляцию</div>
+                                <div class="form-text small text-muted">Укажите связанное закрытое сообщение, если вы подаете повторное обжалование</div>
                             </div>
                         {% endif %}
 
@@ -112,40 +148,43 @@
                                 {% if form.attachments.errors %}
                                     <div class="text-danger small mt-1">{{ form.attachments.errors.0 }}</div>
                                 {% endif %}
-                                {% if form.attachments.help_text %}
-                                    <div class="form-text small text-muted">{{ form.attachments.help_text }}</div>
-                                {% endif %}
+                                <div class="form-text small text-muted">
+                                    <i class="bx bx-info-circle me-1"></i>Разрешены форматы: <strong>PDF, JPG, PNG</strong> (до 25 МБ каждый). Можно выбрать несколько файлов.
+                                </div>
                             </div>
                         {% endif %}
 
-                        <!-- Management Fields -->
-                        {% if form.responsible and request.user|has_group:'Руководство' or request.user.is_superuser %}
-                            <div class="mb-3 p-3 bg-light rounded border">
-                                <label for="{{ form.responsible.id_for_label }}" class="form-label font-weight-bold text-dark">
-                                    Назначить ответственного сотрудника
-                                </label>
-                                {{ form.responsible|add_class:"form-control form-control-modern" }}
-                                {% if form.responsible.errors %}
-                                    <div class="text-danger small mt-1">{{ form.responsible.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-
-                        {% if form.status and request.user|has_group:'Руководство' or request.user.is_superuser %}
-                            <div class="mb-3 p-3 bg-light rounded border">
-                                <label for="{{ form.status.id_for_label }}" class="form-label font-weight-bold text-dark">
-                                    Статус сообщения
-                                </label>
-                                {{ form.status|add_class:"form-control form-control-modern" }}
-                                {% if form.status.errors %}
-                                    <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
-                                {% endif %}
-                            </div>
+                        <!-- Management Fields (Only when editing and user has management rights) -->
+                        {% if form.instance.pk and form.responsible %}
+                            {% if request.user|has_group:'Руководство' or request.user.is_superuser %}
+                                <div class="management-box mb-3">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label for="{{ form.responsible.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                                <i class="bx bx-user-check text-primary me-1"></i>Ответственный специалист
+                                            </label>
+                                            {{ form.responsible|add_class:"form-control form-control-modern" }}
+                                            {% if form.responsible.errors %}
+                                                <div class="text-danger small mt-1">{{ form.responsible.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label for="{{ form.status.id_for_label }}" class="form-label font-weight-bold text-dark">
+                                                <i class="bx bx-check-shield text-primary me-1"></i>Статус обработки
+                                            </label>
+                                            {{ form.status|add_class:"form-control form-control-modern" }}
+                                            {% if form.status.errors %}
+                                                <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% endif %}
 
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
-                            <a href="{% url 'tickets_app:list' %}" class="btn btn-outline-secondary btn-touch">
-                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            <a href="{% if form.instance.pk %}{% url 'tickets_app:detail' form.instance.pk %}{% else %}{% url 'tickets_app:list' %}{% endif %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-x me-1"></i> Отмена
                             </a>
                             <button type="submit" class="btn btn-primary font-weight-bold btn-touch">
                                 <i class="bx bx-send me-1"></i> {% if form.instance.pk %}Сохранить изменения{% else %}Отправить сообщение{% endif %}
@@ -156,16 +195,16 @@
             </div>
 
             {% if not form.instance.pk %}
-                <div class="alert alert-info border-0 shadow-sm p-4">
+                <div class="alert alert-info border-0 shadow-sm p-4" style="background-color: #f0f9ff; border-left: 4px solid #0284c7 !important;">
                     <h6 class="font-weight-bold text-dark mb-2">
-                        <i class="bx bx-info-circle text-primary me-2"></i>Памятка по подаче сообщения
+                        <i class="bx bx-shield-quarter text-primary me-2"></i>Принципы СДС авиакомпании «БАРКОЛ»
                     </h6>
                     <ol class="mb-0 small text-muted ps-3">
-                        <li class="mb-1">Укажите лаконичный и понятный заголовок;</li>
-                        <li class="mb-1">Подробно опишите события, факторы риска или предложения в поле «Описание»;</li>
-                        <li class="mb-1">При необходимости прикрепите подтверждающие документы или фотографии (PDF, JPG, PNG);</li>
-                        <li class="mb-1">Руководство зарегистрирует заявку и назначит ответственное лицо для проведения анализа;</li>
-                        <li>О ходе рассмотрения и принятых мерах вы будете уведомлены через систему.</li>
+                        <li class="mb-1"><strong>Политика справедливой культуры (Just Culture)</strong>: добровольные сообщения направлены на устранение факторов опасности, а не на поиск виновных;</li>
+                        <li class="mb-1">Опишите события и обстоятельства максимально точно: дата, время, место, метеоусловия или технические особенности;</li>
+                        <li class="mb-1">При наличии прикрепите подтверждающие фотографии или PDF-документы;</li>
+                        <li class="mb-1">Руководство зарегистрирует обращение, назначит ответственное лицо и организует анализ рисков;</li>
+                        <li>О принятых корректирующих мерах и решении проблемы вы получите уведомление в системе и на email.</li>
                     </ol>
                 </div>
             {% endif %}

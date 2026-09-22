@@ -4,121 +4,145 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Уведомление</title>
+    <title>Уведомление // СДС БАРКОЛ</title>
     <style type="text/css">
         body {
             width: 100% !important;
-            background-color: #f0f2f5;
+            background-color: #f1f5f9;
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
         }
 
         .card {
             background-color: #ffffff;
-            border-radius: 12px;
-            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
             overflow: hidden;
         }
 
         .content-padding {
-            padding: 40px;
+            padding: 36px 32px;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 4px 12px;
+            padding: 5px 14px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            margin-bottom: 15px;
-        {% if event_type == 'new' %} background-color: #e3f2fd; color: #1976d2;
-        {% elif event_type == 'resolved' %} background-color: #e8f5e9; color: #2e7d32;
-        {% else %} background-color: #f5f5f5; color: #616161; {% endif %}
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+            {% if event_type == 'new' %} background-color: #e0f2fe; color: #0284c7;
+            {% elif event_type == 'assigned' %} background-color: #fef3c7; color: #d97706;
+            {% elif event_type == 'resolved' %} background-color: #d1fae5; color: #059669;
+            {% else %} background-color: #e2e8f0; color: #475569; {% endif %}
+        }
+
+        .btn-primary {
+            background-color: #002b49;
+            border-radius: 6px;
+            color: #ffffff !important;
+            display: inline-block;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 12px 26px;
+            text-decoration: none;
         }
 
         @media only screen and (max-width: 640px) {
             .container590 {
-                width: 90% !important;
+                width: 92% !important;
             }
 
             .content-padding {
-                padding: 20px !important;
+                padding: 24px 18px !important;
             }
         }
     </style>
 </head>
 
-<body bgcolor="#f0f2f5">
-<table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f2f5">
+<body bgcolor="#f1f5f9">
+<table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f1f5f9">
     <tr>
-        <td align="center" style="padding: 30px 0;">
+        <td align="center" style="padding: 28px 0;">
             <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590">
+                <!-- Header Logo -->
                 <tr>
-                    <td align="center">
-                        <img width="140" src="https://corp.barkol.ru/static/admin_templates/img/logo.png" alt="BARKOL"
-                             style="display: block; margin-bottom: 10px;"/>
-                        <div style="font-size: 12px; color: #a0aec0; letter-spacing: 2px; font-weight: bold;">
-                            КОРПОРАТИВНЫЙ ПОРТАЛ
+                    <td align="center" style="padding-bottom: 20px;">
+                        <div style="font-size: 18px; color: #002b49; font-weight: 800; letter-spacing: 1.5px;">
+                            ООО АВИАКОМПАНИЯ «БАРКОЛ»
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; letter-spacing: 2px; font-weight: 600; text-transform: uppercase; margin-top: 4px;">
+                            Система добровольных сообщений (СДС)
                         </div>
                     </td>
                 </tr>
 
+                <!-- Main Card -->
                 <tr>
                     <td align="left" class="card" bgcolor="#ffffff">
                         <table border="0" width="100%" cellpadding="0" cellspacing="0">
+                            <!-- Top colored stripe -->
                             <tr>
-                                <td height="4" style="font-size: 4px; line-height: 4px;
-                                        {% if event_type == 'new' %} background-color: #4361ee;
-                                        {% elif event_type == 'resolved' %} background-color: #2ecc71;
-                                        {% else %} background-color: #8e9aaf; {% endif %}">
+                                <td height="5" style="font-size: 5px; line-height: 5px;
+                                        {% if event_type == 'new' %} background-color: #0284c7;
+                                        {% elif event_type == 'assigned' %} background-color: #f59e0b;
+                                        {% elif event_type == 'resolved' %} background-color: #10b981;
+                                        {% else %} background-color: #002b49; {% endif %}">
                                     &nbsp;
                                 </td>
                             </tr>
                             <tr>
                                 <td class="content-padding">
                                     <div class="status-badge">
-                                        {% if event_type == 'new' %}Новая задача
-                                        {% elif event_type == 'assigned' %}Назначение
-                                        {% elif event_type == 'resolved' %}Выполнено
-                                        {% elif event_type == 'message' %}Сообщение
-                                        {% endif %}
+                                        {% if event_type == 'new' %}Новое обращение
+                                        {% elif event_type == 'assigned' %}Назначен ответственный
+                                        {% elif event_type == 'resolved' %}Обращение решено
+                                        {% elif event_type == 'message' %}Новый комментарий
+                                        {% else %}Уведомление системы{% endif %}
                                     </div>
 
-                                    <h1 style="color: #1a1a1a; font-size: 22px; font-weight: 700; line-height: 30px; margin: 0 0 20px 0;">
-                                        {{ ticket_title }}
-                                    </h1>
+                                    <h2 style="color: #002b49; font-size: 20px; font-weight: 700; line-height: 28px; margin: 0 0 16px 0;">
+                                        #{{ ticket_pk }}: {{ ticket_title }}
+                                    </h2>
 
-                                    <div style="color: #4a4a4a; font-size: 16px; line-height: 26px;">
+                                    <div style="color: #334155; font-size: 15px; line-height: 24px;">
                                         {% if event_type == 'new' %}
-                                            Поступила новая заявка от
-                                            <strong style="color: #1a1a1a;">{{ author_name }}</strong>.
+                                            Зарегистрировано новое добровольное сообщение от сотрудника:
+                                            <strong style="color: #002b49;">{{ author_name }}</strong>.
                                         {% elif event_type == 'assigned' %}
-                                            Вам назначена заявка от
-                                            <strong style="color: #1a1a1a;">{{ author_name }}</strong>.
+                                            Вам поручено рассмотрение добровольного сообщения от:
+                                            <strong style="color: #002b49;">{{ author_name }}</strong>.
                                         {% elif event_type == 'resolved' %}
-                                            Ваша заявка успешно переведена в статус
-                                            <strong style="color: #2e7d32;">«Решено»</strong>.
+                                            Ваше добровольное сообщение переведено в статус
+                                            <strong style="color: #059669;">«Решено»</strong>.
                                         {% elif event_type == 'message' %}
-                                            В заявке новое сообщение от
-                                            <strong style="color: #1a1a1a;">{{ sender_name }}</strong>.
+                                            В переписке по обращению опубликовано новое сообщение от
+                                            <strong style="color: #002b49;">{{ sender_name }}</strong>.
                                         {% endif %}
 
-                                        {% if ticket_description %}
-                                            <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #e9ecef; color: #666;">
-                                                <i style="font-size: 14px; display: block; margin-bottom: 5px; color: #999;">Описание:</i>
-                                                {{ ticket_description }}
+                                        {% if new_message_text %}
+                                            <div style="margin: 18px 0; padding: 14px 16px; background-color: #f8fafc; border-left: 4px solid #0284c7; border-radius: 4px; color: #1e293b; font-size: 14px; line-height: 22px;">
+                                                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 6px;">Текст комментария:</div>
+                                                {{ new_message_text|linebreaksbr }}
+                                            </div>
+                                        {% elif ticket_description %}
+                                            <div style="margin: 18px 0; padding: 14px 16px; background-color: #f8fafc; border-left: 4px solid #002b49; border-radius: 4px; color: #334155; font-size: 14px; line-height: 22px;">
+                                                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 6px;">Содержание сообщения:</div>
+                                                {{ ticket_description|truncatewords:45 }}
                                             </div>
                                         {% endif %}
                                     </div>
 
-                                    <table border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px;">
+                                    <table border="0" cellpadding="0" cellspacing="0" style="margin-top: 28px;">
                                         <tr>
-                                            <td align="center" bgcolor="#4361ee" style="border-radius: 6px;">
-                                                <a href="{{ ticket_url }}" target="_blank"
-                                                   style="padding: 14px 28px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; display: inline-block;">
-                                                    Открыть заявку #{{ ticket_pk }}
+                                            <td align="center">
+                                                <a href="{{ ticket_url }}" target="_blank" class="btn-primary">
+                                                    Перейти к обращению #{{ ticket_pk }} &rarr;
                                                 </a>
                                             </td>
                                         </tr>
@@ -129,13 +153,13 @@
                     </td>
                 </tr>
 
+                <!-- Footer -->
                 <tr>
-                    <td align="center" style="padding-top: 25px;">
-                        <div style="font-size: 13px; color: #4361ee; line-height: 20px; margin: 0;">
-                            <strong>ООО Авиакомпания "БАРКОЛ"</strong><br/>
-                            Это автоматическое уведомление, на него не нужно отвечать.<br/>
-                            <a href="https://corp.barkol.ru" style="color: #4361ee; text-decoration: none;">{{ Year }} ©
-                                Все права защищены</a>
+                    <td align="center" style="padding-top: 24px;">
+                        <div style="font-size: 12px; color: #64748b; line-height: 20px; margin: 0;">
+                            <strong>ООО Авиакомпания "БАРКОЛ"</strong> &bull; Корпоративный портал<br/>
+                            Это автоматическое системное уведомление СДС, отвечать на него не требуется.<br/>
+                            <a href="https://corp.barkol.ru" style="color: #0284c7; text-decoration: none;">© {{ year|default:2026 }} Все права защищены</a>
                         </div>
                     </td>
                 </tr>

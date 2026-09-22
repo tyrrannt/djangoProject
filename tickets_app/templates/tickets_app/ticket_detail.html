@@ -10,6 +10,10 @@
     <style>
         :root {
             --touch-target-size: 44px;
+            --barkol-blue: #002b49;
+            --barkol-sky: #0284c7;
+            --barkol-emerald: #10b981;
+            --barkol-amber: #f59e0b;
         }
         .btn-touch {
             min-height: var(--touch-target-size);
@@ -18,6 +22,18 @@
             justify-content: center;
             padding: 8px 18px;
             font-weight: 600;
+            border-radius: 6px;
+        }
+        .detail-card {
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 43, 73, 0.04);
+            background: #ffffff;
+        }
+        .detail-card .card-header {
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 14px 20px;
         }
         .attr-box {
             background: #f8fafc;
@@ -30,8 +46,9 @@
             font-size: 0.78rem;
             text-transform: uppercase;
             color: #64748b;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 4px;
+            letter-spacing: 0.5px;
         }
         .message-item {
             position: relative;
@@ -39,49 +56,49 @@
             padding: 18px 20px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
-            background: #fff;
+            background: #ffffff;
             transition: box-shadow 0.2s ease;
         }
         .message-item.is-author {
-            border-left: 4px solid #0088cc;
-            background: #f0f7fc;
+            border-left: 4px solid var(--barkol-sky);
+            background: #f0f9ff;
         }
         .message-item.is-responsible {
-            border-left: 4px solid #47a447;
-            background: #f4faf4;
+            border-left: 4px solid var(--barkol-emerald);
+            background: #f0fdf4;
         }
         .message-item.is-internal {
-            border-left: 4px solid #ed9c28;
-            background: #fefaf3;
+            border-left: 4px solid var(--barkol-amber);
+            background: #fffbeb;
         }
         .sender-avatar {
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: #0088cc;
+            background: var(--barkol-sky);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
+            color: #ffffff;
             font-weight: 700;
             font-size: 0.95rem;
             flex-shrink: 0;
         }
         .message-item.is-responsible .sender-avatar {
-            background: #47a447;
+            background: var(--barkol-emerald);
         }
         .message-item.is-internal .sender-avatar {
-            background: #ed9c28;
+            background: var(--barkol-amber);
         }
         .attachment-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            background: #f1f5f9;
+            background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
-            color: #0088cc;
+            color: var(--barkol-sky);
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 600;
@@ -89,20 +106,27 @@
             cursor: pointer;
         }
         .attachment-badge:hover {
-            background: #e2e8f0;
-            color: #006699;
+            background: #f1f5f9;
+            color: #0369a1;
+            border-color: #94a3b8;
         }
         .modal-body .attachment-preview {
             max-width: 100%;
-            max-height: 70vh;
+            max-height: 75vh;
             display: block;
             margin: 0 auto;
             border-radius: 6px;
         }
         .modal-body .pdf-preview {
             width: 100%;
-            height: 70vh;
+            height: 75vh;
             border: none;
+            border-radius: 6px;
+        }
+        @media (max-width: 768px) {
+            .modal-body .pdf-preview {
+                height: 55vh;
+            }
         }
     </style>
 {% endblock %}
@@ -117,15 +141,15 @@
                     <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
                         <i class="bx bx-info-circle me-2 fs-5"></i>
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
                     </div>
                 {% endfor %}
             {% endif %}
 
             <!-- Header -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 mb-md-4 gap-2">
                 <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
+                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                         <h3 class="font-weight-bold text-dark mb-0">
                             <i class="bx bx-message-square-detail text-primary me-2"></i>Сообщение #{{ ticket.pk }}: {{ ticket.title }}
                         </h3>
@@ -136,12 +160,10 @@
                     </p>
                 </div>
                 <div class="d-flex gap-2">
-                    {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
-                        {% if request.user|has_group:'Руководство' or user.is_superuser or ticket.author == user %}
-                            <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-primary btn-touch font-weight-bold">
-                                <i class="bx bx-edit me-1"></i> Редактировать
-                            </a>
-                        {% endif %}
+                    {% if can_edit and not ticket.is_closed_or_resolved %}
+                        <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-primary btn-touch font-weight-bold">
+                            <i class="bx bx-edit me-1"></i> Редактировать
+                        </a>
                     {% endif %}
                     <a href="{% url 'tickets_app:list' %}" class="btn btn-outline-secondary btn-touch">
                         <i class="bx bx-arrow-back me-1"></i> К списку
@@ -149,35 +171,52 @@
                 </div>
             </div>
 
+            <!-- Mobile Quick Status Bar (Above the fold for smartphones) -->
+            <div class="d-lg-none card detail-card mb-3 p-3 bg-light">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small font-weight-bold text-muted text-uppercase">Статус заявки:</span>
+                    <span class="badge {{ ticket.status_badge_class }} fs-6 px-3 py-1">{{ ticket.get_status_display }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small font-weight-bold text-muted text-uppercase">Ответственный:</span>
+                    <span class="fw-bold text-dark">
+                        {% if ticket.responsible %}
+                            <i class="bx bx-user-check text-success me-1"></i>{{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
+                        {% else %}
+                            <span class="text-warning"><i class="bx bx-time-five me-1"></i>Не назначен</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% if can_manage and not ticket.is_closed_or_resolved %}
+                    <div class="d-flex gap-2 pt-2 border-top">
+                        <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-sm btn-primary flex-fill">
+                            <i class="bx bx-user-check me-1"></i>Назначить / Статус
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
             <!-- Main Content Grid -->
-            <div class="row g-4">
+            <div class="row g-3 g-md-4">
                 <!-- Left: Ticket Description & Discussion -->
                 <div class="col-12 col-lg-8">
                     <!-- Ticket Main Card -->
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="card detail-card mb-4">
+                        <header class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <h5 class="card-title text-dark mb-0 font-weight-bold">
-                                <i class="bx bx-detail text-primary me-2"></i>Описание сообщения
+                                <i class="bx bx-detail text-primary me-2"></i>Описание ситуации
                             </h5>
                             <div>
-                                {% if ticket.status == 'new' %}
-                                    <span class="badge bg-success fs-6 px-3 py-2">Новое</span>
-                                {% elif ticket.status == 'in_progress' %}
-                                    <span class="badge bg-primary fs-6 px-3 py-2">В работе</span>
-                                {% elif ticket.status == 'redirected' %}
-                                    <span class="badge bg-warning text-dark fs-6 px-3 py-2">Переадресовано</span>
-                                {% elif ticket.status == 'resolved' %}
-                                    <span class="badge bg-info fs-6 px-3 py-2">Решено</span>
-                                {% elif ticket.status == 'closed' %}
-                                    <span class="badge bg-secondary fs-6 px-3 py-2">Закрыто</span>
-                                {% endif %}
+                                <span class="badge {{ ticket.status_badge_class }} fs-6 px-3 py-2">
+                                    {{ ticket.get_status_display }}
+                                </span>
                             </div>
                         </header>
-                        <div class="card-body p-4">
+                        <div class="card-body p-3 p-md-4">
                             <!-- Appeals info -->
                             {% if ticket.parent_ticket %}
                                 <div class="alert alert-warning border-0 shadow-sm mb-3">
-                                    <i class="bx bx-revision me-1"></i> <strong>Это повторное обжалование сообщения:</strong>
+                                    <i class="bx bx-revision me-1"></i> <strong>Повторное обжалование (апелляция) закрытого сообщения:</strong>
                                     <a href="{% url 'tickets_app:detail' ticket.parent_ticket.pk %}" class="text-dark fw-bold text-decoration-underline ms-1">
                                         #{{ ticket.parent_ticket.pk }} — {{ ticket.parent_ticket.title }}
                                     </a>
@@ -186,13 +225,14 @@
 
                             {% if ticket.appeals.exists %}
                                 <div class="alert alert-danger border-0 shadow-sm mb-3">
-                                    <i class="bx bx-error-circle me-1"></i> <strong>По этому сообщению поданы апелляции:</strong>
+                                    <i class="bx bx-error-circle me-1"></i> <strong>По этому сообщению зарегистрированы апелляции:</strong>
                                     <ul class="mb-0 mt-1 small ps-3">
                                         {% for appeal in ticket.appeals.all %}
                                             <li>
                                                 <a href="{% url 'tickets_app:detail' appeal.pk %}" class="text-dark fw-bold">
                                                     #{{ appeal.pk }} — {{ appeal.title }}
                                                 </a>
+                                                <span class="badge {{ appeal.status_badge_class }} ms-2">{{ appeal.get_status_display }}</span>
                                             </li>
                                         {% endfor %}
                                     </ul>
@@ -201,7 +241,7 @@
 
                             <div class="attr-box mb-3">
                                 <div class="attr-label">Содержание сообщения</div>
-                                <div class="fs-6 text-dark" style="white-space: pre-wrap; line-height: 1.6;">{{ ticket.description|linebreaksbr }}</div>
+                                <div class="fs-6 text-dark" style="white-space: pre-wrap; line-height: 1.65;">{{ ticket.description|linebreaksbr }}</div>
                             </div>
 
                             <!-- Attachments -->
@@ -226,14 +266,14 @@
                     </div>
 
                     <!-- Discussion / Messages Section -->
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <div class="card detail-card mb-4">
+                        <header class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title text-dark mb-0 font-weight-bold">
                                 <i class="bx bx-conversation text-primary me-2"></i>История переписки и мер
                             </h5>
                             <span class="badge bg-primary rounded-pill">{{ visible_messages_count|default:"0" }}</span>
                         </header>
-                        <div class="card-body p-4">
+                        <div class="card-body p-3 p-md-4">
                             {% for message in visible_messages %}
                                 <div class="message-item {% if message.is_internal %}is-internal{% elif message.sender == ticket.author %}is-author{% elif message.sender == ticket.responsible %}is-responsible{% else %}is-other{% endif %}">
                                     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
@@ -245,13 +285,13 @@
                                                 <div class="fw-bold text-dark">{{ message.sender|FIO_format|default:message.sender.username }}</div>
                                                 <small class="text-muted">
                                                     {% if message.is_internal %}
-                                                        <span class="badge bg-warning text-dark"><i class="bx bx-lock-alt me-1"></i>Внутренняя заметка</span>
+                                                        <span class="badge bg-warning text-dark"><i class="bx bx-lock-alt me-1"></i>Внутренняя служебная заметка</span>
                                                     {% elif message.sender == ticket.author %}
                                                         <span class="text-primary font-weight-bold">Автор сообщения</span>
                                                     {% elif message.sender == ticket.responsible %}
-                                                        <span class="text-success font-weight-bold">Ответственный</span>
+                                                        <span class="text-success font-weight-bold">Ответственный специалист</span>
                                                     {% else %}
-                                                        Участник
+                                                        Участник обсуждения
                                                     {% endif %}
                                                 </small>
                                             </div>
@@ -261,7 +301,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="text-dark mb-2" style="white-space: pre-wrap; line-height: 1.6;">
+                                    <div class="text-dark mb-2" style="white-space: pre-wrap; line-height: 1.65;">
                                         {{ message.text|linebreaksbr }}
                                     </div>
 
@@ -282,7 +322,7 @@
                                 </div>
                             {% empty %}
                                 <div class="text-center py-4 text-muted">
-                                    <i class="bx bx-chat fs-1 d-block mb-1 text-muted opacity-50"></i>
+                                    <i class="bx bx-chat fs-1 d-block mb-2 text-muted opacity-50"></i>
                                     Сообщений и комментариев пока нет
                                 </div>
                             {% endfor %}
@@ -290,23 +330,23 @@
                     </div>
 
                     <!-- Add Message Form -->
-                    {% if request.user|has_group:'Руководство' or request.user.is_superuser or ticket.author == request.user or ticket.responsible == request.user %}
-                        {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
-                            <div class="card card-modern shadow-sm border-0 mb-4">
-                                <header class="card-header bg-light py-3">
+                    {% if not ticket.is_closed_or_resolved %}
+                        {% if can_manage or ticket.author == request.user or ticket.responsible == request.user %}
+                            <div class="card detail-card mb-4">
+                                <header class="card-header">
                                     <h5 class="card-title text-dark mb-0 font-weight-bold">
                                         <i class="bx bx-send text-primary me-2"></i>Добавить ответ / примечание
                                     </h5>
                                 </header>
-                                <div class="card-body p-4">
+                                <div class="card-body p-3 p-md-4">
                                     <form method="post" action="{% url 'tickets_app:add_message' ticket.pk %}" enctype="multipart/form-data">
                                         {% csrf_token %}
                                         <div class="mb-3">
                                             <label class="form-label font-weight-bold text-dark">Текст ответа</label>
-                                            <textarea name="text" class="form-control form-control-modern" rows="4" placeholder="Введите ваш комментарий или отчет о принятых мерах..." required></textarea>
+                                            <textarea name="text" class="form-control" rows="4" placeholder="Введите ваш комментарий или отчет о принятых мерах..." required></textarea>
                                         </div>
 
-                                        {% if request.user|has_group:'Руководство' or request.user.is_superuser %}
+                                        {% if can_manage or is_responsible %}
                                             <div class="form-check mb-3">
                                                 <input type="checkbox" name="is_internal" class="form-check-input" id="id_is_internal">
                                                 <label class="form-check-label text-dark font-weight-bold" for="id_is_internal">
@@ -315,12 +355,13 @@
                                             </div>
                                         {% endif %}
 
-                                        {% if ticket.author != request.user %}
+                                        {% if ticket.author != request.user and can_manage or is_responsible %}
                                             <div class="mb-3">
-                                                <label class="form-label font-weight-bold text-dark">Сменить статус заявки</label>
-                                                <select name="status" class="form-control form-control-modern">
-                                                    <option value="">-- Оставить текущий статус --</option>
+                                                <label class="form-label font-weight-bold text-dark">Сменить статус заявки при отправке ответа</label>
+                                                <select name="status" class="form-select">
+                                                    <option value="">-- Оставить текущий статус ({{ ticket.get_status_display }}) --</option>
                                                     <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>В работе</option>
+                                                    <option value="redirected" {% if ticket.status == 'redirected' %}selected{% endif %}>Переадресовано</option>
                                                     <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>Решено</option>
                                                     <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Закрыто</option>
                                                 </select>
@@ -328,8 +369,8 @@
                                         {% endif %}
 
                                         <div class="mb-4">
-                                            <label class="form-label font-weight-bold text-dark">Прикрепить файлы (PDF, JPG, PNG)</label>
-                                            <input type="file" name="attachments" class="form-control form-control-modern" multiple accept=".pdf,.jpg,.jpeg,.png">
+                                            <label class="form-label font-weight-bold text-dark">Прикрепить файлы (PDF, JPG, PNG до 25 МБ)</label>
+                                            <input type="file" name="attachments" class="form-control" multiple accept=".pdf,.jpg,.jpeg,.png">
                                         </div>
 
                                         <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
@@ -338,24 +379,33 @@
                                     </form>
                                 </div>
                             </div>
-                        {% else %}
-                            <div class="alert alert-secondary border-0 shadow-sm p-3 text-center">
-                                <i class="bx bx-lock-alt fs-4 me-1"></i>
-                                Заявка закрыта или решена. Добавление новых сообщений заблокировано.
-                            </div>
                         {% endif %}
+                    {% else %}
+                        <div class="alert alert-secondary border-0 shadow-sm p-3 text-center">
+                            <i class="bx bx-lock-alt fs-4 me-1"></i>
+                            Заявка находится в статусе «{{ ticket.get_status_display }}». Добавление сообщений заблокировано.
+                        </div>
                     {% endif %}
                 </div>
 
-                <!-- Right: Information & Action Side Card -->
+                <!-- Right: Information & Action Side Card (Desktop) -->
                 <div class="col-12 col-lg-4">
-                    <div class="card card-modern shadow-sm border-0 mb-4">
-                        <header class="card-header bg-light py-3">
+                    <div class="card detail-card mb-4">
+                        <header class="card-header">
                             <h5 class="card-title text-dark mb-0 font-weight-bold">
                                 <i class="bx bx-info-circle text-primary me-2"></i>Параметры и реквизиты
                             </h5>
                         </header>
-                        <div class="card-body p-4">
+                        <div class="card-body p-3 p-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Текущий статус</div>
+                                <div>
+                                    <span class="badge {{ ticket.status_badge_class }} fs-6 px-3 py-1">
+                                        {{ ticket.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+
                             <div class="attr-box">
                                 <div class="attr-label">Текущий ответственный</div>
                                 <div class="fw-bold text-dark">
@@ -385,16 +435,14 @@
                                 </div>
                             {% endif %}
 
-                            {% if request.user|has_group:'Руководство' or user.is_superuser %}
+                            {% if can_manage and not ticket.is_closed_or_resolved %}
                                 <div class="pt-3 border-top d-flex flex-column gap-2">
-                                    {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
-                                        <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-primary btn-touch font-weight-bold">
-                                            <i class="bx bx-user-check me-1"></i> Назначить ответственного
-                                        </a>
-                                        <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-outline-secondary btn-touch font-weight-bold">
-                                            <i class="bx bx-transfer me-1"></i> Изменить статус
-                                        </a>
-                                    {% endif %}
+                                    <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-primary btn-touch font-weight-bold">
+                                        <i class="bx bx-user-check me-1"></i> Назначить ответственного
+                                    </a>
+                                    <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-outline-secondary btn-touch font-weight-bold">
+                                        <i class="bx bx-transfer me-1"></i> Изменить статус
+                                    </a>
                                 </div>
                             {% endif %}
                         </div>
@@ -404,33 +452,33 @@
         </div>
     </div>
 
-    <!-- Модальное окно для просмотра вложений -->
+    <!-- Модальное окно для предпросмотра вложений -->
     <div class="modal fade" id="attachmentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-light py-3">
                     <h5 class="modal-title font-weight-bold text-dark" id="attachmentModalLabel">Просмотр вложения</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
-                <div class="modal-body text-center p-4">
+                <div class="modal-body text-center p-3 p-md-4">
                     <img id="modalImagePreview" class="attachment-preview" style="display: none;" alt="Предпросмотр">
                     <div id="modalPdfContainer" style="display: none;">
                         <iframe id="modalPdfPreview" class="pdf-preview"></iframe>
-                        <div class="pdf-fallback" style="display: none;">
-                            <p><i class="bx bx-file"></i> PDF файл не может быть отображён встроенным средством.</p>
+                        <div class="pdf-fallback mt-3" style="display: none;">
+                            <p class="text-muted"><i class="bx bx-file me-1"></i>PDF файл не может быть отображён встроенным средством браузера.</p>
                             <a id="modalPdfDownload" href="#" class="btn btn-primary btn-touch" download>
                                 <i class="bx bx-download me-1"></i> Скачать PDF
                             </a>
                         </div>
                     </div>
                     <div id="modalFileContainer" style="display: none;">
-                        <p><i class="bx bx-file-blank fs-1 d-block mb-2 text-primary"></i> <span id="modalFileName" class="fw-bold"></span></p>
+                        <p><i class="bx bx-file-blank fs-1 d-block mb-2 text-primary"></i> <span id="modalFileName" class="fw-bold text-dark"></span></p>
                         <a id="modalFileDownload" href="#" class="btn btn-primary btn-touch" download>
                             <i class="bx bx-download me-1"></i> Скачать файл
                         </a>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
+                <div class="modal-footer bg-light py-2">
                     <a id="modalDownloadLink" href="#" class="btn btn-outline-secondary btn-touch" download>
                         <i class="bx bx-download me-1"></i> Скачать
                     </a>
@@ -459,13 +507,13 @@
             const modalPdfDownload = document.getElementById('modalPdfDownload');
             const modalTitle = document.getElementById('attachmentModalLabel');
 
-            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
             const pdfExtension = '.pdf';
 
             attachmentModal.addEventListener('show.bs.modal', function (event) {
                 const trigger = event.relatedTarget;
                 const fileUrl = trigger.getAttribute('data-file-url');
-                const fileName = trigger.getAttribute('data-file-name');
+                const fileName = trigger.getAttribute('data-file-name') || 'Вложение';
 
                 const extension = '.' + fileName.split('.').pop().toLowerCase();
 

@@ -1,70 +1,145 @@
-from rest_framework import viewsets, permissions, status
+"""Эндпоинты REST API модуля заявок и добровольных сообщений (tickets_app.api_views).
+
+Предоставляет программный доступ для мобильных приложений и внешних сервисов:
+- Просмотр списка и карточек заявок;
+- Создание заявок и отправка сообщений;
+- Смена статусов с асинхронными Celery-уведомлениями.
+"""
+
+from typing import Any
+
+from django.db.models import Q
+from django.utils import timezone
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
-from .models import Ticket, Message, Attachment
-from .serializers import TicketSerializer, MessageSerializer
+
+from .models import Attachment, Message, Ticket, TicketStatus
+from .serializers import MessageSerializer, TicketSerializer
+from .services import save_ticket_attachments, send_ticket_notification_async
+
 
 class TicketViewSet(viewsets.ModelViewSet):
+    """ViewSet для операций с добровольными сообщениями и заявками."""
+
     serializer_class = TicketSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """Возвращает заявки с учетом прав доступа пользователя."""
         user = self.request.user
-        if user.is_staff:
-            return Ticket.objects.all().order_by('-updated_at', '-created_at')
-        return Ticket.objects.filter(author=user).order_by('-updated_at', '-created_at')
+        is_manager = user.is_superuser or user.groups.filter(name='Руководство').exists()
 
-    def perform_create(self, serializer):
-        ticket = serializer.save()
+        if is_manager:
+            return Ticket.objects.all().select_related('author', 'responsible', 'parent_ticket').order_by('-created_at')
+
+        return (
+            Ticket.objects.filter(Q(author=user) | Q(responsible=user))
+            .select_related('author', 'responsible', 'parent_ticket')
+            .order_by('-created_at')
+        )
+
+    def perform_create(self, serializer: TicketSerializer) -> None:
+        """Сохраняет новую заявку, вложения и отправляет асинхронное уведомление."""
+        ticket: Ticket = serializer.save()
         files = self.request.FILES.getlist('attachments')
-        for f in files:
-            Attachment.objects.create(ticket=ticket, file=f)
+        if files:
+            save_ticket_attachments(files, ticket=ticket)
+
+        send_ticket_notification_async(
+            event_type='new',
+            ticket=ticket,
+            request=self.request,
+            actor=self.request.user,
+        )
 
     @action(detail=True, methods=['post'])
-    def message(self, request, pk=None):
-        ticket = self.get_object()
-        text = request.data.get('text')
+    def message(self, request: Request, pk: Any = None) -> Response:
+        """Добавляет новое сообщение в переписку по заявке."""
+        ticket: Ticket = self.get_object()
+
+        if ticket.is_closed_or_resolved:
+            return Response(
+                {'error': 'Нельзя добавлять сообщения в закрытую или решенную заявку.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        text = request.data.get('text', '').strip()
         if not text:
-            return Response({'error': 'Текст сообщения обязателен'}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response({'error': 'Текст сообщения обязателен.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_manager = request.user.is_superuser or request.user.groups.filter(name='Руководство').exists()
+        is_responsible = ticket.responsible == request.user
+        is_internal = bool(request.data.get('is_internal', False))
+
+        # Обычный пользователь не может отправлять скрытые служебные заметки
+        if not is_manager and not is_responsible:
+            is_internal = False
+
         msg = Message.objects.create(
             ticket=ticket,
             sender=request.user,
-            text=text
+            text=text,
+            is_internal=is_internal,
         )
-        
+
         files = request.FILES.getlist('attachments')
-        for f in files:
-            Attachment.objects.create(message=msg, file=f)
-        
-        # Обновляем ticket updated_at
-        ticket.save()
-        
-        serializer = MessageSerializer(msg)
+        if files:
+            save_ticket_attachments(files, message=msg)
+
+        # Автоматический перевод в работу при ответе сотрудника/руководителя
+        if ticket.status == TicketStatus.NEW and (is_manager or is_responsible) and ticket.author != request.user:
+            ticket.status = TicketStatus.IN_PROGRESS
+            ticket.save(update_fields=['status', 'updated_at'])
+        else:
+            ticket.save(update_fields=['updated_at'])
+
+        # Асинхронное уведомление через Celery
+        send_ticket_notification_async(
+            event_type='message',
+            ticket=ticket,
+            request=request,
+            actor=request.user,
+            new_message=msg,
+        )
+
+        serializer = MessageSerializer(msg, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['patch'])
-    def change_status(self, request, pk=None):
-        ticket = self.get_object()
+    def change_status(self, request: Request, pk: Any = None) -> Response:
+        """Изменяет статус обработки заявки (для руководства и ответственного)."""
+        ticket: Ticket = self.get_object()
         user = request.user
-        
-        if not (user.is_superuser or user.groups.filter(name='Руководство').exists() or ticket.responsible == user):
-            return Response({'error': 'Нет прав для изменения статуса'}, status=status.HTTP_403_FORBIDDEN)
-            
+
+        is_manager = user.is_superuser or user.groups.filter(name='Руководство').exists()
+        is_responsible = ticket.responsible == user
+
+        if not (is_manager or is_responsible):
+            return Response({'error': 'Недостаточно прав для изменения статуса.'}, status=status.HTTP_403_FORBIDDEN)
+
         new_status = request.data.get('status')
-        if not new_status:
-            return Response({'error': 'Не указан новый статус'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        from .models import TicketStatus
         valid_statuses = [s[0] for s in TicketStatus.choices]
-        if new_status not in valid_statuses:
-            return Response({'error': 'Неверный статус'}, status=status.HTTP_400_BAD_REQUEST)
-            
+        if not new_status or new_status not in valid_statuses:
+            return Response({'error': 'Неверный статус заявки.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        old_status = ticket.status
         ticket.status = new_status
         if new_status == TicketStatus.RESOLVED:
-            from django.utils import timezone
             ticket.resolved_at = timezone.now()
-        ticket.save(update_fields=['status', 'resolved_at'] if new_status == TicketStatus.RESOLVED else ['status'])
-        
+        else:
+            ticket.resolved_at = None
+
+        ticket.save(update_fields=['status', 'resolved_at', 'updated_at'])
+
+        if new_status == TicketStatus.RESOLVED and old_status != TicketStatus.RESOLVED:
+            send_ticket_notification_async(
+                event_type='resolved',
+                ticket=ticket,
+                request=request,
+                actor=request.user,
+            )
+
         serializer = self.get_serializer(ticket)
         return Response(serializer.data)
