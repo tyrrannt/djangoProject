@@ -1,8 +1,11 @@
-# flight_planning/services.py
+import logging
 import re
 from datetime import date, timedelta
 from typing import List, Dict, Any, Optional, Tuple, Set
 from .models import PilotAssignment, AircraftMovement, PeriodicCheckRecord
+
+logger = logging.getLogger(__name__)
+
 
 
 def handle_aircraft_movement_crew_fallback(
@@ -2025,10 +2028,10 @@ ALL_STAFF_JOB_NAMES = list(dict.fromkeys(FLIGHT_CREW_JOB_NAMES + ENGINEERING_STA
 
 
 def get_user_personnel_scope(user) -> str:
-    """Определяет категорию видимости персонала для пользователя на основе принадлежности должности.
+    """Определяет категорию видимости персонала для пользователя на основе прав и принадлежности должности.
 
     Категории:
-        - '0': Общий состав (видны все 18 должностей: и летный, и инженерно-технический состав).
+        - '0': Общий состав (видны все сотрудники: и летный, и инженерно-технический состав).
         - '1': Летный состав (видны только летчики / пилоты / бортмеханики).
         - '2': Инженерный состав (видны только инженеры и авиатехники).
 
@@ -2041,33 +2044,59 @@ def get_user_personnel_scope(user) -> str:
     if not user or not getattr(user, 'is_authenticated', False) or getattr(user, 'is_superuser', False):
         return '0'
 
+    # 1. Проверка по ролевым группам ЛПК
+    user_groups = set(user.groups.values_list('name', flat=True))
+    if "[ЛПК] Инженерная служба (ИАС)" in user_groups and not (
+        {"[ЛПК] Диспетчеры планирования", "Планирование полетов", "[ЛПК] Руководство", "Руководство"} & user_groups
+    ):
+        return '2'
+
+    if "[ЛПК] Летная служба" in user_groups and not (
+        {"[ЛПК] Диспетчеры планирования", "Планирование полетов", "[ЛПК] Руководство", "Руководство"} & user_groups
+    ):
+        return '1'
+
+    if {"[ЛПК] Диспетчеры планирования", "Планирование полетов", "[ЛПК] Руководство", "Руководство", "[ЛПК] Кадры и охрана труда", "Отдел кадров"} & user_groups:
+        return '0'
+
+    # 2. Определение по профилю должности сотрудника
     profile = getattr(user, 'user_work_profile', None)
     if profile and profile.job:
         job = profile.job
-        # Если в Job явно указана принадлежность (type_of_job: "0", "1", "2", "3")
+
+        # Проверка через division_affiliation должности
+        affil = getattr(job, 'division_affiliation', None)
+        if affil:
+            affil_name = (getattr(affil, 'name', '') or '').lower()
+            if affil.pk == 2 or "летн" in affil_name:
+                return '1'
+            if affil.pk == 3 or "инженер" in affil_name:
+                return '2'
+            if affil.pk == 1 or "общ" in affil_name:
+                return '0'
+
+        # Если в Job явно указана принадлежность (type_of_job: "0", "1", "2")
         if job.type_of_job in ('1', '2', '0'):
             return job.type_of_job
 
         # Fallback сопоставление по точному наименованию должности
-        j_name = (job.name or "").strip()
-        if any(j_name.lower() == name.lower() for name in FLIGHT_CREW_JOB_NAMES):
+        j_name = (job.name or "").strip().lower()
+        if any(j_name == name.lower() for name in FLIGHT_CREW_JOB_NAMES):
             return '1'
-        if any(j_name.lower() == name.lower() for name in ENGINEERING_STAFF_JOB_NAMES):
+        if any(j_name == name.lower() for name in ENGINEERING_STAFF_JOB_NAMES):
             return '2'
 
     return '0'
 
 
-def get_allowed_staff_queryset(user=None):
-    """Возвращает QuerySet активных сотрудников из разрешенного списка должностей в зависимости от принадлежности должности пользователя.
+def get_allowed_staff_queryset(user=None, target_scope: Optional[str] = None):
+    """Возвращает QuerySet активных сотрудников из разрешенного списка должностей в зависимости от прав доступа.
 
-    Если пользователь относится к общему составу или является администратором,
-    возвращаются все сотрудники из разрешенного перечня (18 должностей).
-    Если к инженерному составу — только инженерно-технический персонал.
-    Если к летному составу — только летный состав.
+    Фильтрует сотрудников с учетом division_affiliation должности (Летный / Инженерный / Общий состав).
 
     Args:
         user (Optional[DataBaseUser]): Текущий пользователь системы для фильтрации по правам доступа.
+        target_scope (Optional[str]): Явный код категории ('0', '1', '2'), переопределяющий автоматический scope.
 
     Returns:
         QuerySet[DataBaseUser]: Отфильтрованный список сотрудников с предзагрузкой профилей и должностей.
@@ -2075,35 +2104,41 @@ def get_allowed_staff_queryset(user=None):
     from customers_app.models import DataBaseUser
     from django.db.models import Q
 
-    scope = get_user_personnel_scope(user)
+    scope = target_scope if target_scope is not None else get_user_personnel_scope(user)
+
     if scope == '1':
-        target_names = FLIGHT_CREW_JOB_NAMES
+        # Только летный состав
         q_filter = (
-                Q(user_work_profile__job__name__in=target_names)
-                | Q(user_work_profile__job__type_of_job='1')
+            Q(user_work_profile__job__division_affiliation__pk=2)
+            | Q(user_work_profile__job__division_affiliation__name="Летный состав")
+            | Q(user_work_profile__job__type_of_job='1')
+            | Q(user_work_profile__job__name__in=FLIGHT_CREW_JOB_NAMES)
         )
     elif scope == '2':
-        target_names = ENGINEERING_STAFF_JOB_NAMES
+        # Только инженерный состав
         q_filter = (
-                Q(user_work_profile__job__name__in=target_names)
-                | Q(user_work_profile__job__type_of_job='2')
+            Q(user_work_profile__job__division_affiliation__pk=3)
+            | Q(user_work_profile__job__division_affiliation__name="Инженерный состав")
+            | Q(user_work_profile__job__type_of_job='2')
+            | Q(user_work_profile__job__name__in=ENGINEERING_STAFF_JOB_NAMES)
         )
     else:
-        target_names = ALL_STAFF_JOB_NAMES
+        # Все профильные сотрудники (летный + инженерный + общий)
         q_filter = (
-                Q(user_work_profile__job__name__in=target_names)
-                | Q(user_work_profile__job__type_of_job__in=['1', '2'])
+            Q(user_work_profile__job__division_affiliation__pk__in=[1, 2, 3])
+            | Q(user_work_profile__job__type_of_job__in=['0', '1', '2'])
+            | Q(user_work_profile__job__name__in=ALL_STAFF_JOB_NAMES)
         )
 
     return DataBaseUser.objects.filter(
         is_active=True,
         user_work_profile__isnull=False
-    ).filter(
-        q_filter
-    ).select_related(
+    ).filter(q_filter).select_related(
         'user_work_profile',
-        'user_work_profile__job'
-    ).order_by('last_name', 'first_name').distinct()
+        'user_work_profile__job',
+        'user_work_profile__job__division_affiliation'
+    ).distinct().order_by('last_name', 'first_name')
+
 
 
 EXACT_JOB_SHORTCUTS = {
@@ -2500,4 +2535,161 @@ def merge_periodic_check_types_service(
         'source_deleted': source_deleted,
         'message': msg
     }
+
+
+def get_lpc_roles_summary() -> Dict[str, Any]:
+    """Формирует сводную информацию о текущих назначенных пользователях по ролевым группам ЛПК.
+
+    Returns:
+        Dict[str, Any]: Словарь с перечнем ролевых групп, описанием полномочий
+            и списком активных пользователей.
+    """
+    from django.contrib.auth.models import Group
+    from .permissions import (
+        GROUP_LPC_MANAGEMENT,
+        GROUP_LPC_FLIGHT_PLANNERS,
+        GROUP_LPC_TECH_SERVICE,
+        GROUP_LPC_FLIGHT_SERVICE,
+        GROUP_LPC_HR_SAFETY,
+        GROUP_LEGACY_PLANNERS,
+        GROUP_COMPANY_LEADERSHIP,
+    )
+
+    role_definitions = [
+        {
+            'code': 'flight_planners',
+            'group_name': GROUP_LPC_FLIGHT_PLANNERS,
+            'legacy_name': GROUP_LEGACY_PLANNERS,
+            'title': 'Диспетчеры планирования полетов',
+            'description': 'Полное управление шахматкой экипажей, назначениями пилотов, формированием черновиков документов расстановки и контролем допусков летного состава.',
+            'badge_class': 'badge-primary',
+            'icon': 'bx-calendar-event',
+        },
+        {
+            'code': 'tech_service',
+            'group_name': GROUP_LPC_TECH_SERVICE,
+            'legacy_name': None,
+            'title': 'Инженерная служба (ИАС)',
+            'description': 'Ведение журнала перемещений ВС (дислокация флота), учет периодических мероприятий и состояний инженерно-технического состава (авиатехников, инженеров ТО).',
+            'badge_class': 'badge-warning',
+            'icon': 'bxs-plane-take-off',
+        },
+        {
+            'code': 'flight_service',
+            'group_name': GROUP_LPC_FLIGHT_SERVICE,
+            'legacy_name': None,
+            'title': 'Летная служба / ЛМО',
+            'description': 'Учет периодических мероприятий летного состава (ВЛЭК, тренажеры, проверки техники пилотирования, КПК) и состояний летчиков.',
+            'badge_class': 'badge-info',
+            'icon': 'bx-check-shield',
+        },
+        {
+            'code': 'hr_safety',
+            'group_name': GROUP_LPC_HR_SAFETY,
+            'legacy_name': None,
+            'title': 'Кадры и охрана труда',
+            'description': 'Ведение общих периодических мероприятий (Охрана труда, ПБ, медицина) и общих состояний сотрудников.',
+            'badge_class': 'badge-secondary',
+            'icon': 'bx-user-check',
+        },
+        {
+            'code': 'leadership',
+            'group_name': GROUP_LPC_MANAGEMENT,
+            'legacy_name': GROUP_COMPANY_LEADERSHIP,
+            'title': 'Руководство компании (Наблюдатели)',
+            'description': 'Сквозной просмотр всех данных, аналитики, отчетов и метеоцентра в режиме «Только чтение» + эксклюзивное право утверждать официальные документы расстановки.',
+            'badge_class': 'badge-dark',
+            'icon': 'bx-crown',
+        },
+    ]
+
+    roles_data = []
+    for r in role_definitions:
+        group_names = [r['group_name']]
+        if r['legacy_name']:
+            group_names.append(r['legacy_name'])
+
+        groups = Group.objects.filter(name__in=group_names)
+        user_ids = set()
+        users_list = []
+        for g in groups:
+            for u in g.user_set.filter(is_active=True).select_related('user_work_profile', 'user_work_profile__job'):
+                if u.pk not in user_ids:
+                    user_ids.add(u.pk)
+                    users_list.append({
+                        'id': u.pk,
+                        'username': u.username,
+                        'full_name': u.get_full_name() or u.username,
+                        'job_title': u.user_work_profile.job.name if hasattr(u, 'user_work_profile') and u.user_work_profile and u.user_work_profile.job else '',
+                    })
+
+        roles_data.append({
+            'code': r['code'],
+            'group_name': r['group_name'],
+            'title': r['title'],
+            'description': r['description'],
+            'badge_class': r['badge_class'],
+            'icon': r['icon'],
+            'users': users_list,
+            'count': len(users_list),
+        })
+
+    return {'roles': roles_data}
+
+
+def add_user_to_lpc_role(user_id: int, group_name: str, operator=None) -> Tuple[bool, str]:
+    """Добавляет сотрудника в указанную ролевую группу ЛПК.
+
+    Args:
+        user_id (int): Идентификатор пользователя.
+        group_name (str): Наименование ролевой группы.
+        operator (Optional[DataBaseUser]): Пользователь, выполняющий назначение.
+
+    Returns:
+        Tuple[bool, str]: Успешность операции и текстовое сообщение для пользователя.
+    """
+    from django.contrib.auth.models import Group
+    from customers_app.models import DataBaseUser
+
+    user = DataBaseUser.objects.filter(pk=user_id, is_active=True).first()
+    if not user:
+        return False, "Сотрудник не найден или заблокирован."
+
+    group, _ = Group.objects.get_or_create(name=group_name)
+    if user.groups.filter(pk=group.pk).exists():
+        return False, f"Сотрудник {user.get_full_name()} уже входит в роль «{group_name}»."
+
+    user.groups.add(group)
+    op_info = operator.username if operator else "система"
+    logger.info("Пользователь %s добавил %s в роль ЛПК «%s»", op_info, user.username, group_name)
+    return True, f"Сотрудник {user.get_full_name()} успешно добавлен в роль «{group_name}»."
+
+
+def remove_user_from_lpc_role(user_id: int, group_name: str, operator=None) -> Tuple[bool, str]:
+    """Исключает сотрудника из указанной ролевой группы ЛПК.
+
+    Args:
+        user_id (int): Идентификатор пользователя.
+        group_name (str): Наименование ролевой группы.
+        operator (Optional[DataBaseUser]): Пользователь, выполняющий исключение.
+
+    Returns:
+        Tuple[bool, str]: Успешность операции и текстовое сообщение.
+    """
+    from django.contrib.auth.models import Group
+    from customers_app.models import DataBaseUser
+
+    user = DataBaseUser.objects.filter(pk=user_id).first()
+    if not user:
+        return False, "Сотрудник не найден."
+
+    group = Group.objects.filter(name=group_name).first()
+    if not group or not user.groups.filter(pk=group.pk).exists():
+        return False, f"Сотрудник не состоит в роли «{group_name}»."
+
+    user.groups.remove(group)
+    op_info = operator.username if operator else "система"
+    logger.info("Пользователь %s исключил %s из роли ЛПК «%s»", op_info, user.username, group_name)
+    return True, f"Сотрудник {user.get_full_name()} успешно исключен из роли «{group_name}»."
+
 

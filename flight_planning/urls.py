@@ -67,6 +67,8 @@ urlpatterns = [
     path('settings/', views.settings_view, name='settings'),
     path('settings/template/checks/', views.download_check_template_view, name='download_check_template'),
     path('api/import-checks/', views.import_checks_api, name='api_import_checks'),
+    path('api/roles/assign/', views.assign_lpc_role_api, name='assign_lpc_role_api'),
+    path('api/roles/remove/', views.remove_lpc_role_api, name='remove_lpc_role_api'),
 
     # API v1 (REST)
     path('api/v1/', include(api_urlpatterns)),

@@ -443,7 +443,7 @@
                         <a href="{% url 'flight_planning:periodic_checks_pdf_report' %}?status=issues{% if filter_employee_id %}&employee_id={{ filter_employee_id }}{% endif %}{% if filter_check_type_id %}&check_type_id={{ filter_check_type_id }}{% endif %}{% if filter_aircraft_type_id %}&aircraft_type_id={{ filter_aircraft_type_id }}{% endif %}" class="btn btn-outline-danger btn-sm px-3 btn-touch d-inline-flex align-items-center" title="Скачать PDF отчет по проблемным мероприятиям (просроченные и истекающие)" aria-label="Скачать PDF отчет">
                             <i class='bx bxs-file-pdf me-1'></i> <span class="d-none d-md-inline">Отчет PDF (Проблемные)</span><span class="d-md-none">PDF</span>
                         </a>
-                        {% if is_planner %}
+                        {% if can_edit_checks %}
                             <button type="button" class="btn btn-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openAddRecordBtn" aria-label="Внести запись о мероприятии" title="Внести запись о мероприятии">
                                 <i class='bx bx-plus-circle me-1'></i> <span class="d-none d-md-inline">Внести запись о мероприятии</span><span class="d-md-none">Внести запись</span>
                             </button>
@@ -540,7 +540,7 @@
                             <th>Статус годности</th>
                             <th class="d-none d-md-table-cell">Документ</th>
                             <th class="d-none d-lg-table-cell">Кем выдано</th>
-                            {% if is_planner %}<th class="text-end text-nowrap">Действия</th>{% endif %}
+                            {% if can_edit_checks %}<th class="text-end text-nowrap">Действия</th>{% endif %}
                         </tr>
                         </thead>
                         <tbody>
@@ -599,8 +599,10 @@
                                     <td class="d-none d-lg-table-cell small text-muted text-truncate" style="max-width: 140px;" title="{{ r.issued_by }}">
                                         {{ r.issued_by|default:"—" }}
                                     </td>
-                                    {% if is_planner %}
+                                    {% if can_edit_checks %}
                                         <td class="text-end text-nowrap">
+                                            {% can_edit_target_checks request.user r.employee as can_edit_emp %}
+                                            {% if can_edit_emp %}
                                             <button type="button" class="btn btn-sm btn-outline-success btn-renew-record py-1 px-2 btn-touch"
                                                     data-employee-id="{{ r.employee.id }}"
                                                     data-employee-name="{{ r.employee.title|default:r.employee.username|FIO_format }}"
@@ -615,6 +617,7 @@
                                             <a href="{% url 'flight_planning:periodic_check_update' r.id %}" class="btn btn-sm btn-outline-primary py-1 px-2 btn-touch" title="Редактировать" aria-label="Редактировать">
                                                 <i class='bx bx-edit-alt'></i>
                                             </a>
+                                            {% endif %}
                                             <button type="button" class="btn btn-sm btn-view-history py-1 px-2 btn-touch btn-outline-info"
                                                     data-employee-id="{{ r.employee.id }}"
                                                     data-employee-name="{{ r.employee.title|default:r.employee.username|FIO_format }}"
@@ -624,9 +627,11 @@
                                                     aria-label="История">
                                                 <i class='bx bx-history'></i>
                                             </button>
+                                            {% if can_edit_emp %}
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-delete-record py-1 px-2 btn-touch" data-id="{{ r.id }}" data-name="{{ r.check_type.name }} ({{ r.employee.title|FIO_format }})" title="Удалить" aria-label="Удалить">
                                                 <i class='bx bx-trash'></i>
                                             </button>
+                                            {% endif %}
                                         </td>
                                     {% endif %}
                                 </tr>
@@ -681,7 +686,8 @@
                                                 <i class='bx bx-time-five text-warning ms-1' title="Есть мероприятия, истекающие в течение 30 дней"></i>
                                             {% endif %}
                                         </div>
-                                        {% if is_planner %}
+                                        {% can_edit_target_checks request.user row.pilot as can_edit_row %}
+                                        {% if can_edit_row %}
                                             <button type="button" class="btn btn-sm btn-outline-secondary btn-assign-checks ms-2 py-1 px-2 btn-touch"
                                                     data-employee-id="{{ row.pilot.id }}"
                                                     data-employee-name="{{ row.pilot.title|default:row.pilot.username|FIO_format }}"
@@ -703,24 +709,36 @@
                                         data-last-end="{{ cell.record.end_date|date:'Y-m-d'|default:'' }}"
                                         data-has-record="{% if cell.record %}1{% else %}0{% endif %}"
                                         data-is-required="{% if cell.is_required %}1{% else %}0{% endif %}"
-                                        title="{% if not cell.is_required %}Не требуется сотруднику (нажмите для внесения или настройки){% else %}Нажмите для продления или просмотра истории: {{ cell.check_type.name }}{% endif %}">
-                                        {% if not cell.is_required %}
+                                        data-can-edit="{% if can_edit_row %}1{% else %}0{% endif %}">
+                                        <div class="matrix-cell-content">
                                             {% if cell.record %}
-                                                <span class="text-muted small"><i class='bx bx-minus me-1'></i>{{ cell.text }}</span>
+                                                <span class="matrix-cell-date">{{ cell.record.end_date|date:"d.m.y" }}</span>
+                                                {% if cell.record.is_superseded %}
+                                                    <span class="matrix-cell-sub">Продлено</span>
+                                                {% elif cell.status == 'expired' %}
+                                                    <span class="matrix-cell-sub text-danger">Просрочено</span>
+                                                {% elif cell.status == 'warning' %}
+                                                    <span class="matrix-cell-sub text-warning">{{ cell.record.days_remaining }} дн.</span>
+                                                {% else %}
+                                                    <span class="matrix-cell-sub text-success">{{ cell.record.days_remaining }} дн.</span>
+                                                {% endif %}
                                             {% else %}
-                                                <span class="text-muted" style="opacity: 0.6;"><i class='bx bx-minus me-1'></i>Не требуется</span>
+                                                {% if cell.is_required %}
+                                                    <span class="matrix-cell-missing text-danger">НЕТ СДАЧИ</span>
+                                                {% else %}
+                                                    <span class="matrix-cell-empty">—</span>
+                                                {% endif %}
                                             {% endif %}
-                                        {% elif cell.status == 'valid' %}
-                                            <i class='bx bx-check text-success me-1'></i>{{ cell.text }}
-                                        {% elif cell.status == 'warning' %}
-                                            <i class='bx bx-time-five text-warning me-1'></i>{{ cell.text }}
-                                        {% elif cell.status == 'expired' %}
-                                            <i class='bx bx-x text-danger me-1'></i>{{ cell.text }}
-                                        {% else %}
-                                            <span class="text-danger font-weight-bold">+ Внести</span>
-                                        {% endif %}
+                                        </div>
                                     </td>
                                 {% endfor %}
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="{{ active_check_types|length|add:1 }}" class="text-center py-5 text-muted">
+                                    <i class='bx bx-user-x fs-1 d-block mb-2'></i>
+                                    Сотрудников по заданным критериям фильтра не найдено.
+                                </td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -728,9 +746,9 @@
                 </div>
 
             {% elif active_tab == 'types' %}
-                <!-- Вкладка: Справочник видов мероприятий -->
+                <!-- ВКЛАДКА 3: СПРАВОЧНИК ВИДОВ МЕРОПРИЯТИЙ -->
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle border mb-0">
+                    <table class="table table-hover align-middle mb-0" id="typesTable">
                         <thead class="table-light">
                         <tr>
                             <th class="d-none d-md-table-cell">Порядок</th>
@@ -795,6 +813,13 @@
                                         </button>
                                     </td>
                                 {% endif %}
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class='bx bx-folder-open fs-1 d-block mb-2'></i>
+                                    Виды периодических мероприятий не созданы.
+                                </td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -879,7 +904,7 @@
     </div>
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top mt-3">
         <button type="button" class="btn btn-secondary btn-sm btn-touch px-3" id="cancelHistoryModalBtn">Закрыть</button>
-        {% if is_planner %}
+        {% if can_edit_checks %}
             <button type="button" class="btn btn-success btn-sm font-weight-bold btn-touch px-3" id="renewFromHistoryBtn">
                 <i class='bx bx-refresh me-1'></i> Продлить (Внести новую сдачу)
             </button>

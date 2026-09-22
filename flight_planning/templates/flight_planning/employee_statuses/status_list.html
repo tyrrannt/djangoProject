@@ -325,18 +325,18 @@
                     </li>
                 </ul>
 
-                {% if is_planner %}
-                    <div class="d-flex gap-2">
+                <div class="d-flex gap-2">
+                    {% if can_edit_statuses %}
                         <a href="{% url 'flight_planning:employee_status_create' %}" class="btn btn-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openAddStatusBtn" aria-label="Ввести состояние сотрудника" title="Ввести состояние сотрудника">
                             <i class='bx bx-plus-circle me-1'></i> <span class="d-none d-md-inline">Ввести состояние сотрудника</span><span class="d-md-none">Ввести статус</span>
                         </a>
-                        {% if active_tab == 'types' %}
-                            <a href="{% url 'flight_planning:employee_status_type_create' %}" class="btn btn-outline-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openAddTypeBtn" aria-label="Добавить вид состояния" title="Добавить вид состояния">
-                                <i class='bx bx-plus me-1'></i> <span class="d-none d-md-inline">Добавить вид состояния</span><span class="d-md-none">Добавить вид</span>
-                            </a>
-                        {% endif %}
-                    </div>
-                {% endif %}
+                    {% endif %}
+                    {% if active_tab == 'types' and is_planner %}
+                        <a href="{% url 'flight_planning:employee_status_type_create' %}" class="btn btn-outline-primary btn-sm px-3 btn-touch d-inline-flex align-items-center" id="openAddTypeBtn" aria-label="Добавить вид состояния" title="Добавить вид состояния">
+                            <i class='bx bx-plus me-1'></i> <span class="d-none d-md-inline">Добавить вид состояния</span><span class="d-md-none">Добавить вид</span>
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -390,7 +390,7 @@
                                 <th>Дней</th>
                                 <th class="d-none d-md-table-cell">Документ</th>
                                 <th class="d-none d-lg-table-cell">Примечание</th>
-                                {% if is_planner %}<th class="text-end text-nowrap">Действия</th>{% endif %}
+                                {% if can_edit_statuses %}<th class="text-end text-nowrap">Действия</th>{% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -409,14 +409,19 @@
                                     <td><span class="badge bg-light text-dark border">{{ r.duration_days }} дн.</span></td>
                                     <td class="d-none d-md-table-cell">{{ r.document_number|default:"—" }}</td>
                                     <td class="text-muted small d-none d-lg-table-cell">{{ r.notes|truncatechars:40|default:"—" }}</td>
-                                    {% if is_planner %}
+                                    {% if can_edit_statuses %}
                                         <td class="text-end text-nowrap">
+                                            {% can_edit_target_checks request.user r.employee as can_edit_emp %}
+                                            {% if can_edit_emp %}
                                             <a href="{% url 'flight_planning:employee_status_update' r.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2 btn-touch" title="Редактировать" aria-label="Редактировать">
                                                 <i class='bx bx-edit-alt'></i>
                                             </a>
                                             <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 btn-touch" onclick="confirmDeleteRecord({{ r.id }}, '{{ r.status_type.name }}', '{{ r.employee.title|FIO_format }}')" title="Удалить" aria-label="Удалить">
                                                 <i class='bx bx-trash'></i>
                                             </button>
+                                            {% else %}
+                                            <span class="text-muted small">—</span>
+                                            {% endif %}
                                         </td>
                                     {% endif %}
                                 </tr>

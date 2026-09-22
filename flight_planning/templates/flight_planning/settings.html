@@ -105,7 +105,7 @@
             gap: 4px;
             margin-bottom: 20px;
             width: 100%;
-            max-width: 600px;
+            max-width: 920px;
         }
         .segmented-tab-btn {
             flex: 1;
@@ -127,6 +127,68 @@
             background: #ffffff;
             color: var(--fp-dark);
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Карточки ролей ЛПК */
+        .role-domain-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--fp-slate-200);
+            box-shadow: var(--fp-card-shadow);
+            transition: all 0.25s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .role-domain-card:hover {
+            box-shadow: var(--fp-card-hover-shadow);
+            border-color: #cbd5e1;
+        }
+        .role-domain-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--fp-slate-200);
+            background: #f8fafc;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .role-domain-body {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .role-user-item {
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+            transition: background 0.15s ease;
+        }
+        .role-user-item:hover {
+            background: #f1f5f9;
+        }
+        .role-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 1px solid #dbeafe;
         }
 
         /* Главная карточка настроек */
@@ -502,6 +564,9 @@
         <button type="button" class="segmented-tab-btn" id="tabBtnTemplate">
             <i class='bx bx-file-blank fs-5'></i> Шаблоны и спецификация
         </button>
+        <button type="button" class="segmented-tab-btn" id="tabBtnAccess">
+            <i class='bx bx-user-shield fs-5'></i> Управление доступом (Роли ЛПК)
+        </button>
     </div>
 
     <!-- ВКЛАДКА 1: ИМПОРТ МЕРОПРИЯТИЙ -->
@@ -802,6 +867,181 @@
             </div>
         </div>
     </div>
+
+    <!-- ВКЛАДКА 3: УПРАВЛЕНИЕ ДОСТУПОМ И РОЛЯМИ ЛПК -->
+    <div id="sectionAccess" class="tab-pane-content" style="display: none;">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <div>
+                    <h2 class="h6 font-weight-bold mb-0 text-dark">
+                        <i class='bx bx-user-shield text-primary me-2'></i> Доменная матрица прав и ролей ЛПК
+                    </h2>
+                    <small class="text-muted">
+                        Назначение ответственных специалистов за ключевые направления Летно-производственного комплекса без использования панели Django Admin
+                    </small>
+                </div>
+                {% if can_manage_roles %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 font-weight-semibold">
+                    <i class='bx bx-check-shield me-1'></i> Режим администрирования активен
+                </span>
+                {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-3 py-2 font-weight-semibold">
+                    <i class='bx bx-lock-alt me-1'></i> Режим «Только просмотр»
+                </span>
+                {% endif %}
+            </div>
+            <div class="modern-card-body">
+                <div class="alert alert-info py-3 px-3 mb-4 d-flex align-items-center gap-3 rounded-3 border-info">
+                    <i class='bx bx-info-circle fs-3 text-primary flex-shrink-0'></i>
+                    <div class="small">
+                        <strong>Принцип работы прав доступа ЛПК:</strong>
+                        Каждая роль строго изолирует зону ответственности. Диспетчеры ведут экипажи и шахматку полетов; Инженерная служба (ИАС) фиксирует дислокацию бортов и проверки авиатехников; Летная служба ведет допуски и состояния пилотов; Руководство компании имеет сквозной доступ к данным в режиме «Только чтение» и исключительное право утверждать официальные документы расстановки.
+                    </div>
+                </div>
+
+                <!-- Сетка ролей ЛПК -->
+                <div class="row g-4">
+                    {% for role in roles_summary.roles %}
+                    <div class="col-12 col-lg-6">
+                        <div class="role-domain-card" id="roleCard-{{ role.code }}">
+                            <div class="role-domain-header">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="kpi-icon-bubble bubble-blue" style="width: 40px; height: 40px; font-size: 1.25rem;">
+                                        <i class='bx {{ role.icon }}'></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="h6 font-weight-bold text-dark mb-0">{{ role.title }}</h3>
+                                        <span class="badge {{ role.badge_class }} small mt-1" style="font-size: 0.72rem;">{{ role.group_name }}</span>
+                                    </div>
+                                </div>
+                                <span class="badge bg-white border text-dark font-weight-bold px-2 py-1 role-user-count" id="roleCount-{{ role.code }}">
+                                    {{ role.count }} сотр.
+                                </span>
+                            </div>
+                            <div class="role-domain-body">
+                                <p class="text-muted small mb-3">{{ role.description }}</p>
+
+                                <div class="mb-3 flex-grow-1">
+                                    <div class="text-xs font-weight-bold text-uppercase text-muted mb-2 letter-spacing-1">
+                                        Назначенные сотрудники:
+                                    </div>
+                                    <div class="role-users-list" id="roleUsersList-{{ role.code }}" style="max-height: 240px; overflow-y: auto;">
+                                        {% for u in role.users %}
+                                        <div class="role-user-item" id="roleUser-{{ role.code }}-{{ u.id }}">
+                                            <div class="d-flex align-items-center gap-2 text-truncate">
+                                                <div class="role-user-avatar">
+                                                    {{ u.full_name|slice:":1"|upper }}
+                                                </div>
+                                                <div class="text-truncate">
+                                                    <div class="font-weight-semibold text-dark text-truncate small" title="{{ u.full_name }}">
+                                                        {{ u.full_name }}
+                                                    </div>
+                                                    <div class="text-muted text-truncate" style="font-size: 0.75rem;" title="{{ u.job_title|default:u.username }}">
+                                                        {{ u.job_title|default:u.username }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% if can_manage_roles %}
+                                            <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1 btn-remove-role-user"
+                                                    data-user-id="{{ u.id }}"
+                                                    data-group-name="{{ role.group_name }}"
+                                                    data-user-name="{{ u.full_name }}"
+                                                    data-role-code="{{ role.code }}"
+                                                    title="Исключить из роли" aria-label="Исключить">
+                                                <i class='bx bx-x fs-5'></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        {% empty %}
+                                        <div class="text-center py-3 text-muted small fst-italic no-users-placeholder">
+                                            Сотрудники в этой роли не назначены
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                {% if can_manage_roles %}
+                                <div class="pt-2 border-top">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 font-weight-semibold btn-open-assign-modal"
+                                            data-group-name="{{ role.group_name }}"
+                                            data-role-title="{{ role.title }}"
+                                            data-role-code="{{ role.code }}">
+                                        <i class='bx bx-user-plus me-1'></i> Назначить сотрудника
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО НАЗНАЧЕНИЯ СОТРУДНИКА В РОЛЬ ЛПК -->
+    {% if can_manage_roles %}
+    <div class="modal fade" id="assignRoleModal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+                <div class="modal-header bg-primary text-white py-3 px-4">
+                    <div>
+                        <h5 class="modal-title font-weight-bold" id="assignRoleModalLabel">
+                            <i class='bx bx-user-plus me-2'></i> Назначение роли сотруднику
+                        </h5>
+                        <small class="text-white-50" id="assignRoleModalSubtitle">Ролевая группа ЛПК</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="assignRoleForm">
+                        <input type="hidden" id="assignRoleGroupName" name="group_name" value="">
+                        <input type="hidden" id="assignRoleCode" name="role_code" value="">
+
+                        <div class="mb-3">
+                            <label for="assignRoleUserSearch" class="form-label font-weight-semibold small text-muted text-uppercase">
+                                Быстрый фильтр сотрудников:
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class='bx bx-search'></i></span>
+                                <input type="text" class="form-control border-start-0" id="assignRoleUserSearch" placeholder="Введите фамилию или должность..." autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="assignRoleUserSelect" class="form-label font-weight-semibold">
+                                Выберите сотрудника компании <span class="text-danger">*</span>:
+                            </label>
+                            <select class="form-select" id="assignRoleUserSelect" name="user_id" size="7" required style="font-size: 0.88rem;">
+                                {% for u in all_users %}
+                                <option value="{{ u.id }}" data-search="{{ u.last_name|lower }} {{ u.first_name|lower }} {{ u.user_work_profile.job.name|default:''|lower }}">
+                                    {{ u.last_name }} {{ u.first_name }} {{ u.patronymic|default:"" }} {% if u.user_work_profile and u.user_work_profile.job %}— {{ u.user_work_profile.job.name }}{% endif %} ({{ u.username }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small text-muted">
+                                Выберите сотрудника из списка активных учетных записей.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-0" id="assignRoleAlert" style="display: none !important;">
+                            <i class='bx bx-error-circle fs-5'></i>
+                            <span id="assignRoleAlertText"></span>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light py-3 px-4">
+                    <button type="button" class="btn btn-outline-secondary font-weight-semibold" data-bs-dismiss="modal">
+                        Отмена
+                    </button>
+                    <button type="button" class="btn btn-primary font-weight-bold px-4" id="btnSubmitAssignRole">
+                        <i class='bx bx-check-circle me-1'></i> Назначить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}
 
 {% block custom_script %}
@@ -813,23 +1053,45 @@
         // Элементы вкладок
         const tabBtnImport = document.getElementById('tabBtnImport');
         const tabBtnTemplate = document.getElementById('tabBtnTemplate');
+        const tabBtnAccess = document.getElementById('tabBtnAccess');
         const sectionImport = document.getElementById('sectionImport');
         const sectionTemplate = document.getElementById('sectionTemplate');
+        const sectionAccess = document.getElementById('sectionAccess');
 
-        // Переключение основных вкладок
-        tabBtnImport.addEventListener('click', function() {
-            tabBtnImport.classList.add('active');
-            tabBtnTemplate.classList.remove('active');
-            sectionImport.style.display = 'block';
-            sectionTemplate.style.display = 'none';
-        });
-
-        tabBtnTemplate.addEventListener('click', function() {
-            tabBtnTemplate.classList.add('active');
+        function switchTab(targetTab) {
             tabBtnImport.classList.remove('active');
+            tabBtnTemplate.classList.remove('active');
+            if (tabBtnAccess) tabBtnAccess.classList.remove('active');
+
             sectionImport.style.display = 'none';
-            sectionTemplate.style.display = 'block';
-        });
+            sectionTemplate.style.display = 'none';
+            if (sectionAccess) sectionAccess.style.display = 'none';
+
+            if (targetTab === 'template') {
+                tabBtnTemplate.classList.add('active');
+                sectionTemplate.style.display = 'block';
+            } else if (targetTab === 'access') {
+                if (tabBtnAccess) tabBtnAccess.classList.add('active');
+                if (sectionAccess) sectionAccess.style.display = 'block';
+            } else {
+                tabBtnImport.classList.add('active');
+                sectionImport.style.display = 'block';
+            }
+        }
+
+        tabBtnImport.addEventListener('click', function() { switchTab('import'); });
+        tabBtnTemplate.addEventListener('click', function() { switchTab('template'); });
+        if (tabBtnAccess) {
+            tabBtnAccess.addEventListener('click', function() { switchTab('access'); });
+        }
+
+        // Проверка URL параметров или хэша для начального открытия вкладки
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'access' || window.location.hash === '#access') {
+            switchTab('access');
+        } else if (urlParams.get('tab') === 'template' || window.location.hash === '#template') {
+            switchTab('template');
+        }
 
         // Источник данных
         const btnSourceFile = document.getElementById('btnSourceFile');
@@ -1107,6 +1369,179 @@
                 resultsTableBody.appendChild(tr);
             });
         }
+
+        // =====================================================================
+        // УПРАВЛЕНИЕ РОЛЯМИ ЛПК (AJAX НАЗНАЧЕНИЕ И ИСКЛЮЧЕНИЕ СОТРУДНИКОВ)
+        // =====================================================================
+        const assignRoleModalEl = document.getElementById('assignRoleModal');
+        let assignRoleModal = null;
+        if (assignRoleModalEl && typeof bootstrap !== 'undefined') {
+            assignRoleModal = bootstrap.Modal.getOrCreateInstance(assignRoleModalEl);
+        }
+
+        const assignRoleGroupNameInput = document.getElementById('assignRoleGroupName');
+        const assignRoleCodeInput = document.getElementById('assignRoleCode');
+        const assignRoleModalSubtitle = document.getElementById('assignRoleModalSubtitle');
+        const assignRoleUserSearch = document.getElementById('assignRoleUserSearch');
+        const assignRoleUserSelect = document.getElementById('assignRoleUserSelect');
+        const assignRoleAlert = document.getElementById('assignRoleAlert');
+        const assignRoleAlertText = document.getElementById('assignRoleAlertText');
+        const btnSubmitAssignRole = document.getElementById('btnSubmitAssignRole');
+
+        // Открытие модального окна назначения сотрудника
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-open-assign-modal');
+            if (!btn) return;
+
+            const groupName = btn.getAttribute('data-group-name');
+            const roleTitle = btn.getAttribute('data-role-title');
+            const roleCode = btn.getAttribute('data-role-code');
+
+            if (assignRoleGroupNameInput) assignRoleGroupNameInput.value = groupName;
+            if (assignRoleCodeInput) assignRoleCodeInput.value = roleCode;
+            if (assignRoleModalSubtitle) assignRoleModalSubtitle.textContent = roleTitle + ' (' + groupName + ')';
+            if (assignRoleUserSearch) assignRoleUserSearch.value = '';
+            if (assignRoleAlert) assignRoleAlert.style.setProperty('display', 'none', 'important');
+
+            if (assignRoleUserSelect) {
+                assignRoleUserSelect.selectedIndex = -1;
+                Array.from(assignRoleUserSelect.options).forEach(opt => {
+                    opt.style.display = '';
+                });
+            }
+
+            if (assignRoleModal) {
+                assignRoleModal.show();
+            }
+        });
+
+        // Быстрый живой фильтр в модальном окне выбора сотрудника
+        if (assignRoleUserSearch && assignRoleUserSelect) {
+            assignRoleUserSearch.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                Array.from(assignRoleUserSelect.options).forEach(opt => {
+                    const searchData = opt.getAttribute('data-search') || opt.textContent.toLowerCase();
+                    opt.style.display = searchData.includes(query) ? '' : 'none';
+                });
+            });
+        }
+
+        // Отправка формы назначения сотрудника
+        if (btnSubmitAssignRole && assignRoleUserSelect) {
+            btnSubmitAssignRole.addEventListener('click', function() {
+                const userId = assignRoleUserSelect.value;
+                const groupName = assignRoleGroupNameInput ? assignRoleGroupNameInput.value : '';
+
+                if (!userId) {
+                    if (assignRoleAlert && assignRoleAlertText) {
+                        assignRoleAlertText.textContent = 'Пожалуйста, выберите сотрудника из списка.';
+                        assignRoleAlert.style.setProperty('display', 'flex', 'important');
+                    }
+                    return;
+                }
+
+                btnSubmitAssignRole.disabled = true;
+                btnSubmitAssignRole.innerHTML = "<span class='spinner-border spinner-border-sm me-1' role='status' aria-hidden='true'></span> Назначение...";
+
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                formData.append('group_name', groupName);
+
+                const csrfToken = getCsrfToken();
+
+                fetch('{% url "flight_planning:assign_lpc_role_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(res => res.json().then(data => ({ status: res.status, body: data })))
+                .then(({ status, body }) => {
+                    btnSubmitAssignRole.disabled = false;
+                    btnSubmitAssignRole.innerHTML = "<i class='bx bx-check-circle me-1'></i> Назначить";
+
+                    if (status !== 200 || body.status === 'error') {
+                        if (assignRoleAlert && assignRoleAlertText) {
+                            assignRoleAlertText.textContent = body.error || body.message || 'Ошибка назначения роли.';
+                            assignRoleAlert.style.setProperty('display', 'flex', 'important');
+                        }
+                        return;
+                    }
+
+                    if (assignRoleModal) assignRoleModal.hide();
+                    if (window.toastr) {
+                        toastr.success(body.message || 'Сотрудник успешно назначен в роль.');
+                    }
+
+                    // Перезагружаем вкладку для гарантированной синхронизации интерфейса
+                    window.location.hash = '#access';
+                    window.location.reload();
+                })
+                .catch(err => {
+                    btnSubmitAssignRole.disabled = false;
+                    btnSubmitAssignRole.innerHTML = "<i class='bx bx-check-circle me-1'></i> Назначить";
+                    if (assignRoleAlert && assignRoleAlertText) {
+                        assignRoleAlertText.textContent = 'Сетевая ошибка при назначении роли: ' + err.message;
+                        assignRoleAlert.style.setProperty('display', 'flex', 'important');
+                    }
+                });
+            });
+        }
+
+        // Исключение сотрудника из роли ЛПК
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-remove-role-user');
+            if (!btn) return;
+
+            const userId = btn.getAttribute('data-user-id');
+            const groupName = btn.getAttribute('data-group-name');
+            const userName = btn.getAttribute('data-user-name');
+
+            if (!confirm(`Вы действительно хотите исключить сотрудника «${userName}» из роли «${groupName}»?`)) {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span>";
+
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('group_name', groupName);
+
+            const csrfToken = getCsrfToken();
+
+            fetch('{% url "flight_planning:remove_lpc_role_api" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(res => res.json().then(data => ({ status: res.status, body: data })))
+            .then(({ status, body }) => {
+                if (status !== 200 || body.status === 'error') {
+                    alert(body.error || body.message || 'Ошибка исключения сотрудника из роли.');
+                    btn.disabled = false;
+                    btn.innerHTML = "<i class='bx bx-x fs-5'></i>";
+                    return;
+                }
+
+                if (window.toastr) {
+                    toastr.success(body.message || 'Сотрудник успешно исключен из роли.');
+                }
+
+                window.location.hash = '#access';
+                window.location.reload();
+            })
+            .catch(err => {
+                alert('Сетевая ошибка: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = "<i class='bx bx-x fs-5'></i>";
+            });
+        });
     });
 })();
 </script>

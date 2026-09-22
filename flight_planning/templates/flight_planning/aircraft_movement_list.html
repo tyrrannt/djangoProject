@@ -108,7 +108,7 @@
                 <p class="text-muted mb-0 small">Учет текущей дислокации и истории перемещений бортов</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                {% if is_planner %}
+                {% if can_edit_movements %}
                 <a href="{% url 'flight_planning:aircraft_movement_add' %}"
                    class="btn btn-primary btn-touch py-2 px-3 d-flex align-items-center font-weight-semibold"
                    aria-label="Зафиксировать перемещение" title="Зафиксировать перемещение">
@@ -274,7 +274,7 @@
                                         </small>
                                     </td>
                                     <td class="text-center action-btns text-nowrap">
-                                        {% if is_planner %}
+                                        {% if can_edit_movements %}
                                         <a href="{% url 'flight_planning:aircraft_movement_update' m.pk %}"
                                            class="btn btn-sm btn-outline-primary btn-touch" title="Редактировать" aria-label="Редактировать">
                                             <i class='bx bx-edit'></i>

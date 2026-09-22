@@ -31,9 +31,19 @@ from .permissions import (
     is_flight_planner,
     can_view_flight_reports,
     can_view_flight_planning,
+    can_manage_flight_crews,
+    can_approve_flight_planning,
+    can_edit_aircraft_movements,
+    can_edit_checks_for_employee,
+    can_edit_employee_statuses,
+    can_manage_lpc_access,
+    is_leadership_viewer,
     flight_planner_required,
+    flight_crew_planner_required,
+    aircraft_movements_editor_required,
     flight_reports_required,
-    flight_planning_view_required
+    flight_planning_view_required,
+    lpc_access_manager_required,
 )
 from .selectors import (
     get_pilot_assignments_for_month,
@@ -84,7 +94,10 @@ from .services import (
     ALL_STAFF_JOB_NAMES,
     format_short_job,
     get_periodic_check_type_merge_preview_service,
-    merge_periodic_check_types_service
+    merge_periodic_check_types_service,
+    get_lpc_roles_summary,
+    add_user_to_lpc_role,
+    remove_user_from_lpc_role
 )
 from .pdf_services import generate_periodic_checks_issues_pdf
 from .importers import PeriodicCheckImporter
@@ -606,7 +619,7 @@ def document_detail_view(request, pk: int):
         'snapshot': document.snapshot_data,
         'diff_list': document.diff_data,
         'is_planner': is_flight_planner(request.user),
-        'can_approve': (can_view_flight_reports(request.user) or request.user.is_superuser) and document.is_pending,
+        'can_approve': can_approve_flight_planning(request.user) and document.is_pending,
     }
     return render(request, 'flight_planning/document_detail.html', context)
 
@@ -708,10 +721,9 @@ def document_create_view(request):
 
 
 @login_required
-@flight_reports_required
 @require_http_methods(["POST"])
 def document_approve_view(request, pk: int):
-    """Утверждает документ расстановки экипажей (доступно руководству).
+    """Утверждает документ расстановки экипажей (доступно руководству компании).
 
     Args:
         request (HttpRequest): POST-запрос.
@@ -720,6 +732,12 @@ def document_approve_view(request, pk: int):
     Returns:
         HttpResponseRedirect | JsonResponse: Перенаправление на карточку документа или JSON.
     """
+    if not can_approve_flight_planning(request.user):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'У вас нет полномочий для утверждения официального плана расстановки экипажей.'}, status=403)
+        messages.error(request, 'У вас нет полномочий для утверждения официального плана расстановки экипажей.')
+        return redirect('flight_planning:document_detail', pk=pk)
+
     document = get_object_or_404(FlightPlanningDocument, pk=pk)
 
     if document.status != 'pending':
@@ -1141,6 +1159,7 @@ def aircraft_movement_list_view(request):
 
     is_planner = is_flight_planner(request.user)
     can_reports = can_view_flight_reports(request.user)
+    can_edit_movements = can_edit_aircraft_movements(request.user)
 
     context = {
         'title': 'Журнал перемещения воздушных судов по МПД',
@@ -1153,13 +1172,14 @@ def aircraft_movement_list_view(request):
         'selected_date_from': date_from or '',
         'selected_date_to': date_to or '',
         'is_planner': is_planner,
+        'can_edit_movements': can_edit_movements,
         'can_view_reports': can_reports,
     }
     return render(request, 'flight_planning/aircraft_movement_list.html', context)
 
 
 @login_required
-@flight_planner_required
+@aircraft_movements_editor_required
 def aircraft_movement_create_view(request):
     """Создание новой записи в журнале перемещения ВС.
 
@@ -1204,14 +1224,15 @@ def aircraft_movement_create_view(request):
         'title': 'Добавить перемещение воздушного судна',
         'form': form,
         'is_edit': False,
-        'is_planner': True,
+        'is_planner': is_flight_planner(request.user),
+        'can_edit_movements': True,
         'can_view_reports': can_view_flight_reports(request.user),
     }
     return render(request, 'flight_planning/aircraft_movement_form.html', context)
 
 
 @login_required
-@flight_planner_required
+@aircraft_movements_editor_required
 def aircraft_movement_update_view(request, pk):
     """Редактирование существующей записи журнала перемещения ВС.
 
@@ -1253,14 +1274,15 @@ def aircraft_movement_update_view(request, pk):
         'form': form,
         'movement': movement,
         'is_edit': True,
-        'is_planner': True,
+        'is_planner': is_flight_planner(request.user),
+        'can_edit_movements': True,
         'can_view_reports': can_view_flight_reports(request.user),
     }
     return render(request, 'flight_planning/aircraft_movement_form.html', context)
 
 
 @login_required
-@flight_planner_required
+@aircraft_movements_editor_required
 @require_http_methods(["POST"])
 def aircraft_movement_delete_view(request, pk):
     """Удаление записи о перемещении ВС. Поддерживает как стандартный POST, так и AJAX запрос.
@@ -2535,6 +2557,7 @@ def periodic_check_list_view(request):
         'valid_records_count': valid_records_count,
         'renewed_records_count': renewed_records_count,
         'is_planner': is_flight_planner(request.user),
+        'can_edit_checks': not is_leadership_viewer(request.user) and (can_manage_flight_crews(request.user) or get_allowed_staff_queryset(request.user).exists()),
         'today': today,
         'filter_employee_id': employee_id,
         'filter_aircraft_type_id': aircraft_type_id,
@@ -2546,9 +2569,11 @@ def periodic_check_list_view(request):
 
 
 @login_required
-@flight_planner_required
 def periodic_check_create_view(request):
     """Создание новой записи о прохождении периодического мероприятия сотрудником.
+
+    Проверяет принадлежность сотрудника (division_affiliation / Летный / Инженерный / Общий)
+    и полномочия текущего пользователя на внесение данных.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса (GET или POST с файлом).
@@ -2556,9 +2581,23 @@ def periodic_check_create_view(request):
     Returns:
         HttpResponse: Перенаправление на журнал или отрендеренная форма.
     """
+    if is_leadership_viewer(request.user):
+        raise PermissionDenied("Руководству компании модуль доступен исключительно в режиме «Только просмотр».")
+
+    if not (can_manage_flight_crews(request.user) or get_allowed_staff_queryset(request.user).exists()):
+        raise PermissionDenied("У вас нет полномочий для внесения периодических мероприятий.")
+
     if request.method == 'POST':
         form = PeriodicCheckRecordForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
+            target_employee = form.cleaned_data.get('employee')
+            if not can_edit_checks_for_employee(request.user, target_employee):
+                err_msg = "У вас нет полномочий вносить мероприятия для данного сотрудника."
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'error': err_msg}, status=403)
+                messages.error(request, err_msg)
+                return redirect('flight_planning:periodic_check_list')
+
             record = form.save(commit=False)
             record.created_by = request.user
             record.save()
@@ -2595,9 +2634,10 @@ def periodic_check_create_view(request):
 
 
 @login_required
-@flight_planner_required
 def periodic_check_update_view(request, pk: int):
     """Редактирование записи о прохождении периодического мероприятия.
+
+    Доступно ответственной службе (Летная служба, ИАС, Кадры) или диспетчерам.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
@@ -2607,6 +2647,10 @@ def periodic_check_update_view(request, pk: int):
         HttpResponse: Перенаправление на журнал или страница редактирования.
     """
     record = get_object_or_404(PeriodicCheckRecord.objects.select_related('employee', 'check_type'), pk=pk)
+
+    if is_leadership_viewer(request.user) or not can_edit_checks_for_employee(request.user, record.employee):
+        messages.error(request, "У вас нет прав для изменения записей мероприятий данного сотрудника.")
+        return redirect('flight_planning:periodic_check_list')
 
     if request.method == 'POST':
         form = PeriodicCheckRecordForm(request.POST, request.FILES, instance=record, user=request.user)
@@ -2626,7 +2670,6 @@ def periodic_check_update_view(request, pk: int):
 
 
 @login_required
-@flight_planner_required
 def periodic_check_delete_view(request, pk: int):
     """Удаление записи о прохождении мероприятия.
 
@@ -2638,6 +2681,14 @@ def periodic_check_delete_view(request, pk: int):
         HttpResponse: Перенаправление на список записей.
     """
     record = get_object_or_404(PeriodicCheckRecord, pk=pk)
+
+    if is_leadership_viewer(request.user) or not can_edit_checks_for_employee(request.user, record.employee):
+        err_msg = "У вас нет прав для удаления записей мероприятий данного сотрудника."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'error': err_msg}, status=403)
+        messages.error(request, err_msg)
+        return redirect('flight_planning:periodic_check_list')
+
     name = f"{record.check_type.name} ({record.employee.title})"
     record.delete()
     messages.success(request, f"Запись мероприятия «{name}» успешно удалена.")
@@ -3386,6 +3437,7 @@ def employee_status_list_view(request):
         'training_today_count': training_today_count,
         'total_records_count': total_records_count,
         'is_planner': is_flight_planner(request.user),
+        'can_edit_statuses': not is_leadership_viewer(request.user) and (can_manage_flight_crews(request.user) or get_allowed_staff_queryset(request.user).exists()),
         'filter_employee_id': employee_id,
         'filter_status_type_id': status_type_id,
         'search_query': search_query,
@@ -3394,9 +3446,11 @@ def employee_status_list_view(request):
 
 
 @login_required
-@flight_planner_required
 def employee_status_create_view(request):
     """Создание новой записи о состоянии/статусе сотрудника.
+
+    Проверяет принадлежность сотрудника (division_affiliation / Летный / Инженерный / Общий)
+    и полномочия текущего пользователя на внесение состояний.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
@@ -3404,9 +3458,23 @@ def employee_status_create_view(request):
     Returns:
         HttpResponse: Перенаправление или JSON-ответ при AJAX.
     """
+    if is_leadership_viewer(request.user):
+        raise PermissionDenied("Руководству компании модуль доступен исключительно в режиме «Только просмотр».")
+
+    if not (can_manage_flight_crews(request.user) or get_allowed_staff_queryset(request.user).exists()):
+        raise PermissionDenied("У вас нет полномочий для внесения состояний сотрудников.")
+
     if request.method == 'POST':
         form = EmployeeStatusRecordForm(request.POST, user=request.user)
         if form.is_valid():
+            target_employee = form.cleaned_data.get('employee')
+            if not can_edit_employee_statuses(request.user, target_employee):
+                err_msg = "У вас нет полномочий вносить состояния для данного сотрудника."
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'error': err_msg}, status=403)
+                messages.error(request, err_msg)
+                return redirect('flight_planning:employee_status_list')
+
             record = form.save(commit=False)
             record.created_by = request.user
             record.save()
@@ -3433,9 +3501,10 @@ def employee_status_create_view(request):
 
 
 @login_required
-@flight_planner_required
 def employee_status_update_view(request, pk: int):
     """Редактирование записи о состоянии сотрудника.
+
+    Доступно ответственной службе (Летная служба, ИАС, Кадры) или диспетчерам.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
@@ -3445,6 +3514,11 @@ def employee_status_update_view(request, pk: int):
         HttpResponse: Перенаправление на список или страница с формой.
     """
     record = get_object_or_404(EmployeeStatusRecord, pk=pk)
+
+    if is_leadership_viewer(request.user) or not can_edit_employee_statuses(request.user, record.employee):
+        messages.error(request, "У вас нет прав для изменения состояния данного сотрудника.")
+        return redirect('flight_planning:employee_status_list')
+
     if request.method == 'POST':
         form = EmployeeStatusRecordForm(request.POST, instance=record, user=request.user)
         if form.is_valid():
@@ -3462,7 +3536,6 @@ def employee_status_update_view(request, pk: int):
 
 
 @login_required
-@flight_planner_required
 @require_http_methods(["POST"])
 def employee_status_delete_view(request, pk: int):
     """Удаление записи о состоянии сотрудника.
@@ -3475,6 +3548,13 @@ def employee_status_delete_view(request, pk: int):
         HttpResponse: Перенаправление или JSON-ответ.
     """
     record = get_object_or_404(EmployeeStatusRecord, pk=pk)
+
+    if is_leadership_viewer(request.user) or not can_edit_employee_statuses(request.user, record.employee):
+        err_msg = "У вас нет прав для удаления состояния данного сотрудника."
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'error': err_msg}, status=403)
+        messages.error(request, err_msg)
+        return redirect('flight_planning:employee_status_list')
     emp_name = record.employee.title or record.employee.username
     st_name = record.status_type.name
     record.delete()
@@ -3605,12 +3685,11 @@ def get_pilot_employee_statuses_api(request, pilot_id: int):
 
 
 @login_required
-@flight_planner_required
 def settings_view(request):
-    """Служебный раздел настроек модуля планирования полетов.
+    """Служебный раздел настроек модуля планирования полетов и управления доступом.
 
     Предоставляет интерфейс импорта данных из внешних систем (Excel/CSV/буфер обмена),
-    скачивания эталонных шаблонов и управления служебными справочниками.
+    скачивания эталонных шаблонов, управления справочниками и ролями ЛПК.
 
     Args:
         request (HttpRequest): Объект HTTP-запроса.
@@ -3618,19 +3697,115 @@ def settings_view(request):
     Returns:
         HttpResponse: Отрендеренная страница настроек модуля.
     """
+    can_roles = can_manage_lpc_access(request.user)
+    is_planner = is_flight_planner(request.user)
+
+    if not (can_roles or is_planner):
+        raise PermissionDenied("У вас нет полномочий для доступа к разделу настроек ЛПК.")
+
     total_checks_count = PeriodicCheckRecord.objects.count()
     total_check_types_count = PeriodicCheckType.objects.count()
     total_statuses_count = EmployeeStatusRecord.objects.count()
     total_users_count = DataBaseUser.objects.filter(is_active=True).count()
 
+    roles_summary = get_lpc_roles_summary() if can_roles else None
+    all_users = (
+        DataBaseUser.objects.filter(is_active=True)
+        .select_related('user_work_profile', 'user_work_profile__job')
+        .order_by('last_name', 'first_name')
+        if can_roles
+        else []
+    )
+
     context = {
-        'is_planner': is_flight_planner(request.user),
+        'is_planner': is_planner,
+        'can_manage_roles': can_roles,
+        'roles_summary': roles_summary,
+        'all_users': all_users,
         'total_checks_count': total_checks_count,
         'total_check_types_count': total_check_types_count,
         'total_statuses_count': total_statuses_count,
         'total_users_count': total_users_count,
     }
     return render(request, 'flight_planning/settings.html', context)
+
+
+@login_required
+@lpc_access_manager_required
+@require_http_methods(["POST"])
+def assign_lpc_role_api(request: HttpRequest) -> JsonResponse:
+    """API назначения сотрудника в ролевую группу Летно-производственного комплекса.
+
+    Доступно Руководству компании и администраторам системы.
+
+    Args:
+        request (HttpRequest): AJAX POST-запрос с параметрами user_id и group_name.
+
+    Returns:
+        JsonResponse: Статус операции и текстовое сообщение.
+    """
+    user_id_raw = request.POST.get('user_id')
+    group_name = request.POST.get('group_name', '').strip()
+
+    if not user_id_raw or not group_name:
+        return JsonResponse({'status': 'error', 'error': 'Не указан сотрудник или наименование роли.'}, status=400)
+
+    try:
+        user_id = int(user_id_raw)
+    except (ValueError, TypeError):
+        return JsonResponse({'status': 'error', 'error': 'Некорректный идентификатор сотрудника.'}, status=400)
+
+    success, message = add_user_to_lpc_role(user_id=user_id, group_name=group_name, operator=request.user)
+    if not success:
+        return JsonResponse({'status': 'error', 'error': message}, status=400)
+
+    summary = get_lpc_roles_summary()
+    target_role = next((r for r in summary.get('roles', []) if r['group_name'] == group_name), None)
+
+    return JsonResponse({
+        'status': 'success',
+        'message': message,
+        'role': target_role,
+    })
+
+
+@login_required
+@lpc_access_manager_required
+@require_http_methods(["POST"])
+def remove_lpc_role_api(request: HttpRequest) -> JsonResponse:
+    """API исключения сотрудника из ролевой группы Летно-производственного комплекса.
+
+    Доступно Руководству компании и администраторам системы.
+
+    Args:
+        request (HttpRequest): AJAX POST-запрос с параметрами user_id и group_name.
+
+    Returns:
+        JsonResponse: Статус операции и текстовое сообщение.
+    """
+    user_id_raw = request.POST.get('user_id')
+    group_name = request.POST.get('group_name', '').strip()
+
+    if not user_id_raw or not group_name:
+        return JsonResponse({'status': 'error', 'error': 'Не указан сотрудник или наименование роли.'}, status=400)
+
+    try:
+        user_id = int(user_id_raw)
+    except (ValueError, TypeError):
+        return JsonResponse({'status': 'error', 'error': 'Некорректный идентификатор сотрудника.'}, status=400)
+
+    success, message = remove_user_from_lpc_role(user_id=user_id, group_name=group_name, operator=request.user)
+    if not success:
+        return JsonResponse({'status': 'error', 'error': message}, status=400)
+
+    summary = get_lpc_roles_summary()
+    target_role = next((r for r in summary.get('roles', []) if r['group_name'] == group_name), None)
+
+    return JsonResponse({
+        'status': 'success',
+        'message': message,
+        'role': target_role,
+    })
 
 
 @login_required
