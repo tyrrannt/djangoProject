@@ -84,8 +84,25 @@
                     </h3>
                     <p class="text-muted small mb-0">Система добровольных сообщений по безопасности полетов и охране труда (СДС)</p>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'tickets_app:create' %}" class="btn btn-primary btn-touch font-weight-bold">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    {% if can_assign_curator %}
+                        <button type="button" class="btn btn-outline-primary btn-touch font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#curatorModal" title="Назначить сотрудника, ответственного за первичный разбор всех сообщений">
+                            <i class="bx bx-user-pin me-1 fs-5"></i>
+                            <span>Куратор СДС:</span>
+                            {% if curator %}
+                                <strong class="ms-1 text-dark">{{ curator|FIO_format|default:curator.username }}</strong>
+                            {% else %}
+                                <span class="badge bg-warning text-dark ms-1">Не назначен</span>
+                            {% endif %}
+                        </button>
+                    {% elif curator %}
+                        <div class="d-inline-flex align-items-center px-3 py-2 bg-light border rounded text-dark small">
+                            <i class="bx bx-user-pin text-primary me-1 fs-5"></i>
+                            <span>Куратор СДС: <strong>{{ curator|FIO_format|default:curator.username }}</strong></span>
+                        </div>
+                    {% endif %}
+
+                    <a href="{% url 'tickets_app:create' %}" class="btn btn-primary btn-touch font-weight-bold shadow-sm">
                         <i class="bx bx-plus me-1"></i> Подать сообщение
                     </a>
                 </div>
@@ -274,6 +291,60 @@
             </div>
         </div>
     </div>
+
+    {% if can_assign_curator %}
+        <!-- Модальное окно назначения куратора / диспетчера СДС -->
+        <div class="modal fade" id="curatorModal" tabindex="-1" aria-labelledby="curatorModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <form action="{% url 'tickets_app:set_curator' %}" method="post">
+                        {% csrf_token %}
+                        <div class="modal-header bg-light py-3 border-bottom">
+                            <h5 class="modal-title font-weight-bold text-dark" id="curatorModalLabel">
+                                <i class="bx bx-user-pin text-primary me-2"></i>Назначение куратора (диспетчера) СДС
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                        </div>
+                        <div class="modal-body p-3 p-md-4">
+                            <p class="text-muted small mb-3">
+                                Назначенный куратор наделяется полномочиями первичного разбора всех входящих добровольных сообщений, назначения ответственных исполнителей и контроля процесса параллельно с руководством компании.
+                            </p>
+
+                            <div class="mb-3">
+                                <label for="curator_id" class="form-label fw-bold text-dark">Выберите сотрудника из штата:</label>
+                                <select name="curator_id" id="curator_id" class="form-select form-select-lg">
+                                    <option value="">-- Не назначен (обрабатывает только руководство) --</option>
+                                    {% for staff_user in staff_users %}
+                                        <option value="{{ staff_user.pk }}" {% if curator and curator.pk == staff_user.pk %}selected{% endif %}>
+                                            {{ staff_user|FIO_format|default:staff_user.username }}
+                                            {% if staff_user.user_work_profile.job %}
+                                                &mdash; {{ staff_user.user_work_profile.job }}
+                                            {% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            {% if curator %}
+                                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center py-2 px-3 mb-0 small">
+                                    <i class="bx bx-info-circle me-2 fs-5"></i>
+                                    <div>
+                                        Текущий куратор: <strong>{{ curator|FIO_format|default:curator.username }}</strong>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="modal-footer bg-light py-2 border-top">
+                            <button type="button" class="btn btn-outline-secondary btn-touch" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary btn-touch font-weight-bold">
+                                <i class="bx bx-check me-1"></i> Сохранить назначение
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
     <!-- end: page -->
 {% endblock %}
 

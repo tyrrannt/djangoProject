@@ -17,9 +17,53 @@ from django.utils import timezone
 
 from customers_app.models import DataBaseUser
 from mailbox_app.services.email_service import UniversalEmailService
-from .models import Attachment, Message, Ticket, TicketStatus, validate_file_extension
+from .models import Attachment, Message, Ticket, TicketSettings, TicketStatus, validate_file_extension
 
 logger = logging.getLogger(__name__)
+
+
+def is_ticket_manager(user: Any) -> bool:
+    """Проверяет, обладает ли пользователь правами управления и разбора заявок СДС.
+
+    Менеджерскими правами обладают:
+    - Администраторы / суперпользователи (user.is_superuser);
+    - Члены системной группы 'Руководство';
+    - Персонально назначенный куратор/диспетчер СДС (TicketSettings.get_curator()).
+
+    Args:
+        user (Any): Экземпляр пользователя Django.
+
+    Returns:
+        bool: True, если пользователь наделен правами разбора заявок, иначе False.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(user, 'is_superuser', False):
+        return True
+    if user.groups.filter(name='Руководство').exists():
+        return True
+    curator = TicketSettings.get_curator()
+    if curator and curator.pk == user.pk:
+        return True
+    return False
+
+
+def can_manage_curator(user: Any) -> bool:
+    """Проверяет право пользователя назначать или изменять куратора СДС.
+
+    Назначать или снимать куратора имеют право только суперпользователи
+    и пользователи из группы 'Руководство'.
+
+    Args:
+        user (Any): Экземпляр пользователя Django.
+
+    Returns:
+        bool: True, если пользователь уполномочен назначать куратора, иначе False.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    return bool(getattr(user, 'is_superuser', False) or user.groups.filter(name='Руководство').exists())
+
 
 
 def send_ticket_notification_async(
@@ -72,10 +116,16 @@ def send_ticket_notification_async(
 
         if event_type == 'new':
             subject = f'Новое добровольное сообщение #{ticket.pk}: {ticket.title}'
-            leadership_users = DataBaseUser.objects.filter(
-                groups__name='Руководство',
-                is_active=True,
-            ).exclude(email='').values_list('email', flat=True)
+            leadership_users = list(
+                DataBaseUser.objects.filter(
+                    groups__name='Руководство',
+                    is_active=True,
+                ).exclude(email='').values_list('email', flat=True)
+            )
+            # Добавляем персонально назначенного куратора СДС
+            curator = TicketSettings.get_curator()
+            if curator and getattr(curator, 'is_active', False) and curator.email:
+                leadership_users.append(curator.email)
             recipients = list(set(leadership_users))
 
         elif event_type == 'assigned':

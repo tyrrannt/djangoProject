@@ -11,17 +11,25 @@ import logging
 from typing import Any, Dict
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count, Prefetch, Q
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from customers_app.models import DataBaseUser
 from .forms import MessageForm, TicketCreateForm, TicketUpdateForm
-from .models import Message, Ticket, TicketStatus
-from .services import save_ticket_attachments, send_ticket_notification_async
+from .models import Message, Ticket, TicketSettings, TicketStatus
+from .services import (
+    can_manage_curator,
+    is_ticket_manager,
+    save_ticket_attachments,
+    send_ticket_notification_async,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +39,7 @@ class TicketListView(LoginRequiredMixin, ListView):
 
     - Обычный заявитель видит только свои сообщения;
     - Назначенный специалист видит порученные ему заявки;
-    - Руководство и администраторы видят сквозной реестр компании с KPI-сводкой.
+    - Руководство, администраторы и назначенный куратор СДС видят сквозной реестр компании с KPI-сводкой.
     """
 
     model = Ticket
@@ -47,7 +55,7 @@ class TicketListView(LoginRequiredMixin, ListView):
             .order_by('-created_at')
         )
 
-        is_manager = user.is_superuser or user.groups.filter(name='Руководство').exists()
+        is_manager = is_ticket_manager(user)
         if is_manager:
             unassigned = self.request.GET.get('unassigned')
             if unassigned == '1':
@@ -60,10 +68,11 @@ class TicketListView(LoginRequiredMixin, ListView):
         return queryset.filter(Q(author=user) | Q(responsible=user)).distinct()
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
-        """Добавляет достоверные статистические KPI-метрики для руководства."""
+        """Добавляет достоверные статистические KPI-метрики для руководства и куратора."""
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        is_manager = user.is_superuser or user.groups.filter(name='Руководство').exists()
+        is_manager = is_ticket_manager(user)
+        can_assign = can_manage_curator(user)
 
         if is_manager:
             context['total_count'] = Ticket.objects.count()
@@ -92,6 +101,14 @@ class TicketListView(LoginRequiredMixin, ListView):
             ).count()
 
         context['is_manager'] = is_manager
+        context['curator'] = TicketSettings.get_curator()
+        context['can_assign_curator'] = can_assign
+        if can_assign:
+            context['staff_users'] = (
+                DataBaseUser.objects.filter(is_active=True, is_staff=True)
+                .select_related('user_work_profile__job')
+                .order_by('last_name', 'first_name')
+            )
         return context
 
 
@@ -105,7 +122,7 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         """Формирует выборку с предварительной загрузкой связанных сообщений и вложений."""
         user = self.request.user
-        is_manager = user.is_superuser or user.groups.filter(name='Руководство').exists()
+        is_manager = is_ticket_manager(user)
 
         messages_qs = (
             Message.objects.select_related('sender')
@@ -132,7 +149,7 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
         user = self.request.user
         ticket: Ticket = self.object
 
-        is_manager = user.is_superuser or user.groups.filter(name='Руководство').exists()
+        is_manager = is_ticket_manager(user)
         is_responsible = ticket.responsible == user
 
         # Служебные заметки скрываются от заявителя
@@ -148,6 +165,7 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
         context['is_responsible'] = is_responsible
         context['can_manage'] = is_manager
         context['can_edit'] = is_manager or (ticket.author == user and not ticket.is_closed_or_resolved)
+        context['curator'] = TicketSettings.get_curator()
         context['message_form'] = MessageForm()
         return context
 
@@ -198,7 +216,7 @@ class TicketUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         """Проверяет право пользователя на изменение параметров заявки."""
         ticket: Ticket = self.get_object()
         user = self.request.user
-        is_manager = user.groups.filter(name='Руководство').exists() or user.is_superuser
+        is_manager = is_ticket_manager(user)
         if not (is_manager or ticket.author == user):
             return False
         if ticket.is_closed_or_resolved and not is_manager:
@@ -210,6 +228,12 @@ class TicketUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
+
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Добавляет признак прав менеджера в контекст формы редактирования."""
+        context = super().get_context_data(**kwargs)
+        context['is_manager'] = is_ticket_manager(self.request.user)
+        return context
 
     def form_valid(self, form: TicketUpdateForm) -> HttpResponse:
         """Транзакционно сохраняет изменения статуса, фиксирует resolved_at и рассылает уведомления."""
@@ -261,7 +285,7 @@ def add_message_to_ticket(request: HttpRequest, pk: int) -> HttpResponse:
     """
     ticket = get_object_or_404(Ticket, pk=pk)
 
-    is_manager = request.user.groups.filter(name='Руководство').exists() or request.user.is_superuser
+    is_manager = is_ticket_manager(request.user)
     is_author = ticket.author == request.user
     is_responsible = ticket.responsible == request.user
 
@@ -322,3 +346,47 @@ def add_message_to_ticket(request: HttpRequest, pk: int) -> HttpResponse:
             messages.error(request, 'Ошибка при отправке сообщения. Проверьте формат файлов и текст.')
 
     return redirect('tickets_app:detail', pk=ticket.pk)
+
+
+@login_required
+@require_POST
+def set_ticket_curator(request: HttpRequest) -> HttpResponse:
+    """Назначает или сменяет уполномоченного куратора (диспетчера) СДС.
+
+    Доступно исключительно руководству компании и суперпользователям.
+    Сохраняет выбранного сотрудника в TicketSettings и фиксирует автора назначения.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса с POST-параметром curator_id.
+
+    Returns:
+        HttpResponse: Перенаправление обратно на реестр заявок.
+    """
+    if not can_manage_curator(request.user):
+        messages.error(request, 'У вас нет полномочий для назначения куратора СДС.')
+        return redirect('tickets_app:list')
+
+    curator_id = request.POST.get('curator_id', '').strip()
+    settings_obj = TicketSettings.get_settings()
+
+    if not curator_id:
+        settings_obj.curator = None
+        settings_obj.updated_by = request.user
+        settings_obj.save()
+        messages.warning(request, 'Куратор СДС снят. Заявки обрабатываются только руководством.')
+        return redirect('tickets_app:list')
+
+    try:
+        new_curator = DataBaseUser.objects.get(pk=curator_id, is_active=True, is_staff=True)
+        settings_obj.curator = new_curator
+        settings_obj.updated_by = request.user
+        settings_obj.save()
+        messages.success(
+            request,
+            f'Куратором (диспетчером) СДС успешно назначен: {new_curator.get_full_name() or new_curator.username}.',
+        )
+    except DataBaseUser.DoesNotExist:
+        messages.error(request, 'Указанный сотрудник не найден или не является активным штатным специалистом.')
+
+    return redirect('tickets_app:list')
+

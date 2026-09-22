@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 
 from administration_app.utils import make_custom_field
 from .models import Attachment, Message, Ticket, TicketStatus, validate_file_extension
+from .services import is_ticket_manager
 
 User = get_user_model()
 
@@ -165,9 +166,7 @@ class TicketUpdateForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        is_manager = False
-        if self.user:
-            is_manager = self.user.is_superuser or self.user.groups.filter(name='Руководство').exists()
+        is_manager = is_ticket_manager(self.user)
 
         if not is_manager:
             self.fields['responsible'].disabled = True
@@ -180,9 +179,7 @@ class TicketUpdateForm(forms.ModelForm):
 
     def clean_responsible(self) -> Optional[Any]:
         """Предотвращает подделку ответственного лица обычным пользователем."""
-        is_manager = False
-        if self.user:
-            is_manager = self.user.is_superuser or self.user.groups.filter(name='Руководство').exists()
+        is_manager = is_ticket_manager(self.user)
 
         if not is_manager and self.instance.pk:
             return self.instance.responsible
@@ -194,9 +191,7 @@ class TicketUpdateForm(forms.ModelForm):
 
     def clean_status(self) -> str:
         """Предотвращает несанкционированную смену статуса обычным пользователем."""
-        is_manager = False
-        if self.user:
-            is_manager = self.user.is_superuser or self.user.groups.filter(name='Руководство').exists()
+        is_manager = is_ticket_manager(self.user)
 
         if not is_manager and self.instance.pk:
             return self.instance.status

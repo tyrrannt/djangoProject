@@ -17,8 +17,13 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Attachment, Message, Ticket, TicketStatus, validate_file_extension
-from .services import save_ticket_attachments, send_ticket_notification_async
+from .models import Attachment, Message, Ticket, TicketSettings, TicketStatus, validate_file_extension
+from .services import (
+    can_manage_curator,
+    is_ticket_manager,
+    save_ticket_attachments,
+    send_ticket_notification_async,
+)
 
 User = get_user_model()
 
@@ -401,3 +406,155 @@ class TicketApiTestCase(TestCase):
         self.ticket.refresh_from_db()
         self.assertEqual(self.ticket.status, TicketStatus.RESOLVED)
         self.assertIsNotNone(self.ticket.resolved_at)
+
+
+class TicketCuratorTestCase(TestCase):
+    """Тестирование функционала назначения куратора СДС и его полномочий."""
+
+    def setUp(self):
+        self.leadership_group, _ = Group.objects.get_or_create(name='Руководство')
+
+        self.leader = User.objects.create_user(
+            username='boss_curator',
+            email='boss_curator@barkol.ru',
+            password='pass',
+            first_name='Руководитель',
+            last_name='Главный',
+        )
+        self.leader.groups.add(self.leadership_group)
+
+        self.curator_candidate = User.objects.create_user(
+            username='safety_dispatcher',
+            email='dispatcher@barkol.ru',
+            password='pass',
+            first_name='Сергей',
+            last_name='Диспетчеров',
+            is_staff=True,
+        )
+
+        self.specialist = User.objects.create_user(
+            username='engineer_resp',
+            email='engineer_resp@barkol.ru',
+            password='pass',
+            first_name='Михаил',
+            last_name='Инженеров',
+            is_staff=True,
+        )
+
+        self.author = User.objects.create_user(
+            username='pilot_author',
+            email='pilot_author@barkol.ru',
+            password='pass',
+            first_name='Алексей',
+            last_name='Летчиков',
+        )
+
+        self.ticket = Ticket.objects.create(
+            title='Дефект закрылка ВС',
+            description='Обнаружен люфт закрылка при предполетном осмотре',
+            author=self.author,
+            status=TicketStatus.NEW,
+        )
+
+    def test_can_manage_curator_permissions(self):
+        """Проверяет разграничение прав на назначение куратора."""
+        self.assertTrue(can_manage_curator(self.leader))
+        self.assertFalse(can_manage_curator(self.author))
+        self.assertFalse(can_manage_curator(self.curator_candidate))
+
+        super_user = User.objects.create_superuser(
+            username='super_admin',
+            email='super@barkol.ru',
+            password='pass',
+            first_name='Супер',
+            last_name='Админ',
+        )
+        self.assertTrue(can_manage_curator(super_user))
+
+    def test_set_ticket_curator_view(self):
+        """Проверяет назначение и снятие куратора через контроллер set_ticket_curator."""
+        self.client.force_login(self.leader)
+
+        # 1. Назначение куратора
+        resp = self.client.post(
+            reverse('tickets_app:set_curator'),
+            data={'curator_id': self.curator_candidate.pk},
+            follow=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(TicketSettings.get_curator(), self.curator_candidate)
+        self.assertTrue(is_ticket_manager(self.curator_candidate))
+
+        # 2. Обычный пользователь не может назначить куратора
+        self.client.force_login(self.author)
+        resp_forbidden = self.client.post(
+            reverse('tickets_app:set_curator'),
+            data={'curator_id': self.author.pk},
+            follow=True,
+        )
+        self.assertEqual(resp_forbidden.status_code, 200)
+        # Куратор не должен измениться
+        self.assertEqual(TicketSettings.get_curator(), self.curator_candidate)
+
+        # 3. Снятие куратора руководством
+        self.client.force_login(self.leader)
+        resp_clear = self.client.post(
+            reverse('tickets_app:set_curator'),
+            data={'curator_id': ''},
+            follow=True,
+        )
+        self.assertEqual(resp_clear.status_code, 200)
+        self.assertIsNone(TicketSettings.get_curator())
+        self.assertFalse(is_ticket_manager(self.curator_candidate))
+
+    @patch('mailbox_app.services.email_service.UniversalEmailService.send_async_email')
+    def test_curator_receives_email_on_new_ticket(self, mock_send):
+        """Проверяет включение куратора в рассылку при поступлении новой заявки."""
+        mock_send.return_value = True
+
+        # Назначаем куратора
+        settings_obj = TicketSettings.get_settings()
+        settings_obj.curator = self.curator_candidate
+        settings_obj.save()
+
+        send_ticket_notification_async(
+            event_type='new',
+            ticket=self.ticket,
+            actor=self.author,
+        )
+
+        self.assertTrue(mock_send.called)
+        _, kwargs = mock_send.call_args
+        recipients = kwargs.get('recipient_list', [])
+        self.assertIn(self.curator_candidate.email, recipients)
+        self.assertIn(self.leader.email, recipients)
+
+    def test_curator_can_assign_responsible_and_update_ticket(self):
+        """Проверяет полномочия назначенного куратора по редактированию и назначению ответственного."""
+        settings_obj = TicketSettings.get_settings()
+        settings_obj.curator = self.curator_candidate
+        settings_obj.save()
+
+        self.client.force_login(self.curator_candidate)
+
+        # Куратор открывает форму редактирования
+        resp = self.client.get(reverse('tickets_app:edit', kwargs={'pk': self.ticket.pk}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.context['is_manager'])
+
+        # Куратор назначает ответственного специалиста и переводит заявку в работу
+        resp_post = self.client.post(
+            reverse('tickets_app:edit', kwargs={'pk': self.ticket.pk}),
+            data={
+                'title': self.ticket.title,
+                'description': self.ticket.description,
+                'responsible': self.specialist.pk,
+                'status': TicketStatus.IN_PROGRESS,
+            },
+            follow=True,
+        )
+        self.assertEqual(resp_post.status_code, 200)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.responsible, self.specialist)
+        self.assertEqual(self.ticket.status, TicketStatus.IN_PROGRESS)
+

@@ -1504,6 +1504,11 @@ UNFOLD = {
                         "icon": "attach_file",
                         "link": reverse_lazy("admin:tickets_app_attachment_changelist"),
                     },
+                    {
+                        "title": _("Настройки СДС"),
+                        "icon": "manage_accounts",
+                        "link": reverse_lazy("admin:tickets_app_ticketsettings_changelist"),
+                    },
                 ],
             },
 
@@ -1794,6 +1799,7 @@ UNFOLD = {
                 "tickets_app.ticket",
                 "tickets_app.message",
                 "tickets_app.attachment",
+                "tickets_app.ticketsettings",
                 # Library
                 "library_app.companyevent",
                 "library_app.hashtag",

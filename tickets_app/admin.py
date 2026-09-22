@@ -11,7 +11,7 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
 
-from .models import Attachment, Message, Ticket, TicketStatus
+from .models import Attachment, Message, Ticket, TicketSettings, TicketStatus
 
 
 class MessageInline(TabularInline):
@@ -127,3 +127,36 @@ class AttachmentAdmin(ModelAdmin):
         return '—'
 
     file_link.short_description = 'Файл'
+
+
+@admin.register(TicketSettings)
+class TicketSettingsAdmin(ModelAdmin):
+    """Панель глобальных настроек модуля заявок и куратора СДС в Django Unfold."""
+
+    list_display = ['id', 'curator_name', 'updated_at', 'updated_by']
+    autocomplete_fields = ['curator']
+    readonly_fields = ['updated_at', 'updated_by']
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description='Куратор СДС')
+    def curator_name(self, obj: TicketSettings) -> str:
+        """Отображает полное имя назначенного куратора."""
+        if obj.curator:
+            return obj.curator.get_full_name() or obj.curator.username
+        return 'Не назначен'
+
+    def save_model(self, request: Any, obj: TicketSettings, form: Any, change: bool) -> None:
+        """Фиксирует автора назначения настроек."""
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+    def has_add_permission(self, request: Any) -> bool:
+        """Разрешает создание только одной записи настроек (Singleton)."""
+        if TicketSettings.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+    def has_delete_permission(self, request: Any, obj: Any = None) -> bool:
+        """Запрещает удаление глобальных настроек модуля."""
+        return False

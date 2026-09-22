@@ -254,3 +254,73 @@ class Attachment(models.Model):
         """Валидирует обязательную привязку файла к сообщению или заявке."""
         if not self.message and not self.ticket:
             raise ValidationError('Файл должен быть привязан к сообщению или заявке.')
+
+
+class TicketSettings(models.Model):
+    """Глобальные настройки системы добровольных сообщений и заявок (Singleton).
+
+    Позволяет руководству компании и администраторам назначать уполномоченного
+    сотрудника-куратора (диспетчера СДС), который наделяется правами первичного разбора
+    всех сообщений, назначения ответственных и контроля процесса параллельно с руководством.
+
+    Attributes:
+        curator (ForeignKey): Назначенный сотрудник-куратор СДС (из штата).
+        updated_at (DateTimeField): Дата и время последнего обновления настроек.
+        updated_by (ForeignKey): Пользователь, выполнивший последнее назначение.
+    """
+
+    class Meta:
+        verbose_name = 'Настройки СДС'
+        verbose_name_plural = 'Настройки СДС'
+
+    curator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Куратор заявок (Диспетчер СДС)',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='curated_ticket_settings',
+        limit_choices_to={'is_staff': True},
+        help_text='Сотрудник, уполномоченный разбирать новые заявки и назначать ответственных специалистов.',
+    )
+    updated_at = models.DateTimeField(
+        verbose_name='Дата обновления',
+        auto_now=True,
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Кто назначил',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление настроек с именем куратора."""
+        curator_title = self.curator.get_full_name() if self.curator else 'Не назначен'
+        return f"Настройки СДС (Куратор: {curator_title})"
+
+    @classmethod
+    def get_settings(cls) -> 'TicketSettings':
+        """Возвращает или создает экземпляр настроек (Singleton).
+
+        Returns:
+            TicketSettings: Единственный экземпляр настроек модуля СДС.
+        """
+        instance = cls.objects.first()
+        if not instance:
+            instance = cls.objects.create()
+        return instance
+
+    @classmethod
+    def get_curator(cls) -> Optional[Any]:
+        """Возвращает текущего назначенного активного куратора СДС.
+
+        Returns:
+            Optional[DataBaseUser]: Активный пользователь-куратор или None.
+        """
+        settings_obj = cls.objects.select_related('curator').first()
+        if settings_obj and settings_obj.curator and getattr(settings_obj.curator, 'is_active', False):
+            return settings_obj.curator
+        return None

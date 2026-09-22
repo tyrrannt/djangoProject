@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from rest_framework import serializers
 
 from .models import Attachment, Message, Ticket, TicketStatus
+from .services import is_ticket_manager
 
 
 class AttachmentSerializer(serializers.ModelSerializer):
@@ -101,15 +102,12 @@ class TicketSerializer(serializers.ModelSerializer):
         read_only_fields = ['status', 'created_at', 'updated_at', 'resolved_at']
 
     def get_messages(self, obj: Ticket) -> List[Dict[str, Any]]:
-        """Фильтрует внутренние заметки руководства от обычных заявителей."""
+        """Фильтрует внутренние заметки руководства и куратора от обычных заявителей."""
         request = self.context.get('request')
         user = request.user if request and request.user.is_authenticated else None
 
-        is_manager = False
-        is_responsible = False
-        if user:
-            is_manager = user.is_superuser or user.groups.filter(name='Руководство').exists()
-            is_responsible = obj.responsible == user
+        is_manager = is_ticket_manager(user)
+        is_responsible = user is not None and obj.responsible == user
 
         all_msgs = obj.messages.select_related('sender').prefetch_related('attachments').order_by('created_at')
         if not is_manager and not is_responsible:
@@ -149,7 +147,7 @@ class TicketSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         user = request.user
-        return user.is_superuser or user.groups.filter(name='Руководство').exists() or obj.responsible == user
+        return is_ticket_manager(user) or obj.responsible == user
 
     def validate_parent_ticket(self, value: Optional[Ticket]) -> Optional[Ticket]:
         """Валидирует право на повторное обжалование заявки."""

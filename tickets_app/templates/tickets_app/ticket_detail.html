@@ -418,6 +418,16 @@
                                 </div>
                             </div>
 
+                            {% if curator %}
+                                <div class="attr-box">
+                                    <div class="attr-label">Куратор СДС</div>
+                                    <div class="fw-bold text-dark">
+                                        <i class="bx bx-user-pin text-primary me-1"></i>
+                                        {{ curator|FIO_format|default:curator.username }}
+                                    </div>
+                                </div>
+                            {% endif %}
+
                             <div class="attr-box">
                                 <div class="attr-label">Дата регистрации</div>
                                 <div class="fw-bold font-monospace text-dark">{{ ticket.created_at|date:"d.m.Y H:i" }}</div>

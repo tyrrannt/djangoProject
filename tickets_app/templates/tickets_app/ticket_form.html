@@ -156,7 +156,7 @@
 
                         <!-- Management Fields (Only when editing and user has management rights) -->
                         {% if form.instance.pk and form.responsible %}
-                            {% if request.user|has_group:'Руководство' or request.user.is_superuser %}
+                            {% if is_manager or request.user|has_group:'Руководство' or request.user.is_superuser %}
                                 <div class="management-box mb-3">
                                     <div class="row g-3">
                                         <div class="col-12 col-md-6">
