@@ -130,6 +130,10 @@ TEMPLATES = [
                 "administration_app.context_processors.device_context",
                 # "administration_app.context_processors.get_qrcode",
             ],
+            "libraries": {
+                "planning_extras": "flight_planning.templatetags.planning_extras",
+                "custom": "contracts_app.templatetags.custom",
+            },
         },
     },
 ]

@@ -598,6 +598,44 @@ def filter_is_flight_planner(user) -> bool:
         return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name="Планирование полетов").exists()))
 
 
+@register.simple_tag(name="can_edit_target_checks")
+@register.filter(name="can_edit_target_checks")
+def can_edit_target_checks(user, target_employee) -> bool:
+    """Шаблонный тег и фильтр для проверки права редактирования допусков конкретного сотрудника с учетом division_affiliation.
+
+    Args:
+        user: Текущий пользователь (request.user).
+        target_employee: Целевой сотрудник, запись о котором проверяется.
+
+    Returns:
+        bool: True, если редактирование разрешено.
+    """
+    try:
+        from flight_planning.permissions import can_edit_checks_for_employee
+        return can_edit_checks_for_employee(user, target_employee)
+    except Exception:
+        return False
+
+
+@register.simple_tag(name="can_edit_target_status")
+@register.filter(name="can_edit_target_status")
+def can_edit_target_status(user, target_employee) -> bool:
+    """Шаблонный тег и фильтр для проверки права редактирования состояний конкретного сотрудника с учетом division_affiliation.
+
+    Args:
+        user: Текущий пользователь (request.user).
+        target_employee: Целевой сотрудник, запись о котором проверяется.
+
+    Returns:
+        bool: True, если редактирование разрешено.
+    """
+    try:
+        from flight_planning.permissions import can_edit_employee_statuses
+        return can_edit_employee_statuses(user, target_employee)
+    except Exception:
+        return False
+
+
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)
 register.filter("empty_item", empty_item)

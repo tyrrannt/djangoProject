@@ -157,12 +157,101 @@ def filter_short_job(job_name, mode: str = 'standard') -> str:
         return str(job_name or "")
 
 
+@register.filter(name="can_edit_flight_crews")
+def filter_can_edit_flight_crews(user) -> bool:
+    """Шаблонный фильтр для проверки прав редактирования шахматки экипажей."""
+    try:
+        from flight_planning.permissions import can_manage_flight_crews
+        return can_manage_flight_crews(user)
+    except Exception:
+        return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name__in=["[ЛПК] Диспетчеры планирования", "Планирование полетов"]).exists()))
+
+
+@register.filter(name="can_edit_aircraft_movements")
+def filter_can_edit_aircraft_movements(user) -> bool:
+    """Шаблонный фильтр для проверки прав редактирования журнала перемещений ВС (ИАС)."""
+    try:
+        from flight_planning.permissions import can_edit_aircraft_movements
+        return can_edit_aircraft_movements(user)
+    except Exception:
+        return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name__in=["[ЛПК] Инженерная служба (ИАС)", "[ЛПК] Диспетчеры планирования", "Планирование полетов"]).exists()))
+
+
+@register.filter(name="can_approve_flight_planning")
+def filter_can_approve_flight_planning(user) -> bool:
+    """Шаблонный фильтр для проверки прав утверждения плана расстановки экипажей."""
+    try:
+        from flight_planning.permissions import can_approve_flight_planning
+        return can_approve_flight_planning(user)
+    except Exception:
+        return bool(user and user.is_authenticated and (user.is_superuser or user.groups.filter(name__in=["[ЛПК] Руководство", "Руководство", "Руководство полетов"]).exists()))
+
+
+@register.filter(name="is_leadership_viewer")
+def filter_is_leadership_viewer(user) -> bool:
+    """Шаблонный фильтр для проверки, находится ли пользователь в статусе руководства (только просмотр)."""
+    try:
+        from flight_planning.permissions import is_leadership_viewer
+        return is_leadership_viewer(user)
+    except Exception:
+        return False
+
+
+@register.filter(name="can_manage_lpc_access")
+def filter_can_manage_lpc_access(user) -> bool:
+    """Шаблонный фильтр для проверки прав настройки ролей ЛПК."""
+    try:
+        from flight_planning.permissions import can_manage_lpc_access
+        return can_manage_lpc_access(user)
+    except Exception:
+        return bool(user and user.is_authenticated and user.is_superuser)
+
+
+@register.simple_tag(name="can_edit_target_checks")
+@register.filter(name="can_edit_target_checks")
+def can_edit_target_checks(user, target_employee) -> bool:
+    """Шаблонный тег и фильтр для проверки права редактирования допусков конкретного сотрудника с учетом division_affiliation.
+
+    Args:
+        user: Текущий пользователь (request.user).
+        target_employee: Целевой сотрудник, запись о котором проверяется.
+
+    Returns:
+        bool: True, если редактирование разрешено.
+    """
+    try:
+        from flight_planning.permissions import can_edit_checks_for_employee
+        return can_edit_checks_for_employee(user, target_employee)
+    except Exception:
+        return False
+
+
+@register.simple_tag(name="can_edit_target_status")
+@register.filter(name="can_edit_target_status")
+def can_edit_target_status(user, target_employee) -> bool:
+    """Шаблонный тег и фильтр для проверки права редактирования состояний конкретного сотрудника с учетом division_affiliation.
+
+    Args:
+        user: Текущий пользователь (request.user).
+        target_employee: Целевой сотрудник, запись о котором проверяется.
+
+    Returns:
+        bool: True, если редактирование разрешено.
+    """
+    try:
+        from flight_planning.permissions import can_edit_employee_statuses
+        return can_edit_employee_statuses(user, target_employee)
+    except Exception:
+        return False
+
+
 # Реэкспорт фильтра FIO_format для удобного использования во всех шаблонах планирования
 try:
     from contracts_app.templatetags.custom import FIO_format
     register.filter("FIO_format", FIO_format)
 except Exception:
     pass
+
 
 
 

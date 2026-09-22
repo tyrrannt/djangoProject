@@ -411,7 +411,7 @@
                                     <td class="text-muted small d-none d-lg-table-cell">{{ r.notes|truncatechars:40|default:"—" }}</td>
                                     {% if can_edit_statuses %}
                                         <td class="text-end text-nowrap">
-                                            {% can_edit_target_checks request.user r.employee as can_edit_emp %}
+                                            {% can_edit_target_status request.user r.employee as can_edit_emp %}
                                             {% if can_edit_emp %}
                                             <a href="{% url 'flight_planning:employee_status_update' r.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2 btn-touch" title="Редактировать" aria-label="Редактировать">
                                                 <i class='bx bx-edit-alt'></i>
