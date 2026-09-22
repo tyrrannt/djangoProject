@@ -145,9 +145,8 @@ class PeriodicCheckRecordForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Сотрудники (фильтрация по разрешенным должностям и принадлежности пользователя)
-        emp_qs = get_allowed_staff_queryset(user=user)
-        if self.instance.pk and getattr(self.instance, 'employee_id', None):
-            emp_qs = (emp_qs | DataBaseUser.objects.filter(pk=self.instance.employee_id)).distinct().order_by('last_name', 'first_name')
+        emp_id = self.instance.employee_id if (self.instance.pk and getattr(self.instance, 'employee_id', None)) else None
+        emp_qs = get_allowed_staff_queryset(user=user, extra_user_id=emp_id)
 
         self.fields['employee'].queryset = emp_qs
         self.fields['employee'].label = "Сотрудник"
@@ -271,9 +270,8 @@ class EmployeeStatusRecordForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        emp_qs = get_allowed_staff_queryset(user=user)
-        if self.instance.pk and getattr(self.instance, 'employee_id', None):
-            emp_qs = (emp_qs | DataBaseUser.objects.filter(pk=self.instance.employee_id)).distinct().order_by('last_name', 'first_name')
+        emp_id = self.instance.employee_id if (self.instance.pk and getattr(self.instance, 'employee_id', None)) else None
+        emp_qs = get_allowed_staff_queryset(user=user, extra_user_id=emp_id)
 
         self.fields['employee'].queryset = emp_qs
         self.fields['employee'].label_from_instance = lambda u: (

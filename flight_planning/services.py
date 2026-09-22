@@ -2089,14 +2089,21 @@ def get_user_personnel_scope(user) -> str:
     return '0'
 
 
-def get_allowed_staff_queryset(user=None, target_scope: Optional[str] = None):
+def get_allowed_staff_queryset(
+    user=None,
+    target_scope: Optional[str] = None,
+    extra_user_id: Optional[int] = None
+):
     """Возвращает QuerySet активных сотрудников из разрешенного списка должностей в зависимости от прав доступа.
 
     Фильтрует сотрудников с учетом division_affiliation должности (Летный / Инженерный / Общий состав).
+    При передаче extra_user_id гарантирует включение указанного сотрудника (например, при редактировании существующей записи),
+    исключая несовместимость QuerySet и ошибку "Cannot combine a unique query with a non-unique query".
 
     Args:
         user (Optional[DataBaseUser]): Текущий пользователь системы для фильтрации по правам доступа.
         target_scope (Optional[str]): Явный код категории ('0', '1', '2'), переопределяющий автоматический scope.
+        extra_user_id (Optional[int]): Первичный ключ сотрудника для обязательного включения в выборку.
 
     Returns:
         QuerySet[DataBaseUser]: Отфильтрованный список сотрудников с предзагрузкой профилей и должностей.
@@ -2130,10 +2137,15 @@ def get_allowed_staff_queryset(user=None, target_scope: Optional[str] = None):
             | Q(user_work_profile__job__name__in=ALL_STAFF_JOB_NAMES)
         )
 
+    base_filter = Q(is_active=True, user_work_profile__isnull=False) & q_filter
+    if extra_user_id:
+        final_filter = base_filter | Q(pk=extra_user_id)
+    else:
+        final_filter = base_filter
+
     return DataBaseUser.objects.filter(
-        is_active=True,
-        user_work_profile__isnull=False
-    ).filter(q_filter).select_related(
+        final_filter
+    ).select_related(
         'user_work_profile',
         'user_work_profile__job',
         'user_work_profile__job__division_affiliation'
