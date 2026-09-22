@@ -105,7 +105,7 @@ class TicketListView(LoginRequiredMixin, ListView):
         context['can_assign_curator'] = can_assign
         if can_assign:
             context['staff_users'] = (
-                DataBaseUser.objects.filter(is_active=True, is_staff=True)
+                DataBaseUser.objects.filter(is_active=True)
                 .select_related('user_work_profile__job')
                 .order_by('last_name', 'first_name')
             )
@@ -377,7 +377,7 @@ def set_ticket_curator(request: HttpRequest) -> HttpResponse:
         return redirect('tickets_app:list')
 
     try:
-        new_curator = DataBaseUser.objects.get(pk=curator_id, is_active=True, is_staff=True)
+        new_curator = DataBaseUser.objects.get(pk=curator_id, is_active=True)
         settings_obj.curator = new_curator
         settings_obj.updated_by = request.user
         settings_obj.save()
@@ -386,7 +386,7 @@ def set_ticket_curator(request: HttpRequest) -> HttpResponse:
             f'Куратором (диспетчером) СДС успешно назначен: {new_curator.get_full_name() or new_curator.username}.',
         )
     except DataBaseUser.DoesNotExist:
-        messages.error(request, 'Указанный сотрудник не найден или не является активным штатным специалистом.')
+        messages.error(request, 'Указанный сотрудник не найден или заблокирован.')
 
     return redirect('tickets_app:list')
 

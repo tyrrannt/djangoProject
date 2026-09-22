@@ -112,7 +112,7 @@ class Ticket(models.Model):
         null=True,
         blank=True,
         related_name='responsible_tickets',
-        limit_choices_to={'is_staff': True},
+        limit_choices_to={'is_active': True},
     )
     status = models.CharField(
         verbose_name='Статус',
@@ -280,7 +280,7 @@ class TicketSettings(models.Model):
         null=True,
         blank=True,
         related_name='curated_ticket_settings',
-        limit_choices_to={'is_staff': True},
+        limit_choices_to={'is_active': True},
         help_text='Сотрудник, уполномоченный разбирать новые заявки и назначать ответственных специалистов.',
     )
     updated_at = models.DateTimeField(

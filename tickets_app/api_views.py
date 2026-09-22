@@ -161,10 +161,10 @@ class TicketViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Параметр responsible обязателен.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            resp_user = DataBaseUser.objects.get(pk=resp_id, is_active=True, is_staff=True)
+            resp_user = DataBaseUser.objects.get(pk=resp_id, is_active=True)
         except DataBaseUser.DoesNotExist:
             return Response(
-                {'error': 'Сотрудник не найден или не является активным штатным пользователем.'},
+                {'error': 'Сотрудник не найден или заблокирован.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
