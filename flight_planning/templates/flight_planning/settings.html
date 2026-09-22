@@ -995,6 +995,7 @@
                 </div>
                 <div class="modal-body p-4">
                     <form id="assignRoleForm">
+                        {% csrf_token %}
                         <input type="hidden" id="assignRoleGroupName" name="group_name" value="">
                         <input type="hidden" id="assignRoleCode" name="role_code" value="">
 
@@ -1373,6 +1374,18 @@
         // =====================================================================
         // УПРАВЛЕНИЕ РОЛЯМИ ЛПК (AJAX НАЗНАЧЕНИЕ И ИСКЛЮЧЕНИЕ СОТРУДНИКОВ)
         // =====================================================================
+        function getCsrfToken() {
+            const input = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (input && input.value) return input.value;
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+            if (cookieValue) return decodeURIComponent(cookieValue);
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') : '';
+        }
+
         const assignRoleModalEl = document.getElementById('assignRoleModal');
         let assignRoleModal = null;
         if (assignRoleModalEl && typeof bootstrap !== 'undefined') {
@@ -1443,50 +1456,62 @@
                 btnSubmitAssignRole.disabled = true;
                 btnSubmitAssignRole.innerHTML = "<span class='spinner-border spinner-border-sm me-1' role='status' aria-hidden='true'></span> Назначение...";
 
-                const formData = new FormData();
-                formData.append('user_id', userId);
-                formData.append('group_name', groupName);
+                try {
+                    const csrfToken = getCsrfToken();
+                    const formData = new FormData();
+                    formData.append('user_id', userId);
+                    formData.append('group_name', groupName);
+                    if (csrfToken) {
+                        formData.append('csrfmiddlewaretoken', csrfToken);
+                    }
 
-                const csrfToken = getCsrfToken();
+                    fetch('{% url "flight_planning:assign_lpc_role_api" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+                    .then(({ status, body }) => {
+                        btnSubmitAssignRole.disabled = false;
+                        btnSubmitAssignRole.innerHTML = "<i class='bx bx-check-circle me-1'></i> Назначить";
 
-                fetch('{% url "flight_planning:assign_lpc_role_api" %}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                })
-                .then(res => res.json().then(data => ({ status: res.status, body: data })))
-                .then(({ status, body }) => {
-                    btnSubmitAssignRole.disabled = false;
-                    btnSubmitAssignRole.innerHTML = "<i class='bx bx-check-circle me-1'></i> Назначить";
+                        if (status !== 200 || body.status === 'error') {
+                            if (assignRoleAlert && assignRoleAlertText) {
+                                assignRoleAlertText.textContent = body.error || body.message || 'Ошибка назначения роли.';
+                                assignRoleAlert.style.setProperty('display', 'flex', 'important');
+                            }
+                            return;
+                        }
 
-                    if (status !== 200 || body.status === 'error') {
+                        if (assignRoleModal) assignRoleModal.hide();
+                        if (window.toastr) {
+                            toastr.success(body.message || 'Сотрудник успешно назначен в роль.');
+                        }
+
+                        // Перезагружаем вкладку для гарантированной синхронизации интерфейса
+                        window.location.hash = '#access';
+                        window.location.reload();
+                    })
+                    .catch(err => {
+                        btnSubmitAssignRole.disabled = false;
+                        btnSubmitAssignRole.innerHTML = "<i class='bx bx-check-circle me-1'></i> Назначить";
                         if (assignRoleAlert && assignRoleAlertText) {
-                            assignRoleAlertText.textContent = body.error || body.message || 'Ошибка назначения роли.';
+                            assignRoleAlertText.textContent = 'Сетевая ошибка при назначении роли: ' + err.message;
                             assignRoleAlert.style.setProperty('display', 'flex', 'important');
                         }
-                        return;
-                    }
-
-                    if (assignRoleModal) assignRoleModal.hide();
-                    if (window.toastr) {
-                        toastr.success(body.message || 'Сотрудник успешно назначен в роль.');
-                    }
-
-                    // Перезагружаем вкладку для гарантированной синхронизации интерфейса
-                    window.location.hash = '#access';
-                    window.location.reload();
-                })
-                .catch(err => {
+                    });
+                } catch (err) {
+                    console.error('Ошибка подготовки запроса назначения роли:', err);
                     btnSubmitAssignRole.disabled = false;
                     btnSubmitAssignRole.innerHTML = "<i class='bx bx-check-circle me-1'></i> Назначить";
                     if (assignRoleAlert && assignRoleAlertText) {
-                        assignRoleAlertText.textContent = 'Сетевая ошибка при назначении роли: ' + err.message;
+                        assignRoleAlertText.textContent = 'Произошла ошибка при отправке запроса: ' + err.message;
                         assignRoleAlert.style.setProperty('display', 'flex', 'important');
                     }
-                });
+                }
             });
         }
 
@@ -1503,44 +1528,54 @@
                 return;
             }
 
+            const originalBtnHtml = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span>";
 
-            const formData = new FormData();
-            formData.append('user_id', userId);
-            formData.append('group_name', groupName);
+            try {
+                const csrfToken = getCsrfToken();
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                formData.append('group_name', groupName);
+                if (csrfToken) {
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+                }
 
-            const csrfToken = getCsrfToken();
+                fetch('{% url "flight_planning:remove_lpc_role_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(res => res.json().then(data => ({ status: res.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status !== 200 || body.status === 'error') {
+                        alert(body.error || body.message || 'Ошибка исключения сотрудника из роли.');
+                        btn.disabled = false;
+                        btn.innerHTML = originalBtnHtml;
+                        return;
+                    }
 
-            fetch('{% url "flight_planning:remove_lpc_role_api" %}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            })
-            .then(res => res.json().then(data => ({ status: res.status, body: data })))
-            .then(({ status, body }) => {
-                if (status !== 200 || body.status === 'error') {
-                    alert(body.error || body.message || 'Ошибка исключения сотрудника из роли.');
+                    if (window.toastr) {
+                        toastr.success(body.message || 'Сотрудник успешно исключен из роли.');
+                    }
+
+                    window.location.hash = '#access';
+                    window.location.reload();
+                })
+                .catch(err => {
+                    alert('Сетевая ошибка: ' + err.message);
                     btn.disabled = false;
-                    btn.innerHTML = "<i class='bx bx-x fs-5'></i>";
-                    return;
-                }
-
-                if (window.toastr) {
-                    toastr.success(body.message || 'Сотрудник успешно исключен из роли.');
-                }
-
-                window.location.hash = '#access';
-                window.location.reload();
-            })
-            .catch(err => {
-                alert('Сетевая ошибка: ' + err.message);
+                    btn.innerHTML = originalBtnHtml;
+                });
+            } catch (err) {
+                console.error('Ошибка подготовки запроса исключения из роли:', err);
+                alert('Произошла ошибка: ' + err.message);
                 btn.disabled = false;
-                btn.innerHTML = "<i class='bx bx-x fs-5'></i>";
-            });
+                btn.innerHTML = originalBtnHtml;
+            }
         });
     });
 })();
