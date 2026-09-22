@@ -158,31 +158,78 @@ class TypePropertysUpdateForm(forms.ModelForm):
 
 
 class EstateAddForm(forms.ModelForm):
+    """Форма добавления нового объекта имущества / воздушного судна.
+
+    Настраивает поля даты (дата выпуска, дата вывода из эксплуатации) с поддержкой
+    ручного ввода в формате ДД.ММ.ГГГГ и интерактивного выбора через Bootstrap Datepicker.
+    """
+
     class Meta:
         model = Estate
         fields = '__all__'
         widgets = {
-            'release_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'decommission_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'release_date': forms.DateInput(
+                format='%d.%m.%Y',
+                attrs={
+                    'type': 'text',
+                    'class': 'form-control form-control-modern',
+                    'autocomplete': 'off',
+                    'placeholder': 'ДД.ММ.ГГГГ',
+                }
+            ),
+            'decommission_date': forms.DateInput(
+                format='%d.%m.%Y',
+                attrs={
+                    'type': 'text',
+                    'class': 'form-control form-control-modern',
+                    'autocomplete': 'off',
+                    'placeholder': 'ДД.ММ.ГГГГ',
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
+        """Инициализирует форму и стилизует поля через make_custom_field."""
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             make_custom_field(field)
 
 
 class EstateUpdateForm(forms.ModelForm):
+    """Форма редактирования параметров объекта имущества / воздушного судна.
+
+    Обеспечивает корректное отображение существующих дат выпуска и вывода из эксплуатации
+    в формате ДД.ММ.ГГГГ, а также возможность их редактирования и очистки.
+    """
+
     class Meta:
         model = Estate
         fields = '__all__'
         widgets = {
-            'release_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'decommission_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'release_date': forms.DateInput(
+                format='%d.%m.%Y',
+                attrs={
+                    'type': 'text',
+                    'class': 'form-control form-control-modern',
+                    'autocomplete': 'off',
+                    'placeholder': 'ДД.ММ.ГГГГ',
+                }
+            ),
+            'decommission_date': forms.DateInput(
+                format='%d.%m.%Y',
+                attrs={
+                    'type': 'text',
+                    'class': 'form-control form-control-modern',
+                    'autocomplete': 'off',
+                    'placeholder': 'ДД.ММ.ГГГГ',
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
+        """Инициализирует форму и стилизует поля через make_custom_field."""
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             make_custom_field(field)
+
 

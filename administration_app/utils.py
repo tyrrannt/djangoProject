@@ -1147,12 +1147,21 @@ def change_password():
 #         return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-fileinput": True})
 
 
-def make_custom_field(f: forms.Field):
-    """
-    Настраивает атрибуты виджетов форм Django для интеграции с JS-плагинами (Select2, Multiselect и др.).
-    Порядок в списке field_mapping критически важен из-за иерархии наследования классов Django.
-    """
+def make_custom_field(f: forms.Field) -> forms.Field:
+    """Настраивает атрибуты виджетов форм Django для интеграции с UI/JS-плагинами.
 
+    Конфигурирует классы стилизации (Bootstrap/Porto), атрибуты для Select2,
+    MultiSelect, Bootstrap Datepicker/Datetimepicker и переключателей iOS Switch.
+    Порядок в списке field_mapping критически важен из-за иерархии наследования классов Django.
+    Для полей даты DateField принудительно задается тип 'text' во избежание конфликта
+    между HTML5 native date picker и jQuery Bootstrap Datepicker с форматом 'dd.mm.yyyy'.
+
+    Args:
+        f (forms.Field): Поле формы Django, подлежащее стилизации.
+
+    Returns:
+        forms.Field: Исходный объект поля с обновленными атрибутами виджета.
+    """
     field_mapping = [
         (forms.MultipleChoiceField, {
             "class": "form-control form-control-modern",
@@ -1175,15 +1184,15 @@ def make_custom_field(f: forms.Field):
         (forms.DateField, {
             "class": "form-control form-control-modern",
             "data-plugin-datepicker": "true",
-            "type": "date",
+            "type": "text",
             "autocomplete": "off",
             "data-date-language": "ru",
-            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "todayBtn": true, "clearBtn": true}',
+            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "todayBtn": true, "clearBtn": true, "autoclose": true}',
         }),
         (forms.DateTimeField, {
             "class": "form-control form-control-modern",
             "data-plugin-datetimepicker": "true",
-            "type": "datetime-local",  # HTML5 тип для даты+времени
+            "type": "text",
             "autocomplete": "off",
             "data-date-language": "ru",
             "data-plugin-options": '{"format": "dd.mm.yyyy hh:ii", "autoclose": true, "todayBtn": true, "minuteStep": 1}',
@@ -1214,6 +1223,10 @@ def make_custom_field(f: forms.Field):
         if isinstance(f, field_type):
             # Обновляем атрибуты
             f.widget.attrs.update(attrs)
+
+            if isinstance(f, forms.DateField):
+                if hasattr(f.widget, 'format') and not f.widget.format:
+                    f.widget.format = '%d.%m.%Y'
 
             if isinstance(f, forms.ModelMultipleChoiceField):
                 if 'size' in f.widget.attrs:
