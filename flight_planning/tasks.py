@@ -89,6 +89,8 @@ def sync_mpd_weather_task(
     mpd_id: int,
     mode: str = "all",
     force_model: Optional[str] = None,
+    *args: Any,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Фоновая задача оперативного комплексного обновления погоды для конкретного МПД.
 
@@ -100,6 +102,8 @@ def sync_mpd_weather_task(
         mpd_id (int): Идентификатор места производственной деятельности.
         mode (str, optional): Режим синхронизации ('metar', 'coordinate', 'all'). Defaults to 'all'.
         force_model (Optional[str], optional): Принудительная модель (ecmwf_ifs, gfs_seamless). Defaults to None.
+        *args: Дополнительные позиционные аргументы для обратной совместимости.
+        **kwargs: Дополнительные именованные аргументы для обратной совместимости.
 
     Returns:
         Dict[str, Any]: Информативный результат с массивом хронологических логов и статистикой.
@@ -107,8 +111,21 @@ def sync_mpd_weather_task(
     from django.utils import timezone
     from .weather_services import AviationWeatherService
 
+    # Безопасное извлечение параметров при вызове с любой комбинацией args/kwargs
+    if "mode" in kwargs and kwargs["mode"]:
+        mode = str(kwargs["mode"])
+    elif len(args) >= 1 and args[0]:
+        mode = str(args[0])
+
+    if "force_model" in kwargs and kwargs["force_model"]:
+        force_model = str(kwargs["force_model"])
+    elif "model" in kwargs and kwargs["model"]:
+        force_model = str(kwargs["model"])
+    elif len(args) >= 2 and args[1]:
+        force_model = str(args[1])
+
     task_id = self.request.id
-    logger.info("Старт задачи sync_mpd_weather_task [task_id=%s, mpd_id=%s, mode=%s]", task_id, mpd_id, mode)
+    logger.info("Старт задачи sync_mpd_weather_task [task_id=%s, mpd_id=%s, mode=%s, model=%s]", task_id, mpd_id, mode, force_model)
 
     try:
         mpd = PlaceProductionActivity.objects.filter(pk=mpd_id).first()

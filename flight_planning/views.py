@@ -4113,7 +4113,10 @@ def mpd_weather_sync_run_view(request: HttpRequest, mpd_id: int) -> JsonResponse
 
     # Пробуем передать задачу в Celery
     try:
-        async_res = sync_mpd_weather_task.apply_async(args=[mpd.pk, mode, force_model])
+        async_res = sync_mpd_weather_task.apply_async(
+            args=[mpd.pk],
+            kwargs={'mode': mode, 'force_model': force_model},
+        )
         return JsonResponse({
             'success': True,
             'is_async': True,
@@ -4180,13 +4183,25 @@ def mpd_weather_sync_status_view(request: HttpRequest, mpd_id: int, task_id: str
                     'error': payload.get('error'),
                 })
             else:
+                raw_err = str(res.result)
+                user_friendly_err = raw_err
+                if "takes" in raw_err and "positional argument" in raw_err:
+                    user_friendly_err = (
+                        f"{raw_err}. Воркер Celery использует устаревшую сигнатуру функции в памяти процесса. "
+                        "Пожалуйста, перезапустите службу Celery (sudo systemctl restart celery) для применения обновленного кода."
+                    )
+                elif "unexpected keyword argument" in raw_err:
+                    user_friendly_err = (
+                        f"{raw_err}. Воркер Celery использует устаревшую сигнатуру функции в памяти процесса. "
+                        "Пожалуйста, перезапустите службу Celery (sudo systemctl restart celery) для применения обновленного кода."
+                    )
                 return JsonResponse({
                     'ready': True,
                     'successful': False,
                     'state': 'FAILURE',
                     'logs': [],
                     'stats': {},
-                    'error': str(res.result),
+                    'error': user_friendly_err,
                 })
 
         if state == 'PROGRESS':
