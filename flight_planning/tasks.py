@@ -84,64 +84,75 @@ def sync_all_aviation_weather_task(self) -> Dict[str, Any]:
     acks_late=True,
     name="flight_planning.tasks.sync_mpd_weather_task",
 )
-def sync_mpd_weather_task(self, mpd_id: int) -> Dict[str, Any]:
+def sync_mpd_weather_task(
+    self,
+    mpd_id: int,
+    mode: str = "all",
+    force_model: Optional[str] = None,
+) -> Dict[str, Any]:
     """Фоновая задача оперативного комплексного обновления погоды для конкретного МПД.
+
+    Выполняет опрос сводок METAR/TAF и гидродинамической сеточной модели с фиксацией
+    интерактивных событий в состоянии задачи (state='PROGRESS') для онлайн-мониторинга.
 
     Args:
         self: Экземпляр связанной задачи Celery (bind=True).
         mpd_id (int): Идентификатор места производственной деятельности.
+        mode (str, optional): Режим синхронизации ('metar', 'coordinate', 'all'). Defaults to 'all'.
+        force_model (Optional[str], optional): Принудительная модель (ecmwf_ifs, gfs_seamless). Defaults to None.
 
     Returns:
-        Dict[str, Any]: Информативный результат опроса конкретного МПД с расшифровкой метеоусловий.
+        Dict[str, Any]: Информативный результат с массивом хронологических логов и статистикой.
     """
-    from .weather_providers import WeatherManagerService
+    from django.utils import timezone
+    from .weather_services import AviationWeatherService
 
     task_id = self.request.id
-    logger.info("Старт задачи sync_mpd_weather_task [task_id=%s, mpd_id=%s]", task_id, mpd_id)
+    logger.info("Старт задачи sync_mpd_weather_task [task_id=%s, mpd_id=%s, mode=%s]", task_id, mpd_id, mode)
 
     try:
         mpd = PlaceProductionActivity.objects.filter(pk=mpd_id).first()
         if not mpd:
             logger.warning("МПД id=%s не найден, задача отменена", mpd_id)
-            return {"status": "SKIPPED", "reason": "MPD not found", "mpd_id": mpd_id}
+            return {"status": "SKIPPED", "success": False, "reason": "MPD not found", "mpd_id": mpd_id, "logs": []}
 
-        obs, fc = AviationWeatherService.sync_mpd_weather(mpd)
-        coord_count = 0
-        if mpd.latitude is not None and mpd.longitude is not None:
-            coord_count = WeatherManagerService.sync_coordinate_forecasts_for_mpds([mpd])
+        live_logs: list = []
 
-        obs_time_str = obs.observation_time.strftime("%d.%m.%Y %H:%M UTC") if obs and obs.observation_time else None
-        weather_summary = "Данные не поступили"
-        if obs:
-            summary_parts = []
-            if obs.temperature is not None:
-                summary_parts.append(f"{obs.temperature:+.0f}°C")
-            if obs.wind_speed is not None:
-                w_dir = f"{obs.wind_direction:03d}°" if obs.wind_direction is not None else "VRB"
-                summary_parts.append(f"Ветер {w_dir} {obs.wind_speed:.0f} м/с")
-            if obs.visibility_meters is not None:
-                summary_parts.append(f"Вид. {obs.visibility_meters}м" if obs.visibility_meters < 10000 else "Вид. >10км")
-            if obs.cloud_base_meters is not None:
-                summary_parts.append(f"ВНГО {obs.cloud_base_meters}м")
-            if obs.pressure_mmhg is not None:
-                summary_parts.append(f"QNH {obs.pressure_mmhg:.1f} мм")
-            if summary_parts:
-                weather_summary = ", ".join(summary_parts)
+        def on_progress(pct: int, msg: str, level: str) -> None:
+            ts = timezone.now().strftime("%H:%M:%S")
+            live_logs.append({"time": ts, "message": msg, "level": level})
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "percent": pct,
+                    "message": msg,
+                    "level": level,
+                    "logs": list(live_logs),
+                    "mpd_id": mpd_id,
+                    "mpd_name": mpd.name,
+                },
+            )
+
+        on_progress(5, f"Инициализация фоновой задачи обновления метеоданных для «{mpd.name}» (ID: {task_id[:13]}...)", "start")
+
+        result = AviationWeatherService.sync_mpd_weather_with_progress(
+            mpd=mpd,
+            mode=mode,
+            force_model=force_model,
+            progress_callback=on_progress,
+        )
 
         return {
-            "status": "SUCCESS",
-            "message": f"Погода для '{mpd.name}' ({mpd.icao_code or 'координаты'}) успешно обновлена.",
+            "status": "SUCCESS" if result["success"] else "FAILURE",
+            "success": result["success"],
+            "has_warnings": result.get("has_warnings", False),
+            "has_errors": result.get("has_errors", False),
+            "message": f"Погода для «{mpd.name}» обновлена.",
             "mpd_id": mpd_id,
             "mpd_name": mpd.name,
-            "icao_code": mpd.icao_code or "—",
-            "flight_category": obs.flight_category if obs else "N/A",
-            "has_metar": bool(obs),
-            "has_taf": bool(fc),
-            "observation_time": obs_time_str,
-            "weather_summary": weather_summary,
-            "latest_raw_metar": obs.raw_text if obs else None,
-            "coordinate_records_saved": coord_count,
-            "sync_status": mpd.weather_sync_status,
+            "logs": result["logs"],
+            "stats": result.get("stats", {}),
+            "error": result.get("error"),
         }
     except (ConnectionError, TimeoutError, OSError) as exc:
         countdown = 30 * (2 ** self.request.retries)

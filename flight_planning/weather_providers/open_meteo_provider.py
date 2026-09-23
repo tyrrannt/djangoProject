@@ -3,7 +3,7 @@
 from datetime import datetime, timezone as dt_timezone
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -55,6 +55,7 @@ class OpenMeteoProvider(BaseWeatherProvider):
         points: List[Dict[str, Any]],
         model_name: Optional[str] = None,
         forecast_days: int = 2,
+        logger_callback: Optional[Callable[[str, str], None]] = None,
     ) -> List[Dict[str, Any]]:
         """Выполняет пакетный HTTP-запрос почасового прогноза для списка географических точек.
 
@@ -66,11 +67,14 @@ class OpenMeteoProvider(BaseWeatherProvider):
                 - 'mpd_id': int (или объект mpd)
             model_name (Optional[str]): Имя модели (ecmwf_ifs, gfs_seamless, icon_seamless).
             forecast_days (int): Горизонт прогноза в сутках (по умолчанию 2 дня = 48 часов).
+            logger_callback (Optional[Callable[[str, str], None]]): Callback для детального логирования шагов и ошибок.
 
         Returns:
             List[Dict[str, Any]]: Список результатов прогноза для каждой точки с массивом почасовых записей.
         """
         if not points:
+            if logger_callback:
+                logger_callback("Список координатных точек для запроса пуст", "warn")
             return []
 
         if len(points) > 5:
@@ -78,7 +82,12 @@ class OpenMeteoProvider(BaseWeatherProvider):
             chunk_size = 5
             for i in range(0, len(points), chunk_size):
                 chunk_points = points[i : i + chunk_size]
-                chunk_res = cls.fetch_coordinate_forecasts_batch(chunk_points, model_name=model_name, forecast_days=forecast_days)
+                chunk_res = cls.fetch_coordinate_forecasts_batch(
+                    chunk_points,
+                    model_name=model_name,
+                    forecast_days=forecast_days,
+                    logger_callback=logger_callback,
+                )
                 all_results.extend(chunk_res)
             return all_results
 
@@ -91,6 +100,13 @@ class OpenMeteoProvider(BaseWeatherProvider):
         lats = [f"{p['latitude']:.4f}" for p in points]
         lons = [f"{p['longitude']:.4f}" for p in points]
         elevs = [f"{p.get('elevation', 0.0):.1f}" if p.get("elevation") is not None else "nan" for p in points]
+
+        if logger_callback:
+            logger_callback(
+                f"Запрос метеомодели {selected_model.upper()} для {len(points)} точек: "
+                f"координаты ({', '.join(lats)}; {', '.join(lons)})...",
+                "queue",
+            )
 
         query_dict: Dict[str, Any] = {
             "latitude": ",".join(lats),
@@ -128,17 +144,58 @@ class OpenMeteoProvider(BaseWeatherProvider):
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 content = response.read().decode("utf-8")
                 response_data = json.loads(content)
+        except urllib.error.HTTPError as exc:
+            error_details = f"HTTP {exc.code} {exc.reason}"
+            try:
+                raw_body = exc.read().decode("utf-8", errors="ignore")
+                if raw_body:
+                    try:
+                        err_json = json.loads(raw_body)
+                        error_details += f" — {err_json.get('reason', raw_body[:150])}"
+                    except Exception:
+                        error_details += f" — {raw_body[:150]}"
+            except Exception:
+                pass
+
+            logger.warning(
+                "Ошибка HTTP Open-Meteo [%s] для %s точек: %s. Пробуем fallback...",
+                selected_model, len(points), error_details
+            )
+            if logger_callback:
+                logger_callback(f"Ошибка ответа Open-Meteo ({selected_model.upper()}): {error_details}", "warn" if selected_model != "gfs_seamless" else "error")
+
+            if selected_model != "gfs_seamless":
+                if logger_callback:
+                    logger_callback("Автоматический запуск резервной модели прогнозирования GFS Seamless...", "step")
+                return cls.fetch_coordinate_forecasts_batch(
+                    points,
+                    model_name="gfs_seamless",
+                    forecast_days=forecast_days,
+                    logger_callback=logger_callback,
+                )
+            return []
         except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
             logger.warning(
-                "Ошибка запроса Open-Meteo [%s] для %s точек: %s. Пробуем fallback...",
+                "Ошибка сети/таймаута Open-Meteo [%s] для %s точек: %s. Пробуем fallback...",
                 selected_model, len(points), exc
             )
-            # Если выбранная модель дала сбой и это была не gfs_seamless, пробуем fallback
+            if logger_callback:
+                logger_callback(f"Сетевой сбой при обращении к Open-Meteo ({selected_model.upper()}): {exc}", "warn" if selected_model != "gfs_seamless" else "error")
+
             if selected_model != "gfs_seamless":
-                return cls.fetch_coordinate_forecasts_batch(points, model_name="gfs_seamless", forecast_days=forecast_days)
+                if logger_callback:
+                    logger_callback("Автоматический запуск резервной модели прогнозирования GFS Seamless...", "step")
+                return cls.fetch_coordinate_forecasts_batch(
+                    points,
+                    model_name="gfs_seamless",
+                    forecast_days=forecast_days,
+                    logger_callback=logger_callback,
+                )
             return []
         except Exception as exc:
             logger.exception("Критическая ошибка при запросе Open-Meteo: %s", exc)
+            if logger_callback:
+                logger_callback(f"Непредвиденная ошибка при запросе Open-Meteo: {exc}", "error")
             return []
 
         # Если точка была одна, API возвращает словарь; если несколько — список словарей

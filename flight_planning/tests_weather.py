@@ -543,3 +543,105 @@ class WeatherViewsTestCase(TestCase):
         self.assertContains(response, "dailyWeatherChartEcmwf")
         self.assertContains(response, "dailyWeatherChartLarge")
 
+    @patch("flight_planning.weather_services.AviationWeatherService.fetch_noaa_raw")
+    @patch("flight_planning.weather_providers.open_meteo_provider.OpenMeteoProvider.fetch_coordinate_forecasts_batch")
+    def test_sync_mpd_weather_with_progress_coordinate_point(self, mock_om, mock_noaa):
+        """Тест пошаговой синхронизации метеоданных с протоколированием логов для координатной точки."""
+        mock_noaa.return_value = {}
+        now = timezone.now()
+
+        coord_mpd = PlaceProductionActivity.objects.create(
+            name="МПД Саратов Гагаринский",
+            short_name="Саратов",
+            icao_code="",
+            latitude=51.648399,
+            longitude=46.058534,
+            elevation_msl_m=152.0,
+            in_planning=True,
+            weather_monitoring_enabled=True,
+        )
+
+        mock_om.return_value = [{
+            "point": {"mpd_id": coord_mpd.pk, "latitude": 51.6484, "longitude": 46.0585},
+            "model_name": "ecmwf_ifs",
+            "elevation_msl_m": 150.0,
+            "hourly_records": [
+                {
+                    "forecast_for": now,
+                    "model_run_at": now,
+                    "weather_code": 0,
+                    "temperature": 22.0,
+                    "dew_point": 9.0,
+                    "relative_humidity": 45,
+                    "surface_pressure_hpa": 1012.0,
+                    "surface_pressure_mmhg": 759.1,
+                    "pressure_msl_hpa": 1015.0,
+                    "pressure_mmhg": 761.3,
+                    "wind_speed": 4.5,
+                    "wind_direction": 150,
+                    "wind_gust": 7.0,
+                    "cloud_cover_total": 10,
+                    "cloud_cover_low": 5,
+                    "cloud_cover_mid": 0,
+                    "cloud_cover_high": 0,
+                    "cloud_base_agl_m": 1800,
+                    "freezing_level_msl_m": 2900,
+                    "precipitation_mm": 0.0,
+                    "precipitation_probability": 0,
+                    "visibility_m": 10000,
+                    "model_flight_category": "VFR",
+                }
+            ],
+        }]
+
+        res = AviationWeatherService.sync_mpd_weather_with_progress(coord_mpd, mode="all")
+        self.assertTrue(res["success"])
+        self.assertGreater(len(res["logs"]), 5)
+        log_levels = [l["level"] for l in res["logs"]]
+        self.assertIn("start", log_levels)
+        self.assertIn("step", log_levels)
+        self.assertIn("success", log_levels)
+        self.assertEqual(res["stats"]["coordinate_points_saved"], 1)
+
+    def test_mpd_weather_sync_run_view_endpoint(self):
+        """Тест AJAX-эндпоинта запуска синхронизации погоды."""
+        coord_mpd = PlaceProductionActivity.objects.create(
+            name="МПД Тест Запуск",
+            latitude=55.0,
+            longitude=37.0,
+            in_planning=True,
+            weather_monitoring_enabled=True,
+        )
+        url = reverse("flight_planning:mpd_weather_sync_run", args=[coord_mpd.pk])
+        response = self.client.post(
+            url,
+            {"mode": "coordinate"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            SERVER_NAME="localhost",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("success", data)
+        self.assertIn("is_async", data)
+        self.assertIn("task_name", data)
+
+    def test_mpd_weather_sync_status_view_endpoint(self):
+        """Тест AJAX-эндпоинта мониторинга статуса задачи."""
+        coord_mpd = PlaceProductionActivity.objects.create(
+            name="МПД Тест Статус",
+            latitude=55.0,
+            longitude=37.0,
+            in_planning=True,
+        )
+        url = reverse("flight_planning:mpd_weather_sync_status", args=[coord_mpd.pk, "fake-task-id-12345"])
+        response = self.client.get(
+            url,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            SERVER_NAME="localhost",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("state", data)
+        self.assertIn("ready", data)
+
+

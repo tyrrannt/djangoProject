@@ -275,6 +275,39 @@
                 font-size: 0.8rem;
             }
         }
+
+        /* Стили консоли мониторинга погоды (Celery style) */
+        .weather-sync-console {
+            background-color: #0f172a !important;
+            color: #f8fafc;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            height: 250px;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        .weather-sync-console::-webkit-scrollbar {
+            width: 6px;
+        }
+        .weather-sync-console::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 3px;
+        }
+        .weather-log-time {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-right: 6px;
+        }
+        .weather-log-start { color: #38bdf8; font-weight: 600; }
+        .weather-log-queue { color: #c084fc; }
+        .weather-log-step { color: #e2e8f0; }
+        .weather-log-success { color: #4ade80; font-weight: 600; }
+        .weather-log-warn { color: #fbbf24; font-weight: 600; }
+        .weather-log-error { color: #f87171; font-weight: 600; }
+        .weather-log-info { color: #93c5fd; }
     </style>
 {% endblock %}
 
@@ -564,6 +597,420 @@
                 }
             });
         };
+
+        // Менеджер выполнения и интерактивного онлайн-мониторинга погоды (Celery style)
+        const WeatherSyncManager = (function() {
+            let activeTaskId = null;
+            let activeTaskName = '';
+            let pollInterval = null;
+            let timerInterval = null;
+            let startTime = null;
+            let modalInstance = null;
+            let renderedLogCount = 0;
+            const csrfToken = '{{ csrf_token }}';
+
+            function getElements() {
+                return {
+                    modalElem: document.getElementById('weatherSyncProgressModal'),
+                    floatingWidget: document.getElementById('weatherFloatingWidget'),
+                    floatingName: document.getElementById('weatherFloatingTaskName'),
+                    floatingStatus: document.getElementById('weatherFloatingTaskStatus'),
+                    consoleElem: document.getElementById('weatherSyncConsole'),
+                    headerIcon: document.getElementById('weatherModalHeaderIcon'),
+                    stateBadge: document.getElementById('weatherTaskStateBadge'),
+                    nameText: document.getElementById('weatherTaskNameText'),
+                    timerText: document.getElementById('weatherTaskTimerText'),
+                    progressBar: document.getElementById('weatherTaskProgressBar'),
+                    statusMsg: document.getElementById('weatherTaskStatusMsg'),
+                    idBadge: document.getElementById('weatherTaskIdBadge'),
+                    doneBtn: document.getElementById('weatherModalDoneBtn'),
+                    minBtn: document.getElementById('weatherModalMinimizeBtn'),
+                    retryGfsBtn: document.getElementById('weatherModalRetryGfsBtn'),
+                    closeXBtn: document.getElementById('weatherModalCloseX'),
+                    clearLogsBtn: document.getElementById('weatherClearLogsBtn')
+                };
+            }
+
+            function getModal() {
+                const el = getElements();
+                if (!modalInstance && window.bootstrap && el.modalElem) {
+                    modalInstance = new bootstrap.Modal(el.modalElem);
+                }
+                return modalInstance;
+            }
+
+            function showModal() {
+                const m = getModal();
+                const el = getElements();
+                if (m) {
+                    m.show();
+                } else if (el.modalElem) {
+                    el.modalElem.style.display = 'block';
+                    el.modalElem.classList.add('show');
+                    document.body.classList.add('modal-open');
+                }
+            }
+
+            function closeModal() {
+                const m = getModal();
+                const el = getElements();
+                if (m) {
+                    m.hide();
+                } else if (el.modalElem) {
+                    el.modalElem.style.display = 'none';
+                    el.modalElem.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                }
+            }
+
+            function getTimestamp() {
+                const now = new Date();
+                return now.toTimeString().split(' ')[0];
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function logLine(message, type = 'info', timeStr = null) {
+                const el = getElements();
+                if (!el.consoleElem) return;
+                const line = document.createElement('div');
+                let colorClass = 'weather-log-info';
+                let prefix = 'ℹ️';
+
+                if (type === 'success') {
+                    colorClass = 'weather-log-success';
+                    prefix = '✅';
+                } else if (type === 'error') {
+                    colorClass = 'weather-log-error';
+                    prefix = '❌';
+                } else if (type === 'warn') {
+                    colorClass = 'weather-log-warn';
+                    prefix = '⚠️';
+                } else if (type === 'start') {
+                    colorClass = 'weather-log-start';
+                    prefix = '🚀';
+                } else if (type === 'queue') {
+                    colorClass = 'weather-log-queue';
+                    prefix = '📡';
+                } else if (type === 'step') {
+                    colorClass = 'weather-log-step';
+                    prefix = '⚙️';
+                }
+
+                const t = timeStr || getTimestamp();
+                line.className = colorClass;
+                line.innerHTML = `<span class="weather-log-time">[${t}]</span> ${prefix} ${escapeHtml(message)}`;
+                el.consoleElem.appendChild(line);
+                el.consoleElem.scrollTop = el.consoleElem.scrollHeight;
+            }
+
+            function updateTimer() {
+                if (!startTime) return;
+                const el = getElements();
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+                const secs = String(elapsedSec % 60).padStart(2, '0');
+                if (el.timerText) el.timerText.innerHTML = `<i class="bx bx-time-five me-1"></i>${mins}:${secs}`;
+            }
+
+            function startTimer() {
+                startTime = Date.now();
+                if (timerInterval) clearInterval(timerInterval);
+                updateTimer();
+                timerInterval = setInterval(updateTimer, 500);
+            }
+
+            function stopTimer() {
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            function resetUI(taskName) {
+                const el = getElements();
+                activeTaskName = taskName;
+                renderedLogCount = 0;
+                if (el.nameText) el.nameText.textContent = taskName;
+                if (el.consoleElem) el.consoleElem.innerHTML = '';
+                if (el.stateBadge) {
+                    el.stateBadge.className = 'badge bg-secondary';
+                    el.stateBadge.textContent = 'PENDING';
+                }
+                if (el.headerIcon) {
+                    el.headerIcon.innerHTML = '<span class="spinner-border spinner-border-sm text-info" role="status"></span>';
+                }
+                if (el.progressBar) {
+                    el.progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-info';
+                    el.progressBar.style.width = '15%';
+                }
+                if (el.statusMsg) el.statusMsg.textContent = 'Подготовка запроса...';
+                if (el.idBadge) el.idBadge.textContent = 'ID: -';
+                if (el.doneBtn) {
+                    el.doneBtn.classList.add('d-none');
+                    el.doneBtn.innerHTML = '<i class="bx bx-check me-1"></i> Завершить и обновить';
+                }
+                if (el.retryGfsBtn) el.retryGfsBtn.classList.add('d-none');
+                if (el.minBtn) el.minBtn.classList.remove('d-none');
+                if (el.floatingWidget) el.floatingWidget.classList.add('d-none');
+            }
+
+            function showFloating(statusText) {
+                const el = getElements();
+                if (el.floatingWidget) {
+                    el.floatingWidget.classList.remove('d-none');
+                    if (el.floatingName) el.floatingName.textContent = activeTaskName;
+                    if (el.floatingStatus) el.floatingStatus.textContent = statusText || 'Синхронизация...';
+                }
+            }
+
+            function hideFloating() {
+                const el = getElements();
+                if (el.floatingWidget) el.floatingWidget.classList.add('d-none');
+            }
+
+            function runSync(mode = 'all', forceModel = null, taskTitle = null) {
+                const el = getElements();
+                const title = taskTitle || (mode === 'metar' ? 'Синхронизация METAR/TAF' : (mode === 'coordinate' ? 'Расчет сеточной модели' : 'Комплексное обновление метеоданных'));
+                resetUI(title);
+                showModal();
+                startTimer();
+
+                logLine(`Инициализация запроса для «{{ mpd.name }}» (Режим: ${mode.toUpperCase()})...`, 'start');
+
+                const formData = new FormData();
+                formData.append('mode', mode);
+                if (forceModel) formData.append('model', forceModel);
+                if (csrfToken) formData.append('csrfmiddlewaretoken', csrfToken);
+
+                fetch('{% url "flight_planning:mpd_weather_sync_run" mpd.pk %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.is_async && data.task_id) {
+                        activeTaskId = data.task_id;
+                        if (el.idBadge) el.idBadge.textContent = `ID: ${data.task_id.substring(0, 13)}...`;
+                        logLine(`Задача передана в фоновую очередь Celery (Task ID: ${data.task_id})`, 'queue');
+                        logLine('Ожидание подключения свободного воркера в очереди...', 'info');
+                        startPolling(data.task_id);
+                    } else {
+                        // Синхронный ответ
+                        stopTimer();
+                        if (data.logs && Array.isArray(data.logs)) {
+                            data.logs.forEach(l => logLine(l.message, l.level, l.time));
+                        }
+                        if (data.success) {
+                            onSyncSuccess(data);
+                        } else {
+                            onSyncFailure(data.error || 'Не удалось получить актуальные метеоданные');
+                        }
+                    }
+                })
+                .catch(err => {
+                    stopTimer();
+                    onSyncFailure(`Сетевой сбой при отправке запроса: ${err.message}`);
+                });
+            }
+
+            function startPolling(taskId) {
+                if (pollInterval) clearInterval(pollInterval);
+                let pollCount = 0;
+                let lastState = '';
+
+                pollInterval = setInterval(function() {
+                    pollCount++;
+                    const el = getElements();
+                    const statusUrl = '{% url "flight_planning:mpd_weather_sync_status" mpd.pk "TASK_ID_PLACEHOLDER" %}'.replace('TASK_ID_PLACEHOLDER', taskId);
+
+                    fetch(statusUrl, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        const state = data.state;
+
+                        if (state !== lastState) {
+                            lastState = state;
+                            if (state === 'STARTED') {
+                                if (el.stateBadge) {
+                                    el.stateBadge.className = 'badge bg-info text-dark';
+                                    el.stateBadge.textContent = 'STARTED';
+                                }
+                                if (el.statusMsg) el.statusMsg.textContent = 'Воркер Celery начал опрос метеошлюзов...';
+                                logLine('Воркер Celery принял задачу в обработку (STARTED)', 'step');
+                            } else if (state === 'PROGRESS') {
+                                if (el.stateBadge) {
+                                    el.stateBadge.className = 'badge bg-warning text-dark';
+                                    el.stateBadge.textContent = 'PROGRESS';
+                                }
+                            }
+                        }
+
+                        if (data.progress) {
+                            const pct = data.progress.percent || 30;
+                            if (el.progressBar) el.progressBar.style.width = pct + '%';
+                            if (el.statusMsg) el.statusMsg.textContent = data.progress.message || 'Идет опрос серверов...';
+                        }
+
+                        if (data.logs && Array.isArray(data.logs) && data.logs.length > renderedLogCount) {
+                            for (let i = renderedLogCount; i < data.logs.length; i++) {
+                                const l = data.logs[i];
+                                logLine(l.message, l.level, l.time);
+                            }
+                            renderedLogCount = data.logs.length;
+                        }
+
+                        if (data.ready) {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                            stopTimer();
+
+                            if (data.successful) {
+                                onSyncSuccess(data);
+                            } else {
+                                onSyncFailure(data.error || 'Ошибка в процессе выполнения фоновой задачи.');
+                            }
+                        } else {
+                            if (pollCount % 6 === 0) {
+                                logLine('Опрос метеосерверов продолжается...', 'step');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.debug('Polling error:', err);
+                    });
+                }, 1000);
+            }
+
+            function onSyncSuccess(data) {
+                const el = getElements();
+                const hasWarn = data.has_warnings;
+                if (el.stateBadge) {
+                    el.stateBadge.className = hasWarn ? 'badge bg-warning text-dark' : 'badge bg-success';
+                    el.stateBadge.textContent = hasWarn ? 'WARNING' : 'SUCCESS';
+                }
+                if (el.headerIcon) {
+                    el.headerIcon.innerHTML = hasWarn ? '<i class="bx bx-error-circle text-warning fs-5"></i>' : '<i class="bx bx-check-circle text-success fs-5"></i>';
+                }
+                if (el.progressBar) {
+                    el.progressBar.className = hasWarn ? 'progress-bar bg-warning' : 'progress-bar bg-success';
+                    el.progressBar.style.width = '100%';
+                }
+                if (el.statusMsg) {
+                    el.statusMsg.textContent = hasWarn ? 'Синхронизация завершена с предупреждениями' : 'Данные успешно обновлены!';
+                }
+
+                if (el.doneBtn) el.doneBtn.classList.remove('d-none');
+                if (el.minBtn) el.minBtn.classList.add('d-none');
+
+                if (el.floatingWidget && !el.floatingWidget.classList.contains('d-none')) {
+                    if (el.floatingStatus) el.floatingStatus.textContent = hasWarn ? '⚠️ Завершено с предупреждениями' : '✅ Успешно обновлено!';
+                    setTimeout(hideFloating, 4000);
+                }
+            }
+
+            function onSyncFailure(errorMessage) {
+                const el = getElements();
+                if (el.stateBadge) {
+                    el.stateBadge.className = 'badge bg-danger';
+                    el.stateBadge.textContent = 'ERROR';
+                }
+                if (el.headerIcon) {
+                    el.headerIcon.innerHTML = '<i class="bx bx-x-circle text-danger fs-5"></i>';
+                }
+                if (el.progressBar) {
+                    el.progressBar.className = 'progress-bar bg-danger';
+                    el.progressBar.style.width = '100%';
+                }
+                if (el.statusMsg) el.statusMsg.textContent = 'Ошибка синхронизации данных';
+                logLine(`Ошибка: ${errorMessage}`, 'error');
+
+                if (el.retryGfsBtn) {
+                    el.retryGfsBtn.classList.remove('d-none');
+                    el.retryGfsBtn.onclick = function() {
+                        runSync('coordinate', 'gfs_seamless', 'Повтор с резервной моделью GFS');
+                    };
+                }
+                if (el.doneBtn) {
+                    el.doneBtn.classList.remove('d-none');
+                    el.doneBtn.textContent = 'Закрыть';
+                }
+                if (el.minBtn) el.minBtn.classList.add('d-none');
+
+                if (el.floatingWidget && !el.floatingWidget.classList.contains('d-none')) {
+                    if (el.floatingStatus) el.floatingStatus.textContent = '❌ Ошибка синхронизации';
+                }
+            }
+
+            function init() {
+                const el = getElements();
+
+                document.querySelectorAll('.js-weather-sync-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const mode = this.dataset.mode || 'all';
+                        const model = this.dataset.model || null;
+                        runSync(mode, model);
+                    });
+                });
+
+                if (el.clearLogsBtn) {
+                    el.clearLogsBtn.addEventListener('click', function() {
+                        if (el.consoleElem) el.consoleElem.innerHTML = '';
+                    });
+                }
+
+                if (el.doneBtn) {
+                    el.doneBtn.addEventListener('click', function() {
+                        if (el.stateBadge && (el.stateBadge.textContent === 'SUCCESS' || el.stateBadge.textContent === 'WARNING')) {
+                            window.location.reload();
+                        } else {
+                            closeModal();
+                        }
+                    });
+                }
+
+                if (el.minBtn) {
+                    el.minBtn.addEventListener('click', function() {
+                        closeModal();
+                        showFloating();
+                    });
+                }
+
+                if (el.closeXBtn) {
+                    el.closeXBtn.addEventListener('click', function() {
+                        closeModal();
+                    });
+                }
+
+                if (el.floatingWidget) {
+                    el.floatingWidget.addEventListener('click', function() {
+                        hideFloating();
+                        showModal();
+                    });
+                }
+            }
+
+            return {
+                init: init,
+                runSync: runSync
+            };
+        })();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            WeatherSyncManager.init();
+        });
     </script>
 {% endblock %}
 
@@ -652,14 +1099,22 @@
                         <!-- Кнопки обновления погоды -->
                         <div class="btn-group" role="group">
                             <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=metar"
-                               class="btn btn-success btn-touch" title="Запросить свежие сводки METAR/TAF опорной станции">
+                               class="btn btn-success btn-touch js-weather-sync-btn" data-mode="metar"
+                               title="Запросить свежие сводки METAR/TAF опорной станции">
                                 <i class="bx bx-refresh me-1"></i>
                                 <span class="d-none d-sm-inline">Обновить </span><span>METAR</span>
                             </a>
                             <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=coordinate"
-                               class="btn btn-primary btn-touch" title="Запросить численный прогноз модели ECMWF IFS по координатам">
+                               class="btn btn-primary btn-touch js-weather-sync-btn" data-mode="coordinate"
+                               title="Запросить численный прогноз модели ECMWF IFS по координатам">
                                 <i class="bx bx-cube-alt me-1"></i>
                                 <span class="d-none d-sm-inline">Обновить </span><span>ECMWF</span>
+                            </a>
+                            <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=all"
+                               class="btn btn-dark btn-touch js-weather-sync-btn" data-mode="all"
+                               title="Комплексная синхронизация всех метеоданных (METAR/TAF + сеточная модель)">
+                                <i class="bx bx-sync me-1"></i>
+                                <span class="d-none d-md-inline">Обновить </span><span>Всё</span>
                             </a>
                         </div>
 
@@ -1131,7 +1586,8 @@
                                 </span>
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=coordinate" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=coordinate"
+                                   class="btn btn-sm btn-outline-primary js-weather-sync-btn" data-mode="coordinate">
                                     <i class="bx bx-sync me-1"></i> Синхронизировать с Open-Meteo
                                 </a>
                             </div>
@@ -1262,8 +1718,9 @@
                                                     </div>
                                                 {% else %}
                                                     <p class="small text-muted mb-2">Координаты МПД: {{ mpd.latitude|floatformat:4 }}, {{ mpd.longitude|floatformat:4 }}. Нажмите кнопку ниже для отправки запроса в Open-Meteo:</p>
-                                                    <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=coordinate" class="btn btn-primary btn-sm fw-bold">
-                                                        <i class="bx bx-cube-alt me-1"></i> Обновить ECMWF
+                                                    <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=coordinate"
+                                                       class="btn btn-primary btn-sm fw-bold js-weather-sync-btn" data-mode="coordinate">
+                                                        <i class="bx bx-cube-alt me-1"></i> Запустить расчет ECMWF
                                                     </a>
                                                 {% endif %}
                                             </td>
@@ -1424,6 +1881,84 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeIcaoTesterModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно онлайн-синхронизации метеоданных (по аналогии с задачами Celery) -->
+    <div class="modal fade" id="weatherSyncProgressModal" tabindex="-1" aria-labelledby="weatherSyncModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <div id="weatherModalHeaderIcon">
+                            <span class="spinner-border spinner-border-sm text-info" role="status"></span>
+                        </div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="weatherSyncModalLabel">
+                            Синхронизация метеоданных: {{ mpd.name }}
+                        </h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary" id="weatherTaskStateBadge">PENDING</span>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть" id="weatherModalCloseX"></button>
+                    </div>
+                </div>
+
+                <div class="modal-body p-4">
+                    <!-- Карточка сводки -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong class="text-dark" id="weatherTaskNameText">Обновление метеоданных...</strong>
+                            <span class="text-muted small fw-semibold" id="weatherTaskTimerText"><i class="bx bx-time-five me-1"></i>00:00</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 12px; border-radius: 6px; background-color: #e2e8f0;">
+                            <div id="weatherTaskProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 15%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center small text-muted">
+                            <span id="weatherTaskStatusMsg">Подготовка запроса к метеоцентру...</span>
+                            <span id="weatherTaskIdBadge" class="text-truncate" style="max-width: 260px; font-family: monospace;">ID: -</span>
+                        </div>
+                    </div>
+
+                    <!-- Терминал живых логов (Live Console Log) -->
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-uppercase fw-bold text-muted" style="font-size: 11px; letter-spacing: 0.5px;">Журнал выполнения (Live Weather Log)</span>
+                        <button type="button" class="btn btn-link btn-sm text-muted p-0" id="weatherClearLogsBtn" style="font-size: 12px; text-decoration: none;">
+                            <i class="bx bx-trash"></i> Очистить
+                        </button>
+                    </div>
+                    <div id="weatherSyncConsole" class="weather-sync-console">
+                        <!-- Лог-сообщения добавляются динамически -->
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between align-items-center">
+                    <div class="text-muted small" id="weatherFooterHint">
+                        <i class="bx bx-info-circle me-1"></i> Окно можно свернуть — сбор данных продолжится в фоне
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" id="weatherModalMinimizeBtn">
+                            <i class="bx bx-minus"></i> Свернуть в фон
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm px-3 d-none" id="weatherModalRetryGfsBtn">
+                            <i class="bx bx-sync"></i> Повторить (GFS)
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm px-4 d-none" data-bs-dismiss="modal" id="weatherModalDoneBtn">
+                            <i class="bx bx-check"></i> Завершить и обновить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Плавающий индикатор фоновой задачи при сворачивании (Floating Mini Widget) -->
+    <div id="weatherFloatingWidget" class="position-fixed bottom-0 end-0 m-4 d-none" style="z-index: 1060; cursor: pointer;">
+        <div class="bg-dark text-white p-3 rounded-pill shadow-lg d-flex align-items-center gap-3 border border-info">
+            <div class="spinner-border spinner-border-sm text-info" role="status" id="weatherFloatingSpinner"></div>
+            <div>
+                <div class="fw-bold small text-truncate" id="weatherFloatingTaskName" style="max-width: 180px;">Синхронизация погоды</div>
+                <div class="text-white-50" style="font-size: 10px;" id="weatherFloatingTaskStatus">Нажмите, чтобы открыть</div>
+            </div>
         </div>
     </div>
 {% endblock %}

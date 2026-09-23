@@ -11,11 +11,12 @@ import logging
 import math
 import re
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 import urllib.error
 import urllib.parse
 import urllib.request
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -841,6 +842,235 @@ class AviationWeatherService:
             mpd.save(update_fields=["weather_last_sync_at", "weather_sync_status"])
 
         return obs_obj, forecast_obj
+
+    @classmethod
+    def sync_mpd_weather_with_progress(
+        cls,
+        mpd: PlaceProductionActivity,
+        mode: str = "all",
+        force_model: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, str], None]] = None,
+    ) -> Dict[str, Any]:
+        """Синхронизирует метеоданные МПД с генерацией пошагового структурированного лога.
+
+        Выполняет валидацию параметров МПД, геопривязку к опорной метеостанции ИКАО,
+        опрос авиационных сводок METAR/TAF через шлюз NOAA AWC и расчет сеточной гидродинамической
+        модели ECMWF IFS / GFS через Open-Meteo API с фиксацией каждого события.
+
+        Args:
+            mpd (PlaceProductionActivity): Объект места производственной деятельности.
+            mode (str, optional): Режим синхронизации ('metar', 'coordinate', 'all'). Defaults to 'all'.
+            force_model (Optional[str], optional): Принудительное указание численной модели атмосферы. Defaults to None.
+            progress_callback (Optional[Callable[[int, str, str], None]], optional):
+                Функция обратного вызова (percent: int, message: str, level: str) для передачи прогресса в Celery/UI.
+
+        Returns:
+            Dict[str, Any]: Словарь с итоговым результатом:
+                - 'success' (bool): Общий статус завершения.
+                - 'has_warnings' (bool): Присутствуют ли предупреждения.
+                - 'has_errors' (bool): Присутствуют ли ошибки.
+                - 'logs' (List[Dict[str, Any]]): Хронологический список логов событий.
+                - 'stats' (Dict[str, Any]): Сводные количественные показатели.
+                - 'error' (Optional[str]): Текст критической ошибки при сбое.
+        """
+        from .weather_providers.geo_service import GeoStationService
+        from .weather_providers.weather_manager import WeatherManagerService
+
+        logs: List[Dict[str, Any]] = []
+
+        def emit(msg: str, level: str = "info", pct: int = 0) -> None:
+            ts = timezone.now().strftime("%H:%M:%S")
+            entry = {"time": ts, "level": level, "message": msg}
+            logs.append(entry)
+            if progress_callback:
+                try:
+                    progress_callback(pct, msg, level)
+                except Exception as cb_err:
+                    logger.debug("Ошибка вызова progress_callback: %s", cb_err)
+
+        emit(f"Старт синхронизации метеоданных для МПД «{mpd.name}» (Режим: {mode.upper()})...", "start", 5)
+
+        has_coords = mpd.latitude is not None and mpd.longitude is not None
+        lat_val = float(mpd.latitude) if mpd.latitude is not None else None
+        lon_val = float(mpd.longitude) if mpd.longitude is not None else None
+        elev_val = float(mpd.elevation_msl_m) if mpd.elevation_msl_m is not None else None
+
+        if has_coords:
+            emit(
+                f"Географические координаты МПД: {lat_val:.6f}° с.ш., {lon_val:.6f}° в.д., высота {elev_val or 0:.0f} м MSL",
+                "info",
+                10,
+            )
+        else:
+            emit(
+                "Географические координаты МПД не заполнены в карточке объекта",
+                "warn" if mode == "metar" else "error",
+                10,
+            )
+
+        nearest_info = None
+        nearest_station = None
+        if has_coords:
+            nearest_info = GeoStationService.find_nearest_station(
+                latitude=lat_val,
+                longitude=lon_val,
+                mpd_elevation_msl_m=elev_val,
+            )
+            if nearest_info and nearest_info.get("station"):
+                nearest_station = nearest_info["station"]
+                dist_km = nearest_info["distance_km"]
+                st_name = nearest_station.name_ru or nearest_station.name_en or ""
+                repr_txt = "Репрезентативна (≤15 км)" if nearest_info.get("is_representative") else f"Удаленная станция ({dist_km:.1f} км)"
+                elev_delta_str = f", перепад высот: {nearest_info['elevation_delta_m']:+.0f} м" if nearest_info.get("elevation_delta_m") is not None else ""
+                emit(
+                    f"Определена опорная метеостанция ИКАО: {nearest_station.icao_code} ({st_name}), расстояние {dist_km:.1f} км{elev_delta_str}. Статус: {repr_txt}.",
+                    "step",
+                    20,
+                )
+            else:
+                emit("Опорная метеостанция ИКАО поблизости (до 150 км) не обнаружена", "warn", 20)
+
+        obs_obj: Optional[AviationWeatherObservation] = None
+        forecast_obj: Optional[AviationWeatherForecast] = None
+        target_icao = (mpd.icao_code or "").strip().upper()
+
+        if not target_icao and nearest_station:
+            target_icao = nearest_station.icao_code.upper()
+            emit(f"Для запроса метеосводок используется ICAO код опорного аэродрома: {target_icao}", "info", 25)
+
+        if mode in ("metar", "all"):
+            if target_icao and len(target_icao) == 4:
+                emit(f"Запрос авиационных сводок METAR / TAF для станции {target_icao} через шлюз NOAA AWC...", "queue", 30)
+
+                # Запрос METAR
+                metar_dict = cls.fetch_noaa_raw([target_icao], data_type="metar", timeout=15)
+                raw_metar = metar_dict.get(target_icao)
+                if raw_metar:
+                    emit(f"Получена сырая сводка METAR ({target_icao}): {raw_metar}", "step", 40)
+                    try:
+                        parsed_metar = MetarParser.parse_metar(raw_metar)
+                        parsed_metar["icao_code"] = target_icao
+                        parsed_metar["mpd"] = mpd
+                        with transaction.atomic():
+                            obs_obj, _ = AviationWeatherObservation.objects.update_or_create(
+                                icao_code=target_icao,
+                                observation_time=parsed_metar["observation_time"],
+                                defaults=parsed_metar,
+                            )
+                        cat = obs_obj.flight_category or "N/A"
+                        w_spd = f"{obs_obj.wind_speed:.0f} м/с" if obs_obj.wind_speed is not None else "штиль"
+                        vis = f"{obs_obj.visibility_meters} м" if obs_obj.visibility_meters is not None else "н/д"
+                        qnh = f"{obs_obj.pressure_mmhg:.1f} мм рт.ст." if obs_obj.pressure_mmhg is not None else "н/д"
+                        emit(
+                            f"METAR успешно сохранен в БД. Категория полетов: {cat}, Ветер: {w_spd}, Видимость: {vis}, Давление QNH: {qnh}.",
+                            "success",
+                            45,
+                        )
+                    except Exception as err:
+                        emit(f"Ошибка парсинга или сохранения сводки METAR: {err}", "error", 45)
+                else:
+                    emit(
+                        f"Станция {target_icao} в настоящее время не передает регулярные сводки METAR в международную сеть NOAA (HTTP 204 No Content). Фактическая сводка недоступна.",
+                        "warn",
+                        45,
+                    )
+
+                # Запрос TAF
+                taf_dict = cls.fetch_noaa_raw([target_icao], data_type="taf", timeout=15)
+                raw_taf = taf_dict.get(target_icao)
+                if raw_taf:
+                    emit(f"Получен официальный прогноз погоды TAF ({target_icao})", "step", 50)
+                    try:
+                        parsed_taf = TafParser.parse_taf(raw_taf)
+                        parsed_taf["icao_code"] = target_icao
+                        parsed_taf["mpd"] = mpd
+                        with transaction.atomic():
+                            forecast_obj, _ = AviationWeatherForecast.objects.update_or_create(
+                                icao_code=target_icao,
+                                issued_at=parsed_taf["issued_at"],
+                                defaults=parsed_taf,
+                            )
+                        v_from = forecast_obj.valid_from.strftime("%d.%m %H:%M") if forecast_obj.valid_from else ""
+                        v_to = forecast_obj.valid_to.strftime("%d.%m %H:%M") if forecast_obj.valid_to else ""
+                        emit(f"Прогноз TAF успешно сохранен (период действия: {v_from} — {v_to} UTC)", "success", 55)
+                    except Exception as err:
+                        emit(f"Ошибка парсинга или сохранения прогноза TAF: {err}", "warn", 55)
+                else:
+                    emit(f"Официальный прогноз TAF для станции {target_icao} не найден или отсутствует на сервере", "info", 55)
+            else:
+                emit("Код ICAO не задан и опорная станция не определена. Опрос METAR/TAF пропущен.", "warn", 55)
+
+        coord_saved = 0
+        model_name = force_model or getattr(settings, "OPEN_METEO_DEFAULT_MODEL", "ecmwf_ifs")
+
+        if mode in ("coordinate", "all"):
+            if not has_coords:
+                emit("Сеточный гидродинамический расчет пропущен: отсутствуют географические координаты точки МПД", "warn", 85)
+            else:
+                emit(f"Запрос сеточной модели атмосферы {model_name.upper()} через Open-Meteo API (почасовой расчет на 2 суток)...", "queue", 65)
+
+                def om_cb(msg: str, lvl: str) -> None:
+                    emit(msg, lvl, 75)
+
+                try:
+                    coord_saved = WeatherManagerService.sync_coordinate_forecasts_for_mpds(
+                        [mpd],
+                        force_model=force_model,
+                        logger_callback=om_cb,
+                    )
+                    if coord_saved > 0:
+                        emit(f"Численный расчет погоды завершен: успешно сохранено {coord_saved} почасовых точек прогноза.", "success", 90)
+                    else:
+                        emit("От Open-Meteo не поступили почасовые данные или точка не была обработана.", "warn", 90)
+                except Exception as err:
+                    emit(f"Ошибка при синхронизации сеточного прогноза: {err}", "error", 90)
+
+        # Финализация аудита МПД
+        now_ts = timezone.now()
+        mpd.weather_last_sync_at = now_ts
+        if obs_obj and coord_saved > 0:
+            mpd.weather_sync_status = f"OK (METAR + {model_name.upper()})"
+        elif obs_obj:
+            mpd.weather_sync_status = "OK (METAR)"
+        elif coord_saved > 0:
+            mpd.weather_sync_status = f"OK ({model_name.upper()})"
+        else:
+            mpd.weather_sync_status = "Данные не поступили"
+        if mpd.pk:
+            mpd.save(update_fields=["weather_last_sync_at", "weather_sync_status"])
+
+        has_errors = any(entry["level"] == "error" for entry in logs)
+        has_warnings = any(entry["level"] == "warn" for entry in logs)
+
+        if not has_errors and (obs_obj or coord_saved > 0):
+            emit(f"Синхронизация метеоданных для «{mpd.name}» успешно выполнена!", "success", 100)
+            overall_success = True
+        elif obs_obj or coord_saved > 0:
+            emit(f"Синхронизация для «{mpd.name}» выполнена с предупреждениями (данные получены частично).", "warn", 100)
+            overall_success = True
+        else:
+            emit(f"Синхронизация для «{mpd.name}» завершена без получения метеоданных.", "error", 100)
+            overall_success = False
+
+        return {
+            "success": overall_success,
+            "has_warnings": has_warnings,
+            "has_errors": has_errors,
+            "logs": logs,
+            "stats": {
+                "mpd_id": mpd.id,
+                "mpd_name": mpd.name,
+                "icao_code": target_icao,
+                "has_metar": bool(obs_obj),
+                "has_taf": bool(forecast_obj),
+                "coordinate_points_saved": coord_saved,
+                "model": model_name,
+                "flight_category": obs_obj.flight_category if obs_obj else None,
+                "sync_status": mpd.weather_sync_status,
+                "sync_time": now_ts.strftime("%d.%m.%Y %H:%M:%S"),
+            },
+            "error": "Не удалось получить актуальные метеоданные" if not overall_success else None,
+        }
 
     @classmethod
     def sync_all_active_mpds(cls) -> Dict[str, Any]:

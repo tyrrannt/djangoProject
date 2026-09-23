@@ -2,7 +2,7 @@
 
 from datetime import date, datetime, timezone as dt_timezone
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from django.db import transaction
 from django.utils import timezone
@@ -28,6 +28,7 @@ class WeatherManagerService:
         cls,
         mpds: List[PlaceProductionActivity],
         force_model: Optional[str] = None,
+        logger_callback: Optional[Callable[[str, str], None]] = None,
     ) -> int:
         """Синхронизирует сеточные почасовые прогнозы для переданного списка МПД.
 
@@ -37,6 +38,7 @@ class WeatherManagerService:
         Args:
             mpds (List[PlaceProductionActivity]): Список объектов МПД с координатами.
             force_model (Optional[str]): Принудительное указание модели (ecmwf_ifs, gfs_seamless).
+            logger_callback (Optional[Callable[[str, str], None]]): Функция для пошагового логирования прогресса.
 
         Returns:
             int: Количество сохраненных / обновленных почасовых записей прогноза.
@@ -55,12 +57,21 @@ class WeatherManagerService:
                 mpd_by_id[mpd.pk] = mpd
 
         if not valid_points:
+            if logger_callback:
+                logger_callback("Нет доступных МПД с заполненными географическими координатами", "warn")
             return 0
+
+        if logger_callback:
+            logger_callback(
+                f"Старт запроса координатного прогноза для {len(valid_points)} точек МПД...",
+                "step",
+            )
 
         # Пакетная выгрузка из Open-Meteo
         batch_results = OpenMeteoProvider.fetch_coordinate_forecasts_batch(
             valid_points,
             model_name=force_model,
+            logger_callback=logger_callback,
         )
 
         total_saved = 0
@@ -83,6 +94,13 @@ class WeatherManagerService:
                 mpd_elevation_msl_m=elev_msl,
             )
             nearest_station = nearest_info["station"] if nearest_info else None
+            st_code = nearest_station.icao_code if nearest_station else "нет"
+
+            if logger_callback:
+                logger_callback(
+                    f"МПД «{mpd.name}»: привязка к опорной станции {st_code}. Сохранение {len(hourly_records)} почасовых точек...",
+                    "step",
+                )
 
             # Транзакционное сохранение почасовых точек
             with transaction.atomic():
@@ -108,6 +126,12 @@ class WeatherManagerService:
             mpd.weather_last_sync_at = timezone.now()
             mpd.weather_sync_status = f"OK ({model_name.upper()})"
             mpd.save(update_fields=["weather_last_sync_at", "weather_sync_status"])
+
+            if logger_callback:
+                logger_callback(
+                    f"МПД «{mpd.name}»: сохранено {len(hourly_records)} точек прогноза ({model_name.upper()}).",
+                    "success",
+                )
 
         logger.info(
             "Синхронизированы координатные прогнозы: обработано %s МПД, сохранено %s записей",

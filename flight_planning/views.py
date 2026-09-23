@@ -1,7 +1,10 @@
 # flight_planning/views.py
 import json
+import logging
 from datetime import datetime, timedelta, date
 from typing import List, Dict, Any, Optional, Tuple, Union, Set
+
+logger = logging.getLogger(__name__)
 
 from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
@@ -4049,37 +4052,175 @@ def mpd_weather_refresh_view(request: HttpRequest, mpd_id: int) -> Union[HttpRes
         mpd_id (int): Идентификатор места производственной деятельности.
 
     Returns:
-        Union[HttpResponse, JsonResponse]: Перенаправление на страницу истории или JSON ответ.
+        Union[HttpResponse, JsonResponse]: Перенаправление на страницу истории или JSON ответ с протоколом.
     """
     from .weather_services import AviationWeatherService
-    from .weather_providers import WeatherManagerService
 
     mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
     mode = request.POST.get('mode') or request.GET.get('mode', 'all')
+    force_model = request.POST.get('model') or request.GET.get('model')
 
-    obs, fc = None, None
-    coord_count = 0
-
-    if mode in ('metar', 'all') and mpd.icao_code:
-        obs, fc = AviationWeatherService.sync_mpd_weather(mpd)
-
-    if mode in ('coordinate', 'all') and mpd.latitude is not None and mpd.longitude is not None:
-        coord_count = WeatherManagerService.sync_coordinate_forecasts_for_mpds([mpd])
+    result = AviationWeatherService.sync_mpd_weather_with_progress(
+        mpd=mpd,
+        mode=mode,
+        force_model=force_model,
+    )
 
     if request.headers.get('Accept') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
-            'success': True,
+            'success': result['success'],
             'mode': mode,
-            'icao_code': mpd.icao_code,
-            'has_metar': bool(obs),
-            'has_taf': bool(fc),
-            'coordinate_points_saved': coord_count,
-            'observation_time': obs.observation_time.strftime('%H:%M UTC') if obs else None,
-            'flight_category': obs.flight_category if obs else None,
+            'icao_code': result.get('stats', {}).get('icao_code') or mpd.icao_code,
+            'logs': result.get('logs', []),
+            'stats': result.get('stats', {}),
+            'has_warnings': result.get('has_warnings', False),
+            'has_errors': result.get('has_errors', False),
+            'error': result.get('error'),
         })
 
     target_date = request.GET.get('date', timezone.now().date().strftime('%Y-%m-%d'))
     return redirect(f"{reverse('flight_planning:mpd_weather_history', args=[mpd.pk])}?date={target_date}")
+
+
+@login_required
+def mpd_weather_sync_run_view(request: HttpRequest, mpd_id: int) -> JsonResponse:
+    """Запуск фоновой задачи Celery или оперативной синхронизации погоды МПД.
+
+    Поддерживает параметры 'mode' ('metar', 'coordinate', 'all') и 'model' ('ecmwf_ifs', 'gfs_seamless').
+    Пытается передать задачу брокеру сообщений Celery с генерацией task_id.
+    В случае недоступности брокера или воркеров выполняет синхронную обработку
+    и сразу возвращает сформированный журнал выполнения.
+
+    Args:
+        request (HttpRequest): AJAX/Fetch HTTP запрос.
+        mpd_id (int): Идентификатор места производственной деятельности.
+
+    Returns:
+        JsonResponse: Метаданные запущенной задачи (task_id, is_async) либо итоговый протокол.
+    """
+    from .tasks import sync_mpd_weather_task
+    from .weather_services import AviationWeatherService
+
+    mpd = get_object_or_404(PlaceProductionActivity, pk=mpd_id)
+    mode = request.POST.get('mode') or request.GET.get('mode', 'all')
+    force_model = request.POST.get('model') or request.GET.get('model')
+
+    mode_label = "Все метеоданные (METAR + Модель)"
+    if mode == "metar":
+        mode_label = "Авиационные сводки METAR / TAF"
+    elif mode == "coordinate":
+        mode_label = f"Численная модель прогноза ({force_model or 'ECMWF'})"
+
+    # Пробуем передать задачу в Celery
+    try:
+        async_res = sync_mpd_weather_task.apply_async(args=[mpd.pk, mode, force_model])
+        return JsonResponse({
+            'success': True,
+            'is_async': True,
+            'task_id': async_res.id,
+            'task_name': f"Обновление погоды «{mpd.name}» ({mode_label})",
+            'mpd_id': mpd.pk,
+            'mpd_name': mpd.name,
+            'mode': mode,
+        })
+    except Exception as exc:
+        logger.warning("Не удалось поставить задачу в очередь Celery (%s). Запуск синхронного режима...", exc)
+        # Синхронный fallback
+        result = AviationWeatherService.sync_mpd_weather_with_progress(
+            mpd=mpd,
+            mode=mode,
+            force_model=force_model,
+        )
+        return JsonResponse({
+            'success': result['success'],
+            'is_async': False,
+            'task_id': None,
+            'task_name': f"Обновление погоды «{mpd.name}» ({mode_label})",
+            'mpd_id': mpd.pk,
+            'mpd_name': mpd.name,
+            'logs': result.get('logs', []),
+            'stats': result.get('stats', {}),
+            'has_warnings': result.get('has_warnings', False),
+            'has_errors': result.get('has_errors', False),
+            'error': result.get('error'),
+        })
+
+
+@login_required
+def mpd_weather_sync_status_view(request: HttpRequest, mpd_id: int, task_id: str) -> JsonResponse:
+    """Опрос текущего статуса и живого протокола выполнения фоновой задачи Celery.
+
+    Args:
+        request (HttpRequest): AJAX/Fetch HTTP запрос от фронтенд-поллера.
+        mpd_id (int): Идентификатор МПД.
+        task_id (str): Идентификатор задачи Celery.
+
+    Returns:
+        JsonResponse: Состояние выполнения (state, ready, successful, progress, logs, error).
+    """
+    from celery.result import AsyncResult
+
+    try:
+        res = AsyncResult(task_id)
+        state = res.state
+        ready = res.ready()
+
+        if ready:
+            if res.successful():
+                payload = res.result or {}
+                return JsonResponse({
+                    'ready': True,
+                    'successful': payload.get('success', True),
+                    'state': 'SUCCESS' if payload.get('success', True) else 'FAILURE',
+                    'logs': payload.get('logs', []),
+                    'stats': payload.get('stats', {}),
+                    'has_warnings': payload.get('has_warnings', False),
+                    'has_errors': payload.get('has_errors', False),
+                    'result': payload.get('message', 'Синхронизация успешно завершена!'),
+                    'error': payload.get('error'),
+                })
+            else:
+                return JsonResponse({
+                    'ready': True,
+                    'successful': False,
+                    'state': 'FAILURE',
+                    'logs': [],
+                    'stats': {},
+                    'error': str(res.result),
+                })
+
+        if state == 'PROGRESS':
+            info = res.info or {}
+            return JsonResponse({
+                'ready': False,
+                'state': 'PROGRESS',
+                'progress': {
+                    'percent': info.get('percent', 0),
+                    'message': info.get('message', 'Обработка данных...'),
+                    'level': info.get('level', 'info'),
+                },
+                'logs': info.get('logs', []),
+            })
+
+        # PENDING или STARTED
+        return JsonResponse({
+            'ready': False,
+            'state': state,
+            'progress': {
+                'percent': 5,
+                'message': 'Ожидание воркера Celery в очереди...',
+                'level': 'info',
+            },
+            'logs': [],
+        })
+    except Exception as exc:
+        logger.exception("Ошибка получения статуса задачи Celery [%s]: %s", task_id, exc)
+        return JsonResponse({
+            'ready': True,
+            'successful': False,
+            'state': 'ERROR',
+            'error': f"Ошибка монитора: {exc}",
+        })
 
 
 @login_required
