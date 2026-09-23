@@ -3,6 +3,7 @@
 from datetime import datetime, timezone as dt_timezone
 import json
 import logging
+import socket
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import urllib.error
 import urllib.parse
@@ -38,7 +39,7 @@ class OpenMeteoProvider(BaseWeatherProvider):
         base_url = getattr(settings, "OPEN_METEO_BASE_URL", cls.DEFAULT_BASE_URL)
         api_key = getattr(settings, "OPEN_METEO_API_KEY", None)
         default_model = getattr(settings, "OPEN_METEO_DEFAULT_MODEL", cls.DEFAULT_MODEL)
-        timeout = getattr(settings, "OPEN_METEO_TIMEOUT", 25)
+        timeout = getattr(settings, "OPEN_METEO_TIMEOUT", 8)
         retries = getattr(settings, "OPEN_METEO_RETRIES", 2)
 
         return {
@@ -51,12 +52,29 @@ class OpenMeteoProvider(BaseWeatherProvider):
 
     @classmethod
     def _open_url(cls, req: urllib.request.Request, timeout: int) -> str:
-        """Выполняет прямое HTTP-соединение к Open-Meteo API без прокси (метео-трафик идет напрямую).
+        """Выполняет сетевой запрос к Open-Meteo API.
 
-        ProxyHandler({}) гарантирует, что системные HTTP_PROXY / HTTPS_PROXY или прокси Telegram
-        не перехватывают авиационный метео-трафик.
+        Если в Django settings или .env задан специализированный WEATHER_PROXY или
+        OPEN_METEO_PROXY (например, локальный адаптер WireGuard wireproxy http://127.0.0.1:8118),
+        запрос безопасно направляется через него для обхода сетевых блокировок Hetzner.
+        Иначе запрос выполняется напрямую с ProxyHandler({}), гарантируя изоляцию от прокси Telegram.
         """
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        from decouple import config
+
+        weather_proxy = (
+            getattr(settings, "WEATHER_PROXY", None)
+            or getattr(settings, "OPEN_METEO_PROXY", None)
+            or config("WEATHER_PROXY", default="").strip()
+            or config("OPEN_METEO_PROXY", default="").strip()
+        )
+
+        if weather_proxy:
+            opener = urllib.request.build_opener(
+                urllib.request.ProxyHandler({"http": weather_proxy, "https": weather_proxy})
+            )
+        else:
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
         with opener.open(req, timeout=timeout) as resp:
             return resp.read().decode("utf-8")
 
@@ -198,8 +216,27 @@ class OpenMeteoProvider(BaseWeatherProvider):
                 )
             return []
         except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
+            err_str = str(exc).lower()
+            is_connect_timeout = (
+                isinstance(exc, (TimeoutError, socket.timeout))
+                or "timed out" in err_str
+                or "connection refused" in err_str
+                or ("failed" in err_str and "connect" in err_str)
+            )
+
+            if is_connect_timeout:
+                logger.warning("Сетевая блокировка/таймаут хоста Open-Meteo (Hetzner): %s", exc)
+                timeout_msg = (
+                    f"Сетевой таймаут ({timeout} с) при подключении к api.open-meteo.com ({exc}). "
+                    "IP-диапазон Hetzner заблокирован вашим интернет-провайдером / РКН. "
+                    "Для получения погоды площадки используйте «Обновить Всё» или «Обновить METAR» (серверы NOAA AWC работают штатно)."
+                )
+                if logger_callback:
+                    logger_callback(timeout_msg, "error")
+                return []
+
             logger.warning(
-                "Ошибка сети/таймаута Open-Meteo [%s] для %s точек: %s. Пробуем fallback...",
+                "Ошибка сети Open-Meteo [%s] для %s точек: %s. Пробуем fallback...",
                 selected_model, len(points), exc
             )
 
@@ -211,7 +248,7 @@ class OpenMeteoProvider(BaseWeatherProvider):
 
             if next_model:
                 if logger_callback:
-                    logger_callback(f"Сетевой сбой при обращении к {selected_model.upper()} ({exc}). Запуск резервной модели {next_model.upper()}...", "warn")
+                    logger_callback(f"Сбой при обращении к {selected_model.upper()} ({exc}). Запуск резервной модели {next_model.upper()}...", "warn")
                 return cls.fetch_coordinate_forecasts_batch(
                     points,
                     model_name=next_model,
@@ -219,13 +256,8 @@ class OpenMeteoProvider(BaseWeatherProvider):
                     logger_callback=logger_callback,
                 )
 
-            timeout_msg = (
-                f"Сетевой сбой при обращении к Open-Meteo: {exc}. "
-                f"Сервер не ответил в течение {timeout} сек. "
-                "Это задержка или блокировка сетевого соединения (таймаут), а не лимит запросов: при превышении лимита сервис возвращает HTTP 429."
-            )
             if logger_callback:
-                logger_callback(timeout_msg, "error")
+                logger_callback(f"Сбой при обращении к Open-Meteo: {exc}", "error")
             return []
         except Exception as exc:
             logger.exception("Критическая ошибка при запросе Open-Meteo: %s", exc)
