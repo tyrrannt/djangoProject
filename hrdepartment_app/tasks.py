@@ -28,6 +28,7 @@ from contracts_app.models import Contract
 
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings, VacationScheduleList, \
     VacationSchedule, Counteragent, DataBaseUserProfile, ApartmentBooking
+from djangoProject import settings
 from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, BASE_DIR, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 from hrdepartment_app.models import (
@@ -45,12 +46,8 @@ from hrdepartment_app.services.celery_services import (
 )
 
 
-PROXY = f"http://{config('PROXY_LOGIN')}:{config('PROXY_PASS')}@{config('PROXY_IP')}:{config('PROXY_PORT')}"
-
-proxies = {
-    "http": PROXY,
-    "https": PROXY,
-}
+TELEGRAM_PROXY = getattr(settings, "TELEGRAM_PROXY", None) or config("TELEGRAM_PROXY", default=config("WEATHER_PROXY", default="")).strip()
+proxies = {"http": TELEGRAM_PROXY, "https": TELEGRAM_PROXY} if TELEGRAM_PROXY else None
 
 # В tasks.py
 @app.task()
