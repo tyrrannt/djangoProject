@@ -50,6 +50,35 @@ class OpenMeteoProvider(BaseWeatherProvider):
         }
 
     @classmethod
+    def _open_url(cls, req: urllib.request.Request, timeout: int) -> str:
+        """Выполняет сетевой запрос к API с автоопределением корпоративного прокси и фоллбэком на прямое соединение."""
+        import os
+        from decouple import config
+
+        proxy_ip = getattr(settings, "PROXY_IP", None) or config("PROXY_IP", default="").strip()
+        proxy_port = getattr(settings, "PROXY_PORT", None) or config("PROXY_PORT", default="").strip()
+        proxy_login = getattr(settings, "PROXY_LOGIN", None) or config("PROXY_LOGIN", default="").strip()
+        proxy_pass = getattr(settings, "PROXY_PASS", None) or config("PROXY_PASS", default="").strip()
+
+        # 1. Если задан прокси в .env, пробуем запрос через него
+        if proxy_ip and proxy_port:
+            if proxy_login and proxy_pass:
+                proxy_url = f"http://{proxy_login}:{proxy_pass}@{proxy_ip}:{proxy_port}"
+            else:
+                proxy_url = f"http://{proxy_ip}:{proxy_port}"
+            try:
+                opener = urllib.request.build_opener(urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url}))
+                with opener.open(req, timeout=timeout) as resp:
+                    return resp.read().decode("utf-8")
+            except (urllib.error.URLError, OSError) as proxy_err:
+                logger.debug("Прокси %s не ответил (%s). Пробуем прямое соединение...", proxy_ip, proxy_err)
+
+        # 2. Прямое соединение (или системный HTTP_PROXY/HTTPS_PROXY)
+        opener = urllib.request.build_opener()
+        with opener.open(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8")
+
+    @classmethod
     def fetch_coordinate_forecasts_batch(
         cls,
         points: List[Dict[str, Any]],
@@ -141,9 +170,8 @@ class OpenMeteoProvider(BaseWeatherProvider):
         response_data: Union[Dict[str, Any], List[Dict[str, Any]]] = {}
 
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:
-                content = response.read().decode("utf-8")
-                response_data = json.loads(content)
+            content = cls._open_url(req, timeout=timeout)
+            response_data = json.loads(content)
         except urllib.error.HTTPError as exc:
             error_details = f"HTTP {exc.code} {exc.reason}"
             try:
@@ -157,19 +185,32 @@ class OpenMeteoProvider(BaseWeatherProvider):
             except Exception:
                 pass
 
+            if exc.code == 429:
+                limit_msg = f"Превышен лимит запросов Open-Meteo API ({error_details}). Бесплатный лимит: 10 000 запросов/сутки."
+                logger.error(limit_msg)
+                if logger_callback:
+                    logger_callback(limit_msg, "error")
+                return []
+
             logger.warning(
                 "Ошибка HTTP Open-Meteo [%s] для %s точек: %s. Пробуем fallback...",
                 selected_model, len(points), error_details
             )
             if logger_callback:
-                logger_callback(f"Ошибка ответа Open-Meteo ({selected_model.upper()}): {error_details}", "warn" if selected_model != "gfs_seamless" else "error")
+                logger_callback(f"Ошибка ответа Open-Meteo ({selected_model.upper()}): {error_details}", "warn")
 
-            if selected_model != "gfs_seamless":
+            next_model = None
+            if selected_model not in ("gfs_seamless", "best_match"):
+                next_model = "gfs_seamless"
+            elif selected_model == "gfs_seamless":
+                next_model = "best_match"
+
+            if next_model:
                 if logger_callback:
-                    logger_callback("Автоматический запуск резервной модели прогнозирования GFS Seamless...", "step")
+                    logger_callback(f"Автоматический запуск резервной модели прогнозирования {next_model.upper()}...", "step")
                 return cls.fetch_coordinate_forecasts_batch(
                     points,
-                    model_name="gfs_seamless",
+                    model_name=next_model,
                     forecast_days=forecast_days,
                     logger_callback=logger_callback,
                 )
@@ -179,18 +220,30 @@ class OpenMeteoProvider(BaseWeatherProvider):
                 "Ошибка сети/таймаута Open-Meteo [%s] для %s точек: %s. Пробуем fallback...",
                 selected_model, len(points), exc
             )
-            if logger_callback:
-                logger_callback(f"Сетевой сбой при обращении к Open-Meteo ({selected_model.upper()}): {exc}", "warn" if selected_model != "gfs_seamless" else "error")
 
-            if selected_model != "gfs_seamless":
+            next_model = None
+            if selected_model not in ("gfs_seamless", "best_match"):
+                next_model = "gfs_seamless"
+            elif selected_model == "gfs_seamless":
+                next_model = "best_match"
+
+            if next_model:
                 if logger_callback:
-                    logger_callback("Автоматический запуск резервной модели прогнозирования GFS Seamless...", "step")
+                    logger_callback(f"Сетевой сбой при обращении к {selected_model.upper()} ({exc}). Запуск резервной модели {next_model.upper()}...", "warn")
                 return cls.fetch_coordinate_forecasts_batch(
                     points,
-                    model_name="gfs_seamless",
+                    model_name=next_model,
                     forecast_days=forecast_days,
                     logger_callback=logger_callback,
                 )
+
+            timeout_msg = (
+                f"Сетевой сбой при обращении к Open-Meteo: {exc}. "
+                f"Сервер не ответил в течение {timeout} сек. "
+                "Это задержка или блокировка сетевого соединения (таймаут), а не лимит запросов: при превышении лимита сервис возвращает HTTP 429."
+            )
+            if logger_callback:
+                logger_callback(timeout_msg, "error")
             return []
         except Exception as exc:
             logger.exception("Критическая ошибка при запросе Open-Meteo: %s", exc)

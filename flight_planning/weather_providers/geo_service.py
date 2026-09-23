@@ -101,7 +101,14 @@ class GeoStationService:
         """
         active_stations = AviationWeatherStation.objects.filter(is_active=True)
         if not active_stations.exists():
-            return None
+            try:
+                from flight_planning.fixtures_stations import seed_aviation_weather_stations
+                seed_aviation_weather_stations()
+                active_stations = AviationWeatherStation.objects.filter(is_active=True)
+            except Exception:
+                pass
+            if not active_stations.exists():
+                return None
 
         best_station: Optional[AviationWeatherStation] = None
         min_distance: float = float("inf")
