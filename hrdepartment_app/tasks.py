@@ -257,6 +257,14 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
 
 @app.task()
 def birthday_telegram():
+    """Отправляет поздравления именинников текущего дня в корпоративный Telegram-канал.
+
+    Использует настроенный прокси TELEGRAM_PROXY / WEATHER_PROXY (wireproxy) для надежной
+    доставки сообщений через requests.post в обход региональных блокировок.
+
+    Returns:
+        None.
+    """
     today = datetime.datetime.today()
     list_obj = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month)).exclude(
         is_active=False).order_by('title')
@@ -273,28 +281,7 @@ def birthday_telegram():
     messages += '\n<b>Поздравляем\nС Днём Рождения! \U0001f389 \U0001f389 \U0001f389</b>'
     # Вставка картинки в сообщение, если есть. &#8205; - это символ невидимого неразрывного пробела
     messages += '<a href="https://corp.barkol.ru/static/admin_templates/img/Cakes_Candles_Holidays.jpg">&#8205;</a>'
-    # Указаваем в параметрах CHAT_ID и само сообщение
-    input_data = json.dumps(
-        {
-            'chat_id': TELEGRAM_CHAT_ID,
-            'parse_mode': 'html',
-            'text': messages,
-            'disable_web_page_preview': False,
-        }
-    ).encode()
-    # if count >= 1:
-    #     try:
-    #         req = urllib.request.Request(
-    #             url=api_url,
-    #             data=input_data,
-    #             headers={'Content-Type': 'application/json'}
-    #         )
-    #         with urllib.request.urlopen(req) as response:
-    #             # Тут выводим ответ
-    #             print(response.read().decode('utf-8'))
-    #
-    #     except Exception as e:
-    #         print(e)
+
     if count >= 1:
         try:
             response = requests.post(
@@ -306,18 +293,26 @@ def birthday_telegram():
                     'disable_web_page_preview': False,
                 },
                 proxies=proxies,
-                timeout=10
+                timeout=10,
             )
-
-            print(response.status_code)
-            print(response.text)
-
+            if response.status_code == 200:
+                logger.info(f"Telegram birthday notification sent successfully: HTTP {response.status_code}")
+            else:
+                logger.error(f"Telegram birthday notification failed [HTTP {response.status_code}]: {response.text}")
         except Exception as e:
-            print(e)
+            logger.error(f"Exception while sending Telegram birthday notification: {e}")
 
 
 @app.task()
 def holiday_telegram():
+    """Отправляет праздничное поздравление в корпоративный Telegram-канал.
+
+    Использует настроенный прокси TELEGRAM_PROXY / WEATHER_PROXY (wireproxy) для надежной
+    доставки сообщений через requests.post в обход региональных блокировок.
+
+    Returns:
+        None.
+    """
     today = datetime.datetime.today()
     api_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     messages = f'<b>Уважаемые коллеги!\n</b>'
@@ -325,28 +320,26 @@ def holiday_telegram():
     messages += f'\n<blockquote> Поздравляем вас с Днём Победы! Желаем вам чистого неба над головой, мира и добра. Пусть в вашей жизни всегда будет радость и счастье!</blockquote>\n'
     # Вставка картинки в сообщение, если есть. &#8205; - это символ невидимого неразрывного пробела
     messages += '<a href="https://corp.barkol.ru/static/admin_templates/img/9may.jpg">&#8205;</a>'
-    # Указаваем в параметрах CHAT_ID и само сообщение
-    input_data = json.dumps(
-        {
-            'chat_id': TELEGRAM_CHAT_ID,
-            'parse_mode': 'html',
-            'text': messages,
-            'disable_web_page_preview': False,
-        }
-    ).encode()
+
     if count >= 1:
         try:
-            req = urllib.request.Request(
-                url=api_url,
-                data=input_data,
-                headers={'Content-Type': 'application/json'}
+            response = requests.post(
+                api_url,
+                json={
+                    'chat_id': TELEGRAM_CHAT_ID,
+                    'parse_mode': 'html',
+                    'text': messages,
+                    'disable_web_page_preview': False,
+                },
+                proxies=proxies,
+                timeout=10,
             )
-            with urllib.request.urlopen(req) as response:
-                # Тут выводим ответ
-                print(response.read().decode('utf-8'))
-
+            if response.status_code == 200:
+                logger.info(f"Telegram holiday notification sent successfully: HTTP {response.status_code}")
+            else:
+                logger.error(f"Telegram holiday notification failed [HTTP {response.status_code}]: {response.text}")
         except Exception as e:
-            print(e)
+            logger.error(f"Exception while sending Telegram holiday notification: {e}")
 
 
 def happy_birthday_loc():
