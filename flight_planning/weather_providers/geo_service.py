@@ -100,15 +100,15 @@ class GeoStationService:
                 - 'max_representative_km': Пороговая граница (15.0 км).
         """
         active_stations = AviationWeatherStation.objects.filter(is_active=True)
-        if not active_stations.exists():
-            try:
-                from flight_planning.fixtures_stations import seed_aviation_weather_stations
+        try:
+            from flight_planning.fixtures_stations import INITIAL_RUSSIAN_METAR_STATIONS, seed_aviation_weather_stations
+            if active_stations.count() < len(INITIAL_RUSSIAN_METAR_STATIONS):
                 seed_aviation_weather_stations()
                 active_stations = AviationWeatherStation.objects.filter(is_active=True)
-            except Exception:
-                pass
-            if not active_stations.exists():
-                return None
+        except Exception:
+            pass
+        if not active_stations.exists():
+            return None
 
         best_station: Optional[AviationWeatherStation] = None
         min_distance: float = float("inf")

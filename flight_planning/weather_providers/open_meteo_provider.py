@@ -51,30 +51,12 @@ class OpenMeteoProvider(BaseWeatherProvider):
 
     @classmethod
     def _open_url(cls, req: urllib.request.Request, timeout: int) -> str:
-        """Выполняет сетевой запрос к API с автоопределением корпоративного прокси и фоллбэком на прямое соединение."""
-        import os
-        from decouple import config
+        """Выполняет прямое HTTP-соединение к Open-Meteo API без прокси (метео-трафик идет напрямую).
 
-        proxy_ip = getattr(settings, "PROXY_IP", None) or config("PROXY_IP", default="").strip()
-        proxy_port = getattr(settings, "PROXY_PORT", None) or config("PROXY_PORT", default="").strip()
-        proxy_login = getattr(settings, "PROXY_LOGIN", None) or config("PROXY_LOGIN", default="").strip()
-        proxy_pass = getattr(settings, "PROXY_PASS", None) or config("PROXY_PASS", default="").strip()
-
-        # 1. Если задан прокси в .env, пробуем запрос через него
-        if proxy_ip and proxy_port:
-            if proxy_login and proxy_pass:
-                proxy_url = f"http://{proxy_login}:{proxy_pass}@{proxy_ip}:{proxy_port}"
-            else:
-                proxy_url = f"http://{proxy_ip}:{proxy_port}"
-            try:
-                opener = urllib.request.build_opener(urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url}))
-                with opener.open(req, timeout=timeout) as resp:
-                    return resp.read().decode("utf-8")
-            except (urllib.error.URLError, OSError) as proxy_err:
-                logger.debug("Прокси %s не ответил (%s). Пробуем прямое соединение...", proxy_ip, proxy_err)
-
-        # 2. Прямое соединение (или системный HTTP_PROXY/HTTPS_PROXY)
-        opener = urllib.request.build_opener()
+        ProxyHandler({}) гарантирует, что системные HTTP_PROXY / HTTPS_PROXY или прокси Telegram
+        не перехватывают авиационный метео-трафик.
+        """
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         with opener.open(req, timeout=timeout) as resp:
             return resp.read().decode("utf-8")
 

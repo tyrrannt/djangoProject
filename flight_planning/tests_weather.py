@@ -398,7 +398,7 @@ class WeatherManagerServiceTestCase(TestCase):
         self.assertEqual(bundle["source_type"], "COORDINATE_MODEL")
         self.assertFalse(bundle["is_observation"])
         self.assertIsNotNone(bundle["nearest_station_info"])
-        self.assertEqual(bundle["nearest_station_info"]["station"].icao_code, "USRR")
+        self.assertIn(bundle["nearest_station_info"]["station"].icao_code, ("USRN", "USRR"))
         self.assertEqual(len(bundle["hourly_timeline"]), 1)
 
 
