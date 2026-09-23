@@ -69,13 +69,20 @@ class OpenMeteoProvider(BaseWeatherProvider):
         )
 
         if weather_proxy:
-            opener = urllib.request.build_opener(
-                urllib.request.ProxyHandler({"http": weather_proxy, "https": weather_proxy})
-            )
-        else:
-            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            try:
+                proxy_req = urllib.request.Request(req.full_url, headers=dict(req.headers))
+                opener = urllib.request.build_opener(
+                    urllib.request.ProxyHandler({"http": weather_proxy, "https": weather_proxy})
+                )
+                with opener.open(proxy_req, timeout=timeout) as resp:
+                    return resp.read().decode("utf-8")
+            except (urllib.error.URLError, OSError) as proxy_err:
+                logger.warning("WEATHER_PROXY %s недоступен (%s). Пробуем прямое соединение...", weather_proxy, proxy_err)
 
-        with opener.open(req, timeout=timeout) as resp:
+        # Прямое соединение без системных прокси и без прокси Telegram
+        direct_req = urllib.request.Request(req.full_url, headers=dict(req.headers))
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(direct_req, timeout=timeout) as resp:
             return resp.read().decode("utf-8")
 
     @classmethod

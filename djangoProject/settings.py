@@ -1914,3 +1914,12 @@ ISPMANAGER_API_PASSWORD = config("ISPMANAGER_API_PASSWORD", default="")
 ISPMANAGER_API_VERIFY_SSL = config("ISPMANAGER_API_VERIFY_SSL", default=False, cast=bool)
 ISPMANAGER_API_TIMEOUT = config("ISPMANAGER_API_TIMEOUT", default=10, cast=int)
 
+# ==============================================================================
+# AVIATION WEATHER & OPEN-METEO CONFIGURATION
+# ==============================================================================
+OPEN_METEO_BASE_URL = config("OPEN_METEO_BASE_URL", default="https://api.open-meteo.com/v1/forecast")
+OPEN_METEO_DEFAULT_MODEL = config("OPEN_METEO_DEFAULT_MODEL", default="ecmwf_ifs")
+OPEN_METEO_TIMEOUT = config("OPEN_METEO_TIMEOUT", default=10, cast=int)
+WEATHER_PROXY = config("WEATHER_PROXY", default="")
+
+
