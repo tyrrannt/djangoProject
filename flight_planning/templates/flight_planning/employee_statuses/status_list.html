@@ -122,6 +122,33 @@
             z-index: 10;
         }
 
+        /* Презентабельная всплывающая карточка состояния / статуса */
+        .tooltip.status-card-tooltip {
+            opacity: 1 !important;
+            z-index: 10070 !important;
+        }
+
+        .tooltip.status-card-tooltip .tooltip-inner {
+            max-width: 330px !important;
+            min-width: 250px !important;
+            width: max-content;
+            padding: 0 !important;
+            text-align: left !important;
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.25), 0 4px 10px -2px rgba(15, 23, 42, 0.12) !important;
+            overflow: hidden !important;
+            font-size: 0.8rem !important;
+            line-height: 1.35 !important;
+        }
+
+        .tooltip.status-card-tooltip .tooltip-arrow::before {
+            border-top-color: #cbd5e1 !important;
+            border-bottom-color: #cbd5e1 !important;
+        }
+
         .status-pill {
             display: inline-block;
             padding: 4px 10px;
@@ -498,11 +525,11 @@
                                             {% if cell.has_status %}
                                                 <div class="d-flex flex-column align-items-center justify-content-center gap-1">
                                                     {% for b in cell.badges %}
-                                                        <span class="status-cell-badge" style="background-color: {{ b.color }};" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" title="{{ b.tooltip }}">
+                                                        <span class="status-cell-badge" style="background-color: {{ b.color }};" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" data-bs-custom-class="status-card-tooltip" data-bs-title="{{ b.tooltip }}" title="{{ b.tooltip }}">
                                                             {{ b.abbr }}
                                                         </span>
                                                     {% empty %}
-                                                        <span class="status-cell-badge" style="background-color: {{ cell.color }};" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" title="{{ cell.tooltip }}">
+                                                        <span class="status-cell-badge" style="background-color: {{ cell.color }};" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" data-bs-custom-class="status-card-tooltip" data-bs-title="{{ cell.tooltip }}" title="{{ cell.tooltip }}">
                                                             {{ cell.abbr }}
                                                         </span>
                                                     {% endfor %}
@@ -926,12 +953,13 @@
             });
         }
 
-        // Инициализация тултипов Bootstrap с поддержкой HTML
+        // Инициализация тултипов Bootstrap с поддержкой HTML и кастомного класса карточки
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl, {
                 html: true,
-                boundary: 'window'
+                boundary: 'window',
+                sanitize: false
             });
         });
     });

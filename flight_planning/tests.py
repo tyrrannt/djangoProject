@@ -929,7 +929,7 @@ class EmployeeStatusTests(TestCase):
             REPORT_CARD_STATUS_CONFIG
         )
 
-        # Создаем запись табеля ReportCard для пилота (например, 16 - Больничный)
+        # Создаем запись табеля ReportCard для пилота (16 - Больничный)
         target_day = datetime.date(2026, 9, 15)
         ReportCard.objects.create(
             employee=self.pilot,
@@ -938,6 +938,18 @@ class EmployeeStatusTests(TestCase):
             reason_adjustment='Больничный лист №12345',
             confirmed=True
         )
+
+        # Создаем запись служебной поездки с привязкой к МПД
+        trip_day = datetime.date(2026, 9, 20)
+        mpd_trip = PlaceProductionActivity.objects.create(name='МПД «Липецк»')
+        rc_trip = ReportCard.objects.create(
+            employee=self.pilot,
+            report_card_day=trip_day,
+            record_type='14',
+            reason_adjustment='(СП): Направление на работы',
+            confirmed=True
+        )
+        rc_trip.place_report_card.set([mpd_trip])
 
         # Проверяем формирование матрицы за сентябрь 2026
         matrix_rows, days_list = get_combined_employee_occupancy_matrix(
@@ -950,12 +962,21 @@ class EmployeeStatusTests(TestCase):
         row = matrix_rows[0]
         self.assertTrue(row['has_any_status'])
 
-        # Находим ячейку на target_day
+        # Находим ячейку на target_day (Больничный)
         cell_15 = next(c for c in row['cells'] if c['date'] == target_day)
         self.assertTrue(cell_15['has_status'])
         self.assertEqual(cell_15['abbr'], 'Б')
         self.assertEqual(cell_15['color'], '#ef4444')
         self.assertIn('Больничный', cell_15['tooltip'])
+        self.assertIn('status-card-item', cell_15['tooltip'])
+
+        # Находим ячейку на trip_day (Служебная поездка с МПД)
+        cell_20 = next(c for c in row['cells'] if c['date'] == trip_day)
+        self.assertTrue(cell_20['has_status'])
+        self.assertEqual(cell_20['abbr'], 'СП')
+        self.assertIn('Служебная поездка', cell_20['tooltip'])
+        self.assertIn('МПД «Липецк»', cell_20['tooltip'])
+        self.assertIn('МПД:', cell_20['tooltip'])
 
         # Проверяем KPI на дату target_day
         kpi = get_today_active_statuses_summary(pilots_list=[self.pilot], today=target_day)
@@ -970,6 +991,8 @@ class EmployeeStatusTests(TestCase):
         self.assertIn('matrix_rows', res.context)
         self.assertContains(res, 'Обозначения состояний и статусов персонала')
         self.assertContains(res, 'Больничный лист')
+        self.assertContains(res, 'status-card-tooltip')
+        self.assertContains(res, 'МПД «Липецк»')
 
 
 class PeriodicChecksPDFReportTests(TestCase):

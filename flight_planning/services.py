@@ -680,7 +680,7 @@ def check_crew_member_conflicts(
         report_card_day__gte=start_date,
         report_card_day__lte=end_date,
         record_type__in=blocking_rc_types
-    ).select_related('employee')
+    ).select_related('employee').prefetch_related('place_report_card')
 
     for rc in rc_blocking_records:
         meta = REPORT_CARD_STATUS_CONFIG.get(rc.record_type, {})
@@ -688,6 +688,12 @@ def check_crew_member_conflicts(
         status_name = meta.get('full_name', rc.get_record_type_display())
         day_str = rc.report_card_day.strftime('%d.%m.%Y')
         reason_str = f" ({rc.reason_adjustment})" if rc.reason_adjustment else ""
+
+        mpd_info = ""
+        if rc.record_type in ('14', '15'):
+            places = [p.name for p in rc.place_report_card.all()]
+            if places:
+                mpd_info = f" на {', '.join(places)}"
 
         conflicts.append({
             'conflict_kind': 'employee_status',
@@ -701,7 +707,7 @@ def check_crew_member_conflicts(
             'date': rc.report_card_day.isoformat(),
             'date_formatted': day_str,
             'document_number': rc.doc_ref_key or "",
-            'description': f"{pilot_name}: {day_str} имеет отметку в табеле 1С «{status_name}»{reason_str}."
+            'description': f"{pilot_name}: {day_str} имеет отметку в табеле 1С «{status_name}»{mpd_info}{reason_str}."
         })
 
     return conflicts
@@ -2183,19 +2189,26 @@ def get_month_employee_statuses_map(
         report_card_day__gte=start_of_month,
         report_card_day__lte=end_of_month,
         record_type__in=rc_types
-    ).values('id', 'employee_id', 'report_card_day', 'record_type', 'reason_adjustment', 'confirmed')
+    ).prefetch_related('place_report_card')
 
     for rc in rc_month:
-        meta = REPORT_CARD_STATUS_CONFIG.get(rc['record_type'])
+        meta = REPORT_CARD_STATUS_CONFIG.get(rc.record_type)
         if not meta:
             continue
-        emp_id = rc['employee_id']
-        day_iso = rc['report_card_day'].isoformat()
-        day_fmt = rc['report_card_day'].strftime('%d.%m.%Y')
+        emp_id = rc.employee_id
+        day_iso = rc.report_card_day.isoformat()
+        day_fmt = rc.report_card_day.strftime('%d.%m.%Y')
+
+        mpd_info = ""
+        if rc.record_type in ('14', '15'):
+            places = [p.name for p in rc.place_report_card.all()]
+            if places:
+                mpd_info = f" ({', '.join(places)})"
+
         status_map[emp_id].append({
-            'id': f"rc_{rc['id']}",
+            'id': f"rc_{rc.id}",
             'source': 'report_card',
-            'status_name': f"[Табель 1С] {meta['full_name']}",
+            'status_name': f"[Табель 1С] {meta['full_name']}{mpd_info}",
             'status_code': meta['code'],
             'color': meta['color'],
             'is_blocking': meta['is_blocking'],
@@ -2203,9 +2216,9 @@ def get_month_employee_statuses_map(
             'end_date': day_iso,
             'start_date_formatted': day_fmt,
             'end_date_formatted': day_fmt,
-            'period_display': rc['report_card_day'].strftime('%d.%m'),
-            'document_number': rc.get('reason_adjustment') or '',
-            'notes': f"Запись табеля 1С (код {rc['record_type']})"
+            'period_display': rc.report_card_day.strftime('%d.%m'),
+            'document_number': rc.reason_adjustment or '',
+            'notes': f"Запись табеля 1С (код {rc.record_type}){mpd_info}"
         })
 
     return dict(status_map)
@@ -2347,6 +2360,139 @@ def get_today_active_statuses_summary(
     }
 
 
+def _build_status_card_html(
+        source: str,
+        name: str,
+        abbr: str,
+        color: str,
+        date_display: str,
+        period_info: Optional[str] = None,
+        days_count: Optional[int] = None,
+        mpd_name: Optional[str] = None,
+        document_number: Optional[str] = None,
+        notes: Optional[str] = None,
+        is_blocking: bool = False,
+        is_confirmed: bool = False,
+) -> str:
+    """Формирует презентабельную структурированную HTML-карточку для всплывающей подсказки ячейки статуса.
+
+    Включает в себя:
+    - Заголовок с цветным бейджем аббревиатуры и наименованием статуса;
+    - Бейдж источника записи (1С:ЗУП Табель или ЛПК Оперативный);
+    - Период действия с датами и количеством дней;
+    - Выделенный блок МПД назначения для служебных поездок и командировок;
+    - Реквизиты документов-оснований (приказ, больничный лист, распоряжение);
+    - Служебные примечания / причину ручной корректировки;
+    - Индикаторы блокировки экипажа и подтверждения.
+
+    Args:
+        source (str): Источник записи ('lpc' или 'report_card').
+        name (str): Полное наименование статуса.
+        abbr (str): 1-2 символьная аббревиатура.
+        color (str): Цветовой HEX-код статуса.
+        date_display (str): Дата дня в формате "ДД.ММ.ГГГГ".
+        period_info (Optional[str], optional): Диапазон дат "с ДД.ММ по ДД.ММ.ГГГГ".
+        days_count (Optional[int], optional): Длительность в календарных днях.
+        mpd_name (Optional[str], optional): Наименование МПД (для командировок и служебных поездок).
+        document_number (Optional[str], optional): Номер документа или приказа.
+        notes (Optional[str], optional): Служебные примечания.
+        is_blocking (bool, optional): Блокирует ли данный статус назначение в экипаж. Defaults to False.
+        is_confirmed (bool, optional): Подтверждена ли запись (для СП). Defaults to False.
+
+    Returns:
+        str: HTML-разметка карточки для всплывающего тултипа.
+    """
+    from django.utils.html import escape
+
+    safe_name = escape(name)
+    safe_abbr = escape(abbr)
+
+    if source == 'report_card':
+        source_label = "1С:ЗУП Табель"
+        source_bg = "#f1f5f9"
+        source_color = "#475569"
+        source_border = "#cbd5e1"
+    else:
+        source_label = "ЛПК Оперативный"
+        source_bg = "#eff6ff"
+        source_color = "#1d4ed8"
+        source_border = "#bfdbfe"
+
+    period_text = escape(period_info) if period_info else escape(date_display)
+    days_badge = ""
+    if days_count and days_count > 1:
+        days_badge = f'<span style="background:#f1f5f9;color:#64748b;font-size:10px;font-weight:600;padding:1px 5px;border-radius:4px;margin-left:4px;">{days_count} дн.</span>'
+
+    mpd_block = ""
+    if mpd_name:
+        safe_mpd = escape(str(mpd_name).strip())
+        mpd_block = (
+            f'<div style="display:flex;align-items:center;gap:6px;margin:5px 0;padding:5px 8px;'
+            f'border-radius:6px;background-color:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:12px;">'
+            f'<span style="font-size:14px;line-height:1;">📍</span>'
+            f'<div style="min-width:0;line-height:1.25;">'
+            f'<span style="font-weight:700;color:#15803d;margin-right:3px;">МПД:</span>'
+            f'<span style="font-weight:600;color:#14532d;">{safe_mpd}</span>'
+            f'</div></div>'
+        )
+
+    doc_block = ""
+    if document_number:
+        safe_doc = escape(str(document_number).strip())
+        if safe_doc and safe_doc != '0':
+            doc_block = (
+                f'<div style="display:flex;align-items:center;gap:5px;color:#475569;font-size:11px;margin-bottom:3px;">'
+                f'<span style="color:#64748b;">📄</span>'
+                f'<span>Документ: <strong>{safe_doc}</strong></span>'
+                f'</div>'
+            )
+
+    notes_block = ""
+    if notes:
+        safe_notes = escape(str(notes).strip())
+        if safe_notes and safe_notes.lower() != name.lower():
+            notes_block = (
+                f'<div style="margin-top:4px;padding:4px 8px;border-radius:4px;background-color:#f8fafc;'
+                f'border-left:3px solid #cbd5e1;color:#334155;font-size:11px;line-height:1.3;">'
+                f'<span style="color:#64748b;font-weight:600;">Примечание:</span> {safe_notes}'
+                f'</div>'
+            )
+
+    if is_blocking:
+        blocking_html = '<span style="color:#dc2626;font-weight:600;display:inline-flex;align-items:center;gap:3px;"><span style="font-size:12px;">⛔</span> Блокирует экипаж</span>'
+    else:
+        blocking_html = '<span style="color:#16a34a;font-weight:500;display:inline-flex;align-items:center;gap:3px;"><span style="font-size:12px;">✓</span> Не блокирует полеты</span>'
+
+    confirmed_html = ""
+    if is_confirmed:
+        confirmed_html = '<span style="color:#0284c7;font-weight:600;display:inline-flex;align-items:center;gap:3px;"><span style="font-size:12px;">✅</span> Подтверждено</span>'
+
+    card_html = (
+        f'<div class="status-card-item" style="padding:10px 12px;border-left:4px solid {color};background:#ffffff;">'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+        f'<div style="display:flex;align-items:center;gap:6px;min-width:0;">'
+        f'<span style="display:inline-block;background-color:{color};color:#ffffff;font-weight:700;font-size:11px;padding:2px 6px;border-radius:4px;line-height:1;">{safe_abbr}</span>'
+        f'<span style="font-weight:700;font-size:13px;color:#0f172a;line-height:1.2;">{safe_name}</span>'
+        f'</div>'
+        f'<span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;background:{source_bg};color:{source_color};border:1px solid {source_border};white-space:nowrap;">{source_label}</span>'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;gap:5px;color:#475569;font-size:12px;margin-bottom:4px;">'
+        f'<span style="color:#64748b;">📅</span>'
+        f'<span style="font-weight:600;">{period_text}</span>'
+        f'{days_badge}'
+        f'</div>'
+        f'{mpd_block}'
+        f'{doc_block}'
+        f'{notes_block}'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;padding-top:5px;border-top:1px solid #f1f5f9;font-size:11px;">'
+        f'{blocking_html}'
+        f'{confirmed_html}'
+        f'</div>'
+        f'</div>'
+    )
+    return card_html
+
+
 def get_combined_employee_occupancy_matrix(
         pilots_list: Sequence[Any],
         year: int,
@@ -2362,6 +2508,10 @@ def get_combined_employee_occupancy_matrix(
        Все 19 регламентированных видов отсутствий (Ежегодный, Дополнительный,
        Без оплаты, Учебный, ЧАЭС, Декретный, Больничный, Медосмотр, График отпусков,
        Служебная поездка, Командировка, Санаторно-курортное лечение, Отгул).
+
+    Для служебных поездок и командировок автоматически определяется и выводится
+    наименование МПД назначения (из связей табеля с `PlaceProductionActivity`
+    или согласованных служебных записок `OfficialMemo`).
 
     При наличии записей из обоих источников на один день, статусы агрегируются
     в список бейджей ячейки с устранением дубликатов одинаковых типов и
@@ -2403,10 +2553,33 @@ def get_combined_employee_occupancy_matrix(
     if not pilot_ids:
         return [], days_list
 
-    # 1. Загрузка оперативных записей ЛПК (EmployeeStatusRecord)
     from .models import EmployeeStatusRecord
     from collections import defaultdict
 
+    # Предзагрузка служебных записок (OfficialMemo) для быстрого разрешения МПД командировок / поездок
+    from hrdepartment_app.models import OfficialMemo
+    memo_mpd_map: Dict[Tuple[int, date], List[str]] = defaultdict(list)
+    try:
+        memos = OfficialMemo.objects.filter(
+            person_id__in=pilot_ids,
+            period_from__lte=end_of_month,
+            period_for__gte=start_of_month
+        ).prefetch_related('place_production_activity')
+
+        for m in memos:
+            p_names = [p.name for p in m.place_production_activity.all()]
+            if not p_names:
+                continue
+            m_from = max(start_of_month, m.period_from) if m.period_from else start_of_month
+            m_to = min(end_of_month, m.period_for) if m.period_for else end_of_month
+            cur_d = m_from
+            while cur_d <= m_to:
+                memo_mpd_map[(m.person_id, cur_d)].extend(p_names)
+                cur_d += timedelta(days=1)
+    except Exception:
+        pass
+
+    # 1. Загрузка оперативных записей ЛПК (EmployeeStatusRecord)
     lpc_records = EmployeeStatusRecord.objects.filter(
         employee_id__in=pilot_ids,
         start_date__lte=end_of_month,
@@ -2451,24 +2624,47 @@ def get_combined_employee_occupancy_matrix(
             abbr = (r.status_type.name[:2] if len(r.status_type.name) >= 2 else r.status_type.name).upper()
             prio = 45
 
-        doc_info = f" (приказ №{r.document_number})" if r.document_number else ""
-        period_info = f"с {r.start_date.strftime('%d.%m')} по {r.end_date.strftime('%d.%m')}"
-        tooltip = f"[ЛПК] {r.status_type.name}: {period_info}{doc_info}"
-        if r.notes:
-            tooltip += f" — {r.notes}"
-
-        badge = {
-            'source': 'lpc',
-            'abbr': abbr,
-            'name': r.status_type.name,
-            'color': r.status_type.color,
-            'is_blocking': r.status_type.is_blocking,
-            'tooltip': tooltip,
-            'priority': prio,
-            'record_id': r.id,
-        }
+        period_info = f"с {r.start_date.strftime('%d.%m')} по {r.end_date.strftime('%d.%m.%Y')}"
+        days_cnt = r.duration_days
 
         while curr <= last_d:
+            # Для командировок определяем МПД
+            lpc_mpd = None
+            if code == 'BUSINESS_TRIP':
+                if (r.employee_id, curr) in memo_mpd_map:
+                    lpc_mpd = ", ".join(dict.fromkeys(memo_mpd_map[(r.employee_id, curr)]))
+                elif r.notes and ('мпд' in r.notes.lower() or 'база' in r.notes.lower()):
+                    lpc_mpd = r.notes
+                else:
+                    lpc_mpd = "не указано"
+
+            card_html = _build_status_card_html(
+                source='lpc',
+                name=r.status_type.name,
+                abbr=abbr,
+                color=r.status_type.color,
+                date_display=curr.strftime('%d.%m.%Y'),
+                period_info=period_info,
+                days_count=days_cnt,
+                mpd_name=lpc_mpd,
+                document_number=r.document_number,
+                notes=r.notes,
+                is_blocking=r.status_type.is_blocking,
+                is_confirmed=False,
+            )
+
+            badge = {
+                'source': 'lpc',
+                'abbr': abbr,
+                'name': r.status_type.name,
+                'color': r.status_type.color,
+                'is_blocking': r.status_type.is_blocking,
+                'tooltip': card_html,
+                'priority': prio,
+                'record_id': r.id,
+                'mpd_name': lpc_mpd,
+            }
+
             status_matrix_lookup[(r.employee_id, curr)].append(badge)
             curr += timedelta(days=1)
 
@@ -2481,24 +2677,47 @@ def get_combined_employee_occupancy_matrix(
         report_card_day__gte=start_of_month,
         report_card_day__lte=end_of_month,
         record_type__in=rc_type_keys
-    ).values('id', 'employee_id', 'report_card_day', 'record_type', 'reason_adjustment', 'confirmed')
+    ).prefetch_related('place_report_card')
 
     for rc in rc_records:
-        r_type = rc['record_type']
+        r_type = rc.record_type
         meta = REPORT_CARD_STATUS_CONFIG.get(r_type)
         if not meta:
             continue
 
-        emp_id = rc['employee_id']
-        rc_day = rc['report_card_day']
+        emp_id = rc.employee_id
+        rc_day = rc.report_card_day
         rc_date_str = rc_day.strftime('%d.%m.%Y')
 
-        rc_tooltip = f"[Табель 1С] {meta['full_name']} ({rc_date_str})"
-        reason = (rc.get('reason_adjustment') or '').strip()
-        if reason and reason.lower() != meta['name'].lower() and reason.lower() != meta['full_name'].lower():
-            rc_tooltip += f" — {reason}"
-        if rc.get('confirmed'):
-            rc_tooltip += " (Подтверждено)"
+        # Определение МПД для служебных поездок и командировок
+        mpd_name = None
+        if r_type in ('14', '15'):
+            direct_places = [p.name for p in rc.place_report_card.all()]
+            if direct_places:
+                mpd_name = ", ".join(dict.fromkeys(direct_places))
+            elif (emp_id, rc_day) in memo_mpd_map:
+                memo_places = memo_mpd_map[(emp_id, rc_day)]
+                mpd_name = ", ".join(dict.fromkeys(memo_places))
+            else:
+                mpd_name = "не указано в табеле"
+
+        reason = (rc.reason_adjustment or '').strip()
+        notes_val = reason if (reason and reason.lower() != meta['name'].lower() and reason.lower() != meta['full_name'].lower()) else None
+
+        rc_card_html = _build_status_card_html(
+            source='report_card',
+            name=meta['full_name'],
+            abbr=meta['abbr'],
+            color=meta['color'],
+            date_display=rc_date_str,
+            period_info=None,
+            days_count=1,
+            mpd_name=mpd_name,
+            document_number=rc.doc_ref_key if (rc.doc_ref_key and rc.doc_ref_key != '0') else None,
+            notes=notes_val,
+            is_blocking=meta['is_blocking'],
+            is_confirmed=rc.confirmed,
+        )
 
         rc_badge = {
             'source': 'report_card',
@@ -2506,18 +2725,21 @@ def get_combined_employee_occupancy_matrix(
             'name': meta['full_name'],
             'color': meta['color'],
             'is_blocking': meta['is_blocking'],
-            'tooltip': rc_tooltip,
+            'tooltip': rc_card_html,
             'priority': meta.get('priority', 50),
-            'record_id': rc['id'],
+            'record_id': rc.id,
             'record_type': r_type,
+            'mpd_name': mpd_name,
         }
 
         existing_badges = status_matrix_lookup[(emp_id, rc_day)]
         # Проверяем на дубликат по типу записи или одинаковой аббревиатуре
         duplicate_badge = next((b for b in existing_badges if b.get('record_type') == r_type or b['abbr'] == meta['abbr']), None)
         if duplicate_badge:
-            if rc_tooltip not in duplicate_badge['tooltip']:
-                duplicate_badge['tooltip'] += f"<br>{rc_tooltip}"
+            # Если у дубликата есть МПД, а у первого не было — дополняем тултип
+            if mpd_name and not duplicate_badge.get('mpd_name'):
+                duplicate_badge['tooltip'] = rc_card_html
+                duplicate_badge['mpd_name'] = mpd_name
         else:
             existing_badges.append(rc_badge)
 
@@ -2542,6 +2764,10 @@ def get_combined_employee_occupancy_matrix(
                 # Сортируем бейджи по приоритету (наиболее важный статус сверху)
                 sorted_badges = sorted(badges, key=lambda b: b.get('priority', 50))
                 primary = sorted_badges[0]
+                # Объединяем карточки статусов тонким изящным разделителем
+                combined_tooltip = '<div style="height:1px;background:#e2e8f0;margin:0;"></div>'.join(
+                    b['tooltip'] for b in sorted_badges
+                )
                 p_cells.append({
                     'date': d,
                     'is_today': (d == today),
@@ -2551,7 +2777,7 @@ def get_combined_employee_occupancy_matrix(
                     'name': primary['name'],
                     'color': primary['color'],
                     'is_blocking': any(b.get('is_blocking', False) for b in sorted_badges),
-                    'tooltip': "<br>".join(b['tooltip'] for b in sorted_badges),
+                    'tooltip': combined_tooltip,
                     'record': None,
                 })
             else:
