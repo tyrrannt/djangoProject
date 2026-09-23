@@ -1,7 +1,8 @@
 import logging
 import re
 from datetime import date, timedelta
-from typing import List, Dict, Any, Optional, Tuple, Set
+from typing import List, Dict, Any, Optional, Tuple, Set, Sequence
+from django.db.models import Q
 from .models import PilotAssignment, AircraftMovement, PeriodicCheckRecord
 
 logger = logging.getLogger(__name__)
@@ -369,6 +370,204 @@ def validate_crew_composition(flight_type: str, members: List[Dict[str, Any]]) -
     return len(errors) == 0, errors
 
 
+# ==============================================================================
+# КОНФИГУРАЦИЯ СТАТУСОВ ТАБЕЛЯ УЧЕТА РАБОЧЕГО ВРЕМЕНИ (ReportCard / 1С:ЗУП)
+# ==============================================================================
+
+REPORT_CARD_STATUS_CONFIG: Dict[str, Dict[str, Any]] = {
+    "2": {
+        "code": "VACATION_ANNUAL",
+        "name": "Ежегодный",
+        "full_name": "Ежегодный отпуск",
+        "abbr": "ОТ",
+        "color": "#f59e0b",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 20,
+    },
+    "3": {
+        "code": "VACATION_EXTRA_ANNUAL",
+        "name": "Дополнительный ежегодный отпуск",
+        "full_name": "Дополнительный ежегодный отпуск",
+        "abbr": "ДО",
+        "color": "#d97706",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 21,
+    },
+    "4": {
+        "code": "VACATION_UNPAID",
+        "name": "Отпуск за свой счет",
+        "full_name": "Отпуск без сохранения заработной платы",
+        "abbr": "БС",
+        "color": "#64748b",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 22,
+    },
+    "5": {
+        "code": "VACATION_STUDY",
+        "name": "Дополнительный учебный отпуск (оплачиваемый)",
+        "full_name": "Дополнительный учебный отпуск (оплачиваемый)",
+        "abbr": "УО",
+        "color": "#0284c7",
+        "is_blocking": True,
+        "category": "study",
+        "priority": 23,
+    },
+    "6": {
+        "code": "VACATION_CHILDCARE",
+        "name": "Отпуск по уходу за ребенком",
+        "full_name": "Отпуск по уходу за ребенком",
+        "abbr": "ОР",
+        "color": "#7c3aed",
+        "is_blocking": True,
+        "category": "leave",
+        "priority": 24,
+    },
+    "7": {
+        "code": "VACATION_CHERNOBYL_UNPAID",
+        "name": "Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС",
+        "full_name": "Дополнительный неоплачиваемый отпуск пострадавшим на ЧАЭС",
+        "abbr": "ОЧ",
+        "color": "#475569",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 25,
+    },
+    "8": {
+        "code": "VACATION_MATERNITY",
+        "name": "Отпуск по беременности и родам",
+        "full_name": "Отпуск по беременности и родам",
+        "abbr": "БР",
+        "color": "#db2777",
+        "is_blocking": True,
+        "category": "leave",
+        "priority": 26,
+    },
+    "9": {
+        "code": "VACATION_UNPAID_TK",
+        "name": "Отпуск без оплаты согласно ТК РФ",
+        "full_name": "Отпуск без оплаты согласно ТК РФ",
+        "abbr": "БО",
+        "color": "#64748b",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 27,
+    },
+    "10": {
+        "code": "VACATION_EXTRA",
+        "name": "Дополнительный отпуск",
+        "full_name": "Дополнительный отпуск",
+        "abbr": "ДО",
+        "color": "#d97706",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 28,
+    },
+    "11": {
+        "code": "VACATION_CHERNOBYL_PAID",
+        "name": "Дополнительный оплачиваемый отпуск пострадавшим в аварии на ЧАЭС",
+        "full_name": "Дополнительный оплачиваемый отпуск пострадавшим на ЧАЭС",
+        "abbr": "ОЧ",
+        "color": "#0284c7",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 29,
+    },
+    "12": {
+        "code": "VACATION_MAIN",
+        "name": "Основной",
+        "full_name": "Основной отпуск",
+        "abbr": "ОТ",
+        "color": "#f59e0b",
+        "is_blocking": True,
+        "category": "vacation",
+        "priority": 30,
+    },
+    "13": {
+        "code": "MANUAL_INPUT",
+        "name": "Ручной ввод",
+        "full_name": "Ручной ввод табеля",
+        "abbr": "РВ",
+        "color": "#eab308",
+        "is_blocking": False,
+        "category": "manual",
+        "priority": 80,
+    },
+    "14": {
+        "code": "BUSINESS_TRIP_LOCAL",
+        "name": "Служебная поездка",
+        "full_name": "Служебная поездка",
+        "abbr": "СП",
+        "color": "#ea580c",
+        "is_blocking": True,
+        "category": "trip",
+        "priority": 40,
+    },
+    "15": {
+        "code": "BUSINESS_TRIP",
+        "name": "Командировка",
+        "full_name": "Командировка",
+        "abbr": "КМ",
+        "color": "#10b981",
+        "is_blocking": True,
+        "category": "trip",
+        "priority": 41,
+    },
+    "16": {
+        "code": "SICK_LEAVE",
+        "name": "Больничный",
+        "full_name": "Больничный лист",
+        "abbr": "Б",
+        "color": "#ef4444",
+        "is_blocking": True,
+        "category": "sick",
+        "priority": 10,
+    },
+    "17": {
+        "code": "MEDICAL_EXAM",
+        "name": "Мед осмотр",
+        "full_name": "Медицинский осмотр",
+        "abbr": "МО",
+        "color": "#06b6d4",
+        "is_blocking": True,
+        "category": "medical",
+        "priority": 35,
+    },
+    "18": {
+        "code": "VACATION_SCHEDULE",
+        "name": "График отпусков",
+        "full_name": "График отпусков (плановый)",
+        "abbr": "ГО",
+        "color": "#38bdf8",
+        "is_blocking": False,
+        "category": "vacation_plan",
+        "priority": 70,
+    },
+    "19": {
+        "code": "VACATION_RESORT",
+        "name": "Отпуск на санаторно курортное лечение",
+        "full_name": "Санаторно-курортное лечение",
+        "abbr": "СК",
+        "color": "#059669",
+        "is_blocking": True,
+        "category": "resort",
+        "priority": 31,
+    },
+    "20": {
+        "code": "DAY_OFF",
+        "name": "Отгул",
+        "full_name": "Отгул",
+        "abbr": "В",
+        "color": "#8b5cf6",
+        "is_blocking": True,
+        "category": "day_off",
+        "priority": 50,
+    },
+}
+
+
 def check_crew_member_conflicts(
         mpd_id: int,
         start_date: date,
@@ -471,6 +670,38 @@ def check_crew_member_conflicts(
             'date_formatted': period_str,
             'document_number': sr.document_number,
             'description': f"{pilot_name}: {period_str} находится в состоянии «{sr.status_type.name}»{doc_info}."
+        })
+
+    # 3. Проверка блокирующих записей из табеля учета рабочего времени (ReportCard / 1С:ЗУП)
+    from hrdepartment_app.models import ReportCard
+    blocking_rc_types = [k for k, v in REPORT_CARD_STATUS_CONFIG.items() if v.get('is_blocking')]
+    rc_blocking_records = ReportCard.objects.filter(
+        employee_id__in=member_ids,
+        report_card_day__gte=start_date,
+        report_card_day__lte=end_date,
+        record_type__in=blocking_rc_types
+    ).select_related('employee')
+
+    for rc in rc_blocking_records:
+        meta = REPORT_CARD_STATUS_CONFIG.get(rc.record_type, {})
+        pilot_name = rc.employee.title if rc.employee else "Сотрудник"
+        status_name = meta.get('full_name', rc.get_record_type_display())
+        day_str = rc.report_card_day.strftime('%d.%m.%Y')
+        reason_str = f" ({rc.reason_adjustment})" if rc.reason_adjustment else ""
+
+        conflicts.append({
+            'conflict_kind': 'employee_status',
+            'member_id': rc.employee_id,
+            'pilot_name': pilot_name,
+            'status_name': f"[Табель 1С] {status_name}",
+            'status_code': meta.get('code', 'REPORT_CARD_ABSENCE'),
+            'status_color': meta.get('color', '#ef4444'),
+            'start_date': rc.report_card_day.isoformat(),
+            'end_date': rc.report_card_day.isoformat(),
+            'date': rc.report_card_day.isoformat(),
+            'date_formatted': day_str,
+            'document_number': rc.doc_ref_key or "",
+            'description': f"{pilot_name}: {day_str} имеет отметку в табеле 1С «{status_name}»{reason_str}."
         })
 
     return conflicts
@@ -1912,6 +2143,7 @@ def get_month_employee_statuses_map(
         Dict[int, List[Dict[str, Any]]]: Словарь вида { pilot_id: [status_records_data] }.
     """
     from .models import EmployeeStatusRecord
+    from hrdepartment_app.models import ReportCard
     from collections import defaultdict
 
     start_of_month = date(year, month, 1)
@@ -1930,6 +2162,7 @@ def get_month_employee_statuses_map(
     for r in records:
         status_map[r.employee_id].append({
             'id': r.id,
+            'source': 'lpc',
             'status_name': r.status_type.name,
             'status_code': r.status_type.code,
             'color': r.status_type.color,
@@ -1941,6 +2174,38 @@ def get_month_employee_statuses_map(
             'period_display': f"{r.start_date.strftime('%d.%m')}–{r.end_date.strftime('%d.%m')}",
             'document_number': r.document_number,
             'notes': r.notes
+        })
+
+    # Добавляем подтвержденные записи из табеля 1С (ReportCard)
+    rc_types = list(REPORT_CARD_STATUS_CONFIG.keys())
+    rc_month = ReportCard.objects.filter(
+        employee_id__in=pilot_ids,
+        report_card_day__gte=start_of_month,
+        report_card_day__lte=end_of_month,
+        record_type__in=rc_types
+    ).values('id', 'employee_id', 'report_card_day', 'record_type', 'reason_adjustment', 'confirmed')
+
+    for rc in rc_month:
+        meta = REPORT_CARD_STATUS_CONFIG.get(rc['record_type'])
+        if not meta:
+            continue
+        emp_id = rc['employee_id']
+        day_iso = rc['report_card_day'].isoformat()
+        day_fmt = rc['report_card_day'].strftime('%d.%m.%Y')
+        status_map[emp_id].append({
+            'id': f"rc_{rc['id']}",
+            'source': 'report_card',
+            'status_name': f"[Табель 1С] {meta['full_name']}",
+            'status_code': meta['code'],
+            'color': meta['color'],
+            'is_blocking': meta['is_blocking'],
+            'start_date': day_iso,
+            'end_date': day_iso,
+            'start_date_formatted': day_fmt,
+            'end_date_formatted': day_fmt,
+            'period_display': rc['report_card_day'].strftime('%d.%m'),
+            'document_number': rc.get('reason_adjustment') or '',
+            'notes': f"Запись табеля 1С (код {rc['record_type']})"
         })
 
     return dict(status_map)
@@ -1993,6 +2258,326 @@ def get_pilot_employee_statuses(
         'active_status_color': active_status.status_type.color if active_status else None,
         'records': records_data
     }
+
+
+def get_today_active_statuses_summary(
+        pilots_list: Sequence[Any],
+        today: Optional[date] = None
+) -> Dict[str, int]:
+    """Формирует сводные счетчики KPI по активным состояниям сотрудников на указанную дату.
+
+    Агрегирует данные без дублирования сотрудников из двух источников:
+    - Оперативные записи ЛПК (`EmployeeStatusRecord`)
+    - Подтвержденные отметки табеля (`ReportCard` / 1С:ЗУП)
+
+    Args:
+        pilots_list (Sequence[Any]): Список или QuerySet сотрудников.
+        today (Optional[date], optional): Дата среза. Defaults to date.today().
+
+    Returns:
+        Dict[str, int]: Словарь счетчиков KPI:
+            - 'total_active_today_count': Общее число сотрудников со статусами сегодня.
+            - 'sick_leave_today_count': Число сотрудников на больничном.
+            - 'vacation_today_count': Число сотрудников в отпуске (включая график отпусков).
+            - 'reserve_today_count': Число сотрудников в резерве.
+            - 'training_today_count': Число сотрудников на КПК / ВЛЭК / медосмотре.
+    """
+    if today is None:
+        today = date.today()
+
+    pilot_ids = set(p.id for p in pilots_list)
+    if not pilot_ids:
+        return {
+            'total_active_today_count': 0,
+            'sick_leave_today_count': 0,
+            'vacation_today_count': 0,
+            'reserve_today_count': 0,
+            'training_today_count': 0,
+        }
+
+    from .models import EmployeeStatusRecord
+    from hrdepartment_app.models import ReportCard
+
+    # 1. Записи ЛПК на сегодня
+    today_lpc = EmployeeStatusRecord.objects.filter(
+        employee_id__in=pilot_ids,
+        start_date__lte=today,
+        end_date__gte=today
+    ).select_related('status_type')
+
+    # 2. Записи ReportCard на сегодня
+    rc_vacation_types = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '18', '19']
+    today_rc = ReportCard.objects.filter(
+        employee_id__in=pilot_ids,
+        report_card_day=today
+    ).exclude(record_type='1').exclude(record_type='')
+
+    # Множества сотрудников по категориям (дедупликация)
+    sick_emps = set(today_lpc.filter(
+        Q(status_type__code='SICK_LEAVE') | Q(status_type__name__icontains='Больничный')
+    ).values_list('employee_id', flat=True))
+    sick_emps.update(today_rc.filter(record_type='16').values_list('employee_id', flat=True))
+
+    vacation_emps = set(today_lpc.filter(
+        Q(status_type__code__in=['VACATION', 'EXTRA_VACATION']) | Q(status_type__name__icontains='Отпуск')
+    ).values_list('employee_id', flat=True))
+    vacation_emps.update(today_rc.filter(record_type__in=rc_vacation_types).values_list('employee_id', flat=True))
+
+    reserve_emps = set(today_lpc.filter(
+        Q(status_type__code='RESERVE') | Q(status_type__name__icontains='Резерв')
+    ).values_list('employee_id', flat=True))
+
+    training_emps = set(today_lpc.filter(
+        Q(status_type__code__in=['KPK', 'VLEK', 'MEDICAL_EXAM']) |
+        Q(status_type__name__icontains='КПК') |
+        Q(status_type__name__icontains='ВЛЭК') |
+        Q(status_type__name__icontains='Медосмотр')
+    ).values_list('employee_id', flat=True))
+    training_emps.update(today_rc.filter(record_type='17').values_list('employee_id', flat=True))
+
+    total_active_emps = set(today_lpc.values_list('employee_id', flat=True))
+    total_active_emps.update(today_rc.values_list('employee_id', flat=True))
+
+    return {
+        'total_active_today_count': len(total_active_emps),
+        'sick_leave_today_count': len(sick_emps),
+        'vacation_today_count': len(vacation_emps),
+        'reserve_today_count': len(reserve_emps),
+        'training_today_count': len(training_emps),
+    }
+
+
+def get_combined_employee_occupancy_matrix(
+        pilots_list: Sequence[Any],
+        year: int,
+        month: int,
+        today: Optional[date] = None
+) -> Tuple[List[Dict[str, Any]], List[date]]:
+    """Формирует сводную матрицу занятости персонала на указанный месяц.
+
+    Объединяет в единой календарной сетке:
+    1. Оперативные записи модуля ЛПК (`EmployeeStatusRecord`):
+       Отпуск, Больничный, Резерв, КПК, ВЛЭК, Медосмотр, Командировка, Отгул.
+    2. Подтвержденные записи кадрового учета и табеля 1С (`ReportCard`):
+       Все 19 регламентированных видов отсутствий (Ежегодный, Дополнительный,
+       Без оплаты, Учебный, ЧАЭС, Декретный, Больничный, Медосмотр, График отпусков,
+       Служебная поездка, Командировка, Санаторно-курортное лечение, Отгул).
+
+    При наличии записей из обоих источников на один день, статусы агрегируются
+    в список бейджей ячейки с устранением дубликатов одинаковых типов и
+    приоритетной сортировкой (Больничный -> Отпуск -> ВЛЭК/МО -> Командировка -> План).
+
+    Args:
+        pilots_list (Sequence[Any]): Список или QuerySet отображаемых сотрудников.
+        year (int): Год планирования (например, 2026).
+        month (int): Месяц планирования (1-12).
+        today (Optional[date], optional): Текущая дата для подсветки столбца "Сегодня".
+            Defaults to date.today().
+
+    Returns:
+        Tuple[List[Dict[str, Any]], List[date]]: Кортеж, содержащий:
+            - matrix_rows (List[Dict[str, Any]]): Список строк по каждому сотруднику:
+                {
+                    'pilot': DataBaseUser,
+                    'pilot_name': str,
+                    'job': str,
+                    'cells': List[Dict[str, Any]],
+                    'has_any_status': bool,
+                    'status_count': int
+                }
+            - days_list (List[date]): Список дат всех дней выбранного месяца.
+    """
+    if today is None:
+        today = date.today()
+
+    start_of_month = date(year, month, 1)
+    if month == 12:
+        end_of_month = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end_of_month = date(year, month + 1, 1) - timedelta(days=1)
+
+    days_in_month = (end_of_month - start_of_month).days + 1
+    days_list = [date(year, month, d) for d in range(1, days_in_month + 1)]
+
+    pilot_ids = [p.id for p in pilots_list]
+    if not pilot_ids:
+        return [], days_list
+
+    # 1. Загрузка оперативных записей ЛПК (EmployeeStatusRecord)
+    from .models import EmployeeStatusRecord
+    from collections import defaultdict
+
+    lpc_records = EmployeeStatusRecord.objects.filter(
+        employee_id__in=pilot_ids,
+        start_date__lte=end_of_month,
+        end_date__gte=start_of_month
+    ).select_related('employee', 'status_type').order_by('start_date')
+
+    # Словарь (employee_id, date) -> list of badge dicts
+    status_matrix_lookup: Dict[Tuple[int, date], List[Dict[str, Any]]] = defaultdict(list)
+
+    for r in lpc_records:
+        curr = max(start_of_month, r.start_date)
+        last_d = min(end_of_month, r.end_date)
+        code = r.status_type.code
+        if code == 'VACATION':
+            abbr = 'ОТ'
+            prio = 20
+        elif code == 'EXTRA_VACATION':
+            abbr = 'ДО'
+            prio = 21
+        elif code == 'SICK_LEAVE':
+            abbr = 'Б'
+            prio = 10
+        elif code == 'RESERVE':
+            abbr = 'Р'
+            prio = 50
+        elif code == 'KPK':
+            abbr = 'КПК'
+            prio = 32
+        elif code == 'VLEK':
+            abbr = 'ВЛ'
+            prio = 33
+        elif code == 'MEDICAL_EXAM':
+            abbr = 'МО'
+            prio = 34
+        elif code == 'BUSINESS_TRIP':
+            abbr = 'КМ'
+            prio = 40
+        elif code == 'DAY_OFF':
+            abbr = 'В'
+            prio = 60
+        else:
+            abbr = (r.status_type.name[:2] if len(r.status_type.name) >= 2 else r.status_type.name).upper()
+            prio = 45
+
+        doc_info = f" (приказ №{r.document_number})" if r.document_number else ""
+        period_info = f"с {r.start_date.strftime('%d.%m')} по {r.end_date.strftime('%d.%m')}"
+        tooltip = f"[ЛПК] {r.status_type.name}: {period_info}{doc_info}"
+        if r.notes:
+            tooltip += f" — {r.notes}"
+
+        badge = {
+            'source': 'lpc',
+            'abbr': abbr,
+            'name': r.status_type.name,
+            'color': r.status_type.color,
+            'is_blocking': r.status_type.is_blocking,
+            'tooltip': tooltip,
+            'priority': prio,
+            'record_id': r.id,
+        }
+
+        while curr <= last_d:
+            status_matrix_lookup[(r.employee_id, curr)].append(badge)
+            curr += timedelta(days=1)
+
+    # 2. Загрузка подтвержденных записей табеля ReportCard (1C:ЗУП)
+    from hrdepartment_app.models import ReportCard
+    rc_type_keys = list(REPORT_CARD_STATUS_CONFIG.keys())
+
+    rc_records = ReportCard.objects.filter(
+        employee_id__in=pilot_ids,
+        report_card_day__gte=start_of_month,
+        report_card_day__lte=end_of_month,
+        record_type__in=rc_type_keys
+    ).values('id', 'employee_id', 'report_card_day', 'record_type', 'reason_adjustment', 'confirmed')
+
+    for rc in rc_records:
+        r_type = rc['record_type']
+        meta = REPORT_CARD_STATUS_CONFIG.get(r_type)
+        if not meta:
+            continue
+
+        emp_id = rc['employee_id']
+        rc_day = rc['report_card_day']
+        rc_date_str = rc_day.strftime('%d.%m.%Y')
+
+        rc_tooltip = f"[Табель 1С] {meta['full_name']} ({rc_date_str})"
+        reason = (rc.get('reason_adjustment') or '').strip()
+        if reason and reason.lower() != meta['name'].lower() and reason.lower() != meta['full_name'].lower():
+            rc_tooltip += f" — {reason}"
+        if rc.get('confirmed'):
+            rc_tooltip += " (Подтверждено)"
+
+        rc_badge = {
+            'source': 'report_card',
+            'abbr': meta['abbr'],
+            'name': meta['full_name'],
+            'color': meta['color'],
+            'is_blocking': meta['is_blocking'],
+            'tooltip': rc_tooltip,
+            'priority': meta.get('priority', 50),
+            'record_id': rc['id'],
+            'record_type': r_type,
+        }
+
+        existing_badges = status_matrix_lookup[(emp_id, rc_day)]
+        # Проверяем на дубликат по типу записи или одинаковой аббревиатуре
+        duplicate_badge = next((b for b in existing_badges if b.get('record_type') == r_type or b['abbr'] == meta['abbr']), None)
+        if duplicate_badge:
+            if rc_tooltip not in duplicate_badge['tooltip']:
+                duplicate_badge['tooltip'] += f"<br>{rc_tooltip}"
+        else:
+            existing_badges.append(rc_badge)
+
+    # 3. Построение строк матрицы
+    matrix_rows = []
+    for p in pilots_list:
+        p_name = p.title or f"{p.last_name} {p.first_name}".strip() or p.username
+        job_name = (
+            p.user_work_profile.job.name
+            if (hasattr(p, 'user_work_profile') and p.user_work_profile and p.user_work_profile.job)
+            else ''
+        )
+        p_cells = []
+        has_any_status = False
+        status_count = 0
+
+        for d in days_list:
+            badges = status_matrix_lookup.get((p.id, d), [])
+            if badges:
+                has_any_status = True
+                status_count += 1
+                # Сортируем бейджи по приоритету (наиболее важный статус сверху)
+                sorted_badges = sorted(badges, key=lambda b: b.get('priority', 50))
+                primary = sorted_badges[0]
+                p_cells.append({
+                    'date': d,
+                    'is_today': (d == today),
+                    'has_status': True,
+                    'badges': sorted_badges,
+                    'abbr': primary['abbr'],
+                    'name': primary['name'],
+                    'color': primary['color'],
+                    'is_blocking': any(b.get('is_blocking', False) for b in sorted_badges),
+                    'tooltip': "<br>".join(b['tooltip'] for b in sorted_badges),
+                    'record': None,
+                })
+            else:
+                p_cells.append({
+                    'date': d,
+                    'is_today': (d == today),
+                    'has_status': False,
+                    'badges': [],
+                    'abbr': '',
+                    'name': '',
+                    'color': '',
+                    'is_blocking': False,
+                    'tooltip': '',
+                    'record': None,
+                })
+
+        matrix_rows.append({
+            'pilot': p,
+            'pilot_name': p_name,
+            'job': job_name,
+            'cells': p_cells,
+            'has_any_status': has_any_status,
+            'status_count': status_count,
+        })
+
+    return matrix_rows, days_list
 
 
 # ==============================================================================

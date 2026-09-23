@@ -101,18 +101,21 @@
         }
 
         .status-cell-badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             width: 28px;
-            height: 24px;
-            line-height: 22px;
+            height: 22px;
+            line-height: 1;
             text-align: center;
             border-radius: 4px;
             font-weight: 700;
-            font-size: 0.72rem;
+            font-size: 0.70rem;
             color: #ffffff;
             cursor: pointer;
             box-shadow: 0 1px 2px rgba(0,0,0,0.15);
             transition: transform 0.1s ease;
+            user-select: none;
         }
         .status-cell-badge:hover {
             transform: scale(1.15);
@@ -441,14 +444,31 @@
                 <!-- ================= TAB 2: СВОДНАЯ СЕТКА ЗАНЯТОСТИ ================= -->
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                     <div>
-                        <h5 class="fw-bold mb-1">Сводная занятость персонала на {{ current_date|date:"F Y" }}</h5>
-                        <p class="text-muted small mb-0">Сетка запланированных отпусков, больничных, резервов и других состояний</p>
+                        <h5 class="fw-bold mb-1">Сводная занятость персонала на {{ month_display|default:month_name }}</h5>
+                        <p class="text-muted small mb-0">Сетка запланированных отпусков, больничных, резервов и подтвержденных записей табеля 1С</p>
                     </div>
-                    <form method="get" class="d-flex gap-2 align-items-center">
-                        <input type="hidden" name="tab" value="matrix">
-                        <input type="month" name="month" class="form-control form-control-modern form-control-sm" value="{{ current_date|date:'Y-m' }}" onchange="this.form.submit()">
-                        <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">Перейти</button></noscript>
-                    </form>
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <div class="input-group input-group-sm" style="max-width: 220px;">
+                            <span class="input-group-text bg-white border-end-0"><i class='bx bx-search text-muted'></i></span>
+                            <input type="text" id="matrixPilotSearch" class="form-control form-control-modern border-start-0" placeholder="Фильтр по ФИО...">
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <a href="?tab=matrix&year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-secondary btn-touch" title="Предыдущий месяц" aria-label="Предыдущий месяц">
+                                <i class='bx bx-chevron-left'></i>
+                            </a>
+                            <a href="?tab=matrix&year={{ today.year }}&month={{ today.month }}" class="btn btn-outline-secondary btn-touch" title="Перейти на текущий месяц">
+                                Текущий
+                            </a>
+                            <a href="?tab=matrix&year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-secondary btn-touch" title="Следующий месяц" aria-label="Следующий месяц">
+                                <i class='bx bx-chevron-right'></i>
+                            </a>
+                        </div>
+                        <form method="get" class="d-flex gap-2 align-items-center m-0">
+                            <input type="hidden" name="tab" value="matrix">
+                            <input type="month" name="month" class="form-control form-control-modern form-control-sm" value="{{ current_month_input }}" onchange="this.form.submit()" title="Выбрать месяц">
+                            <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">Перейти</button></noscript>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="matrix-table-wrapper border rounded">
@@ -476,9 +496,17 @@
                                     {% for cell in row.cells %}
                                         <td class="{% if cell.is_today %}today-col{% endif %}">
                                             {% if cell.has_status %}
-                                                <span class="status-cell-badge" style="background-color: {{ cell.color }};" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ cell.tooltip }}">
-                                                    {{ cell.abbr }}
-                                                </span>
+                                                <div class="d-flex flex-column align-items-center justify-content-center gap-1">
+                                                    {% for b in cell.badges %}
+                                                        <span class="status-cell-badge" style="background-color: {{ b.color }};" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" title="{{ b.tooltip }}">
+                                                            {{ b.abbr }}
+                                                        </span>
+                                                    {% empty %}
+                                                        <span class="status-cell-badge" style="background-color: {{ cell.color }};" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" title="{{ cell.tooltip }}">
+                                                            {{ cell.abbr }}
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
                                             {% else %}
                                                 <span style="color: #cbd5e1;">·</span>
                                             {% endif %}
@@ -492,6 +520,112 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Легенда обозначений состояний и статусов персонала -->
+                <div class="mt-4 p-3 bg-light rounded border">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class='bx bx-info-circle fs-5 text-primary'></i>
+                            <h6 class="fw-bold mb-0 text-dark">Обозначения состояний и статусов персонала в сетке занятости</h6>
+                        </div>
+                        <span class="text-muted small">Формируется на основе оперативных данных ЛПК и подтвержденных отметок Табеля (1С:ЗУП)</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Блок 1: Отпуска и отдых -->
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="fw-bold small text-muted text-uppercase mb-2"><i class='bx bx-sun text-warning me-1'></i> Отпуска и отдых</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #f59e0b; width: 28px; height: 22px;">ОТ</span>
+                                    <span class="small">Ежегодный / Основной отпуск</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #38bdf8; width: 28px; height: 22px;">ГО</span>
+                                    <span class="small">График отпусков (плановый)</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #d97706; width: 28px; height: 22px;">ДО</span>
+                                    <span class="small">Дополнительный ежегодный отпуск</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #64748b; width: 28px; height: 22px;">БС</span>
+                                    <span class="small">Отпуск за свой счет / без оплаты</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #0284c7; width: 28px; height: 22px;">УО</span>
+                                    <span class="small">Учебный отпуск (оплачиваемый)</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #7c3aed; width: 28px; height: 22px;">ОР</span>
+                                    <span class="small">Отпуск по уходу за ребенком</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #db2777; width: 28px; height: 22px;">БР</span>
+                                    <span class="small">Отпуск по беременности и родам</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #059669; width: 28px; height: 22px;">СК</span>
+                                    <span class="small">Санаторно-курортное лечение</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #8b5cf6; width: 28px; height: 22px;">В</span>
+                                    <span class="small">Отгул / Выходной</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 2: Здоровье и квалификация -->
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="fw-bold small text-muted text-uppercase mb-2"><i class='bx bx-plus-medical text-danger me-1'></i> Здоровье и квалификация</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #ef4444; width: 28px; height: 22px;">Б</span>
+                                    <span class="small">Больничный лист</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #06b6d4; width: 28px; height: 22px;">МО</span>
+                                    <span class="small">Медицинский осмотр</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #ec4899; width: 28px; height: 22px;">ВЛ</span>
+                                    <span class="small">ВЛЭК (Летно-экспертная комиссия)</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #8b5cf6; width: 28px; height: 22px;">КПК</span>
+                                    <span class="small">Курсы повышения квалификации</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #475569; width: 28px; height: 22px;">ОЧ</span>
+                                    <span class="small">Отпуск пострадавшим на ЧАЭС</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 3: Оперативная деятельность -->
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="fw-bold small text-muted text-uppercase mb-2"><i class='bx bx-briefcase text-info me-1'></i> Оперативная деятельность</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #3b82f6; width: 28px; height: 22px;">Р</span>
+                                    <span class="small">Резерв экипажей</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #10b981; width: 28px; height: 22px;">КМ</span>
+                                    <span class="small">Командировка</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #ea580c; width: 28px; height: 22px;">СП</span>
+                                    <span class="small">Служебная поездка</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-cell-badge" style="background-color: #eab308; width: 28px; height: 22px;">РВ</span>
+                                    <span class="small">Ручной ввод табеля</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             {% elif active_tab == 'types' %}
@@ -777,10 +911,28 @@
             $('.select2-filter').select2({ theme: 'bootstrap', width: '100%' });
         }
 
-        // Инициализация тултипов Bootstrap
+        // Живой поиск сотрудников в сетке занятости
+        const matrixSearchInput = document.getElementById('matrixPilotSearch');
+        if (matrixSearchInput) {
+            matrixSearchInput.addEventListener('input', function() {
+                const q = this.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('.matrix-table tbody tr');
+                rows.forEach(row => {
+                    const nameCell = row.querySelector('.pilot-name-cell');
+                    if (!nameCell) return;
+                    const text = nameCell.textContent.toLowerCase();
+                    row.style.display = text.includes(q) ? '' : 'none';
+                });
+            });
+        }
+
+        // Инициализация тултипов Bootstrap с поддержкой HTML
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                html: true,
+                boundary: 'window'
+            });
         });
     });
 </script>

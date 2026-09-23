@@ -13,7 +13,10 @@ from django.contrib.auth.models import Group, Permission
 from customers_app.models import DataBaseUser
 from hrdepartment_app.models import PlaceProductionActivity
 from contracts_app.models import Estate, TypeProperty
-from flight_planning.models import FlightCrew, CrewMember, FlightCrewNote, AircraftMovement, PilotAssignment
+from flight_planning.models import (
+    FlightCrew, CrewMember, FlightCrewNote, AircraftMovement, PilotAssignment,
+    EmployeeStatusType, EmployeeStatusRecord
+)
 from flight_planning.permissions import (
     is_flight_planner,
     can_view_flight_reports,
@@ -704,13 +707,16 @@ class EmployeeStatusTests(TestCase):
     """Тестирование моделей, сервисов, проверки конфликтов и представлений модуля «Состояния сотрудников»."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = Client(SERVER_NAME='127.0.0.1')
         self.planner_user = DataBaseUser.objects.create_user(
             username='planner_status_user',
             password='password123',
-            is_staff=True
+            first_name='Иван',
+            last_name='Планировщиков',
+            is_staff=True,
+            is_superuser=True
         )
-        planner_group, _ = Group.objects.get_or_create(name='Диспетчер по планированию полетов')
+        planner_group, _ = Group.objects.get_or_create(name='[ЛПК] Диспетчеры планирования')
         self.planner_user.groups.add(planner_group)
 
         self.pilot = DataBaseUser.objects.create_user(
@@ -719,6 +725,10 @@ class EmployeeStatusTests(TestCase):
             first_name='Сергей',
             last_name='Петров'
         )
+        from customers_app.models import Job, DataBaseUserWorkProfile
+        job_pilot, _ = Job.objects.get_or_create(name='Командир воздушного судна Ми-8', defaults={'type_of_job': '1'})
+        self.pilot.user_work_profile = DataBaseUserWorkProfile.objects.create(job=job_pilot)
+        self.pilot.save()
 
         self.mpd = PlaceProductionActivity.objects.create(
             name='МПД Север',
@@ -880,15 +890,15 @@ class EmployeeStatusTests(TestCase):
         job_general = Job.objects.create(name='Руководитель полетов', type_of_job='0')
 
         # Создаем пользователей
-        user_flight = DataBaseUser.objects.create_user(username='u_flight', password='pwd')
+        user_flight = DataBaseUser.objects.create_user(username='u_flight', password='pwd', first_name='Летчик', last_name='Иванов')
         user_flight.user_work_profile = DataBaseUserWorkProfile.objects.create(job=job_flight)
         user_flight.save()
 
-        user_eng = DataBaseUser.objects.create_user(username='u_eng', password='pwd')
+        user_eng = DataBaseUser.objects.create_user(username='u_eng', password='pwd', first_name='Инженер', last_name='Петров')
         user_eng.user_work_profile = DataBaseUserWorkProfile.objects.create(job=job_eng)
         user_eng.save()
 
-        user_gen = DataBaseUser.objects.create_user(username='u_gen', password='pwd')
+        user_gen = DataBaseUser.objects.create_user(username='u_gen', password='pwd', first_name='Начальник', last_name='Сидоров')
         user_gen.user_work_profile = DataBaseUserWorkProfile.objects.create(job=job_general)
         user_gen.save()
 
@@ -909,6 +919,57 @@ class EmployeeStatusTests(TestCase):
         qs_gen = get_allowed_staff_queryset(user=user_gen)
         self.assertIn(user_flight, qs_gen)
         self.assertIn(user_eng, qs_gen)
+
+    def test_report_card_occupancy_matrix_integration(self):
+        """Проверка интеграции записей ReportCard (1С) в сводную сетку занятости и KPI."""
+        from hrdepartment_app.models import ReportCard
+        from flight_planning.services import (
+            get_combined_employee_occupancy_matrix,
+            get_today_active_statuses_summary,
+            REPORT_CARD_STATUS_CONFIG
+        )
+
+        # Создаем запись табеля ReportCard для пилота (например, 16 - Больничный)
+        target_day = datetime.date(2026, 9, 15)
+        ReportCard.objects.create(
+            employee=self.pilot,
+            report_card_day=target_day,
+            record_type='16',
+            reason_adjustment='Больничный лист №12345',
+            confirmed=True
+        )
+
+        # Проверяем формирование матрицы за сентябрь 2026
+        matrix_rows, days_list = get_combined_employee_occupancy_matrix(
+            pilots_list=[self.pilot],
+            year=2026,
+            month=9,
+            today=target_day
+        )
+        self.assertEqual(len(matrix_rows), 1)
+        row = matrix_rows[0]
+        self.assertTrue(row['has_any_status'])
+
+        # Находим ячейку на target_day
+        cell_15 = next(c for c in row['cells'] if c['date'] == target_day)
+        self.assertTrue(cell_15['has_status'])
+        self.assertEqual(cell_15['abbr'], 'Б')
+        self.assertEqual(cell_15['color'], '#ef4444')
+        self.assertIn('Больничный', cell_15['tooltip'])
+
+        # Проверяем KPI на дату target_day
+        kpi = get_today_active_statuses_summary(pilots_list=[self.pilot], today=target_day)
+        self.assertEqual(kpi['total_active_today_count'], 1)
+        self.assertEqual(kpi['sick_leave_today_count'], 1)
+        self.assertEqual(kpi['vacation_today_count'], 0)
+
+        # Проверяем рендеринг страницы с этой матрицей
+        self.client.force_login(self.planner_user)
+        res = self.client.get(reverse('flight_planning:employee_status_list') + '?tab=matrix&month=2026-09')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('matrix_rows', res.context)
+        self.assertContains(res, 'Обозначения состояний и статусов персонала')
+        self.assertContains(res, 'Больничный лист')
 
 
 class PeriodicChecksPDFReportTests(TestCase):

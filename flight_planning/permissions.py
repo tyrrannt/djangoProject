@@ -30,6 +30,12 @@ GROUP_LEGACY_CREW = "Летный состав"
 GROUP_COMPANY_LEADERSHIP = "Руководство"
 GROUP_HR = "Отдел кадров"
 
+# Псевдонимы для обратной совместимости
+GROUP_FLIGHT_PLANNERS = GROUP_LPC_FLIGHT_PLANNERS
+GROUP_FLIGHT_MANAGEMENT = GROUP_LPC_MANAGEMENT
+GROUP_FLIGHT_CREW = GROUP_LPC_CREW
+
+
 
 def get_employee_affiliation_code(employee: Any) -> str:
     """Определяет символьный код принадлежности сотрудника к составу компании.

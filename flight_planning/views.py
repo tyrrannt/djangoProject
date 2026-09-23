@@ -97,7 +97,10 @@ from .services import (
     merge_periodic_check_types_service,
     get_lpc_roles_summary,
     add_user_to_lpc_role,
-    remove_user_from_lpc_role
+    remove_user_from_lpc_role,
+    get_today_active_statuses_summary,
+    get_combined_employee_occupancy_matrix,
+    REPORT_CARD_STATUS_CONFIG
 )
 from .pdf_services import generate_periodic_checks_issues_pdf
 from .importers import PeriodicCheckImporter
@@ -3244,18 +3247,42 @@ def employee_status_list_view(request):
     active_tab = request.GET.get('tab', 'records')
     today = timezone.now().date()
 
-    # Фильтры журнала
+    # Фильтры журнала и сетки
     employee_id = request.GET.get('employee')
     status_type_id = request.GET.get('status_type')
-    month = request.GET.get('month', today.month)
-    year = request.GET.get('year', today.year)
+    month_param = request.GET.get('month')
+    year_param = request.GET.get('year')
     search_query = request.GET.get('q', '').strip()
 
-    try:
-        month = int(month)
-        year = int(year)
-    except (ValueError, TypeError):
+    month = today.month
+    year = today.year
+
+    # Разбор параметра месяца (поддержка как 'YYYY-MM' из input[type=month], так и раздельных параметров)
+    if month_param:
+        m_str = str(month_param).strip()
+        if '-' in m_str:
+            try:
+                parts = m_str.split('-')
+                year = int(parts[0])
+                month = int(parts[1])
+            except (ValueError, IndexError):
+                month = today.month
+                year = today.year
+        else:
+            try:
+                month = int(m_str)
+            except (ValueError, TypeError):
+                month = today.month
+
+    if year_param:
+        try:
+            year = int(year_param)
+        except (ValueError, TypeError):
+            pass
+
+    if not (1 <= month <= 12):
         month = today.month
+    if not (1970 <= year <= 2100):
         year = today.year
 
     start_of_month = date(year, month, 1)
@@ -3296,121 +3323,32 @@ def employee_status_list_view(request):
             Q(notes__icontains=search_query)
         )
 
-    # KPI счетчики на сегодняшнюю дату (для доступного состава)
-    all_active_today = EmployeeStatusRecord.objects.filter(
-        employee__in=pilots_list,
-        start_date__lte=today,
-        end_date__gte=today
-    )
-    total_active_today_count = all_active_today.count()
-    sick_leave_today_count = all_active_today.filter(
-        Q(status_type__code='SICK_LEAVE') | Q(status_type__name__icontains='Больничный')
-    ).count()
-    vacation_today_count = all_active_today.filter(
-        Q(status_type__code__in=['VACATION', 'EXTRA_VACATION']) | Q(status_type__name__icontains='Отпуск')
-    ).count()
-    reserve_today_count = all_active_today.filter(
-        Q(status_type__code='RESERVE') | Q(status_type__name__icontains='Резерв')
-    ).count()
-    training_today_count = all_active_today.filter(
-        Q(status_type__code__in=['KPK', 'VLEK', 'MEDICAL_EXAM']) | Q(status_type__name__icontains='КПК') | Q(status_type__name__icontains='ВЛЭК')
-    ).count()
-
+    # Сводные KPI счетчики на сегодняшнюю дату (объединяют ЛПК и ReportCard без дубликатов)
+    kpi_summary = get_today_active_statuses_summary(pilots_list=pilots_list, today=today)
     total_records_count = EmployeeStatusRecord.objects.filter(employee__in=pilots_list).count()
 
     # Справочник видов статусов
     status_types = EmployeeStatusType.objects.all().order_by('order', 'name')
 
-    days_in_month = (end_of_month - start_of_month).days + 1
-    days_list = [date(year, month, d) for d in range(1, days_in_month + 1)]
-
-    # Выборка записей для матрицы месяца (только для доступного персонала)
-    month_records = EmployeeStatusRecord.objects.filter(
-        employee__in=pilots_list,
-        start_date__lte=end_of_month,
-        end_date__gte=start_of_month
-    ).select_related('employee', 'status_type')
-
-    # Индексация записей: (employee_id, date) -> status_record
-    status_matrix_lookup = {}
-    for r in month_records:
-        curr = max(start_of_month, r.start_date)
-        last_d = min(end_of_month, r.end_date)
-        while curr <= last_d:
-            status_matrix_lookup[(r.employee_id, curr)] = r
-            curr += timedelta(days=1)
-
-    matrix_rows = []
-    for p in pilots_list:
-        p_name = p.title or f"{p.last_name} {p.first_name}".strip() or p.username
-        job_name = p.user_work_profile.job.name if (hasattr(p, 'user_work_profile') and p.user_work_profile and p.user_work_profile.job) else ''
-        p_cells = []
-        has_any_status = False
-
-        for d in days_list:
-            rec = status_matrix_lookup.get((p.id, d))
-            if rec:
-                has_any_status = True
-                # Вычисляем краткую аббревиатуру для компактного вывода в клетке
-                code = rec.status_type.code
-                if code == 'VACATION':
-                    abbr = 'ОТ'
-                elif code == 'EXTRA_VACATION':
-                    abbr = 'ДО'
-                elif code == 'SICK_LEAVE':
-                    abbr = 'Б'
-                elif code == 'RESERVE':
-                    abbr = 'Р'
-                elif code == 'KPK':
-                    abbr = 'КПК'
-                elif code == 'VLEK':
-                    abbr = 'ВЛ'
-                elif code == 'MEDICAL_EXAM':
-                    abbr = 'МО'
-                elif code == 'BUSINESS_TRIP':
-                    abbr = 'КМ'
-                elif code == 'DAY_OFF':
-                    abbr = 'В'
-                else:
-                    abbr = rec.status_type.name[:2].upper()
-
-                p_cells.append({
-                    'date': d,
-                    'is_today': (d == today),
-                    'has_status': True,
-                    'record': rec,
-                    'abbr': abbr,
-                    'name': rec.status_type.name,
-                    'color': rec.status_type.color,
-                    'is_blocking': rec.status_type.is_blocking,
-                    'tooltip': f"{rec.status_type.name} (c {rec.start_date.strftime('%d.%m')} по {rec.end_date.strftime('%d.%m')})"
-                })
-            else:
-                p_cells.append({
-                    'date': d,
-                    'is_today': (d == today),
-                    'has_status': False,
-                    'record': None,
-                    'abbr': '',
-                    'name': '',
-                    'color': '',
-                    'is_blocking': False,
-                    'tooltip': ''
-                })
-
-        matrix_rows.append({
-            'pilot': p,
-            'pilot_name': p_name,
-            'job': job_name,
-            'cells': p_cells,
-            'has_any_status': has_any_status
-        })
+    # Построение сводной матрицы занятости персонала за выбранный месяц (ЛПК + 1С ReportCard)
+    matrix_rows, days_list = get_combined_employee_occupancy_matrix(
+        pilots_list=pilots_list,
+        year=year,
+        month=month,
+        today=today
+    )
 
     prev_month_date = start_of_month - timedelta(days=1)
     next_month_date = end_of_month + timedelta(days=1)
 
     record_form = EmployeeStatusRecordForm(user=request.user)
     type_form = EmployeeStatusTypeForm()
+
+    MONTH_NAMES_RU = [
+        "", "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+    ]
+    month_name_ru = f"{MONTH_NAMES_RU[month]} {year} г."
 
     context = {
         'title': 'Состояния и статусы сотрудников',
@@ -3425,16 +3363,19 @@ def employee_status_list_view(request):
         'year': year,
         'month': month,
         'month_name': start_of_month.strftime('%B %Y'),
+        'month_display': month_name_ru,
+        'current_date': start_of_month,
+        'current_month_input': f"{year:04d}-{month:02d}",
         'prev_year': prev_month_date.year,
         'prev_month': prev_month_date.month,
         'next_year': next_month_date.year,
         'next_month': next_month_date.month,
         'today': today,
-        'total_active_today_count': total_active_today_count,
-        'sick_leave_today_count': sick_leave_today_count,
-        'vacation_today_count': vacation_today_count,
-        'reserve_today_count': reserve_today_count,
-        'training_today_count': training_today_count,
+        'total_active_today_count': kpi_summary['total_active_today_count'],
+        'sick_leave_today_count': kpi_summary['sick_leave_today_count'],
+        'vacation_today_count': kpi_summary['vacation_today_count'],
+        'reserve_today_count': kpi_summary['reserve_today_count'],
+        'training_today_count': kpi_summary['training_today_count'],
         'total_records_count': total_records_count,
         'is_planner': is_flight_planner(request.user),
         'can_edit_statuses': not is_leadership_viewer(request.user) and (can_manage_flight_crews(request.user) or get_allowed_staff_queryset(request.user).exists()),
