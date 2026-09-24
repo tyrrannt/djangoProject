@@ -1,221 +1,92 @@
+# -*- coding: utf-8 -*-
+"""Команда управления Django для запуска асинхронного Telegram-бота компании БАРКОЛ (aiogram 3.31.0)."""
+
+import asyncio
 import datetime
-import time
-from dateutil.relativedelta import relativedelta
-from decouple import config
+import logging
+from typing import List
+
 from django.core.management import BaseCommand
-import telebot
-from email.utils import parseaddr
 from django.db.models import Q
-from loguru import logger
-from customers_app.models import DataBaseUser
-from djangoProject.settings import API_TOKEN
-from telegram_app.models import ChatID, TelegramNotification
+from dateutil.relativedelta import relativedelta
 
-# Константы для кнопок
-action = ["ПОДПИСАТЬСЯ", "ПРОВЕРИТЬ"]
-author_action = ["Количество"]
-article_action = []
+from telegram_app.bot.main import main
+from telegram_app.models import TelegramNotification
+from telegram_app.services.telegram_service import UniversalTelegramService
 
-# Настройка логгера
-logger.add(
-    "debug_bot.json",
-    format=config("LOG_FORMAT"),
-    level=config("LOG_LEVEL"),
-    rotation=config("LOG_ROTATION"),
-    compression=config("LOG_COMPRESSION"),
-    serialize=config("LOG_SERIALIZE"),
-)
+logger = logging.getLogger(__name__)
 
 
-def main_bot(tok):
-    bot = telebot.TeleBot(tok, skip_pending=True)
+def send_message_tg() -> List[str]:
+    """Синхронная функция обработки очереди TelegramNotification для обратной совместимости.
 
-    # Создаем клавиатуру
-    keyboard = telebot.types.ReplyKeyboardMarkup(True)
-    keyboard.row("ПОЛЬЗОВАТЕЛИ", "ПОДПИСКА")
+    Использует UniversalTelegramService для гарантированной маршрутизации запросов
+    через настроенный туннель wireproxy (TELEGRAM_PROXY).
 
-    # Создаем inline-кнопки
-    subscribe_button, author_button, article_button = [], [], []
-    otvet = telebot.types.InlineKeyboardMarkup(row_width=2)
-    author_otvet = telebot.types.InlineKeyboardMarkup(row_width=2)
-    article_otvet = telebot.types.InlineKeyboardMarkup(row_width=2)
-
-    for item in range(0, len(action)):
-        subscribe_button.append(
-            telebot.types.InlineKeyboardButton(
-                f"{action[item]}", callback_data=action[item]
-            )
-        )
-    for item in range(0, len(author_action)):
-        author_button.append(
-            telebot.types.InlineKeyboardButton(
-                f"{author_action[item]}", callback_data=author_action[item]
-            )
-        )
-    for item in range(0, len(article_action)):
-        article_button.append(
-            telebot.types.InlineKeyboardButton(
-                f"{article_action[item]}", callback_data=article_action[item]
-            )
-        )
-
-    for item in range(0, len(action)):
-        otvet.add(subscribe_button[item])
-    for item in range(0, len(author_action)):
-        author_otvet.add(author_button[item])
-    for item in range(0, len(article_action)):
-        article_otvet.add(article_button[item])
-
-    # Обработчик команды /start
-    @bot.message_handler(commands=["start"])
-    def start_message(message):
-        logger.info(f"Start command received from {message.chat.id}")
-        bot.send_message(
-            message.chat.id,
-            f"Здравствуйте {message.from_user.first_name}, для продолжения воспользуйтесь меню.",
-            reply_markup=keyboard,
-        )
-
-    # Обработчик callback-запросов
-    @bot.callback_query_handler(func=lambda call: True)
-    def callback_inline(call):
-        try:
-            logger.info(f"Callback received: {call.data}")  # Логируем callback-данные
-            if call.message:
-                logger.info(f"Message chat ID: {call.message.chat.id}")  # Логируем ID чата
-                if call.data == "ПОДПИСАТЬСЯ":
-                    logger.info("User clicked 'ПОДПИСАТЬСЯ'")  # Логируем нажатие кнопки
-                    bot.send_message(
-                        call.message.chat.id, "Отправь УИН из своего профиля"
-                    )
-                elif call.data == "ПРОВЕРИТЬ":
-                    logger.info("User clicked 'ПРОВЕРИТЬ'")  # Логируем нажатие кнопки
-                    if DataBaseUser.objects.filter(telegram_id=call.message.chat.id):
-                        bot.send_message(
-                            call.message.chat.id,
-                            "Вы успешно подписаны на уведомления! ",
-                        )
-                    else:
-                        bot.send_message(
-                            call.message.chat.id,
-                            "Не нашел вас в списке пользователей! Пройдите процесс подписки на уведомления.",
-                        )
-                elif call.data == "Количество":
-                    logger.info("User clicked 'Количество'")  # Логируем нажатие кнопки
-                    msg = DataBaseUser.objects.all().exclude(telegram_id="")
-                    message_to_user = (
-                        f"Количество подписанных пользователей = {msg.count()}"
-                    )
-                    bot.send_message(
-                        call.message.chat.id, message_to_user, parse_mode="HTML"
-                    )
-                else:
-                    logger.warning(f"Unknown callback data: {call.data}")  # Логируем неизвестные данные
-            else:
-                logger.warning("Callback message is missing")  # Логируем отсутствие сообщения
-        except Exception as e:
-            logger.error(f"Error in callback_inline: {repr(e)}")  # Логируем ошибки
-
-    # Обработчик текстовых сообщений
-    @bot.message_handler(content_types=["text"])
-    def commands(message):
-        logger.info(f"Text message received: {message.text}")  # Логируем текст сообщения
-        if len(message.text) == 36:
-            if DataBaseUser.objects.filter(person_ref_key=message.text):
-                user_obj = DataBaseUser.objects.get(person_ref_key=message.text)
-                ChatID.objects.update_or_create(
-                    chat_id=message.chat.id, ref_key=user_obj.person_ref_key
-                )
-                user_obj.telegram_id = message.chat.id
-                user_obj.save()
-                bot.send_message(
-                    message.chat.id, "Вы успешно подписаны на уведомления! "
-                )
-            else:
-                bot.send_message(
-                    message.chat.id, "Не нашел вас в списке пользователей! "
-                )
-        elif message.text.lower() == "пользователи":
-            bot.send_message(
-                message.chat.id, "Выберите вариант: ", reply_markup=author_otvet
-            )
-        elif message.text.lower() == "статьи":
-            bot.send_message(
-                message.chat.id, "Выберите категорию: ", reply_markup=article_otvet
-            )
-        elif message.text.lower() == "подписка":
-            bot.send_message(message.chat.id, "Выберите вариант:", reply_markup=otvet)
-        elif message.text.lower()[:1] == "@":
-            check_email = parseaddr(message.text.lower()[1:])
-            if check_email[1] != "":
-                verify_link = f"/telegram/{message.chat.id}:{check_email[1]}/"
-                title = f"Подтверждение учетной записи {message.chat.id}"
-                email_message = (
-                    f"Для подтверждения учетной записи {message.chat.id}"
-                    f" на портале https://reqsoft.ru перейдите по "
-                    f"ссылке: \nhttps://reqsoft.ru{verify_link} "
-                )
-                bot_message = (
-                    f"Для подтверждения учетной записи {message.chat.id}"
-                    f" на портале https://reqsoft.ru перейдите по "
-                    f"ссылке отправленной вам на email "
-                )
-                bot.send_message(message.chat.id, f"{bot_message}")
-
-    # Запуск бота
-    bot.infinity_polling(timeout=10, long_polling_timeout=5)
-
-
-# Функция для отправки уведомлений
-def send_message_tg():
+    Returns:
+        List[str]: Список информационных сообщений о результатах отправки.
+    """
     time_list = [0, 15, 5]
     dt = datetime.datetime.now()
-    result = list()
+    result: List[str] = []
+
     try:
-        bot = telebot.TeleBot(API_TOKEN, skip_pending=True)
         notify_list = TelegramNotification.objects.filter(
             Q(send_time__hour=dt.hour) & Q(send_time__minute=dt.minute) & Q(send_date=dt.date())
         )
         for item in notify_list:
-            for chat_id in item.respondents.all():
+            for chat in item.respondents.all():
                 if item.sending_counter > 0:
+                    text_content = f"<b>{item.message}</b>"
                     if item.document_url:
-                        bot.send_message(
-                            chat_id.chat_id,
-                            f'<b>{item.message}</b>.\n <a href="{item.document_url}">Ссылка на документ</a>\n <blockquote>Время отправки: {item.send_date.strftime("%d.%m.%Y")} {item.send_time.strftime("%H:%M")}</blockquote>',
-                            parse_mode="HTML",
-                        )
-                        result.append(
-                            f"Сообщение для {chat_id.chat_id}: {item.message}. "
-                            f"Ссылка на документ: {item.document_url}"
-                        )
-                        logger.info(
-                            f"Сообщение для {chat_id.chat_id} отправлено. "
-                            f"Текст: {item.message}. Ссылка: {item.document_url}"
-                        )
-                    else:
-                        bot.send_message(
-                            chat_id.chat_id, f"{item.message}", parse_mode="HTML"
-                        )
-                        result.append(
-                            f"Сообщение для {chat_id.chat_id}: {item.message}."
-                        )
-                        logger.info(
-                            f"Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}."
-                        )
-            item.sending_counter -= 1
-            item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
-            item.save()
-            time.sleep(1)
+                        text_content += f"\n<a href='{item.document_url}'>Ссылка на документ</a>"
+                    text_content += (
+                        f"\n<blockquote>Время отправки: "
+                        f"{item.send_date.strftime('%d.%m.%Y') if item.send_date else ''} "
+                        f"{item.send_time.strftime('%H:%M') if item.send_time else ''}</blockquote>"
+                    )
 
-    except Exception as _ex:
-        result.append(f"Ошибка telegram бота: {_ex}")
+                    success, err = UniversalTelegramService.send_message_sync(
+                        chat_id=chat.chat_id,
+                        text=text_content,
+                        parse_mode="HTML",
+                    )
+                    if success:
+                        msg_log = f"Сообщение для {chat.chat_id} отправлено: {item.message}"
+                        result.append(msg_log)
+                        logger.info("[TelegramBot:Legacy] %s", msg_log)
+                    else:
+                        logger.warning(
+                            "[TelegramBot:Legacy] Ошибка отправки в чат %s: %s",
+                            chat.chat_id,
+                            err,
+                        )
+
+            item.sending_counter -= 1
+            if 0 <= item.sending_counter < len(time_list):
+                item.send_time = (dt + relativedelta(minutes=time_list[item.sending_counter])).time()
+            item.save()
+
+    except Exception as exc:
+        err_msg = f"Ошибка legacy-обработчика telegram: {exc}"
+        logger.exception("[TelegramBot:Legacy] %s", err_msg)
+        result.append(err_msg)
+
     return result
 
 
-# Команда для запуска бота
 class Command(BaseCommand):
-    help = "Запускет бота"
+    """Management-команда запуска асинхронного Telegram-бота компании БАРКОЛ."""
+
+    help = "Запускает асинхронного Telegram-бота (aiogram 3.31.0) в режиме polling"
 
     def handle(self, *args, **options):
-        main_bot(API_TOKEN)
+        """Точка входа команды 'python manage.py bot'."""
+        self.stdout.write(self.style.SUCCESS("Запуск Telegram-бота компании БАРКОЛ на aiogram 3.31.0..."))
+        try:
+            asyncio.run(main())
+        except (KeyboardInterrupt, SystemExit):
+            self.stdout.write(self.style.WARNING("Бот остановлен пользователем."))
+        except Exception as exc:
+            self.stderr.write(self.style.ERROR(f"Критическая ошибка работы бота: {exc}"))
+            raise
