@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load tz %}
 
 {% block title %}
     Метеоцентр: {{ mpd.name }} ({{ mpd.icao_code|default:"—" }}) // {{ target_date_formatted }}
@@ -1210,7 +1211,7 @@
                                 <i class="bx bx-check-shield"></i> {{ latest_observation.get_flight_category_name_ru }} ({{ latest_observation.flight_category }})
                             </span>
                             <span class="text-white-50 small">
-                                <i class="bx bx-time-five me-1"></i>{{ latest_observation.observation_time|date:"d.m.Y H:i" }} UTC
+                                <i class="bx bx-time-five me-1"></i>{% timezone "UTC" %}{{ latest_observation.observation_time|date:"d.m.Y H:i" }}{% endtimezone %} UTC
                             </span>
                         </div>
                         <h2 class="h3 font-weight-bold text-white mb-1">
@@ -1294,7 +1295,7 @@
                                     <i class="bx bx-shield-quarter me-1"></i> {{ curr.get_flight_category_name_ru }} ({{ curr.flight_category }})
                                 </span>
                                 <span class="text-white-50 small">
-                                    <i class="bx bx-time-five me-1"></i>Срез на {{ curr.forecast_for|date:"d.m.Y H:i" }} UTC
+                                    <i class="bx bx-time-five me-1"></i>Срез на {% timezone "UTC" %}{{ curr.forecast_for|date:"d.m.Y H:i" }}{% endtimezone %} UTC
                                 </span>
                             </div>
                             <h2 class="h3 font-weight-bold text-white mb-1">
@@ -1316,7 +1317,7 @@
                             </div>
                             {% if curr.model_run_at %}
                                 <div class="text-white-50 mt-1" style="font-size: 0.72rem;">
-                                    <i class="bx bx-sync me-1"></i>Инициализация модели: {{ curr.model_run_at|date:"d.m.Y H:i" }} UTC
+                                    <i class="bx bx-sync me-1"></i>Инициализация модели: {% timezone "UTC" %}{{ curr.model_run_at|date:"d.m.Y H:i" }}{% endtimezone %} UTC
                                 </div>
                             {% endif %}
                         </div>
@@ -1484,8 +1485,8 @@
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0 timeline-table">
                                 <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 110px;">Время UTC</th>
+                                     <tr>
+                                        <th style="width: 120px;">Время (UTC / МСК)</th>
                                         <th style="width: 100px;">Условия</th>
                                         <th>Ветер</th>
                                         <th>Видимость</th>
@@ -1500,7 +1501,8 @@
                                     {% for obs in observations %}
                                         <tr>
                                             <td class="font-weight-bold">
-                                                <i class="bx bx-time text-muted me-1"></i>{{ obs.observation_time|date:"H:i" }}
+                                                <i class="bx bx-time text-muted me-1"></i>{% timezone "UTC" %}{{ obs.observation_time|date:"H:i" }}Z{% endtimezone %}
+                                                <small class="text-muted d-block" style="font-size: 0.72rem;">{{ obs.observation_time|date:"H:i" }} МСК</small>
                                                 {% if obs.report_type == 'SPECI' %}
                                                     <span class="badge bg-danger ms-1">SPECI</span>
                                                 {% endif %}
@@ -1611,8 +1613,8 @@
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0 timeline-table">
                                 <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 100px;">Время UTC</th>
+                                     <tr>
+                                        <th style="width: 120px;">Время (UTC / МСК)</th>
                                         <th style="width: 100px;">Категория</th>
                                         <th>Явление (WMO)</th>
                                         <th>Темп / Роса</th>
@@ -1628,7 +1630,8 @@
                                     {% for fc in coordinate_forecasts %}
                                         <tr>
                                             <td class="font-weight-bold">
-                                                <i class="bx bx-time text-info me-1"></i>{{ fc.forecast_for|date:"H:i" }}
+                                                <i class="bx bx-time text-info me-1"></i>{% timezone "UTC" %}{{ fc.forecast_for|date:"H:i" }}Z{% endtimezone %}
+                                                <small class="text-muted d-block" style="font-size: 0.72rem;">{{ fc.forecast_for|date:"H:i" }} МСК</small>
                                             </td>
                                             <td>
                                                 <span class="badge bg-{{ fc.get_flight_category_color }} fs-7">
@@ -1697,10 +1700,10 @@
                                                 {% endif %}
                                             </td>
                                             <td class="text-end">
-                                                <span class="badge bg-secondary font-monospace fs-8" title="Инициализация: {{ fc.model_run_at|date:'d.m.Y H:i' }} UTC">
+                                                <span class="badge bg-secondary font-monospace fs-8" title="Инициализация: {% timezone 'UTC' %}{{ fc.model_run_at|date:'d.m.Y H:i' }}{% endtimezone %} UTC">
                                                     {{ fc.model|upper }}
                                                 </span>
-                                                <small class="text-muted d-block font-monospace" style="font-size: 0.7rem;">{{ fc.model_run_at|date:"H:i" }}Z</small>
+                                                <small class="text-muted d-block font-monospace" style="font-size: 0.7rem;">{% timezone "UTC" %}{{ fc.model_run_at|date:"H:i" }}Z{% endtimezone %}</small>
                                             </td>
                                         </tr>
                                     {% empty %}

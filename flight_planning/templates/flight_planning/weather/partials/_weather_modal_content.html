@@ -1,5 +1,6 @@
 {% load static %}
 {% load custom %}
+{% load tz %}
 
 <div class="weather-modal-wrapper" data-mpd-id="{{ mpd.pk }}" data-current-date="{{ target_date_str }}">
     <!-- Заголовок информера -->
@@ -66,7 +67,7 @@
                         {{ latest_observation.flight_category }} ({{ latest_observation.get_flight_category_name_ru }})
                     </span>
                     <span class="text-white-50 small">
-                        <i class="bx bx-time-five me-1"></i>{{ latest_observation.observation_time|date:"H:i" }} UTC ({{ latest_observation.observation_time|date:"d.m.Y" }})
+                        <i class="bx bx-time-five me-1"></i>{% timezone "UTC" %}{{ latest_observation.observation_time|date:"H:i" }} UTC ({{ latest_observation.observation_time|date:"d.m.Y" }}){% endtimezone %}
                     </span>
                 </div>
                 <div>
@@ -149,7 +150,7 @@
                             {{ curr.flight_category }} ({{ curr.get_flight_category_name_ru }})
                         </span>
                         <span class="text-white-50 small">
-                            <i class="bx bx-time-five me-1"></i>{{ curr.forecast_for|date:"H:i" }} UTC ({{ curr.forecast_for|date:"d.m.Y" }})
+                            <i class="bx bx-time-five me-1"></i>{% timezone "UTC" %}{{ curr.forecast_for|date:"H:i" }} UTC ({{ curr.forecast_for|date:"d.m.Y" }}){% endtimezone %}
                         </span>
                     </div>
                     <div>
@@ -272,7 +273,7 @@
                 <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
                     <thead class="table-light sticky-top">
                         <tr>
-                            <th>Время UTC</th>
+                            <th>Время (UTC / МСК)</th>
                             <th>Условия</th>
                             <th>Ветер (м/с)</th>
                             <th>Видимость</th>
@@ -285,7 +286,10 @@
                     <tbody>
                         {% for obs in observations %}
                             <tr>
-                                <td class="font-monospace fw-bold">{{ obs.observation_time|date:"H:i" }}</td>
+                                <td class="font-monospace fw-bold">
+                                    {% timezone "UTC" %}{{ obs.observation_time|date:"H:i" }}Z{% endtimezone %}
+                                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ obs.observation_time|date:"H:i" }} МСК</small>
+                                </td>
                                 <td>
                                     <span class="badge {% if obs.flight_category == 'VFR' %}bg-success{% elif obs.flight_category == 'MVFR' %}bg-info text-dark{% elif obs.flight_category == 'IFR' %}bg-danger{% else %}bg-dark text-white{% endif %} py-1 px-2">
                                         {{ obs.flight_category }}
@@ -318,7 +322,7 @@
                 <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
                     <thead class="table-light sticky-top">
                         <tr>
-                            <th>Время UTC</th>
+                            <th>Время (UTC / МСК)</th>
                             <th>Условия</th>
                             <th>Ветер (м/с)</th>
                             <th>Видимость</th>
@@ -331,7 +335,10 @@
                     <tbody>
                         {% for fc in coordinate_forecasts %}
                             <tr>
-                                <td class="font-monospace fw-bold">{{ fc.forecast_for|date:"H:i" }}</td>
+                                <td class="font-monospace fw-bold">
+                                    {% timezone "UTC" %}{{ fc.forecast_for|date:"H:i" }}Z{% endtimezone %}
+                                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ fc.forecast_for|date:"H:i" }} МСК</small>
+                                </td>
                                 <td>
                                     <span class="badge bg-{{ fc.get_flight_category_color }} py-1 px-2">
                                         {{ fc.flight_category }}

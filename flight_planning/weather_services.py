@@ -5,7 +5,7 @@
 и обеспечивает синхронизацию с открытыми метеорологическими шлюзами (NOAA / Aviation Weather Center).
 """
 
-from datetime import date, datetime, timezone as dt_timezone
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 import json
 import logging
 import math
@@ -1312,11 +1312,16 @@ class AviationWeatherService:
     def get_mpd_current_weather(cls, mpd: PlaceProductionActivity) -> Dict[str, Any]:
         """Возвращает актуальный статус погоды и действующий прогноз для МПД.
 
+        Для координатных площадок (без ICAO кода станции или с удаленной станцией)
+        находит срез численного прогноза, максимально близкий к текущему моменту времени (UTC).
+        Это гарантирует независимость от часовых поясов пользователей и корректное
+        отображение температуры в реальном времени.
+
         Args:
             mpd (PlaceProductionActivity): Объект места деятельности.
 
         Returns:
-            Dict[str, Any]: Словарь с текущим метеонаблюдением (METAR) и прогнозом (TAF).
+            Dict[str, Any]: Словарь с текущим метеонаблюдением (METAR) и прогнозом (TAF / координатная модель).
         """
         icao = (mpd.icao_code or "").strip().upper()
         latest_obs = None
@@ -1327,8 +1332,37 @@ class AviationWeatherService:
             latest_forecast = AviationWeatherForecast.objects.filter(icao_code=icao).order_by("-issued_at").first()
 
         latest_coord = None
-        if not latest_obs and mpd.latitude is not None and mpd.longitude is not None:
-            latest_coord = CoordinateWeatherForecast.objects.filter(mpd=mpd).order_by("-forecast_for").first()
+        if mpd.latitude is not None and mpd.longitude is not None:
+            now_utc = timezone.now()
+            # 1. Сначала ищем почасовой срез в окрестности текущего момента (±3 часа от now_utc)
+            recent_coords = list(
+                CoordinateWeatherForecast.objects.filter(
+                    mpd=mpd,
+                    forecast_for__gte=now_utc - timedelta(hours=3),
+                    forecast_for__lte=now_utc + timedelta(hours=3),
+                )
+            )
+            if recent_coords:
+                latest_coord = min(recent_coords, key=lambda f: abs((f.forecast_for - now_utc).total_seconds()))
+            else:
+                # 2. Если в окне ±3ч нет, ищем ближайший доступный срез за последние/следующие 2 суток
+                window_coords = list(
+                    CoordinateWeatherForecast.objects.filter(
+                        mpd=mpd,
+                        forecast_for__gte=now_utc - timedelta(days=2),
+                        forecast_for__lte=now_utc + timedelta(days=2),
+                    )
+                )
+                if window_coords:
+                    latest_coord = min(window_coords, key=lambda f: abs((f.forecast_for - now_utc).total_seconds()))
+                else:
+                    # 3. Крайний фоллбэк: берем ближайший в прошлом или будущем
+                    past = CoordinateWeatherForecast.objects.filter(mpd=mpd, forecast_for__lte=now_utc).order_by("-forecast_for").first()
+                    future = CoordinateWeatherForecast.objects.filter(mpd=mpd, forecast_for__gte=now_utc).order_by("forecast_for").first()
+                    if past and future:
+                        latest_coord = past if abs((past.forecast_for - now_utc).total_seconds()) <= abs((future.forecast_for - now_utc).total_seconds()) else future
+                    else:
+                        latest_coord = past or future
 
         return {
             "mpd": mpd,

@@ -1,6 +1,6 @@
 """Тесты парсера авиационной метеорологии, сервисов, координатных прогнозов и представлений."""
 
-from datetime import date, datetime, timezone as dt_timezone
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 import json
 from unittest.mock import MagicMock, patch
 
@@ -643,5 +643,60 @@ class WeatherViewsTestCase(TestCase):
         data = response.json()
         self.assertIn("state", data)
         self.assertIn("ready", data)
+
+    def test_get_mpd_current_weather_selects_closest_to_now(self):
+        """Тест выбора актуального среза погоды, максимально близкого к текущему моменту (now)."""
+        from flight_planning.weather_services import AviationWeatherService
+
+        coord_mpd = PlaceProductionActivity.objects.create(
+            name="МПД Тест Временная Зона",
+            latitude=57.58,
+            longitude=37.21,
+            elevation_msl_m=182.0,
+            in_planning=True,
+            weather_monitoring_enabled=True,
+        )
+        now = timezone.now()
+
+        # Создаем 3 точки: 6 часов назад, текущий час, и 11 часов вперед (ночь)
+        past_forecast = CoordinateWeatherForecast.objects.create(
+            mpd=coord_mpd,
+            latitude=57.58,
+            longitude=37.21,
+            elevation_msl_m=182.0,
+            forecast_for=now - timedelta(hours=6),
+            model_run_at=now - timedelta(hours=12),
+            model="ecmwf_ifs",
+            temperature=12.0,
+        )
+        current_forecast = CoordinateWeatherForecast.objects.create(
+            mpd=coord_mpd,
+            latitude=57.58,
+            longitude=37.21,
+            elevation_msl_m=182.0,
+            forecast_for=now,
+            model_run_at=now - timedelta(hours=6),
+            model="ecmwf_ifs",
+            temperature=19.0,
+        )
+        night_forecast = CoordinateWeatherForecast.objects.create(
+            mpd=coord_mpd,
+            latitude=57.58,
+            longitude=37.21,
+            elevation_msl_m=182.0,
+            forecast_for=now + timedelta(hours=11),
+            model_run_at=now - timedelta(hours=6),
+            model="ecmwf_ifs",
+            temperature=9.0,
+        )
+
+        weather = AviationWeatherService.get_mpd_current_weather(coord_mpd)
+        latest_coord = weather.get("latest_coordinate_forecast")
+
+        self.assertIsNotNone(latest_coord)
+        # Должен быть выбран срез на текущий момент (температура 19.0), а не ночной (9.0)
+        self.assertEqual(latest_coord.pk, current_forecast.pk)
+        self.assertEqual(latest_coord.temperature, 19.0)
+
 
 
