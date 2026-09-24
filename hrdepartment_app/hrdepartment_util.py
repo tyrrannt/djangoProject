@@ -221,75 +221,58 @@ def check_email(obj):
 
 
 def send_mail_change(counter, obj, message=""):
+    """Отправляет уведомления об изменениях в служебной записке через UniversalEmailService.
+
+    Args:
+        counter (int): Сценарий адресации (1: все, 2: согласующие/распределитель, 3: сотрудник/кадры).
+        obj: Объект документа изменения.
+        message (str): Текст сопроводительного сообщения.
+    """
     mail_to = check_email(obj.person)
     mail_to_copy_first = check_email(obj.responsible)
-    mail_to_copy_second = check_email(obj.docs.person_distributor)
-    mail_to_copy_third = check_email(obj.docs.person_department_staff)
+    mail_to_copy_second = check_email(getattr(getattr(obj, "docs", None), "person_distributor", None))
+    mail_to_copy_third = check_email(getattr(getattr(obj, "docs", None), "person_department_staff", None))
     subject_mail = obj.get_title()
 
     current_context = {
         "title": obj.get_title(),
         "order_number": str(obj.order.document_number) if obj.order else "",
         "order_date": str(obj.order.document_date.strftime("%d.%m.%Y"))
-        if obj.order
+        if obj.order and obj.order.document_date
         else "",
         "message": message,
         "person_executor": obj.responsible,
         "mail_to_copy": check_email(obj.responsible),
-        "person_department_staff": str(obj.docs.person_department_staff)
-        if obj.docs.person_department_staff
+        "person_department_staff": str(getattr(getattr(obj, "docs", None), "person_department_staff", ""))
+        if getattr(getattr(obj, "docs", None), "person_department_staff", None)
         else "",
-        "person_distributor": str(obj.docs.person_distributor)
-        if obj.docs.person_distributor
+        "person_distributor": str(getattr(getattr(obj, "docs", None), "person_distributor", ""))
+        if getattr(getattr(obj, "docs", None), "person_distributor", None)
         else "",
     }
 
-    text_content = render_to_string(
-        "hrdepartment_app/email_change_bpmemo.html", current_context
-    )
     html_content = render_to_string(
         "hrdepartment_app/email_change_bpmemo.html", current_context
     )
 
-    try:
-        if counter == 1:
-            first_msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [mail_to, mail_to_copy_first],
-            )
-            second_msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [mail_to_copy_second, mail_to_copy_third],
-            )
-            first_msg.attach_alternative(html_content, "text/html")
-            second_msg.attach_alternative(html_content, "text/html")
-            first_msg.send()
-            second_msg.send()
-        if counter == 2:
-            first_msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [mail_to_copy_first, mail_to_copy_second],
-            )
-            first_msg.attach_alternative(html_content, "text/html")
-            first_msg.send()
-        if counter == 3:
-            first_msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [mail_to, mail_to_copy_third],
-            )
-            first_msg.attach_alternative(html_content, "text/html")
-            first_msg.send()
+    from mailbox_app.services.email_service import UniversalEmailService
 
-    except Exception as _ex:
-        logger.debug(f"Failed to send email. {_ex}")
+    target_recipients = []
+    if counter == 1:
+        target_recipients = [mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third]
+    elif counter == 2:
+        target_recipients = [mail_to_copy_first, mail_to_copy_second]
+    elif counter == 3:
+        target_recipients = [mail_to, mail_to_copy_third]
+
+    valid_recipients = [r for r in target_recipients if r]
+    if valid_recipients:
+        UniversalEmailService.send_async_email(
+            subject=subject_mail,
+            recipient_list=valid_recipients,
+            html_message=html_content,
+        )
+
 
 
 def get_month(period):

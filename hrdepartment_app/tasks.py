@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from typing import Any, Dict, List, Optional, Tuple, Union
 import calendar
 import datetime
+
 import json
 import urllib.request
 from collections import defaultdict
@@ -1202,3 +1204,61 @@ def get_database_user(self):
     except Exception as exc:
         logger.error(f"Error in get_database_user task: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=60)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=10,
+    name="hrdepartment_app.tasks.process_memo_notification_task",
+)
+def process_memo_notification_task(
+    self,
+    process_id: int,
+    event_type: str,
+    actor_id: Optional[int] = None,
+    extra_context: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Фоновая задача Celery для отправки уведомлений по событиям служебных записок.
+
+    Args:
+        self: Экземпляр текущей задачи Celery.
+        process_id (int): Первичный ключ процесса ApprovalOficialMemoProcess.
+        event_type (str): Тип бизнес-события ('SUBMITTED', 'APPROVED', 'LOCATION_SET',
+            'ORDER_ISSUED', 'ORIGINALS_RECEIVED', 'TRANSFERRED_TO_ACCOUNTING',
+            'COMPLETED', 'CANCELLED', 'REJECTED').
+        actor_id (Optional[int]): ID пользователя-инициатора события.
+        extra_context (Optional[Dict[str, Any]]): Дополнительные параметры контекста.
+
+    Returns:
+        bool: True при успешной обработке уведомления.
+
+    Raises:
+        self.retry: При сбоях отправки с экспоненциальным backoff.
+    """
+    logger.info(
+        "[Celery:MemoNotify] Старт обработки события '%s' для СЗ ID=%d (попытка %d)",
+        event_type,
+        process_id,
+        self.request.retries + 1,
+    )
+    try:
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+        success = MemoNotificationService.handle_event_sync(
+            process_id=process_id,
+            event_type=event_type,
+            actor_id=actor_id,
+            extra_context=extra_context,
+        )
+        return success
+    except Exception as exc:
+        logger.error(
+            "[Celery:MemoNotify] Ошибка при обработке события %s для СЗ ID=%d: %s",
+            event_type,
+            process_id,
+            exc,
+            exc_info=True,
+        )
+        countdown = (2 ** self.request.retries) * 10
+        raise self.retry(exc=exc, countdown=countdown)
+

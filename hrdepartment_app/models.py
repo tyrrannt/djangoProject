@@ -1409,273 +1409,48 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     def send_mail(self, title: str, trigger: int = 0) -> tuple[bool, str]:
         """Отправляет служебные почтовые уведомления по процессу согласования поездки.
 
-        В зависимости от переданного триггера выполняет:
-        - trigger=0: Уведомление об отмене служебной поездки (сотруднику, исполнителю,
-          распределителю и кадровой службе).
-        - trigger=1: Повторное уведомление командируемому сотруднику с вложением
-          служебного задания (PDF или XLSX).
-        - trigger=2: Письмо исполнителю (инициатору процесса) с вложением служебного задания.
+        Делегирует исполнение в MemoNotificationService с асинхронной отправкой через Celery,
+        сохраняя обратную совместимость для вызовов из интерфейса и админки.
 
         Args:
             title (str): Тема сообщения (используется при отмене процесса).
             trigger (int, optional): Идентификатор действия:
                 0 — отмена служебной поездки,
                 1 — повторное уведомление командируемому сотруднику,
-                2 — письмо исполнителю. По умолчанию 0.
+                2 — письмо исполнителю,
+                3 — письмо на общую почту летной службы. По умолчанию 0.
 
         Returns:
             tuple[bool, str]: Кортеж (успех_отправки, адрес_получателя_или_текст_ошибки).
         """
-        # Отмена СП или СК
-        if self.cancellation and trigger == 0:
-            mail_to = self.document.person.email if (self.document and self.document.person) else ""
-            mail_to_copy_first = (
-                self.person_executor.email if self.person_executor else ""
-            )
-            mail_to_copy_second = (
-                self.person_distributor.email if self.person_distributor else ""
-            )
-            mail_to_copy_third = (
-                self.person_department_staff.email
-                if self.person_department_staff
-                else ""
-            )
-            subject_mail = title
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
 
-            current_context = {
-                "title": self.document.title if self.document else "",
-                "order_number": str(self.order.document_number)
-                if self.order
-                else "--//--",
-                "order_date": str(self.order.document_date) if self.order else "--//--",
-                "reason_cancellation": str(self.reason_cancellation),
-                "person_executor": str(self.person_executor)
-                if self.person_executor
-                else "",
-                "person_distributor": str(self.person_distributor)
-                if self.person_distributor
-                else "",
-                "person_department_staff": str(self.person_department_staff)
-                if self.person_department_staff
-                else "",
-                "mail_to_copy": str(self.person_executor.email)
-                if self.person_executor
-                else "",
-            }
-            logger.debug(f"Email string: {current_context}")
-            text_content = render_to_string(
-                "hrdepartment_app/email_cancel_bpmemo.html", current_context
+        if trigger == 0:
+            MemoNotificationService.dispatch_event(
+                self.pk,
+                "CANCELLED",
+                extra_context={"reason": str(self.reason_cancellation or title)},
             )
-            html_content = render_to_string(
-                "hrdepartment_app/email_cancel_bpmemo.html", current_context
-            )
-            first_msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [mail_to, mail_to_copy_first],
-            )
-            second_msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [mail_to_copy_second, mail_to_copy_third],
-            )
-            first_msg.attach_alternative(html_content, "text/html")
-            second_msg.attach_alternative(html_content, "text/html")
+            recipient = self.document.person.email if (self.document and self.document.person) else "все участники"
+            return True, recipient
 
-            try:
-                first_msg.send()
-            except Exception as _ex:
-                logger.debug(
-                    f"Failed to send first email to: {mail_to} {mail_to_copy_first}. {_ex}"
-                )
-            try:
-                second_msg.send()
-            except Exception as _ex:
-                logger.debug(
-                    f"Failed to send second email to {mail_to_copy_second} {mail_to_copy_third}. {_ex}"
-                )
-            return True, mail_to
-
-        if trigger == 1 or trigger == 2 or trigger == 3:
-            # Повторное уведомление об СП или СК
+        if trigger in (1, 2, 3):
             if not self.process_accepted:
                 return False, "Приказ по служебной поездке еще не издан."
 
-            from openpyxl import load_workbook
-
-            delta = self.document.period_for - self.document.period_from
-            try:
-                place = [
-                    item.name
-                    for item in self.document.place_production_activity.all()
-                ]
-            except Exception as _ex:
-                place = []
-            # Получаем ссылку на файл шаблона
-            if (
-                    self.document.person.user_work_profile.job.division_affiliation.pk
-                    == 2
-            ):
-                if self.document.type_trip == "2":
-                    filepath_name = "spk.xlsx"
-                else:
-                    filepath_name = "sp.xlsx"
-            else:
-                if self.document.type_trip == "2":
-                    filepath_name = "sp2k.xlsx"
-                else:
-                    filepath_name = "sp2.xlsx"
-            filepath = pathlib.Path.joinpath(
-                pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates"),
-                filepath_name,
-            )
-            wb = load_workbook(filepath)
-            ws = wb.active
-            ws["C3"] = str(self.document.person)
-            ws["M3"] = str(self.document.person.service_number)
-            ws["C4"] = str(self.document.person.user_work_profile.job)
-            ws["C5"] = str(self.document.person.user_work_profile.divisions)
-            ws["C6"] = "Приказ № " + str(self.order.document_number)
-            ws["F6"] = self.order.document_date.strftime("%d.%m.%y")
-            ws["H6"] = "на " + ending_day(int(delta.days) + 1)
-            ws["L6"] = self.document.period_from.strftime("%d.%m.%y")
-            ws["O6"] = self.document.period_for.strftime("%d.%m.%y")
-            ws["C8"] = ", ".join(place)
-            ws["C9"] = str(self.document.purpose_trip)
-            ws["A90"] = (
-                    str(self.person_agreement.user_work_profile.job)
-                    + ", "
-                    + format_name_initials(self.person_agreement)
-            )
-
-            wb.save(
-                pathlib.Path.joinpath(
-                    pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
-                )
-            )
-            wb.close()
+            MemoNotificationService.dispatch_event(self.pk, "ORDER_ISSUED")
+            mail_to = ""
             if trigger == 2:
                 mail_to = self.person_executor.email if self.person_executor else ""
+            elif trigger == 3:
+                mail_to = getattr(settings, "FLIGHT_DEPARTMENT_EMAIL", "fly@barkol.ru")
             else:
-                if trigger == 3:
-                    mail_to = "fly@barkol.ru"
-                else:
-                    mail_to = self.document.person.email if (self.document and self.document.person) else ""
+                mail_to = self.document.person.email if (self.document and self.document.person) else ""
 
-            if not mail_to:
-                return False, "У получателя не указан адрес электронной почты в профиле."
-
-            type_trip = (
-                "поездку" if self.document.type_trip == "1" else "командировку"
-            )
-            official_memo_type = self.document.official_memo_type
-            source = str(
-                pathlib.Path.joinpath(
-                    pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
-                )
-            )
-            file_name = None
-            if official_memo_type == "1":
-                # Конвертируем xlsx в pdf (с безопасным откатом к XLSX при сбое конвертера)
-                output_dir = str(pathlib.Path.joinpath(BASE_DIR, "media"))
-                try:
-                    from msoffice2pdf import convert
-                    file_name = convert(source=source, output_dir=output_dir, soft=0)
-                    if not file_name or not os.path.exists(str(file_name)):
-                        file_name = None
-                except Exception as conv_err:
-                    logger.warning(
-                        f"Не удалось конвертировать {source} в PDF через msoffice2pdf: {conv_err}. "
-                        f"Будет отправлен оригинальный XLSX файл."
-                    )
-                    file_name = None
-
-                subject_mail = "Направление в служебную " + type_trip
-                type_trip_title = "Вы направляетесь в служебную " + type_trip
-                type_trip_variant = "направлении в служебную " + type_trip
-                type_trip_variant_second = "направление в служебную " + type_trip
-                type_trip_extension = ""
-            else:
-                subject_mail = (
-                        "Продление служебной "
-                        + type_trip[0:-1]
-                        + "и: с "
-                        + str(self.document.period_from.strftime("%d.%m.%Y"))
-                        + " г. по "
-                        + str(self.document.period_for.strftime("%d.%m.%Y"))
-                        + " г. "
-                        + str(self.document.document_extension.order)
-                )
-                type_trip_title = "Вам продлена служебная " + type_trip[0:-1] + "а"
-                type_trip_variant = "продлении служебной " + type_trip[0:-1] + "и"
-                type_trip_variant_second = (
-                        "продление служебной " + type_trip[0:-1] + "и"
-                )
-                type_trip_extension = "Внимание! При продлении служебной поездки или служебной командировки, новое служебное задание не высылается. Отметки и печати о выбытии и прибытии в пункты назначения проставляются в основном служебном задании."
-
-            if self.accommodation == "1":
-                accommodation = "Квартира"
-            else:
-                accommodation = "Гостиница"
-
-            current_context = {
-                "greetings": "Уважаемый"
-                if self.document.person.gender == "male"
-                else "Уважаемая",
-                "person": str(self.document.person),
-                "place": ", ".join(place),
-                "type_trip": type_trip_title,
-                "type_trip_variant": type_trip_variant,
-                "type_trip_variant_second": type_trip_variant_second,
-                "type_trip_second": "поездки"
-                if self.document.type_trip == "1"
-                else "командировки",
-                "purpose_trip": str(self.document.purpose_trip),
-                "order_number": str(self.order.document_number),
-                "order_date": self.order.document_date.strftime("%d.%m.%Y"),
-                "delta": str(ending_day(int(delta.days) + 1)),
-                "period_from": self.document.period_from.strftime("%d.%m.%Y"),
-                "period_for": self.document.period_for.strftime("%d.%m.%Y"),
-                "accommodation": accommodation,
-                "person_executor": format_name_initials(self.person_executor),
-                "mail_to_copy": str(self.person_executor.email if self.person_executor else ""),
-                "person_distributor": format_name_initials(self.person_distributor),
-                "Year": str(datetime.datetime.today().year),
-                "type_trip_extension": type_trip_extension,
-            }
-            logger.debug(f"Email string: {current_context}")
-            text_content = render_to_string(
-                "hrdepartment_app/email_template.html", current_context
-            )
-            html_content = render_to_string(
-                "hrdepartment_app/email_template.html", current_context
-            )
-
-            msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [
-                    mail_to,
-                ],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            if self.document.official_memo_type == "1":
-                attachment_file = str(file_name) if (file_name and os.path.exists(str(file_name))) else source
-                if os.path.exists(attachment_file):
-                    msg.attach_file(attachment_file)
-            try:
-                res = msg.send()
-                self.email_send = True
-                self.save(update_fields=["email_send"])
-                return True, mail_to
-            except Exception as _ex:
-                logger.error(f"Failed to send email to {mail_to}: {_ex}")
-                return False, str(_ex)
+            return True, mail_to or "отправлено асинхронно"
 
         return False, "Неизвестный триггер или условия отправки не выполнены."
+
 
 
 def create_xlsx(instance):
@@ -1751,232 +1526,37 @@ def hr_accepted(sender, instance, **kwargs):
 
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
 def create_report(sender, instance: ApprovalOficialMemoProcess, raw=False, **kwargs):
-    # Защита: выходим, если это загрузка фикстур (loaddata)
-    if raw:
+    """Сигнал пост-сохранения процесса служебной записки.
+
+    Обновляет текстовый статус согласования и асинхронно диспетчеризирует уведомления
+    через MemoNotificationService без блокировки веб-потока.
+
+    Args:
+        sender: Класс модели ApprovalOficialMemoProcess.
+        instance: Экземпляр сохраняемой записи.
+        raw (bool): Признак загрузки фикстур (loaddata).
+        **kwargs: Дополнительные аргументы сигнала.
+    """
+    if raw or not instance.pk:
         return
+
     change_approval_status(instance)
-    type_of = ["Служебная квартира", "Гостиница"]
-    if (instance.submit_for_approval and not instance.document_not_agreed and not instance.email_send):
-        business_process = BusinessProcessDirection.objects.filter(
-            person_executor=instance.person_executor.user_work_profile.job
-        )
-        person_agreement_job_list = []
-        person_agreement_list = []
-        for item in business_process:
-            for job in item.person_agreement.all():
-                person_agreement_job_list.append(job)
-        for item in DataBaseUser.objects.filter(
-                user_work_profile__job__name__in=set(person_agreement_job_list)
-        ):
-            if item.telegram_id:
-                person_agreement_list.append(
-                    ChatID.objects.filter(chat_id=item.telegram_id).first()
-                )
-        kwargs_obj = {
-            "message": f"Необходимо согласовать документ: {instance.document}",
-            "document_url": f"https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/",
-            "document_id": f"{instance.pk}",
-            "sending_counter": 3,
-            "send_time": datetime.datetime.now() + relativedelta(minutes=1),
-            "send_date": datetime.datetime.today(),
-        }
-        tn, created = TelegramNotification.objects.update_or_create(
-            document_id=instance.pk, defaults=kwargs_obj
-        )
-        tn.respondents.set(person_agreement_list)
-    if (
-            instance.document_not_agreed and not instance.location_selected and not instance.email_send and instance.document.official_memo_type in [
-        "1", "2"]):
-        person_agreement_list = []
-        for item in DataBaseUser.objects.filter(
-                Q(user_work_profile__divisions__type_of_role="1")
-                & Q(user_work_profile__job__right_to_approval=True)
-        ):
-            if item.telegram_id:
-                person_agreement_list.append(
-                    ChatID.objects.filter(chat_id=item.telegram_id).first()
-                )
-        kwargs_obj = {
-            "message": f"Необходимо утвердить место проживания: {instance.document}",
-            "document_url": f"https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/",
-            "document_id": f"{instance.pk}",
-            "sending_counter": 3,
-            "send_time": datetime.datetime.now() + relativedelta(minutes=1),
-            "send_date": datetime.datetime.today(),
-        }
-        tn, created = TelegramNotification.objects.update_or_create(
-            document_id=instance.pk, defaults=kwargs_obj
-        )
-        tn.respondents.set(person_agreement_list)
-    if (instance.location_selected and not instance.process_accepted and not instance.email_send):
-        person_agreement_list = []
-        for item in DataBaseUser.objects.filter(
-                Q(user_work_profile__divisions__type_of_role="2")
-                & Q(user_work_profile__job__right_to_approval=True)
-        ):
-            if item.telegram_id:
-                person_agreement_list.append(
-                    ChatID.objects.filter(chat_id=item.telegram_id).first()
-                )
-        kwargs_obj = {
-            "message": f"Необходимо издать приказ: {instance.document}",
-            "document_url": f"https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/",
-            "document_id": f"{instance.pk}",
-            "sending_counter": 3,
-            "send_time": datetime.datetime.now() + relativedelta(minutes=1),
-            "send_date": datetime.datetime.today(),
-        }
-        tn, created = TelegramNotification.objects.update_or_create(
-            document_id=instance.pk, defaults=kwargs_obj
-        )
-        tn.respondents.set(person_agreement_list)
-    if instance.process_accepted and not instance.email_send:
-        tn = TelegramNotification.objects.filter(document_id=instance.pk)
-        for item in tn:
-            item.delete()
 
-        delta = instance.document.period_for - instance.document.period_from
-        try:
-            place = [
-                item.name for item in instance.document.place_production_activity.all()
-            ]
-        except Exception as _ex:
-            place = []
-        # Получаем ссылку на файл шаблона
-        if instance.document.person.user_work_profile.job.division_affiliation.pk == 2:
-            if instance.document.type_trip == "2":
-                filepath_name = "spk.xlsx"
-            else:
-                filepath_name = "sp.xlsx"
-        else:
-            if instance.document.type_trip == "2":
-                filepath_name = "sp2k.xlsx"
-            else:
-                filepath_name = "sp2.xlsx"
-        filepath = pathlib.Path.joinpath(
-            pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates"), filepath_name
-        )
-        wb = load_workbook(filepath)
-        ws = wb.active
-        ws["C3"] = str(instance.document.person)
-        ws["M3"] = str(instance.document.person.service_number)
-        ws["C4"] = str(instance.document.person.user_work_profile.job)
-        ws["C5"] = str(instance.document.person.user_work_profile.divisions)
-        ws["C6"] = "Приказ № " + str(instance.order.document_number)
-        ws["F6"] = instance.order.document_date.strftime("%d.%m.%y")
-        ws["H6"] = "на " + ending_day(int(delta.days) + 1)
-        ws["L6"] = instance.document.period_from.strftime("%d.%m.%y")
-        ws["O6"] = instance.document.period_for.strftime("%d.%m.%y")
-        ws["C8"] = ", ".join(place)
-        ws["C9"] = str(instance.document.purpose_trip)
-        if instance.document.purpose_trip.title == "Дежурства на ПСР":
-            ws["H86"] = ", из них ПСР"
-            ws["K86"] = "__________"
-        ws["A90"] = (
-                str(instance.person_agreement.user_work_profile.job)
-                + ", "
-                + format_name_initials(instance.person_agreement)
-        )
+    from hrdepartment_app.services.memo_notification_service import MemoNotificationService
 
-        wb.save(
-            pathlib.Path.joinpath(
-                pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
-            )
-        )
-        wb.close()
+    if instance.cancellation:
+        MemoNotificationService.dispatch_event(instance.pk, "CANCELLED")
+    elif instance.accepted_accounting:
+        MemoNotificationService.dispatch_event(instance.pk, "COMPLETED")
+    elif instance.process_accepted and not instance.email_send:
+        MemoNotificationService.dispatch_event(instance.pk, "ORDER_ISSUED")
+    elif instance.location_selected and not instance.process_accepted:
+        MemoNotificationService.dispatch_event(instance.pk, "LOCATION_SET")
+    elif instance.document_not_agreed and not instance.location_selected:
+        MemoNotificationService.dispatch_event(instance.pk, "APPROVED")
+    elif instance.submit_for_approval and not instance.document_not_agreed:
+        MemoNotificationService.dispatch_event(instance.pk, "SUBMITTED")
 
-        mail_to = instance.document.person.email
-        mail_to_copy = instance.person_executor.email
-        type_trip = "поездку" if instance.document.type_trip == "1" else "командировку"
-
-        official_memo_type = instance.document.official_memo_type
-        if official_memo_type == "1":
-            # Конвертируем xlsx в pdf
-            # Удалить
-
-            source = str(
-                pathlib.Path.joinpath(
-                    pathlib.Path.joinpath(BASE_DIR, "media"), filepath_name
-                )
-            )
-            output_dir = str(pathlib.Path.joinpath(BASE_DIR, "media"))
-            file_name = convert(source=source, output_dir=output_dir, soft=0)
-            subject_mail = "Направление в служебную " + type_trip
-            type_trip_title = "Вы направляетесь в служебную " + type_trip
-            type_trip_variant = "направлении в служебную " + type_trip
-            type_trip_variant_second = "направление в служебную " + type_trip
-            type_trip_extension = ""
-        else:
-            subject_mail = (
-                    "Продление служебной "
-                    + type_trip[0:-1]
-                    + "и: с "
-                    + str(instance.document.period_from.strftime("%d.%m.%Y"))
-                    + " г. по "
-                    + str(instance.document.period_for.strftime("%d.%m.%Y"))
-                    + " г. Приказ:  "
-                    + str(instance.document.order)
-            )
-            type_trip_title = "Вам продлена служебная " + type_trip[0:-1] + "а"
-            type_trip_variant = "продлении служебной " + type_trip[0:-1] + "и"
-            type_trip_variant_second = "продление служебной " + type_trip[0:-1] + "и"
-            type_trip_extension = "Внимание! При продлении служебной поездки или служебной командировки, новое служебное задание не высылается. Отметки и печати о выбытии и прибытии в пункты назначения проставляются в основном служебном задании."
-
-        if instance.accommodation == "1":
-            accommodation = "Квартира"
-        else:
-            accommodation = "Гостиница"
-        current_context = {
-            "greetings": "Уважаемый"
-            if instance.document.person.gender == "male"
-            else "Уважаемая",
-            "person": str(instance.document.person),
-            "place": ", ".join(place),
-            "type_trip": type_trip_title,
-            "type_trip_variant": type_trip_variant,
-            "type_trip_variant_second": type_trip_variant_second,
-            "type_trip_second": "поездки"
-            if instance.document.type_trip == "1"
-            else "командировки",
-            "purpose_trip": str(instance.document.purpose_trip),
-            "order_number": str(instance.order.document_number),
-            "order_date": instance.order.document_date.strftime("%d.%m.%Y"),
-            "delta": str(ending_day(int(delta.days) + 1)),
-            "period_from": instance.document.period_from.strftime("%d.%m.%Y"),
-            "period_for": instance.document.period_for.strftime("%d.%m.%Y"),
-            "accommodation": accommodation,
-            "person_executor": format_name_initials(instance.person_executor),
-            "mail_to_copy": str(instance.person_executor.email),
-            "person_distributor": format_name_initials(instance.person_distributor),
-            "Year": str(datetime.datetime.today().year),
-            "type_trip_extension": type_trip_extension,
-        }
-        logger.debug(f"Email string: {current_context}")
-        text_content = render_to_string(
-            "hrdepartment_app/email_template.html", current_context
-        )
-        html_content = render_to_string(
-            "hrdepartment_app/email_template.html", current_context
-        )
-
-        msg = EmailMultiAlternatives(
-            subject_mail,
-            text_content,
-            EMAIL_HOST_USER,
-            [
-                mail_to,
-                mail_to_copy,
-            ],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        if instance.document.official_memo_type == "1":
-            msg.attach_file(str(file_name))
-        try:
-            res = msg.send()
-            instance.email_send = True
-            instance.save()
-        except Exception as _ex:
-            logger.debug(f"Failed to send email. {_ex}")
 
 
 # Более не используется

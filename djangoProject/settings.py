@@ -1921,6 +1921,6 @@ OPEN_METEO_BASE_URL = config("OPEN_METEO_BASE_URL", default="https://api.open-me
 OPEN_METEO_DEFAULT_MODEL = config("OPEN_METEO_DEFAULT_MODEL", default="ecmwf_ifs")
 OPEN_METEO_TIMEOUT = config("OPEN_METEO_TIMEOUT", default=10, cast=int)
 WEATHER_PROXY = config("WEATHER_PROXY", default="")
-TELEGRAM_PROXY = config("TELEGRAM_PROXY", default=config("WEATHER_PROXY", default=""))
+TELEGRAM_PROXY = config("TELEGRAM_PROXY", default="")
 
 

@@ -31,16 +31,45 @@ class UniversalTelegramService:
         return str(token).strip() if token else ""
 
     @classmethod
+    def is_proxy_alive(cls, proxy_url: str) -> bool:
+        """Проверяет доступность прокси-сервера (открыт ли сокет).
+
+        Args:
+            proxy_url: URL прокси-сервера.
+
+        Returns:
+            bool: True, если сокет успешно ответил, иначе False.
+        """
+        try:
+            import socket
+            from urllib.parse import urlparse
+            parsed = urlparse(proxy_url)
+            host = parsed.hostname or "127.0.0.1"
+            port = parsed.port or (80 if parsed.scheme == "http" else 1080)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1.0)
+            res = sock.connect_ex((host, port))
+            sock.close()
+            return res == 0
+        except Exception:
+            return False
+
+    @classmethod
     def get_proxies(cls) -> Optional[Dict[str, str]]:
         """Возвращает конфигурацию прокси для requests при наличии TELEGRAM_PROXY.
 
         Returns:
             Optional[Dict[str, str]]: Словарь настроек прокси для HTTP/HTTPS или None.
         """
-        proxy_url = getattr(settings, "TELEGRAM_PROXY", None) or getattr(settings, "WEATHER_PROXY", None)
+        proxy_url = getattr(settings, "TELEGRAM_PROXY", None)
         if proxy_url and str(proxy_url).strip():
             proxy_clean = str(proxy_url).strip()
-            return {"http": proxy_clean, "https": proxy_clean}
+            if cls.is_proxy_alive(proxy_clean):
+                return {"http": proxy_clean, "https": proxy_clean}
+            logger.warning(
+                "[UniversalTelegram] Настроенный TELEGRAM_PROXY=%s недоступен. Переключение на прямое подключение!",
+                proxy_clean,
+            )
         return None
 
     @classmethod
