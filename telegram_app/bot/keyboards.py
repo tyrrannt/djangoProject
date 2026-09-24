@@ -1,33 +1,43 @@
-#  Copyright (c) 2025. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-#  Morbi non lorem porttitor neque feugiat blandit. Ut vitae ipsum eget quam lacinia accumsan.
-#  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
-#  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
-#  Vestibulum commodo. Ut rhoncus gravida arcu.
+# -*- coding: utf-8 -*-
+"""Клавиатуры Telegram-бота компании БАРКОЛ (aiogram 3)."""
+
 from aiogram.types import (
-    ReplyKeyboardMarkup, KeyboardButton,
-    InlineKeyboardMarkup, InlineKeyboardButton
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
 )
 
-# Главное меню
+# Главное меню (Reply-кнопки внизу экрана)
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="ПОЛЬЗОВАТЕЛИ"), KeyboardButton(text="ПОДПИСКА")]
+        [
+            KeyboardButton(text="👥 ПОЛЬЗОВАТЕЛИ"),
+            KeyboardButton(text="🔔 ПОДПИСКА"),
+        ]
     ],
-    resize_keyboard=True
+    resize_keyboard=True,
+    is_persistent=True,
 )
 
-# Inline кнопки
+# Меню управления подпиской (Inline-кнопки под сообщением)
 subscribe_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="ПОДПИСАТЬСЯ", callback_data="ПОДПИСАТЬСЯ")],
-        [InlineKeyboardButton(text="ПРОВЕРИТЬ", callback_data="ПРОВЕРИТЬ")]
+        [InlineKeyboardButton(text="🔑 Привязать аккаунт (УИН)", callback_data="ПОДПИСАТЬСЯ")],
+        [InlineKeyboardButton(text="🔍 Проверить статус подписки", callback_data="ПРОВЕРИТЬ")],
     ]
 )
 
+# Меню раздела пользователей
 author_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="Количество", callback_data="Количество")]
+        [InlineKeyboardButton(text="📊 Количество подключенных", callback_data="Количество")]
     ]
 )
 
-article_keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+# Меню статей и базы знаний
+article_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="🌐 Корпоративный портал", url="https://corp.barkol.ru")]
+    ]
+)

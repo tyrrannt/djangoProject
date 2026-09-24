@@ -19,6 +19,30 @@ from ..models import TelegramNotification
 logger = logging.getLogger(__name__)
 
 
+def is_proxy_alive(proxy_url: str) -> bool:
+    """Проверяет доступность прокси-сервера (открыт ли сокет).
+
+    Args:
+        proxy_url: URL прокси-сервера.
+
+    Returns:
+        bool: True, если сокет успешно ответил, иначе False.
+    """
+    try:
+        import socket
+        from urllib.parse import urlparse
+        parsed = urlparse(proxy_url)
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or (80 if parsed.scheme == "http" else 1080)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1.0)
+        res = sock.connect_ex((host, port))
+        sock.close()
+        return res == 0
+    except Exception:
+        return False
+
+
 def create_bot() -> Bot:
     """Создает и настраивает экземпляр Bot с поддержкой wireproxy (TELEGRAM_PROXY).
 
@@ -26,13 +50,19 @@ def create_bot() -> Bot:
         Bot: Инициализированный экземпляр aiogram Bot.
     """
     token = getattr(settings, "TELEGRAM_TOKEN", None) or getattr(settings, "API_TOKEN", None)
-    proxy_url = getattr(settings, "TELEGRAM_PROXY", None) or getattr(settings, "WEATHER_PROXY", None)
+    proxy_url = getattr(settings, "TELEGRAM_PROXY", None)
 
     session: Optional[AiohttpSession] = None
     if proxy_url and str(proxy_url).strip():
         proxy_clean = str(proxy_url).strip()
-        logger.info("[TelegramBot:Aiogram] Запуск через туннель wireproxy: %s", proxy_clean)
-        session = AiohttpSession(proxy=proxy_clean)
+        if is_proxy_alive(proxy_clean):
+            logger.info("[TelegramBot:Aiogram] Запуск через туннель wireproxy: %s", proxy_clean)
+            session = AiohttpSession(proxy=proxy_clean)
+        else:
+            logger.warning(
+                "[TelegramBot:Aiogram] Прокси %s недоступен (порт закрыт). Автоматическое прямое подключение!",
+                proxy_clean,
+            )
 
     return Bot(
         token=str(token).strip(),
@@ -108,6 +138,8 @@ async def main() -> None:
     asyncio.create_task(background_notifier(bot))
 
     try:
+        logger.info("[TelegramBot] Сброс устаревшего вебхука Telegram перед поллингом...")
+        await bot.delete_webhook(drop_pending_updates=True)
         logger.info("[TelegramBot] Бот успешно запущен в режиме polling.")
         await dp.start_polling(bot)
     finally:

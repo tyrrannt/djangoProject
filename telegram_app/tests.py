@@ -29,12 +29,20 @@ class UniversalTelegramServiceTests(SimpleTestCase):
         self.assertEqual(result["inline_keyboard"][1][0]["url"], "https://corp.barkol.ru/hr/bpmemo/1/update/")
 
     @override_settings(TELEGRAM_PROXY="http://127.0.0.1:8118")
-    def test_get_proxies_configured(self):
-        """Проверяет получение конфигурации прокси при установленном TELEGRAM_PROXY."""
+    @patch.object(UniversalTelegramService, "is_proxy_alive", return_value=True)
+    def test_get_proxies_configured(self, mock_alive):
+        """Проверяет получение конфигурации прокси при установленном и доступном TELEGRAM_PROXY."""
         proxies = UniversalTelegramService.get_proxies()
         self.assertIsNotNone(proxies)
         self.assertEqual(proxies.get("http"), "http://127.0.0.1:8118")
         self.assertEqual(proxies.get("https"), "http://127.0.0.1:8118")
+
+    @override_settings(TELEGRAM_PROXY="http://127.0.0.1:8118")
+    @patch.object(UniversalTelegramService, "is_proxy_alive", return_value=False)
+    def test_get_proxies_unreachable_fallback(self, mock_alive):
+        """Проверяет автоматический переход на прямое соединение (None), если прокси недоступен."""
+        proxies = UniversalTelegramService.get_proxies()
+        self.assertIsNone(proxies)
 
     @override_settings(TELEGRAM_PROXY="", WEATHER_PROXY="")
     def test_get_proxies_empty(self):

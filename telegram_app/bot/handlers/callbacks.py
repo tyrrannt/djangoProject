@@ -1,40 +1,80 @@
-#  Copyright (c) 2025. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-#  Morbi non lorem porttitor neque feugiat blandit. Ut vitae ipsum eget quam lacinia accumsan.
-#  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
-#  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
-#  Vestibulum commodo. Ut rhoncus gravida arcu.
+# -*- coding: utf-8 -*-
+"""Обработчик общих Inline-кнопок (CallbackQuery) Telegram-бота компании БАРКОЛ (aiogram 3)."""
+
+import logging
+from typing import Optional
+
 from aiogram import Router, types
-from core import logger
-from customers_app.models import DataBaseUser
 from asgiref.sync import sync_to_async
 
-router = Router()
+from customers_app.models import DataBaseUser
+
+logger = logging.getLogger(__name__)
+
+router = Router(name="callbacks_router")
 
 
 @router.callback_query()
-async def process_callback(call: types.CallbackQuery):
-    data = call.data
-    chat_id = call.message.chat.id
-    logger.info(f"Callback {data} от {chat_id}")
+async def process_callback(call: types.CallbackQuery) -> None:
+    """Обрабатывает нажатия на общие inline-кнопки (подписка, проверка, количество).
+
+    Args:
+        call: Объект события обратного вызова (CallbackQuery).
+    """
+    data = call.data or ""
+    chat_id = call.message.chat.id if call.message else call.from_user.id
+    logger.info("[TelegramBot] Callback '%s' от чата %s (пользователь %s)", data, chat_id, call.from_user.id)
+
+    # Вспомогательная функция отправки сообщения в чат
+    async def _reply(text: str) -> None:
+        if call.message and hasattr(call.message, "answer"):
+            await call.message.answer(text, parse_mode="HTML")
+        else:
+            await call.bot.send_message(chat_id=call.from_user.id, text=text, parse_mode="HTML")
 
     try:
         if data == "ПОДПИСАТЬСЯ":
-            await call.message.answer("Отправь УИН из своего профиля")
+            await call.answer()
+            await _reply(
+                "🔑 <b>Привязка аккаунта к порталу БАРКОЛ</b>\n\n"
+                "1. Войдите в свой профиль на корпоративном портале.\n"
+                "2. Скопируйте ваш <b>УИН</b> (36-значный уникальный код в формате UUID).\n"
+                "3. Отправьте скопированный УИН ответным сообщением в этот чат."
+            )
 
         elif data == "ПРОВЕРИТЬ":
-            exists = await sync_to_async(DataBaseUser.objects.filter(telegram_id=chat_id).exists)()
-            if exists:
-                await call.message.answer("Вы успешно подписаны на уведомления!")
+            await call.answer()
+            user_obj: Optional[DataBaseUser] = await sync_to_async(
+                DataBaseUser.objects.filter(telegram_id=str(chat_id), is_active=True).first
+            )()
+            if user_obj:
+                await _reply(
+                    f"✅ <b>Подписка активна!</b>\n\n"
+                    f"Сотрудник: <b>{user_obj.title}</b>\n"
+                    f"Telegram ID: <code>{chat_id}</code>\n"
+                    f"Вы успешно получаете все корпоративные уведомления."
+                )
             else:
-                await call.message.answer("Не нашёл вас в списке пользователей!")
+                await _reply(
+                    f"⚠️ <b>Аккаунт не привязан!</b>\n\n"
+                    f"Ваш Telegram ID <code>{chat_id}</code> еще не зарегистрирован в базе данных портала.\n\n"
+                    f"Чтобы привязать аккаунт, отправьте мне свой <b>УИН</b> из личного кабинета."
+                )
 
         elif data == "Количество":
-            count = await sync_to_async(DataBaseUser.objects.exclude(telegram_id="").count)()
-            await call.message.answer(f"Количество подписанных пользователей = {count}")
+            await call.answer()
+            count = await sync_to_async(
+                DataBaseUser.objects.exclude(telegram_id="").exclude(telegram_id__isnull=True).count
+            )()
+            await _reply(f"📊 Количество сотрудников компании с подключенным Telegram: <b>{count}</b>")
 
         else:
-            logger.warning(f"Неизвестный callback: {data}")
+            await call.answer()
+            logger.warning("[TelegramBot] Неизвестный callback_data: %s", data)
 
-    except Exception as e:
-        logger.exception(f"Ошибка в callback: {e}")
-        await call.message.answer("Произошла ошибка, попробуйте позже.")
+    except Exception as exc:
+        logger.exception("[TelegramBot] Ошибка обработки callback %s: %s", data, exc)
+        try:
+            await call.answer("Произошла ошибка при обработке запроса. Попробуйте позже.", show_alert=True)
+        except Exception:
+            pass
