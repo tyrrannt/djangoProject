@@ -699,4 +699,123 @@ class WeatherViewsTestCase(TestCase):
         self.assertEqual(latest_coord.temperature, 19.0)
 
 
+class AviationWeatherMapTestCase(TestCase):
+    """Набор тестов для интерактивной авиационной метеокарты и селектора данных."""
+
+    def setUp(self):
+        """Подготовка тестовых данных: пользователь, МПД и срез погоды."""
+        self.user = DataBaseUser.objects.create_user(
+            username="test_weather_pilot",
+            first_name="Иван",
+            last_name="Пилотов",
+            password="testpassword",
+            email="pilot@barkol.ru",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.mpd1 = PlaceProductionActivity.objects.create(
+            name="МПД Оренбург Тест",
+            short_name="Оренбург",
+            icao_code="UWOO",
+            latitude=51.79,
+            longitude=55.45,
+            elevation_msl_m=118.0,
+            in_planning=True,
+            weather_monitoring_enabled=True,
+        )
+        self.mpd2 = PlaceProductionActivity.objects.create(
+            name="Вертодром Тайга Координатный",
+            short_name="Тайга",
+            icao_code="",
+            latitude=60.12,
+            longitude=75.34,
+            elevation_msl_m=85.0,
+            in_planning=True,
+            weather_monitoring_enabled=True,
+        )
+        now = timezone.now()
+        AviationWeatherObservation.objects.create(
+            mpd=self.mpd1,
+            icao_code="UWOO",
+            observation_time=now,
+            temperature=18.5,
+            dew_point=9.2,
+            wind_direction=120,
+            wind_speed=6.0,
+            wind_gust=12.0,
+            pressure_hpa=1018.0,
+            pressure_mmhg=763.5,
+            flight_category="VFR",
+            visibility_meters=10000,
+            cloud_base_meters=1500,
+        )
+        CoordinateWeatherForecast.objects.create(
+            mpd=self.mpd2,
+            latitude=60.12,
+            longitude=75.34,
+            elevation_msl_m=85.0,
+            forecast_for=now,
+            model_run_at=now - timedelta(hours=3),
+            model="ecmwf_ifs",
+            temperature=7.0,
+            dew_point=5.0,
+            relative_humidity=85.0,
+            wind_direction=340,
+            wind_speed=9.0,
+            wind_gust=15.0,
+            surface_pressure_hpa=1005.0,
+            pressure_msl_hpa=1015.0,
+            cloud_base_agl_m=400.0,
+            visibility_m=6000.0,
+            model_flight_category="MVFR",
+            weather_code=61,
+        )
+
+    def test_get_all_mpds_weather_map_data_structure(self):
+        """Тест структуры и расчетов селектора get_all_mpds_weather_map_data."""
+        from .selectors import get_all_mpds_weather_map_data
+
+        data = get_all_mpds_weather_map_data()
+        self.assertIn("mpds", data)
+        self.assertIn("stats", data)
+        self.assertGreaterEqual(len(data["mpds"]), 2)
+        self.assertGreaterEqual(data["stats"]["total"], 2)
+
+        # Проверяем точку METAR
+        orenburg = next((m for m in data["mpds"] if m["id"] == self.mpd1.pk), None)
+        self.assertIsNotNone(orenburg)
+        self.assertEqual(orenburg["flight_category"], "VFR")
+        self.assertEqual(orenburg["temperature"], 18.5)
+        self.assertEqual(orenburg["wind_direction"], 120)
+        self.assertIn("120° 6 м/с (G12)", orenburg["wind_label"])
+        self.assertEqual(orenburg["weather_source"], "METAR")
+
+        # Проверяем точку ECMWF
+        taiga = next((m for m in data["mpds"] if m["id"] == self.mpd2.pk), None)
+        self.assertIsNotNone(taiga)
+        self.assertEqual(taiga["flight_category"], "MVFR")
+        self.assertEqual(taiga["temperature"], 7.0)
+        self.assertEqual(taiga["weather_source"], "ECMWF_IFS")
+        self.assertIn("340° 9 м/с (G15)", taiga["wind_label"])
+
+    def test_weather_map_views_http_response(self):
+        """Тест HTTP-ответов страницы карты и JSON API."""
+        self.client.force_login(self.user)
+
+        # 1. Страница карты
+        url_page = reverse("flight_planning:weather_map")
+        res_page = self.client.get(url_page)
+        self.assertEqual(res_page.status_code, 200)
+        self.assertContains(res_page, "aviation-map")
+        self.assertContains(res_page, "Метеокарта базирования")
+
+        # 2. JSON API
+        url_api = reverse("flight_planning:weather_map_data_api")
+        res_api = self.client.get(url_api)
+        self.assertEqual(res_api.status_code, 200)
+        json_data = res_api.json()
+        self.assertIn("mpds", json_data)
+        self.assertIn("stats", json_data)
+
+
 

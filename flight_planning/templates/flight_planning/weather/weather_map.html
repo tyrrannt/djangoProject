@@ -1,0 +1,1242 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load tz %}
+
+{% block title %}
+    Интерактивная метеокарта базирования ВС «Баркол»
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'vendor/maplibre/maplibre-gl.css' %}">
+    <style>
+        :root {
+            --touch-target-size: 42px;
+            --barkol-navy: #002b49;
+            --barkol-sky: #0284c7;
+            --aviation-vfr: #10b981;
+            --aviation-mvfr: #0284c7;
+            --aviation-ifr: #ef4444;
+            --aviation-lifr: #831843;
+            --aviation-unknown: #64748b;
+        }
+
+        .content-body {
+            padding: 6px 12px 12px 12px !important;
+        }
+
+        /* Контейнер карты */
+        .aviation-map-wrapper {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 130px);
+            min-height: 600px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            background-color: #111827;
+        }
+
+        @media (max-width: 768px) {
+            .aviation-map-wrapper {
+                height: calc(100vh - 150px);
+                min-height: 480px;
+            }
+        }
+
+        #aviation-map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Верхняя плавающая панель управления */
+        .map-top-bar {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .map-top-bar > * {
+            pointer-events: auto;
+        }
+
+        .map-glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #ffffff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .map-brand-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 14px;
+        }
+
+        .map-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: #ffffff;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .map-subtitle {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        /* Кнопки управления */
+        .btn-map-control {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            font-size: 0.825rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            min-height: 38px;
+        }
+
+        .btn-map-control:hover {
+            background: rgba(51, 65, 85, 0.95);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-map-control.active {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+        }
+
+        /* Статистические плашки */
+        .stats-pills-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            overflow-x: auto;
+        }
+
+        .stat-pill {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .stat-pill:hover {
+            opacity: 0.9;
+            transform: scale(1.03);
+        }
+
+        .stat-pill.vfr { background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .stat-pill.mvfr { background: rgba(2, 132, 199, 0.25); color: #38bdf8; border: 1px solid rgba(2, 132, 199, 0.4); }
+        .stat-pill.ifr { background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .stat-pill.lifr { background: rgba(131, 24, 67, 0.25); color: #f472b6; border: 1px solid rgba(131, 24, 67, 0.4); }
+        .stat-pill.all { background: rgba(100, 116, 139, 0.25); color: #cbd5e1; border: 1px solid rgba(100, 116, 139, 0.4); }
+
+        /* Выдвижной диспетчерский сайдбар */
+        .map-sidebar {
+            position: absolute;
+            top: 68px;
+            left: 12px;
+            bottom: 74px;
+            width: 320px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+            pointer-events: auto;
+        }
+
+        .map-sidebar.collapsed {
+            transform: translateX(-340px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @media (max-width: 576px) {
+            .map-sidebar {
+                width: calc(100% - 24px);
+                bottom: 84px;
+            }
+        }
+
+        .sidebar-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-search {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-search-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.825rem;
+            outline: none;
+        }
+
+        .sidebar-search-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+        }
+
+        .sidebar-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* Карточка площадки в сайдбаре */
+        .mpd-list-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .mpd-list-card:hover {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(2px);
+        }
+
+        .mpd-list-card.selected {
+            border-color: #38bdf8;
+            background: rgba(2, 132, 199, 0.25);
+        }
+
+        .mpd-card-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mpd-card-meta {
+            font-size: 0.725rem;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Нижняя панель радара и анимации */
+        .map-bottom-bar {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 16px;
+            pointer-events: auto;
+        }
+
+        .radar-controls-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+            max-width: 700px;
+        }
+
+        .radar-play-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #0284c7;
+            color: #ffffff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+            flex-shrink: 0;
+        }
+
+        .radar-play-btn:hover {
+            background: #0369a1;
+            transform: scale(1.05);
+        }
+
+        .radar-time-display {
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: #38bdf8;
+            font-family: monospace;
+            white-space: nowrap;
+            min-width: 140px;
+        }
+
+        .radar-slider {
+            flex-grow: 1;
+            accent-color: #38bdf8;
+            cursor: pointer;
+            height: 6px;
+        }
+
+        .radar-opacity-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            white-space: nowrap;
+        }
+
+        .radar-opacity-slider {
+            width: 70px;
+            accent-color: #94a3b8;
+            cursor: pointer;
+        }
+
+        .radar-legend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .legend-gradient {
+            width: 90px;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, rgba(0, 150, 255, 0.7), rgba(0, 255, 100, 0.8), rgba(255, 230, 0, 0.9), rgba(255, 0, 0, 1), rgba(150, 0, 255, 1));
+        }
+
+        @media (max-width: 992px) {
+            .radar-legend { display: none; }
+            .radar-opacity-control { display: none; }
+        }
+
+        /* Авиационные маркеры на карте (MapLibre Marker HTML) */
+        .aviation-marker {
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            transition: transform 0.2s ease;
+        }
+
+        .aviation-marker:hover {
+            z-index: 50;
+            transform: translate(-50%, -50%) scale(1.12);
+        }
+
+        .marker-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+        }
+
+        .marker-badge.vfr { background: #10b981; }
+        .marker-badge.mvfr { background: #0284c7; }
+        .marker-badge.ifr { background: #ef4444; animation: marker-pulse-red 2s infinite; }
+        .marker-badge.lifr { background: #831843; animation: marker-pulse-purple 2s infinite; }
+        .marker-badge.unknown { background: #64748b; }
+
+        @keyframes marker-pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        @keyframes marker-pulse-purple {
+            0% { box-shadow: 0 0 0 0 rgba(131, 24, 67, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(131, 24, 67, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(131, 24, 67, 0); }
+        }
+
+        .wind-vector-icon {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .marker-title-label {
+            margin-top: 3px;
+            background: rgba(15, 23, 42, 0.9);
+            color: #f1f5f9;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Всплывающий попап (MapLibre Popup) */
+        .maplibregl-popup-content {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            border-radius: 12px !important;
+            padding: 14px 16px !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+            font-family: inherit !important;
+            max-width: 320px !important;
+        }
+
+        .maplibregl-popup-close-button {
+            color: #94a3b8 !important;
+            font-size: 1.25rem !important;
+            padding: 4px 8px !important;
+            outline: none !important;
+        }
+
+        .maplibregl-popup-close-button:hover {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+            border-top-color: #0f172a !important;
+        }
+        .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+            border-bottom-color: #0f172a !important;
+        }
+        .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+            border-right-color: #0f172a !important;
+        }
+        .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+            border-left-color: #0f172a !important;
+        }
+
+        .popup-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-right: 16px;
+        }
+
+        .popup-mpd-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .popup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 10px 0;
+        }
+
+        .popup-cell {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .popup-cell-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #94a3b8;
+            margin-bottom: 2px;
+        }
+
+        .popup-cell-value {
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .popup-footer-actions {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .btn-popup-link {
+            width: 100%;
+            background: #0284c7;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-popup-link:hover {
+            background: #0369a1;
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid px-1 py-1">
+        <div class="aviation-map-wrapper">
+            <!-- КАРТА MAPLIBRE GL -->
+            <div id="aviation-map"></div>
+
+            <!-- ВЕРХНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ -->
+            <div class="map-top-bar">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Заголовок карты -->
+                    <div class="map-glass-panel map-brand-badge">
+                        <div class="bg-primary text-white p-1 rounded d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                            <i class="bx bx-compass fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="map-title">Метеокарта базирования «Баркол»</h4>
+                            <p class="map-subtitle d-none d-sm-block">
+                                WebGL • Авиационная метеорология и радар осадков
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Кнопка сайдбара -->
+                    <button type="button" class="btn-map-control map-glass-panel" id="toggleSidebarBtn" title="Список площадок">
+                        <i class="bx bx-list-ul fs-5"></i>
+                        <span class="d-none d-md-inline">Площадки ({{ map_data.stats.total }})</span>
+                    </button>
+                </div>
+
+                <!-- Центральный блок фильтров по летным категориям -->
+                <div class="map-glass-panel stats-pills-bar d-none d-lg-flex">
+                    <span class="stat-pill all" data-filter="all">Все: {{ map_data.stats.total }}</span>
+                    <span class="stat-pill vfr" data-filter="vfr">🟢 ПВП: {{ map_data.stats.vfr }}</span>
+                    <span class="stat-pill mvfr" data-filter="mvfr">🔵 ОПВП: {{ map_data.stats.mvfr }}</span>
+                    <span class="stat-pill ifr" data-filter="ifr">🔴 ППП: {{ map_data.stats.ifr }}</span>
+                    {% if map_data.stats.lifr %}
+                        <span class="stat-pill lifr" data-filter="lifr">🟣 НППП: {{ map_data.stats.lifr }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Правый блок: Переключение базовых слоев и действия -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group map-glass-panel p-1" role="group" aria-label="Слои карты">
+                        <button type="button" class="btn-map-control active py-1 px-2" id="styleDarkBtn" title="Темная диспетчерская карта">
+                            <i class="bx bx-moon"></i> <span class="d-none d-xl-inline">Темная</span>
+                        </button>
+                        <button type="button" class="btn-map-control py-1 px-2" id="styleLightBtn" title="Светлая топографическая карта">
+                            <i class="bx bx-sun"></i> <span class="d-none d-xl-inline">Светлая</span>
+                        </button>
+                        <button type="button" class="btn-map-control py-1 px-2" id="styleSatBtn" title="Спутниковые снимки">
+                            <i class="bx bx-world"></i> <span class="d-none d-xl-inline">Спутник</span>
+                        </button>
+                    </div>
+
+                    <a href="{% url 'flight_planning:weather_hub' %}" class="btn-map-control map-glass-panel" title="Вернуться в Метеоцентр площадки">
+                        <i class="bx bx-buildings fs-5"></i>
+                        <span class="d-none d-sm-inline">Карточки МПД</span>
+                    </a>
+
+                    <button type="button" class="btn-map-control map-glass-panel" id="refreshMapDataBtn" title="Обновить метеоданные">
+                        <i class="bx bx-refresh fs-5" id="refreshSpinnerIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ВЫДВИЖНОЙ ДИСПЕТЧЕРСКИЙ САЙДБАР (СПИСОК МПД) -->
+            <div class="map-sidebar map-glass-panel" id="mapSidebar">
+                <div class="sidebar-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-layer text-info"></i>
+                        <span class="fw-bold fs-6">Площадки базирования</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white btn-sm" id="closeSidebarBtn"></button>
+                </div>
+                <div class="sidebar-search">
+                    <input type="text" class="sidebar-search-input" id="mpdSearchInput" placeholder="Поиск по названию или ICAO...">
+                </div>
+                <div class="sidebar-list" id="mpdSidebarList">
+                    <!-- Заполняется динамически из JS -->
+                </div>
+            </div>
+
+            <!-- НИЖНЯЯ ПАНЕЛЬ: РАДАР ОСАДКОВ И ТАЙМЛАЙН -->
+            <div class="map-bottom-bar map-glass-panel" id="radarBar">
+                <div class="radar-controls-group">
+                    <button type="button" class="radar-play-btn" id="radarPlayBtn" title="Воспроизвести движение осадков">
+                        <i class="bx bx-play fs-4" id="radarPlayIcon"></i>
+                    </button>
+                    <div class="radar-time-display" id="radarTimeDisplay">
+                        <i class="bx bx-radar me-1"></i> Радар осадков
+                    </div>
+                    <input type="range" class="radar-slider" id="radarSlider" min="0" max="0" value="0" step="1">
+                </div>
+
+                <div class="radar-opacity-control">
+                    <span>Слой:</span>
+                    <input type="range" class="radar-opacity-slider" id="radarOpacitySlider" min="10" max="100" value="75" title="Прозрачность радара">
+                </div>
+
+                <div class="radar-legend">
+                    <span>Интенсивность:</span>
+                    <div class="legend-gradient" title="Слабый дождь → Сильный ливень → Грозовой фронт / Град"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Встроенные JSON-данные для мгновенного первого рендера -->
+    <script id="initial-map-data" type="application/json">{{ map_data_json|safe }}</script>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'vendor/maplibre/maplibre-gl.js' %}"></script>
+    <script>
+        (function() {
+            // 1. Извлечение исходных данных
+            let mapData = null;
+            try {
+                const dataElem = document.getElementById('initial-map-data');
+                if (dataElem) {
+                    mapData = JSON.parse(dataElem.textContent);
+                }
+            } catch (e) {
+                console.error('Ошибка парсинга initial-map-data:', e);
+            }
+
+            // 2. Определение картографических стилей MapLibre
+            const STYLES = {
+                dark: {
+                    version: 8,
+                    sources: {
+                        'carto-dark': {
+                            type: 'raster',
+                            tiles: [
+                                'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                                'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                                'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'
+                            ],
+                            tileSize: 256,
+                            attribution: '&copy; OpenStreetMap, &copy; CARTO'
+                        }
+                    },
+                    layers: [{ id: 'base-dark-layer', type: 'raster', source: 'carto-dark', minzoom: 0, maxzoom: 20 }]
+                },
+                light: {
+                    version: 8,
+                    sources: {
+                        'carto-light': {
+                            type: 'raster',
+                            tiles: [
+                                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+                                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+                                'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'
+                            ],
+                            tileSize: 256,
+                            attribution: '&copy; OpenStreetMap, &copy; CARTO'
+                        }
+                    },
+                    layers: [{ id: 'base-light-layer', type: 'raster', source: 'carto-light', minzoom: 0, maxzoom: 20 }]
+                },
+                satellite: {
+                    version: 8,
+                    sources: {
+                        'esri-sat': {
+                            type: 'raster',
+                            tiles: [
+                                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                            ],
+                            tileSize: 256,
+                            attribution: '&copy; Esri World Imagery'
+                        }
+                    },
+                    layers: [{ id: 'base-sat-layer', type: 'raster', source: 'esri-sat', minzoom: 0, maxzoom: 19 }]
+                }
+            };
+
+            let currentStyleKey = 'dark';
+            let activeFilter = 'all';
+            let activeMarkers = [];
+            let activePopups = [];
+
+            // 3. Инициализация карты MapLibre
+            const map = new maplibregl.Map({
+                container: 'aviation-map',
+                style: STYLES.dark,
+                center: [45.0, 53.0], // Центр Европейской части РФ
+                zoom: 5,
+                pitch: 0,
+                bearing: 0,
+                attributionControl: false
+            });
+
+            // Навигационные контролы (зум, компас, наклон)
+            map.addControl(new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showCompass: true,
+                showZoom: true
+            }), 'top-right');
+
+            map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+
+            // 4. Позиционирование камеры по всем МПД компании
+            function fitMapToBounds() {
+                if (!mapData || !mapData.mpds || mapData.mpds.length === 0) return;
+                const bounds = new maplibregl.LngLatBounds();
+                let validCount = 0;
+                mapData.mpds.forEach(mpd => {
+                    if (mpd.longitude && mpd.latitude) {
+                        bounds.extend([mpd.longitude, mpd.latitude]);
+                        validCount++;
+                    }
+                });
+                if (validCount > 0) {
+                    map.fitBounds(bounds, {
+                        padding: { top: 90, bottom: 90, left: 60, right: 60 },
+                        maxZoom: 9,
+                        duration: 1000
+                    });
+                }
+            }
+
+            // 5. SVG стрелка вектора ветра
+            function getWindSvg(directionDeg) {
+                if (directionDeg === null || directionDeg === undefined) {
+                    return '';
+                }
+                // Направление ветра в авиации - ОТКУДА дует.
+                // Стрелка указывает КУДА направлен поток (+180° к метеорологическому направлению).
+                const arrowRotation = (directionDeg + 180) % 360;
+                return `
+                    <svg class="wind-vector-icon" style="transform: rotate(${arrowRotation}deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                    </svg>
+                `;
+            }
+
+            // 6. Генерация HTML попапа
+            function createPopupHtml(mpd) {
+                const badgeClass = mpd.flight_category.toLowerCase();
+                const tempDisplay = mpd.temperature_str;
+                const windDisplay = mpd.wind_label;
+                const qfeDisplay = mpd.surface_pressure_mmhg ? `${mpd.surface_pressure_mmhg} мм (${mpd.surface_pressure_hpa} гПа)` : '—';
+                const qnhDisplay = mpd.msl_pressure_mmhg ? `${mpd.msl_pressure_mmhg} мм (${mpd.msl_pressure_hpa} гПа)` : '—';
+                const cloudDisplay = mpd.cloud_base_str;
+                const visDisplay = mpd.visibility_str;
+                const srcDisplay = mpd.weather_source === 'METAR' ? `METAR ${mpd.icao_code || ''}` : `Модель ${mpd.weather_source}`;
+
+                let stationInfoHtml = '';
+                if (mpd.nearest_station_icao) {
+                    const distLabel = mpd.nearest_station_distance_km ? `${mpd.nearest_station_distance_km} км` : '';
+                    stationInfoHtml = `
+                        <div class="text-muted small mt-1">
+                            <i class="bx bx-radio-circle-marked text-info me-1"></i> Опорный аэродром: 
+                            <strong class="text-light">${mpd.nearest_station_name} (${mpd.nearest_station_icao})</strong> ${distLabel}
+                            ${mpd.is_distant ? '<span class="badge bg-warning text-dark ms-1">>15 км</span>' : ''}
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="popup-header">
+                        <div>
+                            <h5 class="popup-mpd-name">${mpd.name}</h5>
+                            <span class="badge bg-secondary font-monospace">${mpd.icao_code || 'КООРДИНАТЫ'}</span>
+                            <span class="badge bg-info text-dark font-monospace">${mpd.elevation_msl_m ? mpd.elevation_msl_m + ' м MSL' : ''}</span>
+                        </div>
+                        <span class="marker-badge ${badgeClass}">${mpd.flight_category}</span>
+                    </div>
+
+                    <div class="text-info small fw-bold mb-1">
+                        <i class="bx bx-time-five me-1"></i> ${mpd.time_full_str} • ${srcDisplay}
+                    </div>
+                    <div class="text-light small mb-2 fst-italic">
+                        ${mpd.weather_description}
+                    </div>
+
+                    <div class="popup-grid">
+                        <div class="popup-cell">
+                            <div class="popup-cell-label">Температура</div>
+                            <div class="popup-cell-value text-warning">${tempDisplay}</div>
+                        </div>
+                        <div class="popup-cell">
+                            <div class="popup-cell-label">Ветер / Порывы</div>
+                            <div class="popup-cell-value text-info">${windDisplay}</div>
+                        </div>
+                        <div class="popup-cell">
+                            <div class="popup-cell-label">Давление QFE (МПД)</div>
+                            <div class="popup-cell-value">${qfeDisplay}</div>
+                        </div>
+                        <div class="popup-cell">
+                            <div class="popup-cell-label">Давление QNH</div>
+                            <div class="popup-cell-value">${qnhDisplay}</div>
+                        </div>
+                        <div class="popup-cell">
+                            <div class="popup-cell-label">Нижняя кромка (НГО)</div>
+                            <div class="popup-cell-value">${cloudDisplay}</div>
+                        </div>
+                        <div class="popup-cell">
+                            <div class="popup-cell-label">Видимость</div>
+                            <div class="popup-cell-value">${visDisplay}</div>
+                        </div>
+                    </div>
+
+                    ${stationInfoHtml}
+
+                    <div class="popup-footer-actions">
+                        <a href="${mpd.detail_url}" class="btn-popup-link">
+                            <i class="bx bx-bar-chart-alt-2"></i> Открыть Метеоцентр МПД
+                        </a>
+                    </div>
+                `;
+            }
+
+            // 7. Рендеринг маркеров на карте
+            function renderMarkers() {
+                // Очистка старых маркеров
+                activeMarkers.forEach(m => m.remove());
+                activeMarkers = [];
+                activePopups = [];
+
+                if (!mapData || !mapData.mpds) return;
+
+                mapData.mpds.forEach(mpd => {
+                    if (!mpd.longitude || !mpd.latitude) return;
+
+                    // Фильтрация
+                    const cat = mpd.flight_category.toLowerCase();
+                    if (activeFilter !== 'all' && cat !== activeFilter) {
+                        return;
+                    }
+
+                    // Создание DOM-элемента маркера
+                    const el = document.createElement('div');
+                    el.className = 'aviation-marker';
+                    el.setAttribute('data-mpd-id', mpd.id);
+
+                    const windSvg = getWindSvg(mpd.wind_direction);
+                    const badgeClass = cat;
+                    const tempText = mpd.temperature_str !== '—' ? mpd.temperature_str : '';
+
+                    el.innerHTML = `
+                        <div class="marker-badge ${badgeClass}">
+                            ${windSvg}
+                            <span>${tempText}</span>
+                        </div>
+                        <div class="marker-title-label">${mpd.short_name}</div>
+                    `;
+
+                    // Создание попапа
+                    const popup = new maplibregl.Popup({
+                        offset: 20,
+                        closeButton: true,
+                        closeOnClick: false,
+                        maxWidth: '320px'
+                    }).setHTML(createPopupHtml(mpd));
+
+                    const marker = new maplibregl.Marker({
+                        element: el,
+                        anchor: 'center'
+                    })
+                    .setLngLat([mpd.longitude, mpd.latitude])
+                    .setPopup(popup)
+                    .addTo(map);
+
+                    activeMarkers.push(marker);
+                    activePopups.push({ id: mpd.id, popup: popup, marker: marker, lngLat: [mpd.longitude, mpd.latitude] });
+                });
+            }
+
+            // 8. Заполнение бокового сайдбара
+            function renderSidebar(searchQuery = '') {
+                const listElem = document.getElementById('mpdSidebarList');
+                if (!listElem || !mapData || !mapData.mpds) return;
+
+                listElem.innerHTML = '';
+                const query = searchQuery.trim().toLowerCase();
+
+                const filtered = mapData.mpds.filter(mpd => {
+                    const matchCat = activeFilter === 'all' || mpd.flight_category.toLowerCase() === activeFilter;
+                    const matchSearch = !query ||
+                        mpd.name.toLowerCase().includes(query) ||
+                        (mpd.icao_code && mpd.icao_code.toLowerCase().includes(query)) ||
+                        (mpd.short_name && mpd.short_name.toLowerCase().includes(query));
+                    return matchCat && matchSearch;
+                });
+
+                if (filtered.length === 0) {
+                    listElem.innerHTML = '<div class="text-muted small text-center p-3">Площадки не найдены</div>';
+                    return;
+                }
+
+                filtered.forEach(mpd => {
+                    const card = document.createElement('div');
+                    card.className = 'mpd-list-card';
+                    card.setAttribute('data-id', mpd.id);
+
+                    const cat = mpd.flight_category.toLowerCase();
+                    const windStr = mpd.wind_label !== '—' ? mpd.wind_label : '';
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="mpd-card-name">
+                                <span>${mpd.name}</span>
+                                ${mpd.icao_code ? `<span class="badge bg-secondary font-monospace" style="font-size: 0.65rem;">${mpd.icao_code}</span>` : ''}
+                            </div>
+                            <div class="mpd-card-meta">
+                                <span><i class="bx bx-thermometer text-warning"></i> ${mpd.temperature_str}</span>
+                                <span><i class="bx bx-wind text-info"></i> ${windStr}</span>
+                            </div>
+                        </div>
+                        <span class="marker-badge ${cat}" style="padding: 2px 6px; font-size: 0.7rem;">${mpd.flight_category}</span>
+                    `;
+
+                    card.addEventListener('click', () => {
+                        flyToMpd(mpd.id);
+                    });
+
+                    listElem.appendChild(card);
+                });
+            }
+
+            // 9. Плавный перелет к выбранному МПД
+            function flyToMpd(mpdId) {
+                const match = activePopups.find(p => p.id === mpdId);
+                if (match) {
+                    map.flyTo({
+                        center: match.lngLat,
+                        zoom: 9.5,
+                        pitch: 25,
+                        speed: 1.2,
+                        curve: 1.4,
+                        essential: true
+                    });
+                    // Закрываем другие попапы и открываем этот
+                    activePopups.forEach(p => p.popup.remove());
+                    match.marker.togglePopup();
+
+                    // Подсветка в сайдбаре
+                    document.querySelectorAll('.mpd-list-card').forEach(c => c.classList.remove('selected'));
+                    const selectedElem = document.querySelector(`.mpd-list-card[data-id="${mpdId}"]`);
+                    if (selectedElem) selectedElem.classList.add('selected');
+                }
+            }
+
+            // 10. Модуль интеграции радара RainViewer
+            let radarData = null;
+            let radarFrames = [];
+            let currentRadarIndex = 0;
+            let radarInterval = null;
+            let isRadarPlaying = false;
+            let radarOpacity = 0.75;
+
+            async function initRainViewerRadar() {
+                try {
+                    const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    radarData = await res.json();
+
+                    if (!radarData || !radarData.radar || !radarData.radar.past) {
+                        console.warn('RainViewer API: нет данных past');
+                        return;
+                    }
+
+                    // Объединяем past и nowcast кадры
+                    const past = radarData.radar.past || [];
+                    const nowcast = radarData.radar.nowcast || [];
+                    radarFrames = [...past, ...nowcast];
+
+                    if (radarFrames.length === 0) return;
+
+                    const slider = document.getElementById('radarSlider');
+                    if (slider) {
+                        slider.max = radarFrames.length - 1;
+                        slider.value = past.length > 0 ? past.length - 1 : 0;
+                        currentRadarIndex = parseInt(slider.value, 10);
+                    }
+
+                    updateRadarLayer();
+                } catch (err) {
+                    console.warn('Не удалось загрузить радарные слои RainViewer:', err);
+                    const timeDisp = document.getElementById('radarTimeDisplay');
+                    if (timeDisp) timeDisp.innerHTML = '<span class="text-muted">Радар офлайн</span>';
+                }
+            }
+
+            function updateRadarLayer() {
+                if (!radarFrames || radarFrames.length === 0 || !radarData) return;
+                const frame = radarFrames[currentRadarIndex];
+                if (!frame) return;
+
+                const host = radarData.host || 'https://tilecache.rainviewer.com';
+                const tileUrl = `${host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+
+                // Форматирование времени кадра
+                const dt = new Date(frame.time * 1000);
+                const utcStr = dt.toTimeString().substring(0, 5) + 'Z';
+                const mskHour = (dt.getUTCHours() + 3) % 24;
+                const mskStr = `${String(mskHour).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')} МСК`;
+                const isNowcast = currentRadarIndex >= (radarData.radar.past ? radarData.radar.past.length : 0);
+                const statusTag = isNowcast ? '<span class="badge bg-primary ms-1" style="font-size:0.6rem;">ПРОГНОЗ</span>' : '<span class="badge bg-success ms-1" style="font-size:0.6rem;">РАДАР</span>';
+
+                const timeDisp = document.getElementById('radarTimeDisplay');
+                if (timeDisp) {
+                    timeDisp.innerHTML = `<i class="bx bx-radar text-info"></i> ${utcStr} (${mskStr}) ${statusTag}`;
+                }
+
+                const slider = document.getElementById('radarSlider');
+                if (slider) slider.value = currentRadarIndex;
+
+                const sourceId = 'rainviewer-radar-source';
+                const layerId = 'rainviewer-radar-layer';
+
+                // Если источник уже есть, обновляем тайлы
+                if (map.getSource(sourceId)) {
+                    // Удаляем старый слой и источник для смены тайлов
+                    if (map.getLayer(layerId)) map.removeLayer(layerId);
+                    map.removeSource(sourceId);
+                }
+
+                map.addSource(sourceId, {
+                    type: 'raster',
+                    tiles: [tileUrl],
+                    tileSize: 256
+                });
+
+                map.addLayer({
+                    id: layerId,
+                    type: 'raster',
+                    source: sourceId,
+                    paint: {
+                        'raster-opacity': radarOpacity,
+                        'raster-opacity-transition': { duration: 200 }
+                    }
+                });
+            }
+
+            function playRadar() {
+                if (radarInterval) clearInterval(radarInterval);
+                isRadarPlaying = true;
+                const icon = document.getElementById('radarPlayIcon');
+                if (icon) icon.className = 'bx bx-pause fs-4';
+
+                radarInterval = setInterval(() => {
+                    if (!radarFrames || radarFrames.length === 0) return;
+                    currentRadarIndex = (currentRadarIndex + 1) % radarFrames.length;
+                    updateRadarLayer();
+                }, 800);
+            }
+
+            function pauseRadar() {
+                if (radarInterval) clearInterval(radarInterval);
+                radarInterval = null;
+                isRadarPlaying = false;
+                const icon = document.getElementById('radarPlayIcon');
+                if (icon) icon.className = 'bx bx-play fs-4';
+            }
+
+            // 11. Переключение картографических подложек
+            function switchBasemap(styleKey) {
+                if (!STYLES[styleKey] || styleKey === currentStyleKey) return;
+                currentStyleKey = styleKey;
+
+                // Кнопки
+                document.getElementById('styleDarkBtn').classList.toggle('active', styleKey === 'dark');
+                document.getElementById('styleLightBtn').classList.toggle('active', styleKey === 'light');
+                document.getElementById('styleSatBtn').classList.toggle('active', styleKey === 'satellite');
+
+                map.setStyle(STYLES[styleKey]);
+                map.once('style.load', () => {
+                    renderMarkers();
+                    updateRadarLayer();
+                });
+            }
+
+            // 12. Обновление метеоданных по API
+            async function refreshWeatherData() {
+                const spinner = document.getElementById('refreshSpinnerIcon');
+                if (spinner) spinner.classList.add('bx-spin');
+
+                try {
+                    const res = await fetch('{% url "flight_planning:weather_map_data_api" %}');
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const newData = await res.json();
+                    mapData = newData;
+
+                    // Обновляем статистику
+                    updateStatsDisplay();
+                    // Перерисовываем маркеры и сайдбар
+                    renderMarkers();
+                    renderSidebar(document.getElementById('mpdSearchInput') ? document.getElementById('mpdSearchInput').value : '');
+                } catch (err) {
+                    console.error('Ошибка обновления метеоданных:', err);
+                } finally {
+                    if (spinner) {
+                        setTimeout(() => spinner.classList.remove('bx-spin'), 600);
+                    }
+                }
+            }
+
+            function updateStatsDisplay() {
+                if (!mapData || !mapData.stats) return;
+                const s = mapData.stats;
+                const btnSidebar = document.querySelector('#toggleSidebarBtn span');
+                if (btnSidebar) btnSidebar.textContent = `Площадки (${s.total})`;
+
+                const pillAll = document.querySelector('.stat-pill.all');
+                if (pillAll) pillAll.textContent = `Все: ${s.total}`;
+
+                const pillVfr = document.querySelector('.stat-pill.vfr');
+                if (pillVfr) pillVfr.textContent = `🟢 ПВП: ${s.vfr}`;
+
+                const pillMvfr = document.querySelector('.stat-pill.mvfr');
+                if (pillMvfr) pillMvfr.textContent = `🔵 ОПВП: ${s.mvfr}`;
+
+                const pillIfr = document.querySelector('.stat-pill.ifr');
+                if (pillIfr) pillIfr.textContent = `🔴 ППП: ${s.ifr}`;
+            }
+
+            // 13. Инициализация событий при загрузке карты
+            map.on('load', () => {
+                fitMapToBounds();
+                renderMarkers();
+                renderSidebar();
+                initRainViewerRadar();
+            });
+
+            // Обработчики кнопок подложек
+            document.getElementById('styleDarkBtn').addEventListener('click', () => switchBasemap('dark'));
+            document.getElementById('styleLightBtn').addEventListener('click', () => switchBasemap('light'));
+            document.getElementById('styleSatBtn').addEventListener('click', () => switchBasemap('satellite'));
+
+            // Кнопка обновления
+            document.getElementById('refreshMapDataBtn').addEventListener('click', refreshWeatherData);
+
+            // Кнопки сайдбара
+            const sidebarElem = document.getElementById('mapSidebar');
+            document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
+                sidebarElem.classList.toggle('collapsed');
+            });
+            document.getElementById('closeSidebarBtn').addEventListener('click', () => {
+                sidebarElem.classList.add('collapsed');
+            });
+
+            // Поиск по сайдбару
+            const searchInput = document.getElementById('mpdSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    renderSidebar(e.target.value);
+                });
+            }
+
+            // Фильтры по летным категориям
+            document.querySelectorAll('.stat-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    activeFilter = pill.getAttribute('data-filter') || 'all';
+                    renderMarkers();
+                    renderSidebar(searchInput ? searchInput.value : '');
+                });
+            });
+
+            // Контролы радара
+            document.getElementById('radarPlayBtn').addEventListener('click', () => {
+                if (isRadarPlaying) {
+                    pauseRadar();
+                } else {
+                    playRadar();
+                }
+            });
+
+            document.getElementById('radarSlider').addEventListener('input', (e) => {
+                pauseRadar();
+                currentRadarIndex = parseInt(e.target.value, 10);
+                updateRadarLayer();
+            });
+
+            document.getElementById('radarOpacitySlider').addEventListener('input', (e) => {
+                radarOpacity = parseFloat(e.target.value) / 100.0;
+                const layerId = 'rainviewer-radar-layer';
+                if (map.getLayer(layerId)) {
+                    map.setPaintProperty(layerId, 'raster-opacity', radarOpacity);
+                }
+            });
+
+            // Периодическое фоновое обновление метеоданных каждые 60 секунд
+            setInterval(refreshWeatherData, 60000);
+        })();
+    </script>
+{% endblock %}

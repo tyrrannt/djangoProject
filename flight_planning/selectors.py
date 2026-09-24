@@ -1,9 +1,10 @@
-# flight_planning/selectors.py
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone as dt_timezone
 from typing import Optional, Dict, List, Any
 from django.db.models import QuerySet, Q
 from django.utils import timezone
+from django.urls import reverse
 from contracts_app.models import Estate
+from hrdepartment_app.models import PlaceProductionActivity
 from .models import PilotAssignment, AircraftMovement, FlightCrew, CrewMember
 
 
@@ -651,6 +652,296 @@ def get_aircraft_basing_report_data(
         'total_mpds': len(sorted_mpd_groups),
         'total_reserve': total_reserve,
         'type_counts': type_counts,
+    }
+
+
+def get_all_mpds_weather_map_data(target_date: Optional[date] = None) -> Dict[str, Any]:
+    """Возвращает агрегированный набор метеоданных по всем активным МПД для интерактивной карты.
+
+    Выбирает все активные площадки с географическими координатами (WGS84),
+    определяет для каждой из них актуальный срез фактической погоды (METAR)
+    или расчетного численного прогноза (ECMWF IFS / GFS) на текущий момент времени,
+    рассчитывает вектор ветра, давление, летную категорию и формирует готовую структуру
+    для картографического рендеринга на MapLibre GL JS.
+
+    Args:
+        target_date (Optional[date]): Целевая дата среза (по умолчанию текущая дата).
+
+    Returns:
+        Dict[str, Any]: Словарь со структурой:
+            - 'mpds': список словарей параметров МПД и актуальной погоды;
+            - 'stats': сводная статистика по летным категориям;
+            - 'generated_at': временная метка генерации (UTC);
+            - 'generated_at_str': читаемая строка времени генерации (UTC / МСК).
+    """
+    import math
+    from .weather_services import AviationWeatherService
+    from .weather_providers.geo_service import GeoStationService
+
+    now_utc = timezone.now()
+    if target_date is None:
+        target_date = now_utc.date()
+
+    category_meta = {
+        "VFR": {
+            "label": "VFR (ПВП)",
+            "full_label": "ПВП — Визуальные метеоусловия",
+            "color": "#10b981",
+            "badge_class": "success",
+        },
+        "MVFR": {
+            "label": "MVFR (ОПВП)",
+            "full_label": "ОПВП — Ухудшенные визуальные",
+            "color": "#0284c7",
+            "badge_class": "primary",
+        },
+        "IFR": {
+            "label": "IFR (ППП)",
+            "full_label": "ППП — Приборные метеоусловия",
+            "color": "#ef4444",
+            "badge_class": "danger",
+        },
+        "LIFR": {
+            "label": "LIFR (НППП)",
+            "full_label": "НППП — Низкие приборные",
+            "color": "#831843",
+            "badge_class": "dark",
+        },
+        "UNKNOWN": {
+            "label": "Нет данных",
+            "full_label": "Метеоданные отсутствуют или устарели",
+            "color": "#64748b",
+            "badge_class": "secondary",
+        },
+    }
+
+    # Выбираем все активные МПД с координатами
+    active_mpds = PlaceProductionActivity.objects.filter(
+        Q(in_planning=True) | Q(weather_monitoring_enabled=True)
+    ).filter(
+        latitude__isnull=False,
+        longitude__isnull=False,
+    ).distinct().order_by("name")
+
+    mpd_list: List[Dict[str, Any]] = []
+    stats = {
+        "total": 0,
+        "vfr": 0,
+        "mvfr": 0,
+        "ifr": 0,
+        "lifr": 0,
+        "unknown": 0,
+    }
+
+    for mpd in active_mpds:
+        curr_weather = AviationWeatherService.get_mpd_current_weather(mpd)
+        latest_obs = curr_weather.get("latest_observation")
+        latest_coord = curr_weather.get("latest_coordinate_forecast")
+
+        pref = mpd.weather_source_preference or "AUTO"
+        use_obs = False
+
+        if pref == "METAR_ONLY":
+            use_obs = bool(latest_obs)
+        elif pref == "COORDINATES_ONLY":
+            use_obs = False
+        else:
+            if mpd.icao_code and latest_obs:
+                use_obs = True
+            elif latest_coord:
+                use_obs = False
+            elif latest_obs:
+                use_obs = True
+
+        elev_m = float(mpd.elevation_msl_m) if mpd.elevation_msl_m is not None else 0.0
+
+        # Поиск опорной станции
+        nearest_info = GeoStationService.find_nearest_station(
+            latitude=float(mpd.latitude),
+            longitude=float(mpd.longitude),
+            mpd_elevation_msl_m=elev_m,
+        )
+        st_icao = ""
+        st_name = ""
+        st_dist = None
+        is_distant = False
+        if nearest_info and nearest_info.get("station"):
+            st = nearest_info["station"]
+            st_icao = st.icao_code
+            st_name = st.name_ru or st.name_en or st.icao_code
+            st_dist = round(nearest_info.get("distance_km", 0.0), 1)
+            is_distant = bool(nearest_info.get("is_distant", False))
+
+        # Сбор параметров
+        if use_obs and latest_obs:
+            raw_cat = (latest_obs.flight_category or "VFR").upper()
+            flight_category = raw_cat if raw_cat in category_meta else "VFR"
+            temperature = round(latest_obs.temperature, 1) if latest_obs.temperature is not None else None
+            dew_point = round(latest_obs.dew_point, 1) if latest_obs.dew_point is not None else None
+
+            # Расчет относительной влажности по Magnus-Tetens, если есть T и Td
+            humidity = None
+            if temperature is not None and dew_point is not None:
+                try:
+                    rh = 100 * (math.exp((17.625 * dew_point) / (243.04 + dew_point)) / math.exp((17.625 * temperature) / (243.04 + temperature)))
+                    humidity = max(1, min(100, int(round(rh))))
+                except Exception:
+                    pass
+
+            wind_dir = latest_obs.wind_direction
+            wind_spd = round(latest_obs.wind_speed, 1) if latest_obs.wind_speed is not None else None
+            wind_gst = round(latest_obs.wind_gust, 1) if latest_obs.wind_gust is not None else None
+
+            qnh_hpa = round(latest_obs.pressure_hpa, 1) if latest_obs.pressure_hpa is not None else None
+            qnh_mmhg = round(latest_obs.pressure_mmhg, 1) if latest_obs.pressure_mmhg is not None else (round(qnh_hpa * 0.750062, 1) if qnh_hpa else None)
+
+            # Расчет QFE (давление на уровне МПД)
+            qfe_hpa = None
+            qfe_mmhg = None
+            if qnh_hpa is not None:
+                qfe_hpa = round(qnh_hpa - (elev_m / 8.3), 1)
+                qfe_mmhg = round(qfe_hpa * 0.750062, 1)
+
+            cloud_base = latest_obs.cloud_base_meters
+            visibility = latest_obs.visibility_meters
+            weather_desc = latest_obs.weather_phenomena or ("CAVOK — Хорошая погода" if latest_obs.cavok else "Без опасных явлений")
+            time_dt = latest_obs.observation_time
+            weather_source = "METAR"
+            has_weather = True
+
+        elif latest_coord:
+            raw_cat = (getattr(latest_coord, "model_flight_category", None) or getattr(latest_coord, "flight_category", None) or "VFR").upper()
+            flight_category = raw_cat if raw_cat in category_meta else "VFR"
+            temperature = round(latest_coord.temperature, 1) if latest_coord.temperature is not None else None
+            dew_point = round(latest_coord.dew_point, 1) if latest_coord.dew_point is not None else None
+            humidity = int(round(latest_coord.relative_humidity)) if latest_coord.relative_humidity is not None else None
+
+            wind_dir = latest_coord.wind_direction
+            wind_spd = round(latest_coord.wind_speed, 1) if latest_coord.wind_speed is not None else None
+            wind_gst = round(latest_coord.wind_gust, 1) if latest_coord.wind_gust is not None else None
+
+            qfe_hpa = round(latest_coord.surface_pressure_hpa, 1) if latest_coord.surface_pressure_hpa is not None else None
+            qfe_mmhg = round(latest_coord.surface_pressure_mmhg, 1) if latest_coord.surface_pressure_mmhg is not None else (round(qfe_hpa * 0.750062, 1) if qfe_hpa is not None else None)
+
+            qnh_hpa = round(latest_coord.pressure_msl_hpa, 1) if latest_coord.pressure_msl_hpa is not None else None
+            qnh_mmhg = round(latest_coord.pressure_mmhg, 1) if latest_coord.pressure_mmhg is not None else (round(qnh_hpa * 0.750062, 1) if qnh_hpa else None)
+
+            cloud_base = int(round(latest_coord.cloud_base_agl_m)) if latest_coord.cloud_base_agl_m is not None else None
+            visibility = int(round(latest_coord.visibility_m)) if latest_coord.visibility_m is not None else None
+            weather_desc = latest_coord.weather_description or "Без существенных явлений"
+            time_dt = latest_coord.forecast_for
+            weather_source = latest_coord.model.upper()
+            has_weather = True
+
+        else:
+            flight_category = "UNKNOWN"
+            temperature = None
+            dew_point = None
+            humidity = None
+            wind_dir = None
+            wind_spd = None
+            wind_gst = None
+            qfe_hpa = None
+            qfe_mmhg = None
+            qnh_hpa = None
+            qnh_mmhg = None
+            cloud_base = None
+            visibility = None
+            weather_desc = "Данные о погоде отсутствуют"
+            time_dt = None
+            weather_source = "NO_DATA"
+            has_weather = False
+
+        meta = category_meta.get(flight_category, category_meta["UNKNOWN"])
+
+        # Формирование лейбла ветра
+        if wind_spd is not None:
+            if wind_spd == 0:
+                wind_label = "Штиль"
+            else:
+                dir_str = f"{wind_dir:03d}°" if wind_dir is not None else "VRB"
+                wind_label = f"{dir_str} {wind_spd:.0f} м/с"
+                if wind_gst and wind_gst > wind_spd:
+                    wind_label += f" (G{wind_gst:.0f})"
+        else:
+            wind_label = "—"
+
+        # Формирование времени
+        if time_dt:
+            t_utc = time_dt.astimezone(dt_timezone.utc)
+            t_utc_str = t_utc.strftime("%H:%M") + "Z"
+            t_msk_str = (t_utc + timedelta(hours=3)).strftime("%H:%M") + " МСК"
+            time_full_str = f"{t_utc_str} / {t_msk_str}"
+            time_date_str = t_utc.strftime("%d.%m.%Y")
+        else:
+            t_utc_str = "—"
+            t_msk_str = "—"
+            time_full_str = "—"
+            time_date_str = "—"
+
+        # Статистика
+        stats["total"] += 1
+        cat_key = flight_category.lower()
+        if cat_key in stats:
+            stats[cat_key] += 1
+        else:
+            stats["unknown"] += 1
+
+        mpd_dict = {
+            "id": mpd.pk,
+            "name": mpd.name,
+            "short_name": mpd.short_name or mpd.name,
+            "icao_code": (mpd.icao_code or "").upper(),
+            "latitude": float(mpd.latitude),
+            "longitude": float(mpd.longitude),
+            "elevation_msl_m": elev_m,
+            "has_weather": has_weather,
+            "weather_source": weather_source,
+            "flight_category": flight_category,
+            "flight_category_label": meta["label"],
+            "flight_category_full_label": meta["full_label"],
+            "flight_category_color": meta["color"],
+            "flight_category_badge": meta["badge_class"],
+            "temperature": temperature,
+            "temperature_str": f"{temperature:+.0f}°C" if temperature is not None else "—",
+            "dew_point": dew_point,
+            "dew_point_str": f"{dew_point:+.0f}°C" if dew_point is not None else "—",
+            "humidity": humidity,
+            "humidity_str": f"{humidity}%" if humidity is not None else "—",
+            "wind_direction": wind_dir,
+            "wind_speed": wind_spd,
+            "wind_gust": wind_gst,
+            "wind_label": wind_label,
+            "cloud_base_agl_m": cloud_base,
+            "cloud_base_str": f"{cloud_base} м" if cloud_base is not None else "—",
+            "visibility_meters": visibility,
+            "visibility_str": f"{visibility} м" if (visibility is not None and visibility < 10000) else ("> 10 км" if visibility is not None else "—"),
+            "surface_pressure_hpa": qfe_hpa,
+            "surface_pressure_mmhg": qfe_mmhg,
+            "msl_pressure_hpa": qnh_hpa,
+            "msl_pressure_mmhg": qnh_mmhg,
+            "weather_description": weather_desc,
+            "time_utc_str": t_utc_str,
+            "time_msk_str": t_msk_str,
+            "time_full_str": time_full_str,
+            "time_date_str": time_date_str,
+            "nearest_station_icao": st_icao,
+            "nearest_station_name": st_name,
+            "nearest_station_distance_km": st_dist,
+            "is_distant": is_distant,
+            "detail_url": reverse("flight_planning:mpd_weather_history", args=[mpd.pk]),
+        }
+        mpd_list.append(mpd_dict)
+
+    now_utc_str = now_utc.strftime("%H:%M") + "Z"
+    now_msk_str = (now_utc + timedelta(hours=3)).strftime("%H:%M") + " МСК"
+
+    return {
+        "mpds": mpd_list,
+        "stats": stats,
+        "generated_at": now_utc.isoformat(),
+        "generated_at_str": f"{now_utc_str} / {now_msk_str}",
+        "target_date_str": target_date.strftime("%d.%m.%Y"),
     }
 
 

@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, HttpRequest
+from django.core.serializers.json import DjangoJSONEncoder
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
@@ -60,7 +61,8 @@ from .selectors import (
     get_mpd_crew_map,
     get_available_aircraft_for_mpd,
     get_personnel_utilization_report_data,
-    get_aircraft_basing_report_data
+    get_aircraft_basing_report_data,
+    get_all_mpds_weather_map_data,
 )
 from .services import (
     get_grouped_pilot_schedule,
@@ -3810,7 +3812,6 @@ def download_check_template_view(request):
 
 
 @login_required
-@login_required
 def weather_hub_view(request: HttpRequest) -> HttpResponse:
     """Главный вход в Метеоцентр планирования полетов.
 
@@ -3841,6 +3842,57 @@ def weather_hub_view(request: HttpRequest) -> HttpResponse:
     return render(request, 'flight_planning/weather/weather_hub_empty.html', {
         'all_mpds': all_mpds,
     })
+
+
+@login_required
+def weather_map_view(request: HttpRequest) -> HttpResponse:
+    """Отображение интерактивной полноэкранной авиационной метеокарты базирования ВС.
+
+    Визуализирует все посадочные площадки и места производственной деятельности (МПД)
+    на географической векторной карте с WebGL-движком MapLibre GL JS.
+    Отображает динамические маркеры со статусами летных категорий (VFR, MVFR, IFR, LIFR),
+    векторами ветра (направление, скорость, порывы), температурой и наложением живого
+    радарного слоя осадков и грозовых фронтов RainViewer.
+
+    Args:
+        request (HttpRequest): HTTP GET запрос.
+
+    Returns:
+        HttpResponse: Отрендеренная страница полноэкранной метеокарты.
+    """
+    map_data = get_all_mpds_weather_map_data()
+    all_weather_mpds = PlaceProductionActivity.objects.filter(
+        Q(in_planning=True) | Q(weather_monitoring_enabled=True)
+    ).filter(
+        Q(icao_code__gt="") | Q(latitude__isnull=False, longitude__isnull=False)
+    ).distinct().order_by('name')
+
+    context = {
+        "map_data": map_data,
+        "map_data_json": json.dumps(map_data, cls=DjangoJSONEncoder),
+        "all_weather_mpds": all_weather_mpds,
+        "active_tab": "weather_map",
+    }
+    return render(request, "flight_planning/weather/weather_map.html", context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def weather_map_data_api(request: HttpRequest) -> JsonResponse:
+    """REST API эндпоинт для динамического получения метеоданных карты в формате JSON.
+
+    Используется клиентским модулем MapLibre GL JS для первичной загрузки геометрии,
+    динамической фильтрации и периодического автообновления метеорологической обстановки
+    без перезагрузки страницы.
+
+    Args:
+        request (HttpRequest): HTTP GET запрос.
+
+    Returns:
+        JsonResponse: JSON-объект с массивом площадок, координатами, метеопараметрами и статистикой.
+    """
+    data = get_all_mpds_weather_map_data()
+    return JsonResponse(data, encoder=DjangoJSONEncoder, safe=False)
 
 
 @login_required

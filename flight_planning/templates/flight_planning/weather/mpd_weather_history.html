@@ -1022,7 +1022,10 @@
             <div class="card card-modern shadow-sm border-0 mb-3">
                 <div class="card-body p-2 px-3">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small fw-bold text-uppercase d-none d-md-inline flex-shrink-0">
+                        <a href="{% url 'flight_planning:weather_map' %}" class="btn btn-primary btn-sm rounded-pill px-3 py-1 flex-shrink-0 d-inline-flex align-items-center gap-1 shadow-sm" title="Открыть интерактивную метеокарту всех площадок">
+                            <i class="bx bx-map-alt fs-6"></i> <span>Метеокарта</span>
+                        </a>
+                        <span class="text-muted small fw-bold text-uppercase d-none d-md-inline flex-shrink-0 ms-1">
                             <i class="bx bx-buildings me-1"></i> Площадки:
                         </span>
                         <div class="mpd-pills-bar flex-grow-1">
@@ -1091,6 +1094,11 @@
                                 <i class="bx bx-calendar-event me-1"></i> <span class="d-none d-sm-inline">Сегодня</span>
                             </a>
                         {% endif %}
+
+                        <!-- Кнопка перехода на интерактивную метеокарту -->
+                        <a href="{% url 'flight_planning:weather_map' %}" class="btn btn-outline-primary btn-touch" title="Интерактивная карта базирования ВС и радар осадков">
+                            <i class="bx bx-map-alt me-1"></i> <span class="d-none d-md-inline">Метеокарта</span>
+                        </a>
 
                         <!-- Кнопка тестера ICAO -->
                         <button type="button" class="btn btn-outline-info btn-touch" onclick="openIcaoTesterModal('{{ mpd.icao_code|default:'' }}')" title="Проверить ответ метеошлюза NOAA для любого ICAO кода">

@@ -54,8 +54,10 @@ urlpatterns = [
     path('statuses/types/<int:pk>/delete/', views.employee_status_type_delete_view, name='employee_status_type_delete'),
     path('api/employee-statuses/<int:pilot_id>/', views.get_pilot_employee_statuses_api, name='get_pilot_employee_statuses_api'),
 
-    # Авиационная метеорология (METAR / TAF / Метеоцентр МПД)
+    # Авиационная метеорология (METAR / TAF / Метеоцентр МПД / Интерактивная карта)
     path('weather/', views.weather_hub_view, name='weather_hub'),
+    path('weather/map/', views.weather_map_view, name='weather_map'),
+    path('weather/api/map-data/', views.weather_map_data_api, name='weather_map_data_api'),
     path('weather/mpd/<int:mpd_id>/', views.mpd_weather_history_view, name='mpd_weather_history'),
     path('weather/mpd/<int:mpd_id>/refresh/', views.mpd_weather_refresh_view, name='mpd_weather_refresh'),
     path('weather/mpd/<int:mpd_id>/api/sync/', views.mpd_weather_sync_run_view, name='mpd_weather_sync_run'),
