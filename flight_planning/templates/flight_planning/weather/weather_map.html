@@ -25,7 +25,7 @@
             padding: 6px 12px 12px 12px !important;
         }
 
-        /* Контейнер карты */
+        /* 1. Главный контейнер карты */
         .aviation-map-wrapper {
             position: relative;
             width: 100%;
@@ -35,12 +35,14 @@
             overflow: hidden;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             background-color: #111827;
+            touch-action: manipulation;
         }
 
         @media (max-width: 768px) {
             .aviation-map-wrapper {
-                height: calc(100vh - 150px);
+                height: calc(100vh - 100px);
                 min-height: 480px;
+                border-radius: 8px;
             }
         }
 
@@ -49,28 +51,82 @@
             height: 100%;
         }
 
-        /* Верхняя плавающая панель управления */
+        /* 2. Позиционирование навигационных контролов MapLibre (БЕЗ ПЕРЕКРЫТИЙ) */
+        .maplibregl-ctrl-top-right {
+            top: 66px !important;
+            right: 12px !important;
+            z-index: 5 !important;
+            transition: top 0.25s ease, opacity 0.25s ease;
+        }
+
+        @media (max-width: 768px) {
+            .maplibregl-ctrl-top-right {
+                top: 56px !important;
+                right: 8px !important;
+            }
+            .maplibregl-ctrl-group button {
+                width: 36px !important;
+                height: 36px !important;
+            }
+        }
+
+        .maplibregl-ctrl-bottom-right {
+            bottom: 78px !important;
+            right: 12px !important;
+            z-index: 5 !important;
+            transition: bottom 0.25s ease, opacity 0.25s ease;
+        }
+
+        @media (max-width: 768px) {
+            .maplibregl-ctrl-bottom-right {
+                bottom: 84px !important;
+                right: 8px !important;
+            }
+        }
+
+        /* Когда радарная панель свернута, нижние контролы опускаются к низу */
+        .map-wrapper-radar-collapsed .maplibregl-ctrl-bottom-right {
+            bottom: 20px !important;
+        }
+
+        @media (max-width: 768px) {
+            .map-wrapper-radar-collapsed .maplibregl-ctrl-bottom-right {
+                bottom: 16px !important;
+            }
+        }
+
+        /* 3. Верхняя плавающая панель управления */
         .map-top-bar {
             position: absolute;
-            top: 12px;
-            left: 12px;
-            right: 12px;
+            top: 10px;
+            left: 10px;
+            right: 10px;
             z-index: 10;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
             pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
         .map-top-bar > * {
             pointer-events: auto;
         }
 
+        @media (max-width: 768px) {
+            .map-top-bar {
+                top: 8px;
+                left: 8px;
+                right: 8px;
+                gap: 4px;
+            }
+        }
+
         .map-glass-panel {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 10px;
             color: #ffffff;
@@ -80,12 +136,18 @@
         .map-brand-badge {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 6px 14px;
+            gap: 8px;
+            padding: 6px 12px;
+        }
+
+        @media (max-width: 768px) {
+            .map-brand-badge {
+                padding: 4px 8px;
+            }
         }
 
         .map-title {
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-weight: 700;
             letter-spacing: 0.3px;
             color: #ffffff;
@@ -93,13 +155,19 @@
             white-space: nowrap;
         }
 
+        @media (max-width: 576px) {
+            .map-title {
+                font-size: 0.82rem;
+            }
+        }
+
         .map-subtitle {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             color: #94a3b8;
             margin: 0;
         }
 
-        /* Кнопки управления */
+        /* Кнопки управления тулбара */
         .btn-map-control {
             background: rgba(30, 41, 59, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -110,11 +178,21 @@
             border-radius: 8px;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
             cursor: pointer;
             transition: all 0.2s ease;
             text-decoration: none;
             min-height: 38px;
+            user-select: none;
+        }
+
+        @media (max-width: 768px) {
+            .btn-map-control {
+                padding: 6px 9px;
+                min-height: 36px;
+                font-size: 0.775rem;
+            }
         }
 
         .btn-map-control:hover {
@@ -164,12 +242,12 @@
         .stat-pill.lifr { background: rgba(131, 24, 67, 0.25); color: #f472b6; border: 1px solid rgba(131, 24, 67, 0.4); }
         .stat-pill.all { background: rgba(100, 116, 139, 0.25); color: #cbd5e1; border: 1px solid rgba(100, 116, 139, 0.4); }
 
-        /* Выдвижной диспетчерский сайдбар */
+        /* 4. Выдвижной диспетчерский сайдбар */
         .map-sidebar {
             position: absolute;
-            top: 68px;
-            left: 12px;
-            bottom: 74px;
+            top: 66px;
+            left: 10px;
+            bottom: 78px;
             width: 320px;
             z-index: 10;
             display: flex;
@@ -185,11 +263,42 @@
             pointer-events: none;
         }
 
-        @media (max-width: 576px) {
+        @media (max-width: 1024px) and (min-width: 769px) {
             .map-sidebar {
-                width: calc(100% - 24px);
-                bottom: 84px;
+                width: 290px;
             }
+        }
+
+        /* Мобильный Drawer для смартфонов (<= 768px) */
+        @media (max-width: 768px) {
+            .map-sidebar {
+                position: absolute !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: min(340px, 86vw) !important;
+                border-radius: 0 16px 16px 0 !important;
+                z-index: 1050 !important;
+                box-shadow: 6px 0 28px rgba(0, 0, 0, 0.65) !important;
+            }
+
+            .map-sidebar.collapsed {
+                transform: translateX(-105%) !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+        }
+
+        .map-sidebar-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 1040;
+            opacity: 1;
+            transition: opacity 0.25s ease;
+            pointer-events: auto;
         }
 
         .sidebar-header {
@@ -273,19 +382,55 @@
             gap: 8px;
         }
 
-        /* Нижняя панель радара и анимации */
+        /* 5. Мобильное всплывающее меню слоев и настроек (#mobileLayersMenu) */
+        .mobile-layers-menu {
+            position: absolute;
+            top: 52px;
+            right: 10px;
+            z-index: 25;
+            min-width: 250px;
+            max-width: calc(100vw - 20px);
+            background: rgba(15, 23, 42, 0.95) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+            animation: slideDownFade 0.2s ease;
+            pointer-events: auto;
+        }
+
+        @keyframes slideDownFade {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 6. Нижняя панель радара и анимации осадков */
         .map-bottom-bar {
             position: absolute;
-            bottom: 12px;
-            left: 12px;
-            right: 12px;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
             z-index: 10;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 8px 16px;
+            padding: 8px 14px;
             pointer-events: auto;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        @media (max-width: 768px) {
+            .map-bottom-bar {
+                bottom: 8px;
+                left: 8px;
+                right: 8px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+                padding: 8px 10px;
+            }
         }
 
         .radar-controls-group {
@@ -293,7 +438,15 @@
             align-items: center;
             gap: 10px;
             flex-grow: 1;
-            max-width: 700px;
+            max-width: 720px;
+        }
+
+        @media (max-width: 768px) {
+            .radar-controls-group {
+                width: 100% !important;
+                max-width: none !important;
+                justify-content: space-between;
+            }
         }
 
         .radar-play-btn {
@@ -326,11 +479,23 @@
             min-width: 140px;
         }
 
-        .radar-slider {
+        .radar-slider-container {
             flex-grow: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .radar-slider {
+            width: 100%;
             accent-color: #38bdf8;
             cursor: pointer;
             height: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .radar-slider {
+                height: 8px;
+            }
         }
 
         .radar-opacity-control {
@@ -368,7 +533,100 @@
             .radar-opacity-control { display: none; }
         }
 
-        /* Авиационные маркеры на карте (MapLibre Marker HTML) */
+        /* Свернутая плашка радара */
+        .map-radar-pill {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            pointer-events: auto;
+            animation: slideUpFade 0.2s ease;
+        }
+
+        @media (max-width: 768px) {
+            .map-radar-pill {
+                bottom: 8px;
+                left: 8px;
+            }
+        }
+
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-radar-pill {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+
+        .btn-radar-pill-play {
+            background: #0284c7;
+            color: #ffffff;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
+        }
+
+        /* 7. Режим «Чистый экран» (Zen Mode — без перекрытий) */
+        .zen-mode .map-top-bar,
+        .zen-mode .map-bottom-bar,
+        .zen-mode .map-sidebar,
+        .zen-mode .map-radar-pill,
+        .zen-mode .map-sidebar-backdrop,
+        .zen-mode .mobile-layers-menu {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: scale(0.96) !important;
+        }
+
+        .btn-zen-exit {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 50;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .btn-zen-exit:hover {
+            background: rgba(30, 41, 59, 0.98);
+            border-color: #38bdf8;
+            transform: translateY(-1px);
+        }
+
+        /* 8. Авиационные маркеры на карте (MapLibre Marker HTML) */
         .aviation-marker {
             cursor: pointer;
             transform: translate(-50%, -50%);
@@ -436,7 +694,7 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
-        /* Всплывающий попап (MapLibre Popup) */
+        /* 9. Всплывающий попап (MapLibre Popup) */
         .maplibregl-popup-content {
             background: #0f172a !important;
             color: #ffffff !important;
@@ -446,6 +704,30 @@
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
             font-family: inherit !important;
             max-width: 320px !important;
+        }
+
+        @media (max-width: 576px) {
+            .maplibregl-popup {
+                max-width: 90vw !important;
+            }
+            .maplibregl-popup-content {
+                max-width: calc(100vw - 28px) !important;
+                padding: 10px 12px !important;
+            }
+            .popup-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+                margin: 6px 0;
+            }
+            .popup-cell {
+                padding: 4px 6px;
+            }
+            .popup-cell-label {
+                font-size: 0.6rem;
+            }
+            .popup-cell-value {
+                font-size: 0.75rem;
+            }
         }
 
         .maplibregl-popup-close-button {
@@ -460,18 +742,10 @@
             background: transparent !important;
         }
 
-        .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-            border-top-color: #0f172a !important;
-        }
-        .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-            border-bottom-color: #0f172a !important;
-        }
-        .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-            border-right-color: #0f172a !important;
-        }
-        .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-            border-left-color: #0f172a !important;
-        }
+        .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: #0f172a !important; }
+        .maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: #0f172a !important; }
+        .maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: #0f172a !important; }
+        .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: #0f172a !important; }
 
         .popup-header {
             display: flex;
@@ -553,35 +827,43 @@
 
 {% block content %}
     <div class="container-fluid px-1 py-1">
-        <div class="aviation-map-wrapper">
+        <div class="aviation-map-wrapper" id="mapWrapper">
             <!-- КАРТА MAPLIBRE GL -->
             <div id="aviation-map"></div>
 
+            <!-- КНОПКА ВОЗВРАТА ИЗ РЕЖИМА «ЧИСТЫЙ ЭКРАН» -->
+            <button type="button" class="btn-zen-exit map-glass-panel d-none" id="zenExitBtn" title="Вернуть панели управления">
+                <i class="bx bx-show fs-5 text-info"></i>
+                <span>Инструменты</span>
+            </button>
+
             <!-- ВЕРХНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ -->
-            <div class="map-top-bar">
-                <div class="d-flex align-items-center gap-2">
+            <div class="map-top-bar" id="mapTopBar">
+                <div class="d-flex align-items-center gap-1 gap-sm-2">
                     <!-- Заголовок карты -->
                     <div class="map-glass-panel map-brand-badge">
-                        <div class="bg-primary text-white p-1 rounded d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                        <div class="bg-primary text-white p-1 rounded d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;">
                             <i class="bx bx-compass fs-5"></i>
                         </div>
                         <div>
-                            <h4 class="map-title">Метеокарта базирования «Баркол»</h4>
-                            <p class="map-subtitle d-none d-sm-block">
-                                WebGL • Авиационная метеорология и радар осадков
+                            <h4 class="map-title d-none d-sm-block">Метеокарта базирования «Баркол»</h4>
+                            <h4 class="map-title d-block d-sm-none">Метео</h4>
+                            <p class="map-subtitle d-none d-md-block">
+                                WebGL • Метеорология и радар
                             </p>
                         </div>
                     </div>
 
-                    <!-- Кнопка сайдбара -->
-                    <button type="button" class="btn-map-control map-glass-panel" id="toggleSidebarBtn" title="Список площадок">
+                    <!-- Кнопка сайдбара с количеством площадок -->
+                    <button type="button" class="btn-map-control map-glass-panel" id="toggleSidebarBtn" title="Список площадок базирования">
                         <i class="bx bx-list-ul fs-5"></i>
-                        <span class="d-none d-md-inline">Площадки ({{ map_data.stats.total }})</span>
+                        <span class="d-none d-md-inline">Площадки</span>
+                        <span class="badge bg-info text-dark" id="sidebarBadgeCount">{{ map_data.stats.total }}</span>
                     </button>
                 </div>
 
-                <!-- Центральный блок фильтров по летным категориям -->
-                <div class="map-glass-panel stats-pills-bar d-none d-lg-flex">
+                <!-- Центральный блок фильтров по летным категориям (десктоп >= 1200px) -->
+                <div class="map-glass-panel stats-pills-bar d-none d-xl-flex" id="desktopStatsBar">
                     <span class="stat-pill all" data-filter="all">Все: {{ map_data.stats.total }}</span>
                     <span class="stat-pill vfr" data-filter="vfr">🟢 ПВП: {{ map_data.stats.vfr }}</span>
                     <span class="stat-pill mvfr" data-filter="mvfr">🔵 ОПВП: {{ map_data.stats.mvfr }}</span>
@@ -591,47 +873,104 @@
                     {% endif %}
                 </div>
 
-                <!-- Правый блок: Переключение базовых слоев и действия -->
-                <div class="d-flex align-items-center gap-2">
-                    <div class="btn-group map-glass-panel p-1" role="group" aria-label="Слои карты">
-                        <button type="button" class="btn-map-control active py-1 px-2" id="styleDarkBtn" title="Темная диспетчерская карта (CARTO Dark)">
+                <!-- Правый блок инструментов -->
+                <div class="d-flex align-items-center gap-1 gap-sm-2">
+                    <!-- Десктопный выбор подложек (>= 992px) -->
+                    <div class="btn-group map-glass-panel p-1 d-none d-lg-flex" role="group" aria-label="Слои карты">
+                        <button type="button" class="btn-map-control active py-1 px-2" id="styleDarkBtn" title="Темная (CARTO Dark)">
                             <i class="bx bx-moon"></i> <span class="d-none d-xl-inline">Темная</span>
                         </button>
-                        <button type="button" class="btn-map-control py-1 px-2" id="styleLightBtn" title="Светлая карта (CARTO Light)">
+                        <button type="button" class="btn-map-control py-1 px-2" id="styleLightBtn" title="Светлая (CARTO Light)">
                             <i class="bx bx-sun"></i> <span class="d-none d-xl-inline">Светлая</span>
                         </button>
-                        <button type="button" class="btn-map-control py-1 px-2" id="styleOsmBtn" title="Стандартный OpenStreetMap (Без водяных знаков)">
+                        <button type="button" class="btn-map-control py-1 px-2" id="styleOsmBtn" title="OpenStreetMap (Без ключей)">
                             <i class="bx bx-map"></i> <span class="d-none d-xl-inline">OSM</span>
                         </button>
-                        <button type="button" class="btn-map-control py-1 px-2" id="styleSatBtn" title="Спутниковые снимки">
+                        <button type="button" class="btn-map-control py-1 px-2" id="styleSatBtn" title="Спутник (Esri World Imagery)">
                             <i class="bx bx-world"></i> <span class="d-none d-xl-inline">Спутник</span>
                         </button>
                     </div>
 
-                    <!-- Кнопка настройки ключа CARTO API -->
-                    <button type="button" class="btn-map-control map-glass-panel" id="cartoKeyBtn" data-bs-toggle="modal" data-bs-target="#cartoKeyModal" title="Настройка CARTO API Key">
+                    <!-- Кнопка настройки ключа CARTO API (десктоп) -->
+                    <button type="button" class="btn-map-control map-glass-panel d-none d-lg-inline-flex" id="cartoKeyBtn" data-bs-toggle="modal" data-bs-target="#cartoKeyModal" title="Настройка CARTO API Key">
                         <i class="bx bx-key fs-5" id="cartoKeyIcon"></i>
                     </button>
 
+                    <!-- Мобильная кнопка меню слоев и настроек (< 992px) -->
+                    <button type="button" class="btn-map-control map-glass-panel d-lg-none" id="mobileLayersBtn" title="Слои и настройки карты">
+                        <i class="bx bx-layer fs-5 text-info"></i>
+                    </button>
+
+                    <!-- Кнопка «Чистый экран» (Zen mode) -->
+                    <button type="button" class="btn-map-control map-glass-panel" id="zenModeBtn" title="Чистый экран (скрыть все панели)">
+                        <i class="bx bx-fullscreen fs-5"></i>
+                    </button>
+
+                    <!-- Ссылка в Метеоцентр площадок -->
                     <a href="{% url 'flight_planning:weather_hub' %}" class="btn-map-control map-glass-panel" title="Вернуться в Метеоцентр площадки">
                         <i class="bx bx-buildings fs-5"></i>
-                        <span class="d-none d-sm-inline">Карточки МПД</span>
+                        <span class="d-none d-sm-inline">Карточки</span>
                     </a>
 
+                    <!-- Кнопка обновления метеоданных -->
                     <button type="button" class="btn-map-control map-glass-panel" id="refreshMapDataBtn" title="Обновить метеоданные">
                         <i class="bx bx-refresh fs-5" id="refreshSpinnerIcon"></i>
                     </button>
                 </div>
             </div>
 
+            <!-- МОБИЛЬНОЕ ВСПЛЫВАЮЩЕЕ ОКНО СЛОЕВ И ФИЛЬТРОВ (< 992px) -->
+            <div class="mobile-layers-menu map-glass-panel d-none" id="mobileLayersMenu">
+                <div class="d-flex align-items-center justify-content-between p-2 border-bottom border-secondary border-opacity-25">
+                    <span class="small fw-bold text-light"><i class="bx bx-layer text-info me-1"></i> Подложка карты</span>
+                    <button type="button" class="btn-close btn-close-white btn-sm" id="closeMobileLayersBtn"></button>
+                </div>
+                <div class="p-2 d-grid gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-light text-start d-flex align-items-center justify-content-between active" id="mStyleDarkBtn">
+                        <span><i class="bx bx-moon me-2"></i>Темная (CARTO)</span>
+                        <i class="bx bx-check check-icon text-info"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light text-start d-flex align-items-center justify-content-between" id="mStyleLightBtn">
+                        <span><i class="bx bx-sun me-2"></i>Светлая (CARTO)</span>
+                        <i class="bx bx-check check-icon text-info d-none"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light text-start d-flex align-items-center justify-content-between" id="mStyleOsmBtn">
+                        <span><i class="bx bx-map me-2"></i>OpenStreetMap</span>
+                        <i class="bx bx-check check-icon text-info d-none"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light text-start d-flex align-items-center justify-content-between" id="mStyleSatBtn">
+                        <span><i class="bx bx-world me-2"></i>Спутник (Esri)</span>
+                        <i class="bx bx-check check-icon text-info d-none"></i>
+                    </button>
+                </div>
+                <!-- Мобильные фильтры условий -->
+                <div class="p-2 border-top border-secondary border-opacity-25">
+                    <div class="small text-secondary mb-1 fw-bold">Летные условия:</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="stat-pill all" data-filter="all">Все: {{ map_data.stats.total }}</span>
+                        <span class="stat-pill vfr" data-filter="vfr">🟢 ПВП: {{ map_data.stats.vfr }}</span>
+                        <span class="stat-pill mvfr" data-filter="mvfr">🔵 ОПВП: {{ map_data.stats.mvfr }}</span>
+                        <span class="stat-pill ifr" data-filter="ifr">🔴 ППП: {{ map_data.stats.ifr }}</span>
+                    </div>
+                </div>
+                <div class="p-2 border-top border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100" id="mCartoKeyBtn" data-bs-toggle="modal" data-bs-target="#cartoKeyModal">
+                        <i class="bx bx-key me-1" id="mCartoKeyIcon"></i> Настройка CARTO API Key
+                    </button>
+                </div>
+            </div>
+
+            <!-- ЗАТЕМНЯЮЩИЙ БЭКДРОП ДЛЯ МОБИЛЬНОГО САЙДБАРА -->
+            <div class="map-sidebar-backdrop d-none" id="mapSidebarBackdrop"></div>
+
             <!-- ВЫДВИЖНОЙ ДИСПЕТЧЕРСКИЙ САЙДБАР (СПИСОК МПД) -->
-            <div class="map-sidebar map-glass-panel" id="mapSidebar">
+            <div class="map-sidebar map-glass-panel collapsed" id="mapSidebar">
                 <div class="sidebar-header">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bx bx-layer text-info"></i>
                         <span class="fw-bold fs-6">Площадки базирования</span>
                     </div>
-                    <button type="button" class="btn-close btn-close-white btn-sm" id="closeSidebarBtn"></button>
+                    <button type="button" class="btn-close btn-close-white btn-sm" id="closeSidebarBtn" title="Закрыть список"></button>
                 </div>
                 <div class="sidebar-search">
                     <input type="text" class="sidebar-search-input" id="mpdSearchInput" placeholder="Поиск по названию или ICAO...">
@@ -650,18 +989,42 @@
                     <div class="radar-time-display" id="radarTimeDisplay">
                         <i class="bx bx-radar me-1"></i> Радар осадков
                     </div>
-                    <input type="range" class="radar-slider" id="radarSlider" min="0" max="0" value="0" step="1">
+                    <!-- На мобильных кнопка сворачивания в одном ряду -->
+                    <button type="button" class="btn-map-control py-1 px-2 border-0 bg-transparent text-secondary d-md-none ms-auto" id="radarCollapseBtnMobile" title="Свернуть радар">
+                        <i class="bx bx-chevron-down fs-4"></i>
+                    </button>
                 </div>
 
-                <div class="radar-opacity-control">
+                <div class="radar-slider-container">
+                    <input type="range" class="radar-slider" id="radarSlider" min="0" max="0" value="0" step="1" title="Перемотка кадров осадков">
+                </div>
+
+                <div class="radar-opacity-control d-none d-lg-flex">
                     <span>Слой:</span>
                     <input type="range" class="radar-opacity-slider" id="radarOpacitySlider" min="10" max="100" value="75" title="Прозрачность радара">
                 </div>
 
-                <div class="radar-legend">
+                <div class="radar-legend d-none d-lg-flex">
                     <span>Интенсивность:</span>
                     <div class="legend-gradient" title="Слабый дождь → Сильный ливень → Грозовой фронт / Град"></div>
                 </div>
+
+                <!-- Десктопная кнопка сворачивания -->
+                <button type="button" class="btn-map-control py-1 px-2 border-0 bg-transparent text-secondary d-none d-md-inline-flex" id="radarCollapseBtn" title="Свернуть радарную панель">
+                    <i class="bx bx-chevron-down fs-4"></i>
+                </button>
+            </div>
+
+            <!-- СВЕРНУТАЯ ПЛАШКА РАДАРА (КОМПАКТНЫЙ РЕЖИМ БЕЗ ПЕРЕКРЫТИЙ) -->
+            <div class="map-radar-pill map-glass-panel d-none" id="radarPill">
+                <button type="button" class="btn-radar-pill" id="radarExpandBtn" title="Развернуть радар осадков">
+                    <i class="bx bx-radar text-info fs-5"></i>
+                    <span id="radarPillLabel">Радар</span>
+                    <i class="bx bx-chevron-up ms-1"></i>
+                </button>
+                <button type="button" class="btn-radar-pill-play ms-1" id="radarPillPlayBtn" title="Воспроизведение/Пауза">
+                    <i class="bx bx-play" id="radarPillPlayIcon"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -685,7 +1048,7 @@
                         <input type="text" class="form-control bg-dark text-white border-secondary" id="cartoKeyInput" placeholder="Вставьте полученный ключ...">
                     </div>
                     <div class="alert alert-dark border-secondary p-2 small text-secondary mb-0">
-                        <i class="bx bx-info-circle text-info me-1"></i> Также ключ можно один раз задать системному администратору в файле <code>.env</code> проекта: <code>CARTO_API_KEY=ваш_ключ</code>. Либо переключите подложку на «Спутник» или «OSM» (они работают без ключей).
+                        <i class="bx bx-info-circle text-info me-1"></i> Также ключ можно задать администратору в файле <code>.env</code>: <code>CARTO_API_KEY=ваш_ключ</code>. Подложки «Спутник» и «OSM» работают бесплатно без ключа.
                     </div>
                 </div>
                 <div class="modal-footer border-top border-secondary d-flex justify-content-between">
@@ -812,7 +1175,7 @@
                 attributionControl: false
             });
 
-            // Навигационные контролы (зум, компас, наклон)
+            // Навигационные контролы (зум, компас, наклон) с защитой от перекрытий
             map.addControl(new maplibregl.NavigationControl({
                 visualizePitch: true,
                 showCompass: true,
@@ -833,8 +1196,11 @@
                     }
                 });
                 if (validCount > 0) {
+                    const isSmallScreen = window.innerWidth <= 768;
                     map.fitBounds(bounds, {
-                        padding: { top: 90, bottom: 90, left: 60, right: 60 },
+                        padding: isSmallScreen
+                            ? { top: 60, bottom: 60, left: 20, right: 20 }
+                            : { top: 90, bottom: 90, left: 60, right: 60 },
                         maxZoom: 9,
                         duration: 1000
                     });
@@ -846,8 +1212,6 @@
                 if (directionDeg === null || directionDeg === undefined) {
                     return '';
                 }
-                // Направление ветра в авиации - ОТКУДА дует.
-                // Стрелка указывает КУДА направлен поток (+180° к метеорологическому направлению).
                 const arrowRotation = (directionDeg + 180) % 360;
                 return `
                     <svg class="wind-vector-icon" style="transform: rotate(${arrowRotation}deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -936,7 +1300,6 @@
 
             // 7. Рендеринг маркеров на карте
             function renderMarkers() {
-                // Очистка старых маркеров
                 activeMarkers.forEach(m => m.remove());
                 activeMarkers = [];
                 activePopups = [];
@@ -946,104 +1309,162 @@
                 mapData.mpds.forEach(mpd => {
                     if (!mpd.longitude || !mpd.latitude) return;
 
-                    // Фильтрация
                     const cat = mpd.flight_category.toLowerCase();
                     if (activeFilter !== 'all' && cat !== activeFilter) {
                         return;
                     }
 
-                    // Создание DOM-элемента маркера
                     const el = document.createElement('div');
                     el.className = 'aviation-marker';
-                    el.setAttribute('data-mpd-id', mpd.id);
+                    el.setAttribute('data-id', mpd.id);
 
-                    const windSvg = getWindSvg(mpd.wind_direction);
-                    const badgeClass = cat;
-                    const tempText = mpd.temperature_str !== '—' ? mpd.temperature_str : '';
+                    const windIconHtml = getWindSvg(mpd.wind_direction_deg);
+                    const windSpeedText = mpd.wind_speed_ms !== null ? `${mpd.wind_speed_ms}м/с` : '';
 
                     el.innerHTML = `
-                        <div class="marker-badge ${badgeClass}">
-                            ${windSvg}
-                            <span>${tempText}</span>
+                        <div class="marker-badge ${cat}">
+                            ${windIconHtml}
+                            <span>${windSpeedText}</span>
                         </div>
-                        <div class="marker-title-label">${mpd.short_name}</div>
+                        <div class="marker-title-label">
+                            ${mpd.short_name || mpd.name}
+                        </div>
                     `;
 
-                    // Создание попапа
                     const popup = new maplibregl.Popup({
-                        offset: 20,
+                        offset: 24,
                         closeButton: true,
                         closeOnClick: false,
-                        maxWidth: '320px'
+                        maxWidth: '340px'
                     }).setHTML(createPopupHtml(mpd));
 
-                    const marker = new maplibregl.Marker({
-                        element: el,
-                        anchor: 'center'
-                    })
-                    .setLngLat([mpd.longitude, mpd.latitude])
-                    .setPopup(popup)
-                    .addTo(map);
+                    const marker = new maplibregl.Marker({ element: el })
+                        .setLngLat([mpd.longitude, mpd.latitude])
+                        .setPopup(popup)
+                        .addTo(map);
 
                     activeMarkers.push(marker);
                     activePopups.push({ id: mpd.id, popup: popup, marker: marker, lngLat: [mpd.longitude, mpd.latitude] });
+
+                    el.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        activePopups.forEach(p => {
+                            if (p.id !== mpd.id) p.popup.remove();
+                        });
+                        document.querySelectorAll('.mpd-list-card').forEach(c => c.classList.remove('selected'));
+                        const selectedCard = document.querySelector(`.mpd-list-card[data-id="${mpd.id}"]`);
+                        if (selectedCard) {
+                            selectedCard.classList.add('selected');
+                            selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    });
                 });
             }
 
-            // 8. Заполнение бокового сайдбара
+            // 8. Переключение базовой подложки (карты)
+            function switchBasemap(styleKey, forceReload = false) {
+                if (currentStyleKey === styleKey && !forceReload) return;
+                currentStyleKey = styleKey;
+
+                // Синхронизация активных кнопок (десктоп)
+                const btnMap = {
+                    dark: 'styleDarkBtn',
+                    light: 'styleLightBtn',
+                    osm: 'styleOsmBtn',
+                    satellite: 'styleSatBtn'
+                };
+                Object.values(btnMap).forEach(btnId => {
+                    const btn = document.getElementById(btnId);
+                    if (btn) btn.classList.remove('active');
+                });
+                const activeBtn = document.getElementById(btnMap[styleKey]);
+                if (activeBtn) activeBtn.classList.add('active');
+
+                // Синхронизация активных кнопок (мобильное меню)
+                const mBtnMap = {
+                    dark: 'mStyleDarkBtn',
+                    light: 'mStyleLightBtn',
+                    osm: 'mStyleOsmBtn',
+                    satellite: 'mStyleSatBtn'
+                };
+                Object.values(mBtnMap).forEach(btnId => {
+                    const btn = document.getElementById(btnId);
+                    if (btn) {
+                        btn.classList.remove('active');
+                        const checkIcon = btn.querySelector('.check-icon');
+                        if (checkIcon) checkIcon.classList.add('d-none');
+                    }
+                });
+                const mActiveBtn = document.getElementById(mBtnMap[styleKey]);
+                if (mActiveBtn) {
+                    mActiveBtn.classList.add('active');
+                    const checkIcon = mActiveBtn.querySelector('.check-icon');
+                    if (checkIcon) checkIcon.classList.remove('d-none');
+                }
+
+                // Применяем новый стиль карты
+                map.setStyle(getStyleDefinition(styleKey));
+                map.once('style.load', () => {
+                    renderMarkers();
+                    updateRadarLayer();
+                });
+            }
+
+            // 9. Отрисовка списка площадок в сайдбаре
             function renderSidebar(searchQuery = '') {
                 const listElem = document.getElementById('mpdSidebarList');
                 if (!listElem || !mapData || !mapData.mpds) return;
 
-                listElem.innerHTML = '';
-                const query = searchQuery.trim().toLowerCase();
+                const q = searchQuery.toLowerCase().trim();
+                let html = '';
 
                 const filtered = mapData.mpds.filter(mpd => {
-                    const matchCat = activeFilter === 'all' || mpd.flight_category.toLowerCase() === activeFilter;
-                    const matchSearch = !query ||
-                        mpd.name.toLowerCase().includes(query) ||
-                        (mpd.icao_code && mpd.icao_code.toLowerCase().includes(query)) ||
-                        (mpd.short_name && mpd.short_name.toLowerCase().includes(query));
-                    return matchCat && matchSearch;
+                    const cat = mpd.flight_category.toLowerCase();
+                    if (activeFilter !== 'all' && cat !== activeFilter) return false;
+                    if (!q) return true;
+                    const name = (mpd.name || '').toLowerCase();
+                    const icao = (mpd.icao_code || '').toLowerCase();
+                    return name.includes(q) || icao.includes(q);
                 });
 
                 if (filtered.length === 0) {
-                    listElem.innerHTML = '<div class="text-muted small text-center p-3">Площадки не найдены</div>';
+                    listElem.innerHTML = '<div class="text-center text-muted small py-4">Площадки не найдены</div>';
                     return;
                 }
 
                 filtered.forEach(mpd => {
-                    const card = document.createElement('div');
-                    card.className = 'mpd-list-card';
-                    card.setAttribute('data-id', mpd.id);
-
                     const cat = mpd.flight_category.toLowerCase();
-                    const windStr = mpd.wind_label !== '—' ? mpd.wind_label : '';
+                    const temp = mpd.temperature_str;
+                    const wind = mpd.wind_label;
 
-                    card.innerHTML = `
-                        <div>
-                            <div class="mpd-card-name">
-                                <span>${mpd.name}</span>
-                                ${mpd.icao_code ? `<span class="badge bg-secondary font-monospace" style="font-size: 0.65rem;">${mpd.icao_code}</span>` : ''}
+                    html += `
+                        <div class="mpd-list-card" data-id="${mpd.id}">
+                            <div>
+                                <div class="mpd-card-name">
+                                    <span>${mpd.name}</span>
+                                    ${mpd.icao_code ? `<span class="badge bg-secondary font-monospace" style="font-size:0.65rem;">${mpd.icao_code}</span>` : ''}
+                                </div>
+                                <div class="mpd-card-meta">
+                                    <span><i class="bx bx-wind text-info"></i> ${wind}</span>
+                                    <span><i class="bx bx-thermometer text-warning"></i> ${temp}</span>
+                                </div>
                             </div>
-                            <div class="mpd-card-meta">
-                                <span><i class="bx bx-thermometer text-warning"></i> ${mpd.temperature_str}</span>
-                                <span><i class="bx bx-wind text-info"></i> ${windStr}</span>
-                            </div>
+                            <span class="marker-badge ${cat}" style="font-size:0.65rem; padding: 2px 6px;">${mpd.flight_category}</span>
                         </div>
-                        <span class="marker-badge ${cat}" style="padding: 2px 6px; font-size: 0.7rem;">${mpd.flight_category}</span>
                     `;
+                });
 
+                listElem.innerHTML = html;
+
+                listElem.querySelectorAll('.mpd-list-card').forEach(card => {
                     card.addEventListener('click', () => {
-                        flyToMpd(mpd.id);
+                        const mpdId = parseInt(card.getAttribute('data-id'), 10);
+                        selectMpdOnMap(mpdId);
                     });
-
-                    listElem.appendChild(card);
                 });
             }
 
-            // 9. Плавный перелет к выбранному МПД
-            function flyToMpd(mpdId) {
+            function selectMpdOnMap(mpdId) {
                 const match = activePopups.find(p => p.id === mpdId);
                 if (match) {
                     map.flyTo({
@@ -1054,14 +1475,18 @@
                         curve: 1.4,
                         essential: true
                     });
-                    // Закрываем другие попапы и открываем этот
                     activePopups.forEach(p => p.popup.remove());
                     match.marker.togglePopup();
 
-                    // Подсветка в сайдбаре
                     document.querySelectorAll('.mpd-list-card').forEach(c => c.classList.remove('selected'));
                     const selectedElem = document.querySelector(`.mpd-list-card[data-id="${mpdId}"]`);
                     if (selectedElem) selectedElem.classList.add('selected');
+
+                    // На смартфонах и планшетах автоматически скрываем сайдбар,
+                    // чтобы пользователь сразу увидел выбранную площадку на карте
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
                 }
             }
 
@@ -1072,6 +1497,7 @@
             let radarInterval = null;
             let isRadarPlaying = false;
             let radarOpacity = 0.75;
+            let isRadarCollapsed = false;
 
             async function initRainViewerRadar() {
                 try {
@@ -1084,7 +1510,6 @@
                         return;
                     }
 
-                    // Объединяем past и nowcast кадры
                     const past = radarData.radar.past || [];
                     const nowcast = radarData.radar.nowcast || [];
                     radarFrames = [...past, ...nowcast];
@@ -1103,6 +1528,8 @@
                     console.warn('Не удалось загрузить радарные слои RainViewer:', err);
                     const timeDisp = document.getElementById('radarTimeDisplay');
                     if (timeDisp) timeDisp.innerHTML = '<span class="text-muted">Радар офлайн</span>';
+                    const pillLabel = document.getElementById('radarPillLabel');
+                    if (pillLabel) pillLabel.textContent = 'Офлайн';
                 }
             }
 
@@ -1114,7 +1541,6 @@
                 const host = radarData.host || 'https://tilecache.rainviewer.com';
                 const tileUrl = `${host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
 
-                // Форматирование времени кадра
                 const dt = new Date(frame.time * 1000);
                 const utcStr = dt.toTimeString().substring(0, 5) + 'Z';
                 const mskHour = (dt.getUTCHours() + 3) % 24;
@@ -1127,15 +1553,18 @@
                     timeDisp.innerHTML = `<i class="bx bx-radar text-info"></i> ${utcStr} (${mskStr}) ${statusTag}`;
                 }
 
+                const pillLabel = document.getElementById('radarPillLabel');
+                if (pillLabel) {
+                    pillLabel.innerHTML = `${utcStr} (${mskStr})`;
+                }
+
                 const slider = document.getElementById('radarSlider');
                 if (slider) slider.value = currentRadarIndex;
 
                 const sourceId = 'rainviewer-radar-source';
                 const layerId = 'rainviewer-radar-layer';
 
-                // Если источник уже есть, обновляем тайлы
                 if (map.getSource(sourceId)) {
-                    // Удаляем старый слой и источник для смены тайлов
                     if (map.getLayer(layerId)) map.removeLayer(layerId);
                     map.removeSource(sourceId);
                 }
@@ -1152,53 +1581,117 @@
                     source: sourceId,
                     paint: {
                         'raster-opacity': radarOpacity,
-                        'raster-opacity-transition': { duration: 200 }
+                        'raster-opacity-transition': { duration: 0 }
                     }
                 });
             }
 
             function playRadar() {
-                if (radarInterval) clearInterval(radarInterval);
+                if (radarFrames.length === 0) return;
                 isRadarPlaying = true;
-                const icon = document.getElementById('radarPlayIcon');
-                if (icon) icon.className = 'bx bx-pause fs-4';
+                setRadarPlayIcons(true);
 
                 radarInterval = setInterval(() => {
-                    if (!radarFrames || radarFrames.length === 0) return;
-                    currentRadarIndex = (currentRadarIndex + 1) % radarFrames.length;
+                    currentRadarIndex++;
+                    if (currentRadarIndex >= radarFrames.length) {
+                        currentRadarIndex = 0;
+                    }
                     updateRadarLayer();
                 }, 800);
             }
 
             function pauseRadar() {
-                if (radarInterval) clearInterval(radarInterval);
-                radarInterval = null;
                 isRadarPlaying = false;
-                const icon = document.getElementById('radarPlayIcon');
-                if (icon) icon.className = 'bx bx-play fs-4';
+                setRadarPlayIcons(false);
+                if (radarInterval) {
+                    clearInterval(radarInterval);
+                    radarInterval = null;
+                }
             }
 
-            // 11. Переключение картографических подложек
-            function switchBasemap(styleKey, forceReload = false) {
-                if (!forceReload && styleKey === currentStyleKey) return;
-                currentStyleKey = styleKey;
+            function setRadarPlayIcons(isPlaying) {
+                const icon = document.getElementById('radarPlayIcon');
+                if (icon) {
+                    icon.className = isPlaying ? 'bx bx-pause fs-4' : 'bx bx-play fs-4';
+                }
+                const pillIcon = document.getElementById('radarPillPlayIcon');
+                if (pillIcon) {
+                    pillIcon.className = isPlaying ? 'bx bx-pause' : 'bx bx-play';
+                }
+            }
 
-                // Кнопки
-                const btnDark = document.getElementById('styleDarkBtn');
-                const btnLight = document.getElementById('styleLightBtn');
-                const btnOsm = document.getElementById('styleOsmBtn');
-                const btnSat = document.getElementById('styleSatBtn');
+            // Управление сворачиванием радара
+            function setRadarCollapsed(collapsed) {
+                isRadarCollapsed = collapsed;
+                const radarBar = document.getElementById('radarBar');
+                const radarPill = document.getElementById('radarPill');
+                const wrapper = document.getElementById('mapWrapper');
 
-                if (btnDark) btnDark.classList.toggle('active', styleKey === 'dark');
-                if (btnLight) btnLight.classList.toggle('active', styleKey === 'light');
-                if (btnOsm) btnOsm.classList.toggle('active', styleKey === 'osm');
-                if (btnSat) btnSat.classList.toggle('active', styleKey === 'satellite');
+                if (collapsed) {
+                    if (radarBar) radarBar.classList.add('d-none');
+                    if (radarPill) radarPill.classList.remove('d-none');
+                    if (wrapper) wrapper.classList.add('map-wrapper-radar-collapsed');
+                } else {
+                    if (radarBar) radarBar.classList.remove('d-none');
+                    if (radarPill) radarPill.classList.add('d-none');
+                    if (wrapper) wrapper.classList.remove('map-wrapper-radar-collapsed');
+                }
+            }
 
-                map.setStyle(getStyleDefinition(styleKey));
-                map.once('style.load', () => {
-                    renderMarkers();
-                    updateRadarLayer();
-                });
+            // 11. Управление сайдбаром (открытие/закрытие с бэкдропом на мобильных)
+            const sidebarElem = document.getElementById('mapSidebar');
+            const backdropElem = document.getElementById('mapSidebarBackdrop');
+
+            function openSidebar() {
+                if (!sidebarElem) return;
+                sidebarElem.classList.remove('collapsed');
+                if (window.innerWidth <= 768 && backdropElem) {
+                    backdropElem.classList.remove('d-none');
+                }
+            }
+
+            function closeSidebar() {
+                if (!sidebarElem) return;
+                sidebarElem.classList.add('collapsed');
+                if (backdropElem) {
+                    backdropElem.classList.add('d-none');
+                }
+            }
+
+            function toggleSidebar() {
+                if (!sidebarElem) return;
+                if (sidebarElem.classList.contains('collapsed')) {
+                    openSidebar();
+                } else {
+                    closeSidebar();
+                }
+            }
+
+            // 12. Режим «Чистый экран» (Zen Mode)
+            let isZenMode = false;
+            function toggleZenMode() {
+                isZenMode = !isZenMode;
+                const wrapper = document.getElementById('mapWrapper');
+                const zenExitBtn = document.getElementById('zenExitBtn');
+
+                if (isZenMode) {
+                    if (wrapper) wrapper.classList.add('zen-mode');
+                    if (zenExitBtn) zenExitBtn.classList.remove('d-none');
+                    closeMobileLayers();
+                } else {
+                    if (wrapper) wrapper.classList.remove('zen-mode');
+                    if (zenExitBtn) zenExitBtn.classList.add('d-none');
+                }
+            }
+
+            // 13. Мобильное всплывающее меню слоев
+            const mobileLayersMenu = document.getElementById('mobileLayersMenu');
+            function toggleMobileLayers() {
+                if (!mobileLayersMenu) return;
+                mobileLayersMenu.classList.toggle('d-none');
+            }
+            function closeMobileLayers() {
+                if (mobileLayersMenu) mobileLayersMenu.classList.add('d-none');
             }
 
             // Индикатор наличия ключа CARTO
@@ -1206,18 +1699,20 @@
                 const key = getActiveCartoKey();
                 const icon = document.getElementById('cartoKeyIcon');
                 const btn = document.getElementById('cartoKeyBtn');
-                if (icon && btn) {
-                    if (key) {
-                        icon.className = 'bx bxs-key fs-5 text-success';
-                        btn.setAttribute('title', `CARTO API Key активен (${key.substring(0, 4)}***)`);
-                    } else {
-                        icon.className = 'bx bx-key fs-5';
-                        btn.setAttribute('title', 'Настройка CARTO API Key (не задан)');
-                    }
+                const mIcon = document.getElementById('mCartoKeyIcon');
+
+                if (key) {
+                    if (icon) icon.className = 'bx bxs-key fs-5 text-success';
+                    if (mIcon) mIcon.className = 'bx bxs-key me-1 text-success';
+                    if (btn) btn.setAttribute('title', `CARTO API Key активен (${key.substring(0, 4)}***)`);
+                } else {
+                    if (icon) icon.className = 'bx bx-key fs-5';
+                    if (mIcon) mIcon.className = 'bx bx-key me-1';
+                    if (btn) btn.setAttribute('title', 'Настройка CARTO API Key (не задан)');
                 }
             }
 
-            // 12. Обновление метеоданных по API
+            // 14. Обновление метеоданных по API
             async function refreshWeatherData() {
                 const spinner = document.getElementById('refreshSpinnerIcon');
                 if (spinner) spinner.classList.add('bx-spin');
@@ -1228,9 +1723,7 @@
                     const newData = await res.json();
                     mapData = newData;
 
-                    // Обновляем статистику
                     updateStatsDisplay();
-                    // Перерисовываем маркеры и сайдбар
                     renderMarkers();
                     renderSidebar(document.getElementById('mpdSearchInput') ? document.getElementById('mpdSearchInput').value : '');
                 } catch (err) {
@@ -1245,23 +1738,16 @@
             function updateStatsDisplay() {
                 if (!mapData || !mapData.stats) return;
                 const s = mapData.stats;
-                const btnSidebar = document.querySelector('#toggleSidebarBtn span');
-                if (btnSidebar) btnSidebar.textContent = `Площадки (${s.total})`;
+                const badgeCount = document.getElementById('sidebarBadgeCount');
+                if (badgeCount) badgeCount.textContent = s.total;
 
-                const pillAll = document.querySelector('.stat-pill.all');
-                if (pillAll) pillAll.textContent = `Все: ${s.total}`;
-
-                const pillVfr = document.querySelector('.stat-pill.vfr');
-                if (pillVfr) pillVfr.textContent = `🟢 ПВП: ${s.vfr}`;
-
-                const pillMvfr = document.querySelector('.stat-pill.mvfr');
-                if (pillMvfr) pillMvfr.textContent = `🔵 ОПВП: ${s.mvfr}`;
-
-                const pillIfr = document.querySelector('.stat-pill.ifr');
-                if (pillIfr) pillIfr.textContent = `🔴 ППП: ${s.ifr}`;
+                document.querySelectorAll('.stat-pill.all').forEach(p => p.textContent = `Все: ${s.total}`);
+                document.querySelectorAll('.stat-pill.vfr').forEach(p => p.textContent = `🟢 ПВП: ${s.vfr}`);
+                document.querySelectorAll('.stat-pill.mvfr').forEach(p => p.textContent = `🔵 ОПВП: ${s.mvfr}`);
+                document.querySelectorAll('.stat-pill.ifr').forEach(p => p.textContent = `🔴 ППП: ${s.ifr}`);
             }
 
-            // 13. Инициализация событий при загрузке карты
+            // 15. Регистрация событий при загрузке
             map.on('load', () => {
                 fitMapToBounds();
                 renderMarkers();
@@ -1270,13 +1756,116 @@
                 updateCartoKeyIndicator();
             });
 
-            // Обработчики кнопок подложек
+            // Нажатия на карту закрывают всплывающее меню мобильных слоев
+            map.on('click', () => {
+                closeMobileLayers();
+            });
+
+            // Десктопные кнопки переключения подложек
             document.getElementById('styleDarkBtn').addEventListener('click', () => switchBasemap('dark'));
             document.getElementById('styleLightBtn').addEventListener('click', () => switchBasemap('light'));
             document.getElementById('styleOsmBtn').addEventListener('click', () => switchBasemap('osm'));
             document.getElementById('styleSatBtn').addEventListener('click', () => switchBasemap('satellite'));
 
-            // Настройка CARTO API Key в браузере
+            // Мобильные кнопки переключения подложек
+            document.getElementById('mStyleDarkBtn').addEventListener('click', () => { switchBasemap('dark'); closeMobileLayers(); });
+            document.getElementById('mStyleLightBtn').addEventListener('click', () => { switchBasemap('light'); closeMobileLayers(); });
+            document.getElementById('mStyleOsmBtn').addEventListener('click', () => { switchBasemap('osm'); closeMobileLayers(); });
+            document.getElementById('mStyleSatBtn').addEventListener('click', () => { switchBasemap('satellite'); closeMobileLayers(); });
+
+            // Мобильная кнопка вызова слоев
+            const mobileLayersBtn = document.getElementById('mobileLayersBtn');
+            if (mobileLayersBtn) {
+                mobileLayersBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleMobileLayers();
+                });
+            }
+            const closeMobileLayersBtn = document.getElementById('closeMobileLayersBtn');
+            if (closeMobileLayersBtn) {
+                closeMobileLayersBtn.addEventListener('click', closeMobileLayers);
+            }
+
+            // Режим Zen (Чистый экран)
+            const zenModeBtn = document.getElementById('zenModeBtn');
+            if (zenModeBtn) zenModeBtn.addEventListener('click', toggleZenMode);
+            const zenExitBtn = document.getElementById('zenExitBtn');
+            if (zenExitBtn) zenExitBtn.addEventListener('click', toggleZenMode);
+
+            // Сайдбар и бэкдроп
+            document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
+            document.getElementById('closeSidebarBtn').addEventListener('click', closeSidebar);
+            if (backdropElem) backdropElem.addEventListener('click', closeSidebar);
+
+            // Поиск по сайдбару
+            const searchInput = document.getElementById('mpdSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    renderSidebar(e.target.value);
+                });
+            }
+
+            // Фильтры по летным категориям (десктоп и мобильные)
+            document.querySelectorAll('.stat-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    activeFilter = pill.getAttribute('data-filter') || 'all';
+                    renderMarkers();
+                    renderSidebar(searchInput ? searchInput.value : '');
+                    closeMobileLayers();
+                });
+            });
+
+            // Сворачивание и разворачивание радара
+            const radarCollapseBtn = document.getElementById('radarCollapseBtn');
+            if (radarCollapseBtn) radarCollapseBtn.addEventListener('click', () => setRadarCollapsed(true));
+            const radarCollapseBtnMobile = document.getElementById('radarCollapseBtnMobile');
+            if (radarCollapseBtnMobile) radarCollapseBtnMobile.addEventListener('click', () => setRadarCollapsed(true));
+
+            const radarExpandBtn = document.getElementById('radarExpandBtn');
+            if (radarExpandBtn) radarExpandBtn.addEventListener('click', () => setRadarCollapsed(false));
+
+            const radarPillPlayBtn = document.getElementById('radarPillPlayBtn');
+            if (radarPillPlayBtn) {
+                radarPillPlayBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (isRadarPlaying) {
+                        pauseRadar();
+                    } else {
+                        playRadar();
+                    }
+                });
+            }
+
+            // Воспроизведение радара
+            document.getElementById('radarPlayBtn').addEventListener('click', () => {
+                if (isRadarPlaying) {
+                    pauseRadar();
+                } else {
+                    playRadar();
+                }
+            });
+
+            document.getElementById('radarSlider').addEventListener('input', (e) => {
+                pauseRadar();
+                currentRadarIndex = parseInt(e.target.value, 10);
+                updateRadarLayer();
+            });
+
+            const opacitySlider = document.getElementById('radarOpacitySlider');
+            if (opacitySlider) {
+                opacitySlider.addEventListener('input', (e) => {
+                    radarOpacity = parseFloat(e.target.value) / 100.0;
+                    const layerId = 'rainviewer-radar-layer';
+                    if (map.getLayer(layerId)) {
+                        map.setPaintProperty(layerId, 'raster-opacity', radarOpacity);
+                    }
+                });
+            }
+
+            // Кнопка обновления
+            document.getElementById('refreshMapDataBtn').addEventListener('click', refreshWeatherData);
+
+            // Настройка CARTO API Key в модальном окне
             const cartoKeyBtn = document.getElementById('cartoKeyBtn');
             const cartoKeyInput = document.getElementById('cartoKeyInput');
             const cartoKeySaveBtn = document.getElementById('cartoKeySaveBtn');
@@ -1284,9 +1873,15 @@
 
             if (cartoKeyBtn) {
                 cartoKeyBtn.addEventListener('click', () => {
-                    if (cartoKeyInput) {
-                        cartoKeyInput.value = getActiveCartoKey();
-                    }
+                    if (cartoKeyInput) cartoKeyInput.value = getActiveCartoKey();
+                });
+            }
+
+            const mCartoKeyBtn = document.getElementById('mCartoKeyBtn');
+            if (mCartoKeyBtn) {
+                mCartoKeyBtn.addEventListener('click', () => {
+                    closeMobileLayers();
+                    if (cartoKeyInput) cartoKeyInput.value = getActiveCartoKey();
                 });
             }
 
@@ -1322,59 +1917,7 @@
                 });
             }
 
-            // Кнопка обновления
-            document.getElementById('refreshMapDataBtn').addEventListener('click', refreshWeatherData);
-
-            // Кнопки сайдбара
-            const sidebarElem = document.getElementById('mapSidebar');
-            document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
-                sidebarElem.classList.toggle('collapsed');
-            });
-            document.getElementById('closeSidebarBtn').addEventListener('click', () => {
-                sidebarElem.classList.add('collapsed');
-            });
-
-            // Поиск по сайдбару
-            const searchInput = document.getElementById('mpdSearchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', (e) => {
-                    renderSidebar(e.target.value);
-                });
-            }
-
-            // Фильтры по летным категориям
-            document.querySelectorAll('.stat-pill').forEach(pill => {
-                pill.addEventListener('click', () => {
-                    activeFilter = pill.getAttribute('data-filter') || 'all';
-                    renderMarkers();
-                    renderSidebar(searchInput ? searchInput.value : '');
-                });
-            });
-
-            // Контролы радара
-            document.getElementById('radarPlayBtn').addEventListener('click', () => {
-                if (isRadarPlaying) {
-                    pauseRadar();
-                } else {
-                    playRadar();
-                }
-            });
-
-            document.getElementById('radarSlider').addEventListener('input', (e) => {
-                pauseRadar();
-                currentRadarIndex = parseInt(e.target.value, 10);
-                updateRadarLayer();
-            });
-
-            document.getElementById('radarOpacitySlider').addEventListener('input', (e) => {
-                radarOpacity = parseFloat(e.target.value) / 100.0;
-                const layerId = 'rainviewer-radar-layer';
-                if (map.getLayer(layerId)) {
-                    map.setPaintProperty(layerId, 'raster-opacity', radarOpacity);
-                }
-            });
-
-            // Периодическое фоновое обновление метеоданных каждые 60 секунд
+            // Периодическое фоновое обновление каждые 60 секунд
             setInterval(refreshWeatherData, 60000);
         })();
     </script>
