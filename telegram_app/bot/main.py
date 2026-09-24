@@ -10,10 +10,20 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
+from aiogram.types import BotCommand
 from asgiref.sync import sync_to_async
 from django.conf import settings
 
-from .handlers import start, text, callbacks, inline, bpmemo
+from .handlers import (
+    bpmemo,
+    callbacks,
+    help_router,
+    inline,
+    settings_router,
+    start,
+    tasks_router,
+    text,
+)
 from ..models import TelegramNotification
 
 logger = logging.getLogger(__name__)
@@ -79,6 +89,9 @@ def create_dispatcher() -> Dispatcher:
     """
     dp = Dispatcher()
     dp.include_router(start.router)
+    dp.include_router(help_router.router)
+    dp.include_router(tasks_router.router)
+    dp.include_router(settings_router.router)
     dp.include_router(bpmemo.router)
     dp.include_router(callbacks.router)
     dp.include_router(inline.router)
@@ -140,6 +153,21 @@ async def main() -> None:
     try:
         logger.info("[TelegramBot] Сброс устаревшего вебхука Telegram перед поллингом...")
         await bot.delete_webhook(drop_pending_updates=True)
+
+        # Регистрация системного меню команд Telegram
+        try:
+            await bot.set_my_commands(
+                [
+                    BotCommand(command="start", description="Главное меню / Статус"),
+                    BotCommand(command="tasks", description="Мои задачи и поручения"),
+                    BotCommand(command="profile", description="Профиль и уведомления"),
+                    BotCommand(command="help", description="Справка и команды"),
+                ]
+            )
+            logger.info("[TelegramBot] Системные команды (/start, /tasks, /profile, /help) успешно зарегистрированы.")
+        except Exception as cmd_err:
+            logger.warning("[TelegramBot] Не удалось зарегистрировать команды set_my_commands: %s", cmd_err)
+
         logger.info("[TelegramBot] Бот успешно запущен в режиме polling.")
         await dp.start_polling(bot)
     finally:

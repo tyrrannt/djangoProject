@@ -11,9 +11,27 @@ class ChatID(models.Model):
         verbose_name="Уникальный номер", max_length=37, default=""
     )
     chat_id = models.CharField(verbose_name="Telegram ID", max_length=20, blank=True)
+    is_active = models.BooleanField(verbose_name="Активна ли подписка", default=True)
+
+    # Матрица персональных уведомлений
+    notify_memos = models.BooleanField(
+        verbose_name="Уведомления о служебных записках", default=True
+    )
+    notify_tasks = models.BooleanField(
+        verbose_name="Уведомления о задачах", default=True
+    )
+    notify_birthdays = models.BooleanField(
+        verbose_name="Уведомления о днях рождения", default=True
+    )
+    notify_emails = models.BooleanField(
+        verbose_name="Уведомления о корпоративной почте", default=True
+    )
+    notify_flights = models.BooleanField(
+        verbose_name="Уведомления о рейсах и экипажах", default=True
+    )
 
     def __str__(self):
-        return self.chat_id
+        return f"{self.chat_id} ({'активен' if self.is_active else 'отключен'})"
 
 
 class TelegramNotification(models.Model):
