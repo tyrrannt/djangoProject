@@ -787,6 +787,8 @@ class AviationWeatherMapTestCase(TestCase):
         self.assertEqual(orenburg["flight_category"], "VFR")
         self.assertEqual(orenburg["temperature"], 18.5)
         self.assertEqual(orenburg["wind_direction"], 120)
+        self.assertEqual(orenburg["wind_speed_ms"], 6.0)
+        self.assertEqual(orenburg["wind_direction_deg"], 120)
         self.assertIn("120° 6 м/с (G12)", orenburg["wind_label"])
         self.assertEqual(orenburg["weather_source"], "METAR")
 
@@ -796,6 +798,8 @@ class AviationWeatherMapTestCase(TestCase):
         self.assertEqual(taiga["flight_category"], "MVFR")
         self.assertEqual(taiga["temperature"], 7.0)
         self.assertEqual(taiga["weather_source"], "ECMWF_IFS")
+        self.assertEqual(taiga["wind_speed_ms"], 9.0)
+        self.assertEqual(taiga["wind_direction_deg"], 340)
         self.assertIn("340° 9 м/с (G15)", taiga["wind_label"])
 
     def test_weather_map_views_http_response(self):

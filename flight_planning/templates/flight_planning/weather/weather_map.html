@@ -1209,10 +1209,10 @@
 
             // 5. SVG стрелка вектора ветра
             function getWindSvg(directionDeg) {
-                if (directionDeg === null || directionDeg === undefined) {
+                if (directionDeg === null || directionDeg === undefined || isNaN(directionDeg)) {
                     return '';
                 }
-                const arrowRotation = (directionDeg + 180) % 360;
+                const arrowRotation = (Number(directionDeg) + 180) % 360;
                 return `
                     <svg class="wind-vector-icon" style="transform: rotate(${arrowRotation}deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="19" x2="12" y2="5"></line>
@@ -1223,14 +1223,14 @@
 
             // 6. Генерация HTML попапа
             function createPopupHtml(mpd) {
-                const badgeClass = mpd.flight_category.toLowerCase();
-                const tempDisplay = mpd.temperature_str;
-                const windDisplay = mpd.wind_label;
-                const qfeDisplay = mpd.surface_pressure_mmhg ? `${mpd.surface_pressure_mmhg} мм (${mpd.surface_pressure_hpa} гПа)` : '—';
-                const qnhDisplay = mpd.msl_pressure_mmhg ? `${mpd.msl_pressure_mmhg} мм (${mpd.msl_pressure_hpa} гПа)` : '—';
-                const cloudDisplay = mpd.cloud_base_str;
-                const visDisplay = mpd.visibility_str;
-                const srcDisplay = mpd.weather_source === 'METAR' ? `METAR ${mpd.icao_code || ''}` : `Модель ${mpd.weather_source}`;
+                const badgeClass = (mpd.flight_category || 'unknown').toLowerCase();
+                const tempDisplay = mpd.temperature_str || '—';
+                const windDisplay = mpd.wind_label || '—';
+                const qfeDisplay = mpd.surface_pressure_mmhg ? `${mpd.surface_pressure_mmhg} мм (${mpd.surface_pressure_hpa || '—'} гПа)` : '—';
+                const qnhDisplay = mpd.msl_pressure_mmhg ? `${mpd.msl_pressure_mmhg} мм (${mpd.msl_pressure_hpa || '—'} гПа)` : '—';
+                const cloudDisplay = mpd.cloud_base_str || '—';
+                const visDisplay = mpd.visibility_str || '—';
+                const srcDisplay = mpd.weather_source === 'METAR' ? `METAR ${mpd.icao_code || ''}` : (mpd.weather_source ? `Модель ${mpd.weather_source}` : '—');
 
                 let stationInfoHtml = '';
                 if (mpd.nearest_station_icao) {
@@ -1238,8 +1238,8 @@
                     stationInfoHtml = `
                         <div class="text-muted small mt-1">
                             <i class="bx bx-radio-circle-marked text-info me-1"></i> Опорный аэродром: 
-                            <strong class="text-light">${mpd.nearest_station_name} (${mpd.nearest_station_icao})</strong> ${distLabel}
-                            ${mpd.is_distant ? '<span class="badge bg-warning text-dark ms-1">>15 км</span>' : ''}
+                            <strong class="text-light">${mpd.nearest_station_name || mpd.nearest_station_icao} (${mpd.nearest_station_icao})</strong> ${distLabel}
+                            ${(mpd.is_distant || mpd.nearest_station_is_distant) ? '<span class="badge bg-warning text-dark ms-1">>15 км</span>' : ''}
                         </div>
                     `;
                 }
@@ -1247,18 +1247,18 @@
                 return `
                     <div class="popup-header">
                         <div>
-                            <h5 class="popup-mpd-name">${mpd.name}</h5>
+                            <h5 class="popup-mpd-name">${mpd.name || ''}</h5>
                             <span class="badge bg-secondary font-monospace">${mpd.icao_code || 'КООРДИНАТЫ'}</span>
-                            <span class="badge bg-info text-dark font-monospace">${mpd.elevation_msl_m ? mpd.elevation_msl_m + ' м MSL' : ''}</span>
+                            <span class="badge bg-info text-dark font-monospace">${(mpd.elevation_msl_m !== null && mpd.elevation_msl_m !== undefined) ? mpd.elevation_msl_m + ' м MSL' : ''}</span>
                         </div>
-                        <span class="marker-badge ${badgeClass}">${mpd.flight_category}</span>
+                        <span class="marker-badge ${badgeClass}">${mpd.flight_category || '—'}</span>
                     </div>
 
                     <div class="text-info small fw-bold mb-1">
-                        <i class="bx bx-time-five me-1"></i> ${mpd.time_full_str} • ${srcDisplay}
+                        <i class="bx bx-time-five me-1"></i> ${mpd.time_full_str || '—'} • ${srcDisplay}
                     </div>
                     <div class="text-light small mb-2 fst-italic">
-                        ${mpd.weather_description}
+                        ${mpd.weather_description || 'Данные о погоде отсутствуют'}
                     </div>
 
                     <div class="popup-grid">
@@ -1291,7 +1291,7 @@
                     ${stationInfoHtml}
 
                     <div class="popup-footer-actions">
-                        <a href="${mpd.detail_url}" class="btn-popup-link">
+                        <a href="${mpd.detail_url || '#'}" class="btn-popup-link">
                             <i class="bx bx-bar-chart-alt-2"></i> Открыть Метеоцентр МПД
                         </a>
                     </div>
@@ -1309,7 +1309,7 @@
                 mapData.mpds.forEach(mpd => {
                     if (!mpd.longitude || !mpd.latitude) return;
 
-                    const cat = mpd.flight_category.toLowerCase();
+                    const cat = (mpd.flight_category || 'unknown').toLowerCase();
                     if (activeFilter !== 'all' && cat !== activeFilter) {
                         return;
                     }
@@ -1318,16 +1318,47 @@
                     el.className = 'aviation-marker';
                     el.setAttribute('data-id', mpd.id);
 
-                    const windIconHtml = getWindSvg(mpd.wind_direction_deg);
-                    const windSpeedText = mpd.wind_speed_ms !== null ? `${mpd.wind_speed_ms}м/с` : '';
+                    const windDir = (mpd.wind_direction !== undefined && mpd.wind_direction !== null)
+                        ? mpd.wind_direction
+                        : ((mpd.wind_direction_deg !== undefined && mpd.wind_direction_deg !== null) ? mpd.wind_direction_deg : null);
+
+                    const windSpd = (mpd.wind_speed !== undefined && mpd.wind_speed !== null)
+                        ? mpd.wind_speed
+                        : ((mpd.wind_speed_ms !== undefined && mpd.wind_speed_ms !== null) ? mpd.wind_speed_ms : null);
+
+                    let windIconHtml = '';
+                    let windSpeedText = '';
+
+                    if (windSpd !== null && !isNaN(windSpd)) {
+                        if (Number(windSpd) === 0) {
+                            windSpeedText = '0 м/с';
+                        } else {
+                            windIconHtml = getWindSvg(windDir);
+                            windSpeedText = `${Math.round(windSpd)} м/с`;
+                        }
+                    } else if (mpd.wind_label && mpd.wind_label !== '—') {
+                        windSpeedText = mpd.wind_label;
+                    }
+
+                    const tempText = (mpd.temperature_str && mpd.temperature_str !== '—') ? mpd.temperature_str : '';
+
+                    let badgeHtml = '';
+                    if (tempText && windSpeedText) {
+                        badgeHtml = `<span class="marker-temp">${tempText}</span>${windIconHtml}<span class="marker-wind">${windSpeedText}</span>`;
+                    } else if (tempText) {
+                        badgeHtml = `<span class="marker-temp">${tempText}</span>`;
+                    } else if (windSpeedText) {
+                        badgeHtml = `${windIconHtml}<span class="marker-wind">${windSpeedText}</span>`;
+                    } else {
+                        badgeHtml = `<span>${mpd.flight_category || '—'}</span>`;
+                    }
 
                     el.innerHTML = `
                         <div class="marker-badge ${cat}">
-                            ${windIconHtml}
-                            <span>${windSpeedText}</span>
+                            ${badgeHtml}
                         </div>
                         <div class="marker-title-label">
-                            ${mpd.short_name || mpd.name}
+                            ${mpd.short_name || mpd.name || ''}
                         </div>
                     `;
 
@@ -1419,7 +1450,7 @@
                 let html = '';
 
                 const filtered = mapData.mpds.filter(mpd => {
-                    const cat = mpd.flight_category.toLowerCase();
+                    const cat = (mpd.flight_category || 'unknown').toLowerCase();
                     if (activeFilter !== 'all' && cat !== activeFilter) return false;
                     if (!q) return true;
                     const name = (mpd.name || '').toLowerCase();
@@ -1433,15 +1464,15 @@
                 }
 
                 filtered.forEach(mpd => {
-                    const cat = mpd.flight_category.toLowerCase();
-                    const temp = mpd.temperature_str;
-                    const wind = mpd.wind_label;
+                    const cat = (mpd.flight_category || 'unknown').toLowerCase();
+                    const temp = mpd.temperature_str || '—';
+                    const wind = mpd.wind_label || '—';
 
                     html += `
                         <div class="mpd-list-card" data-id="${mpd.id}">
                             <div>
                                 <div class="mpd-card-name">
-                                    <span>${mpd.name}</span>
+                                    <span>${mpd.name || ''}</span>
                                     ${mpd.icao_code ? `<span class="badge bg-secondary font-monospace" style="font-size:0.65rem;">${mpd.icao_code}</span>` : ''}
                                 </div>
                                 <div class="mpd-card-meta">
@@ -1449,7 +1480,7 @@
                                     <span><i class="bx bx-thermometer text-warning"></i> ${temp}</span>
                                 </div>
                             </div>
-                            <span class="marker-badge ${cat}" style="font-size:0.65rem; padding: 2px 6px;">${mpd.flight_category}</span>
+                            <span class="marker-badge ${cat}" style="font-size:0.65rem; padding: 2px 6px;">${mpd.flight_category || '—'}</span>
                         </div>
                     `;
                 });
