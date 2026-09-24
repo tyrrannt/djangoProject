@@ -17,6 +17,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 
 from customers_app.models import DataBaseUser
 from hrdepartment_app.models import PlaceProductionActivity
@@ -3872,6 +3873,7 @@ def weather_map_view(request: HttpRequest) -> HttpResponse:
         "map_data_json": json.dumps(map_data, cls=DjangoJSONEncoder),
         "all_weather_mpds": all_weather_mpds,
         "active_tab": "weather_map",
+        "carto_api_key": getattr(settings, "CARTO_API_KEY", ""),
     }
     return render(request, "flight_planning/weather/weather_map.html", context)
 

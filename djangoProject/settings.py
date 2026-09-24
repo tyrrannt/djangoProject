@@ -1923,4 +1923,7 @@ OPEN_METEO_TIMEOUT = config("OPEN_METEO_TIMEOUT", default=10, cast=int)
 WEATHER_PROXY = config("WEATHER_PROXY", default="")
 TELEGRAM_PROXY = config("TELEGRAM_PROXY", default="")
 
+# API-ключ для растровых подложек CARTO Basemaps (Dark Matter / Positron)
+CARTO_API_KEY = config("CARTO_API_KEY", default="")
+
 
