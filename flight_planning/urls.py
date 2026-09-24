@@ -56,6 +56,7 @@ urlpatterns = [
 
     # Авиационная метеорология (METAR / TAF / Метеоцентр МПД / Интерактивная карта)
     path('weather/', views.weather_hub_view, name='weather_hub'),
+    path('weather/mpd/', views.weather_hub_view, name='weather_mpd_hub'),
     path('weather/map/', views.weather_map_view, name='weather_map'),
     path('weather/api/map-data/', views.weather_map_data_api, name='weather_map_data_api'),
     path('weather/mpd/<int:mpd_id>/', views.mpd_weather_history_view, name='mpd_weather_history'),

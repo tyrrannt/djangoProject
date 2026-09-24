@@ -1395,9 +1395,12 @@ class AviationWeatherObservation(models.Model):
         """Возвращает форматированное описание ветра.
 
         Returns:
-            str: Направление и скорость с порывами (например, '240° 6 м/с (порывы 12)').
+            str: Направление и скорость с порывами (например, '240° 6 м/с (порывы 12 м/с)')
+                или 'Штиль (0 м/с)', либо '—' при отсутствии данных.
         """
-        if self.wind_speed is None or self.wind_speed == 0:
+        if self.wind_speed is None:
+            return "—"
+        if self.wind_speed == 0:
             return "Штиль (0 м/с)"
         dir_str = "VRB" if self.wind_variable or self.wind_direction is None else f"{self.wind_direction:03d}°"
         spd_str = f"{self.wind_speed:.0f} м/с"
@@ -1886,9 +1889,12 @@ class CoordinateWeatherForecast(models.Model):
         """Возвращает форматированное описание ветра.
 
         Returns:
-            str: Направление и скорость с порывами (например, '280° 5 м/с (порывы 9)').
+            str: Направление и скорость с порывами (например, '280° 5 м/с (порывы 9 м/с)')
+                или 'Штиль (0 м/с)', либо '—' при отсутствии данных.
         """
-        if self.wind_speed is None or self.wind_speed == 0:
+        if self.wind_speed is None:
+            return "—"
+        if self.wind_speed == 0:
             return "Штиль (0 м/с)"
         dir_str = "—" if self.wind_direction is None else f"{self.wind_direction:03d}°"
         spd_str = f"{self.wind_speed:.0f} м/с"

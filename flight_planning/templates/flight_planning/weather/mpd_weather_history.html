@@ -234,6 +234,21 @@
             padding: 0.6rem 1rem;
             font-size: 0.875rem;
         }
+        .table-scroll-hint {
+            font-size: 0.75rem;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table-responsive {
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
         @media (max-width: 768px) {
             .weather-hero-card {
                 padding: 1rem;
@@ -244,22 +259,22 @@
                 padding: 4px 10px;
             }
             .weather-metric-box {
-                padding: 0.65rem 0.75rem;
+                padding: 0.6rem 0.65rem;
             }
             .weather-metric-label {
-                font-size: 0.7rem;
+                font-size: 0.68rem;
             }
             .weather-metric-value {
-                font-size: 1.1rem;
+                font-size: 1.05rem;
             }
             .kpi-mini-card {
-                padding: 0.75rem;
+                padding: 0.65rem 0.75rem;
             }
             .kpi-mini-label {
-                font-size: 0.72rem;
+                font-size: 0.7rem;
             }
             .kpi-mini-value {
-                font-size: 1.15rem;
+                font-size: 1.1rem;
             }
             .raw-metar-block {
                 padding: 0.6rem 0.75rem;
@@ -274,6 +289,41 @@
             .card-header-tabs-scroll .nav-link {
                 padding: 0.5rem 0.75rem;
                 font-size: 0.8rem;
+            }
+            .timeline-table th,
+            .timeline-table td {
+                padding: 0.45rem 0.55rem;
+                font-size: 0.8rem;
+            }
+            .weather-sync-console {
+                height: 180px;
+                font-size: 0.76rem;
+            }
+            .modal-window.large-modal {
+                width: 96% !important;
+                max-width: 96% !important;
+                margin: 10px auto;
+                max-height: 85vh;
+            }
+        }
+        @media (max-width: 576px) {
+            .btn-touch {
+                padding: 6px 9px;
+                font-size: 0.8rem;
+            }
+            .weather-date-input {
+                width: 110px;
+                font-size: 0.78rem;
+                padding: 0.2rem 0.35rem;
+            }
+            .weather-hero-card .h3 {
+                font-size: 1.35rem;
+            }
+            .kpi-mini-card {
+                padding: 0.5rem 0.6rem;
+            }
+            .kpi-mini-value {
+                font-size: 1.0rem;
             }
         }
 
@@ -401,8 +451,20 @@
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        var label = context.dataset.label || '';
-                                        return label + ': ' + context.parsed.y;
+                                        var val = context.parsed.y;
+                                        if (val === null || val === undefined || isNaN(val)) {
+                                            return null;
+                                        }
+                                        var ds = context.dataset;
+                                        var label = ds.label || '';
+                                        if (ds.yAxisID === 'yTemp') {
+                                            return label + ': ' + (val > 0 ? '+' : '') + val + ' °C';
+                                        } else if (ds.yAxisID === 'yWind') {
+                                            return label + ': ' + val + ' м/с';
+                                        } else if (ds.yAxisID === 'yPress') {
+                                            return label + ': ' + val + ' мм рт. ст.';
+                                        }
+                                        return label + ': ' + val;
                                     }
                                 }
                             }
@@ -570,8 +632,16 @@
                         var pm = resp.parsed_metar;
                         $('#diagFlightCat').html('<span class="badge bg-primary">' + (pm.flight_category || '—') + '</span>');
                         
-                        var windStr = (pm.wind_direction || 0) + '° ' + (pm.wind_speed || 0) + ' м/с';
-                        if (pm.wind_gust) windStr += ' (G' + pm.wind_gust + ')';
+                        var windStr = '—';
+                        if (pm.wind_speed !== null && pm.wind_speed !== undefined) {
+                            if (pm.wind_speed === 0) {
+                                windStr = 'Штиль (0 м/с)';
+                            } else {
+                                var dir = (pm.wind_direction !== null && pm.wind_direction !== undefined) ? (String(pm.wind_direction).padStart(3, '0') + '° ') : (pm.wind_variable ? 'VRB ' : '— ');
+                                windStr = dir + pm.wind_speed + ' м/с';
+                                if (pm.wind_gust) windStr += ' (порывы ' + pm.wind_gust + ' м/с)';
+                            }
+                        }
                         $('#diagWind').text(windStr);
 
                         var visStr = pm.visibility_meters ? (pm.visibility_meters >= 10000 ? '>10 км' : (pm.visibility_meters + ' м')) : '—';
@@ -1095,14 +1165,14 @@
                             </a>
                         {% endif %}
 
-                        <!-- Кнопка перехода на интерактивную метеокарту -->
-                        <a href="{% url 'flight_planning:weather_map' %}" class="btn btn-outline-primary btn-touch" title="Интерактивная карта базирования ВС и радар осадков">
-                            <i class="bx bx-map-alt me-1"></i> <span class="d-none d-md-inline">Метеокарта</span>
+                        <!-- Кнопка перехода на интерактивную метеокарту (на мобильных доступна в верхней ленте площадок) -->
+                        <a href="{% url 'flight_planning:weather_map' %}" class="btn btn-outline-primary btn-touch d-none d-lg-inline-flex" title="Интерактивная карта базирования ВС и радар осадков">
+                            <i class="bx bx-map-alt me-1"></i> <span>Метеокарта</span>
                         </a>
 
                         <!-- Кнопка тестера ICAO -->
                         <button type="button" class="btn btn-outline-info btn-touch" onclick="openIcaoTesterModal('{{ mpd.icao_code|default:'' }}')" title="Проверить ответ метеошлюза NOAA для любого ICAO кода">
-                            <i class="bx bx-vial me-1"></i> <span class="d-none d-md-inline">Тестер ICAO</span>
+                            <i class="bx bx-vial me-1"></i> <span class="d-none d-md-inline">Тестер ICAO</span><span class="d-inline d-md-none">ICAO</span>
                         </button>
 
                         <!-- Кнопки обновления погоды -->
@@ -1111,25 +1181,26 @@
                                class="btn btn-success btn-touch js-weather-sync-btn" data-mode="metar"
                                title="Запросить свежие сводки METAR/TAF опорной станции">
                                 <i class="bx bx-refresh me-1"></i>
-                                <span class="d-none d-sm-inline">Обновить </span><span>METAR</span>
+                                <span class="d-none d-xl-inline">Обновить </span><span>METAR</span>
                             </a>
                             <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=coordinate"
                                class="btn btn-primary btn-touch js-weather-sync-btn" data-mode="coordinate"
                                title="Запросить численный прогноз модели ECMWF IFS по координатам">
                                 <i class="bx bx-cube-alt me-1"></i>
-                                <span class="d-none d-sm-inline">Обновить </span><span>ECMWF</span>
+                                <span class="d-none d-xl-inline">Обновить </span><span>ECMWF</span>
                             </a>
                             <a href="{% url 'flight_planning:mpd_weather_refresh' mpd.pk %}?date={{ target_date_str }}&mode=all"
                                class="btn btn-dark btn-touch js-weather-sync-btn" data-mode="all"
                                title="Комплексная синхронизация всех метеоданных (METAR/TAF + сеточная модель)">
                                 <i class="bx bx-sync me-1"></i>
-                                <span class="d-none d-md-inline">Обновить </span><span>Всё</span>
+                                <span class="d-none d-xl-inline">Обновить </span><span>Всё</span>
                             </a>
                         </div>
 
                         <a href="{% url 'flight_planning:planning_table' %}" class="btn btn-outline-dark btn-touch" title="К шахматке планирования">
                             <i class="bx bx-calendar me-1"></i>
                             <span class="d-none d-lg-inline">К планированию</span>
+                            <span class="d-none d-sm-inline d-lg-none">План</span>
                         </a>
                     </div>
                 </div>
@@ -1246,7 +1317,21 @@
                             <div class="col-6 col-md-3">
                                 <div class="weather-metric-box">
                                     <div class="weather-metric-label"><i class="bx bx-wind me-1"></i> Ветер</div>
-                                    <div class="weather-metric-value">{{ latest_observation.get_wind_display }}</div>
+                                    {% if latest_observation.wind_speed is None %}
+                                        <div class="weather-metric-value">—</div>
+                                    {% elif latest_observation.wind_speed == 0 %}
+                                        <div class="weather-metric-value">Штиль</div>
+                                        <small class="text-white-50 d-block" style="font-size: 0.72rem;">0 м/с</small>
+                                    {% else %}
+                                        <div class="weather-metric-value">
+                                            {% if latest_observation.wind_variable or latest_observation.wind_direction is None %}VRB{% else %}{{ latest_observation.wind_direction|stringformat:"03d" }}°{% endif %} {{ latest_observation.wind_speed|floatformat:0 }} м/с
+                                        </div>
+                                        {% if latest_observation.wind_gust and latest_observation.wind_gust > latest_observation.wind_speed %}
+                                            <small class="text-warning d-block font-weight-bold" style="font-size: 0.72rem;">Порывы {{ latest_observation.wind_gust|floatformat:0 }} м/с</small>
+                                        {% else %}
+                                            <small class="text-white-50 d-block" style="font-size: 0.72rem;">Без порывов</small>
+                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                             <div class="col-6 col-md-3">
@@ -1335,9 +1420,20 @@
                                 <div class="col-6 col-md-3">
                                     <div class="weather-metric-box">
                                         <div class="weather-metric-label"><i class="bx bx-wind me-1"></i> Ветер (10м)</div>
-                                        <div class="weather-metric-value">{{ curr.get_wind_display }}</div>
-                                        {% if curr.wind_gust %}
-                                            <small class="text-warning d-block font-weight-bold" style="font-size: 0.72rem;">Порывы {{ curr.wind_gust|floatformat:0 }} м/с</small>
+                                        {% if curr.wind_speed is None %}
+                                            <div class="weather-metric-value">—</div>
+                                        {% elif curr.wind_speed == 0 %}
+                                            <div class="weather-metric-value">Штиль</div>
+                                            <small class="text-white-50 d-block" style="font-size: 0.72rem;">0 м/с</small>
+                                        {% else %}
+                                            <div class="weather-metric-value">
+                                                {% if curr.wind_direction is not None %}{{ curr.wind_direction|stringformat:"03d" }}°{% else %}—{% endif %} {{ curr.wind_speed|floatformat:0 }} м/с
+                                            </div>
+                                            {% if curr.wind_gust and curr.wind_gust > curr.wind_speed %}
+                                                <small class="text-warning d-block font-weight-bold" style="font-size: 0.72rem;">Порывы {{ curr.wind_gust|floatformat:0 }} м/с</small>
+                                            {% else %}
+                                                <small class="text-white-50 d-block" style="font-size: 0.72rem;">Без порывов</small>
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                 </div>
@@ -1414,7 +1510,7 @@
                         {% if stats.max_wind is not None %}
                             {{ stats.max_wind|floatformat:0 }} м/с
                             {% if stats.max_gust %}
-                                <span class="text-danger fs-6 font-weight-semibold">(порывы {{ stats.max_gust|floatformat:0 }})</span>
+                                <span class="text-danger fs-6 font-weight-semibold">(порывы {{ stats.max_gust|floatformat:0 }} м/с)</span>
                             {% endif %}
                         {% else %}
                             <span class="text-muted">—</span>
@@ -1491,6 +1587,10 @@
                         {% endif %}
 
                         <div class="table-responsive">
+                            <div class="table-scroll-hint d-md-none">
+                                <i class="bx bx-transfer-alt text-primary fs-6"></i>
+                                <span>Прокручивайте таблицу вбок для просмотра всех колонок</span>
+                            </div>
                             <table class="table table-hover align-middle mb-0 timeline-table">
                                 <thead class="table-light">
                                      <tr>
@@ -1619,6 +1719,10 @@
                         {% endif %}
 
                         <div class="table-responsive">
+                            <div class="table-scroll-hint d-md-none">
+                                <i class="bx bx-transfer-alt text-info fs-6"></i>
+                                <span>Прокручивайте таблицу вбок для просмотра всех колонок</span>
+                            </div>
                             <table class="table table-hover align-middle mb-0 timeline-table">
                                 <thead class="table-light">
                                      <tr>
@@ -1667,9 +1771,6 @@
                                             </td>
                                             <td class="font-weight-semibold">
                                                 <i class="bx bx-wind text-primary me-1"></i>{{ fc.get_wind_display }}
-                                                {% if fc.wind_gust and fc.wind_speed and fc.wind_gust > fc.wind_speed %}
-                                                    <span class="text-danger small ms-1">(G{{ fc.wind_gust|floatformat:0 }})</span>
-                                                {% endif %}
                                             </td>
                                             <td>
                                                 {% if fc.precipitation_mm and fc.precipitation_mm > 0 %}
@@ -1842,7 +1943,7 @@
                        placeholder="например: URWW или УРВВ" maxlength="10" value="{{ mpd.icao_code|default:'' }}"
                        onkeydown="if(event.key === 'Enter') runIcaoTest();">
                 <button type="button" class="btn btn-primary fw-bold" id="icaoTesterRunBtn" onclick="runIcaoTest()">
-                    <i class="bx bx-search-alt me-1"></i> Проверить в NOAA
+                    <i class="bx bx-search-alt me-1"></i> <span class="d-none d-sm-inline">Проверить в </span>NOAA
                 </button>
             </div>
 

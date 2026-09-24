@@ -821,5 +821,70 @@ class AviationWeatherMapTestCase(TestCase):
         self.assertIn("mpds", json_data)
         self.assertIn("stats", json_data)
 
+    def test_models_wind_display_formatting(self):
+        """Тест корректного форматирования ветра в моделях AviationWeatherObservation и CoordinateWeatherForecast.
+
+        Проверяет, что при отсутствии данных (None) возвращается '—',
+        при нулевой скорости — 'Штиль (0 м/с)', а при наличии скорости — корректная строка с порывами.
+        """
+        # 1. AviationWeatherObservation
+        now = timezone.now()
+        obs_none = AviationWeatherObservation(
+            mpd=self.mpd1, icao_code="UWOO", observation_time=now,
+            wind_speed=None, wind_direction=None
+        )
+        self.assertEqual(obs_none.get_wind_display(), "—")
+
+        obs_calm = AviationWeatherObservation(
+            mpd=self.mpd1, icao_code="UWOO", observation_time=now,
+            wind_speed=0.0, wind_direction=0
+        )
+        self.assertEqual(obs_calm.get_wind_display(), "Штиль (0 м/с)")
+
+        obs_wind = AviationWeatherObservation(
+            mpd=self.mpd1, icao_code="UWOO", observation_time=now,
+            wind_speed=5.0, wind_direction=180, wind_gust=10.0
+        )
+        self.assertEqual(obs_wind.get_wind_display(), "180° 5 м/с (порывы 10 м/с)")
+
+        # 2. CoordinateWeatherForecast
+        fc_none = CoordinateWeatherForecast(
+            mpd=self.mpd2, latitude=60.12, longitude=75.34, elevation_msl_m=85.0,
+            forecast_for=now, model_run_at=now, wind_speed=None, wind_direction=None
+        )
+        self.assertEqual(fc_none.get_wind_display(), "—")
+
+        fc_calm = CoordinateWeatherForecast(
+            mpd=self.mpd2, latitude=60.12, longitude=75.34, elevation_msl_m=85.0,
+            forecast_for=now, model_run_at=now, wind_speed=0.0, wind_direction=0
+        )
+        self.assertEqual(fc_calm.get_wind_display(), "Штиль (0 м/с)")
+
+        fc_wind = CoordinateWeatherForecast(
+            mpd=self.mpd2, latitude=60.12, longitude=75.34, elevation_msl_m=85.0,
+            forecast_for=now, model_run_at=now, wind_speed=7.0, wind_direction=310, wind_gust=12.0
+        )
+        self.assertEqual(fc_wind.get_wind_display(), "310° 7 м/с (порывы 12 м/с)")
+
+    def test_weather_mpd_hub_redirect(self):
+        """Тест маршрута-хаба /flight/weather/mpd/ с редиректом на карточку первого МПД."""
+        self.client.force_login(self.user)
+        url = reverse("flight_planning:weather_mpd_hub")
+        res = self.client.get(url)
+        # Сортировка в weather_hub_view идет по name: 'Вертодром...' (mpd2) идет перед 'МПД...' (mpd1)
+        expected_url = reverse("flight_planning:mpd_weather_history", args=[self.mpd2.pk])
+        self.assertIn(expected_url, res.url)
+
+    def test_mpd_weather_history_view_status_and_content(self):
+        """Тест рендеринга страницы Метеоцентра МПД и отсутствия дефектов undefined."""
+        self.client.force_login(self.user)
+        url = reverse("flight_planning:mpd_weather_history", args=[self.mpd1.pk])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, self.mpd1.name)
+        self.assertNotContains(res, "undefinedм/с")
+        self.assertNotContains(res, "undefined м/с")
+
+
 
 
