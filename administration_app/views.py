@@ -1801,7 +1801,10 @@ def portal_user_permissions_api(request: HttpRequest, user_id: int) -> JsonRespo
 @login_required
 @require_http_methods(["POST"])
 def portal_manage_personal_group_api(request: HttpRequest) -> JsonResponse:
-    """Назначает или отзывает персональное право сотрудника через портальный интерфейс.
+    """Назначает или отзывает право доступа сотрудника через портальный интерфейс.
+
+    Поддерживает добавление персональных прав, а также отзыв персональных прав,
+    защищенных ролей подсистем и прав, назначенных напрямую в системе.
 
     Args:
         request (HttpRequest): Входящий HTTP POST запрос с параметрами user_id, group_id, action.
@@ -1827,7 +1830,7 @@ def portal_manage_personal_group_api(request: HttpRequest) -> JsonResponse:
     if action == "add":
         success, message = UserAccessService.add_personal_group(user_id, group_id)
     elif action == "remove":
-        success, message = UserAccessService.remove_personal_group(user_id, group_id)
+        success, message = UserAccessService.revoke_user_group(user_id, group_id)
     else:
         return JsonResponse({"success": False, "error": f"Неизвестное действие: '{action}'."}, status=400)
 

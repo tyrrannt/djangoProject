@@ -248,5 +248,49 @@ class UserAccessServiceTestCase(TestCase):
         personal_names = {g.name for g in self.user.personal_groups.all()}
         self.assertIn(self.group_extra.name, personal_names)
 
+    def test_revoke_user_group_personal(self) -> None:
+        """Проверяет успешный отзыв персонального права сотрудника."""
+        self.user.personal_groups.add(self.group_personal)
+        self.user.groups.add(self.group_personal)
+
+        success, msg = self.UserAccessService.revoke_user_group(self.user.pk, self.group_personal.pk)
+        self.assertTrue(success)
+        self.assertIn("успешно отозвано", msg)
+
+        self.assertNotIn(self.group_personal, self.user.personal_groups.all())
+        self.assertNotIn(self.group_personal, self.user.groups.all())
+
+    def test_revoke_user_group_direct_system_group(self) -> None:
+        """Проверяет отзыв права, назначенного напрямую в системе (в user.groups)."""
+        self.user.personal_groups.clear()
+        self.user.groups.add(self.group_extra)
+
+        success, msg = self.UserAccessService.revoke_user_group(self.user.pk, self.group_extra.pk)
+        self.assertTrue(success)
+        self.assertIn("успешно отозвано", msg)
+
+        self.assertNotIn(self.group_extra, self.user.groups.all())
+
+    def test_revoke_user_group_domain_role(self) -> None:
+        """Проверяет отзыв защищенной роли ЛПК при явном административном действии."""
+        self.user.groups.add(self.group_lpc)
+
+        success, msg = self.UserAccessService.revoke_user_group(self.user.pk, self.group_lpc.pk)
+        self.assertTrue(success)
+        self.assertIn("успешно отозвано", msg)
+
+        self.assertNotIn(self.group_lpc, self.user.groups.all())
+
+    def test_revoke_user_group_blocked_for_job_group(self) -> None:
+        """Проверяет блокировку отзыва прав, наследуемых из штатной должности."""
+        self.user.groups.add(self.group_job)
+
+        success, msg = self.UserAccessService.revoke_user_group(self.user.pk, self.group_job.pk)
+        self.assertFalse(success)
+        self.assertIn("наследуется автоматически", msg)
+        self.assertIn("Инженер-тестировщик Тест", msg)
+        self.assertIn("штатном расписании", msg)
+
+
 
 

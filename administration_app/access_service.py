@@ -425,8 +425,14 @@ class UserAccessService:
 
     @classmethod
     @transaction.atomic
-    def remove_personal_group(cls, user_id: int, group_id: int) -> Tuple[bool, str]:
-        """Отзывает группу доступа из персональных прав сотрудника.
+    def revoke_user_group(cls, user_id: int, group_id: int) -> Tuple[bool, str]:
+        """Отзывает право доступа (персональное, системное или назначенное напрямую) у сотрудника.
+
+        Если группа наследуется из штатной должности (Job.group), отзыв блокируется с
+        пояснением, что права должности настраиваются в штатном расписании.
+        Если группа была назначена как персональное право (personal_groups) или напрямую в
+        системе (user.groups / доменная роль), она удаляется из соответствующих связей
+        и выполняется синхронизация действующих прав.
 
         Args:
             user_id (int): Идентификатор пользователя DataBaseUser.
@@ -443,17 +449,59 @@ class UserAccessService:
         if not group:
             return False, "Группа доступа не найдена."
 
-        if not user.personal_groups.filter(pk=group.pk).exists():
-            return False, f"Группа «{group.name}» не числится в персональных правах сотрудника."
+        job_ids = cls.get_job_group_ids_for_user(user)
+        if group.id in job_ids:
+            job_name = "штатной должности"
+            profile = getattr(user, "user_work_profile", None)
+            if profile and profile.job:
+                job_name = f"должности «{profile.job.name}»"
+            return (
+                False,
+                f"Право «{group.name}» наследуется автоматически из {job_name}. "
+                "Чтобы отозвать его, отредактируйте права должности в штатном расписании.",
+            )
 
-        user.personal_groups.remove(group)
+        was_in_personal = user.personal_groups.filter(pk=group.pk).exists()
+        was_in_groups = user.groups.filter(pk=group.pk).exists()
+
+        if not was_in_personal and not was_in_groups:
+            return False, f"У пользователя {user.get_title()} отсутствует право «{group.name}»."
+
+        if was_in_personal:
+            user.personal_groups.remove(group)
+
+        if was_in_groups:
+            user.groups.remove(group)
+
+        # Выполняем синхронизацию для актуализации итогового состояния
+        cls.sync_user_groups(user)
+
         logger.info(
-            "Администратор отозвал персональную группу '%s' у пользователя %s (ID=%d)",
+            "Администратор отозвал право '%s' (персональное=%s, прямое=%s) у пользователя %s (ID=%d)",
             group.name,
+            was_in_personal,
+            was_in_groups,
             user.username,
             user.pk,
         )
-        return True, f"Персональное право «{group.name}» успешно отозвано."
+        return True, f"Право доступа «{group.name}» успешно отозвано."
+
+    @classmethod
+    @transaction.atomic
+    def remove_personal_group(cls, user_id: int, group_id: int) -> Tuple[bool, str]:
+        """Отзывает группу доступа из персональных прав сотрудника.
+
+        Делегирует выполнение универсальному методу revoke_user_group для обеспечения
+        полной обратной совместимости.
+
+        Args:
+            user_id (int): Идентификатор пользователя DataBaseUser.
+            group_id (int): Идентификатор группы доступа Group.
+
+        Returns:
+            Tuple[bool, str]: Флаг успешности и текстовое сообщение о результате.
+        """
+        return cls.revoke_user_group(user_id, group_id)
 
     @classmethod
     def get_user_permissions_summary(cls, user_id: int) -> Optional[Dict[str, Any]]:

@@ -1194,7 +1194,7 @@
                                     <span class="badge perm-badge-personal px-2 py-1 m-1 d-inline-flex align-items-center rounded-2 shadow-sm">
                                         <i class="fas fa-user-check me-1 small" style="color: #16a34a;"></i>
                                         <span>${escapeHtml(g.name)}</span>
-                                        <button type="button" class="perm-remove-btn remove-personal-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Отозвать персональное право">&times;</button>
+                                        <button type="button" class="perm-remove-btn remove-group-btn remove-personal-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Отозвать персональное право">&times;</button>
                                     </span>
                                 `).join('');
                             }
@@ -1218,6 +1218,7 @@
                                     <span class="badge perm-badge-domain px-2 py-1 m-1 d-inline-flex align-items-center rounded-2 shadow-sm" title="Системная/доменная роль ЛПК">
                                         <i class="fas fa-network-wired me-1 small" style="color: #9333ea;"></i>
                                         <span>${escapeHtml(g.name)}</span>
+                                        <button type="button" class="perm-remove-btn remove-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Отозвать системную роль">&times;</button>
                                     </span>
                                 `;
                             });
@@ -1226,6 +1227,7 @@
                                     <span class="badge perm-badge-other px-2 py-1 m-1 d-inline-flex align-items-center rounded-2 shadow-sm" title="Назначено напрямую в системе">
                                         <i class="fas fa-shield-alt me-1 small" style="color: #d97706;"></i>
                                         <span>${escapeHtml(g.name)}</span>
+                                        <button type="button" class="perm-remove-btn remove-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Отозвать группу, назначенную в системе">&times;</button>
                                     </span>
                                 `;
                             });
@@ -1292,7 +1294,7 @@
                 const userId = userSelect ? userSelect.value : '';
                 if (!userId || !groupId) return;
 
-                if (!confirm(`Вы действительно хотите отозвать персональное право «${groupName}» у данного сотрудника?`)) {
+                if (!confirm(`Вы действительно хотите отозвать право доступа «${groupName}» у данного сотрудника?`)) {
                     return;
                 }
 
@@ -1312,11 +1314,11 @@
                     .then(res => res.json())
                     .then(data => {
                         if (!data.success) {
-                            notify(data.error || 'Ошибка при отзыве персональной группы', 'error');
+                            notify(data.error || 'Ошибка при отзыве права доступа', 'error');
                             return;
                         }
 
-                        notify(data.message || 'Персональное право успешно отозвано!', 'success');
+                        notify(data.message || 'Право доступа успешно отозвано!', 'success');
                         loadUserPermissions(userId);
                     })
                     .catch(err => {
@@ -1342,7 +1344,18 @@
 
                 if (personalBadges) {
                     personalBadges.addEventListener('click', function (e) {
-                        const btn = e.target.closest('.remove-personal-group-btn');
+                        const btn = e.target.closest('.remove-group-btn');
+                        if (btn) {
+                            const groupId = btn.getAttribute('data-group-id');
+                            const groupName = btn.getAttribute('data-group-name') || 'Группа';
+                            removeGroup(groupId, groupName);
+                        }
+                    });
+                }
+
+                if (jobBadges) {
+                    jobBadges.addEventListener('click', function (e) {
+                        const btn = e.target.closest('.remove-group-btn');
                         if (btn) {
                             const groupId = btn.getAttribute('data-group-id');
                             const groupName = btn.getAttribute('data-group-name') || 'Группа';
