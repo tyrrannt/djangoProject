@@ -64,9 +64,10 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
             'avatar', 'address', 'type_users', 'service_number', 'user_access', 'personal_phone', 'gender',
             'user_work_profile', 'user_profile', 'ref_key', 'person_ref_key', 'passphrase', 'telegram_id', 'is_ppa')}),
         ('Permissions',
-         {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'type_of_role')}),
+         {'fields': ('is_active', 'is_staff', 'is_superuser', 'personal_groups', 'groups', 'user_permissions', 'type_of_role')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
+    filter_horizontal = ('personal_groups', 'groups', 'user_permissions')
 
     add_fieldsets = (
         (None, {

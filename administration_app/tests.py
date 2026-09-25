@@ -130,3 +130,123 @@ class Update1CPhysicalPersonEmailTestCase(TestCase):
         self.assertEqual(contacts[0]["Представление"], "new@barkol.ru")
         self.assertEqual(contacts[0]["АдресЭП"], "new@barkol.ru")
         self.assertEqual(contacts[0]["Значение"], "new@barkol.ru")
+
+
+class UserAccessServiceTestCase(TestCase):
+    """Тестирование трехуровневой модели синхронизации прав и ролей UserAccessService."""
+
+    def setUp(self) -> None:
+        """Подготовка тестовых данных: групп, должности и пользователя."""
+        from django.contrib.auth.models import Group
+        from administration_app.access_service import UserAccessService
+        from customers_app.models import DataBaseUser, DataBaseUserWorkProfile, Groups, Job
+
+        self.UserAccessService = UserAccessService
+        self.group_job, _ = Groups.objects.get_or_create(name="Группа Должности Тест")
+        self.group_personal, _ = Group.objects.get_or_create(name="Группа Персональная Тест")
+        self.group_lpc, _ = Group.objects.get_or_create(name="[ЛПК] Руководство")
+        self.group_extra, _ = Group.objects.get_or_create(name="Группа Экстра Тест")
+
+        self.job, _ = Job.objects.get_or_create(name="Инженер-тестировщик Тест")
+        self.job.group.add(self.group_job)
+
+        self.user, _ = DataBaseUser.objects.get_or_create(
+            username="test_access_engineer",
+            defaults={
+                "password": "testpassword123",
+                "first_name": "Иван",
+                "last_name": "Иванов",
+            }
+        )
+        if not getattr(self.user, "user_work_profile", None):
+            self.user.user_work_profile = DataBaseUserWorkProfile.objects.create(job=self.job)
+            self.user.save()
+        else:
+            self.user.user_work_profile.job = self.job
+            self.user.user_work_profile.save()
+
+    def test_sync_user_groups_adds_job_and_personal(self) -> None:
+        """Проверяет добавление должностных и персональных групп при синхронизации."""
+        self.user.personal_groups.clear()
+        self.user.groups.clear()
+        self.user.personal_groups.add(self.group_personal)
+
+        # Проверяем, что сигнал m2m_changed автоматически добавил группы
+        current_names = {g.name for g in self.user.groups.all()}
+        self.assertIn(self.group_job.name, current_names)
+        self.assertIn(self.group_personal.name, current_names)
+
+        # Проверяем явный вызов sync_user_groups при очищенных groups
+        self.user.groups.clear()
+        stat = self.UserAccessService.sync_user_groups(self.user)
+        self.assertFalse(stat["skipped"])
+        self.assertEqual(stat["added"], 2)  # group_job + group_personal
+
+        current_names = {g.name for g in self.user.groups.all()}
+        self.assertIn(self.group_job.name, current_names)
+        self.assertIn(self.group_personal.name, current_names)
+
+    def test_sync_user_groups_preserves_protected_roles(self) -> None:
+        """Проверяет, что защищенные роли (например [ЛПК] *) никогда не удаляются."""
+        self.user.groups.clear()
+        self.user.groups.add(self.group_lpc)
+
+        stat = self.UserAccessService.sync_user_groups(self.user)
+        self.assertEqual(stat["retained_protected"], 1)
+
+        current_names = {g.name for g in self.user.groups.all()}
+        self.assertIn(self.group_lpc.name, current_names)
+        self.assertIn(self.group_job.name, current_names)
+
+    def test_sync_user_groups_removes_stale_job_group_but_protects_personal_and_lpc(self) -> None:
+        """Проверяет корректное удаление устаревших должностных групп с защитой персональных и ЛПК ролей."""
+        from customers_app.models import Groups
+
+        self.user.groups.clear()
+        self.user.personal_groups.clear()
+        old_job_group, _ = Groups.objects.get_or_create(name="Старая Группа Должности Тест")
+        self.user.groups.add(old_job_group, self.group_lpc)
+        self.user.personal_groups.add(self.group_personal)
+
+        self.UserAccessService.sync_user_groups(self.user)
+        current_names = {g.name for g in self.user.groups.all()}
+        self.assertIn(self.group_job.name, current_names)
+        self.assertIn(self.group_personal.name, current_names)
+        self.assertIn(self.group_lpc.name, current_names)
+        # Устаревшая группа удалена:
+        self.assertNotIn(old_job_group.name, current_names)
+
+    def test_promote_extra_groups_to_personal(self) -> None:
+        """Проверяет фиксацию нестандартных групп в качестве персональных."""
+        self.user.groups.clear()
+        self.user.personal_groups.clear()
+        self.user.groups.add(self.group_job, self.group_extra)
+
+        report = self.UserAccessService.get_permissions_audit_report()
+        user_report = next((item for item in report if item["user_id"] == self.user.pk), None)
+        self.assertIsNotNone(user_report)
+        self.assertIn(self.group_extra.name, user_report["unclassified_groups"])
+
+        promoted_count = self.UserAccessService.promote_extra_groups_to_personal(self.user.pk)
+        self.assertEqual(promoted_count, 1)
+
+        personal_names = {g.name for g in self.user.personal_groups.all()}
+        self.assertIn(self.group_extra.name, personal_names)
+
+        new_report = self.UserAccessService.get_permissions_audit_report()
+        user_report_after = next((item for item in new_report if item["user_id"] == self.user.pk), None)
+        self.assertIsNone(user_report_after)
+
+    def test_promote_all_extra_groups_to_personal(self) -> None:
+        """Проверяет массовую фиксацию нераспределенных прав для всех пользователей."""
+        self.user.groups.clear()
+        self.user.personal_groups.clear()
+        self.user.groups.add(self.group_extra)
+        summary = self.UserAccessService.promote_all_extra_groups_to_personal()
+        self.assertGreaterEqual(summary["users_count"], 1)
+        self.assertGreaterEqual(summary["groups_count"], 1)
+        personal_names = {g.name for g in self.user.personal_groups.all()}
+        self.assertIn(self.group_extra.name, personal_names)
+
+
+

@@ -1046,6 +1046,13 @@ class DataBaseUser(AbstractUser):
     employment_contract_date = models.DateField(
         verbose_name="Дата трудового договора", blank=True, null=True
     )
+    personal_groups = models.ManyToManyField(
+        Group,
+        verbose_name="Персональные группы доступа",
+        blank=True,
+        related_name="personal_group_users",
+        help_text="Индивидуальные дополнительные группы доступа сотрудника (не сбрасываются при синхронизации по должности).",
+    )
 
     def save(self, *args, **kwargs):
         """

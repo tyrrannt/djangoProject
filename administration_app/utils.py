@@ -460,7 +460,7 @@ def update_1c_physical_person_email(
         )
 
     # 2. Валидация GUID физлица
-    if not person_ref_key or person_ref_key in ["", "00000000-0000-0000-0000-000000000000"]:
+    if not person_ref_key or not str(person_ref_key).strip():
         return False, "У пользователя не указан GUID физического лица в 1С (person_ref_key отсутствует)."
 
     try:

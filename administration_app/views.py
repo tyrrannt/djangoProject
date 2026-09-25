@@ -11,10 +11,10 @@ from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views import View
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.views.generic import ListView
 
 from administration_app.models import PortalProperty
@@ -309,9 +309,10 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['Group'] = Groups.objects.all()
-        context['title'] = f'Настройки портала'
-        context['users'] = DataBaseUser.objects.filter(is_active=True)
+        from django.contrib.auth.models import Group
+        context['Group'] = Group.objects.all().order_by('name')
+        context['title'] = 'Настройки портала'
+        context['users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name', 'first_name')
         return context
 
     def get(self, request, *args, **kwargs):
@@ -329,17 +330,11 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 for item in job_list:
                     for unit in group_list:
                         item.group.add(unit.id)
-            # Установка прав пользователя наследованием из групп
+            # Установка прав пользователя по трехуровневой модели (должность + персональные + защищенные роли)
             if request.GET.get('update') == '1':
-                users_list = DataBaseUser.objects.all().exclude(username='proxmox', is_active=False)
-                for user_obj in users_list:
-                    try:
-                        user_obj.groups.clear()
-                        for item in user_obj.user_work_profile.job.group.all():
-                            user_obj.groups.add(item)
-                        user_obj.save()
-                    except AttributeError:
-                        logger.info(f"У пользователя {user_obj} отсутствуют группы!")
+                from administration_app.access_service import UserAccessService
+
+                UserAccessService.sync_all_users_groups()
             # Обновить заголовки СЗ
             if request.GET.get('update') == '2':
                 users_list = DataBaseUser.objects.all().exclude(is_superuser=True)
@@ -580,24 +575,16 @@ class PortalPropertyTaskRunView(LoginRequiredMixin, View):
                 })
 
             elif update == "1":
-                users_list = DataBaseUser.objects.all().exclude(username="proxmox", is_active=False)
-                updated_count = 0
-                for user_obj in users_list:
-                    try:
-                        user_obj.groups.clear()
-                        if hasattr(user_obj, "user_work_profile") and user_obj.user_work_profile and user_obj.user_work_profile.job:
-                            for item in user_obj.user_work_profile.job.group.all():
-                                user_obj.groups.add(item)
-                        user_obj.save()
-                        updated_count += 1
-                    except Exception as e:
-                        logger.warning(f"Ошибка обновления групп у {user_obj}: {e}")
+                from administration_app.access_service import UserAccessService
+
+                res = UserAccessService.sync_all_users_groups()
                 return JsonResponse({
                     "success": True,
                     "is_async": False,
                     "task_name": "Обновление прав пользователей",
                     "status": "SUCCESS",
-                    "result": f"Права успешно актуализированы для {updated_count} пользователей."
+                    "result": res["message"],
+                    "stats": res,
                 })
 
             elif update == "2":
@@ -1709,6 +1696,151 @@ def celery_workers_ping_api(request):
 
     results = CeleryMonitorService.ping_workers()
     return JsonResponse({"success": True, "data": results})
+
+
+@login_required
+@require_http_methods(["GET"])
+def portal_permissions_audit_api(request: HttpRequest) -> JsonResponse:
+    """Возвращает отчет аудита прав для ревизии нестандартных доступов сотрудников.
+
+    Показывает сотрудников, у которых есть группы, не входящие в должность,
+    не являющиеся доменными ролями ЛПК и еще не оформленные как персональные.
+
+    Args:
+        request (HttpRequest): Входящий HTTP GET запрос от администратора.
+
+    Returns:
+        JsonResponse: JSON-структура со списком сотрудников, их должностями и нестандартными группами.
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Доступ разрешен только администратору."}, status=403)
+
+    from administration_app.access_service import UserAccessService
+
+    audit_data = UserAccessService.get_permissions_audit_report()
+    return JsonResponse({
+        "success": True,
+        "count": len(audit_data),
+        "data": audit_data,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def portal_promote_extra_groups_api(request: HttpRequest) -> JsonResponse:
+    """Переносит нестандартные группы пользователя в персональные права (personal_groups).
+
+    Args:
+        request (HttpRequest): Входящий HTTP POST запрос с параметром 'user_id'.
+
+    Returns:
+        JsonResponse: Статус операции и количество зафиксированных персональных групп.
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Доступ разрешен только администратору."}, status=403)
+
+    user_id_raw = request.POST.get("user_id")
+    from administration_app.access_service import UserAccessService
+
+    if user_id_raw == "all":
+        summary = UserAccessService.promote_all_extra_groups_to_personal()
+        return JsonResponse({
+            "success": True,
+            "promoted_count": summary["groups_count"],
+            "users_count": summary["users_count"],
+            "message": (
+                f"Успешно зафиксировано {summary['groups_count']} групп как персональные "
+                f"для {summary['users_count']} сотрудников."
+            ),
+        })
+
+    try:
+        user_id = int(user_id_raw)
+    except (TypeError, ValueError):
+        return JsonResponse({"success": False, "error": "Некорректный идентификатор пользователя."}, status=400)
+
+    promoted_count = UserAccessService.promote_extra_groups_to_personal(user_id)
+    return JsonResponse({
+        "success": True,
+        "promoted_count": promoted_count,
+        "message": f"Успешно зафиксировано {promoted_count} групп как персональные права сотрудника.",
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def portal_user_permissions_api(request: HttpRequest, user_id: int) -> JsonResponse:
+    """Возвращает агрегированный срез действующих прав конкретного сотрудника по категориям.
+
+    Используется на портале для отображения бейджей должностных, персональных,
+    защищенных и нераспределенных прав доступа сотрудника.
+
+    Args:
+        request (HttpRequest): Входящий HTTP GET запрос от администратора.
+        user_id (int): Идентификатор пользователя DataBaseUser.
+
+    Returns:
+        JsonResponse: JSON с категоризированными правами пользователя.
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Доступ разрешен только администратору."}, status=403)
+
+    from administration_app.access_service import UserAccessService
+
+    summary = UserAccessService.get_user_permissions_summary(user_id)
+    if not summary:
+        return JsonResponse({"success": False, "error": "Пользователь не найден."}, status=404)
+
+    return JsonResponse({
+        "success": True,
+        "data": summary,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def portal_manage_personal_group_api(request: HttpRequest) -> JsonResponse:
+    """Назначает или отзывает персональное право сотрудника через портальный интерфейс.
+
+    Args:
+        request (HttpRequest): Входящий HTTP POST запрос с параметрами user_id, group_id, action.
+
+    Returns:
+        JsonResponse: Статус операции, обновленный срез прав и сообщение.
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({"success": False, "error": "Доступ разрешен только администратору."}, status=403)
+
+    user_id_raw = request.POST.get("user_id")
+    group_id_raw = request.POST.get("group_id")
+    action = request.POST.get("action", "add")
+
+    try:
+        user_id = int(user_id_raw)
+        group_id = int(group_id_raw)
+    except (TypeError, ValueError):
+        return JsonResponse({"success": False, "error": "Некорректные параметры запроса."}, status=400)
+
+    from administration_app.access_service import UserAccessService
+
+    if action == "add":
+        success, message = UserAccessService.add_personal_group(user_id, group_id)
+    elif action == "remove":
+        success, message = UserAccessService.remove_personal_group(user_id, group_id)
+    else:
+        return JsonResponse({"success": False, "error": f"Неизвестное действие: '{action}'."}, status=400)
+
+    if not success:
+        return JsonResponse({"success": False, "error": message}, status=400)
+
+    updated_summary = UserAccessService.get_user_permissions_summary(user_id)
+    return JsonResponse({
+        "success": True,
+        "message": message,
+        "data": updated_summary,
+    })
+
+
 
 
 
