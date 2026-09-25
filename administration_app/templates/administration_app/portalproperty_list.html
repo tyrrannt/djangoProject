@@ -6,6 +6,78 @@
     {{ title }}
 {% endblock %}
 
+{% block custom_css %}
+    <style>
+        /* Высококонтрастные стили для бейджей прав доступа (WCAG AAA) */
+        .perm-badge-personal {
+            background-color: #dcfce7 !important;
+            color: #14532d !important;
+            border: 1px solid #16a34a !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            letter-spacing: 0.2px;
+        }
+        .perm-badge-job {
+            background-color: #dbeafe !important;
+            color: #1e3a8a !important;
+            border: 1px solid #2563eb !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            letter-spacing: 0.2px;
+        }
+        .perm-badge-domain {
+            background-color: #f3e8ff !important;
+            color: #581c87 !important;
+            border: 1px solid #9333ea !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            letter-spacing: 0.2px;
+        }
+        .perm-badge-other {
+            background-color: #fef3c7 !important;
+            color: #78350f !important;
+            border: 1px solid #d97706 !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            letter-spacing: 0.2px;
+        }
+        .perm-remove-btn {
+            background: transparent;
+            border: none;
+            color: #dc2626 !important;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1;
+            margin-left: 6px;
+            padding: 0 4px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .perm-remove-btn:hover {
+            background: #fee2e2;
+            color: #991b1b !important;
+        }
+        .perm-card-header-personal {
+            background-color: #dcfce7 !important;
+            border-bottom: 2px solid #16a34a !important;
+            color: #14532d !important;
+        }
+        .perm-card-header-job {
+            background-color: #dbeafe !important;
+            border-bottom: 2px solid #2563eb !important;
+            color: #1e3a8a !important;
+        }
+        .perm-card-footer {
+            background-color: #f8fafc !important;
+            border-top: 1px solid #e2e8f0 !important;
+            color: #334155 !important;
+            font-weight: 500 !important;
+            font-size: 12px !important;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
     <!-- start: page -->
     <div class="row">
@@ -58,51 +130,52 @@
 
                             <!-- Интерактивная панель действующих прав выбранного сотрудника -->
                             <div id="userPermissionsPanel" class="mt-3 pt-3 border-top d-none">
-                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-                                    <div>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
                                         <span class="fw-bold text-dark fs-6" id="userPermHeaderName"><i class="fas fa-id-badge text-primary me-1"></i> Права сотрудника</span>
-                                        <span class="badge bg-secondary ms-2" id="userPermJobTitle">Должность не указана</span>
+                                        <span class="badge" id="userPermJobTitle" style="background-color: #0f172a; color: #ffffff; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px;">Должность не указана</span>
+                                        <span class="badge d-none" id="userPermDivision" style="background-color: #f1f5f9; color: #0f172a; border: 1px solid #94a3b8; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px;"></span>
                                     </div>
-                                    <div class="small text-muted d-none d-md-block">
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success me-1">Персональные (настраиваемые)</span>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary me-1">Должностные (авто)</span>
-                                        <span class="badge bg-info bg-opacity-10 text-info border border-info">Системные / Доменные</span>
+                                    <div class="small d-none d-md-flex align-items-center gap-1">
+                                        <span class="badge perm-badge-personal">Персональные (настраиваемые)</span>
+                                        <span class="badge perm-badge-job">Должностные (авто)</span>
+                                        <span class="badge perm-badge-domain">Системные / Доменные</span>
                                     </div>
                                 </div>
 
                                 <div class="row g-3">
                                     <!-- Блок персональных прав -->
                                     <div class="col-12 col-lg-6">
-                                        <div class="card h-100 border-success shadow-none bg-white">
-                                            <div class="card-header bg-success bg-opacity-10 py-2 px-3 border-bottom border-success d-flex justify-content-between align-items-center">
-                                                <span class="fw-semibold text-success small">
-                                                    <i class="fas fa-user-check me-1"></i> Персональные права (Индивидуальные)
+                                        <div class="card h-100 shadow-sm bg-white" style="border: 1px solid #16a34a !important; border-radius: 8px; overflow: hidden;">
+                                            <div class="card-header perm-card-header-personal py-2 px-3 d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold" style="font-size: 13px;">
+                                                    <i class="fas fa-user-check me-1" style="color: #15803d;"></i> Персональные права (Индивидуальные)
                                                 </span>
-                                                <span class="badge bg-success rounded-pill" id="personalGroupsCount">0</span>
+                                                <span class="badge rounded-pill" id="personalGroupsCount" style="background-color: #15803d; color: #ffffff; font-weight: 700; font-size: 12px; padding: 4px 10px;">0</span>
                                             </div>
-                                            <div class="card-body p-2" id="userPersonalGroupsBadges" style="min-height: 65px;">
-                                                <span class="text-muted small fst-italic">Персональные права не назначены</span>
+                                            <div class="card-body p-3" id="userPersonalGroupsBadges" style="min-height: 75px; background-color: #ffffff;">
+                                                <div class="py-2 px-1 text-center" style="color: #475569; font-style: italic; font-weight: 500;"><i class="fas fa-info-circle me-1 text-success"></i> Персональные права не назначены</div>
                                             </div>
-                                            <div class="card-footer bg-light py-1 px-2 border-top small text-muted">
-                                                <i class="fas fa-info-circle me-1 text-secondary"></i> Чтобы отозвать право, нажмите на крестик [✕] на бейдже
+                                            <div class="card-footer perm-card-footer py-2 px-3">
+                                                <i class="fas fa-info-circle me-1 text-success"></i> Чтобы отозвать право, нажмите на крестик <span style="color: #dc2626; font-weight: bold;">[✕]</span> на бейдже
                                             </div>
                                         </div>
                                     </div>
 
                                     <!-- Блок должностных и системных прав -->
                                     <div class="col-12 col-lg-6">
-                                        <div class="card h-100 border-primary shadow-none bg-white">
-                                            <div class="card-header bg-primary bg-opacity-10 py-2 px-3 border-bottom border-primary d-flex justify-content-between align-items-center">
-                                                <span class="fw-semibold text-primary small">
-                                                    <i class="fas fa-briefcase me-1"></i> Должностные и системные права (Автоматические)
+                                        <div class="card h-100 shadow-sm bg-white" style="border: 1px solid #2563eb !important; border-radius: 8px; overflow: hidden;">
+                                            <div class="card-header perm-card-header-job py-2 px-3 d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold" style="font-size: 13px;">
+                                                    <i class="fas fa-briefcase me-1" style="color: #1d4ed8;"></i> Должностные и системные права (Автоматические)
                                                 </span>
-                                                <span class="badge bg-primary rounded-pill" id="jobGroupsCount">0</span>
+                                                <span class="badge rounded-pill" id="jobGroupsCount" style="background-color: #1d4ed8; color: #ffffff; font-weight: 700; font-size: 12px; padding: 4px 10px;">0</span>
                                             </div>
-                                            <div class="card-body p-2" id="userJobGroupsBadges" style="min-height: 65px;">
-                                                <span class="text-muted small fst-italic">Должностные группы не найдены</span>
+                                            <div class="card-body p-3" id="userJobGroupsBadges" style="min-height: 75px; background-color: #ffffff;">
+                                                <div class="py-2 px-1 text-center" style="color: #475569; font-style: italic; font-weight: 500;"><i class="fas fa-info-circle me-1 text-primary"></i> Должностные группы не найдены</div>
                                             </div>
-                                            <div class="card-footer bg-light py-1 px-2 border-top small text-muted">
-                                                <i class="fas fa-lock me-1 text-secondary"></i> Наследуются из штатного расписания и модулей портала
+                                            <div class="card-footer perm-card-footer py-2 px-3">
+                                                <i class="fas fa-lock me-1 text-primary"></i> Наследуются из штатного расписания и доменных модулей портала
                                             </div>
                                         </div>
                                     </div>
@@ -345,17 +418,17 @@
                 <div class="modal-body p-4">
                     {% csrf_token %}
                     <!-- Информационная плашка с разъяснением 3-уровневой модели -->
-                    <div class="alert alert-info border-info d-flex align-items-start gap-3 mb-3 py-2 px-3 rounded-3" style="background-color: #f0f9ff;">
-                        <i class="fas fa-info-circle text-info fs-4 mt-1"></i>
-                        <div class="small text-dark">
-                            <strong>3-уровневая архитектура распределения прав:</strong>
-                            <div class="mt-1">
-                                <span class="badge bg-secondary me-1">1. Должность</span> — общие права наследуются из штатного расписания (справочник Должностей);<br>
-                                <span class="badge bg-success me-1">2. Персональные</span> — индивидуальные права сотрудника (поле <code>personal_groups</code>), не сбрасываются при синхронизации;<br>
-                                <span class="badge bg-info text-dark me-1">3. Защищенные роли</span> — права модулей ЛПК (<code>[ЛПК] *</code>), почты и тестирования с полным иммунитетом от сброса.
+                    <div class="alert border d-flex align-items-start gap-3 mb-3 py-3 px-3 rounded-3" style="background-color: #f0fdf4; border-color: #86efac !important;">
+                        <i class="fas fa-shield-alt fs-4 mt-1" style="color: #16a34a;"></i>
+                        <div class="small" style="color: #0f172a !important;">
+                            <strong style="color: #14532d; font-size: 14px;">3-уровневая архитектура распределения прав:</strong>
+                            <div class="mt-2 lh-base">
+                                <span class="badge perm-badge-job me-1">1. Должность</span> — <strong style="color: #0f172a;">общие права</strong> наследуются из штатного расписания (справочник Должностей);<br>
+                                <span class="badge perm-badge-personal me-1">2. Персональные</span> — <strong style="color: #0f172a;">индивидуальные права</strong> сотрудника (поле <code>personal_groups</code>), не сбрасываются при синхронизации;<br>
+                                <span class="badge perm-badge-domain me-1">3. Защищенные роли</span> — <strong style="color: #0f172a;">права модулей ЛПК</strong> (<code>[ЛПК] *</code>), почты и тестирования с полным иммунитетом от сброса.
                             </div>
-                            <div class="text-muted mt-1">
-                                В таблице ниже отображаются сотрудники с <strong>дополнительными правами</strong>, еще не зафиксированными как персональные.
+                            <div class="mt-2 pt-2 border-top" style="color: #334155; font-weight: 500; border-color: #bbf7d0 !important;">
+                                В таблице ниже отображаются сотрудники с <strong style="color: #b45309;">дополнительными правами</strong>, еще не зафиксированными как персональные.
                             </div>
                         </div>
                     </div>
@@ -842,34 +915,34 @@
 
                     // Badges unclassified
                     const unclassHtml = (user.unclassified_groups || []).map(g =>
-                        `<span class="badge bg-warning text-dark me-1 mb-1 font-monospace" style="font-size: 11px;">${escapeHtml(g)}</span>`
+                        `<span class="badge me-1 mb-1 font-monospace fw-semibold" style="font-size: 11px; background-color: #fef3c7 !important; color: #78350f !important; border: 1px solid #d97706 !important;">${escapeHtml(g)}</span>`
                     ).join('');
 
                     // Badges personal
                     const personalHtml = (user.personal_groups || []).map(g =>
-                        `<span class="badge bg-success me-1 mb-1 font-monospace" style="font-size: 11px;" title="Персональное право">${escapeHtml(g)}</span>`
+                        `<span class="badge me-1 mb-1 font-monospace fw-semibold" style="font-size: 11px; background-color: #dcfce7 !important; color: #14532d !important; border: 1px solid #16a34a !important;" title="Персональное право">${escapeHtml(g)}</span>`
                     ).join('');
 
                     // Badges domain roles
                     const domainHtml = (user.domain_roles || []).map(g =>
-                        `<span class="badge bg-info text-dark me-1 mb-1 font-monospace" style="font-size: 11px;" title="Защищенная роль подсистемы">${escapeHtml(g)}</span>`
+                        `<span class="badge me-1 mb-1 font-monospace fw-semibold" style="font-size: 11px; background-color: #f3e8ff !important; color: #581c87 !important; border: 1px solid #9333ea !important;" title="Защищенная роль подсистемы">${escapeHtml(g)}</span>`
                     ).join('');
 
-                    const existingHtml = (personalHtml || domainHtml) ? `${personalHtml}${domainHtml}` : '<span class="text-muted small">—</span>';
+                    const existingHtml = (personalHtml || domainHtml) ? `${personalHtml}${domainHtml}` : '<span style="color: #64748b; font-size: 12px;">—</span>';
 
                     tr.innerHTML = `
                         <td>
                             <div class="fw-bold text-dark">${escapeHtml(user.full_name)}</div>
-                            <div class="text-muted small font-monospace">@${escapeHtml(user.username)}</div>
+                            <div class="small font-monospace" style="color: #475569;">@${escapeHtml(user.username)}</div>
                         </td>
                         <td>
-                            <div class="fw-semibold text-secondary small">${escapeHtml(user.job_name)}</div>
-                            <div class="text-muted" style="font-size: 11px;">${escapeHtml(user.division_name)}</div>
+                            <div class="fw-bold small" style="color: #1e293b;">${escapeHtml(user.job_name)}</div>
+                            <div style="font-size: 12px; color: #475569; font-weight: 500;">${escapeHtml(user.division_name)}</div>
                         </td>
                         <td>
                             <div>${unclassHtml}</div>
-                            <div class="text-muted" style="font-size: 10px; margin-top: 2px;">
-                                <i class="fas fa-exclamation-triangle text-warning me-1"></i> Не входит в должность
+                            <div style="font-size: 11px; margin-top: 3px; color: #b45309; font-weight: 600;">
+                                <i class="fas fa-exclamation-triangle me-1"></i> Не входит в должность
                             </div>
                         </td>
                         <td>
@@ -877,8 +950,8 @@
                         </td>
                         <td class="text-end">
                             <div class="d-flex gap-1 justify-content-end">
-                                <button type="button" class="btn btn-sm btn-outline-success promote-user-btn" data-user-id="${user.user_id}" title="Сделать эти группы персональными правами">
-                                    <i class="fas fa-check"></i> В персональные
+                                <button type="button" class="btn btn-sm btn-outline-success promote-user-btn fw-semibold" data-user-id="${user.user_id}" title="Сделать эти группы персональными правами">
+                                    <i class="fas fa-check me-1"></i> В персональные
                                 </button>
                                 <a href="/admin/customers_app/databaseuser/${user.user_id}/change/" target="_blank" class="btn btn-sm btn-outline-secondary" title="Открыть карточку пользователя в админке">
                                     <i class="fas fa-external-link-alt"></i>
@@ -1068,10 +1141,10 @@
 
                 if (panel) panel.classList.remove('d-none');
                 if (personalBadges) {
-                    personalBadges.innerHTML = '<div class="text-center py-2"><span class="spinner-border spinner-border-sm text-success me-1"></span><span class="small text-muted">Загрузка персональных прав...</span></div>';
+                    personalBadges.innerHTML = '<div class="text-center py-3"><span class="spinner-border spinner-border-sm text-success me-2"></span><span style="color: #1e293b; font-weight: 500; font-size: 13px;">Загрузка персональных прав...</span></div>';
                 }
                 if (jobBadges) {
-                    jobBadges.innerHTML = '<div class="text-center py-2"><span class="spinner-border spinner-border-sm text-primary me-1"></span><span class="small text-muted">Загрузка должностных прав...</span></div>';
+                    jobBadges.innerHTML = '<div class="text-center py-3"><span class="spinner-border spinner-border-sm text-primary me-2"></span><span style="color: #1e293b; font-weight: 500; font-size: 13px;">Загрузка должностных прав...</span></div>';
                 }
 
                 const url = `{% url 'administration_app:user_permissions_api' 0 %}`.replace('0', userId);
@@ -1086,61 +1159,79 @@
                             return;
                         }
 
+                        const info = data.data || data;
+                        const userName = info.full_name || info.user_name || info.username || 'Сотрудник';
+                        const jobName = info.job_name || 'Должность не указана';
+                        const divisionName = info.division_name || '';
+                        const personalGroups = info.personal_groups || [];
+                        const jobGroups = info.job_groups || [];
+                        const domainRoles = info.domain_roles || info.domain_groups || [];
+                        const otherGroups = info.unclassified_groups || info.other_groups || [];
+
                         if (headerName) {
-                            headerName.innerHTML = `<i class="fas fa-id-badge text-primary me-1"></i> Права сотрудника: <strong>${escapeHtml(data.user_name)}</strong>`;
+                            headerName.innerHTML = `<i class="fas fa-id-badge text-primary me-1"></i> Права сотрудника: <strong>${escapeHtml(userName)}</strong>`;
                         }
                         if (jobTitle) {
-                            jobTitle.textContent = data.job_name || 'Должность не указана';
+                            jobTitle.textContent = jobName;
+                        }
+                        const divisionBadge = document.getElementById('userPermDivision');
+                        if (divisionBadge) {
+                            if (divisionName) {
+                                divisionBadge.textContent = divisionName;
+                                divisionBadge.classList.remove('d-none');
+                            } else {
+                                divisionBadge.classList.add('d-none');
+                            }
                         }
 
                         // Рендеринг персональных прав
-                        if (personalCount) personalCount.textContent = (data.personal_groups || []).length;
+                        if (personalCount) personalCount.textContent = personalGroups.length;
                         if (personalBadges) {
-                            if (!data.personal_groups || data.personal_groups.length === 0) {
-                                personalBadges.innerHTML = '<span class="text-muted small fst-italic"><i class="fas fa-info-circle me-1"></i>Персональные права не назначены</span>';
+                            if (personalGroups.length === 0) {
+                                personalBadges.innerHTML = '<div class="py-2 px-1 text-center" style="color: #475569; font-style: italic; font-weight: 500;"><i class="fas fa-info-circle me-1 text-success"></i> Персональные права не назначены</div>';
                             } else {
-                                personalBadges.innerHTML = data.personal_groups.map(g => `
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1 m-1 d-inline-flex align-items-center rounded-2">
-                                        <i class="fas fa-user-check me-1 small"></i>
+                                personalBadges.innerHTML = personalGroups.map(g => `
+                                    <span class="badge perm-badge-personal px-2 py-1 m-1 d-inline-flex align-items-center rounded-2 shadow-sm">
+                                        <i class="fas fa-user-check me-1 small" style="color: #16a34a;"></i>
                                         <span>${escapeHtml(g.name)}</span>
-                                        <button type="button" class="btn-close ms-2 remove-personal-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" style="font-size: 0.65rem;" title="Отозвать персональное право"></button>
+                                        <button type="button" class="perm-remove-btn remove-personal-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Отозвать персональное право">&times;</button>
                                     </span>
                                 `).join('');
                             }
                         }
 
                         // Рендеринг должностных, доменных и системных прав
-                        const totalJobAndDomain = (data.job_groups || []).length + (data.domain_groups || []).length + (data.other_groups || []).length;
+                        const totalJobAndDomain = jobGroups.length + domainRoles.length + otherGroups.length;
                         if (jobCount) jobCount.textContent = totalJobAndDomain;
                         if (jobBadges) {
                             let badgesHtml = '';
-                            (data.job_groups || []).forEach(g => {
+                            jobGroups.forEach(g => {
                                 badgesHtml += `
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1 m-1 d-inline-flex align-items-center rounded-2" title="Наследуется из штатной должности">
-                                        <i class="fas fa-briefcase me-1 small"></i>
+                                    <span class="badge perm-badge-job px-2 py-1 m-1 d-inline-flex align-items-center rounded-2 shadow-sm" title="Наследуется из штатной должности">
+                                        <i class="fas fa-briefcase me-1 small" style="color: #2563eb;"></i>
                                         <span>${escapeHtml(g.name)}</span>
                                     </span>
                                 `;
                             });
-                            (data.domain_groups || []).forEach(g => {
+                            domainRoles.forEach(g => {
                                 badgesHtml += `
-                                    <span class="badge bg-info bg-opacity-10 text-info border border-info px-2 py-1 m-1 d-inline-flex align-items-center rounded-2" title="Системная/доменная роль ЛПК">
-                                        <i class="fas fa-network-wired me-1 small"></i>
+                                    <span class="badge perm-badge-domain px-2 py-1 m-1 d-inline-flex align-items-center rounded-2 shadow-sm" title="Системная/доменная роль ЛПК">
+                                        <i class="fas fa-network-wired me-1 small" style="color: #9333ea;"></i>
                                         <span>${escapeHtml(g.name)}</span>
                                     </span>
                                 `;
                             });
-                            (data.other_groups || []).forEach(g => {
+                            otherGroups.forEach(g => {
                                 badgesHtml += `
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-2 py-1 m-1 d-inline-flex align-items-center rounded-2" title="Назначено напрямую в системе">
-                                        <i class="fas fa-shield-alt me-1 small"></i>
+                                    <span class="badge perm-badge-other px-2 py-1 m-1 d-inline-flex align-items-center rounded-2 shadow-sm" title="Назначено напрямую в системе">
+                                        <i class="fas fa-shield-alt me-1 small" style="color: #d97706;"></i>
                                         <span>${escapeHtml(g.name)}</span>
                                     </span>
                                 `;
                             });
 
                             if (!badgesHtml) {
-                                jobBadges.innerHTML = '<span class="text-muted small fst-italic"><i class="fas fa-info-circle me-1"></i>Должностные и системные права отсутствуют</span>';
+                                jobBadges.innerHTML = '<div class="py-2 px-1 text-center" style="color: #475569; font-style: italic; font-weight: 500;"><i class="fas fa-info-circle me-1 text-primary"></i> Должностные и системные права отсутствуют</div>';
                             } else {
                                 jobBadges.innerHTML = badgesHtml;
                             }

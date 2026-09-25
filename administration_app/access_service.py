@@ -497,12 +497,24 @@ class UserAccessService:
         job_groups_objs = Group.objects.filter(id__in=job_ids)
         personal_groups_objs = user.personal_groups.all()
 
+        job_str = str(job).strip() if job else ""
+        division_str = str(division).strip() if division else ""
+        domain_list = [
+            {"id": gid, "name": current_groups_map[gid].name}
+            for gid in sorted(protected_ids, key=lambda i: current_groups_map[i].name)
+        ]
+        unclassified_list = [
+            {"id": gid, "name": current_groups_map[gid].name}
+            for gid in sorted(unclassified_ids, key=lambda i: current_groups_map[i].name)
+        ]
+
         return {
             "user_id": user.pk,
             "full_name": user.get_title(),
+            "user_name": user.get_title(),
             "username": user.username,
-            "job_name": str(job) if job else "—",
-            "division_name": str(division) if division else "—",
+            "job_name": job_str if job_str and job_str != "—" else "",
+            "division_name": division_str if division_str and division_str != "—" else "",
             "job_groups": [
                 {"id": g.id, "name": g.name}
                 for g in sorted(job_groups_objs, key=lambda x: x.name)
@@ -511,14 +523,10 @@ class UserAccessService:
                 {"id": g.id, "name": g.name}
                 for g in sorted(personal_groups_objs, key=lambda x: x.name)
             ],
-            "domain_roles": [
-                {"id": gid, "name": current_groups_map[gid].name}
-                for gid in sorted(protected_ids, key=lambda i: current_groups_map[i].name)
-            ],
-            "unclassified_groups": [
-                {"id": gid, "name": current_groups_map[gid].name}
-                for gid in sorted(unclassified_ids, key=lambda i: current_groups_map[i].name)
-            ],
+            "domain_roles": domain_list,
+            "domain_groups": domain_list,
+            "unclassified_groups": unclassified_list,
+            "other_groups": unclassified_list,
         }
 
 

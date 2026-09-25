@@ -1794,6 +1794,7 @@ def portal_user_permissions_api(request: HttpRequest, user_id: int) -> JsonRespo
     return JsonResponse({
         "success": True,
         "data": summary,
+        **summary,
     })
 
 
@@ -1833,11 +1834,12 @@ def portal_manage_personal_group_api(request: HttpRequest) -> JsonResponse:
     if not success:
         return JsonResponse({"success": False, "error": message}, status=400)
 
-    updated_summary = UserAccessService.get_user_permissions_summary(user_id)
+    updated_summary = UserAccessService.get_user_permissions_summary(user_id) or {}
     return JsonResponse({
         "success": True,
         "message": message,
         "data": updated_summary,
+        **updated_summary,
     })
 
 
