@@ -1,10 +1,12 @@
+import uuid
 from datetime import datetime
+from typing import Any, Optional, Dict
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpRequest
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
@@ -38,19 +40,172 @@ def check_session_cookie_secure(request):
         return HttpResponse("SESSION_COOKIE_SECURE is not enabled.")
 
 
-def show_403(request, exception=None):
-    logger.warning(f"403 Forbidden: {request.path} | User: {request.user} | Exception: {exception}")
-    return render(request, "library_app/403.html", status=403)
+def show_400(request: HttpRequest, exception: Any = None) -> HttpResponse:
+    """Обработчик ошибки HTTP 400 (Bad Request).
+
+    Отображает брендированную страницу при некорректных параметрах запроса или сбое валидации.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        exception (Any, optional): Исключение, вызвавшее ошибку 400.
+
+    Returns:
+        HttpResponse: Срендеренная страница ошибки со статусом 400.
+    """
+    logger.warning(
+        f"400 Bad Request: {request.path} | User: {getattr(request, 'user', 'Anonymous')} | "
+        f"Exception: {exception}"
+    )
+    context = {
+        "title": "400 Некорректный запрос",
+        "error_code": "400",
+        "error_name": "Bad Request",
+        "error_title": "Некорректный запрос",
+        "error_description": "Сервер не смог обработать входящий запрос из-за неверного синтаксиса, некорректных параметров или поврежденных данных.",
+        "request_path": getattr(request, "path", ""),
+        "exception_msg": str(exception) if exception else "",
+    }
+    return render(request, "library_app/400.html", context, status=400)
 
 
-def show_404(request, exception=None):
-    logger.warning(f"404 Not Found: {request.path} | User: {request.user} | Exception: {exception}")
-    return render(request, "library_app/404.html", status=404)
+def show_403(request: HttpRequest, exception: Any = None) -> HttpResponse:
+    """Обработчик ошибки HTTP 403 (Forbidden).
+
+    Отображает брендированную страницу ограничения прав доступа с предложением действий.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        exception (Any, optional): Исключение PermissionDenied или описание причины.
+
+    Returns:
+        HttpResponse: Срендеренная страница ошибки со статусом 403.
+    """
+    logger.warning(
+        f"403 Forbidden: {request.path} | User: {getattr(request, 'user', 'Anonymous')} | "
+        f"Exception: {exception}"
+    )
+    context = {
+        "title": "403 Доступ ограничен",
+        "error_code": "403",
+        "error_name": "Access Forbidden",
+        "error_title": "Доступ ограничен",
+        "error_description": "У вашей учетной записи недостаточно прав для просмотра этого раздела или выполнения данной операции.",
+        "request_path": getattr(request, "path", ""),
+        "exception_msg": str(exception) if exception else "",
+    }
+    return render(request, "library_app/403.html", context, status=403)
 
 
-def show_500(request, exception=None):
-    logger.error(f"500 Internal Server Error: {request.path} | User: {request.user} | Exception: {exception}")
-    return render(request, "library_app/500.html", status=500)
+def csrf_failure(request: HttpRequest, reason: str = "") -> HttpResponse:
+    """Обработчик ошибки проверки CSRF токена.
+
+    Отображает дружелюбную страницу с понятным объяснением и кнопкой быстрого обновления страницы.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        reason (str, optional): Техническая причина отклонения CSRF-токена.
+
+    Returns:
+        HttpResponse: Срендеренная страница ошибки со статусом 403.
+    """
+    logger.warning(
+        f"403 CSRF Failure: {request.path} | User: {getattr(request, 'user', 'Anonymous')} | "
+        f"Reason: {reason}"
+    )
+    context = {
+        "title": "Срок действия формы истек",
+        "error_code": "CSRF",
+        "error_name": "Token Expired",
+        "error_title": "Срок действия формы истек",
+        "error_description": "Защитный токен формы устарел или был сброшен из-за длительного ожидания. Пожалуйста, обновите страницу и отправьте форму заново.",
+        "request_path": getattr(request, "path", ""),
+        "reason": reason,
+    }
+    return render(request, "library_app/csrf_failure.html", context, status=403)
+
+
+def show_404(request: HttpRequest, exception: Any = None) -> HttpResponse:
+    """Обработчик ошибки HTTP 404 (Not Found).
+
+    Отображает брендированную страницу отсутствия запрашиваемого ресурса с навигацией.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        exception (Any, optional): Исключение Http404 или описание.
+
+    Returns:
+        HttpResponse: Срендеренная страница ошибки со статусом 404.
+    """
+    logger.warning(
+        f"404 Not Found: {request.path} | User: {getattr(request, 'user', 'Anonymous')} | "
+        f"Exception: {exception}"
+    )
+    context = {
+        "title": "404 Страница не найдена",
+        "error_code": "404",
+        "error_name": "Page Not Found",
+        "error_title": "Страница не найдена",
+        "error_description": "Запрашиваемый адрес не существует на сервере, документ был перемещен или в ссылке допущена опечатка.",
+        "request_path": getattr(request, "path", ""),
+    }
+    return render(request, "library_app/404.html", context, status=404)
+
+
+def show_500(request: HttpRequest, exception: Any = None) -> HttpResponse:
+    """Обработчик ошибки HTTP 500 (Internal Server Error).
+
+    Отображает защищенную автономную брендированную страницу ошибки сервера
+    с уникальным идентификатором инцидента для передачи в техподдержку.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        exception (Any, optional): Необработанное исключение.
+
+    Returns:
+        HttpResponse: Срендеренная страница ошибки со статусом 500.
+    """
+    incident_id = f"BARKOL-500-{uuid.uuid4().hex[:8].upper()}"
+    logger.error(
+        f"500 Internal Server Error [{incident_id}]: {getattr(request, 'path', 'unknown')} | "
+        f"User: {getattr(request, 'user', 'Anonymous')} | Exception: {exception}",
+        exc_info=True,
+    )
+    context = {
+        "title": "500 Ошибка сервера",
+        "error_code": "500",
+        "error_name": "Internal Server Error",
+        "error_title": "Внутренняя ошибка сервера",
+        "error_description": "Произошел непредвиденный системный сбой при обработке вашего запроса. Инженеры уже уведомлены, и подробности инцидента зафиксированы в системном журнале.",
+        "incident_id": incident_id,
+        "request_path": getattr(request, "path", ""),
+    }
+    return render(request, "library_app/500.html", context, status=500)
+
+
+def show_503(request: HttpRequest, exception: Any = None) -> HttpResponse:
+    """Обработчик ошибки HTTP 503 (Service Unavailable / Maintenance).
+
+    Отображает брендированную страницу регламентных работ и технического обслуживания с автообновлением.
+
+    Args:
+        request (HttpRequest): Объект HTTP-запроса.
+        exception (Any, optional): Исключение или описание режима обслуживания.
+
+    Returns:
+        HttpResponse: Срендеренная страница ошибки со статусом 503.
+    """
+    logger.info(
+        f"503 Service Unavailable: {request.path} | User: {getattr(request, 'user', 'Anonymous')}"
+    )
+    context = {
+        "title": "503 Техническое обслуживание",
+        "error_code": "503",
+        "error_name": "Service Unavailable",
+        "error_title": "Техническое обслуживание",
+        "error_description": "На портале проводятся плановые регламентные работы или обновление системных компонентов. Доступ будет автоматически восстановлен через несколько минут.",
+        "request_path": getattr(request, "path", ""),
+    }
+    return render(request, "library_app/503.html", context, status=503)
 
 
 class HelpList(LoginRequiredMixin, ListView):

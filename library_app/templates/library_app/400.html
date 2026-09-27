@@ -3,13 +3,13 @@
 {% load custom %}
 
 {% block title %}
-    404 // Страница не найдена — ООО АК «БАРКОЛ»
+    400 // Некорректный запрос — ООО АК «БАРКОЛ»
 {% endblock %}
 
 {% block custom_css %}
 <style>
     /* ==========================================================================
-       СТИЛИ СТРАНИЦЫ ОШИБКИ 404 (NOT FOUND) В КОРПОРАТИВНОМ СТИЛЕ АК «БАРКОЛ»
+       СТИЛИ СТРАНИЦЫ ОШИБКИ 400 (BAD REQUEST) В КОРПОРАТИВНОМ СТИЛЕ АК «БАРКОЛ»
        ========================================================================== */
     .portal-error-wrapper {
         min-height: calc(100vh - 240px);
@@ -49,7 +49,7 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, #0284c7, #38bdf8, #10b981);
+        background: linear-gradient(90deg, #f59e0b, #eab308, #38bdf8);
     }
 
     .error-icon-bubble {
@@ -57,14 +57,14 @@
         height: 76px;
         margin: 0 auto 16px auto;
         border-radius: 50%;
-        background: rgba(2, 132, 199, 0.2);
-        border: 2px solid rgba(56, 189, 248, 0.45);
-        color: #38bdf8;
+        background: rgba(245, 158, 11, 0.2);
+        border: 2px solid rgba(245, 158, 11, 0.45);
+        color: #fde68a;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 36px;
-        box-shadow: 0 4px 20px rgba(2, 132, 199, 0.3);
+        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
     }
 
     .error-code-badge {
@@ -73,9 +73,9 @@
         font-weight: 700;
         letter-spacing: 2px;
         text-transform: uppercase;
-        color: #7dd3fc;
-        background: rgba(2, 132, 199, 0.18);
-        border: 1px solid rgba(56, 189, 248, 0.35);
+        color: #fde68a;
+        background: rgba(245, 158, 11, 0.18);
+        border: 1px solid rgba(245, 158, 11, 0.35);
         padding: 4px 14px;
         border-radius: 20px;
         display: inline-block;
@@ -139,7 +139,7 @@
         content: '•';
         position: absolute;
         left: 8px;
-        color: #0284c7;
+        color: #f59e0b;
         font-size: 1.2rem;
         line-height: 1;
         top: -1px;
@@ -165,6 +165,7 @@
         border: 1px solid #e2e8f0;
         background: #ffffff;
         color: #1e293b;
+        cursor: pointer;
     }
 
     .action-btn-link:hover {
@@ -239,22 +240,22 @@
     <div class="portal-error-card">
         <div class="error-header-strip">
             <div class="error-icon-bubble">
-                <i class="bx bx-compass"></i>
+                <i class="bx bx-error-alt"></i>
             </div>
-            <span class="error-code-badge">Ошибка 404 // Page Not Found</span>
-            <h1 class="error-main-title">Страница не найдена</h1>
+            <span class="error-code-badge">Ошибка 400 // Bad Request</span>
+            <h1 class="error-main-title">Некорректный запрос</h1>
             <p class="error-main-subtitle">
-                Запрашиваемый ресурс был перемещен, удален или в веб-адресе допущена неточность.
+                Сервер не смог распознать или обработать запрос из-за недопустимых параметров или неверного формата данных.
             </p>
         </div>
 
         <div class="error-body-content">
             <div class="reasons-box">
-                <h6><i class="bx bx-info-circle text-info me-1"></i> Рекомендации:</h6>
+                <h6><i class="bx bx-info-circle text-warning me-1"></i> Возможные причины:</h6>
                 <ul class="reasons-list">
-                    <li>Убедитесь в корректности написания адреса страницы в строке браузера;</li>
-                    <li>Документ, служебная записка или запись могли быть удалены либо перемещены в архив;</li>
-                    <li>Воспользуйтесь поиском по базе знаний или перейдите в один из основных разделов портала.</li>
+                    <li>В строке запроса переданы поврежденные или неполные параметры;</li>
+                    <li>Размер отправляемых файлов или заголовков превышает установленный лимит;</li>
+                    <li>Произошел сбой при формировании запроса в браузере.</li>
                 </ul>
             </div>
 
@@ -263,6 +264,11 @@
                     <i class="bx bx-arrow-back"></i>
                     <span>Вернуться назад</span>
                 </a>
+
+                <button type="button" class="action-btn-link" onclick="window.location.reload();">
+                    <i class="bx bx-refresh text-success"></i>
+                    <span>Повторить запрос</span>
+                </button>
 
                 <a href="/" class="action-btn-link">
                     <i class="bx bx-home-alt text-primary"></i>
@@ -273,19 +279,17 @@
                     <i class="bx bx-help-circle text-warning"></i>
                     <span>База знаний</span>
                 </a>
-
-                <a href="{% url 'library_app:blank_list' %}" class="action-btn-link">
-                    <i class="bx bx-file-blank text-info"></i>
-                    <span>Реестр бланков</span>
-                </a>
             </div>
 
             <div class="tech-details-box">
                 <div>
-                    <span>Запрошенный URL: <span class="tech-meta-item" id="errPath">{{ request_path|default:request.path }}</span></span>
+                    <span>Адрес: <span class="tech-meta-item" id="errPath">{{ request_path|default:request.path }}</span></span>
+                    {% if exception_msg %}
+                        <span class="ms-3 d-none d-sm-inline">Детали: <span class="tech-meta-item">{{ exception_msg }}</span></span>
+                    {% endif %}
                 </div>
                 <button type="button" class="btn-copy-tech" id="btnCopyErrorInfo">
-                    <i class="bx bx-copy me-1"></i> Скопировать ссылку
+                    <i class="bx bx-copy me-1"></i> Скопировать сведения
                 </button>
             </div>
         </div>
@@ -297,11 +301,12 @@
         var btn = document.getElementById('btnCopyErrorInfo');
         if (btn) {
             btn.addEventListener('click', function() {
-                var path = document.getElementById('errPath') ? document.getElementById('errPath').textContent.trim() : window.location.href;
+                var path = document.getElementById('errPath') ? document.getElementById('errPath').textContent.trim() : window.location.pathname;
+                var info = 'Ошибка 400 Некорректный запрос\nПуть: ' + path + '\nВремя: ' + new Date().toLocaleString();
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(path).then(function() {
+                    navigator.clipboard.writeText(info).then(function() {
                         btn.innerHTML = '<i class="bx bx-check me-1"></i> Скопировано!';
-                        setTimeout(function() { btn.innerHTML = '<i class="bx bx-copy me-1"></i> Скопировать ссылку'; }, 2500);
+                        setTimeout(function() { btn.innerHTML = '<i class="bx bx-copy me-1"></i> Скопировать сведения'; }, 2500);
                     });
                 }
             });

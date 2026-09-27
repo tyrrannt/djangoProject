@@ -501,6 +501,7 @@ SESSION_COOKIE_HTTPONLY = config("SESSION_COOKIE_HTTPONLY", default=False, cast=
 
 # Устанавливаем CSRF_COOKIE_SECURE в True, чтобы CSRF-токены передавались только по HTTPS
 CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=False, cast=bool)
+CSRF_FAILURE_VIEW = "library_app.views.csrf_failure"
 
 # Перенаправляем все запросы на HTTPS
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)

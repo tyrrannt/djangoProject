@@ -3,100 +3,325 @@
 {% load custom %}
 
 {% block title %}
-    {{ title|default:"403 Доступ запрещен" }} // Ошибка
+    403 // Доступ ограничен — ООО АК «БАРКОЛ»
 {% endblock %}
 
 {% block custom_css %}
 <style>
-    .error-container {
-        min-height: 70vh;
+    /* ==========================================================================
+       СТИЛИ СТРАНИЦЫ ОШИБКИ 403 (FORBIDDEN) В КОРПОРАТИВНОМ СТИЛЕ АК «БАРКОЛ»
+       ========================================================================== */
+    .portal-error-wrapper {
+        min-height: calc(100vh - 240px);
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 24px 12px;
     }
-    .error-card {
-        max-width: 700px;
-        width: 100%;
-        padding: 40px;
-        border-radius: 16px;
+
+    .portal-error-card {
         background: #ffffff;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        box-shadow: 0 10px 35px rgba(0, 43, 73, 0.08);
+        max-width: 740px;
+        width: 100%;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .error-code {
-        font-size: 72px;
-        font-weight: 800;
-        color: #1e293b;
+
+    .portal-error-card:hover {
+        box-shadow: 0 14px 45px rgba(0, 43, 73, 0.12);
     }
-    .error-icon {
-        font-size: 54px;
-        color: #dc3545;
-        margin-left: 10px;
+
+    .error-header-strip {
+        background: linear-gradient(135deg, #002b49 0%, #083c64 100%);
+        padding: 30px 24px;
+        color: #ffffff;
+        text-align: center;
+        position: relative;
     }
-    .error-text {
-        font-size: 1.1rem;
-        color: #64748b;
-        margin-top: 10px;
+
+    .error-header-strip::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ef4444, #f59e0b, #38bdf8);
     }
-    .nav-links a {
-        display: block;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        border-radius: 10px;
-        text-decoration: none;
-        color: #1e293b;
+
+    .error-icon-bubble {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 16px auto;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.2);
+        border: 2px solid rgba(239, 68, 68, 0.45);
+        color: #fca5a5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    }
+
+    .error-code-badge {
+        font-family: 'JetBrains Mono', Consolas, monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #fca5a5;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        padding: 4px 14px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+
+    .error-main-title {
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 6px;
+    }
+
+    .error-main-subtitle {
+        color: #94a3b8;
+        font-size: 0.95rem;
+        max-width: 580px;
+        margin: 0 auto;
+        line-height: 1.5;
+    }
+
+    .error-body-content {
+        padding: 30px;
+    }
+
+    /* Причины */
+    .reasons-box {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        transition: all 0.2s ease;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+    }
+
+    .reasons-box h6 {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 10px;
+        font-size: 0.92rem;
+    }
+
+    .reasons-list {
+        list-style: none;
+        padding-left: 0;
+        margin-bottom: 0;
+        font-size: 0.88rem;
+        color: #475569;
+    }
+
+    .reasons-list li {
+        position: relative;
+        padding-left: 24px;
+        margin-bottom: 6px;
+        line-height: 1.45;
+    }
+
+    .reasons-list li:last-child {
+        margin-bottom: 0;
+    }
+
+    .reasons-list li::before {
+        content: '•';
+        position: absolute;
+        left: 8px;
+        color: #ef4444;
+        font-size: 1.2rem;
+        line-height: 1;
+        top: -1px;
+    }
+
+    /* Навигационные действия */
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    .action-btn-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        text-decoration: none;
         font-weight: 600;
+        font-size: 0.88rem;
+        transition: all 0.15s ease-in-out;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #1e293b;
     }
-    .nav-links a:hover {
+
+    .action-btn-link:hover {
         background: #f1f5f9;
-        transform: translateX(4px);
-        color: #0088cc;
+        color: #002b49;
+        border-color: #cbd5e1;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-    .nav-links i {
-        margin-right: 8px;
+
+    .action-btn-link.primary-action {
+        background: #002b49;
+        color: #ffffff;
+        border-color: #002b49;
+    }
+    .action-btn-link.primary-action:hover {
+        background: #00406d;
+        color: #ffffff;
+        border-color: #00406d;
+    }
+
+    .action-btn-link i {
+        font-size: 1.2rem;
+    }
+
+    /* Блок технических сведений */
+    .tech-details-box {
+        background: #0f172a;
+        color: #94a3b8;
+        border-radius: 10px;
+        padding: 14px 18px;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .tech-meta-item {
+        font-family: 'JetBrains Mono', Consolas, monospace;
+        color: #38bdf8;
+    }
+
+    .btn-copy-tech {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #f1f5f9;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .btn-copy-tech:hover {
+        background: #0284c7;
+        color: #ffffff;
+        border-color: #0284c7;
+    }
+
+    @media (max-width: 576px) {
+        .portal-error-card { border-radius: 12px; }
+        .error-body-content { padding: 20px 16px; }
+        .error-header-strip { padding: 24px 16px; }
+        .error-main-title { font-size: 1.3rem; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-    <div class="error-container">
-        <div class="error-card text-center">
-            <div>
-                <span class="error-code">403</span>
-                <i class="fas fa-lock error-icon"></i>
+<div class="portal-error-wrapper">
+    <div class="portal-error-card">
+        <!-- Шапка с фирменным стилем и бейджем -->
+        <div class="error-header-strip">
+            <div class="error-icon-bubble">
+                <i class="bx bx-shield-x"></i>
+            </div>
+            <span class="error-code-badge">Ошибка 403 // Forbidden</span>
+            <h1 class="error-main-title">Доступ ограничен</h1>
+            <p class="error-main-subtitle">
+                У вашей учетной записи недостаточно полномочий для просмотра данного раздела или выполнения этой операции.
+            </p>
+        </div>
+
+        <div class="error-body-content">
+            <!-- Возможные причины -->
+            <div class="reasons-box">
+                <h6><i class="bx bx-info-circle text-danger me-1"></i> Возможные причины:</h6>
+                <ul class="reasons-list">
+                    <li>Раздел предназначен для сотрудников определенных подразделений или штатных должностей;</li>
+                    <li>Действие требует подтвержденных прав суперадминистратора или согласования руководства;</li>
+                    <li>Срок действия сессии авторизации истек, либо требуется повторный вход в личный кабинет.</li>
+                </ul>
             </div>
 
-            <p class="error-text">
-                У вас отсутствуют права доступа к данному действию или разделу.
-            </p>
+            <!-- Рекомендуемые действия -->
+            <div class="actions-grid">
+                <a href="javascript:history.back()" class="action-btn-link primary-action">
+                    <i class="bx bx-arrow-back"></i>
+                    <span>Вернуться назад</span>
+                </a>
 
-            <hr class="my-4">
+                <a href="/" class="action-btn-link">
+                    <i class="bx bx-home-alt text-primary"></i>
+                    <span>Главная страница</span>
+                </a>
 
-            <div class="text-start">
-                <h6 class="font-weight-bold text-dark mb-3">Рекомендуемые действия:</h6>
-
-                <div class="nav-links">
-                    <a href="javascript:history.back()">
-                        <i class="fas fa-arrow-left text-primary"></i> Вернуться назад
+                {% if request.user.is_authenticated %}
+                    <a href="{% url 'customers_app:profile' request.user.pk %}" class="action-btn-link">
+                        <i class="bx bx-user-circle text-info"></i>
+                        <span>Мой профиль</span>
                     </a>
-                    
-                    {% if user.is_authenticated %}
-                        <a href="{% url 'customers_app:profile' user.pk %}">
-                            <i class="fas fa-stream text-primary"></i> Лента событий
-                        </a>
-
-                        <a href="{% url 'customers_app:staff' user.pk %}">
-                            <i class="fas fa-user text-primary"></i> Профиль пользователя
-                        </a>
-                    {% endif %}
-
-                    <a href="{% url 'library_app:help_list' %}">
-                        <i class="fas fa-question-circle text-primary"></i> База знаний и справка
+                {% else %}
+                    <a href="{% url 'customers_app:login' %}" class="action-btn-link">
+                        <i class="bx bx-log-in text-success"></i>
+                        <span>Войти в систему</span>
                     </a>
+                {% endif %}
+
+                <a href="{% url 'library_app:help_list' %}" class="action-btn-link">
+                    <i class="bx bx-help-circle text-warning"></i>
+                    <span>База знаний</span>
+                </a>
+            </div>
+
+            <!-- Техническая плашка для IT-отдела -->
+            <div class="tech-details-box">
+                <div>
+                    <span>Адрес: <span class="tech-meta-item" id="errPath">{{ request_path|default:request.path }}</span></span>
+                    <span class="ms-3 d-none d-sm-inline">Пользователь: <span class="tech-meta-item">{{ request.user.username|default:"Аноним" }}</span></span>
                 </div>
+                <button type="button" class="btn-copy-tech" id="btnCopyErrorInfo">
+                    <i class="bx bx-copy me-1"></i> Скопировать сведения
+                </button>
             </div>
         </div>
     </div>
+</div>
+
+<script>
+    (function() {
+        var btn = document.getElementById('btnCopyErrorInfo');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                var path = document.getElementById('errPath') ? document.getElementById('errPath').textContent.trim() : window.location.pathname;
+                var info = 'Ошибка 403 Доступ ограничен\nПуть: ' + path + '\nПользователь: {{ request.user.username|default:"Аноним" }}\nВремя: ' + new Date().toLocaleString();
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(info).then(function() {
+                        btn.innerHTML = '<i class="bx bx-check me-1"></i> Скопировано!';
+                        setTimeout(function() { btn.innerHTML = '<i class="bx bx-copy me-1"></i> Скопировать сведения'; }, 2500);
+                    });
+                }
+            });
+        }
+    })();
+</script>
 {% endblock %}

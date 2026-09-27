@@ -16,6 +16,7 @@ import library_app.views as library_views
 import administration_app.views as administration_views
 from customers_app import views_org_structure
 
+handler400 = library_views.show_400
 handler403 = library_views.show_403
 handler404 = library_views.show_404
 handler500 = library_views.show_500
