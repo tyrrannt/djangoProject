@@ -353,7 +353,7 @@
                         <button type="button" class="quick-cmd-btn" data-cmd="python manage.py migrate">Миграции</button>
                         <button type="button" class="quick-cmd-btn" data-cmd="pkill gunicorn">Рестарт Gunicorn</button>
                         <button type="button" class="quick-cmd-btn" data-cmd="sudo systemctl restart daphne.service">Рестарт Daphne</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="pkill gunicorn; sudo systemctl restart daphne.service">Рестарт всего</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="pkill gunicorn; sudo systemctl restart celery; sudo systemctl restart daphne.service">Рестарт всего</button>
                     </div>
 
                     <div class="text-muted small d-none d-lg-block">
