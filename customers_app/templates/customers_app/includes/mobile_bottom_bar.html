@@ -20,7 +20,7 @@
 ============================================ -->
 <nav class="mobile-bottom-bar" aria-label="Мобильная навигация">
     <!-- 1. Главная / Профиль (Доступно всем) -->
-    <a href="{% url 'customers_app:profile' request.user.pk %}"
+    <a href="{% if request.user.is_authenticated and request.user.pk %}{% url 'customers_app:profile' request.user.pk %}{% else %}/{% endif %}"
        class="mobile-nav-item {% if request.resolver_match.view_name == 'customers_app:profile' %}active{% endif %}"
        aria-label="Главная страница профиля">
         <i class="bx bx-home-alt"></i>
@@ -285,7 +285,7 @@
                 {% endif %}
 
                 <!-- Мой профиль -->
-                <a href="{% url 'customers_app:profile' user.pk %}" class="quick-action-btn mb-2">
+                <a href="{% if user.is_authenticated and user.pk %}{% url 'customers_app:profile' user.pk %}{% else %}/{% endif %}" class="quick-action-btn mb-2">
                     <div class="quick-action-icon bg-primary text-white">
                         <i class="bx bx-user-circle"></i>
                     </div>
@@ -318,7 +318,7 @@
                 </a>
 
                 <!-- Личные данные -->
-                <a href="{% url 'customers_app:staff' user.pk %}" class="quick-action-btn mb-2">
+                <a href="{% if user.is_authenticated and user.pk %}{% url 'customers_app:staff' user.pk %}{% else %}/{% endif %}" class="quick-action-btn mb-2">
                     <div class="quick-action-icon bg-secondary text-white">
                         <i class="bx bx-id-card"></i>
                     </div>
@@ -329,7 +329,7 @@
                 </a>
 
                 <!-- Изменить аватар -->
-                <a href="{% url 'customers_app:avatar_update' user.pk %}" class="quick-action-btn mb-2">
+                <a href="{% if user.is_authenticated and user.pk %}{% url 'customers_app:avatar_update' user.pk %}{% else %}/{% endif %}" class="quick-action-btn mb-2">
                     <div class="quick-action-icon bg-secondary text-white">
                         <i class="bx bx-image"></i>
                     </div>

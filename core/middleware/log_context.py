@@ -20,7 +20,7 @@ class LogContextMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        set_current_user(request.user)
+        set_current_user(getattr(request, "user", None))
         response = self.get_response(request)
         set_current_user(None)
         return response

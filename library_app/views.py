@@ -5,8 +5,15 @@ from typing import Any, Optional, Dict
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
-from django.http import JsonResponse, HttpResponse, HttpRequest
+from django.http import (
+    JsonResponse,
+    HttpResponse,
+    HttpRequest,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    HttpResponseServerError,
+    HttpResponseBadRequest,
+)
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
@@ -179,7 +186,20 @@ def show_500(request: HttpRequest, exception: Any = None) -> HttpResponse:
         "incident_id": incident_id,
         "request_path": getattr(request, "path", ""),
     }
-    return render(request, "library_app/500.html", context, status=500)
+    try:
+        from django.template.loader import render_to_string
+        content = render_to_string("library_app/500.html", context)
+        return HttpResponseServerError(content)
+    except Exception as render_exc:
+        logger.critical(f"Failed to render 500 template: {render_exc}")
+        return HttpResponseServerError(
+            f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>500 Ошибка сервера</title></head>"
+            f"<body style='font-family:sans-serif;text-align:center;padding:50px;background:#f8fafc;color:#002b49;'>"
+            f"<h1>500 Внутренняя ошибка сервера</h1>"
+            f"<p>Код инцидента: <b>{incident_id}</b></p>"
+            f"<p>Технические службы уведомлены о сбое.</p></body></html>",
+            content_type="text/html; charset=utf-8",
+        )
 
 
 def show_503(request: HttpRequest, exception: Any = None) -> HttpResponse:
@@ -195,7 +215,7 @@ def show_503(request: HttpRequest, exception: Any = None) -> HttpResponse:
         HttpResponse: Срендеренная страница ошибки со статусом 503.
     """
     logger.info(
-        f"503 Service Unavailable: {request.path} | User: {getattr(request, 'user', 'Anonymous')}"
+        f"503 Service Unavailable: {getattr(request, 'path', '')} | User: {getattr(request, 'user', 'Anonymous')}"
     )
     context = {
         "title": "503 Техническое обслуживание",
@@ -205,7 +225,15 @@ def show_503(request: HttpRequest, exception: Any = None) -> HttpResponse:
         "error_description": "На портале проводятся плановые регламентные работы или обновление системных компонентов. Доступ будет автоматически восстановлен через несколько минут.",
         "request_path": getattr(request, "path", ""),
     }
-    return render(request, "library_app/503.html", context, status=503)
+    try:
+        from django.template.loader import render_to_string
+        content = render_to_string("library_app/503.html", context)
+        response = HttpResponse(content, status=503)
+        response["Retry-After"] = "30"
+        return response
+    except Exception as render_exc:
+        logger.critical(f"Failed to render 503 template: {render_exc}")
+        return HttpResponse("<h1>503 Техническое обслуживание</h1>", status=503)
 
 
 class HelpList(LoginRequiredMixin, ListView):
