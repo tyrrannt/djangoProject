@@ -292,5 +292,80 @@ class UserAccessServiceTestCase(TestCase):
         self.assertIn("штатном расписании", msg)
 
 
+class WebTerminalTestCase(TestCase):
+    """Набор тестов для проверки безопасности, контекста и моделей веб-терминала."""
+
+    def setUp(self) -> None:
+        """Создает тестовых пользователей: обычного и суперадминистратора."""
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.regular_user = User.objects.create_user(
+            username="regular_test_user",
+            email="regular@barkol.ru",
+            password="testpassword123",
+            first_name="Обычный",
+            last_name="Пользователь",
+        )
+        self.super_user = User.objects.create_superuser(
+            username="super_test_user",
+            email="superuser@barkol.ru",
+            password="superpassword123",
+            first_name="Супер",
+            last_name="Администратор",
+        )
+
+    def test_web_terminal_requires_login(self) -> None:
+        """Проверяет редирект анонимного пользователя на страницу авторизации."""
+        from django.urls import reverse
+        url = reverse("administration_app:web_terminal")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_web_terminal_forbidden_for_regular_user(self) -> None:
+        """Проверяет запрет доступа (403 PermissionDenied) для обычного пользователя."""
+        from django.urls import reverse
+        url = reverse("administration_app:web_terminal")
+        self.client.force_login(self.regular_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_web_terminal_accessible_for_superuser(self) -> None:
+        """Проверяет успешный доступ суперадминистратора и корректность контекста."""
+        from django.urls import reverse
+        url = reverse("administration_app:web_terminal")
+        self.client.force_login(self.super_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("production_dir", response.context)
+        self.assertEqual(response.context["production_dir"], "/home/proxmox/djangoProject")
+        self.assertIn("tmux_available", response.context)
+        self.assertIn("recent_sessions", response.context)
+        self.assertTemplateUsed(response, "administration_app/web_terminal.html")
+
+    def test_web_terminal_session_model_and_duration(self) -> None:
+        """Проверяет создание модели WebTerminalSession и расчет ее длительности."""
+        from administration_app.models import WebTerminalSession
+        from django.utils import timezone
+        import datetime
+
+        start = timezone.now() - datetime.timedelta(seconds=125)
+        end = timezone.now()
+        session = WebTerminalSession.objects.create(
+            user=self.super_user,
+            ip_address="192.168.1.100",
+            user_agent="Mozilla/5.0 Test",
+            tab_id="tab_2",
+            is_tmux=True,
+            started_at=start,
+            ended_at=end,
+        )
+        session.calculate_duration()
+        session.save()
+
+        self.assertEqual(session.duration_seconds, 125)
+        self.assertIn("super_test_user [tmux]", str(session))
+
+
+
 
 

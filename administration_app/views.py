@@ -1430,11 +1430,13 @@ def ssl_cert_demo_api(request):
 
 
 @login_required
-def web_terminal_view(request):
+def web_terminal_view(request: HttpRequest) -> HttpResponse:
     """Отображает интерактивный веб-терминал для прямого управления сервером.
 
-    Предоставляет авторизованному суперадминистратору полноэкранную консоль bash
-    на базе xterm.js с двунаправленной передачей команд через WebSocket (PTY).
+    Предоставляет авторизованному суперадминистратору полноэкранную консоль bash / tmux
+    на базе xterm.js с двунаправленной передачей команд через WebSocket (PTY),
+    поддержкой вкладок, устойчивых сессий tmux, монитором сетевой задержки,
+    безопасным режимом подтверждения опасных команд и историей сессий.
     Доступ строго ограничен пользователями с флагом is_superuser=True.
 
     Args:
@@ -1455,16 +1457,30 @@ def web_terminal_view(request):
 
     import socket
     import platform
+    import shutil
+    from django.conf import settings
+    from administration_app.models import WebTerminalSession
+
     server_info = {
         'hostname': socket.gethostname(),
         'os': platform.system(),
         'release': platform.release(),
         'machine': platform.machine(),
+        'python_version': platform.python_version(),
     }
+
+    recent_sessions = list(
+        WebTerminalSession.objects.select_related('user')
+        .order_by('-started_at')[:10]
+    )
 
     return render(request, 'administration_app/web_terminal.html', {
         'title': 'Веб-терминал управления сервером',
         'server_info': server_info,
+        'production_dir': '/home/proxmox/djangoProject',
+        'base_dir': str(settings.BASE_DIR),
+        'tmux_available': bool(shutil.which('tmux')),
+        'recent_sessions': recent_sessions,
     })
 
 

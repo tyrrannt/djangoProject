@@ -40,17 +40,17 @@ def check_session_cookie_secure(request):
 
 def show_403(request, exception=None):
     logger.warning(f"403 Forbidden: {request.path} | User: {request.user} | Exception: {exception}")
-    return render(request, "library_app/403.html")
+    return render(request, "library_app/403.html", status=403)
 
 
 def show_404(request, exception=None):
     logger.warning(f"404 Not Found: {request.path} | User: {request.user} | Exception: {exception}")
-    return render(request, "library_app/404.html")
+    return render(request, "library_app/404.html", status=404)
 
 
 def show_500(request, exception=None):
     logger.error(f"500 Internal Server Error: {request.path} | User: {request.user} | Exception: {exception}")
-    return render(request, "library_app/500.html")
+    return render(request, "library_app/500.html", status=500)
 
 
 class HelpList(LoginRequiredMixin, ListView):

@@ -3,6 +3,7 @@ import datetime
 import pathlib
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -242,3 +243,100 @@ class TemplateDocument(models.Model):
         return (self.start_date <= now and
                 (self.end_date is None or self.end_date > now) and
                 self.is_active)
+
+
+class WebTerminalSession(models.Model):
+    """Модель аудита интерактивных сессий веб-терминала управления сервером.
+
+    Фиксирует факты подключения суперадминистраторов к PTY (bash / tmux),
+    время активности, длительность работы и сетевой адрес клиента для обеспечения
+    информационной безопасности и сквозного аудита действий на сервере.
+
+    Attributes:
+        user (models.ForeignKey): Аутентифицированный пользователь (суперадминистратор).
+        ip_address (models.CharField): IP-адрес клиентского подключения.
+        user_agent (models.CharField): Клиентский браузер (User-Agent).
+        tab_id (models.CharField): Идентификатор вкладки терминала.
+        is_tmux (models.BooleanField): Флаг использования устойчивой сессии tmux.
+        started_at (models.DateTimeField): Время открытия PTY-сессии.
+        ended_at (models.DateTimeField): Время закрытия сессии.
+        duration_seconds (models.IntegerField): Длительность сессии в секундах.
+        close_code (models.IntegerField): WebSocket код закрытия соединения.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Пользователь",
+        related_name="terminal_sessions",
+    )
+    ip_address = models.CharField(
+        max_length=64,
+        default="127.0.0.1",
+        verbose_name="IP-адрес клиента",
+    )
+    user_agent = models.CharField(
+        max_length=512,
+        blank=True,
+        default="",
+        verbose_name="User-Agent",
+    )
+    tab_id = models.CharField(
+        max_length=32,
+        default="tab_1",
+        verbose_name="Идентификатор вкладки",
+    )
+    is_tmux = models.BooleanField(
+        default=False,
+        verbose_name="Сессия tmux",
+        help_text="Использовалась ли устойчивая сессия tmux",
+    )
+    started_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Время начала",
+        db_index=True,
+    )
+    ended_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Время завершения",
+    )
+    duration_seconds = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Длительность (сек)",
+    )
+    close_code = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Код закрытия",
+    )
+
+    class Meta:
+        verbose_name = "Сессия веб-терминала"
+        verbose_name_plural = "Сессии веб-терминала"
+        ordering = ["-started_at"]
+        indexes = [
+            models.Index(fields=["-started_at"]),
+            models.Index(fields=["user", "-started_at"]),
+        ]
+
+    def __str__(self) -> str:
+        """Строковое представление сессии терминала.
+
+        Returns:
+            str: Информация о пользователе и времени подключения.
+        """
+        username = self.user.username if self.user else "Anonymous"
+        start_str = self.started_at.strftime("%Y-%m-%d %H:%M:%S")
+        mode = "tmux" if self.is_tmux else "bash"
+        return f"{username} [{mode}] ({start_str})"
+
+    def calculate_duration(self) -> None:
+        """Вычисляет и сохраняет длительность сессии на основе started_at и ended_at."""
+        if self.started_at and self.ended_at:
+            delta = self.ended_at - self.started_at
+            self.duration_seconds = max(0, int(delta.total_seconds()))
+

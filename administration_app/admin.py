@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import PortalProperty, MainMenu, Notification, TemplateDocument
+from .models import PortalProperty, MainMenu, Notification, TemplateDocument, WebTerminalSession
 from unfold.admin import ModelAdmin
+from unfold.decorators import display
 
 
 # Register your models here.
@@ -78,3 +79,67 @@ class TemplateDocumentAdmin(ModelAdmin):
         self.message_user(request, f"{queryset.count()} шаблон(ов) деактивировано")
 
     deactivate_templates.short_description = "Деактивировать выбранные шаблоны"
+
+
+@admin.register(WebTerminalSession)
+class WebTerminalSessionAdmin(ModelAdmin):
+    """Административное представление сессий веб-терминала управления сервером в Django Unfold."""
+
+    list_display = [
+        "pk",
+        "user",
+        "ip_address",
+        "tab_id",
+        "mode_badge",
+        "started_at",
+        "ended_at",
+        "duration_display",
+        "close_code",
+    ]
+    list_filter = ["is_tmux", "started_at", "user"]
+    search_fields = ["user__username", "ip_address", "user_agent", "tab_id"]
+    readonly_fields = [
+        "user",
+        "ip_address",
+        "user_agent",
+        "tab_id",
+        "is_tmux",
+        "started_at",
+        "ended_at",
+        "duration_seconds",
+        "close_code",
+    ]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Режим", label={"tmux": "success", "bash": "info"})
+    def mode_badge(self, obj: WebTerminalSession) -> str:
+        """Возвращает текстовый идентификатор режима для стилизации бейджа.
+
+        Args:
+            obj (WebTerminalSession): Экземпляр сессии веб-терминала.
+
+        Returns:
+            str: "tmux" или "bash".
+        """
+        return "tmux" if obj.is_tmux else "bash"
+
+    @display(description="Длительность")
+    def duration_display(self, obj: WebTerminalSession) -> str:
+        """Форматирует длительность сессии в человекочитаемом виде.
+
+        Args:
+            obj (WebTerminalSession): Экземпляр сессии веб-терминала.
+
+        Returns:
+            str: Строка вида "12 мин 34 сек" или "В процессе".
+        """
+        if obj.duration_seconds is None:
+            if obj.ended_at is None:
+                return "В процессе..."
+            return "—"
+        minutes = obj.duration_seconds // 60
+        seconds = obj.duration_seconds % 60
+        if minutes > 0:
+            return f"{minutes} мин {seconds} сек"
+        return f"{seconds} сек"
