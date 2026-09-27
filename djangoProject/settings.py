@@ -218,8 +218,10 @@ STATIC_URL = "/static/"
 # STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
 
 STATICFILES_DIRS = [
-    pathlib.Path.joinpath(BASE_DIR, "static_dev"),
-    pathlib.Path.joinpath(BASE_DIR, 'static'),
+    p for p in [
+        pathlib.Path.joinpath(BASE_DIR, "static_dev"),
+        pathlib.Path.joinpath(BASE_DIR, 'static'),
+    ] if p.is_dir()
 ]
 
 MEDIA_URL = "/media/"
@@ -493,15 +495,19 @@ WEBHOOK_SSL_PRIVATE = pathlib.Path.joinpath(
 # Доверяем прокси-серверу NPM
 TRUSTED_PROXIES = config("TRUSTED_PROXIES")
 
-# Устанавливаем SESSION_COOKIE_SECURE в True, чтобы сессионные куки передавались только по HTTPS
-SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=False, cast=bool)
-
-# Устанавливаем SESSION_COOKIE_HTTPONLY в True, чтобы куки были доступны только через HTTP
-SESSION_COOKIE_HTTPONLY = config("SESSION_COOKIE_HTTPONLY", default=False, cast=bool)
-
-# Устанавливаем CSRF_COOKIE_SECURE в True, чтобы CSRF-токены передавались только по HTTPS
-CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=False, cast=bool)
+# Безопасность кук и сессий (Secure Cookies & Session Protection)
+SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=not DEBUG, cast=bool)
+SESSION_COOKIE_HTTPONLY = config("SESSION_COOKIE_HTTPONLY", default=True, cast=bool)
+CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=not DEBUG, cast=bool)
+CSRF_COOKIE_HTTPONLY = config("CSRF_COOKIE_HTTPONLY", default=False, cast=bool)
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_FAILURE_VIEW = "library_app.views.csrf_failure"
+
+# Защита от MIME-sniffing, XSS и кликджекинга
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "SAMEORIGIN"
+SECURE_REFERRER_POLICY = "same-origin"
 
 # Перенаправляем все запросы на HTTPS
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)
