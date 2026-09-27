@@ -43,7 +43,6 @@ from customers_app.models import (
     HistoryChange,
     Affiliation,
 )
-from djangoProject import settings
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL, DEBUG
 from library_app.models import DocumentForm
 from telegram_app.models import TelegramNotification, ChatID
@@ -1362,6 +1361,22 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
 
     def __init__(self, *args, **kwargs):
         super(ApprovalOficialMemoProcess, self).__init__(*args, **kwargs)
+        self._save_initial_state()
+
+    def _save_initial_state(self):
+        """Фиксирует снимок ключевых статусов бизнес-процесса для отслеживания перехода состояний."""
+        self._initial_state = {
+            "submit_for_approval": bool(self.submit_for_approval),
+            "document_not_agreed": bool(self.document_not_agreed),
+            "location_selected": bool(self.location_selected),
+            "process_accepted": bool(self.process_accepted),
+            "originals_received": bool(self.originals_received),
+            "date_receipt_original": self.date_receipt_original,
+            "date_transfer_accounting": self.date_transfer_accounting,
+            "accepted_accounting": bool(self.accepted_accounting),
+            "cancellation": bool(self.cancellation),
+            "email_send": bool(self.email_send),
+        }
 
     def __str__(self):
         return str(self.document)
@@ -1407,7 +1422,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     def get_absolute_url():
         return reverse("hrdepartment_app:bpmemo_list")
 
-    def send_mail(self, title: str, trigger: int = 0) -> tuple[bool, str]:
+    def send_mail(self, title: str, trigger: int = 0, force: bool = True) -> tuple[bool, str]:
         """Отправляет служебные почтовые уведомления по процессу согласования поездки.
 
         Делегирует исполнение в MemoNotificationService с асинхронной отправкой через Celery,
@@ -1420,6 +1435,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 1 — повторное уведомление командируемому сотруднику,
                 2 — письмо исполнителю,
                 3 — письмо на общую почту летной службы. По умолчанию 0.
+            force (bool, optional): Принудительная отправка в обход дедупликации. Defaults to True.
 
         Returns:
             tuple[bool, str]: Кортеж (успех_отправки, адрес_получателя_или_текст_ошибки).
@@ -1431,6 +1447,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 self.pk,
                 "CANCELLED",
                 extra_context={"reason": str(self.reason_cancellation or title)},
+                force=force,
             )
             recipient = self.document.person.email if (self.document and self.document.person) else "все участники"
             return True, recipient
@@ -1439,7 +1456,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             if not self.process_accepted:
                 return False, "Приказ по служебной поездке еще не издан."
 
-            MemoNotificationService.dispatch_event(self.pk, "ORDER_ISSUED")
+            MemoNotificationService.dispatch_event(self.pk, "ORDER_ISSUED", force=force)
             mail_to = ""
             if trigger == 2:
                 mail_to = self.person_executor.email if self.person_executor else ""
@@ -1530,13 +1547,14 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, raw=False, **kwa
     """Сигнал пост-сохранения процесса служебной записки.
 
     Обновляет текстовый статус согласования и асинхронно диспетчеризирует уведомления
-    через MemoNotificationService без блокировки веб-потока.
+    через MemoNotificationService без блокировки веб-потока исключительно при смене
+    соответствующих статусов бизнес-процесса.
 
     Args:
         sender: Класс модели ApprovalOficialMemoProcess.
-        instance: Экземпляр сохраняемой записи.
+        instance (ApprovalOficialMemoProcess): Экземпляр сохраняемой записи.
         raw (bool): Признак загрузки фикстур (loaddata).
-        **kwargs: Дополнительные аргументы сигнала.
+        **kwargs: Дополнительные аргументы сигнала (created, update_fields и др.).
     """
     if raw or not instance.pk:
         return
@@ -1545,18 +1563,63 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, raw=False, **kwa
 
     from hrdepartment_app.services.memo_notification_service import MemoNotificationService
 
-    if instance.cancellation:
+    init = getattr(instance, "_initial_state", {})
+    created = kwargs.get("created", False)
+
+    # Определение фактических переходов состояний (State Transitions)
+    became_cancelled = instance.cancellation and (created or not init.get("cancellation"))
+    became_completed = instance.accepted_accounting and (created or not init.get("accepted_accounting"))
+    became_transferred_accounting = (
+        bool(instance.date_transfer_accounting)
+        and not instance.accepted_accounting
+        and (created or instance.date_transfer_accounting != init.get("date_transfer_accounting"))
+    )
+    became_originals_received = (
+        instance.originals_received
+        and bool(instance.date_receipt_original)
+        and not instance.date_transfer_accounting
+        and (
+            created
+            or not init.get("originals_received")
+            or instance.date_receipt_original != init.get("date_receipt_original")
+        )
+    )
+    became_order_issued = instance.process_accepted and not instance.email_send
+    became_location_set = (
+        instance.location_selected
+        and not instance.process_accepted
+        and (created or not init.get("location_selected"))
+    )
+    became_approved = (
+        instance.document_not_agreed
+        and not instance.location_selected
+        and (created or not init.get("document_not_agreed"))
+    )
+    became_submitted = (
+        instance.submit_for_approval
+        and not instance.document_not_agreed
+        and (created or not init.get("submit_for_approval"))
+    )
+
+    if became_cancelled:
         MemoNotificationService.dispatch_event(instance.pk, "CANCELLED")
-    elif instance.accepted_accounting:
+    elif became_completed:
         MemoNotificationService.dispatch_event(instance.pk, "COMPLETED")
-    elif instance.process_accepted and not instance.email_send:
+    elif became_transferred_accounting:
+        MemoNotificationService.dispatch_event(instance.pk, "TRANSFERRED_TO_ACCOUNTING")
+    elif became_originals_received:
+        MemoNotificationService.dispatch_event(instance.pk, "ORIGINALS_RECEIVED")
+    elif became_order_issued:
         MemoNotificationService.dispatch_event(instance.pk, "ORDER_ISSUED")
-    elif instance.location_selected and not instance.process_accepted:
+    elif became_location_set:
         MemoNotificationService.dispatch_event(instance.pk, "LOCATION_SET")
-    elif instance.document_not_agreed and not instance.location_selected:
+    elif became_approved:
         MemoNotificationService.dispatch_event(instance.pk, "APPROVED")
-    elif instance.submit_for_approval and not instance.document_not_agreed:
+    elif became_submitted:
         MemoNotificationService.dispatch_event(instance.pk, "SUBMITTED")
+
+    # Обновляем снимок состояния после обработки
+    instance._save_initial_state()
 
 
 

@@ -1489,14 +1489,14 @@ class ApprovalOficialMemoProcessUpdate(
                 return redirect("hrdepartment_app:bpmemo_update", obj_item.pk)
 
             if send_action == "0":
-                success, info = obj_item.send_mail(title="Повторное уведомление", trigger=1)
+                success, info = obj_item.send_mail(title="Повторное уведомление", trigger=1, force=True)
                 action_name = "Повторное уведомление"
             else:
                 if send_action == "2":
-                    success, info = obj_item.send_mail(title="Письмо на общую почту", trigger=3)
+                    success, info = obj_item.send_mail(title="Письмо на общую почту", trigger=3, force=True)
                     action_name = "Письмо на общую почту"
                 else:
-                    success, info = obj_item.send_mail(title="Письмо исполнителю", trigger=2)
+                    success, info = obj_item.send_mail(title="Письмо исполнителю", trigger=2, force=True)
                     action_name = "Письмо исполнителю"
 
             if success:
@@ -1548,8 +1548,6 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
                         cancellation=True,
                         reason_cancellation=obj_item.reason_cancellation,
                     )
-                    print("Отменен")
-                obj_item.send_mail(title="Уведомление об отмене")
             except Exception as _ex:
                 logger.error(f"Ошибка при отмене БП {_ex}")
 
