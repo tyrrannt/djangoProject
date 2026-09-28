@@ -240,7 +240,8 @@ class MemoNotificationServiceTests(SimpleTestCase):
         mock_process.order.document_date = datetime.date(2026, 9, 28)
 
         # 1. Проверяем успешную конвертацию в PDF
-        with patch("openpyxl.load_workbook") as mock_wb, \
+        with patch.object(MemoNotificationService, "_find_soffice_binary", return_value="/usr/bin/soffice"), \
+             patch("openpyxl.load_workbook") as mock_wb, \
              patch("pathlib.Path.exists", return_value=True), \
              patch("msoffice2pdf.convert", return_value="/media/test.pdf") as mock_conv, \
              patch("os.path.exists", return_value=True):
@@ -253,7 +254,8 @@ class MemoNotificationServiceTests(SimpleTestCase):
             self.assertTrue(mock_conv.call_args[1]["output_dir"].endswith("media"))
 
         # 2. Проверяем безопасный откат на XLSX при сбое конвертера
-        with patch("openpyxl.load_workbook") as mock_wb, \
+        with patch.object(MemoNotificationService, "_find_soffice_binary", return_value="/usr/bin/soffice"), \
+             patch("openpyxl.load_workbook") as mock_wb, \
              patch("pathlib.Path.exists", return_value=True), \
              patch("msoffice2pdf.convert", side_effect=Exception("Converter error")) as mock_conv:
             wb_instance = MagicMock()

@@ -11,6 +11,7 @@ import datetime
 import logging
 import os
 import pathlib
+import shutil
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -699,6 +700,39 @@ class MemoNotificationService:
     # -------------------------------------------------------------------------
 
     @classmethod
+    def _find_soffice_binary(cls) -> Optional[str]:
+        """Определяет путь к исполняемому файлу LibreOffice (soffice или libreoffice).
+
+        Выполняет поиск в переменной PATH, а также в стандартных системных директориях
+        Linux (/usr/bin, /usr/local/bin, /snap/bin, /usr/lib/libreoffice/program и др.).
+
+        Returns:
+            Optional[str]: Абсолютный путь к исполняемому файлу или None, если он не найден.
+        """
+        for name in ("soffice", "libreoffice"):
+            bin_path = shutil.which(name)
+            if bin_path:
+                return bin_path
+
+        candidate_paths = [
+            "/usr/bin/soffice",
+            "/usr/bin/libreoffice",
+            "/usr/local/bin/soffice",
+            "/usr/local/bin/libreoffice",
+            "/snap/bin/soffice",
+            "/snap/bin/libreoffice",
+            "/var/lib/snapd/snap/bin/soffice",
+            "/var/lib/snapd/snap/bin/libreoffice",
+            "/usr/lib/libreoffice/program/soffice",
+            "/opt/libreoffice/program/soffice",
+        ]
+        for p in candidate_paths:
+            if os.path.isfile(p) and os.access(p, os.X_OK):
+                return p
+
+        return None
+
+    @classmethod
     def _generate_memo_documents(cls, process: ApprovalOficialMemoProcess) -> Tuple[Optional[str], Optional[str]]:
         """Генерирует файлы служебного задания (XLSX и PDF).
 
@@ -777,6 +811,22 @@ class MemoNotificationService:
         if memo_type_str in ("1", "2"):
             output_dir = str(pathlib.Path.joinpath(settings.BASE_DIR, "media"))
 
+            soffice_bin = cls._find_soffice_binary()
+            if not soffice_bin:
+                logger.warning(
+                    "[MemoNotify:DocGen] Исполняемый файл LibreOffice (soffice/libreoffice) не найден в PATH "
+                    "и стандартных каталогах системы. Будет отправлен оригинальный XLSX."
+                )
+                return source, None
+
+            # Если директория soffice отсутствует в PATH процесса Celery/systemd, добавляем ее,
+            # чтобы msoffice2pdf (вызывающий bare 'soffice') также гарантированно его находил
+            soffice_dir = os.path.dirname(soffice_bin)
+            current_paths = os.environ.get("PATH", "").split(os.pathsep)
+            if soffice_dir and soffice_dir not in current_paths:
+                os.environ["PATH"] = soffice_dir + os.pathsep + os.environ.get("PATH", "")
+                logger.info(f"[MemoNotify:DocGen] Каталог LibreOffice '{soffice_dir}' добавлен в PATH воркера.")
+
             # 1. Попытка конвертации через msoffice2pdf
             try:
                 from msoffice2pdf import convert
@@ -788,18 +838,18 @@ class MemoNotificationService:
             except Exception as conv_err:
                 logger.warning(
                     f"[MemoNotify:DocGen] Ошибка msoffice2pdf при конвертации {source}: {conv_err}. "
-                    f"Переход к прямому вызову soffice."
+                    f"Переход к прямому вызову {soffice_bin}."
                 )
                 file_name = None
 
-            # 2. Прямой вызов LibreOffice (soffice) с изолированным профилем пользователя для предотвращения конфликтов блокировок в Celery/systemd
+            # 2. Прямой вызов LibreOffice с изолированным профилем пользователя для предотвращения конфликтов блокировок в Celery/systemd
             if not file_name:
                 try:
                     import subprocess
                     expected_pdf = os.path.splitext(source)[0] + ".pdf"
                     profile_uri = "file:///tmp/libreoffice_calc_profile"
                     cmd = [
-                        "soffice",
+                        soffice_bin,
                         "--headless",
                         f"-env:UserInstallation={profile_uri}",
                         "--convert-to",
@@ -817,17 +867,17 @@ class MemoNotificationService:
                     )
                     if os.path.exists(expected_pdf):
                         file_name = expected_pdf
-                        logger.info(f"[MemoNotify:DocGen] PDF успешно создан через прямой вызов soffice: {file_name}")
+                        logger.info(f"[MemoNotify:DocGen] PDF успешно создан через прямой вызов {soffice_bin}: {file_name}")
                     else:
                         stdout_msg = proc.stdout.decode("utf-8", errors="replace").strip()
                         stderr_msg = proc.stderr.decode("utf-8", errors="replace").strip()
                         logger.warning(
-                            f"[MemoNotify:DocGen] Прямой вызов soffice не создал PDF-файл. "
+                            f"[MemoNotify:DocGen] Прямой вызов {soffice_bin} не создал PDF-файл. "
                             f"Код возврата: {proc.returncode}, stdout: '{stdout_msg}', stderr: '{stderr_msg}'. "
                             f"Будет отправлен XLSX."
                         )
                 except Exception as _ex_soffice:
-                    logger.warning(f"[MemoNotify:DocGen] Прямой вызов soffice завершился исключением: {_ex_soffice}")
+                    logger.warning(f"[MemoNotify:DocGen] Прямой вызов {soffice_bin} завершился исключением: {_ex_soffice}")
         else:
             logger.info(
                 f"[MemoNotify:DocGen] Пропуск конвертации в PDF: тип служебной записки '{memo_type_str}' "
