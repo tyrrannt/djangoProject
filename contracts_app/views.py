@@ -6,7 +6,7 @@ from decouple import config
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, FieldDoesNotExist
 from django.db.models import Q
 from django.http import QueryDict, JsonResponse, HttpResponse
 from django.shortcuts import HttpResponseRedirect, redirect, render
@@ -376,7 +376,7 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         if form.is_valid():
 
             # 1. Достаем старое состояние из БД (оставляем как у вас, это нужно!)
-            old_instance = Contract.objects.get(pk=self.object.pk).__dict__
+            old_instance = Contract.objects.get(pk=self.object.pk).__dict__.copy()
 
             # 2. Подготавливаем новые данные и сохраняем их
             refreshed_form = form.save(commit=False)
@@ -394,11 +394,17 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
             new_instance = refreshed_form.__dict__
 
             # создаем генератор списка
-            diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
+            diffkeys = [
+                k for k in old_instance
+                if not k.startswith('_') and old_instance.get(k) != new_instance.get(k)
+            ]
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
             for k in diffkeys:
-                if k != '_state':
-                    message += f'{Contract._meta.get_field(k).verbose_name}: <strike>{old_instance[k]}</strike> -> {new_instance[k]}\n'
+                try:
+                    field = Contract._meta.get_field(k)
+                except FieldDoesNotExist:
+                    continue
+                message += f'{field.verbose_name}: <strike>{old_instance[k]}</strike> -> {new_instance[k]}\n'
 
             # post_record = Posts(contract_number=Contract.objects.get(pk=self.object.pk), post_description=message,
             #                     responsible_person=DataBaseUser.objects.get(pk=self.request.user.pk))

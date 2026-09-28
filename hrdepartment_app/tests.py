@@ -189,3 +189,39 @@ class MemoNotificationServiceTests(SimpleTestCase):
         self.assertFalse(process._initial_state["location_selected"])
         self.assertFalse(process._initial_state["cancellation"])
 
+    def test_diffkeys_excludes_internal_attributes(self):
+        """Проверяет, что внутренние атрибуты (_initial_state, _state) исключаются из diffkeys."""
+        from hrdepartment_app.models import ApprovalOficialMemoProcess
+        from django.core.exceptions import FieldDoesNotExist
+
+        old_instance = {
+            "_state": object(),
+            "_initial_state": {"submit_for_approval": False},
+            "submit_for_approval": False,
+            "cancellation": False,
+        }
+        new_instance = {
+            "_state": object(),
+            "_initial_state": {"submit_for_approval": True},
+            "submit_for_approval": True,
+            "cancellation": False,
+        }
+
+        diffkeys = [
+            k for k in old_instance
+            if not k.startswith("_") and old_instance.get(k) != new_instance.get(k)
+        ]
+
+        self.assertEqual(diffkeys, ["submit_for_approval"])
+        self.assertNotIn("_initial_state", diffkeys)
+        self.assertNotIn("_state", diffkeys)
+
+        # Проверяем, что для всех ключей в diffkeys get_field завершается успешно
+        for k in diffkeys:
+            try:
+                field = ApprovalOficialMemoProcess._meta.get_field(k)
+                self.assertIsNotNone(field)
+            except FieldDoesNotExist:
+                self.fail(f"FieldDoesNotExist raised for field: {k}")
+
+

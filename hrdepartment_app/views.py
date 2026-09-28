@@ -26,6 +26,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Q, Count, Sum
 from django.db.models.functions import ExtractMonth, ExtractYear
 from django.forms import inlineformset_factory
@@ -623,7 +624,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 [item.name for item in object_item.place_production_activity.all()]
             )
 
-            old_instance = object_item.__dict__
+            old_instance = object_item.__dict__.copy()
             refresh_form = form.save(commit=False)
             if refresh_form.official_memo_type == "1":
                 refresh_form.document_extension = None
@@ -637,7 +638,10 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             )
             changed = False
             # создаем генератор списка
-            diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
+            diffkeys = [
+                k for k in old_instance
+                if not k.startswith("_") and old_instance.get(k) != new_instance.get(k)
+            ]
             message = (
                 "<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:<br>"
             )
@@ -650,39 +654,31 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 changed = True
             # Доработать замену СЗ
             for k in diffkeys:
-                # print(k)
-                if k != "_state":
-                    # if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
-                    #     critical_change = 1
-                    # if object_item._meta.get_field(k).verbose_name == 'Дата начала':
-                    #     if new_instance[k] < old_instance[k]:
-                    #         critical_change = 1
-                    #     else:
-                    #         warning_change = 1
-                    # if object_item._meta.get_field(k).verbose_name == 'Дата окончания':
-                    #     if (new_instance[k] != old_instance[k]) and (
-                    #             str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
-                    #         warning_change = 1
-                    if k == "person_id":
+                try:
+                    field = object_item._meta.get_field(k)
+                except FieldDoesNotExist:
+                    continue
+
+                if k == "person_id":
+                    critical_change = 1
+                if k == "period_from":
+                    if new_instance[k] < old_instance[k]:
                         critical_change = 1
-                    if k == "period_from":
-                        if new_instance[k] < old_instance[k]:
-                            critical_change = 1
-                        else:
-                            warning_change = 1
-                    if k == "period_for":
-                        if (new_instance[k] != old_instance[k]) and (
-                                str(object_item.purpose_trip)
-                                == "Прохождения курсов повышения квалификации (КПК)"
-                        ):
-                            critical_change = 1
+                    else:
                         warning_change = 1
-                    if k == "type_trip":
-                        warning_change = 1
-                    if k == "purpose_trip_id":
-                        warning_change = 1
-                    message += f"{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(k, old_instance)}</strike> -> {person_finder(k, new_instance)}<br>"
-                    changed = True
+                if k == "period_for":
+                    if (new_instance[k] != old_instance[k]) and (
+                            str(object_item.purpose_trip)
+                            == "Прохождения курсов повышения квалификации (КПК)"
+                    ):
+                        critical_change = 1
+                    warning_change = 1
+                if k == "type_trip":
+                    warning_change = 1
+                if k == "purpose_trip_id":
+                    warning_change = 1
+                message += f"{field.verbose_name}: <strike>{person_finder(k, old_instance)}</strike> -> {person_finder(k, new_instance)}<br>"
+                changed = True
             get_obj = self.get_object()
 
             if changed:
@@ -1278,23 +1274,28 @@ class ApprovalOficialMemoProcessUpdate(
                 "Сотрудник Бухгалтерии",
                 "Делопроизводитель",
             ]
-            if object_item._meta.get_field(k).verbose_name in person_list:
-                if instanse_obj[item]:
-                    return DataBaseUser.objects.get(pk=instanse_obj[item])
-                else:
-                    return "Пустое значение"
+            try:
+                field = object_item._meta.get_field(item)
+                if field.verbose_name in person_list:
+                    if instanse_obj.get(item):
+                        return DataBaseUser.objects.get(pk=instanse_obj[item])
+                    else:
+                        return "Пустое значение"
+            except (FieldDoesNotExist, DataBaseUser.DoesNotExist, TypeError, ValueError):
+                pass
+
+            val = instanse_obj.get(item)
+            if val is True:
+                return "Да"
+            elif val is False:
+                return "Нет"
             else:
-                if instanse_obj[item] == True:
-                    return "Да"
-                elif instanse_obj[item] == False:
-                    return "Нет"
-                else:
-                    return instanse_obj[item]
+                return val
 
         if form.is_valid():
             object_item = self.get_object()
             # в old_instance сохраняем старые значения записи
-            old_instance = object_item.__dict__
+            old_instance = object_item.__dict__.copy()
 
             # Сохраняем данные о бронировании ДО сохранения формы
             old_apartment_booking = None
@@ -1403,12 +1404,18 @@ class ApprovalOficialMemoProcessUpdate(
             new_instance = object_item.__dict__
             changed = False
             # создаем генератор списка
-            diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
+            diffkeys = [
+                k for k in old_instance
+                if not k.startswith("_") and old_instance.get(k) != new_instance.get(k)
+            ]
             message = "<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n"
             for k in diffkeys:
-                if k != "_state":
-                    message += f"{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n"
-                    changed = True
+                try:
+                    field = object_item._meta.get_field(k)
+                except FieldDoesNotExist:
+                    continue
+                message += f"{field.verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n"
+                changed = True
             if changed:
                 object_item.history_change.create(
                     author=self.request.user, body=message
@@ -4879,7 +4886,11 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 
                 for k in form.changed_data:
                     if old_dict[k] != new_dict[k]:
-                        message += f"{self.object._meta.get_field(k).verbose_name}: <strike>{old_dict[k]}</strike> -> {new_dict[k]}<br>"
+                        try:
+                            field = self.object._meta.get_field(k)
+                            message += f"{field.verbose_name}: <strike>{old_dict[k]}</strike> -> {new_dict[k]}<br>"
+                        except FieldDoesNotExist:
+                            continue
                 self.object.history_change.create(author=self.request.user, body=message)
         return super().form_valid(form)
 
