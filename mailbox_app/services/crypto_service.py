@@ -7,13 +7,19 @@ from django.conf import settings
 
 
 def _get_fernet_key() -> bytes:
-    """Генерирует 32-байтный URL-safe Base64 ключ Fernet на основе SECRET_KEY проекта.
+    """Генерирует 32-байтный URL-safe Base64 ключ Fernet.
+
+    Приоритет:
+    1. settings.MAILBOX_ENCRYPTION_KEY (выделенный ключ шифрования почтовых аккаунтов).
+    2. settings.SECRET_KEY (fallback для обратной совместимости).
 
     Returns:
         bytes: 32-байтный ключ в формате URL-safe base64.
     """
-    key_material = hashlib.sha256(settings.SECRET_KEY.encode('utf-8')).digest()
+    secret = getattr(settings, "MAILBOX_ENCRYPTION_KEY", None) or getattr(settings, "SECRET_KEY", "")
+    key_material = hashlib.sha256(secret.encode('utf-8')).digest()
     return base64.urlsafe_b64encode(key_material)
+
 
 
 def encrypt_password(raw_password: str) -> str:
