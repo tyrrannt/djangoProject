@@ -43,6 +43,7 @@ from customers_app.models import (
     HistoryChange,
     Affiliation,
 )
+from djangoProject import settings
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL, DEBUG
 from library_app.models import DocumentForm
 from telegram_app.models import TelegramNotification, ChatID

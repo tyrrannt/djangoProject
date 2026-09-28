@@ -224,4 +224,43 @@ class MemoNotificationServiceTests(SimpleTestCase):
             except FieldDoesNotExist:
                 self.fail(f"FieldDoesNotExist raised for field: {k}")
 
+    def test_generate_memo_documents_pdf_conversion_and_fallback(self):
+        """Проверяет вызов msoffice2pdf.convert в _generate_memo_documents и безопасный fallback на XLSX."""
+        import datetime
+        from unittest.mock import MagicMock, patch
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+
+        mock_process = MagicMock()
+        mock_process.document.official_memo_type = "1"
+        mock_process.document.type_trip = "1"
+        mock_process.document.period_from = datetime.date(2026, 9, 28)
+        mock_process.document.period_for = datetime.date(2026, 9, 30)
+        mock_process.document.place_production_activity.all.return_value = []
+        mock_process.order.document_number = "123"
+        mock_process.order.document_date = datetime.date(2026, 9, 28)
+
+        # 1. Проверяем успешную конвертацию в PDF
+        with patch("openpyxl.load_workbook") as mock_wb, \
+             patch("pathlib.Path.exists", return_value=True), \
+             patch("msoffice2pdf.convert", return_value="/media/test.pdf") as mock_conv, \
+             patch("os.path.exists", return_value=True):
+            wb_instance = MagicMock()
+            mock_wb.return_value = wb_instance
+            xlsx, pdf = MemoNotificationService._generate_memo_documents(mock_process)
+            self.assertEqual(pdf, "/media/test.pdf")
+            self.assertTrue(mock_conv.called)
+            # Проверяем, что output_dir указывает на media
+            self.assertTrue(mock_conv.call_args[1]["output_dir"].endswith("media"))
+
+        # 2. Проверяем безопасный откат на XLSX при сбое конвертера
+        with patch("openpyxl.load_workbook") as mock_wb, \
+             patch("pathlib.Path.exists", return_value=True), \
+             patch("msoffice2pdf.convert", side_effect=Exception("Converter error")) as mock_conv:
+            wb_instance = MagicMock()
+            mock_wb.return_value = wb_instance
+            xlsx, pdf = MemoNotificationService._generate_memo_documents(mock_process)
+            self.assertIsNotNone(xlsx)
+            self.assertIsNone(pdf)
+
+
 

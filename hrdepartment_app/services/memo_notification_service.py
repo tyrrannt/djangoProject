@@ -695,7 +695,10 @@ class MemoNotificationService:
 
     @classmethod
     def _generate_memo_documents(cls, process: ApprovalOficialMemoProcess) -> Tuple[Optional[str], Optional[str]]:
-        """Генерирует Excel и PDF файл служебного задания с уникальными временными именами.
+        """Генерирует файлы служебного задания (XLSX и PDF).
+
+        Args:
+            process (ApprovalOficialMemoProcess): Экземпляр бизнес-процесса служебной записки.
 
         Returns:
             Tuple[Optional[str], Optional[str]]: (путь_к_xlsx, путь_к_pdf).
@@ -704,12 +707,6 @@ class MemoNotificationService:
         person = doc.person
         order = process.order
 
-        temp_dir = pathlib.Path(settings.BASE_DIR) / "media" / "temp_memos"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-
-        unique_id = uuid.uuid4().hex[:8]
-        output_xlsx_path = temp_dir / f"sp_{process.pk}_{unique_id}.xlsx"
-
         # Определение шаблона
         division_affil_pk = getattr(
             getattr(getattr(person, "user_work_profile", None), "job", None),
@@ -717,17 +714,26 @@ class MemoNotificationService:
             None,
         )
         if division_affil_pk == 2:
-            template_name = "spk.xlsx" if doc.type_trip == "2" else "sp.xlsx"
+            filepath_name = "spk.xlsx" if doc.type_trip == "2" else "sp.xlsx"
         else:
-            template_name = "sp2k.xlsx" if doc.type_trip == "2" else "sp2.xlsx"
+            filepath_name = "sp2k.xlsx" if doc.type_trip == "2" else "sp2.xlsx"
 
-        template_path = pathlib.Path(settings.BASE_DIR) / "static" / "DocxTemplates" / template_name
-        if not template_path.exists():
-            logger.error("[MemoNotify:DocGen] Шаблон не найден: %s", template_path)
+        filepath = pathlib.Path.joinpath(
+            pathlib.Path.joinpath(settings.BASE_DIR, "static/DocxTemplates"),
+            filepath_name,
+        )
+        if not filepath.exists():
+            logger.error("[MemoNotify:DocGen] Шаблон не найден: %s", filepath)
             return None, None
 
+        source = str(
+            pathlib.Path.joinpath(
+                pathlib.Path.joinpath(settings.BASE_DIR, "media"), filepath_name
+            )
+        )
+
         try:
-            wb = load_workbook(template_path)
+            wb = load_workbook(filepath)
             ws = wb.active
             delta = doc.period_for - doc.period_from
             places = [p.name for p in doc.place_production_activity.all()]
@@ -754,32 +760,59 @@ class MemoNotificationService:
                 agreement_text = f"{agreement_job}, {format_name_initials(process.person_agreement)}"
             ws["A90"] = agreement_text
 
-            wb.save(output_xlsx_path)
+            wb.save(source)
             wb.close()
-            logger.info("[MemoNotify:DocGen] Сформирован XLSX: %s", output_xlsx_path)
+            logger.info("[MemoNotify:DocGen] Сформирован XLSX: %s", source)
         except Exception as xlsx_err:
             logger.error("[MemoNotify:DocGen] Ошибка генерации XLSX: %s", xlsx_err, exc_info=True)
             return None, None
 
-        # Конвертация в PDF через msoffice2pdf (с безопасным откатом)
-        output_pdf_path = None
-        try:
-            from msoffice2pdf import convert
-            pdf_result = convert(source=str(output_xlsx_path), output_dir=str(temp_dir), soft=0)
-            if pdf_result and os.path.exists(str(pdf_result)):
-                output_pdf_path = str(pdf_result)
-                logger.info("[MemoNotify:DocGen] Успешно сконвертирован в PDF: %s", output_pdf_path)
-        except Exception as conv_err:
-            logger.warning("[MemoNotify:DocGen] Ошибка конвертации в PDF: %s. Будет использован XLSX.", conv_err)
+        file_name = None
+        if doc.official_memo_type == "1":
+            # Конвертируем xlsx в pdf (с безопасным откатом к XLSX при сбое конвертера)
+            output_dir = str(pathlib.Path.joinpath(settings.BASE_DIR, "media"))
+            try:
+                from msoffice2pdf import convert
+                file_name = convert(source=source, output_dir=output_dir, soft=0)
+                if not file_name or not os.path.exists(str(file_name)):
+                    file_name = None
+            except Exception as conv_err:
+                logger.warning(
+                    f"Не удалось конвертировать {source} в PDF через msoffice2pdf: {conv_err}. "
+                    f"Будет отправлен оригинальный XLSX файл."
+                )
+                file_name = None
 
-        return str(output_xlsx_path), output_pdf_path
+            # Дополнительный fallback на случай локализованного вывода LibreOffice на Linux
+            if not file_name:
+                try:
+                    import subprocess
+                    expected_pdf = os.path.splitext(source)[0] + ".pdf"
+                    subprocess.run(
+                        ["soffice", "--headless", "--convert-to", "pdf", "--outdir", output_dir, source],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=30,
+                        check=False,
+                    )
+                    if os.path.exists(expected_pdf):
+                        file_name = expected_pdf
+                        logger.info("[MemoNotify:DocGen] PDF успешно создан через прямой вызов soffice: %s", file_name)
+                except Exception as _ex_soffice:
+                    logger.debug("[MemoNotify:DocGen] Прямой вызов soffice не удался: %s", _ex_soffice)
+
+        return source, file_name
 
     @staticmethod
     def _cleanup_temp_files(paths: List[Optional[str]]) -> None:
         """Безопасно удаляет временные файлы с диска."""
         for p in paths:
             if p and os.path.exists(p):
+                # Не удаляем файлы из папки шаблонов
+                if "DocxTemplates" in p:
+                    continue
                 try:
                     os.remove(p)
                 except OSError as cleanup_err:
                     logger.debug("[MemoNotify:Cleanup] Не удалось удалить временный файл %s: %s", p, cleanup_err)
+
