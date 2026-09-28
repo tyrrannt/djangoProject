@@ -31,7 +31,6 @@ if not config("DEVELOPMENT", default=False, cast=bool):
     # Устанавливаем SESSION_ENGINE на использование подписанных кук
     SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config("SECRET_KEY")
 SECRET_KEY_FALLBACKS = config("SECRET_KEY_FALLBACKS", default="", cast=lambda v: [s.strip() for s in v.split(",") if s.strip()])
 
@@ -443,6 +442,7 @@ CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TASK_TRACK_STARTED = True
+CELERY_RESULT_EXTENDED = True
 
 if not config("DEVELOPMENT", default=False, cast=bool):
     CACHES = {

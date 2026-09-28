@@ -1326,6 +1326,11 @@
         if (data.beat_schedule) {
             renderBeatSchedule(data.beat_schedule);
         }
+
+        // History & Errors
+        if (data.history) {
+            renderHistory(data.history);
+        }
     }
 
     function renderActiveTasks(tasks) {
@@ -1442,6 +1447,65 @@
                 '</div></div>';
         });
         container.html(html);
+    }
+
+    function renderHistory(history) {
+        var tbody = $('#historyTasksTbody');
+        if (!history || history.length === 0) {
+            tbody.html('<tr><td colspan="6" class="text-center py-5 text-muted">' +
+                '<i class="bx bx-history fs-1 d-block mb-2"></i>' +
+                'История выполнения задач пока пуста в Result Backend' +
+                '</td></tr>');
+            return;
+        }
+
+        var searchVal = $('#searchHistoryTasks').val().toLowerCase();
+        var statusVal = $('#filterHistoryStatus').val();
+        var html = '';
+
+        history.forEach(function(h) {
+            var searchData = (h.task_id + ' ' + (h.title || '') + ' ' + (h.task_name || '')).toLowerCase();
+            var matchesSearch = !searchVal || searchData.indexOf(searchVal) > -1;
+            var matchesStatus = (statusVal === 'ALL') || (h.status === statusVal);
+            var isVisible = matchesSearch && matchesStatus;
+            var displayStyle = isVisible ? '' : 'style="display:none;"';
+
+            var statusBadge = '<span class="badge bg-light text-dark border px-2 py-1">' + escapeHtml(h.status) + '</span>';
+            if (h.status === 'SUCCESS') {
+                statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bx bx-check-circle me-1"></i>SUCCESS</span>';
+            } else if (h.status === 'FAILURE') {
+                statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bx bx-x-circle me-1"></i>FAILURE</span>';
+            } else if (h.status === 'REVOKED') {
+                statusBadge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="bx bx-block me-1"></i>REVOKED</span>';
+            }
+
+            var resultClass = (h.status === 'FAILURE') ? 'text-danger font-weight-bold' : 'text-muted';
+
+            html += '<tr data-status="' + escapeHtml(h.status) + '" data-search="' + escapeHtml(h.task_id + ' ' + (h.title || '') + ' ' + (h.task_name || '')) + '" ' + displayStyle + '>' +
+                '<td class="text-center">' + statusBadge + '</td>' +
+                '<td>' +
+                    '<strong class="text-dark d-block">' + escapeHtml(h.title || h.task_name || 'Фоновая задача') + '</strong>' +
+                    '<small class="text-muted font-monospace">' + escapeHtml(h.task_name || h.task_id) + '</small>' +
+                '</td>' +
+                '<td><span class="font-monospace small text-muted">' + escapeHtml(h.task_id) + '</span></td>' +
+                '<td><span class="small font-monospace">' + escapeHtml(h.date_done || '—') + '</span></td>' +
+                '<td>' +
+                    '<small class="text-truncate d-inline-block font-monospace ' + resultClass + '" style="max-width: 220px;" title="' + escapeHtml(h.result_preview || '') + '">' +
+                        escapeHtml(h.result_preview || '—') +
+                    '</small>' +
+                '</td>' +
+                '<td class="text-center">' +
+                    '<div class="d-flex justify-content-center gap-1">' +
+                        '<button class="btn btn-sm btn-outline-primary btn-touch" onclick="openTaskDetailModal(\'' + escapeHtml(h.task_id) + '\')" title="Подробный инспектор задачи и Traceback">' +
+                            '<i class="bx bx-search-alt-2"></i>' +
+                        '</button>' +
+                        (h.task_name && h.task_name !== h.task_id ? '<button class="btn btn-sm btn-outline-secondary btn-touch" onclick="quickRunTask(\'' + escapeHtml(h.task_name) + '\', this)" title="Повторить запуск задачи"><i class="bx bx-refresh"></i></button>' : '') +
+                    '</div>' +
+                '</td>' +
+            '</tr>';
+        });
+
+        tbody.html(html);
     }
 
     // =========================================================================
@@ -1564,14 +1628,41 @@
                     return;
                 }
                 var d = resp.details;
-                var statusBadge = '<span class="badge bg-light text-dark border">' + d.status + '</span>';
-                if (d.status === 'SUCCESS') statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle">SUCCESS</span>';
-                if (d.status === 'FAILURE') statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">FAILURE</span>';
+                var statusBadge = '<span class="badge bg-light text-dark border">' + escapeHtml(d.status) + '</span>';
+                if (d.status === 'SUCCESS') statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bx bx-check-circle me-1"></i>SUCCESS</span>';
+                if (d.status === 'FAILURE') statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bx bx-x-circle me-1"></i>FAILURE</span>';
+                if (d.status === 'REVOKED') statusBadge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="bx bx-block me-1"></i>REVOKED</span>';
 
-                var html = '<div class="row g-3 mb-3">' +
-                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Task UUID:</span><strong class="font-monospace small text-dark">' + d.task_id + '</strong></div>' +
-                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Статус:</span>' + statusBadge + '</div>' +
+                var html = '<div class="row g-3 mb-3 border-bottom pb-3">' +
+                    '<div class="col-12 col-md-8">' +
+                        '<div class="d-flex align-items-center gap-2 mb-1">' +
+                            '<i class="' + escapeHtml(d.icon || 'bx bx-task') + ' text-primary fs-4"></i>' +
+                            '<div>' +
+                                '<strong class="text-dark fs-6 d-block">' + escapeHtml(d.title || d.name || 'Фоновая задача') + '</strong>' +
+                                '<span class="font-monospace small text-muted">' + escapeHtml(d.name || d.task_id) + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-12 col-md-4 text-md-end">' +
+                        '<span class="text-muted small d-block">Статус:</span>' + statusBadge +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row g-3 mb-3">' +
+                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Task UUID:</span><strong class="font-monospace small text-dark">' + escapeHtml(d.task_id) + '</strong></div>' +
+                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Дата завершения:</span><span class="font-monospace small text-dark">' + escapeHtml(d.date_done || '—') + '</span></div>' +
+                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Воркер:</span><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(d.worker || '—') + '</span></div>' +
+                    '<div class="col-12 col-md-6"><span class="text-muted small d-block">Очередь:</span><span class="badge bg-light text-dark border font-monospace">' + escapeHtml(d.queue || 'celery') + '</span></div>' +
                     '</div>';
+
+                if (d.args || d.kwargs) {
+                    var argsStr = '';
+                    if (d.args && d.args.length) argsStr += 'args: ' + JSON.stringify(d.args);
+                    if (d.kwargs && Object.keys(d.kwargs).length) argsStr += (argsStr ? ', ' : '') + 'kwargs: ' + JSON.stringify(d.kwargs);
+                    if (argsStr) {
+                        html += '<div class="mb-3"><span class="text-muted small font-weight-bold d-block mb-1">Параметры запуска:</span>' +
+                            '<div class="p-2 bg-light rounded border font-monospace small text-break">' + escapeHtml(argsStr) + '</div></div>';
+                    }
+                }
 
                 if (d.result_pretty) {
                     html += '<div class="mb-3"><span class="text-muted small font-weight-bold d-block mb-1">Результат выполнения:</span>' +
@@ -1587,6 +1678,10 @@
                 }
 
                 $('#taskDetailBody').html(html);
+
+                if (d.name) {
+                    $('#taskDetailFooterActions').html('<button class="btn btn-sm btn-outline-secondary btn-touch" onclick="quickRunTask(\'' + escapeHtml(d.name) + '\', this)"><i class="bx bx-refresh me-1"></i>Запустить повторно</button>');
+                }
             },
             error: function() {
                 $('#taskDetailBody').html('<div class="alert alert-danger">Ошибка сети при получении деталей.</div>');

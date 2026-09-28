@@ -65,6 +65,42 @@ TASK_METADATA_REGISTRY: Dict[str, Dict[str, str]] = {
         "icon": "bx bx-time",
         "description": "Ежесуточная очистка и перевод в архив неподтвержденных бронирований оборудования и помещений.",
     },
+    "hrdepartment_app.tasks.process_memo_notification_task": {
+        "title": "Уведомление по служебной записке",
+        "category": "Табель и персонал",
+        "icon": "bx bx-file",
+        "description": "Формирование документов и отправка уведомлений по этапам служебных поездок и командировок.",
+    },
+    "hrdepartment_app.tasks.save_report": {
+        "title": "Сохранение отчета табеля",
+        "category": "Табель и персонал",
+        "icon": "bx bx-save",
+        "description": "Периодическое сохранение агрегированного отчета табеля учета рабочего времени.",
+    },
+    "hrdepartment_app.tasks.get_year_report": {
+        "title": "Формирование годового отчета табеля",
+        "category": "Табель и персонал",
+        "icon": "bx bx-spreadsheet",
+        "description": "Расчет и генерация годового отчета по учету рабочего времени сотрудников.",
+    },
+    "hrdepartment_app.tasks.get_vacation": {
+        "title": "Синхронизация отпусков с 1С ЗУП",
+        "category": "Табель и персонал",
+        "icon": "bx bx-sun",
+        "description": "Импорт актуальных периодов отпусков сотрудников из учетной системы 1С.",
+    },
+    "hrdepartment_app.tasks.calc_work_time_task": {
+        "title": "Пересчет рабочего времени",
+        "category": "Табель и персонал",
+        "icon": "bx bx-stopwatch",
+        "description": "Фоновый расчет фактически отработанных часов на основе меток СКУД.",
+    },
+    "hrdepartment_app.tasks.clean_media": {
+        "title": "Очистка временных медиа-файлов",
+        "category": "Служебные",
+        "icon": "bx bx-trash",
+        "description": "Удаление устаревших временных файлов и кэша генерации документов.",
+    },
 
     # finance_app
     "finance_app.tasks.sync_directories_task": {
@@ -137,6 +173,42 @@ TASK_METADATA_REGISTRY: Dict[str, Dict[str, str]] = {
         "icon": "bx bx-envelope-open",
         "description": "Фоновая синхронизация IMAP/POP3 почтовых ящиков компании.",
     },
+    "mailbox_app.tasks.send_universal_email_task": {
+        "title": "Универсальная отправка email",
+        "category": "Почта",
+        "icon": "bx bx-mail-send",
+        "description": "Фоновая отправка email-уведомлений с поддержкой вложений.",
+    },
+    "mailbox_app.tasks.batch_change_isp_passwords_task": {
+        "title": "Пакетная смена паролей ISP",
+        "category": "Почта",
+        "icon": "bx bx-key",
+        "description": "Пакетное обновление паролей ящиков в ISPManager и Kerio Connect.",
+    },
+    "mailbox_app.tasks.send_scheduled_email_task": {
+        "title": "Отправка единичного отложенного письма",
+        "category": "Почта",
+        "icon": "bx bx-mail-send",
+        "description": "Фоновая отправка одного запланированного электронного сообщения.",
+    },
+    "mailbox_app.tasks.sync_mailboxes_task": {
+        "title": "Полная синхронизация почтовых ящиков",
+        "category": "Почта",
+        "icon": "bx bx-sync",
+        "description": "Периодическая фоновая синхронизация папок и сообщений с почтовым сервером.",
+    },
+    "telegram_app.tasks.send_telegram_message_task": {
+        "title": "Отправка сообщения в Telegram",
+        "category": "Telegram",
+        "icon": "bx bxl-telegram",
+        "description": "Фоновая асинхронная отправка сообщения в Telegram.",
+    },
+    "telegram_app.tasks.send_telegram_document_task": {
+        "title": "Отправка файла в Telegram",
+        "category": "Telegram",
+        "icon": "bx bxl-telegram",
+        "description": "Фоновая асинхронная отправка документа или файла в Telegram.",
+    },
 
     # tasks_app
     "tasks_app.tasks.check_task_deadlines_task": {
@@ -150,6 +222,24 @@ TASK_METADATA_REGISTRY: Dict[str, Dict[str, str]] = {
         "category": "Задачи",
         "icon": "bx bx-repeat",
         "description": "Создание новых экземпляров циклических задач по заданному графику повторения.",
+    },
+    "tasks_app.tasks.send_task_notification_task": {
+        "title": "Уведомление по поручению",
+        "category": "Задачи",
+        "icon": "bx bx-bell",
+        "description": "Отправка уведомления исполнителям и контролерам поручения.",
+    },
+    "tasks_app.tasks.send_task_comment_notification_task": {
+        "title": "Уведомление о новом комментарии",
+        "category": "Задачи",
+        "icon": "bx bx-comment-detail",
+        "description": "Оповещение участников о новом комментарии в поручении.",
+    },
+    "tasks_app.tasks.send_task_status_changed_notification_task": {
+        "title": "Уведомление о смене статуса поручения",
+        "category": "Задачи",
+        "icon": "bx bx-check-shield",
+        "description": "Оповещение о переводе поручения на проверку или завершении.",
     },
 
     # logistics_app
@@ -667,8 +757,34 @@ class CeleryMonitorService:
                     elif status == "FAILURE":
                         result_preview = str(result_raw)[:120] if result_raw else "Ошибка выполнения"
 
-                    # Определение имени задачи (из метаданных или сопоставления)
-                    task_name = data.get("task") or data.get("name") or ""
+                    # Определение имени задачи (из метаданных CELERY_RESULT_EXTENDED или эвристического сопоставления)
+                    task_name = data.get("name") or data.get("task") or ""
+                    if not task_name:
+                        # Интеллектуальное эвристическое восстановление имени для задач, сохраненных до включения CELERY_RESULT_EXTENDED
+                        if isinstance(result_raw, dict):
+                            if "processed" in result_raw and ("new_emails_total" in result_raw or "errors" in result_raw or "success" in result_raw):
+                                task_name = "mailbox_app.tasks.poll_mailboxes_unread_task"
+                            elif "expired_attempts_closed" in result_raw:
+                                task_name = "testing_app.tasks.check_expired_attempts_task"
+                            elif "activated_count" in result_raw:
+                                task_name = "testing_app.tasks.auto_activate_scheduled_testings_task"
+                            elif "intervals" in result_raw or "workers_processed" in result_raw:
+                                task_name = "hrdepartment_app.tasks.report_card_separator"
+                            elif "reminders_sent" in result_raw:
+                                task_name = "testing_app.tasks.send_deadline_reminders_task"
+                            elif "tranches_checked" in result_raw:
+                                task_name = "finance_app.tasks.check_overdraft_tranches_task"
+                            elif "notifications_sent" in result_raw:
+                                task_name = "finance_app.tasks.send_upcoming_payment_notifications_task"
+                            elif "records_updated" in result_raw or "sync_status" in result_raw:
+                                task_name = "finance_app.tasks.sync_directories_task"
+                        elif isinstance(result_raw, int) and not isinstance(result_raw, bool):
+                            task_name = "mailbox_app.tasks.process_scheduled_emails_task"
+                        elif isinstance(result_raw, bool):
+                            task_name = "hrdepartment_app.tasks.process_memo_notification_task"
+                        elif result_raw is None and status == "SUCCESS":
+                            task_name = "hrdepartment_app.tasks.happy_birthday"
+
                     meta = get_task_meta(task_name) if task_name else {
                         "title": "Фоновая задача",
                         "category": "История",
@@ -689,7 +805,7 @@ class CeleryMonitorService:
                     history_tasks.append({
                         "task_id": task_id,
                         "status": status,
-                        "task_name": task_name,
+                        "task_name": task_name or meta.get("short_name", task_id[:8]),
                         "title": meta["title"],
                         "category": meta["category"],
                         "icon": meta["icon"],
@@ -792,8 +908,46 @@ class CeleryMonitorService:
             except Exception:
                 result_json_pretty = str(result_val)
 
+        task_name = meta_dict.get("name") or meta_dict.get("task") or ""
+        if not task_name and status == "SUCCESS":
+            if isinstance(result_val, dict):
+                if "processed" in result_val and ("new_emails_total" in result_val or "errors" in result_val or "success" in result_val):
+                    task_name = "mailbox_app.tasks.poll_mailboxes_unread_task"
+                elif "expired_attempts_closed" in result_val:
+                    task_name = "testing_app.tasks.check_expired_attempts_task"
+                elif "activated_count" in result_val:
+                    task_name = "testing_app.tasks.auto_activate_scheduled_testings_task"
+                elif "intervals" in result_val or "workers_processed" in result_val:
+                    task_name = "hrdepartment_app.tasks.report_card_separator"
+                elif "reminders_sent" in result_val:
+                    task_name = "testing_app.tasks.send_deadline_reminders_task"
+                elif "tranches_checked" in result_val:
+                    task_name = "finance_app.tasks.check_overdraft_tranches_task"
+                elif "notifications_sent" in result_val:
+                    task_name = "finance_app.tasks.send_upcoming_payment_notifications_task"
+                elif "records_updated" in result_val or "sync_status" in result_val:
+                    task_name = "finance_app.tasks.sync_directories_task"
+            elif isinstance(result_val, int) and not isinstance(result_val, bool):
+                task_name = "mailbox_app.tasks.process_scheduled_emails_task"
+            elif isinstance(result_val, bool):
+                task_name = "hrdepartment_app.tasks.process_memo_notification_task"
+            elif result_val is None:
+                task_name = "hrdepartment_app.tasks.happy_birthday"
+
+        task_meta = get_task_meta(task_name) if task_name else {
+            "title": "Фоновая задача",
+            "category": "История",
+            "icon": "bx bx-history",
+            "description": "",
+            "short_name": task_id[:8],
+        }
+
         return {
             "task_id": task_id,
+            "name": task_name,
+            "title": task_meta.get("title", "Фоновая задача"),
+            "category": task_meta.get("category", "История"),
+            "icon": task_meta.get("icon", "bx bx-history"),
             "status": status,
             "ready": res.ready(),
             "successful": res.successful() if res.ready() else False,
@@ -804,6 +958,9 @@ class CeleryMonitorService:
             "children": meta_dict.get("children", []),
             "args": meta_dict.get("args"),
             "kwargs": meta_dict.get("kwargs"),
+            "worker": meta_dict.get("worker", "—"),
+            "queue": meta_dict.get("queue", "celery"),
+            "retries": meta_dict.get("retries", 0),
         }
 
     @classmethod
