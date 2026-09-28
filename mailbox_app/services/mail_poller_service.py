@@ -11,6 +11,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Set
 
+from django.conf import settings
 from django.core.cache import cache
 from django.urls import reverse
 
@@ -54,6 +55,15 @@ def poll_single_mailbox(
     password = account.get_password()
     if not password:
         return {"email": email_addr, "status": "skipped", "reason": "empty_password"}
+
+    cooldown_key = f"mailbox_poller_cooldown_{email_clean}"
+    if cache.get(cooldown_key):
+        return {
+            "email": email_clean,
+            "status": "skipped",
+            "reason": "error_cooldown_10m",
+            "elapsed_ms": 0.0,
+        }
 
     state_key = f"mailbox_poller_state_{email_clean}"
     prev_state: Optional[Dict[str, Any]] = cache.get(state_key)
@@ -226,6 +236,9 @@ def poll_single_mailbox(
                     cache.set(folders_cache_key, cached_folders, timeout=1800)
 
             elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
+            # Сбрасываем счетчик ошибок при успешном сеансе связи
+            cache.delete(cooldown_key)
+            cache.delete(f"mailbox_poller_fail_count_{email_clean}")
             return {
                 "email": email_clean,
                 "status": "ok",
@@ -239,6 +252,15 @@ def poll_single_mailbox(
         logger.warning(
             f"[MailPoller] Ошибка при фоновом опросе ящика {email_clean}: {exc}"
         )
+        fail_count_key = f"mailbox_poller_fail_count_{email_clean}"
+        fail_count = (cache.get(fail_count_key) or 0) + 1
+        cache.set(fail_count_key, fail_count, timeout=900)
+        if fail_count >= 2:
+            cache.set(cooldown_key, True, timeout=600)
+            logger.info(
+                f"[MailPoller] Ящик {email_clean} временно исключен из частого опроса на 10 мин "
+                f"из-за повторных ошибок IMAP ({fail_count})."
+            )
         return {
             "email": email_clean,
             "status": "error",
@@ -247,28 +269,80 @@ def poll_single_mailbox(
         }
 
 
-def poll_all_active_mailboxes() -> Dict[str, Any]:
-    """Выполняет фоновый опрос всех активных почтовых ящиков корпоративной почты.
+def poll_all_active_mailboxes(only_online_users: Optional[bool] = None) -> Dict[str, Any]:
+    """Выполняет фоновый опрос почтовых ящиков корпоративной почты на наличие новых писем.
 
-    Собирает все активные общие ящики (Mailbox) и персональные ящики сотрудников (MailAccount),
-    выполняет поочередную проверку новых сообщений, рассылает уведомления и актуализирует кэш.
+    По умолчанию опрашивает только те ящики, пользователи которых сейчас находятся в сети
+    на портале (онлайн), что кардинально снижает нагрузку на сервер приложений,
+    почтовый сервер Kerio Connect и устраняет задержки в очередях фоновых задач Celery.
+
+    Args:
+        only_online_users (Optional[bool]): Если True, проверяются только ящики пользователей в сети.
+            Если None, значение берется из настройки settings.MAILBOX_POLL_ONLY_ONLINE_USERS (True).
+            Если False, опрашиваются все активные ящики без исключения.
 
     Returns:
-        Dict[str, Any]: Сводный отчет выполнения опроса (количество ящиков, новые письма, задержки, ошибки).
+        Dict[str, Any]: Сводный отчет выполнения опроса (число обработанных ящиков, пропущенных,
+            новых писем, время выполнения в мс, ошибки).
     """
-    logger.info("[MailPoller] Запуск периодического фонового опроса всех активных ящиков.")
+    if only_online_users is None:
+        filter_online = getattr(settings, "MAILBOX_POLL_ONLY_ONLINE_USERS", True)
+    else:
+        filter_online = bool(only_online_users)
+
     t_start = time.perf_counter()
     summary: Dict[str, Any] = {
         "processed": 0,
         "success": 0,
         "errors": 0,
         "skipped": 0,
+        "skipped_offline": 0,
+        "online_users_count": 0,
         "new_emails_total": 0,
         "details": [],
     }
 
+    online_user_ids: Set[int] = set()
+    if filter_online:
+        try:
+            from customers_app.consumers import get_online_user_ids
+            online_user_ids = get_online_user_ids()
+        except Exception as err:
+            logger.warning("[MailPoller] Не удалось получить список пользователей онлайн: %s. Опрос всех ящиков.", err)
+            online_user_ids = set()
+            filter_online = False
+
+    if filter_online:
+        summary["online_users_count"] = len(online_user_ids)
+        logger.info(
+            f"[MailPoller] Запуск выборочного опроса (only_online=True). "
+            f"Активных пользователей в сети: {len(online_user_ids)}."
+        )
+
+        if not online_user_ids:
+            total_corp = Mailbox.objects.filter(is_active=True).count()
+            total_pers = MailAccount.objects.filter(user__is_active=True).exclude(email="").count()
+            summary["skipped_offline"] = total_corp + total_pers
+            summary["total_time_ms"] = round((time.perf_counter() - t_start) * 1000, 1)
+            logger.info(
+                f"[MailPoller] На портале нет пользователей онлайн. "
+                f"Опрос всех {total_corp + total_pers} ящиков пропущен (0 мс)."
+            )
+            return summary
+
     # 1. Корпоративные и ведомственные общие ящики
-    corp_mailboxes = Mailbox.objects.filter(is_active=True)
+    if filter_online:
+        # Опрашиваем корпоративные ящики, к которым прикреплен хотя бы один пользователь онлайн
+        corp_mailboxes = Mailbox.objects.filter(
+            is_active=True,
+            users__id__in=online_user_ids,
+        ).distinct()
+        total_active_corp = Mailbox.objects.filter(is_active=True).count()
+        skipped_corp_offline = max(0, total_active_corp - corp_mailboxes.count())
+    else:
+        corp_mailboxes = Mailbox.objects.filter(is_active=True)
+        skipped_corp_offline = 0
+
     for mb in corp_mailboxes:
         res = poll_single_mailbox(mb, is_corporate=True)
         summary["processed"] += 1
@@ -282,11 +356,27 @@ def poll_all_active_mailboxes() -> Dict[str, Any]:
             summary["errors"] += 1
 
     # 2. Персональные ящики активных сотрудников
-    personal_accounts = (
-        MailAccount.objects.filter(user__is_active=True)
-        .select_related("user")
-        .exclude(email="")
-    )
+    if filter_online:
+        personal_accounts = (
+            MailAccount.objects.filter(
+                user__is_active=True,
+                user_id__in=online_user_ids,
+            )
+            .select_related("user")
+            .exclude(email="")
+        )
+        total_active_pers = MailAccount.objects.filter(user__is_active=True).exclude(email="").count()
+        skipped_pers_offline = max(0, total_active_pers - personal_accounts.count())
+    else:
+        personal_accounts = (
+            MailAccount.objects.filter(user__is_active=True)
+            .select_related("user")
+            .exclude(email="")
+        )
+        skipped_pers_offline = 0
+
+    summary["skipped_offline"] = skipped_corp_offline + skipped_pers_offline
+
     for acc in personal_accounts:
         res = poll_single_mailbox(acc, is_corporate=False)
         summary["processed"] += 1
@@ -303,6 +393,8 @@ def poll_all_active_mailboxes() -> Dict[str, Any]:
     summary["total_time_ms"] = total_time
     logger.info(
         f"[MailPoller] Завершен опрос ящиков за {total_time} мс: "
-        f"всего={summary['processed']}, успех={summary['success']}, новых={summary['new_emails_total']}, ошибок={summary['errors']}."
+        f"обработано={summary['processed']}, успех={summary['success']}, "
+        f"пропущено_оффлайн={summary['skipped_offline']}, новых={summary['new_emails_total']}, "
+        f"ошибок={summary['errors']}."
     )
     return summary

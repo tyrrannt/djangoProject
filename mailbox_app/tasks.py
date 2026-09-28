@@ -80,27 +80,50 @@ def send_scheduled_email_task(self, scheduled_email_id: int) -> bool:
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
-def poll_mailboxes_unread_task(self) -> dict:
+def poll_mailboxes_unread_task(self, only_online: bool = True) -> dict:
     """Периодическая фоновая задача Celery Beat для серверного опроса почтовых ящиков.
 
     Периодически проверяет статус непрочитанных писем на сервере IMAP (Kerio Connect)
-    для всех активных корпоративных (Mailbox) и персональных (MailAccount) ящиков,
-    актуализирует кэш счетчиков и рассылает Web Push уведомления о новых письмах.
+    для активных корпоративных (Mailbox) и персональных (MailAccount) ящиков,
+    пользователи которых сейчас находятся в сети на портале (онлайн).
+    Актуализирует кэш счетчиков и рассылает Web Push уведомления о новых письмах.
+    Защищена распределенной блокировкой Redis от параллельного наложения и накопления очередей.
 
     Args:
         self: Экземпляр запущенной задачи Celery.
+        only_online (bool): Если True, проверяются только ящики пользователей онлайн.
+            Defaults to True.
 
     Returns:
         dict: Сводный результат выполнения опроса (число ящиков, новые письма, ошибки).
     """
+    from django.core.cache import cache
     from mailbox_app.services.mail_poller_service import poll_all_active_mailboxes
 
-    logger.info("[Celery:MailPoller] Старт периодического опроса почтовых ящиков.")
+    lock_key = "celery_lock_poll_mailboxes_unread_task"
+    # Атомарный захват блокировки на 55 секунд для предотвращения наложения задач
+    lock_acquired = cache.add(lock_key, self.request.id or "1", timeout=55)
+    if not lock_acquired:
+        logger.info(
+            "[Celery:MailPoller] Предыдущая итерация опроса ящиков еще активна. "
+            "Пропуск запуска во избежание перегрузки очереди."
+        )
+        return {
+            "status": "skipped",
+            "reason": "concurrent_execution_prevented",
+            "processed": 0,
+            "new_emails_total": 0,
+        }
+
+    logger.info(
+        f"[Celery:MailPoller] Старт периодического опроса почтовых ящиков (only_online={only_online})."
+    )
     try:
-        summary = poll_all_active_mailboxes()
+        summary = poll_all_active_mailboxes(only_online_users=only_online)
         logger.info(
             f"[Celery:MailPoller] Опрос успешно завершен: "
-            f"ящиков={summary.get('processed')}, новых писем={summary.get('new_emails_total')}."
+            f"ящиков={summary.get('processed')}, пропущено_оффлайн={summary.get('skipped_offline', 0)}, "
+            f"новых={summary.get('new_emails_total')}."
         )
         return summary
     except Exception as exc:
@@ -110,6 +133,8 @@ def poll_mailboxes_unread_task(self) -> dict:
         except self.MaxRetriesExceededError:
             logger.critical("[Celery:MailPoller] Исчерпан лимит повторных попыток для poll_mailboxes_unread_task.")
             return {"status": "error", "error": str(exc)}
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)

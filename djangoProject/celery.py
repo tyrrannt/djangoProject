@@ -78,6 +78,12 @@ app.conf.beat_schedule = {
     'mailbox_poll_unread_all': {
         'task': 'mailbox_app.tasks.poll_mailboxes_unread_task',
         'schedule': crontab(minute='*/1'),
+        'kwargs': {'only_online': True},
+    },
+    'mailbox_poll_unread_nightly_full': {
+        'task': 'mailbox_app.tasks.poll_mailboxes_unread_task',
+        'schedule': crontab(hour='3', minute='30'),
+        'kwargs': {'only_online': False},
     },
     'tasks_check_deadlines': {
         'task': 'tasks_app.tasks.check_task_deadlines_task',

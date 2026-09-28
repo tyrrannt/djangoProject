@@ -171,7 +171,7 @@ TASK_METADATA_REGISTRY: Dict[str, Dict[str, str]] = {
         "title": "Опрос почтовых ящиков на новые письма",
         "category": "Почта",
         "icon": "bx bx-envelope-open",
-        "description": "Фоновая синхронизация IMAP/POP3 почтовых ящиков компании.",
+        "description": "Фоновая проверка новых писем для ящиков активных онлайн-пользователей портала.",
     },
     "mailbox_app.tasks.send_universal_email_task": {
         "title": "Универсальная отправка email",
@@ -762,7 +762,7 @@ class CeleryMonitorService:
                     if not task_name:
                         # Интеллектуальное эвристическое восстановление имени для задач, сохраненных до включения CELERY_RESULT_EXTENDED
                         if isinstance(result_raw, dict):
-                            if "processed" in result_raw and ("new_emails_total" in result_raw or "errors" in result_raw or "success" in result_raw):
+                            if "processed" in result_raw and ("new_emails_total" in result_raw or "errors" in result_raw or "success" in result_raw or "skipped_offline" in result_raw):
                                 task_name = "mailbox_app.tasks.poll_mailboxes_unread_task"
                             elif "expired_attempts_closed" in result_raw:
                                 task_name = "testing_app.tasks.check_expired_attempts_task"

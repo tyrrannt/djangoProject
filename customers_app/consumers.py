@@ -1,9 +1,12 @@
 # consumers.py
+import logging
 import os
 import time
 from asyncio import sleep
 import psutil
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+logger = logging.getLogger(__name__)
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -245,6 +248,41 @@ def get_current_online_users() -> list:
     except Exception:
         OnlineUsersConsumer._local_registry = _prune_registry(OnlineUsersConsumer._local_registry)
         return _format_online_users(OnlineUsersConsumer._local_registry)
+
+
+def get_online_user_ids() -> Set[int]:
+    """Синхронно возвращает множество первичных ключей (ID) пользователей, находящихся онлайн.
+
+    Опрашивает распределенный реестр активных WebSocket-подключений в кэше Redis (REGISTRY_CACHE_KEY),
+    производит очистку сессий по heartbeat-таймауту (ONLINE_HEARTBEAT_TIMEOUT) и отбирает
+    уникальные идентификаторы действующих пользователей портала.
+
+    Returns:
+        Set[int]: Множество ID активных пользователей (DataBaseUser.pk). При ошибках кэша возвращает пустое множество.
+    """
+    try:
+        registry = cache.get(REGISTRY_CACHE_KEY) or {}
+        active_channels = _prune_registry(registry)
+        if len(active_channels) != len(registry):
+            try:
+                cache.set(REGISTRY_CACHE_KEY, active_channels, timeout=REGISTRY_CACHE_TIMEOUT)
+            except Exception:
+                pass
+        if not active_channels and OnlineUsersConsumer._local_registry:
+            active_channels = _prune_registry(OnlineUsersConsumer._local_registry)
+        online_ids: Set[int] = set()
+        for data in active_channels.values():
+            if isinstance(data, dict):
+                uid = data.get("user_id")
+                if uid:
+                    try:
+                        online_ids.add(int(uid))
+                    except (ValueError, TypeError):
+                        pass
+        return online_ids
+    except Exception as exc:
+        logger.warning("[OnlineUsers] Исключение при получении ID активных пользователей: %s", exc)
+        return set()
 
 
 class OnlineUsersConsumer(AsyncWebsocketConsumer):

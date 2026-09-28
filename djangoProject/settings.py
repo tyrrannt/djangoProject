@@ -444,6 +444,9 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_RESULT_EXTENDED = True
 
+# Опрос почтовых ящиков на новые письма только для пользователей, находящихся онлайн на портале
+MAILBOX_POLL_ONLY_ONLINE_USERS = True
+
 if not config("DEVELOPMENT", default=False, cast=bool):
     CACHES = {
         "default": {
