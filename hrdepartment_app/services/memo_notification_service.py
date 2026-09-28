@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -59,26 +60,68 @@ class MemoNotificationService:
         return f"{cls.get_portal_url()}/hr/bpmemo/{process_id}/update/"
 
     @classmethod
+    def is_telegram_memo_notifications_enabled(cls, telegram_id: Optional[str]) -> bool:
+        """Проверяет, разрешил ли пользователь получение уведомлений о служебных записках в Telegram.
+
+        Анализирует настройки персональной подписки в модели ChatID (флаги is_active и notify_memos).
+
+        Args:
+            telegram_id (Optional[str]): Идентификатор чата пользователя в Telegram.
+
+        Returns:
+            bool: True, если подписка активна и уведомления разрешены (либо подписка не найдена
+                — по умолчанию включено); False, если уведомления явно отключены.
+        """
+        if not telegram_id:
+            return False
+        try:
+            from telegram_app.models import ChatID
+            chat_obj = ChatID.objects.filter(chat_id=str(telegram_id).strip()).first()
+            if chat_obj:
+                return bool(chat_obj.is_active and chat_obj.notify_memos)
+        except Exception as exc:
+            logger.warning("[MemoNotify] Ошибка проверки прав Telegram для %s: %s", telegram_id, exc)
+        return True
+
+    @classmethod
     def dispatch_event(
         cls,
         process_id: int,
         event_type: str,
         actor_id: Optional[int] = None,
         extra_context: Optional[Dict[str, Any]] = None,
+        force: bool = False,
     ) -> bool:
         """Асинхронно ставит событие смены статуса СЗ в очередь Celery после фиксации транзакции.
 
+        Включает механизм гарантированной дедупликации (Idempotency Guard) через кэш Django,
+        предотвращая повторные постановки одной и той же задачи при сетевых ретраях, множественных
+        вызовах save() или повторных кликах пользователя.
+
         Args:
-            process_id: ID процесса ApprovalOficialMemoProcess.
-            event_type: Тип события ('SUBMITTED', 'APPROVED', 'LOCATION_SET',
+            process_id (int): ID процесса ApprovalOficialMemoProcess.
+            event_type (str): Тип события ('SUBMITTED', 'APPROVED', 'LOCATION_SET',
                 'ORDER_ISSUED', 'ORIGINALS_RECEIVED', 'TRANSFERRED_TO_ACCOUNTING',
                 'COMPLETED', 'CANCELLED', 'REJECTED').
-            actor_id: Опциональный ID пользователя, инициировавшего действие.
-            extra_context: Дополнительные параметры (например, причина отмены).
+            actor_id (Optional[int], optional): Опциональный ID пользователя-инициатора. Defaults to None.
+            extra_context (Optional[Dict[str, Any]], optional): Дополнительные параметры. Defaults to None.
+            force (bool, optional): Принудительная отправка в обход дедупликации. Defaults to False.
 
         Returns:
-            bool: True, если задача поставлена в очередь.
+            bool: True, если задача поставлена в очередь; False если отсечена как дубликат.
         """
+        dedup_key = f"memo_notify_guard:{process_id}:{event_type}"
+        if not force and cache.get(dedup_key):
+            logger.info(
+                "[MemoNotify] Пропуск дублирующего события '%s' для процесса ID=%d (активен замок дедупликации).",
+                event_type,
+                process_id,
+            )
+            return False
+
+        # Устанавливаем замок дедупликации на 300 секунд (5 минут)
+        cache.set(dedup_key, True, timeout=300)
+
         def _enqueue():
             try:
                 from hrdepartment_app.tasks import process_memo_notification_task
@@ -251,7 +294,7 @@ class MemoNotificationService:
         )
 
         for user in agreement_users:
-            if user.telegram_id:
+            if user.telegram_id and cls.is_telegram_memo_notifications_enabled(user.telegram_id):
                 UniversalTelegramService.send_message_sync(
                     chat_id=user.telegram_id,
                     text=tg_text,
@@ -268,7 +311,7 @@ class MemoNotificationService:
 
     @classmethod
     def _notify_approved(cls, process: ApprovalOficialMemoProcess) -> bool:
-        """Уведомление распределителя жилья о согласовании СЗ руководителем."""
+        """Уведомление распределителя жилья и инициатора о согласовании СЗ руководителем."""
         doc = process.document
         person = doc.person
         url = cls.get_process_url(process.pk)
@@ -303,12 +346,31 @@ class MemoNotificationService:
         ])
 
         for dist in distributors:
-            if dist.telegram_id:
+            if dist.telegram_id and cls.is_telegram_memo_notifications_enabled(dist.telegram_id):
                 UniversalTelegramService.send_message_sync(
                     chat_id=dist.telegram_id,
                     text=tg_text,
                     reply_markup=reply_markup,
                 )
+
+        # Информирование инициатора СЗ об утверждении руководителем
+        executor = process.person_executor
+        if executor and executor.telegram_id and cls.is_telegram_memo_notifications_enabled(executor.telegram_id):
+            executor_tg_text = (
+                f"✈️ <b>Служебная записка согласована руководителем</b>\n\n"
+                f"Сотрудник: <b>{person}</b>\n"
+                f"Место: {places_str}\n"
+                f"Период: {period_str}\n"
+                f"Согласующий: {process.person_agreement}\n\n"
+                f"Документ успешно передан распределителю для выбора и бронирования жилья."
+            )
+            UniversalTelegramService.send_message_sync(
+                chat_id=executor.telegram_id,
+                text=executor_tg_text,
+                reply_markup=UniversalTelegramService.build_inline_keyboard([
+                    [{"text": "📄 Открыть карточку", "url": url}]
+                ]),
+            )
 
         return True
 
@@ -346,7 +408,7 @@ class MemoNotificationService:
         ])
 
         for hr in hr_staff:
-            if hr.telegram_id:
+            if hr.telegram_id and cls.is_telegram_memo_notifications_enabled(hr.telegram_id):
                 UniversalTelegramService.send_message_sync(
                     chat_id=hr.telegram_id,
                     text=tg_text,
@@ -439,7 +501,7 @@ class MemoNotificationService:
             )
 
         # Отправка Telegram командируемому
-        if person.telegram_id:
+        if person.telegram_id and cls.is_telegram_memo_notifications_enabled(person.telegram_id):
             tg_text = (
                 f"✈️ <b>Вам оформлена служебная {type_trip_title}!</b>\n\n"
                 f"Приказ: <b>№ {order.document_number} от {order.document_date.strftime('%d.%m.%Y')}</b>\n"
@@ -474,7 +536,7 @@ class MemoNotificationService:
         if not recipient and process.document.person:
             recipient = process.person_executor
 
-        if recipient and recipient.telegram_id:
+        if recipient and recipient.telegram_id and cls.is_telegram_memo_notifications_enabled(recipient.telegram_id):
             tg_text = (
                 f"📑 <b>Получены оригиналы документов по поездке</b>\n\n"
                 f"Сотрудник: <b>{person}</b>\n"
@@ -521,7 +583,7 @@ class MemoNotificationService:
         ])
 
         for acc in accountants:
-            if acc.telegram_id:
+            if acc.telegram_id and cls.is_telegram_memo_notifications_enabled(acc.telegram_id):
                 UniversalTelegramService.send_message_sync(
                     chat_id=acc.telegram_id,
                     text=tg_text,
@@ -543,7 +605,7 @@ class MemoNotificationService:
         )
 
         for target in (person, executor):
-            if target and target.telegram_id:
+            if target and target.telegram_id and cls.is_telegram_memo_notifications_enabled(target.telegram_id):
                 UniversalTelegramService.send_message_sync(chat_id=target.telegram_id, text=tg_text)
 
         return True
@@ -595,7 +657,7 @@ class MemoNotificationService:
             f"Причина отмены: <i>{reason_text}</i>"
         )
         for u in (person, executor):
-            if u and u.telegram_id:
+            if u and u.telegram_id and cls.is_telegram_memo_notifications_enabled(u.telegram_id):
                 UniversalTelegramService.send_message_sync(chat_id=u.telegram_id, text=tg_text)
 
         return True
@@ -615,7 +677,7 @@ class MemoNotificationService:
             f"Пожалуйста, свяжитесь с руководителем или внесите корректировки."
         )
 
-        if executor and executor.telegram_id:
+        if executor and executor.telegram_id and cls.is_telegram_memo_notifications_enabled(executor.telegram_id):
             UniversalTelegramService.send_message_sync(chat_id=executor.telegram_id, text=tg_text)
 
         if executor and executor.email:
