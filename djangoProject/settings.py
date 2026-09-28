@@ -33,6 +33,7 @@ if not config("DEVELOPMENT", default=False, cast=bool):
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config("SECRET_KEY")
+SECRET_KEY_FALLBACKS = config("SECRET_KEY_FALLBACKS", default="", cast=lambda v: [s.strip() for s in v.split(",") if s.strip()])
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)

@@ -100,16 +100,41 @@ class CryptoEngine:
             key = key.encode('utf-8')
         return Fernet(key).encrypt(plaintext.encode('utf-8')).decode('utf-8')
 
-    @staticmethod
-    def hash_passphrase(passphrase: str) -> str:
+    @classmethod
+    def get_passphrase_salt(cls) -> bytes:
+        """Возвращает криптографическую соль для хеширования мастер-фразы пользователя.
+
+        Приоритет определения соли:
+        1. Переменная окружения PASSWORD_MANAGER_PASSPHRASE_SALT.
+        2. Fallback на срез settings.SECRET_KEY[:32] для сохранения обратной совместимости.
+
+        Returns:
+            bytes: Криптографическая соль в байтовом представлении.
         """
-        Хеширует ключевую фразу для безопасного хранения в UserKeyHash.
-        Использует SHA-256 с солью для защиты от rainbow-таблиц.
+        salt_str = config("PASSWORD_MANAGER_PASSPHRASE_SALT", default=None)
+        if not salt_str:
+            salt_str = settings.SECRET_KEY[:32]
+        return salt_str.encode("utf-8")
+
+    @classmethod
+    def hash_passphrase(cls, passphrase: str) -> str:
+        """Хеширует ключевую фразу для безопасного хранения в UserKeyHash.
+
+        Использует PBKDF2-HMAC-SHA256 (100 000 итераций) с криптографической
+        солью для защиты от rainbow-таблиц и словарных атак. Соль изолирована
+        от Django SECRET_KEY через переменную окружения PASSWORD_MANAGER_PASSPHRASE_SALT.
+
+        Args:
+            passphrase (str): Ключевая фраза пользователя в открытом виде.
+
+        Returns:
+            str: Шестнадцатеричная строка (hex) вычисленного хеша длиной 64 символа.
         """
-        salt = settings.SECRET_KEY[:32].encode('utf-8')
+        salt = cls.get_passphrase_salt()
         return hashlib.pbkdf2_hmac(
-            'sha256',
-            passphrase.encode('utf-8'),
+            "sha256",
+            passphrase.encode("utf-8"),
             salt,
-            100_000
+            100_000,
         ).hex()
+

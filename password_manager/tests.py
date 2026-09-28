@@ -51,7 +51,10 @@ class BasePasswordManagerTest(TestCase):
                 return self.test_master_key
             elif key == 'PASSWORD_MANAGER_APP_SALT':
                 return 'test_salt_32bytes_for_testing_purpose!!'
+            elif key == 'PASSWORD_MANAGER_PASSPHRASE_SALT':
+                return 'test_passphrase_salt_32_bytes!!'
             return default
+
 
         self.mock_config.side_effect = config_side_effect
 
@@ -99,6 +102,22 @@ class CryptoEngineTests(BasePasswordManagerTest):
         with self.assertRaises(ValueError):
             CryptoEngine.decrypt(ciphertext, "wrong_phrase", self.user_id)
 
+    @override_settings(SECRET_KEY="completely_different_django_secret_key_1234567890")
+    def test_passphrase_salt_isolated_from_secret_key(self):
+        """Проверяет, что при смене SECRET_KEY хеш ключевой фразы не меняется при наличии PASSWORD_MANAGER_PASSPHRASE_SALT."""
+        hash1 = CryptoEngine.hash_passphrase(self.phrase)
+        hash2 = CryptoEngine.hash_passphrase(self.phrase)
+        self.assertEqual(hash1, hash2)
+        self.assertEqual(len(hash1), 64)
+
+    def test_passphrase_salt_fallback_to_secret_key(self):
+        """Проверяет fallback на SECRET_KEY[:32], когда PASSWORD_MANAGER_PASSPHRASE_SALT не задан."""
+        with patch('password_manager.crypto.config', return_value=None):
+            hash_val = CryptoEngine.hash_passphrase(self.phrase)
+            self.assertIsInstance(hash_val, str)
+            self.assertEqual(len(hash_val), 64)
+
+
 
 class PasswordGeneratorTests(BasePasswordManagerTest):
     """Тесты генератора паролей."""
@@ -129,7 +148,9 @@ class ServiceLayerTests(BasePasswordManagerTest):
         super().setUpTestData()
         cls.user = DataBaseUser.objects.create(
             email="test@example.com",
-            username="testuser"
+            username="testuser",
+            first_name="Тест",
+            last_name="Тестовый",
         )
         cls.phrase = "master_key_phrase"
 
@@ -160,18 +181,21 @@ class ModelLogicTests(BasePasswordManagerTest):
 
         cls.user = DataBaseUser.objects.create(
             email="owner@example.com",
-            username="owner"
+            username="owner",
+            first_name="Владелец",
+            last_name="Группы",
         )
-        PasswordService.setup_or_update_key(cls.user, "test_phrase")
         cls.group = PasswordGroup.objects.create(name="Test Group", owner=cls.user)
 
     def setUp(self):
         super().setUp()
+        PasswordService.setup_or_update_key(self.user, "test_phrase")
         self.form_data = {
             'resource_type': ResourceType.WEBSITE,
             'url': 'https://example.com',
             'login': 'admin',
             'group': self.group.pk,
+            'change_password': True,
             'passphrase': 'test_phrase',
             'raw_password': 'InitialPass123!'
         }
@@ -221,16 +245,23 @@ class AccessControlTests(BasePasswordManagerTest):
         self.factory = RequestFactory()
         self.owner = DataBaseUser.objects.create(
             email="owner@test.com",
-            username="owner"
+            username="owner",
+            first_name="Владелец",
+            last_name="Тест",
         )
         self.reader = DataBaseUser.objects.create(
             email="reader@test.com",
-            username="reader"
+            username="reader",
+            first_name="Читатель",
+            last_name="Тест",
         )
         self.editor = DataBaseUser.objects.create(
             email="editor@test.com",
-            username="editor"
+            username="editor",
+            first_name="Редактор",
+            last_name="Тест",
         )
+
 
         PasswordService.setup_or_update_key(self.owner, "phrase")
 
