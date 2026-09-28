@@ -93,13 +93,6 @@ def approve_memo_process(process_id: int, user_obj: DataBaseUser) -> tuple[bool,
     except Exception as hist_err:
         logger.warning("[TelegramBot:BPMemo] Ошибка записи в HistoryChange: %s", hist_err)
 
-    # Запуск уведомлений следующего этапа через сервис
-    try:
-        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
-        MemoNotificationService.dispatch_event(process.pk, "APPROVED")
-    except Exception as notify_err:
-        logger.warning("[TelegramBot:BPMemo] Ошибка запуска уведомлений APPROVED: %s", notify_err)
-
     return True, "Служебная записка успешно согласована!"
 
 
@@ -135,24 +128,36 @@ def reject_memo_process(process_id: int, user_obj: DataBaseUser, reason: str = "
 
     try:
         from hrdepartment_app.services.memo_notification_service import MemoNotificationService
-        MemoNotificationService.dispatch_event(process.pk, "REJECTED")
+        MemoNotificationService.dispatch_event(
+            process.pk,
+            "REJECTED",
+            actor_id=user_obj.pk,
+            extra_context={"reason": reason},
+        )
     except Exception as notify_err:
         logger.warning("[TelegramBot:BPMemo] Ошибка уведомления REJECTED: %s", notify_err)
 
     return True, "Служебная записка отклонена."
 
 
+REJECTION_REASONS = {
+    "dates": "Неверные сроки или даты поездки",
+    "purpose": "Некорректная цель или состав группы",
+    "mgmt": "Отклонено решением руководства",
+}
+
+
 @router.callback_query(lambda call: call.data and call.data.startswith("bpmemo_"))
 async def handle_bpmemo_actions(call: types.CallbackQuery):
     """Обрабатывает нажатия на inline-кнопки согласования служебных записок."""
     parts = call.data.split(":")
-    if len(parts) != 2:
+    if len(parts) < 2:
         await call.answer("Некорректный формат данных кнопки.", show_alert=True)
         return
 
-    action, process_id_str = parts[0], parts[1]
+    action = parts[0]
     try:
-        process_id = int(process_id_str)
+        process_id = int(parts[1])
     except ValueError:
         await call.answer("Неверный ID документа.", show_alert=True)
         return
@@ -184,7 +189,67 @@ async def handle_bpmemo_actions(call: types.CallbackQuery):
             await call.answer(message, show_alert=True)
 
     elif action == "bpmemo_reject":
-        success, message = await reject_memo_process(process_id, user_obj)
+        # Показываем выбор типовых причин отклонения
+        kb = types.InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="📅 Неверные даты / сроки",
+                        callback_data=f"bpmemo_rejreason:{process_id}:dates",
+                    ),
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🎯 Некорректная цель",
+                        callback_data=f"bpmemo_rejreason:{process_id}:purpose",
+                    ),
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🚫 Отмена руководством",
+                        callback_data=f"bpmemo_rejreason:{process_id}:mgmt",
+                    ),
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="↩️ Назад",
+                        callback_data=f"bpmemo_back:{process_id}",
+                    ),
+                ],
+            ]
+        )
+        try:
+            await call.message.edit_reply_markup(reply_markup=kb)
+            await call.answer("Выберите причину отклонения", show_alert=False)
+        except Exception as edit_kb_err:
+            logger.debug("[TelegramBot] Ошибка обновления клавиатуры причин: %s", edit_kb_err)
+
+    elif action == "bpmemo_back":
+        # Возвращаем исходную клавиатуру согласования
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+        url = MemoNotificationService.get_process_url(process_id)
+        kb = types.InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    types.InlineKeyboardButton(text="✅ Согласовать", callback_data=f"bpmemo_approve:{process_id}"),
+                    types.InlineKeyboardButton(text="❌ Отклонить", callback_data=f"bpmemo_reject:{process_id}"),
+                ],
+                [
+                    types.InlineKeyboardButton(text="📄 Открыть на портале", url=url),
+                ],
+            ]
+        )
+        try:
+            await call.message.edit_reply_markup(reply_markup=kb)
+            await call.answer()
+        except Exception as edit_kb_err:
+            logger.debug("[TelegramBot] Ошибка возврата клавиатуры: %s", edit_kb_err)
+
+    elif action == "bpmemo_rejreason":
+        reason_code = parts[2] if len(parts) > 2 else "mgmt"
+        reason_text = REJECTION_REASONS.get(reason_code, "Отклонено в Telegram")
+
+        success, message = await reject_memo_process(process_id, user_obj, reason=reason_text)
         if success:
             await call.answer(message, show_alert=False)
             now_dt = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
@@ -192,7 +257,8 @@ async def handle_bpmemo_actions(call: types.CallbackQuery):
             updated_text = (
                 f"{original_text}\n\n"
                 f"❌ <b>ОТКЛОНЕНО через Telegram</b> ({now_dt})\n"
-                f"<i>Руководитель: {user_obj.title}</i>"
+                f"<i>Руководитель: {user_obj.title}</i>\n"
+                f"<i>Причина: {reason_text}</i>"
             )
             try:
                 await call.message.edit_text(updated_text, parse_mode="HTML", reply_markup=None)

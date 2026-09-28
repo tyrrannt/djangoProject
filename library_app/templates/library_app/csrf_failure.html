@@ -1,0 +1,201 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Срок действия формы истек — ООО АК «БАРКОЛ»
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    .portal-error-wrapper {
+        min-height: calc(100vh - 240px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 12px;
+    }
+
+    .portal-error-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        box-shadow: 0 10px 35px rgba(0, 43, 73, 0.08);
+        max-width: 740px;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .error-header-strip {
+        background: linear-gradient(135deg, #002b49 0%, #083c64 100%);
+        padding: 30px 24px;
+        color: #ffffff;
+        text-align: center;
+        position: relative;
+    }
+
+    .error-header-strip::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #f59e0b, #0284c7, #10b981);
+    }
+
+    .error-icon-bubble {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 16px auto;
+        border-radius: 50%;
+        background: rgba(245, 158, 11, 0.2);
+        border: 2px solid rgba(245, 158, 11, 0.45);
+        color: #fde68a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+    }
+
+    .error-code-badge {
+        font-family: 'JetBrains Mono', Consolas, monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #fde68a;
+        background: rgba(245, 158, 11, 0.18);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        padding: 4px 14px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+
+    .error-main-title {
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 6px;
+    }
+
+    .error-main-subtitle {
+        color: #94a3b8;
+        font-size: 0.95rem;
+        max-width: 580px;
+        margin: 0 auto;
+        line-height: 1.5;
+    }
+
+    .error-body-content {
+        padding: 30px;
+    }
+
+    .info-callout {
+        background: #f0f9ff;
+        border-left: 4px solid #0284c7;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        color: #0369a1;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .action-btn-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 13px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+        transition: all 0.15s ease-in-out;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #1e293b;
+        cursor: pointer;
+    }
+
+    .action-btn-link.primary-action {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: #ffffff;
+        border-color: #0284c7;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+    .action-btn-link.primary-action:hover {
+        opacity: 0.92;
+        transform: translateY(-2px);
+    }
+
+    .action-btn-link:hover {
+        background: #f1f5f9;
+        color: #002b49;
+    }
+
+    .support-note {
+        font-size: 0.8rem;
+        color: #64748b;
+        text-align: center;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="portal-error-wrapper">
+    <div class="portal-error-card">
+        <div class="error-header-strip">
+            <div class="error-icon-bubble">
+                <i class="bx bx-time-five"></i>
+            </div>
+            <span class="error-code-badge">Безопасность сессии // CSRF Token</span>
+            <h1 class="error-main-title">Срок действия формы истек</h1>
+            <p class="error-main-subtitle">
+                Вкладка с формой оставалась неактивной продолжительное время, либо в браузере обновились файлы cookie.
+            </p>
+        </div>
+
+        <div class="error-body-content">
+            <div class="info-callout">
+                <i class="bx bx-shield-quarter me-1 fs-5"></i>
+                <strong>Защита персональных данных:</strong> Данная проверка (CSRF) защищает вашу корпоративную учетную запись от несанкционированной отправки форм сторонними ресурсами. Чтобы продолжить работу, просто обновите страницу.
+            </div>
+
+            <div class="actions-grid">
+                <button type="button" class="action-btn-link primary-action" onclick="window.location.reload();">
+                    <i class="bx bx-refresh fs-5"></i>
+                    <span>Обновить страницу и продолжить</span>
+                </button>
+
+                <a href="javascript:history.back()" class="action-btn-link">
+                    <i class="bx bx-arrow-back fs-5"></i>
+                    <span>Вернуться назад</span>
+                </a>
+
+                <a href="/" class="action-btn-link">
+                    <i class="bx bx-home-alt fs-5 text-primary"></i>
+                    <span>Главная страница</span>
+                </a>
+            </div>
+
+            <div class="support-note">
+                ООО Авиакомпания «БАРКОЛ» &bull; Корпоративная информационная система
+                {% if reason %}<br><span class="font-monospace text-muted small">Причина: {{ reason }}</span>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

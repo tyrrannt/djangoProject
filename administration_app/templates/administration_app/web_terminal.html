@@ -10,30 +10,47 @@
     <!-- Стили xterm.js -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/xterm/xterm.css' %}"/>
     <style>
-        /* ============================================
-           ДИЗАЙН И СТИЛИ ВЕБ-ТЕРМИНАЛА УПРАВЛЕНИЯ СЕРВЕРОМ
-        ============================================ */
+        /* ==========================================================================
+           ДИЗАЙН И СТИЛИ СОВРЕМЕННОГО ВЕБ-ТЕРМИНАЛА УПРАВЛЕНИЯ СЕРВЕРОМ
+           ========================================================================== */
+        :root {
+            --terminal-bg-default: #0c1017;
+            --terminal-nav-bg: #0f172a;
+            --terminal-border: #334155;
+            --terminal-accent: #38bdf8;
+        }
+
         .terminal-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 43, 73, 0.06);
+            box-shadow: 0 6px 20px rgba(0, 43, 73, 0.08);
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: all 0.2s ease-in-out;
         }
 
+        /* Верхняя системная плашка окна терминала */
         .terminal-header-bar {
-            background: #0f172a;
+            background: var(--terminal-nav-bg);
             color: #ffffff;
-            padding: 10px 16px;
+            padding: 8px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             border-top-left-radius: 11px;
             border-top-right-radius: 11px;
+            border-bottom: 1px solid var(--terminal-border);
+        }
+
+        .terminal-left-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
         .terminal-window-dots {
@@ -47,49 +64,120 @@
             height: 12px;
             border-radius: 50%;
             display: inline-block;
+            cursor: pointer;
+            transition: transform 0.15s ease;
         }
+        .terminal-dot:hover { transform: scale(1.15); }
         .terminal-dot.dot-red { background-color: #ef4444; }
         .terminal-dot.dot-yellow { background-color: #f59e0b; }
         .terminal-dot.dot-green { background-color: #10b981; }
 
-        .terminal-title-text {
-            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-            font-size: 0.88rem;
+        /* Вкладки терминала */
+        .terminal-tabs-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            overflow-x: auto;
+            max-width: 520px;
+            scrollbar-width: thin;
+        }
+
+        .terminal-tab-btn {
+            background: rgba(255, 255, 255, 0.05);
             color: #94a3b8;
-            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
         }
 
-        .terminal-title-text .user-host {
+        .terminal-tab-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #f1f5f9;
+        }
+
+        .terminal-tab-btn.active {
+            background: #1e293b;
             color: #38bdf8;
+            border-color: #38bdf8;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(56, 189, 248, 0.2);
         }
 
+        .terminal-tab-close {
+            color: #64748b;
+            font-size: 0.95rem;
+            line-height: 1;
+            padding: 0 2px;
+            border-radius: 3px;
+            transition: all 0.1s ease;
+        }
+        .terminal-tab-close:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .terminal-tab-add-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: #38bdf8;
+            border: 1px dashed rgba(56, 189, 248, 0.4);
+            font-size: 0.82rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .terminal-tab-add-btn:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+
+        /* Панель управляющих действий */
         .terminal-actions-group {
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            flex-wrap: wrap;
         }
 
         .btn-terminal-action {
             background: rgba(255, 255, 255, 0.08);
             color: #f1f5f9;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            font-size: 0.8rem;
-            padding: 4px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            font-size: 0.78rem;
+            padding: 4px 9px;
             border-radius: 6px;
             display: inline-flex;
             align-items: center;
             gap: 4px;
             transition: all 0.15s ease-in-out;
+            cursor: pointer;
         }
 
         .btn-terminal-action:hover {
             background: rgba(255, 255, 255, 0.18);
             color: #ffffff;
-            border-color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.35);
         }
 
+        .btn-terminal-action.active {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #38bdf8;
+        }
+
+        /* Бейджи статуса и пинга */
         .terminal-status-badge {
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             font-weight: 600;
             padding: 3px 8px;
             border-radius: 20px;
@@ -116,6 +204,20 @@
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
+        .terminal-ping-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 3px 7px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .terminal-ping-badge.ping-good { color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
+        .terminal-ping-badge.ping-medium { color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+        .terminal-ping-badge.ping-bad { color: #f87171; border-color: rgba(248, 113, 113, 0.3); }
+
         .status-dot-pulse {
             width: 7px;
             height: 7px;
@@ -130,22 +232,33 @@
             50% { opacity: 0.4; transform: scale(0.8); }
         }
 
-        /* Область вывода xterm */
+        /* Область вывода терминалов xterm */
         .terminal-viewport-wrapper {
-            background-color: #0c1017;
-            padding: 10px 12px;
+            background-color: var(--terminal-bg-default);
+            padding: 8px 10px;
             position: relative;
             min-height: 520px;
-            height: calc(100vh - 310px);
+            height: calc(100vh - 340px);
             width: 100%;
             box-sizing: border-box;
         }
 
-        #terminal-container {
+        .terminal-tab-viewport {
             width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .terminal-tab-viewport.active {
+            display: block;
+        }
+
+        .terminal-tab-viewport .xterm {
+            padding: 4px;
             height: 100%;
         }
 
+        /* Полноэкранный режим */
         .terminal-viewport-wrapper.is-fullscreen {
             position: fixed !important;
             top: 0 !important;
@@ -153,20 +266,59 @@
             width: 100vw !important;
             height: 100vh !important;
             z-index: 10999 !important;
-            padding: 12px !important;
+            padding: 10px !important;
             border-radius: 0 !important;
         }
 
-        /* Быстрые команды */
-        .terminal-quick-bar {
+        /* Панель категорий быстрых команд */
+        .terminal-commands-wrapper {
             background: #f8fafc;
             border-top: 1px solid #e2e8f0;
             padding: 8px 12px;
+        }
+
+        .cmd-category-tabs {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 6px;
+            margin-bottom: 8px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .cmd-cat-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .cmd-cat-btn:hover {
+            color: #0284c7;
+            border-color: #0284c7;
+        }
+
+        .cmd-cat-btn.active {
+            background: #002b49;
+            color: #ffffff;
+            border-color: #002b49;
+        }
+
+        .cmd-buttons-panel {
+            display: none;
+            align-items: center;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
+        }
+
+        .cmd-buttons-panel.active {
+            display: flex;
         }
 
         .quick-cmd-btn {
@@ -174,10 +326,14 @@
             border: 1px solid #cbd5e1;
             color: #1e293b;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.78rem;
-            padding: 3px 8px;
-            border-radius: 4px;
+            font-size: 0.77rem;
+            padding: 3px 9px;
+            border-radius: 5px;
             transition: all 0.15s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .quick-cmd-btn:hover {
@@ -186,7 +342,56 @@
             border-color: #002b49;
         }
 
-        /* Мобильная панель функциональных клавиш */
+        .quick-cmd-btn.btn-danger-cmd {
+            border-color: #fca5a5;
+            color: #b91c1c;
+            background: #fef2f2;
+        }
+
+        .quick-cmd-btn.btn-danger-cmd:hover {
+            background: #dc2626;
+            color: #ffffff;
+            border-color: #dc2626;
+        }
+
+        .custom-snippet-item {
+            display: inline-flex;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #38bdf8;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .custom-snippet-exec {
+            background: transparent;
+            border: none;
+            color: #0369a1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.77rem;
+            padding: 3px 8px;
+            cursor: pointer;
+        }
+        .custom-snippet-exec:hover {
+            background: #0284c7;
+            color: #ffffff;
+        }
+
+        .custom-snippet-delete {
+            background: transparent;
+            border: none;
+            border-left: 1px solid #bae6fd;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            padding: 3px 6px;
+            cursor: pointer;
+        }
+        .custom-snippet-delete:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        /* Мобильная сенсорная клавиатура */
         .mobile-touch-keys {
             display: none;
             background: #1e293b;
@@ -195,6 +400,7 @@
             overflow-x: auto;
             white-space: nowrap;
             gap: 6px;
+            scrollbar-width: thin;
         }
 
         .mobile-key-btn {
@@ -202,13 +408,28 @@
             color: #f1f5f9;
             border: 1px solid #475569;
             border-radius: 4px;
-            padding: 4px 10px;
-            font-size: 0.78rem;
+            padding: 5px 11px;
+            font-size: 0.8rem;
             font-weight: 600;
+            user-select: none;
+            touch-action: manipulation;
         }
-        .mobile-key-btn:active {
-            background: #0284c7;
-            color: #ffffff;
+        .mobile-key-btn:active, .mobile-key-btn.sticky-active {
+            background: #0284c7 !important;
+            color: #ffffff !important;
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+        }
+
+        /* Выпадающий список тем */
+        .theme-select-dropdown {
+            background: #1e293b;
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            font-size: 0.76rem;
+            padding: 3px 6px;
+            cursor: pointer;
         }
 
         @media (max-width: 768px) {
@@ -217,14 +438,14 @@
             }
             .terminal-viewport-wrapper {
                 min-height: 380px;
-                height: calc(100vh - 350px);
-                padding: 6px;
+                height: calc(100vh - 380px);
+                padding: 4px;
             }
             .terminal-header-bar {
-                padding: 8px 10px;
+                padding: 6px 8px;
             }
-            .terminal-title-text {
-                font-size: 0.78rem;
+            .terminal-tabs-container {
+                max-width: 200px;
             }
         }
     </style>
@@ -233,31 +454,39 @@
 {% block content %}
     <div class="row g-3 mb-4">
         <div class="col-12">
-            <!-- Верхняя карточка информации -->
+            <!-- Верхняя информационная карточка сервера -->
             <div class="card card-modern shadow-sm border-0 mb-3">
                 <div class="card-body p-3">
-                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2">
+                    <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
                         <div class="d-flex align-items-center gap-2">
                             <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
                                 <i class="bx bx-terminal fs-3"></i>
                             </div>
                             <div>
-                                <h4 class="font-weight-bold text-dark mb-0">Веб-терминал сервера</h4>
-                                <p class="text-muted small mb-0">Прямое интерактивное управление Linux PTY (Bash) через защищенный WebSocket</p>
+                                <h4 class="font-weight-bold text-dark mb-0">Интерактивный веб-терминал сервера</h4>
+                                <p class="text-muted small mb-0">Управление Linux PTY / tmux через WebSocket с инкрементальным UTF-8 и защитой от сбоев</p>
                             </div>
                         </div>
 
                         <div class="d-flex align-items-center flex-wrap gap-2">
-                            <span class="badge bg-light text-dark border">
+                            <span class="badge bg-light text-dark border" title="Имя узла сервера">
                                 <i class="bx bx-server me-1 text-primary"></i>Хост: <strong>{{ server_info.hostname }}</strong>
                             </span>
-                            <span class="badge bg-light text-dark border">
+                            <span class="badge bg-light text-dark border" title="Операционная система">
                                 <i class="bx bx-chip me-1 text-info"></i>ОС: <strong>{{ server_info.os }} {{ server_info.machine }}</strong>
                             </span>
-                            <span class="badge bg-light text-dark border">
+                            <span class="badge bg-light text-dark border" title="Текущий пользователь">
                                 <i class="bx bx-user-check me-1 text-success"></i>Пользователь: <strong>{{ request.user.username }}</strong>
                             </span>
-                            <a href="{% url 'administration_app:monitoring' %}" class="btn btn-outline-info btn-sm btn-touch font-weight-semibold">
+                            <span class="badge bg-light text-dark border" title="Каталог проекта на продакшне">
+                                <i class="bx bx-folder me-1 text-warning"></i>Прод: <strong>{{ production_dir }}</strong>
+                            </span>
+
+                            <button type="button" class="btn btn-outline-secondary btn-sm font-weight-semibold" data-bs-toggle="modal" data-bs-target="#sessionHistoryModal" title="Журнал сессий терминала">
+                                <i class="bx bx-history me-1"></i> Журнал сессий
+                            </button>
+
+                            <a href="{% url 'administration_app:monitoring' %}" class="btn btn-outline-info btn-sm font-weight-semibold" title="Мониторинг ресурсов">
                                 <i class="bx bx-pulse me-1"></i> Мониторинг
                             </a>
                         </div>
@@ -267,25 +496,59 @@
 
             <!-- Главный контейнер терминала -->
             <div class="terminal-card">
-                <!-- Оконная панель терминала -->
+                <!-- Оконная шапка терминала -->
                 <div class="terminal-header-bar">
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="terminal-left-group">
                         <div class="terminal-window-dots">
-                            <span class="terminal-dot dot-red" title="Закрыть"></span>
-                            <span class="terminal-dot dot-yellow" title="Свернуть"></span>
-                            <span class="terminal-dot dot-green" title="Развернуть"></span>
+                            <span class="terminal-dot dot-red" id="dotCloseTab" title="Закрыть активную вкладку"></span>
+                            <span class="terminal-dot dot-yellow" id="dotClearTab" title="Очистить терминал (Ctrl+L)"></span>
+                            <span class="terminal-dot dot-green" id="dotFullscreen" title="Полноэкранный режим"></span>
                         </div>
-                        <span class="terminal-title-text">
-                            <i class="bx bx-laptop me-1"></i>bash — <span class="user-host">{{ request.user.username }}@{{ server_info.hostname }}</span>
-                        </span>
+
+                        <!-- Контейнер вкладок терминала -->
+                        <div class="terminal-tabs-container" id="terminalTabsContainer">
+                            <div class="terminal-tab-btn active" data-tab-id="tab_1">
+                                <i class="bx bx-terminal"></i>
+                                <span>Терминал 1</span>
+                            </div>
+                            <button type="button" class="terminal-tab-add-btn" id="btnAddTab" title="Открыть новую сессию терминала">
+                                <i class="bx bx-plus"></i> Таб
+                            </button>
+                        </div>
                     </div>
 
                     <div class="terminal-actions-group">
+                        <!-- Индикатор сетевой задержки (Ping / Latency) -->
+                        <span id="wsPingBadge" class="terminal-ping-badge ping-good" title="Время отклика WebSocket (RTT)">
+                            🟢 <span id="wsPingVal">—</span> ms
+                        </span>
+
                         <!-- Статус подключения -->
-                        <div id="wsStatusBadge" class="terminal-status-badge status-connecting">
+                        <div id="wsStatusBadge" class="terminal-status-badge status-connecting" title="Статус WebSocket сессии">
                             <span class="status-dot-pulse"></span>
                             <span id="wsStatusText">Подключение...</span>
                         </div>
+
+                        <!-- Переключатель устойчивой сессии tmux -->
+                        {% if tmux_available %}
+                            <button type="button" class="btn btn-terminal-action" id="btnToggleTmux" title="Включить устойчивую сессию tmux (не прерывать задачи при закрытии)">
+                                <i class="bx bx-layer"></i> <span id="tmuxStatusLabel">tmux: Вкл</span>
+                            </button>
+                        {% endif %}
+
+                        <!-- Переключатель Safe Mode -->
+                        <button type="button" class="btn btn-terminal-action active" id="btnToggleSafeMode" title="Безопасный режим: подставлять команды в строку без авто-Enter">
+                            <i class="bx bx-shield-quarter"></i> <span id="safeModeLabel">Safe: Вкл</span>
+                        </button>
+
+                        <!-- Выбор цветовой схемы -->
+                        <select id="themeSelect" class="theme-select-dropdown" title="Цветовая тема терминала">
+                            <option value="github_dark">GitHub Dark</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="solarized_dark">Solarized Dark</option>
+                            <option value="high_contrast">High Contrast</option>
+                        </select>
 
                         <!-- Масштаб шрифта -->
                         <div class="btn-group btn-group-sm">
@@ -297,35 +560,55 @@
                             </button>
                         </div>
 
-                        <!-- Очистить -->
+                        <!-- Вставка из буфера обмена -->
+                        <button type="button" class="btn btn-terminal-action" id="btnPasteClipboard" title="Вставить из буфера обмена">
+                            <i class="bx bx-paste"></i> <span class="d-none d-sm-inline">Вставить</span>
+                        </button>
+
+                        <!-- Скачать лог терминала -->
+                        <button type="button" class="btn btn-terminal-action" id="btnExportLog" title="Экспортировать текст терминала в .log файл">
+                            <i class="bx bx-download"></i> <span class="d-none d-sm-inline">Лог</span>
+                        </button>
+
+                        <!-- Очистить экран -->
                         <button type="button" class="btn btn-terminal-action" id="btnClearTerminal" title="Очистить терминал (Ctrl+L)">
-                            <i class="bx bx-trash"></i> <span class="d-none d-sm-inline">Очистить</span>
+                            <i class="bx bx-trash"></i>
                         </button>
 
                         <!-- Переподключить -->
-                        <button type="button" class="btn btn-terminal-action" id="btnReconnect" title="Переподключить сессию">
-                            <i class="bx bx-refresh"></i> <span class="d-none d-sm-inline">Рестарт</span>
+                        <button type="button" class="btn btn-terminal-action" id="btnReconnect" title="Переподключить активную вкладку">
+                            <i class="bx bx-refresh"></i>
                         </button>
 
-                        <!-- Во весь экран -->
-                        <button type="button" class="btn btn-terminal-action" id="btnFullscreen" title="Полноэкранный режим">
+                        <!-- Полноэкранный режим -->
+                        <button type="button" class="btn btn-terminal-action" id="btnFullscreen" title="Полноэкранный режим (F11 / Esc)">
                             <i class="bx bx-fullscreen" id="fullscreenIcon"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Вьюпорт xterm -->
+                <!-- Вьюпорт терминалов (контейнеры для каждой вкладки) -->
                 <div class="terminal-viewport-wrapper" id="terminalWrapper">
-                    <div id="terminal-container"></div>
+                    <div id="terminal-container-tab_1" class="terminal-tab-viewport active" data-tab-id="tab_1"></div>
+                    <div id="terminal-container-tab_2" class="terminal-tab-viewport" data-tab-id="tab_2"></div>
+                    <div id="terminal-container-tab_3" class="terminal-tab-viewport" data-tab-id="tab_3"></div>
+                    <div id="terminal-container-tab_4" class="terminal-tab-viewport" data-tab-id="tab_4"></div>
                 </div>
 
-                <!-- Мобильные сенсорные функциональные клавиши -->
+                <!-- Мобильная сенсорная функциональная панель -->
                 <div class="mobile-touch-keys">
                     <button type="button" class="mobile-key-btn" data-key="\x1b">Esc</button>
                     <button type="button" class="mobile-key-btn" data-key="\t">Tab</button>
+                    <button type="button" class="mobile-key-btn" id="mKeyCtrl" title="Залипающий Ctrl">Ctrl</button>
+                    <button type="button" class="mobile-key-btn" id="mKeyAlt" title="Залипающий Alt">Alt</button>
                     <button type="button" class="mobile-key-btn" data-key="\x03">Ctrl+C</button>
-                    <button type="button" class="mobile-key-btn" data-key="\x04">Ctrl+D</button>
+                    <button type="button" class="mobile-key-btn" data-key="\x1a">Ctrl+Z</button>
                     <button type="button" class="mobile-key-btn" data-key="\x0c">Ctrl+L</button>
+                    <button type="button" class="mobile-key-btn" data-key="\x04">Ctrl+D</button>
+                    <button type="button" class="mobile-key-btn" data-key="\x1b[5~">PgUp</button>
+                    <button type="button" class="mobile-key-btn" data-key="\x1b[6~">PgDn</button>
+                    <button type="button" class="mobile-key-btn" data-key="\x1b[H">Home</button>
+                    <button type="button" class="mobile-key-btn" data-key="\x1b[F">End</button>
                     <button type="button" class="mobile-key-btn" data-key="\x1b[A">↑</button>
                     <button type="button" class="mobile-key-btn" data-key="\x1b[B">↓</button>
                     <button type="button" class="mobile-key-btn" data-key="\x1b[D">←</button>
@@ -337,28 +620,234 @@
                     <button type="button" class="mobile-key-btn" data-key="\r">Enter</button>
                 </div>
 
-                <!-- Панель быстрых команд и подсказок -->
-                <div class="terminal-quick-bar">
-                    <div class="d-flex align-items-center flex-wrap gap-1">
-                        <span class="text-muted small me-1"><i class="bx bx-bolt-circle text-warning me-1"></i>Быстрые команды:</span>
-                        <button type="button" class="quick-cmd-btn" data-cmd="df -h">df -h</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="free -m">free -m</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="systemctl status gunicorn daphne nginx redis mariadb">сервисы</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="ps aux | grep -E 'python|gunicorn|daphne|celery'">процессы</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="docker ps">docker</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="uptime">uptime</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="cd /home/proxmox/djangoProject">cd проект</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="source venv/bin/activate">VENV</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="git pull origin master">Git update</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="python manage.py migrate">Миграции</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="pkill gunicorn">Рестарт Gunicorn</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="sudo systemctl restart daphne.service">Рестарт Daphne</button>
-                        <button type="button" class="quick-cmd-btn" data-cmd="pkill gunicorn; sudo systemctl restart daphne.service">Рестарт всего</button>
+                <!-- Категоризированная панель быстрых команд и сниппетов -->
+                <div class="terminal-commands-wrapper">
+                    <!-- Категории команд -->
+                    <div class="cmd-category-tabs">
+                        <button type="button" class="cmd-cat-btn active" data-cat="django">🚀 Django & Git</button>
+                        <button type="button" class="cmd-cat-btn" data-cat="services">⚙️ Сервисы (Systemd)</button>
+                        <button type="button" class="cmd-cat-btn" data-cat="monitoring">📊 Мониторинг</button>
+                        <button type="button" class="cmd-cat-btn" data-cat="docker">🐳 Docker</button>
+                        <button type="button" class="cmd-cat-btn" data-cat="custom">⭐ Мои команды</button>
                     </div>
 
-                    <div class="text-muted small d-none d-lg-block">
-                        <kbd>Ctrl+C</kbd> прервать &bull; <kbd>Tab</kbd> автодополнение &bull; <kbd>Ctrl+L</kbd> очистить &bull; <kbd>Ctrl+D</kbd> выход
+                    <!-- Панель 1: Django & Git -->
+                    <div class="cmd-buttons-panel active" id="catPanel-django">
+                        <button type="button" class="quick-cmd-btn" data-cmd="cd {{ production_dir }}">cd прод ({{ production_dir }})</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="source venv/bin/activate">VENV activate</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="git status">git status</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="git pull origin master">git pull</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="python manage.py check">manage.py check</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="python manage.py showmigrations">showmigrations</button>
+                        <button type="button" class="quick-cmd-btn btn-danger-cmd" data-cmd="python manage.py migrate" data-dangerous="true" title="Применение миграций БД">
+                            <i class="bx bx-error-circle"></i> Миграции (migrate)
+                        </button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="python manage.py collectstatic --noinput">collectstatic</button>
                     </div>
+
+                    <!-- Панель 2: Сервисы (Systemd & Logs) -->
+                    <div class="cmd-buttons-panel" id="catPanel-services">
+                        <button type="button" class="quick-cmd-btn" data-cmd="systemctl status gunicorn daphne nginx redis mariadb celery">Статус всех служб</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="journalctl -u daphne.service -n 50 -f">Лог Daphne (live)</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="journalctl -u celery.service -n 50 -f">Лог Celery (live)</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="journalctl -u nginx.service -n 50 -f">Лог Nginx (live)</button>
+                        <button type="button" class="quick-cmd-btn btn-danger-cmd" data-cmd="pkill gunicorn" data-dangerous="true">
+                            <i class="bx bx-power-off"></i> Рестарт Gunicorn
+                        </button>
+                        <button type="button" class="quick-cmd-btn btn-danger-cmd" data-cmd="sudo systemctl restart daphne.service" data-dangerous="true">
+                            <i class="bx bx-refresh"></i> Рестарт Daphne
+                        </button>
+                        <button type="button" class="quick-cmd-btn btn-danger-cmd" data-cmd="sudo systemctl restart celery.service" data-dangerous="true">
+                            <i class="bx bx-refresh"></i> Рестарт Celery
+                        </button>
+                        <button type="button" class="quick-cmd-btn btn-danger-cmd" data-cmd="pkill gunicorn; sudo systemctl restart celery; sudo systemctl restart daphne.service" data-dangerous="true">
+                            <i class="bx bx-bomb"></i> Рестарт всего стека
+                        </button>
+                    </div>
+
+                    <!-- Панель 3: Мониторинг -->
+                    <div class="cmd-buttons-panel" id="catPanel-monitoring">
+                        <button type="button" class="quick-cmd-btn" data-cmd="df -h">df -h (диски)</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="free -m">free -m (память)</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="uptime">uptime</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="ps aux | grep -E 'python|gunicorn|daphne|celery'">процессы проекта</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="netstat -tulpen | grep LISTEN">listening порты</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="htop">htop</button>
+                    </div>
+
+                    <!-- Панель 4: Docker -->
+                    <div class="cmd-buttons-panel" id="catPanel-docker">
+                        <button type="button" class="quick-cmd-btn" data-cmd="docker ps">docker ps</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="docker stats --no-stream">docker stats</button>
+                        <button type="button" class="quick-cmd-btn" data-cmd="docker compose ps">compose ps</button>
+                    </div>
+
+                    <!-- Панель 5: Мои команды (Пользовательские сниппеты) -->
+                    <div class="cmd-buttons-panel" id="catPanel-custom">
+                        <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" id="btnAddCustomSnippet">
+                            <i class="bx bx-plus"></i> Добавить команду
+                        </button>
+                        <div id="customSnippetsContainer" class="d-inline-flex align-items-center flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ОПАСНОЙ КОМАНДЫ -->
+    <div class="modal fade" id="dangerCmdModal" tabindex="-1" aria-labelledby="dangerCmdModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title font-weight-bold" id="dangerCmdModalLabel">
+                        <i class="bx bx-error-circle me-1"></i> Подтверждение выполнения команды
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-danger font-weight-semibold mb-2">
+                        Вы собираетесь выполнить потенциально деструктивную или перезапускающую команду:
+                    </p>
+                    <div class="p-3 bg-dark text-warning rounded-3 font-monospace small mb-3 text-break" id="dangerCmdPreview"></div>
+                    <p class="text-muted small mb-0">
+                        <i class="bx bx-info-circle me-1 text-primary"></i>Перезапуск Daphne или ключевых сервисов может временно разорвать текущую WebSocket-сессию терминала.
+                    </p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-danger btn-sm font-weight-semibold" id="btnConfirmDangerCmd">
+                        <i class="bx bx-check me-1"></i> Выполнить команду
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ВСТАВКИ ИЗ БУФЕРА ОБМЕНА -->
+    <div class="modal fade" id="pasteModal" tabindex="-1" aria-labelledby="pasteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title font-weight-bold" id="pasteModalLabel">
+                        <i class="bx bx-paste me-1 text-info"></i> Вставка текста в терминал
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <label for="pasteTextarea" class="form-label text-muted small">Проверьте или отредактируйте текст перед вставкой:</label>
+                    <textarea class="form-control font-monospace" id="pasteTextarea" rows="8" placeholder="Вставьте сюда скрипт или команду..."></textarea>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="pasteWithEnter" checked>
+                        <label class="form-check-label small" for="pasteWithEnter">
+                            Автоматически нажать Enter после вставки
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary btn-sm font-weight-semibold" id="btnConfirmPaste">
+                        <i class="bx bx-send me-1"></i> Отправить в терминал
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ПОЛЬЗОВАТЕЛЬСКОЙ КОМАНДЫ -->
+    <div class="modal fade" id="addCustomSnippetModal" tabindex="-1" aria-labelledby="addCustomSnippetModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title font-weight-bold" id="addCustomSnippetModalLabel">
+                        <i class="bx bx-plus-circle me-1"></i> Добавить быструю команду
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="snippetTitleInput" class="form-label font-weight-semibold small">Название (метка на кнопке):</label>
+                        <input type="text" class="form-control" id="snippetTitleInput" placeholder="Например: Проверка логов почты" maxlength="40">
+                    </div>
+                    <div class="mb-3">
+                        <label for="snippetCommandInput" class="form-label font-weight-semibold small">Bash-команда:</label>
+                        <input type="text" class="form-control font-monospace" id="snippetCommandInput" placeholder="tail -f /var/log/mail.log">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary btn-sm font-weight-semibold" id="btnSaveCustomSnippet">
+                        <i class="bx bx-save me-1"></i> Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ЖУРНАЛА СЕССИЙ ТЕРМИНАЛА -->
+    <div class="modal fade" id="sessionHistoryModal" tabindex="-1" aria-labelledby="sessionHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title font-weight-bold" id="sessionHistoryModalLabel">
+                        <i class="bx bx-history me-1 text-primary"></i> Журнал активности сессий веб-терминала
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Пользователь</th>
+                                    <th>IP-адрес</th>
+                                    <th>Таб</th>
+                                    <th>Режим</th>
+                                    <th>Начало</th>
+                                    <th>Завершение</th>
+                                    <th>Длительность</th>
+                                    <th>Код</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in recent_sessions %}
+                                    <tr>
+                                        <td>{{ s.pk }}</td>
+                                        <td><strong>{{ s.user.username|default:"Anonymous" }}</strong></td>
+                                        <td><code>{{ s.ip_address }}</code></td>
+                                        <td><span class="badge bg-light text-dark border">{{ s.tab_id }}</span></td>
+                                        <td>
+                                            {% if s.is_tmux %}
+                                                <span class="badge bg-success-subtle text-success border border-success">tmux</span>
+                                            {% else %}
+                                                <span class="badge bg-info-subtle text-info border border-info">bash</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ s.started_at|date:"d.m.Y H:i:s" }}</td>
+                                        <td>{{ s.ended_at|date:"d.m.Y H:i:s"|default:"<span class='text-warning'>В процессе...</span>"|safe }}</td>
+                                        <td>
+                                            {% if s.duration_seconds %}
+                                                {{ s.duration_seconds }} сек
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td><code>{{ s.close_code|default:"—" }}</code></td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted py-4">Журнал сессий пуст</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <a href="{% url 'admin:administration_app_webterminalsession_changelist' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bx bx-cog me-1"></i> Открыть в панели администрирования
+                    </a>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
                 </div>
             </div>
         </div>
@@ -375,24 +864,106 @@
         (function () {
             'use strict';
 
-            var term = null;
-            var fitAddon = null;
-            var socket = null;
-            var fontSize = 14;
-            var isFullscreen = false;
+            // =========================================================================
+            // КОНФИГУРАЦИЯ ЦВЕТОВЫХ ТЕМ XTERM
+            // =========================================================================
+            var THEMES = {
+                github_dark: {
+                    background: '#0c1017', foreground: '#e6edf3', cursor: '#38bdf8', cursorAccent: '#0c1017',
+                    selectionBackground: 'rgba(56, 189, 248, 0.3)', black: '#484f58', red: '#ff7b72', green: '#3fb950',
+                    yellow: '#d29922', blue: '#58a6ff', magenta: '#bc8cff', cyan: '#39c5cf', white: '#d0d7de',
+                    brightBlack: '#6e7681', brightRed: '#ffa198', brightGreen: '#56d364', brightYellow: '#e3b341',
+                    brightBlue: '#79c0ff', brightMagenta: '#d2a8ff', brightCyan: '#56d4dd', brightWhite: '#ffffff'
+                },
+                dracula: {
+                    background: '#282a36', foreground: '#f8f8f2', cursor: '#f8f8f0', cursorAccent: '#282a36',
+                    selectionBackground: 'rgba(68, 71, 90, 0.5)', black: '#21222c', red: '#ff5555', green: '#50fa7b',
+                    yellow: '#f1fa8c', blue: '#bd93f9', magenta: '#ff79c6', cyan: '#8be9fd', white: '#f8f8f2',
+                    brightBlack: '#6272a4', brightRed: '#ff6e6e', brightGreen: '#69ff94', brightYellow: '#ffffa5',
+                    brightBlue: '#d6acff', brightMagenta: '#ff92df', brightCyan: '#a4ffff', brightWhite: '#ffffff'
+                },
+                monokai: {
+                    background: '#272822', foreground: '#f8f8f2', cursor: '#f8f8f0', cursorAccent: '#272822',
+                    selectionBackground: 'rgba(73, 72, 62, 0.6)', black: '#272822', red: '#f92672', green: '#a6e22e',
+                    yellow: '#f4bf75', blue: '#66d9ef', magenta: '#ae81ff', cyan: '#a1efe4', white: '#f8f8f2',
+                    brightBlack: '#75715e', brightRed: '#f92672', brightGreen: '#a6e22e', brightYellow: '#f4bf75',
+                    brightBlue: '#66d9ef', brightMagenta: '#ae81ff', brightCyan: '#a1efe4', brightWhite: '#f9f8f5'
+                },
+                solarized_dark: {
+                    background: '#002b36', foreground: '#839496', cursor: '#93a1a1', cursorAccent: '#002b36',
+                    selectionBackground: 'rgba(7, 54, 66, 0.7)', black: '#073642', red: '#dc322f', green: '#859900',
+                    yellow: '#b58900', blue: '#268bd2', magenta: '#d33682', cyan: '#2aa198', white: '#eee8d5',
+                    brightBlack: '#002b36', brightRed: '#cb4b16', brightGreen: '#586e75', brightYellow: '#657b83',
+                    brightBlue: '#839496', brightMagenta: '#6c71c4', brightCyan: '#93a1a1', brightWhite: '#fdf6e3'
+                },
+                high_contrast: {
+                    background: '#000000', foreground: '#ffffff', cursor: '#00ff00', cursorAccent: '#000000',
+                    selectionBackground: 'rgba(255, 255, 255, 0.4)', black: '#000000', red: '#ff0000', green: '#00ff00',
+                    yellow: '#ffff00', blue: '#0000ff', magenta: '#ff00ff', cyan: '#00ffff', white: '#ffffff',
+                    brightBlack: '#808080', brightRed: '#ff0000', brightGreen: '#00ff00', brightYellow: '#ffff00',
+                    brightBlue: '#0000ff', brightMagenta: '#ff00ff', brightCyan: '#00ffff', brightWhite: '#ffffff'
+                }
+            };
 
-            var container = document.getElementById('terminal-container');
+            // =========================================================================
+            // СОСТОЯНИЕ И ПЕРЕМЕННЫЕ
+            // =========================================================================
+            var tabs = {};
+            var activeTabId = 'tab_1';
+            var fontSize = parseInt(localStorage.getItem('barkol_term_fontsize') || '14', 10);
+            var currentThemeName = localStorage.getItem('barkol_term_theme') || 'github_dark';
+            var isTmuxEnabled = localStorage.getItem('barkol_term_tmux') !== '0';
+            var isSafeMode = localStorage.getItem('barkol_term_safemode') !== '0';
+            var isFullscreen = false;
+            var pendingDangerousCmd = null;
+
+            // DOM элементы
             var wrapper = document.getElementById('terminalWrapper');
             var statusBadge = document.getElementById('wsStatusBadge');
             var statusText = document.getElementById('wsStatusText');
+            var pingBadge = document.getElementById('wsPingBadge');
+            var pingVal = document.getElementById('wsPingVal');
+            var tabsContainer = document.getElementById('terminalTabsContainer');
+            var btnAddTab = document.getElementById('btnAddTab');
             var btnReconnect = document.getElementById('btnReconnect');
             var btnClear = document.getElementById('btnClearTerminal');
             var btnFullscreen = document.getElementById('btnFullscreen');
             var fullscreenIcon = document.getElementById('fullscreenIcon');
             var btnFontPlus = document.getElementById('btnFontPlus');
             var btnFontMinus = document.getElementById('btnFontMinus');
+            var btnToggleTmux = document.getElementById('btnToggleTmux');
+            var tmuxStatusLabel = document.getElementById('tmuxStatusLabel');
+            var btnToggleSafeMode = document.getElementById('btnToggleSafeMode');
+            var safeModeLabel = document.getElementById('safeModeLabel');
+            var themeSelect = document.getElementById('themeSelect');
+            var btnExportLog = document.getElementById('btnExportLog');
+            var btnPasteClipboard = document.getElementById('btnPasteClipboard');
 
-            function setStatus(state, message) {
+            // Липкие модификаторы для мобильных
+            var stickyCtrl = false;
+            var stickyAlt = false;
+            var mKeyCtrl = document.getElementById('mKeyCtrl');
+            var mKeyAlt = document.getElementById('mKeyAlt');
+
+            // Модальные окна Bootstrap
+            var dangerModalEl = document.getElementById('dangerCmdModal');
+            var dangerModal = dangerModalEl ? new bootstrap.Modal(dangerModalEl) : null;
+            var dangerCmdPreview = document.getElementById('dangerCmdPreview');
+            var btnConfirmDangerCmd = document.getElementById('btnConfirmDangerCmd');
+
+            var pasteModalEl = document.getElementById('pasteModal');
+            var pasteModal = pasteModalEl ? new bootstrap.Modal(pasteModalEl) : null;
+            var pasteTextarea = document.getElementById('pasteTextarea');
+            var pasteWithEnter = document.getElementById('pasteWithEnter');
+            var btnConfirmPaste = document.getElementById('btnConfirmPaste');
+
+            var addCustomModalEl = document.getElementById('addCustomSnippetModal');
+            var addCustomModal = addCustomModalEl ? new bootstrap.Modal(addCustomModalEl) : null;
+
+            // =========================================================================
+            // ФУНКЦИИ УПРАВЛЕНИЯ СТАТУСОМ И ПИНГОМ
+            // =========================================================================
+            function updateStatus(state, message) {
                 if (!statusBadge || !statusText) return;
                 statusBadge.classList.remove('status-connected', 'status-connecting', 'status-disconnected');
                 if (state === 'connected') {
@@ -407,44 +978,41 @@
                 }
             }
 
-            function initTerminal() {
-                if (term) {
-                    term.dispose();
+            function updatePingDisplay(rtt) {
+                if (!pingBadge || !pingVal) return;
+                pingVal.textContent = rtt;
+                pingBadge.classList.remove('ping-good', 'ping-medium', 'ping-bad');
+                if (rtt < 80) {
+                    pingBadge.classList.add('ping-good');
+                    pingBadge.innerHTML = '🟢 ' + rtt + ' ms';
+                } else if (rtt < 250) {
+                    pingBadge.classList.add('ping-medium');
+                    pingBadge.innerHTML = '🟡 ' + rtt + ' ms';
+                } else {
+                    pingBadge.classList.add('ping-bad');
+                    pingBadge.innerHTML = '🔴 ' + rtt + ' ms';
                 }
+            }
 
-                term = new Terminal({
+            // =========================================================================
+            // ИНИЦИАЛИЗАЦИЯ И РАБОТА С ВКЛАДКАМИ ТЕРМИНАЛА
+            // =========================================================================
+            function createTerminalTab(tabId, tabTitle) {
+                var container = document.getElementById('terminal-container-' + tabId);
+                if (!container) return null;
+
+                var term = new Terminal({
                     cursorBlink: true,
                     cursorStyle: 'block',
                     fontSize: fontSize,
-                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Courier New', monospace",
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
                     lineHeight: 1.2,
-                    theme: {
-                        background: '#0c1017',
-                        foreground: '#e6edf3',
-                        cursor: '#38bdf8',
-                        cursorAccent: '#0c1017',
-                        selectionBackground: 'rgba(56, 189, 248, 0.3)',
-                        black: '#484f58',
-                        red: '#ff7b72',
-                        green: '#3fb950',
-                        yellow: '#d29922',
-                        blue: '#58a6ff',
-                        magenta: '#bc8cff',
-                        cyan: '#39c5cf',
-                        white: '#d0d7de',
-                        brightBlack: '#6e7681',
-                        brightRed: '#ffa198',
-                        brightGreen: '#56d364',
-                        brightYellow: '#e3b341',
-                        brightBlue: '#79c0ff',
-                        brightMagenta: '#d2a8ff',
-                        brightCyan: '#56d4dd',
-                        brightWhite: '#ffffff'
-                    },
+                    theme: THEMES[currentThemeName] || THEMES.github_dark,
                     allowProposedApi: true,
                     convertEol: true
                 });
 
+                var fitAddon = null;
                 if (typeof FitAddon !== 'undefined' && FitAddon.FitAddon) {
                     fitAddon = new FitAddon.FitAddon();
                     term.loadAddon(fitAddon);
@@ -457,112 +1025,530 @@
                 container.innerHTML = '';
                 term.open(container);
 
-                if (fitAddon) {
-                    setTimeout(function () {
-                        fitAddon.fit();
-                        sendResize();
-                    }, 50);
-                }
+                var tabObj = {
+                    id: tabId,
+                    title: tabTitle,
+                    term: term,
+                    fitAddon: fitAddon,
+                    socket: null,
+                    pingTimer: null,
+                    container: container
+                };
+
+                tabs[tabId] = tabObj;
 
                 term.onData(function (data) {
-                    if (socket && socket.readyState === WebSocket.OPEN) {
-                        socket.send(data);
+                    if (tabObj.socket && tabObj.socket.readyState === WebSocket.OPEN) {
+                        tabObj.socket.send(data);
                     }
                 });
+
+                connectTabWebSocket(tabId);
+                return tabObj;
             }
 
-            function sendResize() {
-                if (!term || !socket || socket.readyState !== WebSocket.OPEN) return;
-                try {
-                    socket.send(JSON.stringify({
-                        type: 'resize',
-                        cols: term.cols,
-                        rows: term.rows
-                    }));
-                } catch (e) {
-                    console.warn('[WebTerminal] Resize send error:', e);
-                }
-            }
+            function connectTabWebSocket(tabId) {
+                var tab = tabs[tabId];
+                if (!tab) return;
 
-            function connectWebSocket() {
-                setStatus('connecting', 'Подключение...');
-                if (socket) {
+                if (tab.socket) {
                     try {
-                        socket.onclose = null;
-                        socket.close();
+                        tab.socket.onclose = null;
+                        tab.socket.close();
                     } catch (e) {}
                 }
 
+                if (tab.pingTimer) {
+                    clearInterval(tab.pingTimer);
+                    tab.pingTimer = null;
+                }
+
+                if (tabId === activeTabId) {
+                    updateStatus('connecting', 'Подключение...');
+                }
+
                 var wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-                var wsUrl = wsProtocol + window.location.host + '/ws/terminal/';
+                var tmuxParam = isTmuxEnabled ? '1' : '0';
+                var wsUrl = wsProtocol + window.location.host + '/ws/terminal/?tab_id=' + tabId + '&use_tmux=' + tmuxParam;
 
-                socket = new WebSocket(wsUrl);
+                tab.socket = new WebSocket(wsUrl);
 
-                socket.onopen = function () {
-                    setStatus('connected', 'Онлайн');
-                    if (fitAddon) {
-                        fitAddon.fit();
+                tab.socket.onopen = function () {
+                    if (tabId === activeTabId) {
+                        updateStatus('connected', 'Онлайн');
                     }
-                    sendResize();
-                    term.focus();
+                    if (tab.fitAddon) {
+                        setTimeout(function () {
+                            tab.fitAddon.fit();
+                            sendResize(tabId);
+                        }, 50);
+                    }
+                    tab.term.focus();
+
+                    // Запуск Heartbeat Ping каждые 15 секунд
+                    tab.pingTimer = setInterval(function () {
+                        if (tab.socket && tab.socket.readyState === WebSocket.OPEN) {
+                            try {
+                                tab.socket.send(JSON.stringify({
+                                    type: 'ping',
+                                    timestamp: Date.now()
+                                }));
+                            } catch (e) {}
+                        }
+                    }, 15000);
                 };
 
-                socket.onmessage = function (event) {
-                    if (term) {
-                        term.write(event.data);
+                tab.socket.onmessage = function (event) {
+                    // Проверяем, является ли сообщение pong ответом
+                    if (typeof event.data === 'string' && event.data.startsWith('{') && event.data.endsWith('}')) {
+                        try {
+                            var jsonMsg = JSON.parse(event.data);
+                            if (jsonMsg.type === 'pong' && jsonMsg.timestamp) {
+                                var rtt = Date.now() - jsonMsg.timestamp;
+                                if (tabId === activeTabId) {
+                                    updatePingDisplay(rtt);
+                                }
+                                return;
+                            }
+                        } catch (e) {}
+                    }
+
+                    if (tab.term) {
+                        tab.term.write(event.data);
                     }
                 };
 
-                socket.onerror = function (error) {
-                    console.error('[WebTerminal] WebSocket Error:', error);
-                    setStatus('disconnected', 'Ошибка сети');
+                tab.socket.onerror = function (error) {
+                    console.error('[WebTerminal] WebSocket error on tab ' + tabId + ':', error);
+                    if (tabId === activeTabId) {
+                        updateStatus('disconnected', 'Ошибка сети');
+                    }
                 };
 
-                socket.onclose = function (event) {
-                    console.log('[WebTerminal] WebSocket closed with code:', event.code);
-                    setStatus('disconnected', event.code === 4003 ? 'Доступ запрещен' : 'Сессия закрыта');
-                    if (term) {
-                        term.write('\r\n\x1b[33;1m[Сессия терминала завершена. Нажмите «Рестарт» для нового подключения]\x1b[0m\r\n');
+                tab.socket.onclose = function (event) {
+                    if (tab.pingTimer) {
+                        clearInterval(tab.pingTimer);
+                        tab.pingTimer = null;
+                    }
+                    if (tabId === activeTabId) {
+                        updateStatus('disconnected', event.code === 4003 ? 'Доступ запрещен' : 'Сессия закрыта');
+                    }
+                    if (tab.term) {
+                        tab.term.write('\r\n\x1b[33;1m[Сессия завершена. Нажмите «Рестарт» или выберите другую вкладку]\x1b[0m\r\n');
                     }
                 };
             }
 
-            function sendCommand(cmd) {
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send(cmd + '\n');
-                    if (term) term.focus();
+            function sendResize(tabId) {
+                var tab = tabs[tabId];
+                if (!tab || !tab.term || !tab.socket || tab.socket.readyState !== WebSocket.OPEN) return;
+                try {
+                    tab.socket.send(JSON.stringify({
+                        type: 'resize',
+                        cols: tab.term.cols,
+                        rows: tab.term.rows
+                    }));
+                } catch (e) {}
+            }
+
+            function switchTab(tabId) {
+                if (!tabs[tabId]) return;
+                activeTabId = tabId;
+
+                // Переключение отображения контейнеров
+                document.querySelectorAll('.terminal-tab-viewport').forEach(function (el) {
+                    el.classList.remove('active');
+                });
+                var activeContainer = document.getElementById('terminal-container-' + tabId);
+                if (activeContainer) activeContainer.classList.add('active');
+
+                // Переключение кнопок табов
+                document.querySelectorAll('.terminal-tab-btn').forEach(function (btn) {
+                    btn.classList.toggle('active', btn.getAttribute('data-tab-id') === tabId);
+                });
+
+                var curTab = tabs[tabId];
+                if (curTab) {
+                    if (curTab.socket) {
+                        if (curTab.socket.readyState === WebSocket.OPEN) {
+                            updateStatus('connected', 'Онлайн');
+                        } else if (curTab.socket.readyState === WebSocket.CONNECTING) {
+                            updateStatus('connecting', 'Подключение...');
+                        } else {
+                            updateStatus('disconnected', 'Сессия закрыта');
+                        }
+                    }
+                    setTimeout(function () {
+                        if (curTab.fitAddon) curTab.fitAddon.fit();
+                        sendResize(tabId);
+                        curTab.term.focus();
+                    }, 50);
                 }
             }
 
-            // Обработчики кнопок
-            if (btnReconnect) {
-                btnReconnect.addEventListener('click', function () {
-                    initTerminal();
-                    connectWebSocket();
-                });
-            }
-
-            if (btnClear) {
-                btnClear.addEventListener('click', function () {
-                    if (term) {
-                        term.clear();
-                        if (socket && socket.readyState === WebSocket.OPEN) {
-                            socket.send('\x0c'); // Ctrl+L
-                        }
-                        term.focus();
+            function closeTab(tabId) {
+                var tabKeys = Object.keys(tabs);
+                if (tabKeys.length <= 1) {
+                    // Не закрываем последнюю вкладку — просто очищаем
+                    if (tabs[tabId] && tabs[tabId].term) {
+                        tabs[tabId].term.clear();
                     }
+                    return;
+                }
+
+                var tab = tabs[tabId];
+                if (tab) {
+                    if (tab.pingTimer) clearInterval(tab.pingTimer);
+                    if (tab.socket) {
+                        tab.socket.onclose = null;
+                        tab.socket.close();
+                    }
+                    if (tab.term) tab.term.dispose();
+                    delete tabs[tabId];
+                }
+
+                // Удаляем кнопку таба из DOM
+                var tabBtn = document.querySelector('.terminal-tab-btn[data-tab-id="' + tabId + '"]');
+                if (tabBtn) tabBtn.remove();
+
+                // Очищаем контейнер
+                var container = document.getElementById('terminal-container-' + tabId);
+                if (container) {
+                    container.classList.remove('active');
+                    container.innerHTML = '';
+                }
+
+                // Переключаемся на первую оставшуюся вкладку
+                var remaining = Object.keys(tabs);
+                if (remaining.length > 0) {
+                    switchTab(remaining[0]);
+                }
+            }
+
+            // Добавление новой вкладки
+            function addNewTab() {
+                var existingKeys = Object.keys(tabs);
+                if (existingKeys.length >= 4) {
+                    alert('Достигнут максимум параллельных вкладок (4).');
+                    return;
+                }
+
+                var nextIndex = 1;
+                while (tabs['tab_' + nextIndex]) {
+                    nextIndex++;
+                }
+                var newTabId = 'tab_' + nextIndex;
+                var newTabTitle = 'Терминал ' + nextIndex;
+
+                // Создаем кнопку вкладки
+                var tabBtn = document.createElement('div');
+                tabBtn.className = 'terminal-tab-btn';
+                tabBtn.setAttribute('data-tab-id', newTabId);
+                tabBtn.innerHTML = '<i class="bx bx-terminal"></i> <span>' + newTabTitle + '</span> <span class="terminal-tab-close" title="Закрыть">&times;</span>';
+
+                tabBtn.querySelector('.terminal-tab-close').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    closeTab(newTabId);
+                });
+
+                tabBtn.addEventListener('click', function () {
+                    switchTab(newTabId);
+                });
+
+                tabsContainer.insertBefore(tabBtn, btnAddTab);
+                createTerminalTab(newTabId, newTabTitle);
+                switchTab(newTabId);
+            }
+
+            // =========================================================================
+            // ОТПРАВКА КОМАНД И БЕЗОПАСНЫЙ РЕЖИМ (SAFE MODE)
+            // =========================================================================
+            function sendCommandToActiveTab(cmd, autoEnter) {
+                var curTab = tabs[activeTabId];
+                if (!curTab || !curTab.socket || curTab.socket.readyState !== WebSocket.OPEN) {
+                    return;
+                }
+
+                var textToSend = cmd;
+                if (autoEnter) {
+                    textToSend += '\n';
+                }
+
+                curTab.socket.send(textToSend);
+                curTab.term.focus();
+            }
+
+            function handleCommandExecution(cmd, isDangerous) {
+                if (!cmd) return;
+
+                if (isDangerous) {
+                    // Для опасных команд показываем модальное окно подтверждения
+                    pendingDangerousCmd = cmd;
+                    if (dangerCmdPreview) dangerCmdPreview.textContent = cmd;
+                    if (dangerModal) dangerModal.show();
+                    return;
+                }
+
+                if (isSafeMode) {
+                    // Safe Mode: вставляем команду в терминал без нажатия Enter
+                    sendCommandToActiveTab(cmd, false);
+                } else {
+                    // Мгновенное выполнение
+                    sendCommandToActiveTab(cmd, true);
+                }
+            }
+
+            // =========================================================================
+            // ПОЛЬЗОВАТЕЛЬСКИЕ СНИППЕТЫ (LOCAL STORAGE)
+            // =========================================================================
+            function loadCustomSnippets() {
+                var container = document.getElementById('customSnippetsContainer');
+                if (!container) return;
+                container.innerHTML = '';
+
+                var raw = localStorage.getItem('barkol_terminal_custom_snippets');
+                var list = [];
+                try {
+                    list = raw ? JSON.parse(raw) : [];
+                } catch (e) {
+                    list = [];
+                }
+
+                if (list.length === 0) {
+                    container.innerHTML = '<span class="text-muted small">Нет сохраненных команд</span>';
+                    return;
+                }
+
+                list.forEach(function (item, idx) {
+                    var wrap = document.createElement('div');
+                    wrap.className = 'custom-snippet-item';
+
+                    var btnExec = document.createElement('button');
+                    btnExec.type = 'button';
+                    btnExec.className = 'custom-snippet-exec';
+                    btnExec.title = item.cmd;
+                    btnExec.textContent = item.title;
+                    btnExec.addEventListener('click', function () {
+                        handleCommandExecution(item.cmd, false);
+                    });
+
+                    var btnDel = document.createElement('button');
+                    btnDel.type = 'button';
+                    btnDel.className = 'custom-snippet-delete';
+                    btnDel.innerHTML = '&times;';
+                    btnDel.title = 'Удалить';
+                    btnDel.addEventListener('click', function () {
+                        list.splice(idx, 1);
+                        localStorage.setItem('barkol_terminal_custom_snippets', JSON.stringify(list));
+                        loadCustomSnippets();
+                    });
+
+                    wrap.appendChild(btnExec);
+                    wrap.appendChild(btnDel);
+                    container.appendChild(wrap);
                 });
             }
 
+            function saveNewCustomSnippet(title, cmd) {
+                if (!title || !cmd) return;
+                var raw = localStorage.getItem('barkol_terminal_custom_snippets');
+                var list = [];
+                try {
+                    list = raw ? JSON.parse(raw) : [];
+                } catch (e) {
+                    list = [];
+                }
+                list.push({ title: title, cmd: cmd });
+                localStorage.setItem('barkol_terminal_custom_snippets', JSON.stringify(list));
+                loadCustomSnippets();
+            }
+
+            // =========================================================================
+            // ЭКСПОРТ ЛОГА И БУФЕР ОБМЕНА
+            // =========================================================================
+            function exportCurrentTabLog() {
+                var curTab = tabs[activeTabId];
+                if (!curTab || !curTab.term) return;
+
+                var buffer = curTab.term.buffer.active;
+                var lines = [];
+                for (var i = 0; i < buffer.length; i++) {
+                    var line = buffer.getLine(i);
+                    if (line) lines.push(line.translateToString(true));
+                }
+                var content = lines.join('\n').trim();
+                if (!content) {
+                    alert('Буфер терминала пуст.');
+                    return;
+                }
+
+                var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                var now = new Date();
+                var pad = function (n) { return n < 10 ? '0' + n : n; };
+                var filename = 'terminal_' + activeTabId + '_' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + '.log';
+
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }
+
+            function pasteFromClipboard() {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText().then(function (text) {
+                        if (pasteTextarea) pasteTextarea.value = text;
+                        if (pasteModal) pasteModal.show();
+                    }).catch(function () {
+                        if (pasteTextarea) pasteTextarea.value = '';
+                        if (pasteModal) pasteModal.show();
+                    });
+                } else {
+                    if (pasteTextarea) pasteTextarea.value = '';
+                    if (pasteModal) pasteModal.show();
+                }
+            }
+
+            // =========================================================================
+            // НАЗНАЧЕНИЕ ОБРАБОТЧИКОВ СОБЫТИЙ
+            // =========================================================================
+            // Добавление новой вкладки
+            if (btnAddTab) {
+                btnAddTab.addEventListener('click', addNewTab);
+            }
+
+            // Клик по первой вкладке
+            var firstTabBtn = document.querySelector('.terminal-tab-btn[data-tab-id="tab_1"]');
+            if (firstTabBtn) {
+                firstTabBtn.addEventListener('click', function () {
+                    switchTab('tab_1');
+                });
+            }
+
+            // Переключение категорий быстрых команд
+            document.querySelectorAll('.cmd-cat-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.cmd-cat-btn').forEach(function (b) { b.classList.remove('active'); });
+                    this.classList.add('active');
+                    var cat = this.getAttribute('data-cat');
+                    document.querySelectorAll('.cmd-buttons-panel').forEach(function (p) {
+                        p.classList.toggle('active', p.id === 'catPanel-' + cat);
+                    });
+                });
+            });
+
+            // Нажатия на быстрые команды
+            document.querySelectorAll('.quick-cmd-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var cmd = this.getAttribute('data-cmd');
+                    var isDangerous = this.getAttribute('data-dangerous') === 'true';
+                    handleCommandExecution(cmd, isDangerous);
+                });
+            });
+
+            // Подтверждение опасной команды в модальном окне
+            if (btnConfirmDangerCmd) {
+                btnConfirmDangerCmd.addEventListener('click', function () {
+                    if (pendingDangerousCmd) {
+                        sendCommandToActiveTab(pendingDangerousCmd, true);
+                        pendingDangerousCmd = null;
+                    }
+                    if (dangerModal) dangerModal.hide();
+                });
+            }
+
+            // Вставка текста из модального окна вставки
+            if (btnConfirmPaste) {
+                btnConfirmPaste.addEventListener('click', function () {
+                    var text = pasteTextarea ? pasteTextarea.value : '';
+                    if (text) {
+                        var withEnter = pasteWithEnter ? pasteWithEnter.checked : false;
+                        sendCommandToActiveTab(text, withEnter);
+                    }
+                    if (pasteModal) pasteModal.hide();
+                });
+            }
+
+            // Кнопка вызова диалога вставки
+            if (btnPasteClipboard) {
+                btnPasteClipboard.addEventListener('click', pasteFromClipboard);
+            }
+
+            // Экспорт лога
+            if (btnExportLog) {
+                btnExportLog.addEventListener('click', exportCurrentTabLog);
+            }
+
+            // Переключатель tmux
+            if (btnToggleTmux) {
+                var updateTmuxBtn = function () {
+                    if (isTmuxEnabled) {
+                        btnToggleTmux.classList.add('active');
+                        if (tmuxStatusLabel) tmuxStatusLabel.textContent = 'tmux: Вкл';
+                    } else {
+                        btnToggleTmux.classList.remove('active');
+                        if (tmuxStatusLabel) tmuxStatusLabel.textContent = 'tmux: Выкл';
+                    }
+                };
+                updateTmuxBtn();
+                btnToggleTmux.addEventListener('click', function () {
+                    isTmuxEnabled = !isTmuxEnabled;
+                    localStorage.setItem('barkol_term_tmux', isTmuxEnabled ? '1' : '0');
+                    updateTmuxBtn();
+                    // Переподключаем активный таб с новым режимом
+                    connectTabWebSocket(activeTabId);
+                });
+            }
+
+            // Переключатель Safe Mode
+            if (btnToggleSafeMode) {
+                var updateSafeModeBtn = function () {
+                    if (isSafeMode) {
+                        btnToggleSafeMode.classList.add('active');
+                        if (safeModeLabel) safeModeLabel.textContent = 'Safe: Вкл';
+                    } else {
+                        btnToggleSafeMode.classList.remove('active');
+                        if (safeModeLabel) safeModeLabel.textContent = 'Safe: Выкл';
+                    }
+                };
+                updateSafeModeBtn();
+                btnToggleSafeMode.addEventListener('click', function () {
+                    isSafeMode = !isSafeMode;
+                    localStorage.setItem('barkol_term_safemode', isSafeMode ? '1' : '0');
+                    updateSafeModeBtn();
+                });
+            }
+
+            // Выбор цветовой схемы
+            if (themeSelect) {
+                themeSelect.value = currentThemeName;
+                themeSelect.addEventListener('change', function () {
+                    currentThemeName = this.value;
+                    localStorage.setItem('barkol_term_theme', currentThemeName);
+                    var newTheme = THEMES[currentThemeName] || THEMES.github_dark;
+                    Object.keys(tabs).forEach(function (k) {
+                        if (tabs[k] && tabs[k].term) {
+                            tabs[k].term.options.theme = newTheme;
+                        }
+                    });
+                });
+            }
+
+            // Масштабирование шрифта
             if (btnFontPlus) {
                 btnFontPlus.addEventListener('click', function () {
                     if (fontSize < 24) {
                         fontSize += 1;
-                        if (term) {
-                            term.options.fontSize = fontSize;
-                            if (fitAddon) fitAddon.fit();
-                            sendResize();
-                        }
+                        localStorage.setItem('barkol_term_fontsize', fontSize);
+                        Object.keys(tabs).forEach(function (k) {
+                            if (tabs[k] && tabs[k].term) {
+                                tabs[k].term.options.fontSize = fontSize;
+                                if (tabs[k].fitAddon) tabs[k].fitAddon.fit();
+                                sendResize(k);
+                            }
+                        });
                     }
                 });
             }
@@ -571,72 +1557,169 @@
                 btnFontMinus.addEventListener('click', function () {
                     if (fontSize > 10) {
                         fontSize -= 1;
-                        if (term) {
-                            term.options.fontSize = fontSize;
-                            if (fitAddon) fitAddon.fit();
-                            sendResize();
+                        localStorage.setItem('barkol_term_fontsize', fontSize);
+                        Object.keys(tabs).forEach(function (k) {
+                            if (tabs[k] && tabs[k].term) {
+                                tabs[k].term.options.fontSize = fontSize;
+                                if (tabs[k].fitAddon) tabs[k].fitAddon.fit();
+                                sendResize(k);
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Очистка экрана (Ctrl+L)
+            var clearCurrentTab = function () {
+                var curTab = tabs[activeTabId];
+                if (curTab && curTab.term) {
+                    curTab.term.clear();
+                    if (curTab.socket && curTab.socket.readyState === WebSocket.OPEN) {
+                        curTab.socket.send('\x0c'); // Ctrl+L
+                    }
+                    curTab.term.focus();
+                }
+            };
+            if (btnClear) btnClear.addEventListener('click', clearCurrentTab);
+            var dotClearTab = document.getElementById('dotClearTab');
+            if (dotClearTab) dotClearTab.addEventListener('click', clearCurrentTab);
+
+            // Кнопка закрытия таба в кружочке (красный)
+            var dotCloseTab = document.getElementById('dotCloseTab');
+            if (dotCloseTab) {
+                dotCloseTab.addEventListener('click', function () {
+                    closeTab(activeTabId);
+                });
+            }
+
+            // Рестарт текущей сессии
+            if (btnReconnect) {
+                btnReconnect.addEventListener('click', function () {
+                    connectTabWebSocket(activeTabId);
+                });
+            }
+
+            // Полноэкранный режим (Fullscreen API + CSS)
+            var toggleFullscreenMode = function () {
+                isFullscreen = !isFullscreen;
+                if (isFullscreen) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(function () {});
+                    }
+                    wrapper.classList.add('is-fullscreen');
+                    if (fullscreenIcon) fullscreenIcon.className = 'bx bx-exit-fullscreen';
+                } else {
+                    if (document.exitFullscreen && document.fullscreenElement) {
+                        document.exitFullscreen().catch(function () {});
+                    }
+                    wrapper.classList.remove('is-fullscreen');
+                    if (fullscreenIcon) fullscreenIcon.className = 'bx bx-fullscreen';
+                }
+                setTimeout(function () {
+                    var curTab = tabs[activeTabId];
+                    if (curTab) {
+                        if (curTab.fitAddon) curTab.fitAddon.fit();
+                        sendResize(activeTabId);
+                        curTab.term.focus();
+                    }
+                }, 100);
+            };
+
+            if (btnFullscreen) btnFullscreen.addEventListener('click', toggleFullscreenMode);
+            var dotFullscreen = document.getElementById('dotFullscreen');
+            if (dotFullscreen) dotFullscreen.addEventListener('click', toggleFullscreenMode);
+
+            // Добавление кастомного сниппета
+            var btnAddCustomSnippet = document.getElementById('btnAddCustomSnippet');
+            if (btnAddCustomSnippet) {
+                btnAddCustomSnippet.addEventListener('click', function () {
+                    var tInput = document.getElementById('snippetTitleInput');
+                    var cInput = document.getElementById('snippetCommandInput');
+                    if (tInput) tInput.value = '';
+                    if (cInput) cInput.value = '';
+                    if (addCustomModal) addCustomModal.show();
+                });
+            }
+
+            var btnSaveCustomSnippet = document.getElementById('btnSaveCustomSnippet');
+            if (btnSaveCustomSnippet) {
+                btnSaveCustomSnippet.addEventListener('click', function () {
+                    var tInput = document.getElementById('snippetTitleInput');
+                    var cInput = document.getElementById('snippetCommandInput');
+                    var title = tInput ? tInput.value.trim() : '';
+                    var cmd = cInput ? cInput.value.trim() : '';
+                    if (!title || !cmd) {
+                        alert('Заполните название и команду.');
+                        return;
+                    }
+                    saveNewCustomSnippet(title, cmd);
+                    if (addCustomModal) addCustomModal.hide();
+                });
+            }
+
+            // Сенсорные кнопки мобильной клавиатуры
+            if (mKeyCtrl) {
+                mKeyCtrl.addEventListener('click', function () {
+                    stickyCtrl = !stickyCtrl;
+                    mKeyCtrl.classList.toggle('sticky-active', stickyCtrl);
+                });
+            }
+            if (mKeyAlt) {
+                mKeyAlt.addEventListener('click', function () {
+                    stickyAlt = !stickyAlt;
+                    mKeyAlt.classList.toggle('sticky-active', stickyAlt);
+                });
+            }
+
+            document.querySelectorAll('.mobile-key-btn[data-key]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var curTab = tabs[activeTabId];
+                    if (!curTab || !curTab.socket || curTab.socket.readyState !== WebSocket.OPEN) return;
+
+                    var rawKey = this.getAttribute('data-key');
+                    var evaluatedKey = rawKey
+                        .replace(/\\x1b/g, '\x1b')
+                        .replace(/\\t/g, '\t')
+                        .replace(/\\r/g, '\r')
+                        .replace(/\\x03/g, '\x03')
+                        .replace(/\\x04/g, '\x04')
+                        .replace(/\\x0c/g, '\x0c')
+                        .replace(/\\x1a/g, '\x1a');
+
+                    // Если активен модификатор Ctrl для букв a-z
+                    if (stickyCtrl && evaluatedKey.length === 1) {
+                        var code = evaluatedKey.toUpperCase().charCodeAt(0);
+                        if (code >= 65 && code <= 90) {
+                            evaluatedKey = String.fromCharCode(code - 64);
                         }
+                        stickyCtrl = false;
+                        if (mKeyCtrl) mKeyCtrl.classList.remove('sticky-active');
                     }
-                });
-            }
 
-            if (btnFullscreen) {
-                btnFullscreen.addEventListener('click', function () {
-                    isFullscreen = !isFullscreen;
-                    if (isFullscreen) {
-                        wrapper.classList.add('is-fullscreen');
-                        if (fullscreenIcon) fullscreenIcon.className = 'bx bx-exit-fullscreen';
-                    } else {
-                        wrapper.classList.remove('is-fullscreen');
-                        if (fullscreenIcon) fullscreenIcon.className = 'bx bx-fullscreen';
+                    if (stickyAlt) {
+                        evaluatedKey = '\x1b' + evaluatedKey;
+                        stickyAlt = false;
+                        if (mKeyAlt) mKeyAlt.classList.remove('sticky-active');
                     }
-                    setTimeout(function () {
-                        if (fitAddon) fitAddon.fit();
-                        sendResize();
-                        if (term) term.focus();
-                    }, 100);
-                });
-            }
 
-            // Быстрые команды
-            document.querySelectorAll('.quick-cmd-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var cmd = this.getAttribute('data-cmd');
-                    if (cmd) sendCommand(cmd);
+                    curTab.socket.send(evaluatedKey);
+                    curTab.term.focus();
                 });
             });
 
-            // Сенсорные кнопки для мобильных устройств
-            document.querySelectorAll('.mobile-key-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var key = this.getAttribute('data-key');
-                    if (key && socket && socket.readyState === WebSocket.OPEN) {
-                        // Раскодируем escape-последовательности
-                        var evaluatedKey = key
-                            .replace(/\\x1b/g, '\x1b')
-                            .replace(/\\t/g, '\t')
-                            .replace(/\\r/g, '\r')
-                            .replace(/\\x03/g, '\x03')
-                            .replace(/\\x04/g, '\x04')
-                            .replace(/\\x0c/g, '\x0c');
-                        socket.send(evaluatedKey);
-                        if (term) term.focus();
-                    }
-                });
-            });
-
-            // Адаптивное изменение размера окна
+            // Адаптивное изменение размеров при ресайзе окна
             window.addEventListener('resize', function () {
-                if (fitAddon) {
-                    fitAddon.fit();
-                    sendResize();
+                var curTab = tabs[activeTabId];
+                if (curTab && curTab.fitAddon) {
+                    curTab.fitAddon.fit();
+                    sendResize(activeTabId);
                 }
             });
 
-            // Инициализация при загрузке DOM
+            // Инициализация при загрузке документа
             document.addEventListener('DOMContentLoaded', function () {
-                initTerminal();
-                connectWebSocket();
+                createTerminalTab('tab_1', 'Терминал 1');
+                loadCustomSnippets();
             });
         })();
     </script>

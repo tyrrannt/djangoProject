@@ -3,7 +3,7 @@
     <div class="right-wrapper text-end">
         <ol class="breadcrumbs">
             <li>
-                <a href="{% url 'customers_app:profile' user.pk %}" title="На главную">
+                <a href="{% if user.is_authenticated and user.pk %}{% url 'customers_app:profile' user.pk %}{% else %}/{% endif %}" title="На главную">
                     <i class="bx bx-home-alt"></i>
                 </a>
             </li>

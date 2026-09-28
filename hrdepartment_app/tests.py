@@ -61,6 +61,11 @@ class OfficialMemoDetailViewTest(TestCase):
 class MemoNotificationServiceTests(SimpleTestCase):
     """Набор модульных тестов для MemoNotificationService."""
 
+    def setUp(self):
+        """Очищает кэш перед каждым тестом для изоляции дедупликации."""
+        from django.core.cache import cache
+        cache.clear()
+
     def test_get_portal_url_default(self):
         """Проверяет получение базового URL портала по умолчанию."""
         from hrdepartment_app.services.memo_notification_service import MemoNotificationService
@@ -110,9 +115,40 @@ class MemoNotificationServiceTests(SimpleTestCase):
         MemoNotificationService._cleanup_temp_files([temp_path, "/non/existent/path/file.pdf"])
         self.assertFalse(os.path.exists(temp_path))
 
+    @patch("django.core.cache.cache.get")
+    @patch("django.core.cache.cache.set")
+    @patch("django.db.transaction.on_commit")
+    def test_dispatch_event_deduplication(self, mock_on_commit, mock_cache_set, mock_cache_get):
+        """Проверяет работу замка дедупликации и обхода через параметр force."""
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+
+        mock_on_commit.side_effect = lambda cb: cb()
+
+        # 1. Первый вызов (ключа в кэше нет) -> успешно ставится в очередь
+        mock_cache_get.return_value = False
+        with patch("hrdepartment_app.tasks.process_memo_notification_task.delay") as mock_delay:
+            res1 = MemoNotificationService.dispatch_event(process_id=20, event_type="SUBMITTED")
+            self.assertTrue(res1)
+            mock_delay.assert_called_once()
+            mock_cache_set.assert_called_with("memo_notify_guard:20:SUBMITTED", True, timeout=300)
+
+        # 2. Повторный вызов (ключ уже в кэше) без force -> отсекается
+        mock_cache_get.return_value = True
+        with patch("hrdepartment_app.tasks.process_memo_notification_task.delay") as mock_delay:
+            res2 = MemoNotificationService.dispatch_event(process_id=20, event_type="SUBMITTED", force=False)
+            self.assertFalse(res2)
+            mock_delay.assert_not_called()
+
+        # 3. Вызов с force=True (ручная отправка) -> обходит замок и отправляется
+        with patch("hrdepartment_app.tasks.process_memo_notification_task.delay") as mock_delay:
+            res3 = MemoNotificationService.dispatch_event(process_id=20, event_type="SUBMITTED", force=True)
+            self.assertTrue(res3)
+            mock_delay.assert_called_once()
+
+    @patch("hrdepartment_app.services.memo_notification_service.MemoNotificationService.is_telegram_memo_notifications_enabled", return_value=True)
     @patch("hrdepartment_app.services.memo_notification_service.UniversalTelegramService.send_message_sync")
     @patch("hrdepartment_app.services.memo_notification_service.UniversalEmailService.send_async_email")
-    def test_handle_event_sync_sends_email_and_telegram(self, mock_email, mock_tg):
+    def test_handle_event_sync_sends_email_and_telegram(self, mock_email, mock_tg, mock_pref):
         """Проверяет отправку уведомлений по почте и Telegram при наличии адресатов."""
         from unittest.mock import MagicMock, patch
         from hrdepartment_app.services.memo_notification_service import MemoNotificationService
@@ -122,6 +158,7 @@ class MemoNotificationServiceTests(SimpleTestCase):
         mock_process.id = 15
         mock_process.person_agreement.email = "boss@barkol.ru"
         mock_process.person_agreement.telegram_id = "123456"
+        mock_process.person_executor.telegram_id = "654321"
         mock_process.document.official_memo_type = "1"
         mock_process.document.person.title = "Иванов Иван Иванович"
         mock_process.document.period_from.strftime.return_value = "01.01.2026"
@@ -138,4 +175,17 @@ class MemoNotificationServiceTests(SimpleTestCase):
                 self.assertTrue(res)
                 self.assertTrue(mock_email.called)
                 self.assertTrue(mock_tg.called)
+
+    def test_approval_process_initial_state_tracking(self):
+        """Проверяет корректность фиксации исходного состояния в _initial_state."""
+        from hrdepartment_app.models import ApprovalOficialMemoProcess
+
+        process = ApprovalOficialMemoProcess()
+        process.submit_for_approval = True
+        process.location_selected = False
+        process._save_initial_state()
+
+        self.assertTrue(process._initial_state["submit_for_approval"])
+        self.assertFalse(process._initial_state["location_selected"])
+        self.assertFalse(process._initial_state["cancellation"])
 

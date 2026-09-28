@@ -58,12 +58,14 @@
             {% endif %}
 
             <!-- Мой профиль -->
+            {% if user.is_authenticated and user.pk %}
             <li>
                 <a role="menuitem" tabindex="-1" href="{% url 'customers_app:profile' user.pk %}">
                     <i class="bx bx-user-circle me-2"></i>
                     <span>Мой профиль</span>
                 </a>
             </li>
+            {% endif %}
 
             <!-- Корпоративная почта -->
             <li>
@@ -74,6 +76,7 @@
             </li>
 
             <!-- Личные данные (быстрый доступ) -->
+            {% if user.is_authenticated and user.pk %}
             <li>
                 <a role="menuitem" tabindex="-1" href="{% url 'customers_app:staff' user.pk %}">
                     <i class="bx bx-id-card me-2"></i>
@@ -88,6 +91,7 @@
                     <span>Изменить аватар</span>
                 </a>
             </li>
+            {% endif %}
 
             <li class="divider"></li>
 

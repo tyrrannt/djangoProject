@@ -16,6 +16,7 @@ import library_app.views as library_views
 import administration_app.views as administration_views
 from customers_app import views_org_structure
 
+handler400 = library_views.show_400
 handler403 = library_views.show_403
 handler404 = library_views.show_404
 handler500 = library_views.show_500
@@ -76,8 +77,10 @@ urlpatterns = [
     path('mail/', include('mailbox_app.urls')),
     path('testing/', include('testing_app.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls'), name="ck_editor_5_upload_file"),
-    path('__debug__/', include('debug_toolbar.urls')),
 ]
 
 if settings.DEBUG:
+    urlpatterns += [
+        path('__debug__/', include('debug_toolbar.urls')),
+    ]
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -26,4 +26,11 @@ urlpatterns = [
     path('event/<int:pk>/update/', CompanyEventUpdateView.as_view(), name='event_update'),
     path('event/<int:pk>/delete/', CompanyEventDeleteView.as_view(), name='event_delete'),
     path('event/create/', CompanyEventCreateView.as_view(), name='event_create'),
+    # Маршруты предпросмотра страниц ошибок
+    path('errors/400/', views.show_400, name='error_400'),
+    path('errors/403/', views.show_403, name='error_403'),
+    path('errors/csrf/', views.csrf_failure, name='error_csrf'),
+    path('errors/404/', views.show_404, name='error_404'),
+    path('errors/500/', views.show_500, name='error_500'),
+    path('errors/503/', views.show_503, name='error_503'),
 ]

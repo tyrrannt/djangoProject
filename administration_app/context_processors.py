@@ -101,10 +101,11 @@ def breadcrumbs(request):
 
 def get_all_contracts(request):
     data = {}
-    if request.user.is_anonymous:
+    user = getattr(request, "user", None)
+    if not user or user.is_anonymous:
         return data
 
-    cache_key = f"get_all_contracts_{request.user.id}"
+    cache_key = f"get_all_contracts_{user.id}"
 
     contracts_count = Contract.objects.filter(
         Q(parent_category=None),
@@ -112,7 +113,7 @@ def get_all_contracts(request):
         Q(type_of_document__type_document="Договор"),
     ).count()
 
-    if not request.user.is_anonymous:
+    if not user.is_anonymous:
         try:
             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False))
             documents_not_published = DocumentsJobDescription.objects.filter(
@@ -154,13 +155,14 @@ def make_list(n):
 
 
 def get_approval_oficial_memo_process(request):
-    if request.user.is_anonymous:
+    user = getattr(request, "user", None)
+    if not user or user.is_anonymous:
         return {"notifications": []}
 
     # Пытаемся получить готовые уведомления из кэша
     # Читаем текущую версию кэша (по умолчанию 1)
     version = cache.get("memo_notif_version", 1)
-    cache_key = f"memo_notif_{request.user.id}_v{version}"
+    cache_key = f"memo_notif_{user.id}_v{version}"
     cached_data = cache.get(cache_key)
     if cached_data is not None:
         return cached_data
