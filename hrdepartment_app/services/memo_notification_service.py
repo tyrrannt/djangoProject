@@ -441,6 +441,11 @@ class MemoNotificationService:
             with open(attachment_path, "rb") as f:
                 attachment_bytes = f.read()
 
+        logger.info(
+            f"[MemoNotify:OrderIssued] Для процесса ID={process.pk} выбран файл вложения: {attachment_filename} "
+            f"(путь: {attachment_path}, размер: {len(attachment_bytes) if attachment_bytes else 0} байт)"
+        )
+
         # Формирование контекста письма
         delta = doc.period_for - doc.period_from
         places = [p.name for p in doc.place_production_activity.all()]
@@ -762,34 +767,49 @@ class MemoNotificationService:
 
             wb.save(source)
             wb.close()
-            logger.info("[MemoNotify:DocGen] Сформирован XLSX: %s", source)
+            logger.info(f"[MemoNotify:DocGen] Сформирован XLSX: {source}")
         except Exception as xlsx_err:
             logger.error("[MemoNotify:DocGen] Ошибка генерации XLSX: %s", xlsx_err, exc_info=True)
             return None, None
 
         file_name = None
-        if doc.official_memo_type == "1":
-            # Конвертируем xlsx в pdf (с безопасным откатом к XLSX при сбое конвертера)
+        memo_type_str = str(getattr(doc, "official_memo_type", "1"))
+        if memo_type_str in ("1", "2"):
             output_dir = str(pathlib.Path.joinpath(settings.BASE_DIR, "media"))
+
+            # 1. Попытка конвертации через msoffice2pdf
             try:
                 from msoffice2pdf import convert
                 file_name = convert(source=source, output_dir=output_dir, soft=0)
                 if not file_name or not os.path.exists(str(file_name)):
                     file_name = None
+                else:
+                    logger.info(f"[MemoNotify:DocGen] PDF успешно сформирован через msoffice2pdf: {file_name}")
             except Exception as conv_err:
                 logger.warning(
-                    f"Не удалось конвертировать {source} в PDF через msoffice2pdf: {conv_err}. "
-                    f"Будет отправлен оригинальный XLSX файл."
+                    f"[MemoNotify:DocGen] Ошибка msoffice2pdf при конвертации {source}: {conv_err}. "
+                    f"Переход к прямому вызову soffice."
                 )
                 file_name = None
 
-            # Дополнительный fallback на случай локализованного вывода LibreOffice на Linux
+            # 2. Прямой вызов LibreOffice (soffice) с изолированным профилем пользователя для предотвращения конфликтов блокировок в Celery/systemd
             if not file_name:
                 try:
                     import subprocess
                     expected_pdf = os.path.splitext(source)[0] + ".pdf"
-                    subprocess.run(
-                        ["soffice", "--headless", "--convert-to", "pdf", "--outdir", output_dir, source],
+                    profile_uri = "file:///tmp/libreoffice_calc_profile"
+                    cmd = [
+                        "soffice",
+                        "--headless",
+                        f"-env:UserInstallation={profile_uri}",
+                        "--convert-to",
+                        "pdf",
+                        "--outdir",
+                        output_dir,
+                        source,
+                    ]
+                    proc = subprocess.run(
+                        cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         timeout=30,
@@ -797,9 +817,22 @@ class MemoNotificationService:
                     )
                     if os.path.exists(expected_pdf):
                         file_name = expected_pdf
-                        logger.info("[MemoNotify:DocGen] PDF успешно создан через прямой вызов soffice: %s", file_name)
+                        logger.info(f"[MemoNotify:DocGen] PDF успешно создан через прямой вызов soffice: {file_name}")
+                    else:
+                        stdout_msg = proc.stdout.decode("utf-8", errors="replace").strip()
+                        stderr_msg = proc.stderr.decode("utf-8", errors="replace").strip()
+                        logger.warning(
+                            f"[MemoNotify:DocGen] Прямой вызов soffice не создал PDF-файл. "
+                            f"Код возврата: {proc.returncode}, stdout: '{stdout_msg}', stderr: '{stderr_msg}'. "
+                            f"Будет отправлен XLSX."
+                        )
                 except Exception as _ex_soffice:
-                    logger.debug("[MemoNotify:DocGen] Прямой вызов soffice не удался: %s", _ex_soffice)
+                    logger.warning(f"[MemoNotify:DocGen] Прямой вызов soffice завершился исключением: {_ex_soffice}")
+        else:
+            logger.info(
+                f"[MemoNotify:DocGen] Пропуск конвертации в PDF: тип служебной записки '{memo_type_str}' "
+                f"не предусматривает выездного служебного задания."
+            )
 
         return source, file_name
 
