@@ -31,7 +31,7 @@ from hrdepartment_app.models import (
 from mailbox_app.services.email_service import UniversalEmailService
 from telegram_app.services.telegram_service import UniversalTelegramService
 
-logger = logging.getLogger(__name__)
+from core import logger
 
 
 class MemoNotificationService:
