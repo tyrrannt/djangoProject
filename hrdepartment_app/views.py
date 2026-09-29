@@ -7736,6 +7736,7 @@ class PSOMemoReportView(LoginRequiredMixin, View):
             date_of_arrival__lte=end_date,
             date_of_departure__gte=start_date,
             document__place_production_activity__ticket_control=True,
+            document__person__user_work_profile__job__type_of_job='1',
             cancellation=False
         ).distinct().order_by('document__person__last_name', 'document__person__first_name')
 
