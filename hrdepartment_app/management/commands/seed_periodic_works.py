@@ -19,15 +19,15 @@ from hrdepartment_app.models import PeriodicWork, PeriodicWorkColor
 
 PERIODIC_WORKS_DATA: List[Tuple[str, str, float, int, int, str]] = [
     # Cessna
-    ("Cessna", "100 часов", 100.0, 10, 10, PeriodicWorkColor.YELLOW),
-    ("Cessna", "400 часов", 400.0, 10, 10, PeriodicWorkColor.GREEN),
-    ("Cessna", "500 часов", 500.0, 10, 10, PeriodicWorkColor.GREEN),
-    ("Cessna", "1000 часов", 1000.0, 10, 10, PeriodicWorkColor.GREEN),
-    ("Cessna", "2000 часов", 2000.0, 10, 10, PeriodicWorkColor.GREEN),
-    ("Cessna", "3000 часов", 3000.0, 10, 10, PeriodicWorkColor.GREEN),
-    ("Cessna", "6000 часов", 6000.0, 10, 10, PeriodicWorkColor.GREEN),
-    ("Cessna", "10000 часов", 10000.0, 10, 10, PeriodicWorkColor.GREEN),
-    ("Cessna", "12000 часов", 12000.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "100 часов", 100.0, 10, 10, PeriodicWorkColor.YELLOW),
+    # ("Cessna", "400 часов", 400.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "500 часов", 500.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "1000 часов", 1000.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "2000 часов", 2000.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "3000 часов", 3000.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "6000 часов", 6000.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "10000 часов", 10000.0, 10, 10, PeriodicWorkColor.GREEN),
+    # ("Cessna", "12000 часов", 12000.0, 10, 10, PeriodicWorkColor.GREEN),
 
     # R-44
     ("R-44", "50 часов", 50.0, 10, 10, PeriodicWorkColor.YELLOW),
@@ -55,12 +55,12 @@ PERIODIC_WORKS_DATA: List[Tuple[str, str, float, int, int, str]] = [
     ("R-66", "2000 часов", 2000.0, 5, 0, PeriodicWorkColor.RED),
 
     # Ан-2
-    ("Ан-2", "100 часов", 100.0, 15, 15, PeriodicWorkColor.YELLOW),
-    ("Ан-2", "400 часов", 400.0, 30, 30, PeriodicWorkColor.GREEN),
-    ("Ан-2", "800 часов", 800.0, 30, 30, PeriodicWorkColor.GREEN),
-    ("Ан-2", "1200 часов", 1200.0, 30, 30, PeriodicWorkColor.GREEN),
-    ("Ан-2", "1600 часов", 1600.0, 30, 30, PeriodicWorkColor.GREEN),
-    ("Ан-2", "2000 часов", 2000.0, 0, 0, PeriodicWorkColor.RED),
+    # ("Ан-2", "100 часов", 100.0, 15, 15, PeriodicWorkColor.YELLOW),
+    # ("Ан-2", "400 часов", 400.0, 30, 30, PeriodicWorkColor.GREEN),
+    # ("Ан-2", "800 часов", 800.0, 30, 30, PeriodicWorkColor.GREEN),
+    # ("Ан-2", "1200 часов", 1200.0, 30, 30, PeriodicWorkColor.GREEN),
+    # ("Ан-2", "1600 часов", 1600.0, 30, 30, PeriodicWorkColor.GREEN),
+    # ("Ан-2", "2000 часов", 2000.0, 0, 0, PeriodicWorkColor.RED),
 
     # Ми-8 (Ф-1 .. Ф-59, КВР)
     ("Ми-8", "Ф-1", 75.0, 20, 20, PeriodicWorkColor.YELLOW),
