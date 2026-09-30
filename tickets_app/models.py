@@ -87,6 +87,7 @@ class Ticket(models.Model):
         responsible (ForeignKey): Назначенный ответственный специалист (из штата).
         status (CharField): Текущий статус обработки заявки.
         parent_ticket (ForeignKey): Ссылка на родительское закрытое сообщение (обжалование).
+        is_confidential (BooleanField): Признак сокрытия данных автора от назначенного исполнителя.
         created_at (DateTimeField): Дата и время регистрации.
         updated_at (DateTimeField): Дата и время последнего изменения.
         resolved_at (DateTimeField): Дата и время перевода в статус 'Решено'.
@@ -129,6 +130,11 @@ class Ticket(models.Model):
         related_name='appeals',
         help_text='Если это обжалование, укажите предыдущее закрытое сообщение',
     )
+    is_confidential = models.BooleanField(
+        verbose_name='Конфиденциально для исполнителя',
+        default=True,
+        help_text='Если включено, ФИО и контакты заявителя скрыты от назначенного исполнителя (видны только руководству и куратору СДС)',
+    )
 
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField(verbose_name='Дата обновления', auto_now=True)
@@ -141,6 +147,28 @@ class Ticket(models.Model):
     def get_absolute_url(self) -> str:
         """Возвращает канонический URL детального просмотра заявки."""
         return reverse('tickets_app:detail', kwargs={'pk': self.pk})
+
+    def can_view_author(self, user: Any) -> bool:
+        """Проверяет, разрешено ли пользователю видеть персональные данные автора.
+
+        Если включена опция is_confidential:
+        - Заявитель (автор), руководство компании, куратор СДС и администраторы видят реальное ФИО автора;
+        - Назначенный исполнитель (responsible) и другие пользователи видят обезличенного заявителя.
+
+        Args:
+            user (Any): Экземпляр пользователя Django.
+
+        Returns:
+            bool: True, если заявка не конфиденциальна либо пользователь уполномочен видеть автора.
+        """
+        if not self.is_confidential:
+            return True
+        if not user or not getattr(user, 'is_authenticated', False):
+            return False
+        if user.pk == self.author_id:
+            return True
+        from .services import is_ticket_manager
+        return is_ticket_manager(user)
 
     @property
     def is_closed_or_resolved(self) -> bool:

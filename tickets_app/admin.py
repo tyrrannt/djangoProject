@@ -41,12 +41,13 @@ class TicketAdmin(ModelAdmin):
         'id',
         'title',
         'author',
+        'is_confidential',
         'responsible',
         'status_badge',
         'has_appeals',
         'created_at',
     ]
-    list_filter = ['status', 'created_at', 'responsible']
+    list_filter = ['is_confidential', 'status', 'created_at', 'responsible']
     list_filter_submit = True
     search_fields = ['title', 'description', 'author__username', 'author__last_name', 'responsible__username']
     readonly_fields = ['created_at', 'updated_at', 'resolved_at']
@@ -56,7 +57,7 @@ class TicketAdmin(ModelAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('title', 'description', 'author', 'parent_ticket'),
+            'fields': ('title', 'description', 'author', 'parent_ticket', 'is_confidential'),
         }),
         ('Назначения и статусы', {
             'fields': ('responsible', 'status'),

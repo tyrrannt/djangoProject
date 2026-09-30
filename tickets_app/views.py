@@ -165,6 +165,7 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
         context['is_responsible'] = is_responsible
         context['can_manage'] = is_manager
         context['can_edit'] = is_manager or (ticket.author == user and not ticket.is_closed_or_resolved)
+        context['can_view_author'] = ticket.can_view_author(user)
         context['curator'] = TicketSettings.get_curator()
         context['message_form'] = MessageForm()
         return context

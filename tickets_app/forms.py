@@ -89,7 +89,7 @@ class TicketCreateForm(forms.ModelForm):
 
     class Meta:
         model = Ticket
-        fields = ['title', 'description', 'parent_ticket']
+        fields = ['title', 'description', 'parent_ticket', 'is_confidential']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -103,12 +103,23 @@ class TicketCreateForm(forms.ModelForm):
             'parent_ticket': forms.Select(attrs={
                 'class': 'form-select',
             }),
+            'is_confidential': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Инициализирует форму и ограничивает выбор обжалований заявками автора."""
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        if 'is_confidential' in self.fields:
+            self.fields['is_confidential'].initial = True
+            self.fields['is_confidential'].label = 'Скрыть мои данные от исполнителя'
+            self.fields['is_confidential'].help_text = (
+                'Ваши ФИО и контакты будут видны только Руководству и Куратору СДС. '
+                'Исполнитель увидит вас как «Заявитель».'
+            )
 
         if self.user:
             self.fields['parent_ticket'].queryset = Ticket.objects.filter(
@@ -119,7 +130,8 @@ class TicketCreateForm(forms.ModelForm):
             self.fields['parent_ticket'].queryset = Ticket.objects.none()
 
         for field in self.fields:
-            make_custom_field(self.fields[field])
+            if field != 'is_confidential':
+                make_custom_field(self.fields[field])
 
     def clean_parent_ticket(self) -> Optional[Ticket]:
         """Валидирует допустимость обжалования выбранной заявки.
@@ -148,15 +160,17 @@ class TicketUpdateForm(forms.ModelForm):
     """Форма редактирования заявки (изменение темы/описания, назначение ответственного, смена статуса).
 
     Обеспечивает строгое разграничение прав: изменять ответственного и статус могут только
-    пользователи с правами руководства или суперпользователи.
+    пользователи с правами руководства или суперпользователи. Изменять признак конфиденциальности
+    могут только автор сообщения и руководство.
     """
 
     class Meta:
         model = Ticket
-        fields = ['title', 'description', 'responsible', 'status']
+        fields = ['title', 'description', 'is_confidential', 'responsible', 'status']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
+            'is_confidential': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'responsible': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
@@ -167,6 +181,15 @@ class TicketUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         is_manager = is_ticket_manager(self.user)
+        is_author = self.instance.pk and self.instance.author == self.user
+
+        if 'is_confidential' in self.fields:
+            self.fields['is_confidential'].label = 'Скрыть данные автора от исполнителя'
+            self.fields['is_confidential'].help_text = (
+                'Если включено, ФИО и контакты автора скрыты от назначенного исполнителя.'
+            )
+            if not (is_manager or is_author):
+                self.fields['is_confidential'].disabled = True
 
         if not is_manager:
             self.fields['responsible'].disabled = True
@@ -175,7 +198,18 @@ class TicketUpdateForm(forms.ModelForm):
             self.fields['status'].required = False
 
         for field in self.fields:
-            make_custom_field(self.fields[field])
+            if field != 'is_confidential':
+                make_custom_field(self.fields[field])
+
+    def clean_is_confidential(self) -> bool:
+        """Предотвращает несанкционированное изменение признака конфиденциальности."""
+        is_manager = is_ticket_manager(self.user)
+        is_author = bool(self.instance.pk and self.instance.author == self.user)
+
+        if not (is_manager or is_author) and self.instance.pk:
+            return self.instance.is_confidential
+
+        return bool(self.cleaned_data.get('is_confidential', True))
 
     def clean_responsible(self) -> Optional[Any]:
         """Предотвращает подделку ответственного лица обычным пользователем."""

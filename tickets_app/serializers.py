@@ -54,7 +54,11 @@ class MessageSerializer(serializers.ModelSerializer):
         read_only_fields = ['sender', 'created_at']
 
     def get_sender_name(self, obj: Message) -> str:
-        """Возвращает читаемое ФИО или логин отправителя."""
+        """Возвращает читаемое ФИО или логин отправителя с учетом конфиденциальности."""
+        request = self.context.get('request')
+        user = request.user if request and request.user.is_authenticated else None
+        if obj.ticket and obj.sender == obj.ticket.author and not obj.ticket.can_view_author(user):
+            return "Заявитель"
         try:
             title = obj.sender.get_title()
             return title if title else obj.sender.username
@@ -62,7 +66,11 @@ class MessageSerializer(serializers.ModelSerializer):
             return obj.sender.username
 
     def get_sender_position(self, obj: Message) -> str:
-        """Возвращает должность отправителя из профиля сотрудника."""
+        """Возвращает должность отправителя из профиля сотрудника с учетом конфиденциальности."""
+        request = self.context.get('request')
+        user = request.user if request and request.user.is_authenticated else None
+        if obj.ticket and obj.sender == obj.ticket.author and not obj.ticket.can_view_author(user):
+            return ""
         try:
             profile = getattr(obj.sender, 'user_work_profile', None)
             return str(profile.job) if profile and profile.job else ""
@@ -87,6 +95,7 @@ class TicketSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'status',
+            'is_confidential',
             'created_at',
             'updated_at',
             'resolved_at',
@@ -116,7 +125,11 @@ class TicketSerializer(serializers.ModelSerializer):
         return MessageSerializer(all_msgs, many=True, context=self.context).data
 
     def get_author_name(self, obj: Ticket) -> str:
-        """Возвращает читаемое имя автора."""
+        """Возвращает читаемое имя автора с учетом конфиденциальности."""
+        request = self.context.get('request')
+        user = request.user if request and request.user.is_authenticated else None
+        if not obj.can_view_author(user):
+            return "Заявитель"
         try:
             title = obj.author.get_title()
             return title if title else obj.author.username
@@ -124,7 +137,11 @@ class TicketSerializer(serializers.ModelSerializer):
             return obj.author.username if obj.author else ""
 
     def get_author_position(self, obj: Ticket) -> str:
-        """Возвращает должность автора."""
+        """Возвращает должность автора с учетом конфиденциальности."""
+        request = self.context.get('request')
+        user = request.user if request and request.user.is_authenticated else None
+        if not obj.can_view_author(user):
+            return ""
         try:
             profile = getattr(obj.author, 'user_work_profile', None)
             return str(profile.job) if profile and profile.job else ""

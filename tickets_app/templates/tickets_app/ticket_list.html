@@ -102,6 +102,10 @@
                         </div>
                     {% endif %}
 
+                    <a href="{% url 'library_app:help_list' %}" class="btn btn-outline-secondary btn-touch font-weight-bold shadow-sm" title="Справка и руководство пользователя по разделу СДС">
+                        <i class="bx bx-help-circle me-1 fs-5"></i> Справка
+                    </a>
+
                     <a href="{% url 'tickets_app:create' %}" class="btn btn-primary btn-touch font-weight-bold shadow-sm">
                         <i class="bx bx-plus me-1"></i> Подать сообщение
                     </a>
@@ -234,13 +238,30 @@
 
                                             <!-- Mobile sub-line -->
                                             <div class="d-sm-none text-muted small mt-1">
-                                                <i class="bx bx-user me-1"></i>{{ ticket.author|FIO_format|default:ticket.author.username }} &bull; {{ ticket.created_at|date:"d.m.Y" }}
+                                                <i class="bx bx-user me-1"></i>
+                                                {% if is_manager or ticket.author == request.user or not ticket.is_confidential %}
+                                                    {{ ticket.author|FIO_format|default:ticket.author.username }}
+                                                {% else %}
+                                                    Заявитель (конфиденциально)
+                                                {% endif %}
+                                                &bull; {{ ticket.created_at|date:"d.m.Y" }}
                                             </div>
                                         </td>
 
                                         <!-- Author -->
                                         <td class="d-none d-sm-table-cell">
-                                            <span class="text-dark">{{ ticket.author|FIO_format|default:ticket.author.username }}</span>
+                                            {% if is_manager or ticket.author == request.user or not ticket.is_confidential %}
+                                                <span class="text-dark">{{ ticket.author|FIO_format|default:ticket.author.username }}</span>
+                                                {% if ticket.is_confidential %}
+                                                    <span class="badge bg-light text-success border border-success-subtle ms-1" title="Конфиденциально для исполнителя">
+                                                        <i class="bx bx-shield-quarter"></i>
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-light text-muted border border-secondary-subtle" title="Данные автора скрыты политикой конфиденциальности">
+                                                    <i class="bx bx-shield-quarter text-success me-1"></i>Заявитель
+                                                </span>
+                                            {% endif %}
                                         </td>
 
                                         <!-- Responsible -->

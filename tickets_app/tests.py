@@ -548,6 +548,7 @@ class TicketCuratorTestCase(TestCase):
             data={
                 'title': self.ticket.title,
                 'description': self.ticket.description,
+                'is_confidential': True,
                 'responsible': self.specialist.pk,
                 'status': TicketStatus.IN_PROGRESS,
             },
@@ -557,4 +558,138 @@ class TicketCuratorTestCase(TestCase):
         self.ticket.refresh_from_db()
         self.assertEqual(self.ticket.responsible, self.specialist)
         self.assertEqual(self.ticket.status, TicketStatus.IN_PROGRESS)
+
+
+class TicketConfidentialityTestCase(TestCase):
+    """Тестирование функционала конфиденциальности заявок СДС от исполнителей."""
+
+    def setUp(self):
+        """Создает тестовых пользователей, роли и заявку с включенной конфиденциальностью."""
+        self.leadership_group, _ = Group.objects.get_or_create(name='Руководство')
+
+        self.author = User.objects.create_user(
+            username='conf_pilot',
+            email='conf_pilot@barkol.ru',
+            password='pass',
+            first_name='Алексей',
+            last_name='Смирнов',
+        )
+        self.executor = User.objects.create_user(
+            username='conf_engineer',
+            email='conf_engineer@barkol.ru',
+            password='pass',
+            first_name='Михаил',
+            last_name='Кузнецов',
+        )
+        self.leader = User.objects.create_user(
+            username='conf_boss',
+            email='conf_boss@barkol.ru',
+            password='pass',
+            first_name='Сергей',
+            last_name='Васильев',
+        )
+        self.leader.groups.add(self.leadership_group)
+
+        self.curator = User.objects.create_user(
+            username='conf_curator',
+            email='conf_curator@barkol.ru',
+            password='pass',
+            first_name='Дмитрий',
+            last_name='Федоров',
+        )
+        settings_obj = TicketSettings.get_settings()
+        settings_obj.curator = self.curator
+        settings_obj.save()
+
+        # Создаем конфиденциальное обращение
+        self.ticket = Ticket.objects.create(
+            title='Дефект узла крепления',
+            description='Обнаружена трещина на подкосе шасси',
+            author=self.author,
+            responsible=self.executor,
+            status=TicketStatus.IN_PROGRESS,
+            is_confidential=True,
+        )
+
+        # Добавляем сообщения в переписку
+        self.msg_author = Message.objects.create(
+            ticket=self.ticket,
+            sender=self.author,
+            text='Трещина длиной 12 мм, фото приложил',
+        )
+        self.msg_executor = Message.objects.create(
+            ticket=self.ticket,
+            sender=self.executor,
+            text='Осмотрели, требуется замена подкоса',
+        )
+
+    def test_can_view_author_method(self):
+        """Проверяет метод can_view_author для различных ролей."""
+        # При включенной конфиденциальности:
+        # Автор видит свои данные
+        self.assertTrue(self.ticket.can_view_author(self.author))
+        # Руководство видит автора
+        self.assertTrue(self.ticket.can_view_author(self.leader))
+        # Куратор видит автора
+        self.assertTrue(self.ticket.can_view_author(self.curator))
+        # Исполнитель НЕ видит автора
+        self.assertFalse(self.ticket.can_view_author(self.executor))
+
+        # При отключенной конфиденциальности:
+        self.ticket.is_confidential = False
+        self.ticket.save()
+        self.assertTrue(self.ticket.can_view_author(self.executor))
+
+    def test_ticket_detail_view_confidentiality_for_executor(self):
+        """Проверяет, что исполнитель в карточке заявки видит признак can_view_author=False."""
+        self.client.force_login(self.executor)
+        resp = self.client.get(reverse('tickets_app:detail', kwargs={'pk': self.ticket.pk}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context['can_view_author'])
+        # В HTML не должно быть видно реального ФИО автора
+        self.assertContains(resp, 'Заявитель')
+        self.assertNotContains(resp, 'Смирнов Алексей')
+
+    def test_ticket_detail_view_confidentiality_for_leader(self):
+        """Проверяет, что руководство в карточке заявки видит реальное ФИО автора."""
+        self.client.force_login(self.leader)
+        resp = self.client.get(reverse('tickets_app:detail', kwargs={'pk': self.ticket.pk}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.context['can_view_author'])
+        self.assertContains(resp, 'Смирнов')
+
+    def test_ticket_create_form_default_confidential(self):
+        """Проверяет, что при создании заявки конфиденциальность включена по умолчанию."""
+        self.client.force_login(self.author)
+        resp = self.client.post(
+            reverse('tickets_app:create'),
+            data={
+                'title': 'Новое сообщение по безопасности',
+                'description': 'Описание ситуации',
+                'is_confidential': True,
+            },
+            follow=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+        created_ticket = Ticket.objects.get(title='Новое сообщение по безопасности')
+        self.assertTrue(created_ticket.is_confidential)
+
+    @patch('mailbox_app.services.email_service.UniversalEmailService.send_async_email')
+    def test_email_notification_anonymizes_author_for_executor(self, mock_send):
+        """Проверяет сокрытие ФИО автора в письмах, отправляемых исполнителю."""
+        mock_send.return_value = True
+
+        # Уведомление о назначении исполнителю
+        send_ticket_notification_async(
+            event_type='assigned',
+            ticket=self.ticket,
+            actor=self.leader,
+        )
+
+        self.assertTrue(mock_send.called)
+        _, kwargs = mock_send.call_args
+        html = kwargs.get('html_message', '')
+        # В письме исполнителю должно быть обезличенное обращение
+        self.assertIn('Заявитель (конфиденциально)', html)
+        self.assertNotIn('Смирнов Алексей', html)
 

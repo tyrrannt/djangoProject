@@ -155,7 +155,19 @@
                         </h3>
                     </div>
                     <p class="text-muted small mb-0">
-                        Автор: <strong class="text-dark">{{ ticket.author|FIO_format|default:ticket.author.username }}</strong> &bull;
+                        Автор: 
+                        {% if can_view_author %}
+                            <strong class="text-dark">{{ ticket.author|FIO_format|default:ticket.author.username }}</strong>
+                            {% if ticket.is_confidential %}
+                                <span class="badge bg-light text-success border border-success-subtle ms-1" title="Скрыто от назначенного исполнителя">
+                                    <i class="bx bx-shield-quarter me-1"></i>Конфиденциально
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <strong class="text-dark"><i class="bx bx-shield-quarter text-success me-1"></i>Заявитель</strong>
+                            <span class="badge bg-light text-muted border ms-1" title="Данные автора скрыты политикой конфиденциальности">Скрыто</span>
+                        {% endif %}
+                        &bull;
                         Создано: <span class="font-monospace">{{ ticket.created_at|date:"d.m.Y H:i" }}</span>
                     </p>
                 </div>
@@ -279,15 +291,27 @@
                                     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
                                         <div class="d-flex align-items-center gap-2">
                                             <div class="sender-avatar">
-                                                {{ message.sender.get_full_name|default:message.sender.username|slice:":1"|upper }}
+                                                {% if message.sender == ticket.author and not can_view_author %}
+                                                    З
+                                                {% else %}
+                                                    {{ message.sender.get_full_name|default:message.sender.username|slice:":1"|upper }}
+                                                {% endif %}
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark">{{ message.sender|FIO_format|default:message.sender.username }}</div>
+                                                <div class="fw-bold text-dark">
+                                                    {% if message.sender == ticket.author and not can_view_author %}
+                                                        Заявитель
+                                                    {% else %}
+                                                        {{ message.sender|FIO_format|default:message.sender.username }}
+                                                    {% endif %}
+                                                </div>
                                                 <small class="text-muted">
                                                     {% if message.is_internal %}
                                                         <span class="badge bg-warning text-dark"><i class="bx bx-lock-alt me-1"></i>Внутренняя служебная заметка</span>
                                                     {% elif message.sender == ticket.author %}
-                                                        <span class="text-primary font-weight-bold">Автор сообщения</span>
+                                                        <span class="text-primary font-weight-bold">
+                                                            {% if not can_view_author %}Заявитель (СДС){% else %}Автор сообщения{% endif %}
+                                                        </span>
                                                     {% elif message.sender == ticket.responsible %}
                                                         <span class="text-success font-weight-bold">Ответственный специалист</span>
                                                     {% else %}
@@ -427,6 +451,21 @@
                                     </div>
                                 </div>
                             {% endif %}
+
+                            <div class="attr-box">
+                                <div class="attr-label">Конфиденциальность</div>
+                                <div>
+                                    {% if ticket.is_confidential %}
+                                        <span class="badge bg-light text-success border border-success-subtle px-2 py-1">
+                                            <i class="bx bx-shield-quarter me-1"></i>Скрыто от исполнителя
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-secondary border px-2 py-1">
+                                            <i class="bx bx-lock-open-alt me-1"></i>Открытые данные
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
 
                             <div class="attr-box">
                                 <div class="attr-label">Дата регистрации</div>

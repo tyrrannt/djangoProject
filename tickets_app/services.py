@@ -98,6 +98,14 @@ def send_ticket_notification_async(
         sender_name = str(actor) if actor else 'Система'
         author_name = str(ticket.author) if ticket.author else 'Не указан'
 
+        # Если заявка конфиденциальна для исполнителя, обезличиваем данные заявителя
+        if getattr(ticket, 'is_confidential', False):
+            if event_type == 'assigned':
+                author_name = 'Заявитель (конфиденциально)'
+            elif event_type == 'message' and actor == ticket.author:
+                sender_name = 'Заявитель'
+                author_name = 'Заявитель (конфиденциально)'
+
         context: Dict[str, Any] = {
             'event_type': event_type,
             'ticket_pk': ticket.pk,
