@@ -790,6 +790,13 @@ class OperationalWorkAdmin(ActiveUsersFilterMixin, ModelAdmin):
 
 
 def copy_periodic_work(modeladmin, request, queryset):
+    """Копирует выбранные записи периодических работ.
+
+    Args:
+        modeladmin: Экземпляр ModelAdmin.
+        request: Объект HTTP-запроса.
+        queryset: QuerySet выбранных объектов PeriodicWork.
+    """
     for periodic_work in queryset:
         periodic_work.pk = None
         periodic_work.save()
@@ -801,12 +808,42 @@ copy_periodic_work.short_description = "Копировать выбранные 
 @admin.register(PeriodicWork)
 class PeriodicWorkAdmin(ActiveUsersFilterMixin, ModelAdmin):
     """Администрирование видов периодических регламентных работ."""
-    list_display = ("pk", "code", "name", "description", "air_bord_type", "ratio")
-    list_filter = ("air_bord_type",)
+
+    list_display = (
+        "pk",
+        "air_bord_type",
+        "code",
+        "name",
+        "ratio",
+        "lag_minus",
+        "lag_plus",
+        "display_color",
+    )
+    list_filter = ("air_bord_type", "color")
     search_fields = ["name", "code"]
     actions = [copy_periodic_work]
     compressed_fields = True
     warn_unsaved_form = True
+
+    @display(
+        description="Цвет",
+        label={
+            "yellow": "warning",
+            "green": "success",
+            "red": "danger",
+        },
+    )
+    def display_color(self, obj: PeriodicWork) -> str:
+        """Отображает цветную плашку статуса регламентной работы.
+
+        Args:
+            obj: Экземпляр PeriodicWork.
+
+        Returns:
+            str: Код цвета ('yellow', 'green', 'red') для бейджа Unfold.
+        """
+        return obj.color
+
 
 
 @admin.register(TrainingProgram)

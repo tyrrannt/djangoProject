@@ -265,4 +265,120 @@ class MemoNotificationServiceTests(SimpleTestCase):
             self.assertIsNone(pdf)
 
 
+class PeriodicWorkModelTest(TestCase):
+    """Набор тестов для модели PeriodicWork и интеграции с типами ВС."""
+
+    def setUp(self):
+        """Подготовка тестовых данных."""
+        from contracts_app.models import TypeProperty
+        self.aircraft_type = TypeProperty.objects.create(type_property="Тестовое ВС")
+
+    def test_create_periodic_work_with_lags_and_color(self):
+        """Проверяет корректность сохранения лагов и нормализации цвета."""
+        from hrdepartment_app.models import PeriodicWork, PeriodicWorkColor
+
+        work = PeriodicWork.objects.create(
+            name="ТО 100 часов",
+            code="100 часов",
+            ratio=100.0,
+            lag_minus=10,
+            lag_plus=10,
+            color="желтый",
+            air_bord_type=self.aircraft_type,
+        )
+        self.assertEqual(work.color, PeriodicWorkColor.YELLOW.value)
+        self.assertEqual(work.lag_minus, 10)
+        self.assertEqual(work.lag_plus, 10)
+        self.assertEqual(work.type_property, self.aircraft_type)
+        self.assertEqual(str(work), "Тестовое ВС - 100 часов")
+
+    def test_color_normalization_variations(self):
+        """Проверяет нормализацию различных вариантов написания цветов."""
+        from hrdepartment_app.models import PeriodicWork, PeriodicWorkColor
+
+        work_green = PeriodicWork.objects.create(
+            code="400 часов",
+            ratio=400.0,
+            lag_minus=10,
+            lag_plus=10,
+            color="зеленый",
+        )
+        self.assertEqual(work_green.color, PeriodicWorkColor.GREEN.value)
+
+        work_red = PeriodicWork.objects.create(
+            code="2000 часов",
+            ratio=2000.0,
+            lag_minus=0,
+            lag_plus=0,
+            color="красный",
+        )
+        self.assertEqual(work_red.color, PeriodicWorkColor.RED.value)
+
+    def test_admin_display_color(self):
+        """Проверяет метод отображения цвета в PeriodicWorkAdmin."""
+        from django.contrib.admin.sites import AdminSite
+        from hrdepartment_app.admin import PeriodicWorkAdmin
+        from hrdepartment_app.models import PeriodicWork
+
+        admin_instance = PeriodicWorkAdmin(PeriodicWork, AdminSite())
+        work = PeriodicWork.objects.create(
+            code="Test",
+            color="yellow",
+        )
+        badge_value = admin_instance.display_color(work)
+        self.assertEqual(badge_value, "yellow")
+
+    def test_seed_periodic_works_smart_matching(self):
+        """Проверяет интеллектуальное сопоставление записей без типа ВС в команде."""
+        from django.core.management import call_command
+        from contracts_app.models import TypeProperty, Estate
+        from hrdepartment_app.models import PeriodicWork, OutfitCard
+
+        mi8_type, _ = TypeProperty.objects.get_or_create(type_property="МИ-8Т")
+        cessna_type, _ = TypeProperty.objects.get_or_create(type_property="Cessna 172S")
+
+        # 1. Запись с уникальным кодом Ф-59 без типа ВС
+        legacy_mi8 = PeriodicWork.objects.create(
+            code="Ф-59",
+            name="Старая Ф-59",
+            ratio=0.0,
+            air_bord_type=None,
+        )
+
+        # 2. Запись с общим кодом 100 часов, привязанная к карте-наряду с бортом Cessna
+        cessna_board = Estate.objects.create(
+            registration_number="RA-67890",
+            type_property=cessna_type,
+            release_date=datetime.date(2020, 1, 1),
+        )
+        legacy_cessna_work = PeriodicWork.objects.create(
+            code="100 часов",
+            name="Старая сотня",
+            ratio=0.0,
+            air_bord_type=None,
+        )
+        card = OutfitCard.objects.create(
+            outfit_card_number="TEST-001",
+            air_board=cessna_board,
+        )
+        card.periodic_work.add(legacy_cessna_work)
+
+        # Вызываем команду наполнения
+        call_command("seed_periodic_works")
+
+        # Проверяем, что legacy_mi8 привязалась к МИ-8Т и обновилась
+        legacy_mi8.refresh_from_db()
+        self.assertEqual(legacy_mi8.air_bord_type, mi8_type)
+        self.assertEqual(legacy_mi8.ratio, 4425.0)
+        self.assertEqual(legacy_mi8.lag_minus, 20)
+        self.assertEqual(legacy_mi8.lag_plus, 20)
+
+        # Проверяем, что legacy_cessna_work привязалась к Cessna по карте-наряду
+        legacy_cessna_work.refresh_from_db()
+        self.assertEqual(legacy_cessna_work.air_bord_type, cessna_type)
+        self.assertEqual(legacy_cessna_work.ratio, 100.0)
+
+
+
+
 

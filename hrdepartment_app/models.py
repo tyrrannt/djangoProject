@@ -2456,25 +2456,120 @@ class OperationalWork(models.Model):
         return self.code
 
 
+class PeriodicWorkColor(models.TextChoices):
+    """Варианты цветовой индикации регламентных периодических работ."""
+    YELLOW = "yellow", "желтый"
+    GREEN = "green", "зеленый"
+    RED = "red", "красный"
+
+
 class PeriodicWork(models.Model):
-    """
-    Периодические работы
+    """Справочник видов периодических регламентных работ воздушных судов.
+
+    Модель хранит перечень регламентных работ, выполняемых с определенной
+    периодичностью (по наработке норма-часов), допустимые отклонения (лаги)
+    и цветовую маркировку для визуализации в графиках и картах-нарядах.
+
+    Attributes:
+        name (str): Полное наименование регламентной работы.
+        code (str): Код или обозначение регламента (например, 'Ф-1', '100 часов').
+        ratio (float): Норма-часы наработки для выполнения работы.
+        lag_minus (int): Число часов отклонения (минус).
+        lag_plus (int): Число часов отклонения (плюс).
+        color (str): Цветовая маркировка (желтый, зеленый, красный).
+        description (str): Описание регламентных процедур.
+        air_bord_type (TypeProperty): Привязка к типу воздушного судна (contracts_app.TypeProperty).
     """
 
     class Meta:
         verbose_name = "Периодическая работа"
         verbose_name_plural = "Периодические работы"
-        ordering = ("name",)
+        ordering = ("air_bord_type", "ratio", "name")
 
     name = models.TextField(verbose_name="Наименование", blank=True)
     code = models.TextField(verbose_name="Код", blank=True)
-    ratio = models.FloatField(verbose_name="Норма-часы", blank=True)
+    ratio = models.FloatField(verbose_name="Норма-часы", default=0.0, blank=True)
+    lag_minus = models.PositiveIntegerField(
+        verbose_name="Лаг минус",
+        default=0,
+        blank=True,
+        help_text="Число часов отклонения (минус)",
+    )
+    lag_plus = models.PositiveIntegerField(
+        verbose_name="Лаг плюс",
+        default=0,
+        blank=True,
+        help_text="Число часов отклонения (плюс)",
+    )
+    color = models.CharField(
+        verbose_name="Цвет",
+        max_length=20,
+        choices=PeriodicWorkColor.choices,
+        default=PeriodicWorkColor.GREEN,
+        blank=True,
+        help_text="Цветовая индикация периодической работы (желтый, зеленый, красный)",
+    )
     description = models.TextField(verbose_name="Описание", blank=True)
-    air_bord_type = models.ForeignKey(TypeProperty, verbose_name="Тип", on_delete=models.SET_NULL, null=True,
-                                      blank=True)
+    air_bord_type = models.ForeignKey(
+        TypeProperty,
+        verbose_name="Тип ВС",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="periodic_works",
+    )
+
+    @property
+    def type_property(self):
+        """Возвращает связанный тип ВС (TypeProperty) для совместимости по именованию."""
+        return self.air_bord_type
+
+    @type_property.setter
+    def type_property(self, value):
+        self.air_bord_type = value
+
+    def clean(self):
+        """Нормализует значение цвета при валидации."""
+        super().clean()
+        if self.color:
+            val = str(self.color).strip().lower()
+            mapping = {
+                "желтый": PeriodicWorkColor.YELLOW.value,
+                "жёлтый": PeriodicWorkColor.YELLOW.value,
+                "yellow": PeriodicWorkColor.YELLOW.value,
+                "зеленый": PeriodicWorkColor.GREEN.value,
+                "зелёный": PeriodicWorkColor.GREEN.value,
+                "green": PeriodicWorkColor.GREEN.value,
+                "красный": PeriodicWorkColor.RED.value,
+                "red": PeriodicWorkColor.RED.value,
+            }
+            if val in mapping:
+                self.color = mapping[val]
+
+    def save(self, *args, **kwargs):
+        """Сохраняет запись с предварительной нормализацией значений."""
+        if self.color:
+            val = str(self.color).strip().lower()
+            mapping = {
+                "желтый": PeriodicWorkColor.YELLOW.value,
+                "жёлтый": PeriodicWorkColor.YELLOW.value,
+                "yellow": PeriodicWorkColor.YELLOW.value,
+                "зеленый": PeriodicWorkColor.GREEN.value,
+                "зелёный": PeriodicWorkColor.GREEN.value,
+                "green": PeriodicWorkColor.GREEN.value,
+                "красный": PeriodicWorkColor.RED.value,
+                "red": PeriodicWorkColor.RED.value,
+            }
+            if val in mapping:
+                self.color = mapping[val]
+        if not self.name and self.code:
+            self.name = self.code
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.code
+        if self.air_bord_type:
+            return f"{self.air_bord_type} - {self.code}"
+        return self.code or f"Работа #{self.pk}"
 
 
 class OutfitCard(models.Model):
