@@ -1,9 +1,15 @@
 import datetime
+from datetime import date, time
+import hashlib
+import logging
 import os
 import pathlib
+
+logger = logging.getLogger(__name__)
 import re
 import time
 import uuid
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
@@ -17,6 +23,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q, Max
+from django.utils import timezone
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.template.loader import render_to_string
@@ -2437,23 +2444,72 @@ class TimeSheet(models.Model):
 
 
 class OperationalWork(models.Model):
-    """
-    Оперативные работы
+    """Справочник видов оперативных регламентных работ воздушных судов.
+
+    Модель хранит перечень оперативных регламентных работ, выполняемых
+    при оперативном техническом обслуживании воздушных судов (ОТО).
+
+    Attributes:
+        name (str): Полное наименование оперативной работы.
+        code (str): Код или обозначение оперативной формы (например, 'А1', 'А2').
+        description (str): Подробное описание регламентных процедур.
+        air_bord_type (TypeProperty): Привязка к типу воздушного судна.
     """
 
     class Meta:
         verbose_name = "Оперативная работа"
         verbose_name_plural = "Оперативные работы"
-        ordering = ("name",)
+        ordering = ("air_bord_type", "name")
 
     name = models.TextField(verbose_name="Наименование", blank=True)
     code = models.TextField(verbose_name="Код", blank=True)
     description = models.TextField(verbose_name="Описание", blank=True)
-    air_bord_type = models.ForeignKey(TypeProperty, verbose_name="Тип", on_delete=models.SET_NULL, null=True,
-                                      blank=True)
+    air_bord_type = models.ForeignKey(
+        TypeProperty,
+        verbose_name="Тип ВС",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="operational_works",
+    )
+
+    @property
+    def type_property(self):
+        """Возвращает связанный тип ВС (TypeProperty) для совместимости по именованию."""
+        return self.air_bord_type
+
+    @type_property.setter
+    def type_property(self, value):
+        self.air_bord_type = value
+
+    def save(self, *args, **kwargs):
+        """Сохраняет запись с автозаполнением наименования при необходимости."""
+        if not self.name and self.code:
+            self.name = self.code
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.code
+        if self.air_bord_type:
+            return f"{self.air_bord_type} - {self.code}"
+        return self.code or f"Оперативная работа #{self.pk}"
+
+    def get_absolute_url(self):
+        """Возвращает канонический URL реестра оперативных работ."""
+        return reverse("hrdepartment_app:operational_work_list")
+
+    def get_data(self) -> dict:
+        """Формирует сериализованные данные для таблицы DataTables.
+
+        Returns:
+            dict: Словарь с атрибутами для отображения в реестре.
+        """
+        return {
+            "pk": self.pk,
+            "air_bord_type": str(self.air_bord_type) if self.air_bord_type else "—",
+            "code": self.code or "—",
+            "name": self.name or "—",
+            "description": self.description or "—",
+        }
 
 
 class PeriodicWorkColor(models.TextChoices):
@@ -2571,68 +2627,1536 @@ class PeriodicWork(models.Model):
             return f"{self.air_bord_type} - {self.code}"
         return self.code or f"Работа #{self.pk}"
 
+    def get_absolute_url(self):
+        """Возвращает канонический URL реестра периодических работ."""
+        return reverse("hrdepartment_app:periodic_work_list")
+
+    def get_data(self) -> dict:
+        """Формирует сериализованные данные для таблицы DataTables.
+
+        Returns:
+            dict: Словарь с атрибутами и HTML-бейджами для реестра.
+        """
+        color_badges = {
+            PeriodicWorkColor.YELLOW.value: '<span class="badge bg-warning text-dark font-weight-semibold">желтый</span>',
+            PeriodicWorkColor.GREEN.value: '<span class="badge bg-success text-white font-weight-semibold">зеленый</span>',
+            PeriodicWorkColor.RED.value: '<span class="badge bg-danger text-white font-weight-semibold">красный</span>',
+        }
+        badge = color_badges.get(
+            self.color,
+            f'<span class="badge bg-secondary">{self.get_color_display() or self.color}</span>',
+        )
+        return {
+            "pk": self.pk,
+            "air_bord_type": str(self.air_bord_type) if self.air_bord_type else "—",
+            "code": self.code or "—",
+            "name": self.name or "—",
+            "ratio": self.ratio,
+            "lag_minus": self.lag_minus,
+            "lag_plus": self.lag_plus,
+            "color": badge,
+            "description": self.description or "—",
+        }
+
 
 class OutfitCard(models.Model):
+    """Карта-наряд на выполнение технического обслуживания воздушного судна.
+
+    Модель производственно-технической документации по выполнению оперативного
+    и периодического технического обслуживания ВС в соответствии с требованиями
+    Федеральных авиационных правил (Приказ Минтранса РФ от 18.10.2024 N 367).
+
+    Attributes:
+        outfit_card_date (date): Дата открытия карты-наряда.
+        start_time (time): Время начала выполнения ТО (UTC).
+        outfit_card_number (str): Номер наряда-задания.
+        employee (DataBaseUser): Ответственный за выполнение / старший бригады.
+        outfit_card_place (PlaceProductionActivity): Место производственной деятельности (МПД).
+        air_board (Estate): Обслуживаемое воздушное судно.
+        operational_work (ManyToManyField): Выполняемые оперативные работы.
+        periodic_work (ManyToManyField): Выполняемые периодические регламентные работы.
+        other_work (str): Дополнительные или разовые работы.
+        outfit_card_date_end (date): Дата окончания и приемки работ.
+        end_time (time): Время окончания выполнения ТО (UTC).
+        scan_document (FileField): Электронный скан оформленного наряда.
+        notes (str): Особые отметки и примечания.
+        flight_hours (Decimal): Наработка планера СНЭ на момент ТО в часах.
+        flight_hours_tsor (Decimal): Наработка планера ППР на момент ТО в часах.
+        flight_cycles (int): Количество посадок / циклов с начала эксплуатации.
+        deferred_defects (str): Перечень перенесенных дефектов по MEL/CDL/РЭ.
+        deferred_defects_agreed (bool): Отметка о согласовании переноса с эксплуатантом.
+        certifying_staff (DataBaseUser): Специалист подтверждающего персонала, выпустивший ВС.
+        crs_number (str): Порядковый номер Свидетельства о выполненном ТО (CRS).
+        is_signed (bool): Флаг закрытия наряда и выпуска Свидетельства о ТО.
+        signed_at (datetime): Дата и время подписания.
+        signature_hash (str): Контрольная сумма SHA-256 неизменяемости по п. 40 ФАП-367.
     """
-        Атрибуты:
-        _________
-        outfit_card_date: Дата;
-        employee = Ответственный сотрудник;
-        outfit_card_place = МПД;
-        operational_work = Оперативные работы;
-        periodic_work = Периодические работы;
-        air_board = Воздушный борт;
-        other_work = Другие работы;
-        notes = Примечания;
-        """
 
     class Meta:
         verbose_name = "Карта-наряд"
         verbose_name_plural = "Карты-наряды"
         ordering = ("-outfit_card_date",)
 
-    outfit_card_date = models.DateField(verbose_name="Дата", null=True, blank=True)  # Дата
+    outfit_card_date = models.DateField(verbose_name="Дата", null=True, blank=True)
+    start_time = models.TimeField(
+        verbose_name="Время начала (UTC)",
+        null=True,
+        blank=True,
+        help_text="Время начала ТО в формате ЧЧ:ММ (UTC)",
+    )
     outfit_card_number = models.CharField(verbose_name="Номер", max_length=20, default="", blank=True)
-    employee = models.ForeignKey(DataBaseUser, verbose_name="Ответственный", on_delete=models.SET_NULL, null=True,
-                                 blank=True)
-    outfit_card_place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL,
-                                          null=True, blank=True, related_name="outfit_card_place")
-    air_board = models.ForeignKey(Estate, verbose_name="Воздушный борт", related_name='company_air_board',
-                                  blank=True, on_delete=models.SET_NULL, null=True, )
-    operational_work = models.ManyToManyField(OperationalWork, verbose_name="Оперативные работы",
-                                              related_name="outfit_card_operational", blank=True)
-    periodic_work = models.ManyToManyField(PeriodicWork, verbose_name="Периодические работы",
-                                           related_name="outfit_card_periodic", blank=True)
+    employee = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Ответственный",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    outfit_card_place = models.ForeignKey(
+        PlaceProductionActivity,
+        verbose_name="МПД",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="outfit_card_place",
+    )
+    air_board = models.ForeignKey(
+        Estate,
+        verbose_name="Воздушный борт",
+        related_name="company_air_board",
+        blank=True,
+        on_delete=models.SET_NULL,
+        null=True,
+    )
+    operational_work = models.ManyToManyField(
+        OperationalWork,
+        verbose_name="Оперативные работы",
+        related_name="outfit_card_operational",
+        blank=True,
+    )
+    periodic_work = models.ManyToManyField(
+        PeriodicWork,
+        verbose_name="Периодические работы",
+        related_name="outfit_card_periodic",
+        blank=True,
+    )
     other_work = models.CharField(verbose_name="Другие работы", max_length=200, default="", blank=True)
     outfit_card_date_end = models.DateField(verbose_name="Дата окончания", null=True, blank=True)
-    scan_document = models.FileField(verbose_name="Скан документа", upload_to=outfit_directory_path, null=True,
-                                     blank=True)
+    end_time = models.TimeField(
+        verbose_name="Время окончания (UTC)",
+        null=True,
+        blank=True,
+        help_text="Время окончания ТО в формате ЧЧ:ММ (UTC)",
+    )
+    scan_document = models.FileField(
+        verbose_name="Скан документа",
+        upload_to=outfit_directory_path,
+        null=True,
+        blank=True,
+    )
     notes = models.TextField(verbose_name="Примечания", blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.outfit_card_number
+    # --- Поля наработки планера ВС на дату ТО (ФАП-367, ручной ввод) ---
+    flight_hours = models.DecimalField(
+        verbose_name="Наработка СНЭ (ч)",
+        max_digits=9,
+        decimal_places=1,
+        default=0.0,
+        blank=True,
+        null=True,
+        help_text="Наработка планера с начала эксплуатации в часах",
+    )
+    flight_hours_tsor = models.DecimalField(
+        verbose_name="Наработка ППР (ч)",
+        max_digits=9,
+        decimal_places=1,
+        default=0.0,
+        blank=True,
+        null=True,
+        help_text="Наработка планера после последнего ремонта в часах",
+    )
+    flight_cycles = models.PositiveIntegerField(
+        verbose_name="Посадки / циклы",
+        default=0,
+        blank=True,
+        null=True,
+        help_text="Количество посадок/циклов с начала эксплуатации",
+    )
 
-    def get_workers(self):
+    # --- Отложенные дефекты по MEL/CDL/РЭ (п. 87 ФАП-367) ---
+    deferred_defects = models.TextField(
+        verbose_name="Перенесенные дефекты",
+        blank=True,
+        default="",
+        help_text="Перечень дефектов, перенесенных по процедурам MEL/CDL/РЭ",
+    )
+    deferred_defects_agreed = models.BooleanField(
+        verbose_name="Перенос согласован с эксплуатантом",
+        default=False,
+        help_text="Отметка о согласовании переноса срока устранения дефектов с эксплуатантом ВС",
+    )
+    test_flight_required = models.BooleanField(
+        verbose_name="Контрольный облет требуется",
+        default=False,
+        help_text="Отметка о необходимости выполнения контрольного облета после ТО (п. 17 CRS / ФАП-145)",
+    )
+
+    # --- Подтверждающий персонал и выпуск ВС в полет (CRS) (пп. 84-85 ФАП-367) ---
+    certifying_staff = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Подтверждающий персонал",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="certified_outfit_cards",
+        help_text="Специалист подтверждающего персонала, выпустивший ВС",
+    )
+    crs_number = models.CharField(
+        verbose_name="Номер свидетельства о ТО (CRS)",
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Порядковый номер Свидетельства о выполненном ТО ВС",
+    )
+    is_signed = models.BooleanField(
+        verbose_name="Наряд закрыт и подписан",
+        default=False,
+        db_index=True,
+        help_text="Флаг закрытия наряда и выпуска Свидетельства о ТО",
+    )
+    signed_at = models.DateTimeField(
+        verbose_name="Дата и время подписания",
+        null=True,
+        blank=True,
+    )
+    signature_hash = models.CharField(
+        verbose_name="Хэш неизменяемости (SHA-256)",
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Контрольная сумма SHA-256 для гарантии неизменяемости по п. 40 ФАП-367",
+    )
+
+    def __str__(self) -> str:
+        return self.outfit_card_number or f"Карта-наряд #{self.pk}"
+
+    def get_workers(self) -> str:
+        """Возвращает форматированный список исполнителей из сменных табелей."""
         workers = ReportCard.objects.filter(outfit_card=self)
-        return ', '.join(set([format_name_initials(worker.employee.title) for worker in workers]))
+        return ", ".join(set([format_name_initials(worker.employee.title) for worker in workers if worker.employee]))
 
-    def get_works(self):
+    def get_works(self) -> str:
+        """Возвращает перечень выполненных регламентных и оперативных работ."""
         works = [item.code for item in self.periodic_work.all()] + [item.code for item in self.operational_work.all()]
         if self.other_work:
             works.append(self.other_work)
-        return ', '.join(works)
+        return ", ".join(works)
 
-    def get_data(self):
+    def generate_signature_hash(self) -> str:
+        """Формирует контрольную сумму SHA-256 для гарантии неизменяемости карты-наряда по п. 40 ФАП-367.
+
+        Returns:
+            str: 64-значный шестнадцатеричный хэш SHA-256.
+        """
+        payload = (
+            f"{self.pk}:{self.outfit_card_number}:{self.outfit_card_date}:"
+            f"{self.air_board_id}:{self.flight_hours}:{self.flight_cycles}:"
+            f"{self.certifying_staff_id}:{self.is_signed}"
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def get_data(self) -> Dict[str, Any]:
+        """Формирует сериализованные данные для таблицы DataTables.
+
+        Returns:
+            dict: Словарь с атрибутами карты-наряда, наработкой и статусом подписания.
+        """
         self.get_workers()
+        status_badge = (
+            '<span class="badge bg-success text-white">Подписан (CRS)</span>'
+            if self.is_signed
+            else '<span class="badge bg-warning text-dark">В работе</span>'
+        )
+        air_board_str = (
+            f"{self.air_board.type_property} {self.air_board.registration_number}"
+            if self.air_board
+            else "—"
+        )
         return {
             "pk": self.pk,
-            "outfit_card_date": f"{self.outfit_card_date:%d.%m.%Y} г.",  # .strftime(''),
-            "air_board": f"{self.air_board.type_property} {self.air_board.registration_number}",
+            "outfit_card_date": f"{self.outfit_card_date:%d.%m.%Y} г." if self.outfit_card_date else "—",
+            "air_board": air_board_str,
             "works": self.get_works(),
-            "outfit_card_number": self.outfit_card_number,
+            "outfit_card_number": self.outfit_card_number or f"#{self.pk}",
             "workers": self.get_workers(),
-            "employee": format_name_initials(self.employee.title),
+            "employee": format_name_initials(self.employee.title) if self.employee else "—",
+            "certifying_staff": format_name_initials(self.certifying_staff.title) if self.certifying_staff else "—",
+            "flight_hours": float(self.flight_hours or 0.0),
+            "flight_cycles": self.flight_cycles or 0,
+            "is_signed": self.is_signed,
+            "status": status_badge,
+            "crs_number": self.crs_number or "—",
+        }
+
+    def save(self, *args, **kwargs) -> None:
+        """Сохраняет карту-наряд, синхронизирует хэш неизменяемости и наработку ВС."""
+        if self.is_signed and not self.signature_hash:
+            self.signature_hash = self.generate_signature_hash()
+        super().save(*args, **kwargs)
+
+        # Автоматическая фиксация наработки ВС в журнал AircraftHoursTracking
+        if self.air_board_id and self.flight_hours and self.flight_hours > 0 and self.outfit_card_date:
+            try:
+                AircraftHoursTracking.objects.update_or_create(
+                    outfit_card=self,
+                    defaults={
+                        "air_board": self.air_board,
+                        "record_date": self.outfit_card_date,
+                        "flight_hours": self.flight_hours,
+                        "flight_hours_tsor": self.flight_hours_tsor or Decimal("0.0"),
+                        "flight_cycles": self.flight_cycles or 0,
+                        "source": HoursTrackingSource.OUTFIT_CARD,
+                        "notes": f"Автоматически зафиксировано из карты-наряда {self.outfit_card_number}",
+                        "created_by": self.employee,
+                    },
+                )
+            except Exception as e:
+                logger.warning(f"Ошибка автосинхронизации наработки ВС для карты-наряда #{self.pk}: {e}")
+
+    def get_absolute_url(self) -> str:
+        """Возвращает канонический URL детального просмотра карты-наряда.
+
+        Returns:
+            str: URL маршрута 'hrdepartment_app:outfit_card'.
+        """
+        return reverse("hrdepartment_app:outfit_card", kwargs={"pk": self.pk})
+
+
+class HoursTrackingSource(models.TextChoices):
+    """Источники фиксации наработки воздушного судна."""
+
+    MANUAL = "manual", "Ручной ввод"
+    IMPORT = "import", "Импорт из файла (Excel/CSV)"
+    OUTFIT_CARD = "outfit_card", "Карта-наряд на ТО"
+
+
+class AircraftHoursTracking(models.Model):
+    """Журнал учета наработки и циклов воздушных судов (ФАП-367, разд. XIV).
+
+    Хранит хронологические срезы наработки ВС: налет СНЭ (с начала эксплуатации),
+    налет ППР (после последнего ремонта/оверхола), количество посадок/циклов,
+    источник фиксации (ручной ввод, импорт из Excel/CSV или карта-наряд на ТО)
+    и автора записи.
+
+    Attributes:
+        air_board (Estate): Обслуживаемое воздушное судно.
+        record_date (date): Дата фиксации показателей наработки.
+        flight_hours (Decimal): Наработка планера СНЭ в часах.
+        flight_hours_tsor (Decimal): Наработка планера ППР в часах.
+        flight_cycles (int): Количество посадок / циклов с начала эксплуатации.
+        source (str): Источник данных (manual, import, outfit_card).
+        outfit_card (OutfitCard): Ссылка на карту-наряд (при фиксации из наряда).
+        notes (str): Служебное примечание.
+        created_by (DataBaseUser): Пользователь / инженер, внесший данные.
+        created_at (datetime): Дата и время создания записи.
+        updated_at (datetime): Дата и время последнего изменения.
+    """
+
+    class Meta:
+        verbose_name = "Учет наработки ВС"
+        verbose_name_plural = "Учет наработки ВС"
+        ordering = ("-record_date", "-created_at")
+        indexes = [
+            models.Index(fields=["air_board", "-record_date"], name="idx_hours_aircraft_date"),
+            models.Index(fields=["record_date"], name="idx_hours_record_date"),
+        ]
+
+    air_board = models.ForeignKey(
+        Estate,
+        verbose_name="Воздушное судно",
+        on_delete=models.CASCADE,
+        related_name="hours_tracking_records",
+        help_text="Воздушное судно, для которого фиксируется наработка",
+    )
+    record_date = models.DateField(
+        verbose_name="Дата фиксации наработки",
+        db_index=True,
+        help_text="Календарная дата среза наработки",
+    )
+    flight_hours = models.DecimalField(
+        verbose_name="Наработка СНЭ (ч)",
+        max_digits=9,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        help_text="Наработка планера ВС с начала эксплуатации в часах",
+    )
+    flight_hours_tsor = models.DecimalField(
+        verbose_name="Наработка ППР (ч)",
+        max_digits=9,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        blank=True,
+        null=True,
+        help_text="Наработка планера ВС после последнего ремонта (ППР) в часах",
+    )
+    flight_cycles = models.PositiveIntegerField(
+        verbose_name="Количество посадок / циклов",
+        default=0,
+        blank=True,
+        null=True,
+        help_text="Количество посадок/циклов с начала эксплуатации",
+    )
+    source = models.CharField(
+        verbose_name="Источник данных",
+        max_length=20,
+        choices=HoursTrackingSource.choices,
+        default=HoursTrackingSource.MANUAL,
+        help_text="Способ внесения данных: ручной ввод, импорт из Excel или карта-наряд",
+    )
+    outfit_card = models.ForeignKey(
+        OutfitCard,
+        verbose_name="Карта-наряд",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hours_tracking_entries",
+        help_text="Связанная карта-наряд на ТО (если запись создана автоматически)",
+    )
+    notes = models.TextField(
+        verbose_name="Примечание",
+        blank=True,
+        default="",
+        help_text="Служебные примечания к записи наработки",
+    )
+    created_by = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Автор записи",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_hours_tracking",
+        help_text="Сотрудник, зафиксировавший показатели наработки",
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        verbose_name="Дата изменения",
+        auto_now=True,
+    )
+
+    def __str__(self) -> str:
+        board_name = (
+            f"{self.air_board.type_property} {self.air_board.registration_number}"
+            if self.air_board
+            else f"Борт #{self.air_board_id}"
+        )
+        return f"{board_name} от {self.record_date:%d.%m.%Y}: СНЭ {self.flight_hours} ч"
+
+    def get_data(self) -> Dict[str, Any]:
+        """Формирует сериализованные данные для таблицы DataTables.
+
+        Returns:
+            Dict[str, Any]: Словарь с форматированными полями и бейджами.
+        """
+        source_badges = {
+            HoursTrackingSource.MANUAL.value: '<span class="badge bg-secondary">Ручной ввод</span>',
+            HoursTrackingSource.IMPORT.value: '<span class="badge bg-info text-dark">Импорт Excel</span>',
+            HoursTrackingSource.OUTFIT_CARD.value: '<span class="badge bg-primary">Карта-наряд</span>',
+        }
+        badge = source_badges.get(
+            self.source,
+            f'<span class="badge bg-secondary">{self.get_source_display()}</span>',
+        )
+        board_str = (
+            f"{self.air_board.type_property} {self.air_board.registration_number}"
+            if self.air_board
+            else "—"
+        )
+        return {
+            "pk": self.pk,
+            "air_board": board_str,
+            "air_board_id": self.air_board_id,
+            "record_date": f"{self.record_date:%d.%m.%Y} г." if self.record_date else "—",
+            "flight_hours": float(self.flight_hours or 0.0),
+            "flight_hours_tsor": float(self.flight_hours_tsor or 0.0),
+            "flight_cycles": self.flight_cycles or 0,
+            "source": badge,
+            "notes": self.notes or "—",
+            "created_by": format_name_initials(self.created_by.title) if self.created_by else "—",
+            "created_at": f"{self.created_at:%d.%m.%Y %H:%M}" if self.created_at else "—",
+        }
+
+
+def subcontractor_certificate_upload_path(instance: Any, filename: str) -> str:
+    """Генерирует относительный путь для сохранения скан-копии сертификата сторонней организации.
+
+    Args:
+        instance: Экземпляр модели ExternalMaintenanceOrganization.
+        filename: Имя загружаемого файла.
+
+    Returns:
+        str: Относительный путь вида 'subcontractors/certificates/<filename>'.
+    """
+    clean_name = filename.replace(" ", "_")
+    return f"subcontractors/certificates/{clean_name}"
+
+
+def component_release_doc_upload_path(instance: Any, filename: str) -> str:
+    """Генерирует относительный путь для сохранения входящего документа о годности агрегата.
+
+    Args:
+        instance: Экземпляр модели AviationComponent.
+        filename: Имя загружаемого файла.
+
+    Returns:
+        str: Относительный путь вида 'aviation_components/release_docs/<p_num>/<filename>'.
+    """
+    clean_name = filename.replace(" ", "_")
+    p_num = instance.part_number.replace("/", "-").replace(" ", "_") if instance.part_number else "general"
+    return f"aviation_components/release_docs/{p_num}/{clean_name}"
+
+
+class ExternalMaintenanceOrganization(models.Model):
+    """Реестр привлекаемых сторонних организаций по ТО компонентов (ФАП-367, Раздел XV).
+
+    В соответствии с п. 96 ФАП-367, организация по ТО ведет перечень привлекаемых
+    организаций для выполнения ТО и капитального ремонта компонентов (двигателей,
+    ВСУ, винтов, агрегатов) по категориям B и C, контролирует наличие у них
+    действующих сертификатов ФАВТ, область одобрения и сроки их действия.
+
+    Attributes:
+        name (str): Полное официальное наименование организации.
+        short_name (str): Сокращенное наименование для быстрого отображения.
+        counteragent (Counteragent): Связанный контрагент из учетной системы 1С.
+        certificate_number (str): Номер сертификата организации по ТО (ФАВТ / Росавиация).
+        certificate_agency (str): Наименование органа гражданской авиации, выдавшего сертификат.
+        certificate_issue_date (date): Дата выдачи действующего сертификата.
+        certificate_valid_until (date): Дата окончания срока действия (null, если бессрочный).
+        approved_categories (str): Разрешенные категории, рейтинги и компоненты (B1/B2/B3, C1-C20).
+        contract_number (str): Номер и дата действующего договора на ТО компонентов.
+        contract_file (FileField): Электронная копия договора на ТО.
+        certificate_scan (FileField): Электронная копия сертификата организации.
+        is_active (bool): Признак одобренного статуса организации.
+        notes (str): Служебные примечания и условия взаимодействия.
+        created_at (datetime): Дата внесения записи.
+        updated_at (datetime): Дата последнего обновления.
+    """
+
+    class Meta:
+        verbose_name = "Привлеченная организация по ТО"
+        verbose_name_plural = "Привлеченные организации по ТО (ФАП-367)"
+        ordering = ("short_name", "name")
+        indexes = [
+            models.Index(fields=["certificate_number"], name="idx_subcontractor_cert"),
+            models.Index(fields=["is_active"], name="idx_subcontractor_active"),
+        ]
+
+    name = models.CharField(
+        verbose_name="Полное наименование",
+        max_length=255,
+        help_text="Официальное наименование авиаремонтного завода или организации по ТО",
+    )
+    short_name = models.CharField(
+        verbose_name="Краткое наименование",
+        max_length=150,
+        help_text="Сокращенное наименование (например, АО 'СПАРК', АО '218 АРЗ')",
+    )
+    counteragent = models.ForeignKey(
+        Counteragent,
+        verbose_name="Контрагент 1С",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="maintenance_subcontractor_profiles",
+        help_text="Связанная карточка контрагента из 1С:Предприятие",
+    )
+    certificate_number = models.CharField(
+        verbose_name="Номер сертификата ТО",
+        max_length=100,
+        db_index=True,
+        help_text="Номер действующего сертификата организации по ТО (напр., СПАС-ТО-145-2023-01)",
+    )
+    certificate_agency = models.CharField(
+        verbose_name="Орган, выдавший сертификат",
+        max_length=150,
+        default="Федеральное агентство воздушного транспорта (Росавиация)",
+        help_text="Наименование уполномоченного органа в области гражданской авиации",
+    )
+    certificate_issue_date = models.DateField(
+        verbose_name="Дата выдачи сертификата",
+        help_text="Дата первоначальной выдачи или последнего продления сертификата",
+    )
+    certificate_valid_until = models.DateField(
+        verbose_name="Срок действия сертификата",
+        null=True,
+        blank=True,
+        help_text="Оставьте пустым, если сертификат действует бессрочно с периодическим контролем",
+    )
+    approved_categories = models.TextField(
+        verbose_name="Разрешенные категории и компоненты",
+        help_text="Область деятельности по сертификату: категории B1, B2, B3, C1-C20, конкретные типы компонентов",
+    )
+    contract_number = models.CharField(
+        verbose_name="Номер и дата договора",
+        max_length=150,
+        blank=True,
+        default="",
+        help_text="Реквизиты действующего договора на ТО и ремонт компонентов",
+    )
+    contract_file = models.FileField(
+        verbose_name="Скан договора",
+        upload_to="subcontractors/contracts/",
+        blank=True,
+        null=True,
+        help_text="Электронная копия договора с привлекаемой организацией",
+    )
+    certificate_scan = models.FileField(
+        verbose_name="Скан сертификата ТО",
+        upload_to=subcontractor_certificate_upload_path,
+        blank=True,
+        null=True,
+        help_text="Электронная копия действующего сертификата организации по ТО",
+    )
+    is_active = models.BooleanField(
+        verbose_name="Одобренный статус (активен)",
+        default=True,
+        help_text="Флаг активного допуска привлекаемой организации к выполнению работ",
+    )
+    notes = models.TextField(
+        verbose_name="Примечания",
+        blank=True,
+        default="",
+        help_text="Дополнительные условия, контакты ОТК, ограничения",
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        verbose_name="Дата изменения",
+        auto_now=True,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.short_name or self.name} (Сертификат {self.certificate_number})"
+
+    def is_certificate_valid(self, on_date: Optional[datetime.date] = None) -> bool:
+        """Проверяет легитимность сертификата организации на указанную дату.
+
+        Args:
+            on_date: Дата проверки (по умолчанию текущая дата).
+
+        Returns:
+            bool: True, если организация активна и сертификат действителен.
+        """
+        if not self.is_active:
+            return False
+        check_date = on_date or datetime.date.today()
+        if self.certificate_issue_date and check_date < self.certificate_issue_date:
+            return False
+        if self.certificate_valid_until and check_date > self.certificate_valid_until:
+            return False
+        return True
+
+    def get_data(self) -> Dict[str, Any]:
+        """Формирует данные для отображения в реестрах DataTables.
+
+        Returns:
+            Dict[str, Any]: Словарь с сериализованными полями и HTML-бейджами.
+        """
+        today = datetime.date.today()
+        if not self.is_active:
+            status_badge = '<span class="badge bg-danger">Отозван / Не активен</span>'
+        elif self.certificate_valid_until and self.certificate_valid_until < today:
+            status_badge = '<span class="badge bg-danger">Сертификат просрочен</span>'
+        elif self.certificate_valid_until and (self.certificate_valid_until - today).days <= 30:
+            status_badge = '<span class="badge bg-warning text-dark">Истекает скоро</span>'
+        else:
+            status_badge = '<span class="badge bg-success">Действует</span>'
+
+        valid_str = (
+            f"до {self.certificate_valid_until:%d.%m.%Y} г."
+            if self.certificate_valid_until
+            else "Бессрочный"
+        )
+        return {
+            "pk": self.pk,
+            "name": self.name,
+            "short_name": self.short_name or self.name,
+            "certificate_number": self.certificate_number,
+            "validity": f"от {self.certificate_issue_date:%d.%m.%Y} {valid_str}",
+            "status": status_badge,
+            "contract": self.contract_number or "—",
+            "is_active": self.is_active,
+        }
+
+
+class AviationComponentStatus(models.TextChoices):
+    """Жизненный цикл и статус годности авиационного компонента."""
+
+    STOCK = "stock", "На складе (годен к установке)"
+    INSTALLED = "installed", "Установлен на ВС"
+    REPAIR = "repair", "В ремонте у сторонней организации"
+    SCRAPPED = "scrapped", "Списан / Брак / Ресурс исчерпан"
+
+
+class ComponentReleaseDocType(models.TextChoices):
+    """Типы входящих документов о годности компонентов (ФАП-367, Раздел IV)."""
+
+    FORM_1 = "form_1", "Талон годности компонента (Приложение № 2 к ФАП-367 / Form 1)"
+    PASSPORT = "passport", "Паспорт / Формуляр агрегата завода"
+    LABEL = "label", "Этикетка / Талон завода-изготовителя"
+    OTHER = "other", "Иной входящий документ о годности"
+
+
+class AviationComponent(models.Model):
+    """Реестр авиационных компонентов и входящих документов о годности (ФАП-367, Разделы IV и XV).
+
+    Содержит сведения обо всех критических компонентах ВС (двигателях, редукторах,
+    агрегатах гидросистем, авионике), их номерах P/N и S/N, текущем статусе годности,
+    реквизитах входящих паспортов / Талонов годности сторонних организаций по ТО
+    и остатке назначенного / межремонтного ресурса.
+
+    Attributes:
+        name (str): Наименование компонента / агрегата.
+        part_number (str): Чертежный номер (Part Number / P/N).
+        serial_number (str): Заводской / серийный номер (Serial Number / S/N).
+        aircraft_type (TypeProperty): Применимый тип ВС.
+        status (str): Текущее состояние компонента (на складе, на ВС, в ремонте, списан).
+        current_aircraft (Estate): Воздушное судно, на котором сейчас установлен компонент.
+        last_repair_org (ExternalMaintenanceOrganization): Организация, выполнившая последнее ТО/ремонт.
+        release_doc_type (str): Вид входящего документа о годности.
+        release_doc_number (str): Номер входящего Талона годности / паспорта агрегата.
+        release_doc_date (date): Дата оформления входящего документа о годности.
+        release_doc_file (FileField): Электронный скан входящего документа о годности.
+        hours_since_new (Decimal): Наработка с начала эксплуатации (СНЭ), часов.
+        hours_since_overhaul (Decimal): Наработка после последнего ремонта (ППР), часов.
+        resource_limit_hours (Decimal): Назначенный или межремонтный ресурс, часов.
+        remaining_hours (Decimal): Остаток ресурса в часах.
+        notes (str): Служебные примечания.
+        created_at (datetime): Дата создания записи.
+        updated_at (datetime): Дата обновления записи.
+    """
+
+    class Meta:
+        verbose_name = "Авиационный компонент"
+        verbose_name_plural = "Авиационные компоненты (ФАП-367)"
+        ordering = ("name", "part_number", "serial_number")
+        indexes = [
+            models.Index(fields=["part_number", "serial_number"], name="idx_comp_pn_sn"),
+            models.Index(fields=["status"], name="idx_comp_status"),
+            models.Index(fields=["current_aircraft"], name="idx_comp_aircraft"),
+        ]
+
+    name = models.CharField(
+        verbose_name="Наименование компонента",
+        max_length=200,
+        help_text="Наименование агрегата (напр., Двигатель ТВ2-117А, Редуктор ВР-8А, Насос НШ-39М)",
+    )
+    part_number = models.CharField(
+        verbose_name="Чертежный номер (P/N)",
+        max_length=100,
+        db_index=True,
+        help_text="Чертежный номер детали/агрегата по каталогу",
+    )
+    serial_number = models.CharField(
+        verbose_name="Заводской номер (S/N)",
+        max_length=100,
+        db_index=True,
+        help_text="Серийный или заводской номер экземпляра компонента",
+    )
+    aircraft_type = models.ForeignKey(
+        TypeProperty,
+        verbose_name="Тип ВС",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="aviation_components",
+        help_text="Тип воздушного судна, на котором применяется компонент",
+    )
+    status = models.CharField(
+        verbose_name="Статус годности",
+        max_length=20,
+        choices=AviationComponentStatus.choices,
+        default=AviationComponentStatus.STOCK,
+        help_text="Текущее физическое состояние и местонахождение компонента",
+    )
+    current_aircraft = models.ForeignKey(
+        Estate,
+        verbose_name="Установлен на ВС",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="installed_components",
+        help_text="Воздушное судно, на котором смонтирован компонент (при статусе 'Установлен')",
+    )
+    last_repair_org = models.ForeignKey(
+        ExternalMaintenanceOrganization,
+        verbose_name="Привлеченная организация (последнее ТО)",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="repaired_components",
+        help_text="Сторонняя сертифицированная организация (АРЗ), выполнившая последнее ТО или оверхол",
+    )
+    release_doc_type = models.CharField(
+        verbose_name="Вид входящего документа",
+        max_length=20,
+        choices=ComponentReleaseDocType.choices,
+        default=ComponentReleaseDocType.FORM_1,
+        help_text="Вид документа, подтверждающего годность компонента перед установкой (п. 28 ФАП-367)",
+    )
+    release_doc_number = models.CharField(
+        verbose_name="Номер документа о годности",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Номер Талона годности по Приложению № 2, паспорта или этикетки",
+    )
+    release_doc_date = models.DateField(
+        verbose_name="Дата документа о годности",
+        null=True,
+        blank=True,
+        help_text="Дата оформления входящего документа о годности сторонней организацией",
+    )
+    release_doc_file = models.FileField(
+        verbose_name="Скан документа о годности",
+        upload_to=component_release_doc_upload_path,
+        null=True,
+        blank=True,
+        help_text="Электронная скан-копия входящего Талона годности или паспорта агрегата",
+    )
+    hours_since_new = models.DecimalField(
+        verbose_name="Наработка СНЭ (ч)",
+        max_digits=9,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        help_text="Наработка компонента с начала эксплуатации в часах",
+    )
+    hours_since_overhaul = models.DecimalField(
+        verbose_name="Наработка ППР (ч)",
+        max_digits=9,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        help_text="Наработка компонента после последнего ремонта в часах",
+    )
+    resource_limit_hours = models.DecimalField(
+        verbose_name="Назначенный ресурс (ч)",
+        max_digits=9,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Полный назначенный ресурс компонента в часах",
+    )
+    remaining_hours = models.DecimalField(
+        verbose_name="Остаток ресурса (ч)",
+        max_digits=9,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Остаток ресурса до очередного ТО или списания",
+    )
+    notes = models.TextField(
+        verbose_name="Примечания",
+        blank=True,
+        default="",
+        help_text="Особые отметки, консервация, рекламации",
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        verbose_name="Дата изменения",
+        auto_now=True,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.name} (P/N {self.part_number}, S/N {self.serial_number})"
+
+    def clean(self) -> None:
+        """Проверяет полноту реквизитов документа о годности при годном статусе.
+
+        Raises:
+            ValidationError: Если компонент годен или установлен, но номер документа не указан.
+        """
+        super().clean()
+        if self.status in (AviationComponentStatus.STOCK, AviationComponentStatus.INSTALLED):
+            if not self.release_doc_number.strip():
+                raise ValidationError({
+                    "release_doc_number": (
+                        "Для годного к установке компонента обязателен номер входящего документа о годности "
+                        "(Талон годности Приложение № 2, паспорт или этикетка завода по п. 28 ФАП-367)."
+                    )
+                })
+
+    def get_data(self) -> Dict[str, Any]:
+        """Формирует данные для сериализации в таблицах DataTables.
+
+        Returns:
+            Dict[str, Any]: Словарь полей для фронтенда.
+        """
+        status_badges = {
+            AviationComponentStatus.STOCK.value: '<span class="badge bg-success">На складе (годен)</span>',
+            AviationComponentStatus.INSTALLED.value: '<span class="badge bg-primary">Установлен на ВС</span>',
+            AviationComponentStatus.REPAIR.value: '<span class="badge bg-warning text-dark">В ремонте (АРЗ)</span>',
+            AviationComponentStatus.SCRAPPED.value: '<span class="badge bg-danger">Списан</span>',
+        }
+        badge = status_badges.get(
+            self.status,
+            f'<span class="badge bg-secondary">{self.get_status_display()}</span>',
+        )
+        aircraft_str = (
+            f"{self.current_aircraft.registration_number}"
+            if self.current_aircraft
+            else "—"
+        )
+        doc_str = (
+            f"{self.get_release_doc_type_display()} № {self.release_doc_number}"
+            if self.release_doc_number
+            else "Без документа"
+        )
+        if self.release_doc_date:
+            doc_str += f" от {self.release_doc_date:%d.%m.%Y}"
+
+        return {
+            "pk": self.pk,
+            "name": self.name,
+            "part_number": self.part_number,
+            "serial_number": self.serial_number,
+            "aircraft_type": str(self.aircraft_type) if self.aircraft_type else "—",
+            "status": badge,
+            "aircraft": aircraft_str,
+            "release_doc": doc_str,
+            "repair_org": self.last_repair_org.short_name if self.last_repair_org else "—",
+            "remaining_hours": float(self.remaining_hours) if self.remaining_hours is not None else "—",
+        }
+
+
+class ComponentOperationType(models.TextChoices):
+    """Типы технологических операций с компонентами в карте-наряде."""
+
+    INSTALL = "install", "Установка компонента"
+    REMOVE = "remove", "Демонтаж (снятие) компонента"
+    REPLACE = "replace", "Замена (снятие и установка)"
+
+
+class OutfitCardComponent(models.Model):
+    """Фиксация установки и демонтажа компонентов при выполнении ТО (ФАП-367, пп. 38, 88).
+
+    Отражает состав замененных компонентов в рамках карты-наряда: связывает
+    устанавливаемый компонент с входящим документом о годности, фиксирует снятый агрегат,
+    причину демонтажа и выполняет автоматический контроль легитимности привлеченной
+    организации на дату выполнения наряда.
+
+    Attributes:
+        outfit_card (OutfitCard): Обслуживаемая карта-наряд.
+        operation_type (str): Тип операции (установка, снятие, замена).
+        installed_component (AviationComponent): Устанавливаемый на ВС компонент.
+        removed_component_name (str): Наименование снятого агрегата.
+        removed_part_number (str): Чертежный номер (P/N) снятого агрегата.
+        removed_serial_number (str): Заводской номер (S/N) снятого агрегата.
+        removal_reason (str): Основание для снятия (выработка ресурса, отказ, плановое ТО).
+        operating_hours_on_install (Decimal): Наработка планера ВС на момент замены (часов).
+        installed_position (str): Позиция установки (напр. 'Двигатель № 1', 'Основная гидросистема').
+        notes (str): Служебные примечания.
+        created_at (datetime): Дата фиксации операции.
+        updated_at (datetime): Дата изменения записи.
+    """
+
+    class Meta:
+        verbose_name = "Движение компонента при ТО"
+        verbose_name_plural = "Движение компонентов при ТО (ФАП-367)"
+        ordering = ("outfit_card", "-created_at")
+        indexes = [
+            models.Index(fields=["outfit_card"], name="idx_outfit_comp_card"),
+            models.Index(fields=["installed_component"], name="idx_outfit_comp_installed"),
+        ]
+
+    outfit_card = models.ForeignKey(
+        OutfitCard,
+        verbose_name="Карта-наряд",
+        on_delete=models.CASCADE,
+        related_name="component_operations",
+        help_text="Карта-наряд, в рамках которой выполняются работы с компонентом",
+    )
+    operation_type = models.CharField(
+        verbose_name="Тип операции",
+        max_length=20,
+        choices=ComponentOperationType.choices,
+        default=ComponentOperationType.REPLACE,
+        help_text="Характер выполняемой операции с компонентом",
+    )
+    installed_component = models.ForeignKey(
+        AviationComponent,
+        verbose_name="Устанавливаемый агрегат",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="card_installations",
+        help_text="Устанавливаемый агрегат с действующим входящим документом о годности",
+    )
+    removed_component_name = models.CharField(
+        verbose_name="Наименование снятого агрегата",
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Наименование демонтированного с ВС компонента",
+    )
+    removed_part_number = models.CharField(
+        verbose_name="Чертежный номер снятого (P/N)",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Чертежный номер снятого агрегата",
+    )
+    removed_serial_number = models.CharField(
+        verbose_name="Заводской номер снятого (S/N)",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Заводской/серийный номер снятого агрегата",
+    )
+    removal_reason = models.CharField(
+        verbose_name="Причина снятия",
+        max_length=255,
+        blank=True,
+        default="Плановая замена по выработке ресурса",
+        help_text="Причина демонтажа: выработка ресурса, отказ, плановое ТО, бюллетень",
+    )
+    operating_hours_on_install = models.DecimalField(
+        verbose_name="Наработка ВС на момент установки (ч)",
+        max_digits=9,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Показания наработки планера ВС на дату проведения операции",
+    )
+    installed_position = models.CharField(
+        verbose_name="Место установки на ВС",
+        max_length=150,
+        blank=True,
+        default="",
+        help_text="Позиция агрегата на борту (напр., Двигатель левый, Рулевой винт)",
+    )
+    notes = models.TextField(
+        verbose_name="Примечания",
+        blank=True,
+        default="",
+        help_text="Дополнительные сведения о монтаже",
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        verbose_name="Дата изменения",
+        auto_now=True,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.get_operation_type_display()} к наряду {self.outfit_card.outfit_card_number or self.outfit_card_id}"
+
+    def clean(self) -> None:
+        """Выполняет проверку легитимности привлекаемой организации и документа о годности.
+
+        Raises:
+            ValidationError: Если нарушены требования ФАП-367 (Раздел IV и XV).
+        """
+        super().clean()
+        if self.operation_type in (ComponentOperationType.INSTALL, ComponentOperationType.REPLACE):
+            if not self.installed_component:
+                raise ValidationError({
+                    "installed_component": "При операции установки или замены необходимо выбрать устанавливаемый агрегат."
+                })
+
+            comp = self.installed_component
+            if not comp.release_doc_number.strip():
+                raise ValidationError({
+                    "installed_component": (
+                        f"Компонент '{comp.name}' (S/N {comp.serial_number}) не имеет входящего документа о годности "
+                        "(Талон годности Приложение № 2, паспорт или этикетка по п. 28 ФАП-367). "
+                        "Установка на воздушное судно запрещена."
+                    )
+                })
+
+            # Проверка сертификата привлекаемой организации на дату наряда
+            card_date = self.outfit_card.outfit_card_date if self.outfit_card else datetime.date.today()
+            if comp.last_repair_org:
+                org = comp.last_repair_org
+                if not org.is_certificate_valid(card_date):
+                    valid_to_str = (
+                        f"{org.certificate_valid_until:%d.%m.%Y}"
+                        if org.certificate_valid_until
+                        else "отозван"
+                    )
+                    raise ValidationError({
+                        "installed_component": (
+                            f"Сертификат привлекаемой организации '{org.short_name}' "
+                            f"(№ {org.certificate_number}) недействителен на дату ТО {card_date:%d.%m.%Y} "
+                            f"(срок действия: {valid_to_str}). "
+                            "Согласно п. 96 ФАП-367, установка агрегатов от организаций без действующего сертификата запрещена."
+                        )
+                    })
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Сохраняет запись и автоматически синхронизирует статус компонента.
+
+        Args:
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+        """
+        super().save(*args, **kwargs)
+        # Если компонент установлен, обновляем статус устанавливаемого компонента
+        if self.installed_component and self.outfit_card:
+            if self.operation_type in (ComponentOperationType.INSTALL, ComponentOperationType.REPLACE):
+                self.installed_component.status = AviationComponentStatus.INSTALLED
+                self.installed_component.current_aircraft = self.outfit_card.air_board
+                self.installed_component.save(update_fields=["status", "current_aircraft", "updated_at"])
+
+
+class CompanyMaintenanceCertificate(models.Model):
+    """Сертификат организации по техническому обслуживанию ВС (ФАП-145).
+
+    Модель ведет нормативный учет выданных авиакомпании «БАРКОЛ» сертификатов
+    организации по ТО (ФАП-145 / Приказ Минтранса РФ № 367), отслеживает сроки действия
+    и формирует двуязычные реквизиты для подстановки в Свидетельства о выполнении ТО (CRS).
+
+    Attributes:
+        certificate_number (str): Официальный номер сертификата организации (например, '145-25-108').
+        issue_date (date): Дата выдачи сертификата.
+        valid_until (Optional[date]): Срок действия (None, если бессрочный).
+        organization_name_ru (str): Официальное наименование держателя на русском языке.
+        organization_name_en (str): Официальное наименование держателя на английском языке.
+        is_active (bool): Признак действующего основного сертификата компании.
+        scan_file (FileField): Электронный скан-образ сертификата.
+        notes (str): Служебные примечания и область действия.
+        created_at (datetime): Дата регистрации записи.
+        updated_at (datetime): Дата последнего изменения.
+    """
+
+    class Meta:
+        verbose_name = "Сертификат организации по ТО (ФАП-145)"
+        verbose_name_plural = "Сертификаты организации по ТО (ФАП-145)"
+        ordering = ("-issue_date",)
+
+    certificate_number = models.CharField(
+        verbose_name="Номер сертификата организации",
+        max_length=100,
+        default="145-25-108",
+        help_text="Официальный номер сертификата по ФАП-145 (например, '145-25-108')",
+    )
+    issue_date = models.DateField(
+        verbose_name="Дата выдачи",
+        help_text="Дата решения уполномоченного органа о выдаче сертификата",
+    )
+    valid_until = models.DateField(
+        verbose_name="Действителен до",
+        null=True,
+        blank=True,
+        help_text="Оставьте пустым, если сертификат бессрочный",
+    )
+    organization_name_ru = models.CharField(
+        verbose_name="Наименование организации (RU)",
+        max_length=255,
+        default="ООО АВИАКОМПАНИЯ «БАРКОЛ»",
+        help_text="Официальное наименование организации на русском языке",
+    )
+    organization_name_en = models.CharField(
+        verbose_name="Наименование организации (EN)",
+        max_length=255,
+        default="AVIACOMPANY «BARKOL» ltd",
+        help_text="Официальное наименование организации на английском языке",
+    )
+    is_active = models.BooleanField(
+        verbose_name="Действующий основной сертификат",
+        default=True,
+        db_index=True,
+        help_text="Использовать данный сертификат по умолчанию для новых свидетельств CRS",
+    )
+    scan_file = models.FileField(
+        verbose_name="Скан-копия сертификата",
+        upload_to="company_certificates/",
+        null=True,
+        blank=True,
+        help_text="Электронная скан-копия бланка сертификата с приложениями",
+    )
+    notes = models.TextField(
+        verbose_name="Примечания / Область действия",
+        blank=True,
+        default="",
+        help_text="Особые отметки, разрешенные рейтинги и типы ВС",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата добавления", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата изменения", auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Сертификат № {self.certificate_number} от {self.issue_date:%d.%m.%Y}"
+
+    def get_bilingual_certificate_text(self) -> str:
+        """Формирует нормативную двуязычную строку реквизитов сертификата для графы 2 CRS.
+
+        Пример: 'от «25» декабря 2025 № 145-25-108 / № 145-25-108 Issued «25» December 2025'
+
+        Returns:
+            str: Двуязычная строка реквизитов сертификата.
+        """
+        if not self.issue_date:
+            return f"№ {self.certificate_number}"
+
+        ru_months = (
+            "", "января", "февраля", "марта", "апреля", "мая", "июня",
+            "июля", "августа", "сентября", "октября", "ноября", "декабря",
+        )
+        en_months = (
+            "", "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December",
+        )
+        ru_m = ru_months[self.issue_date.month] if 1 <= self.issue_date.month <= 12 else ""
+        en_m = en_months[self.issue_date.month] if 1 <= self.issue_date.month <= 12 else ""
+
+        return (
+            f"от «{self.issue_date.day:02d}» {ru_m} {self.issue_date.year} № {self.certificate_number} / "
+            f"№ {self.certificate_number} Issued «{self.issue_date.day:02d}» {en_m} {self.issue_date.year}"
+        )
+
+    def get_bilingual_organization(self) -> str:
+        """Возвращает нормативное двуязычное наименование организации.
+
+        Returns:
+            str: Строка вида 'ООО АВИАКОМПАНИЯ «БАРКОЛ»  / AVIACOMPANY «BARKOL» ltd'.
+        """
+        return f"{self.organization_name_ru}  / {self.organization_name_en}"
+
+
+class MaintenanceReleaseCertificate(models.Model):
+    """Свидетельство о выполнении технического обслуживания ВС (Журнал свидетельств о ТО ВС).
+
+    Официальный журнал регистрации выданных Свидетельств о выполнении ТО ВС (CRS)
+    в соответствии с Федеральными авиационными правилами (ФАП-145 / Приказ Минтранса РФ № 367).
+    Свидетельство оформляется на основании карты-наряда (OutfitCard). Номера свидетельств
+    имеют независимую годовую сквозную нумерацию без ведущих нулей в формате '<seq>/<YY>'.
+    При выдаче свидетельства реквизиты подтверждающего персонала и номер CRS автоматически
+    синхронизируются с соответствующей картой-нарядом.
+
+    Attributes:
+        number_seq (int): Порядковый номер свидетельства в пределах календарного года (1, 2, ...).
+        year (int): Календарный год регистрации (например, 2026).
+        certificate_number (str): Официальный номер свидетельства вида '1/26', '2/26'.
+        outfit_card (OutfitCard): Основание выдачи (карта-наряд).
+        maintenance_date (date): Дата выполнения ТО ВС.
+        aircraft_type (str): Тип обслуживаемого воздушного судна.
+        tail_number (str): Регистрационный (бортовой) номер ВС.
+        factory_number (str): Заводской (серийный) номер ВС.
+        operating_hours (str): Наработка ВС на момент проведения ТО (например, '693 ч. 53 м.').
+        maintenance_work_scope (str): Вид ТО и объем выполненных работ.
+        certifying_staff (DataBaseUser): Специалист подтверждающего персонала, выпустивший ВС.
+        certifying_staff_name (str): ФИО подтверждающего персонала.
+        certifying_staff_license (str): Номер свидетельства специалиста по ТО ВС.
+        issue_date (date): Дата выдачи и подписания Свидетельства CRS.
+        signature_stamp (str): Отметка об электронной подписи (ПЭП) или статус подписи.
+        scan_file (FileField): Электронный скан подписанного свидетельства.
+        created_at (datetime): Дата создания записи в журнале.
+        updated_at (datetime): Дата последнего обновления записи.
+    """
+
+    class Meta:
+        verbose_name = "Свидетельство о ТО ВС (CRS)"
+        verbose_name_plural = "Журнал свидетельств о ТО ВС (CRS)"
+        ordering = ("-year", "-number_seq")
+        unique_together = [("year", "number_seq")]
+        indexes = [
+            models.Index(fields=["year", "number_seq"], name="idx_crs_year_seq"),
+            models.Index(fields=["certificate_number"], name="idx_crs_cert_num"),
+            models.Index(fields=["outfit_card"], name="idx_crs_outfit_card"),
+        ]
+
+    number_seq = models.PositiveIntegerField(
+        verbose_name="№ п/п (в году)",
+        db_index=True,
+        blank=True,
+        default=0,
+        help_text="Порядковый номер свидетельства в текущем году (без ведущих нулей)",
+    )
+    year = models.PositiveIntegerField(
+        verbose_name="Год",
+        db_index=True,
+        blank=True,
+        default=0,
+        help_text="Календарный год оформления свидетельства",
+    )
+    certificate_number = models.CharField(
+        verbose_name="Номер свидетельства",
+        max_length=50,
+        unique=True,
+        db_index=True,
+        blank=True,
+        help_text="Уникальный номер свидетельства в формате '<seq>/<YY>' (например, 1/26)",
+    )
+    outfit_card = models.ForeignKey(
+        OutfitCard,
+        verbose_name="Карта-наряд (основание)",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="crs_certificates",
+        help_text="Карта-наряд, на основании которой выписано свидетельство о ТО",
+    )
+    maintenance_date = models.DateField(
+        verbose_name="Дата выполнения ТО ВС",
+        blank=True,
+        null=True,
+        help_text="Фактическая дата выполнения работ по ТО",
+    )
+    aircraft_type = models.CharField(
+        verbose_name="Тип ВС",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Тип воздушного судна (например, Ми-8Т, Ан-2)",
+    )
+    tail_number = models.CharField(
+        verbose_name="Рег. № ВС (бортовой)",
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Государственный регистрационный номер ВС",
+    )
+    factory_number = models.CharField(
+        verbose_name="Зав. № ВС",
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Заводской (серийный) номер планера ВС",
+    )
+    operating_hours = models.CharField(
+        verbose_name="Наработка ВС",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Наработка ВС на момент ТО (например, 693 ч. 53 м.)",
+    )
+    maintenance_work_scope = models.TextField(
+        verbose_name="Вид ТО (выполненные работы)",
+        blank=True,
+        default="",
+        help_text="Перечень регламентов, оперативных и дополнительных работ",
+    )
+    certifying_staff = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Подтверждающий персонал",
+        on_delete=models.PROTECT,
+        related_name="crs_release_certificates",
+        help_text="Специалист подтверждающего персонала, выпустивший ВС",
+    )
+    certifying_staff_name = models.CharField(
+        verbose_name="ФИО специалиста",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Фамилия, имя и отчество специалиста",
+    )
+    certifying_staff_license = models.CharField(
+        verbose_name="Свидетельство специалиста",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Номер бессрочного свидетельства специалиста по ТО ВС",
+    )
+    issue_date = models.DateField(
+        verbose_name="Дата свидетельства",
+        default=timezone.now,
+        help_text="Дата подписания и выдачи Свидетельства CRS",
+    )
+    signature_stamp = models.CharField(
+        verbose_name="Подпись / ПЭП",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Отметка об электронной подписи или штамп подтверждающего персонала",
+    )
+    scan_file = models.FileField(
+        verbose_name="Скан свидетельства",
+        upload_to="crs_certificates/",
+        null=True,
+        blank=True,
+        help_text="Электронная скан-копия оформленного свидетельства",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата оформления", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата изменения", auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Свидетельство о ТО № {self.certificate_number} от {self.issue_date:%d.%m.%Y}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Сохраняет свидетельство, автоматически назначая порядковый номер и обновляя карту-наряд."""
+        if not self.issue_date:
+            self.issue_date = timezone.now().date()
+        if not self.year:
+            self.year = self.issue_date.year
+
+        if self.outfit_card:
+            from hrdepartment_app.services.crs_document_service import (
+                build_work_scope_text,
+                format_hours_minutes,
+            )
+            if not self.maintenance_date:
+                self.maintenance_date = (
+                    self.outfit_card.outfit_card_date_end
+                    or self.outfit_card.outfit_card_date
+                    or timezone.now().date()
+                )
+            if not self.aircraft_type:
+                air_board = self.outfit_card.air_board
+                self.aircraft_type = (
+                    air_board.type_property.type_property
+                    if air_board and air_board.type_property
+                    else "ВС"
+                )
+            if not self.tail_number:
+                air_board = self.outfit_card.air_board
+                self.tail_number = air_board.registration_number if air_board else "—"
+            if not self.factory_number and self.outfit_card.air_board:
+                self.factory_number = self.outfit_card.air_board.factory_number or ""
+            if not self.operating_hours:
+                self.operating_hours = format_hours_minutes(self.outfit_card.flight_hours)
+            if not self.maintenance_work_scope:
+                self.maintenance_work_scope = build_work_scope_text(self.outfit_card)
+            if not self.certifying_staff and self.outfit_card.certifying_staff:
+                self.certifying_staff = self.outfit_card.certifying_staff
+
+        if not self.maintenance_date:
+            self.maintenance_date = self.issue_date
+
+        if not self.number_seq:
+            max_seq = (
+                MaintenanceReleaseCertificate.objects.filter(year=self.year)
+                .aggregate(models.Max("number_seq"))["number_seq__max"]
+                or 0
+            )
+            self.number_seq = max_seq + 1
+
+        if not self.certificate_number:
+            yy = str(self.year)[-2:]
+            self.certificate_number = f"{self.number_seq}/{yy}"
+
+        if self.certifying_staff:
+            if not self.certifying_staff_name:
+                self.certifying_staff_name = self.certifying_staff.get_full_name()
+            if not self.certifying_staff_license and getattr(self.certifying_staff, "maintenance_staff_certificate", ""):
+                self.certifying_staff_license = self.certifying_staff.maintenance_staff_certificate
+
+        if not self.signature_stamp:
+            self.signature_stamp = "[Оформлено в СЭД БАРКОЛ]"
+
+        super().save(*args, **kwargs)
+
+        # Синхронизируем обратную связь в карту-наряд по требованию п. 2
+        if self.outfit_card:
+            needs_update = False
+            update_fields = ["updated_at"]
+            if self.outfit_card.crs_number != self.certificate_number:
+                self.outfit_card.crs_number = self.certificate_number
+                update_fields.append("crs_number")
+                needs_update = True
+            if self.certifying_staff and self.outfit_card.certifying_staff != self.certifying_staff:
+                self.outfit_card.certifying_staff = self.certifying_staff
+                update_fields.append("certifying_staff")
+                needs_update = True
+            if needs_update:
+                self.outfit_card.save(update_fields=update_fields)
+
+    @classmethod
+    def create_from_outfit_card(
+        cls,
+        outfit_card: OutfitCard,
+        certifying_staff: Optional[DataBaseUser] = None,
+        issue_date: Optional[date] = None,
+    ) -> "MaintenanceReleaseCertificate":
+        """Фабричный метод создания Свидетельства о ТО (CRS) на основании карты-наряда.
+
+        Извлекает нормативные реквизиты борта, выполненных регламентов, наработки планера
+        и специалиста, регистрирует свидетельство в журнале и обновляет карту-наряд.
+
+        Args:
+            outfit_card (OutfitCard): Карта-наряд на выполнение ТО.
+            certifying_staff (Optional[DataBaseUser]): Подтверждающий специалист (если не указан, берется из наряда).
+            issue_date (Optional[date]): Дата оформления (по умолчанию дата окончания наряда или сегодня).
+
+        Returns:
+            MaintenanceReleaseCertificate: Созданный и зарегистрированный экземпляр свидетельства.
+        """
+        from hrdepartment_app.services.crs_document_service import (
+            build_work_scope_text,
+            format_hours_minutes,
+        )
+
+        staff = certifying_staff or outfit_card.certifying_staff
+        if not staff:
+            raise ValidationError("Для оформления Свидетельства CRS необходимо указать подтверждающий персонал.")
+
+        m_date = outfit_card.outfit_card_date_end or outfit_card.outfit_card_date or timezone.now().date()
+        iss_date = issue_date or m_date
+        air_board = outfit_card.air_board
+        ac_type = air_board.type_property.type_property if air_board and air_board.type_property else "ВС"
+        tail_no = air_board.registration_number if air_board else "—"
+        fact_no = air_board.factory_number if air_board and air_board.factory_number else "—"
+        op_hours = format_hours_minutes(outfit_card.flight_hours)
+        scope = build_work_scope_text(outfit_card)
+
+        cert = cls(
+            outfit_card=outfit_card,
+            maintenance_date=m_date,
+            aircraft_type=ac_type,
+            tail_number=tail_no,
+            factory_number=fact_no,
+            operating_hours=op_hours,
+            maintenance_work_scope=scope,
+            certifying_staff=staff,
+            certifying_staff_name=staff.get_full_name(),
+            certifying_staff_license=getattr(staff, "maintenance_staff_certificate", ""),
+            issue_date=iss_date,
+            signature_stamp="[Оформлено в СЭД БАРКОЛ]",
+        )
+        cert.save()
+        return cert
+
+    def get_absolute_url(self) -> str:
+        """Возвращает URL для скачивания или просмотра свидетельства."""
+        return reverse("hrdepartment_app:crs_certificate_download", kwargs={"pk": self.pk})
+
+    def get_data(self) -> Dict[str, Any]:
+        """Формирует сериализованные данные для таблицы журнала DataTables.
+
+        Returns:
+            Dict[str, Any]: Словарь с атрибутами для 10 граф журнала свидетельств о ТО ВС.
+        """
+        download_url = reverse("hrdepartment_app:crs_certificate_download", kwargs={"pk": self.pk})
+        outfit_url = (
+            reverse("hrdepartment_app:outfit_card_detail", kwargs={"pk": self.outfit_card.pk})
+            if self.outfit_card
+            else ""
+        )
+        return {
+            "pk": self.pk,
+            "number_seq": self.number_seq,
+            "maintenance_date": f"{self.maintenance_date:%d.%m.%Y} г." if self.maintenance_date else "—",
+            "aircraft_type": self.aircraft_type,
+            "tail_number": self.tail_number,
+            "factory_number": self.factory_number or "—",
+            "operating_hours": self.operating_hours or "—",
+            "maintenance_work_scope": self.maintenance_work_scope,
+            "certificate_number": self.certificate_number,
+            "certifying_staff_name": self.certifying_staff_name or (format_name_initials(self.certifying_staff.title) if self.certifying_staff else "—"),
+            "certifying_staff_license": self.certifying_staff_license or "—",
+            "issue_date": f"{self.issue_date:%d.%m.%Y} г." if self.issue_date else "—",
+            "signature_stamp": self.signature_stamp or "Подписано",
+            "download_url": download_url,
+            "outfit_url": outfit_url,
+            "outfit_number": self.outfit_card.outfit_card_number if self.outfit_card else "—",
         }
 
 

@@ -16,7 +16,10 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed, CreatingTeamSetNumber, ExpensesList, expenses_update, \
     ReportCardDetailYear, ReportCardDetailYearXLS, TimeSheetCreateView, TimeSheetDetailView, TimeSheetUpdateView, \
     TimeSheetDeleteView, TimeSheetListView, OutfitCardListView, OutfitCardCreateView, OutfitCardDetailView, \
-    OutfitCardUpdateView, OutfitCardDeleteView, ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
+    OutfitCardUpdateView, OutfitCardDeleteView, OutfitCardCRSDownloadView, OutfitCardIssueCRSView, \
+    MaintenanceReleaseCertificateListView, MaintenanceReleaseCertificateDownloadView, \
+    MaintenanceReleaseCertificateCreateView, OutfitCardCRSDataApiView, \
+    ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
     unacknowledge_document, seasonality_report, export_seasonality_data, absence_analysis, export_absence_data, \
     employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
     ApprovalOficialMemoProcessDetail, management_dashboard, export_trips_csv, BriefingsList, BriefingsAdd, \
@@ -26,10 +29,13 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     BusinessProcessRoutesUpdate, LaborProtectionList, LaborProtectionAdd, LaborProtectionDetail, LaborProtectionDelete, \
     LaborProtectionUpdate, LaborProtectionInstructionsDelete, LaborProtectionInstructionsUpdate, \
     LaborProtectionInstructionsDetail, LaborProtectionInstructionsAdd, LaborProtectionInstructionsList, \
-    ExpenseReportView, ExportExpenseReportView, StudentAgreementListView, StudentAgreementCreateView, \
+    ExpenseReportView, ExportExpenseReportView, PSOMemoReportView, StudentAgreementListView, StudentAgreementCreateView, \
     StudentAgreementDetailView, StudentAgreementUpdateView, StudentAgreementDeleteView, generate_student_agreement, \
     PoaListView, PoaCreateView, PoaDetailView, PoaUpdateView, PoaMarkReceivedView, PoaMarkReceivedDeleteView, \
-    PSOMemoReportView
+    PeriodicWorkList, PeriodicWorkAdd, PeriodicWorkUpdate, PeriodicWorkDelete, \
+    OperationalWorkList, OperationalWorkAdd, OperationalWorkUpdate, OperationalWorkDelete, \
+    AircraftHoursListView, AircraftHoursAddView, AircraftHoursExcelTemplateDownloadView, \
+    AircraftHoursImportView, AircraftMaintenanceApproachesAPIView
 
 app_name = 'hrdepartment_app'
 
@@ -85,6 +91,19 @@ urlpatterns = [
     path('place/<int:pk>/', PlaceProductionActivityDetail.as_view(), name='place'),
     path('place/<int:pk>/detail/', PlaceProductionActivityDetail.as_view(), name='place_detail'),
     path('place/<int:pk>/update/', PlaceProductionActivityUpdate.as_view(), name='place_update'),
+    path('periodicwork/', PeriodicWorkList.as_view(), name='periodic_work_list'),
+    path('periodicwork/add/', PeriodicWorkAdd.as_view(), name='periodic_work_add'),
+    path('periodicwork/<int:pk>/update/', PeriodicWorkUpdate.as_view(), name='periodic_work_update'),
+    path('periodicwork/<int:pk>/delete/', PeriodicWorkDelete.as_view(), name='periodic_work_delete'),
+    path('operationalwork/', OperationalWorkList.as_view(), name='operational_work_list'),
+    path('operationalwork/add/', OperationalWorkAdd.as_view(), name='operational_work_add'),
+    path('operationalwork/<int:pk>/update/', OperationalWorkUpdate.as_view(), name='operational_work_update'),
+    path('operationalwork/<int:pk>/delete/', OperationalWorkDelete.as_view(), name='operational_work_delete'),
+    path('aircraft-hours/', AircraftHoursListView.as_view(), name='aircraft_hours_list'),
+    path('aircraft-hours/add/', AircraftHoursAddView.as_view(), name='aircraft_hours_add'),
+    path('aircraft-hours/template/', AircraftHoursExcelTemplateDownloadView.as_view(), name='aircraft_hours_template'),
+    path('aircraft-hours/import/', AircraftHoursImportView.as_view(), name='aircraft_hours_import'),
+    path('api/aircraft-hours/<int:pk>/approaches/', AircraftMaintenanceApproachesAPIView.as_view(), name='api_aircraft_hours_approaches'),
     path('report/', ReportCardList.as_view(), name='reportcard_list'),
     path('report/list/', ReportCardListManual.as_view(), name='reportcard_listmanual'),
     path('report/admin/', ReportCardListAdmin.as_view(), name='reportcard_listadmin'),
@@ -165,8 +184,15 @@ urlpatterns = [
     path('outfit_cards/', OutfitCardListView.as_view(), name='outfit_card_list'),
     path('outfit_cards/create/', OutfitCardCreateView.as_view(), name='outfit_card_add'),
     path('outfit_cards/<int:pk>/', OutfitCardDetailView.as_view(), name='outfit_card'),
+    path('outfit_cards/<int:pk>/detail/', OutfitCardDetailView.as_view(), name='outfit_card_detail'),
     path('outfit_cards/<int:pk>/update/', OutfitCardUpdateView.as_view(), name='outfit_card_update'),
     path('outfit_cards/<int:pk>/delete/', OutfitCardDeleteView.as_view(), name='outfit_card_delete'),
+    path('outfit_cards/<int:pk>/crs-download/', OutfitCardCRSDownloadView.as_view(), name='outfit_card_crs_download'),
+    path('outfit_cards/<int:pk>/issue-crs/', OutfitCardIssueCRSView.as_view(), name='outfit_card_issue_crs'),
+    path('crs-certificates/', MaintenanceReleaseCertificateListView.as_view(), name='crs_certificate_list'),
+    path('crs-certificates/create/', MaintenanceReleaseCertificateCreateView.as_view(), name='crs_certificate_create'),
+    path('crs-certificates/<int:pk>/download/', MaintenanceReleaseCertificateDownloadView.as_view(), name='crs_certificate_download'),
+    path('api/outfit-card/<int:pk>/crs-data/', OutfitCardCRSDataApiView.as_view(), name='api_outfit_card_crs_data'),
     path('acknowledge/', acknowledge_document, name='acknowledge_document'),
     path('unacknowledge/', unacknowledge_document, name='unacknowledge_document'),
     path("seasonality-report/", seasonality_report, name="seasonality-report"),

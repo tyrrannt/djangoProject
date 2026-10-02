@@ -1,0 +1,171 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {% if object %}Редактирование регламентной работы: {{ object }}{% else %}Добавить периодическую работу{% endif %} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            if ($.fn.select2) {
+                $('[data-plugin-selectTwo]').select2({
+                    theme: 'bootstrap'
+                });
+            }
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-12 col-xl-10 mx-auto">
+            <form class="ecommerce-form" method="post">
+                {% csrf_token %}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                {% if object %}
+                                    <i class="bx bx-edit text-primary me-2"></i>Редактирование регламентной работы
+                                {% else %}
+                                    <i class="bx bx-plus-circle text-primary me-2"></i>Добавление периодической работы
+                                {% endif %}
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">Справочник периодических регламентных работ воздушных судов</p>
+                        </div>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:periodic_work_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> К списку
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.air_bord_type.id_for_label }}">Тип ВС</label>
+                                {{ form.air_bord_type }}
+                                <div class="form-text small text-muted">Тип воздушного судна (например, Cessna 172S, МИ-8Т, R-44)</div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.code.id_for_label }}">Код формы регламента <span class="text-danger">*</span></label>
+                                {{ form.code }}
+                                <div class="form-text small text-muted">Обозначение регламента (например: Ф-1, 100 часов, КВР)</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.name.id_for_label }}">Наименование работы</label>
+                                {{ form.name }}
+                                <div class="form-text small text-muted">Если оставить пустым, будет сформировано автоматически</div>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.ratio.id_for_label }}">Норма-часы наработки <span class="text-danger">*</span></label>
+                                {{ form.ratio }}
+                                <div class="form-text small text-muted">Интервал наработки (ч.)</div>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.lag_minus.id_for_label }}">Лаг минус (ч.)</label>
+                                {{ form.lag_minus }}
+                                <div class="form-text small text-muted">Допустимое отклонение в минус</div>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.lag_plus.id_for_label }}">Лаг плюс (ч.)</label>
+                                {{ form.lag_plus }}
+                                <div class="form-text small text-muted">Допустимое отклонение в плюс</div>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.color.id_for_label }}">Цветовая индикация <span class="text-danger">*</span></label>
+                                {{ form.color }}
+                                <div class="form-text small text-muted">Категория регламента</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.description.id_for_label }}">Описание регламентных процедур</label>
+                                {{ form.description }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Панель действий в футере -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit" class="btn btn-success btn-touch font-weight-semibold">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% url 'hrdepartment_app:periodic_work_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'hrdepartment_app:periodic_work_list' %}" class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-arrow-back text-4 me-2"></i> К списку
+                                </a>
+                            </div>
+                            {% if object %}
+                                <div>
+                                    <a href="{% url 'hrdepartment_app:periodic_work_delete' object.pk %}" class="btn btn-outline-danger btn-touch font-weight-semibold">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}

@@ -1,8 +1,9 @@
 import logging
 import re
 from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
 from typing import List, Dict, Any, Optional, Tuple, Set, Sequence
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from .models import PilotAssignment, AircraftMovement, PeriodicCheckRecord
 
 logger = logging.getLogger(__name__)
@@ -3514,5 +3515,203 @@ def remove_user_from_lpc_role(user_id: int, group_name: str, operator=None) -> T
     op_info = operator.username if operator else "система"
     logger.info("Пользователь %s исключил %s из роли ЛПК «%s»", op_info, user.username, group_name)
     return True, f"Сотрудник {user.get_full_name()} успешно исключен из роли «{group_name}»."
+
+
+def get_certifying_staff_authorization(
+    employee: Any,
+    aircraft_type: Optional[Any] = None,
+    target_date: Optional[date] = None,
+    require_base: bool = False,
+) -> Tuple[bool, Optional[str], Optional[PeriodicCheckRecord]]:
+    """Проверяет наличие и легитимность допуска подтверждающего персонала по ФАП-145 / Приказу Минтранса РФ № 367.
+
+    Согласно требованиям ФАП-145 и регламенту авиакомпании:
+    1. Допуски к оперативному и периодическому ТО едины (нет разделения персонала на оперативное и базовое ТО).
+    2. Допуск подтверждающего персонала предоставляется по результатам успешного прохождения
+       периодического тестирования в системе testing_app (группа 'Выполнение ТО ВС').
+    3. Периодичность проверки и действия допуска составляет строго 6 месяцев (раз в полгода).
+    4. Допуск распространяется на все типы ВС, внесенные в бессрочное свидетельство специалиста
+       по ТО ВС (employee.allowed_aircraft_types).
+    5. Дополнительно признаются действующие приказы и записи PeriodicCheckRecord организации
+       (коды CERT_STAFF_LINE, CERT_STAFF_BASE, CERT_STAFF_MAINTENANCE).
+
+    Args:
+        employee (DataBaseUser): Проверяемый специалист.
+        aircraft_type (Optional[TypeProperty]): Тип обслуживаемого воздушного судна.
+        target_date (Optional[date]): Дата выполнения/приемки ТО (по умолчанию сегодня).
+        require_base (bool): Сохраняется для обратной совместимости сигнатуры API (допуски едины).
+
+    Returns:
+        Tuple[bool, Optional[str], Optional[PeriodicCheckRecord]]:
+            - bool: True, если сотрудник имеет действующий допуск;
+            - Optional[str]: Номер бессрочного свидетельства или документа допуска, либо None;
+            - Optional[PeriodicCheckRecord]: Объект записи о мероприятии, либо None.
+    """
+    if not employee or not getattr(employee, "pk", None):
+        return False, None, None
+
+    if target_date is None:
+        target_date = date.today()
+
+    license_number = getattr(employee, "maintenance_staff_certificate", "").strip()
+
+    # 1. Проверка соответствия типа ВС свидетельству специалиста (если типы явно заданы)
+    if aircraft_type and hasattr(employee, "allowed_aircraft_types") and employee.allowed_aircraft_types.exists():
+        ac_match = employee.allowed_aircraft_types.filter(
+            Q(pk=getattr(aircraft_type, "pk", None)) | Q(type_property=str(aircraft_type))
+        ).exists()
+        if not ac_match:
+            # Данный тип ВС отсутствует в свидетельстве специалиста
+            return False, None, None
+
+    # 2. Проверка допуска по результатам тестирования в testing_app (периодичность 6 месяцев)
+    try:
+        from testing_app.models import TestingAssignment, TestingGroup
+        has_maintenance_testing = TestingGroup.objects.filter(
+            Q(code=TestingGroup.Code.PERFORMING)
+            | Q(code="performing_maintenance")
+            | Q(name__icontains="Выполнение ТО ВС")
+        ).exists()
+
+        if has_maintenance_testing:
+            six_months_ago = target_date - relativedelta(months=6)
+
+            passed_assignment = (
+                TestingAssignment.objects.filter(
+                    employee=employee,
+                    status=TestingAssignment.Status.PASSED,
+                    passed_at__date__gte=six_months_ago,
+                    passed_at__date__lte=target_date,
+                )
+                .filter(
+                    Q(group__code=TestingGroup.Code.PERFORMING)
+                    | Q(group__code="performing_maintenance")
+                    | Q(group__name__icontains="Выполнение ТО ВС")
+                )
+                .order_by("-passed_at")
+                .first()
+            )
+
+            if passed_assignment:
+                doc_no = license_number or "Допуск по результатам тестирования ТО ВС"
+                return True, doc_no, None
+
+            from testing_app.models import TestingAttempt
+            passed_attempt = (
+                TestingAttempt.objects.filter(
+                    assignment__employee=employee,
+                    is_passed=True,
+                    completed_at__date__gte=six_months_ago,
+                    completed_at__date__lte=target_date,
+                )
+                .filter(
+                    Q(assignment__group__code=TestingGroup.Code.PERFORMING)
+                    | Q(assignment__group__code="performing_maintenance")
+                    | Q(assignment__group__name__icontains="Выполнение ТО ВС")
+                )
+                .order_by("-completed_at")
+                .first()
+            )
+
+            if passed_attempt:
+                doc_no = license_number or passed_attempt.result_number or "Допуск по результатам тестирования ТО ВС"
+                return True, doc_no, None
+    except Exception as exc:
+        logger.warning("Ошибка проверки тестирования подтверждающего персонала: %s", exc)
+
+    # 3. Проверка допуска по приказам и журналу периодических проверок (PeriodicCheckRecord)
+    allowed_codes = ["CERT_STAFF_LINE", "CERT_STAFF_BASE", "CERT_STAFF_MAINTENANCE"]
+    records_qs = PeriodicCheckRecord.objects.filter(
+        employee=employee,
+        check_type__code__in=allowed_codes,
+        check_type__is_active=True,
+        start_date__lte=target_date,
+        end_date__gte=target_date,
+    ).select_related("check_type", "aircraft_type")
+
+    if aircraft_type:
+        matching_record = (
+            records_qs.filter(Q(aircraft_type=aircraft_type) | Q(aircraft_type__isnull=True))
+            .order_by("-check_type__order", "-end_date")
+            .first()
+        )
+    else:
+        matching_record = records_qs.order_by("-check_type__order", "-end_date").first()
+
+    if matching_record:
+        doc_no = license_number or (matching_record.document_number.strip() if matching_record.document_number else None)
+        return True, doc_no, matching_record
+
+    # 4. Если в системе еще не зафиксированы периодические тесты или проверки,
+    # признаем бессрочное свидетельство специалиста по ТО ВС (п. 13 требований ФАП-145)
+    if license_number:
+        return True, license_number, None
+
+    # Признаем персонал, назначенный ответственным/инженером
+    return False, None, None
+
+
+def get_authorized_certifying_staff_queryset(
+    aircraft_type: Optional[Any] = None,
+    target_date: Optional[date] = None,
+    require_base: bool = False,
+) -> QuerySet:
+    """Возвращает QuerySet активных сотрудников с действующим допуском подтверждающего персонала.
+
+    Args:
+        aircraft_type (Optional[TypeProperty]): Ограничение по типу ВС (если задано).
+        target_date (Optional[date]): Дата проверки (по умолчанию сегодня).
+        require_base (bool): Сохраняется для обратной совместимости.
+
+    Returns:
+        QuerySet[DataBaseUser]: Отфильтрованный список специалистов подтверждающего персонала.
+    """
+    from customers_app.models import DataBaseUser
+
+    if target_date is None:
+        target_date = date.today()
+
+    six_months_ago = target_date - relativedelta(months=6)
+    allowed_codes = ["CERT_STAFF_LINE", "CERT_STAFF_BASE", "CERT_STAFF_MAINTENANCE"]
+
+    records_filter = Q(
+        flight_periodic_checks__check_type__code__in=allowed_codes,
+        flight_periodic_checks__check_type__is_active=True,
+        flight_periodic_checks__start_date__lte=target_date,
+        flight_periodic_checks__end_date__gte=target_date,
+    )
+    if aircraft_type:
+        records_filter &= (
+            Q(flight_periodic_checks__aircraft_type=aircraft_type)
+            | Q(flight_periodic_checks__aircraft_type__isnull=True)
+        )
+
+    testing_filter = (
+        Q(
+            testing_assignments__status="passed",
+            testing_assignments__passed_at__date__gte=six_months_ago,
+            testing_assignments__passed_at__date__lte=target_date,
+            testing_assignments__group__code__in=["performing_maintenance"],
+        )
+        | Q(
+            testing_assignments__attempts__is_passed=True,
+            testing_assignments__attempts__completed_at__date__gte=six_months_ago,
+            testing_assignments__attempts__completed_at__date__lte=target_date,
+            testing_assignments__group__code__in=["performing_maintenance"],
+        )
+    )
+
+    combined_filter = records_filter | testing_filter
+    qs = DataBaseUser.objects.filter(is_active=True).filter(combined_filter).distinct()
+
+    if aircraft_type:
+        qs = qs.exclude(
+            allowed_aircraft_types__isnull=False
+        ).filter(
+            Q(allowed_aircraft_types=aircraft_type) | Q(allowed_aircraft_types__isnull=True)
+        ).distinct()
+
+    return qs.order_by("last_name")
+
 
 

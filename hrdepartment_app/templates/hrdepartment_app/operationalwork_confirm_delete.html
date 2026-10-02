@@ -1,0 +1,70 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    Удаление оперативной работы // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 mt-4">
+                <header class="card-header bg-danger text-white py-3 px-4 rounded-top">
+                    <h5 class="card-title text-white mb-0 font-weight-bold">
+                        <i class="bx bx-trash me-2"></i> Удаление оперативной работы
+                    </h5>
+                </header>
+                <div class="card-body p-4 text-center">
+                    <div class="my-3">
+                        <i class="bx bx-error-circle text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-dark font-weight-bold mb-3">Подтвердите удаление</h5>
+                    <div class="p-3 bg-light rounded text-start mb-3 border">
+                        <div class="small text-muted mb-1">Оперативная работа:</div>
+                        <div class="fw-bold text-dark fs-6">{{ object }}</div>
+                        <div class="small text-muted mt-2">
+                            <span>Тип ВС: <strong>{{ object.air_bord_type|default:"—" }}</strong></span> |
+                            <span>Код: <strong>{{ object.code }}</strong></span>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0">Это действие необратимо. Запись будет удалена из справочника.</p>
+                </div>
+                <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom d-flex justify-content-between align-items-center">
+                    <a href="{% url 'hrdepartment_app:operational_work_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                        <i class="bx bx-arrow-back me-1"></i> Отмена
+                    </a>
+                    <form method="post" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-touch font-weight-semibold">
+                            <i class="bx bx-trash me-1"></i> Да, удалить
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}

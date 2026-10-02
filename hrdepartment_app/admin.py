@@ -42,6 +42,16 @@ from hrdepartment_app.models import (
     TrainingProgram,
     StudentAgreement,
     PowerOfAttorney,
+    AircraftHoursTracking,
+    HoursTrackingSource,
+    ExternalMaintenanceOrganization,
+    AviationComponent,
+    AviationComponentStatus,
+    ComponentReleaseDocType,
+    ComponentOperationType,
+    OutfitCardComponent,
+    CompanyMaintenanceCertificate,
+    MaintenanceReleaseCertificate,
 )
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
@@ -186,6 +196,22 @@ class TimeSheetAdmin(ActiveUsersFilterMixin, ModelAdmin):
             return ""
 
 
+class OutfitCardComponentInline(TabularInline):
+    """Инлайн технологических операций с компонентами в карте-наряде."""
+    model = OutfitCardComponent
+    extra = 0
+    autocomplete_fields = ["installed_component"]
+    fields = (
+        "operation_type",
+        "installed_component",
+        "installed_position",
+        "removed_component_name",
+        "removed_part_number",
+        "removed_serial_number",
+        "removal_reason",
+    )
+
+
 @admin.register(OutfitCard)
 class OutfitCardAdmin(ActiveUsersFilterMixin, ModelAdmin):
     """Администрирование карт нарядов на ТО."""
@@ -196,6 +222,7 @@ class OutfitCardAdmin(ActiveUsersFilterMixin, ModelAdmin):
         ("outfit_card_date", RangeDateFilter),
     )
     search_fields = ["outfit_card_number"]
+    inlines = [OutfitCardComponentInline]
     compressed_fields = True
     warn_unsaved_form = True
 
@@ -210,6 +237,308 @@ class OutfitCardAdmin(ActiveUsersFilterMixin, ModelAdmin):
             return format_name_initials(obj.employee.title)
         except AttributeError:
             return ""
+
+
+@admin.register(AircraftHoursTracking)
+class AircraftHoursTrackingAdmin(ActiveUsersFilterMixin, ModelAdmin):
+    """Администрирование журнала учета наработки воздушных судов (ФАП-367)."""
+
+    list_display = (
+        "display_aircraft_header",
+        "record_date",
+        "flight_hours",
+        "flight_hours_tsor",
+        "flight_cycles",
+        "display_source",
+        "get_author",
+    )
+    list_filter = (
+        "source",
+        "air_board__type_property",
+        ("record_date", RangeDateFilter),
+    )
+    search_fields = [
+        "air_board__registration_number",
+        "air_board__factory_number",
+        "notes",
+    ]
+    autocomplete_fields = ["air_board", "outfit_card", "created_by"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Воздушное судно", header=True)
+    def display_aircraft_header(self, obj: AircraftHoursTracking) -> Tuple[str, str]:
+        """Возвращает бортовой номер и тип ВС."""
+        board = obj.air_board
+        type_name = str(board.type_property) if board and board.type_property else "Тип не указан"
+        reg_num = board.registration_number if board else "—"
+        return reg_num, type_name
+
+    @display(
+        description="Источник",
+        label={
+            HoursTrackingSource.MANUAL.value: "info",
+            HoursTrackingSource.IMPORT.value: "warning",
+            HoursTrackingSource.OUTFIT_CARD.value: "success",
+        },
+    )
+    def display_source(self, obj: AircraftHoursTracking) -> str:
+        """Цветной бейдж источника наработки."""
+        return obj.source
+
+    @admin.display(description="Автор")
+    def get_author(self, obj: AircraftHoursTracking) -> str:
+        """Возвращает инициалы автора записи."""
+        if obj.created_by:
+            return format_name_initials(obj.created_by.title)
+        return "—"
+
+
+@admin.register(ExternalMaintenanceOrganization)
+class ExternalMaintenanceOrganizationAdmin(ActiveUsersFilterMixin, ModelAdmin):
+    """Администрирование привлекаемых организаций по ТО компонентов (ФАП-367, разд. XV)."""
+
+    list_display = (
+        "display_org_header",
+        "certificate_number",
+        "certificate_agency",
+        "valid_until_display",
+        "display_status",
+        "contract_number",
+    )
+    list_filter = (
+        "is_active",
+        ("certificate_issue_date", RangeDateFilter),
+        ("certificate_valid_until", RangeDateFilter),
+    )
+    search_fields = [
+        "name",
+        "short_name",
+        "certificate_number",
+        "approved_categories",
+        "contract_number",
+    ]
+    autocomplete_fields = ["counteragent"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Организация ТО", header=True)
+    def display_org_header(self, obj: ExternalMaintenanceOrganization) -> Tuple[str, str]:
+        """Возвращает наименование организации и реквизиты договора."""
+        return obj.short_name or obj.name, f"Договор: {obj.contract_number or 'б/н'}"
+
+    @display(description="Срок сертификата")
+    def valid_until_display(self, obj: ExternalMaintenanceOrganization) -> str:
+        """Отображает срок действия сертификата."""
+        if obj.certificate_valid_until:
+            return f"до {obj.certificate_valid_until:%d.%m.%Y}"
+        return "Бессрочный"
+
+    @display(
+        description="Статус допуска",
+        label={
+            "valid": "success",
+            "warning": "warning",
+            "expired": "danger",
+            "inactive": "danger",
+        },
+    )
+    def display_status(self, obj: ExternalMaintenanceOrganization) -> str:
+        """Отображает статус легитимности организации."""
+        if not obj.is_active:
+            return "inactive"
+        today = datetime.date.today()
+        if obj.certificate_valid_until and obj.certificate_valid_until < today:
+            return "expired"
+        if obj.certificate_valid_until and (obj.certificate_valid_until - today).days <= 30:
+            return "warning"
+        return "valid"
+
+
+@admin.register(AviationComponent)
+class AviationComponentAdmin(ActiveUsersFilterMixin, ModelAdmin):
+    """Администрирование реестра авиационных компонентов и агрегатов (ФАП-367, разд. IV)."""
+
+    list_display = (
+        "display_component_header",
+        "aircraft_type",
+        "display_status",
+        "display_current_aircraft",
+        "release_doc_display",
+        "display_repair_org",
+        "remaining_hours",
+    )
+    list_filter = (
+        "status",
+        "aircraft_type",
+        "release_doc_type",
+        "last_repair_org",
+    )
+    search_fields = [
+        "name",
+        "part_number",
+        "serial_number",
+        "release_doc_number",
+        "notes",
+    ]
+    autocomplete_fields = ["current_aircraft", "last_repair_org"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Агрегат (P/N, S/N)", header=True)
+    def display_component_header(self, obj: AviationComponent) -> Tuple[str, str]:
+        """Возвращает название компонента, P/N и S/N."""
+        return obj.name, f"P/N: {obj.part_number} | S/N: {obj.serial_number}"
+
+    @display(
+        description="Статус годности",
+        label={
+            AviationComponentStatus.STOCK.value: "success",
+            AviationComponentStatus.INSTALLED.value: "info",
+            AviationComponentStatus.REPAIR.value: "warning",
+            AviationComponentStatus.SCRAPPED.value: "danger",
+        },
+    )
+    def display_status(self, obj: AviationComponent) -> str:
+        """Цветной бейдж статуса компонента."""
+        return obj.status
+
+    @display(description="Установлен на ВС")
+    def display_current_aircraft(self, obj: AviationComponent) -> str:
+        """Бортовой номер ВС, на котором установлен агрегат."""
+        return obj.current_aircraft.registration_number if obj.current_aircraft else "—"
+
+    @display(description="Документ о годности")
+    def release_doc_display(self, obj: AviationComponent) -> str:
+        """Реквизиты входящего документа о годности."""
+        if not obj.release_doc_number:
+            return "Без документа"
+        date_str = f" от {obj.release_doc_date:%d.%m.%Y}" if obj.release_doc_date else ""
+        return f"№ {obj.release_doc_number}{date_str}"
+
+    @display(description="АРЗ / Организация ТО")
+    def display_repair_org(self, obj: AviationComponent) -> str:
+        """Организация, выполнившая последнее ТО."""
+        return obj.last_repair_org.short_name if obj.last_repair_org else "—"
+
+
+@admin.register(OutfitCardComponent)
+class OutfitCardComponentAdmin(ActiveUsersFilterMixin, ModelAdmin):
+    """Администрирование операций установки и демонтажа агрегатов при ТО."""
+
+    list_display = (
+        "display_op_header",
+        "outfit_card",
+        "installed_component",
+        "display_removed",
+        "installed_position",
+        "created_at",
+    )
+    list_filter = (
+        "operation_type",
+        ("created_at", RangeDateFilter),
+    )
+    search_fields = [
+        "outfit_card__outfit_card_number",
+        "installed_component__name",
+        "installed_component__part_number",
+        "installed_component__serial_number",
+        "removed_component_name",
+        "removed_part_number",
+        "removed_serial_number",
+    ]
+    autocomplete_fields = ["outfit_card", "installed_component"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Операция", header=True)
+    def display_op_header(self, obj: OutfitCardComponent) -> Tuple[str, str]:
+        """Возвращает тип операции и наряд."""
+        card_num = obj.outfit_card.outfit_card_number if obj.outfit_card else f"#{obj.outfit_card_id}"
+        return obj.get_operation_type_display(), f"Наряд № {card_num}"
+
+    @display(description="Снятый агрегат")
+    def display_removed(self, obj: OutfitCardComponent) -> str:
+        """Сведения о демонтированном агрегате."""
+        if obj.removed_component_name:
+            sn_str = f" (S/N {obj.removed_serial_number})" if obj.removed_serial_number else ""
+            return f"{obj.removed_component_name}{sn_str}"
+        return "—"
+
+
+@admin.register(CompanyMaintenanceCertificate)
+class CompanyMaintenanceCertificateAdmin(ModelAdmin):
+    """Администрирование сертификатов организации по ТО (ФАП-145)."""
+
+    list_display = (
+        "display_cert_header",
+        "issue_date",
+        "valid_until",
+        "organization_name_ru",
+        "display_is_active",
+    )
+    list_filter = (
+        "is_active",
+        ("issue_date", RangeDateFilter),
+    )
+    search_fields = ["certificate_number", "organization_name_ru", "organization_name_en", "notes"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Сертификат", header=True)
+    def display_cert_header(self, obj: CompanyMaintenanceCertificate) -> Tuple[str, str]:
+        """Возвращает номер сертификата и статус."""
+        return f"№ {obj.certificate_number}", f"Выдан: {obj.issue_date:%d.%m.%Y}"
+
+    @display(description="Статус", boolean=True)
+    def display_is_active(self, obj: CompanyMaintenanceCertificate) -> bool:
+        """Признак активности основного сертификата."""
+        return obj.is_active
+
+
+@admin.register(MaintenanceReleaseCertificate)
+class MaintenanceReleaseCertificateAdmin(ActiveUsersFilterMixin, ModelAdmin):
+    """Администрирование Журнала свидетельств о выполнении ТО ВС (CRS)."""
+
+    list_display = (
+        "display_crs_header",
+        "maintenance_date",
+        "aircraft_type",
+        "tail_number",
+        "factory_number",
+        "operating_hours",
+        "display_staff",
+        "issue_date",
+    )
+    list_filter = (
+        "year",
+        "aircraft_type",
+        ("maintenance_date", RangeDateFilter),
+        ("issue_date", RangeDateFilter),
+    )
+    search_fields = [
+        "certificate_number",
+        "tail_number",
+        "factory_number",
+        "maintenance_work_scope",
+        "certifying_staff_name",
+        "certifying_staff_license",
+        "outfit_card__outfit_card_number",
+    ]
+    autocomplete_fields = ["outfit_card", "certifying_staff"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Свидетельство CRS", header=True)
+    def display_crs_header(self, obj: MaintenanceReleaseCertificate) -> Tuple[str, str]:
+        """Возвращает номер свидетельства и борт."""
+        return f"Свидетельство № {obj.certificate_number}", f"Борт: {obj.tail_number} ({obj.aircraft_type})"
+
+    @display(description="Подтверждающий персонал")
+    def display_staff(self, obj: MaintenanceReleaseCertificate) -> str:
+        """ФИО и номер бессрочного свидетельства специалиста."""
+        lic = f" [{obj.certifying_staff_license}]" if obj.certifying_staff_license else ""
+        return f"{obj.certifying_staff_name}{lic}"
 
 
 @admin.register(Medical)

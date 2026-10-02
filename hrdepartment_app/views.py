@@ -5,6 +5,7 @@ import logging
 import os
 import pathlib
 from time import strptime
+from typing import Dict, Any, List, Optional, Tuple, Union, Set
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,19 @@ from hrdepartment_app.forms import (
     BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
     LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm, StudentAgreementForm,
     TrainingProgramQuickForm, TrainingUnitQuickForm, TrainingDebtReportForm, PowerOfAttorneyForm,
+    PeriodicWorkForm, OperationalWorkForm, AircraftHoursTrackingForm, AircraftHoursImportForm,
+    MaintenanceReleaseCertificateCreateForm,
 )
+from contracts_app.models import Estate
+from hrdepartment_app.services.aircraft_maintenance_service import (
+    get_aircraft_latest_hours,
+    calculate_maintenance_approaches,
+    get_nearest_maintenance_approach,
+    generate_aircraft_hours_excel_template,
+    import_aircraft_hours_from_excel,
+    import_aircraft_hours_from_csv,
+)
+from hrdepartment_app.services.crs_document_service import generate_crs_docx
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
@@ -117,7 +130,9 @@ from hrdepartment_app.models import (
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
     DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions, StudentAgreement,
-    TrainingProgram, TrainingUnit, PowerOfAttorney,
+    TrainingProgram, TrainingUnit, PowerOfAttorney, PeriodicWork, OperationalWork,
+    AircraftHoursTracking, HoursTrackingSource,
+    MaintenanceReleaseCertificate, CompanyMaintenanceCertificate,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -7811,3 +7826,725 @@ class PSOMemoReportView(LoginRequiredMixin, View):
         except Exception as e:
             logger.exception("Ошибка формирования отчета ПСО")
             return HttpResponse(f"Ошибка при формировании отчета: {e}", status=500)
+
+
+# ==============================================================================
+# Справочники регламентных работ: PeriodicWork и OperationalWork
+# ==============================================================================
+
+
+class PeriodicWorkList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """Отображение реестра видов периодических регламентных работ."""
+
+    model = PeriodicWork
+    template_name = "hrdepartment_app/periodicwork_list.html"
+    permission_required = "hrdepartment_app.view_periodicwork"
+
+    def has_permission(self) -> bool:
+        """Проверяет доступ пользователя (суперпользователи и сотрудники имеют доступ)."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос: JSON для DataTables или HTML-страницу."""
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            items = PeriodicWork.objects.select_related("air_bord_type").all()
+            return JsonResponse({"data": [item.get_data() for item in items]})
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст для шаблона реестра."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Периодические работы"
+        return context
+
+
+class PeriodicWorkAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """Создание нового вида периодической регламентной работы."""
+
+    model = PeriodicWork
+    form_class = PeriodicWorkForm
+    template_name = "hrdepartment_app/periodicwork_form.html"
+    permission_required = "hrdepartment_app.add_periodicwork"
+    success_url = reverse_lazy("hrdepartment_app:periodic_work_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права на добавление регламентной работы."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст страницы добавления."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Добавить периодическую работу"
+        return context
+
+
+class PeriodicWorkUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """Редактирование параметров периодической регламентной работы."""
+
+    model = PeriodicWork
+    form_class = PeriodicWorkForm
+    template_name = "hrdepartment_app/periodicwork_form.html"
+    permission_required = "hrdepartment_app.change_periodicwork"
+    success_url = reverse_lazy("hrdepartment_app:periodic_work_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права на изменение регламентной работы."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст страницы редактирования."""
+        context = super().get_context_data(**kwargs)
+        obj = self.get_object()
+        context["title"] = f"Редактирование: {obj}"
+        return context
+
+
+class PeriodicWorkDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    """Удаление периодической регламентной работы."""
+
+    model = PeriodicWork
+    template_name = "hrdepartment_app/periodicwork_confirm_delete.html"
+    permission_required = "hrdepartment_app.delete_periodicwork"
+    success_url = reverse_lazy("hrdepartment_app:periodic_work_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права на удаление регламентной работы."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст диалога подтверждения удаления."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Удаление периодической работы"
+        return context
+
+
+class OperationalWorkList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """Отображение реестра видов оперативных регламентных работ."""
+
+    model = OperationalWork
+    template_name = "hrdepartment_app/operationalwork_list.html"
+    permission_required = "hrdepartment_app.view_operationalwork"
+
+    def has_permission(self) -> bool:
+        """Проверяет доступ пользователя (суперпользователи и сотрудники имеют доступ)."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос: JSON для DataTables или HTML-страницу."""
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            items = OperationalWork.objects.select_related("air_bord_type").all()
+            return JsonResponse({"data": [item.get_data() for item in items]})
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст для шаблона реестра."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Оперативные работы"
+        return context
+
+
+class OperationalWorkAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """Создание нового вида оперативной работы."""
+
+    model = OperationalWork
+    form_class = OperationalWorkForm
+    template_name = "hrdepartment_app/operationalwork_form.html"
+    permission_required = "hrdepartment_app.add_operationalwork"
+    success_url = reverse_lazy("hrdepartment_app:operational_work_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права на добавление оперативной работы."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст страницы добавления."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Добавить оперативную работу"
+        return context
+
+
+class OperationalWorkUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """Редактирование параметров оперативной работы."""
+
+    model = OperationalWork
+    form_class = OperationalWorkForm
+    template_name = "hrdepartment_app/operationalwork_form.html"
+    permission_required = "hrdepartment_app.change_operationalwork"
+    success_url = reverse_lazy("hrdepartment_app:operational_work_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права на изменение оперативной работы."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст страницы редактирования."""
+        context = super().get_context_data(**kwargs)
+        obj = self.get_object()
+        context["title"] = f"Редактирование: {obj}"
+        return context
+
+
+class OperationalWorkDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    """Удаление вида оперативной работы."""
+
+    model = OperationalWork
+    template_name = "hrdepartment_app/operationalwork_confirm_delete.html"
+    permission_required = "hrdepartment_app.delete_operationalwork"
+    success_url = reverse_lazy("hrdepartment_app:operational_work_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права на удаление оперативной работы."""
+        user = self.request.user
+        return user.is_superuser or user.is_staff or super().has_permission()
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст диалога подтверждения удаления."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Удаление оперативной работы"
+        return context
+
+
+# ==============================================================================
+# УЧЕТ НАРАБОТКИ ВС И РАСЧЕТ ПОДХОДОВ К РЕГЛАМЕНТАМ ТО (ФАП-367, РАЗД. XIV)
+# ==============================================================================
+
+
+class AircraftHoursListView(LoginRequiredMixin, ListView):
+    """Реестр наработки воздушных судов и расчет подходов к регламентному ТО.
+
+    Отображает текущий статус парка ВС (СНЭ, ППР, посадки), ближайшие подходы
+    к периодическим регламентам ТО по ФАП-367, историю фиксации наработки,
+    а также формы ручного добавления и пакетного импорта из Excel/CSV.
+    """
+
+    model = AircraftHoursTracking
+    template_name = "hrdepartment_app/aircrafthours_list.html"
+
+    def get(self, request, *args, **kwargs):
+        """Обрабатывает запросы реестра: JSON для DataTables или HTML-страницу."""
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            tab = request.GET.get("tab", "approaches")
+
+            if tab == "history":
+                records = (
+                    AircraftHoursTracking.objects.select_related("air_board", "air_board__type_property", "created_by")
+                    .order_by("-record_date", "-created_at")[:1000]
+                )
+                return JsonResponse({"data": [r.get_data() for r in records]})
+
+            # Режим по умолчанию: сводная таблица парка ВС с подходами к ТО
+            active_aircraft = (
+                Estate.objects.filter(decommission_date__isnull=True, type_property__isnull=False)
+                .select_related("type_property")
+                .order_by("type_property__type_property", "registration_number")
+            )
+            data = []
+            for board in active_aircraft:
+                latest = get_aircraft_latest_hours(board)
+                cur_hours = float(latest.flight_hours) if latest and latest.flight_hours else 0.0
+                cur_tsor = float(latest.flight_hours_tsor) if latest and latest.flight_hours_tsor else 0.0
+                cur_cycles = latest.flight_cycles if latest and latest.flight_cycles else 0
+                last_date = latest.record_date.strftime("%d.%m.%Y г.") if latest else "—"
+
+                nearest = get_nearest_maintenance_approach(board, current_hours=cur_hours)
+                nearest_badge = nearest["badge_html"] if nearest else '<span class="badge bg-secondary">Нет регламентов</span>'
+                nearest_work = f"{nearest['code']} ({nearest['name']})" if nearest else "—"
+                remaining_val = nearest["remaining_hours"] if nearest else 999999.0
+
+                data.append({
+                    "pk": board.pk,
+                    "registration_number": board.registration_number,
+                    "type_property": str(board.type_property) if board.type_property else "—",
+                    "factory_number": board.factory_number or "—",
+                    "flight_hours": cur_hours,
+                    "flight_hours_tsor": cur_tsor,
+                    "flight_cycles": cur_cycles,
+                    "record_date": last_date,
+                    "nearest_work": nearest_work,
+                    "nearest_badge": nearest_badge,
+                    "remaining_hours": remaining_val,
+                })
+
+            return JsonResponse({"data": data})
+
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст для страницы дашборда и реестра."""
+        context = super().get_context_data(**kwargs)
+        active_aircraft = (
+            Estate.objects.filter(decommission_date__isnull=True, type_property__isnull=False)
+            .select_related("type_property")
+        )
+
+        total_aircraft = active_aircraft.count()
+        overdue_count = 0
+        due_count = 0
+        ok_count = 0
+
+        for board in active_aircraft:
+            nearest = get_nearest_maintenance_approach(board)
+            if nearest:
+                if nearest["status"] == "overdue":
+                    overdue_count += 1
+                elif nearest["status"] == "due":
+                    due_count += 1
+                else:
+                    ok_count += 1
+
+        context.update({
+            "title": "Учет наработки ВС и подходы к регламентному ТО",
+            "tracking_form": AircraftHoursTrackingForm(),
+            "import_form": AircraftHoursImportForm(),
+            "kpi_total": total_aircraft,
+            "kpi_overdue": overdue_count,
+            "kpi_due": due_count,
+            "kpi_ok": ok_count,
+        })
+        return context
+
+
+class AircraftHoursAddView(LoginRequiredMixin, View):
+    """Ручная фиксация показателей наработки воздушного судна."""
+
+    def post(self, request, *args, **kwargs):
+        """Обрабатывает сохранение записи наработки."""
+        form = AircraftHoursTrackingForm(request.POST)
+        if form.is_valid():
+            record = form.save(commit=False)
+            record.source = HoursTrackingSource.MANUAL
+            record.created_by = request.user
+            record.save()
+
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({
+                    "success": True,
+                    "message": f"Наработка для ВС {record.air_board} успешно зафиксирована.",
+                })
+            messages.success(request, f"Наработка для ВС {record.air_board} успешно зафиксирована.")
+            return redirect("hrdepartment_app:aircraft_hours_list")
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
+        messages.error(request, "Пожалуйста, исправьте ошибки в форме.")
+        return redirect("hrdepartment_app:aircraft_hours_list")
+
+
+class AircraftHoursExcelTemplateDownloadView(LoginRequiredMixin, View):
+    """Генерация и скачивание эталонного шаблона Excel (.xlsx) с предзаполненными ВС."""
+
+    def get(self, request, *args, **kwargs):
+        """Отдает бинарный файл .xlsx с активным парком ВС."""
+        content = generate_aircraft_hours_excel_template()
+        filename = f"barkol_aircraft_hours_{timezone.now():%Y%m%d}.xlsx"
+        response = HttpResponse(
+            content,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class AircraftHoursImportView(LoginRequiredMixin, View):
+    """Пакетный импорт наработки ВС из загруженного файла Excel (.xlsx) или CSV."""
+
+    def post(self, request, *args, **kwargs):
+        """Выполняет валидацию и транзакционный импорт данных."""
+        form = AircraftHoursImportForm(request.POST, request.FILES)
+        if not form.is_valid():
+            err_msg = "Ошибка валидации файла: " + "; ".join(
+                f"{k}: {', '.join(v)}" for k, v in form.errors.items()
+            )
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"success": False, "errors": [err_msg]}, status=400)
+            messages.error(request, err_msg)
+            return redirect("hrdepartment_app:aircraft_hours_list")
+
+        uploaded_file = request.FILES["file"]
+        filename = uploaded_file.name.lower()
+
+        if filename.endswith(".xlsx"):
+            success, count, errors = import_aircraft_hours_from_excel(
+                uploaded_file,
+                user=request.user,
+            )
+        elif filename.endswith(".csv"):
+            success, count, errors = import_aircraft_hours_from_csv(
+                uploaded_file.read(),
+                user=request.user,
+            )
+        else:
+            success, count, errors = False, 0, ["Неподдерживаемый формат файла (требуется .xlsx или .csv)."]
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": success,
+                "count": count,
+                "errors": errors,
+                "message": f"Успешно импортировано записей: {count}" if success else "Ошибки при импорте",
+            })
+
+        if success:
+            messages.success(request, f"Пакетный импорт завершен: успешно добавлено {count} записей наработки ВС.")
+        else:
+            first_errors = "<br>• " + "<br>• ".join(errors[:10])
+            if len(errors) > 10:
+                first_errors += f"<br>... и еще {len(errors) - 10} ошибок."
+            messages.error(request, f"Импорт отклонен из-за ошибок в файле:{first_errors}")
+
+        return redirect("hrdepartment_app:aircraft_hours_list")
+
+
+class AircraftMaintenanceApproachesAPIView(LoginRequiredMixin, View):
+    """REST API получения детального расчета всех подходов к регламентам ТО для выбранного ВС."""
+
+    def get(self, request, pk: int, *args, **kwargs):
+        """Возвращает JSON со списком всех регламентов и остатком часов."""
+        board = get_object_or_404(Estate, pk=pk)
+        latest = get_aircraft_latest_hours(board)
+        cur_hours = float(latest.flight_hours) if latest and latest.flight_hours else 0.0
+        cur_tsor = float(latest.flight_hours_tsor) if latest and latest.flight_hours_tsor else 0.0
+        cur_cycles = latest.flight_cycles if latest and latest.flight_cycles else 0
+
+        approaches = calculate_maintenance_approaches(board, current_hours=cur_hours)
+
+        return JsonResponse({
+            "success": True,
+            "aircraft": {
+                "pk": board.pk,
+                "registration_number": board.registration_number,
+                "type_property": str(board.type_property) if board.type_property else "—",
+                "factory_number": board.factory_number or "—",
+                "flight_hours": cur_hours,
+                "flight_hours_tsor": cur_tsor,
+                "flight_cycles": cur_cycles,
+                "record_date": latest.record_date.strftime("%d.%m.%Y г.") if latest else "—",
+            },
+            "approaches": approaches,
+        })
+
+
+class OutfitCardCRSDownloadView(LoginRequiredMixin, View):
+    """Выгрузка Свидетельства о выполнении ТО ВС (CRS) по Приложению № 1 к ФАП-367 в формате Word (.docx)."""
+
+    def get(self, request, pk: int, *args, **kwargs):
+        """Генерирует и отдает файл Word Свидетельства CRS для выбранной карты-наряда.
+
+        Args:
+            request: HTTP-запрос от пользователя.
+            pk: Первичный ключ карты-наряда (OutfitCard).
+
+        Returns:
+            HttpResponse с вложенным .docx файлом и заголовком Content-Disposition.
+        """
+        card = get_object_or_404(OutfitCard, pk=pk)
+        try:
+            docx_content = generate_crs_docx(card)
+        except Exception as exc:
+            messages.error(request, f"Ошибка при формировании Свидетельства CRS: {exc}")
+            return redirect("hrdepartment_app:outfit_card_detail", pk=pk)
+
+        reg_clean = (
+            card.air_board.registration_number.replace("-", "").replace(" ", "")
+            if card.air_board and card.air_board.registration_number
+            else "AC"
+        )
+        date_str = (
+            card.outfit_card_date.strftime("%Y%m%d")
+            if card.outfit_card_date
+            else timezone.now().strftime("%Y%m%d")
+        )
+        num_clean = str(card.outfit_card_number or card.pk).replace("/", "_").replace(" ", "")
+        filename = f"CRS_{reg_clean}_{num_clean}_{date_str}.docx"
+
+        response = HttpResponse(
+            docx_content,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class MaintenanceReleaseCertificateListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """Представление реестра Журнала свидетельств о выполнении ТО ВС (CRS).
+
+    Реализует интерактивный реестр в соответствии с графами журнала:
+    № п/п, Дата выполнения ТО ВС, Тип ВС, Рег. № ВС, Зав. № ВС,
+    Наработка ВС, Вид ТО (выполненные работы), Номер свидетельства,
+    Подпись (подтверждающего персонала), Дата.
+    Поддерживает AJAX DataTables серверную пагинацию и фильтрацию.
+    """
+
+    model = MaintenanceReleaseCertificate
+    template_name = "hrdepartment_app/crs_certificate_list.html"
+    context_object_name = "certificates"
+    permission_required = "hrdepartment_app.view_maintenancereleasecertificate"
+
+    def has_permission(self):
+        """Проверяет права: доступ открыт суперпользователям, а также при наличии прав на свидетельства или карты-наряды."""
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        return (
+            user.has_perm("hrdepartment_app.view_maintenancereleasecertificate")
+            or user.has_perm("hrdepartment_app.view_outfitcard")
+        )
+
+    def get(self, request, *args, **kwargs):
+        """Обрабатывает GET-запрос: отдает HTML страницу либо JSON для DataTables AJAX."""
+        query = Q()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = [
+                "number_seq",
+                "certificate_number",
+                "aircraft_type",
+                "tail_number",
+                "factory_number",
+                "maintenance_work_scope",
+                "certifying_staff_name",
+                "certifying_staff_license",
+            ]
+            context = ajax_search(request, self, search_list, MaintenanceReleaseCertificate, query)
+            return JsonResponse(context, safe=False)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """Формирует контекст шаблона."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Журнал свидетельств о выполнении ТО ВС (CRS)"
+        context["current_year"] = timezone.now().year
+        return context
+
+
+class MaintenanceReleaseCertificateDownloadView(LoginRequiredMixin, View):
+    """Выгрузка бланка Свидетельства CRS (.docx) по объекту журнала свидетельств."""
+
+    def get(self, request, pk: int, *args, **kwargs):
+        """Генерирует и отдает файл Word Свидетельства CRS для выбранной записи журнала.
+
+        Args:
+            request: HTTP-запрос от пользователя.
+            pk: Первичный ключ свидетельства (MaintenanceReleaseCertificate).
+
+        Returns:
+            HttpResponse с вложенным .docx файлом и заголовком Content-Disposition.
+        """
+        cert = get_object_or_404(MaintenanceReleaseCertificate, pk=pk)
+        if not cert.outfit_card:
+            messages.error(request, "Для данного свидетельства не привязана исходная карта-наряд.")
+            return redirect("hrdepartment_app:crs_certificate_list")
+
+        try:
+            docx_content = generate_crs_docx(cert.outfit_card)
+        except Exception as exc:
+            messages.error(request, f"Ошибка при формировании Свидетельства CRS: {exc}")
+            return redirect("hrdepartment_app:crs_certificate_list")
+
+        reg_clean = cert.tail_number.replace("-", "").replace(" ", "")
+        date_str = cert.issue_date.strftime("%Y%m%d") if cert.issue_date else timezone.now().strftime("%Y%m%d")
+        num_clean = cert.certificate_number.replace("/", "_").replace(" ", "")
+        filename = f"CRS_{reg_clean}_{num_clean}_{date_str}.docx"
+
+        response = HttpResponse(
+            docx_content,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class OutfitCardIssueCRSView(LoginRequiredMixin, View):
+    """Выписка Свидетельства о выполнении ТО ВС (CRS) на основании карты-наряда."""
+
+    def post(self, request, pk: int, *args, **kwargs):
+        """Оформляет и регистрирует свидетельство в журнале на основании карты-наряда.
+
+        Args:
+            request: HTTP-запрос от пользователя.
+            pk: Первичный ключ карты-наряда (OutfitCard).
+
+        Returns:
+            HttpResponseRedirect на детальный просмотр карты-наряда с уведомлением.
+        """
+        card = get_object_or_404(OutfitCard, pk=pk)
+        staff = card.certifying_staff
+        if not staff:
+            messages.error(
+                request,
+                "Невозможно выписать свидетельство: в карте-наряде не указан подтверждающий персонал. "
+                "Пожалуйста, выберите специалиста в форме выписки свидетельства или укажите его в карте-наряде."
+            )
+            return redirect(f"{reverse('hrdepartment_app:crs_certificate_create')}?outfit_card={card.pk}")
+
+        from flight_planning.services import get_certifying_staff_authorization
+        target_date = card.outfit_card_date_end or card.outfit_card_date or timezone.now().date()
+        aircraft_type = card.air_board.type_property if card.air_board else None
+        is_auth, doc_no, _ = get_certifying_staff_authorization(
+            employee=staff,
+            aircraft_type=aircraft_type,
+            target_date=target_date,
+        )
+        if not is_auth:
+            messages.warning(
+                request,
+                f"Внимание: у специалиста {staff.get_full_name()} отсутствует действующая запись о периодическом тестировании за последние 6 месяцев (ФАП-145). Свидетельство зарегистрировано."
+            )
+
+        try:
+            cert = MaintenanceReleaseCertificate.create_from_outfit_card(card, certifying_staff=staff)
+            messages.success(
+                request,
+                f"Свидетельство о ТО ВС № {cert.certificate_number} успешно зарегистрировано в журнале!"
+            )
+        except Exception as exc:
+            messages.error(request, f"Ошибка при оформлении свидетельства: {exc}")
+
+        return redirect("hrdepartment_app:outfit_card_detail", pk=pk)
+
+
+class MaintenanceReleaseCertificateCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """Представление создания и регистрации Свидетельства о ТО ВС (CRS) на портале."""
+
+    model = MaintenanceReleaseCertificate
+    form_class = MaintenanceReleaseCertificateCreateForm
+    template_name = "hrdepartment_app/crs_certificate_form.html"
+    success_url = reverse_lazy("hrdepartment_app:crs_certificate_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права пользователя на регистрацию свидетельства CRS.
+
+        Returns:
+            bool: True, если у пользователя есть доступ.
+        """
+        user = self.request.user
+        return (
+            user.is_superuser
+            or user.is_staff
+            or user.has_perm("hrdepartment_app.add_maintenancereleasecertificate")
+            or user.has_perm("hrdepartment_app.change_outfitcard")
+            or user.has_perm("hrdepartment_app.view_outfitcard")
+        )
+
+    def get_initial(self) -> Dict[str, Any]:
+        """Заполняет начальные значения формы при переходе по ссылке из карты-наряда.
+
+        Returns:
+            Dict[str, Any]: Начальные значения формы.
+        """
+        initial = super().get_initial()
+        outfit_card_id = self.request.GET.get("outfit_card")
+        if outfit_card_id:
+            try:
+                card = OutfitCard.objects.select_related(
+                    "air_board", "air_board__type_property", "certifying_staff"
+                ).get(pk=outfit_card_id)
+                initial["outfit_card"] = card
+                if card.certifying_staff:
+                    initial["certifying_staff"] = card.certifying_staff
+                    if getattr(card.certifying_staff, "maintenance_staff_certificate", ""):
+                        initial["certifying_staff_license"] = card.certifying_staff.maintenance_staff_certificate
+                m_date = card.outfit_card_date_end or card.outfit_card_date
+                if m_date:
+                    initial["maintenance_date"] = m_date
+                    initial["issue_date"] = m_date
+                if card.air_board:
+                    if card.air_board.type_property:
+                        initial["aircraft_type"] = card.air_board.type_property.type_property
+                    initial["tail_number"] = card.air_board.registration_number
+                    initial["factory_number"] = card.air_board.factory_number or ""
+                from hrdepartment_app.services.crs_document_service import (
+                    build_work_scope_text,
+                    format_hours_minutes,
+                )
+                initial["operating_hours"] = format_hours_minutes(card.flight_hours)
+                initial["maintenance_work_scope"] = build_work_scope_text(card)
+            except OutfitCard.DoesNotExist:
+                pass
+        return initial
+
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Добавляет контекст заголовка страницы и выбранной карты-наряда.
+
+        Args:
+            **kwargs: Произвольные параметры контекста.
+
+        Returns:
+            Dict[str, Any]: Контекст шаблона.
+        """
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Выписка Свидетельства о ТО ВС (CRS)"
+        outfit_card_id = self.request.GET.get("outfit_card")
+        if outfit_card_id:
+            try:
+                context["selected_card"] = OutfitCard.objects.get(pk=outfit_card_id)
+            except OutfitCard.DoesNotExist:
+                pass
+        return context
+
+    def form_valid(self, form: MaintenanceReleaseCertificateCreateForm) -> HttpResponse:
+        """Сохраняет свидетельство, информирует пользователя и перенаправляет в журнал.
+
+        Args:
+            form: Проверенная форма создания свидетельства.
+
+        Returns:
+            HttpResponse: Редирект в журнал свидетельств CRS.
+        """
+        cert = form.save()
+        messages.success(
+            self.request,
+            f"Свидетельство о ТО ВС № {cert.certificate_number} успешно выписано и зарегистрировано в журнале!"
+        )
+        return redirect("hrdepartment_app:crs_certificate_list")
+
+
+class OutfitCardCRSDataApiView(LoginRequiredMixin, View):
+    """AJAX API для получения параметров карты-наряда при оформлении Свидетельства CRS."""
+
+    def get(self, request, pk: int, *args, **kwargs) -> JsonResponse:
+        """Возвращает JSON с данными карты-наряда для автозаполнения формы свидетельства.
+
+        Args:
+            request: HTTP-запрос.
+            pk: Первичный ключ карты-наряда.
+
+        Returns:
+            JsonResponse: Реквизиты борта, выполненных регламентов, наработки и персонала.
+        """
+        card = get_object_or_404(
+            OutfitCard.objects.select_related("air_board", "air_board__type_property", "certifying_staff"),
+            pk=pk,
+        )
+        from hrdepartment_app.services.crs_document_service import (
+            build_work_scope_text,
+            format_hours_minutes,
+        )
+        air_board = card.air_board
+        m_date = card.outfit_card_date_end or card.outfit_card_date
+        staff = card.certifying_staff
+        data = {
+            "outfit_card_id": card.pk,
+            "outfit_card_number": card.outfit_card_number,
+            "aircraft_type": air_board.type_property.type_property if air_board and air_board.type_property else "",
+            "tail_number": air_board.registration_number if air_board else "",
+            "factory_number": air_board.factory_number if air_board else "",
+            "operating_hours": format_hours_minutes(card.flight_hours),
+            "maintenance_work_scope": build_work_scope_text(card),
+            "maintenance_date": m_date.strftime("%Y-%m-%d") if m_date else "",
+            "certifying_staff_id": staff.pk if staff else "",
+            "certifying_staff_name": staff.get_full_name() if staff else "",
+            "certifying_staff_license": getattr(staff, "maintenance_staff_certificate", "") if staff else "",
+        }
+        return JsonResponse(data)
+
+

@@ -1,0 +1,328 @@
+{% extends 'customers_app/main.html' %}
+{% load i18n %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Выписка Свидетельства о ТО ВС (CRS) // Журнал свидетельств
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        :root {
+            --touch-target-size: 42px;
+        }
+        .btn-touch {
+            min-height: var(--touch-target-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-touch:hover {
+            transform: translateY(-1px);
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        .field-autofilled {
+            animation: highlightField 1.2s ease-out;
+        }
+        @keyframes highlightField {
+            0% { background-color: #d1fae5; border-color: #10b981; }
+            100% { background-color: #ffffff; }
+        }
+        .info-card-banner {
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 14px 18px;
+        }
+    </style>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 mb-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'customers_app:index' %}">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'hrdepartment_app:crs_certificate_list' %}">Журнал свидетельств CRS</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Выписка свидетельства</li>
+                </ol>
+            </nav>
+        </div>
+
+        {% if messages %}
+            <div class="col-12 mb-3">
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if form.errors %}
+            <div class="col-12 mb-3">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong><i class="bx bx-error-circle me-1"></i>Ошибка заполнения формы:</strong>
+                    <ul class="mb-0 mt-2">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ field }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="col-12">
+            <form method="post" enctype="multipart/form-data" id="crsCertificateForm">
+                {% csrf_token %}
+                <div class="card card-modern shadow-sm border-0">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-badge-check text-success me-2"></i>Выписка Свидетельства о ТО ВС (CRS)
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">
+                                Оформление и регистрация Свидетельства в журнале по ФАП-145 (Приказ Минтранса РФ № 367)
+                            </p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'hrdepartment_app:crs_certificate_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                <i class="bx bx-arrow-back me-1"></i>Вернуться в журнал
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        <div class="info-card-banner mb-4">
+                            <div class="d-flex align-items-start gap-3">
+                                <i class="bx bx-info-circle text-primary fs-3 mt-1"></i>
+                                <div>
+                                    <h6 class="font-weight-bold text-dark mb-1">Автоматическая синхронизация и нумерация</h6>
+                                    <p class="text-muted small mb-0">
+                                        Свидетельство выписывается на основании <strong>Карты-наряда</strong>.
+                                        При выборе наряда реквизиты борта (тип, рег. №, зав. №, наработка и объем работ) заполняются автоматически.
+                                        Свидетельству присваивается независимый ежегодный номер <strong>&lt;seq&gt;/&lt;YY&gt;</strong> (без ведущих нулей),
+                                        а номер CRS и специалист автоматически записываются в карту-наряд.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Блок 1: Основание и Персонал -->
+                        <h5 class="text-primary font-weight-bold mb-3">
+                            <i class="bx bx-file-blank me-1"></i>1. Основание и подтверждающий персонал
+                        </h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.outfit_card.id_for_label }}">
+                                    Карта-наряд (основание) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.outfit_card }}
+                                <small class="text-muted d-block mt-1">
+                                    Выберите карту-наряд для автоматического заполнения реквизитов ТО ВС.
+                                </small>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.certifying_staff.id_for_label }}">
+                                    Подтверждающий персонал (CRS) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.certifying_staff }}
+                                <small class="text-muted d-block mt-1">
+                                    Специалист, выпускающий воздушное судно в эксплуатацию.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Блок 2: Даты и Документы персонала -->
+                        <h5 class="text-primary font-weight-bold mb-3">
+                            <i class="bx bx-calendar me-1"></i>2. Даты выполнения и реквизиты допуска
+                        </h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.maintenance_date.id_for_label }}">
+                                    Дата выполнения ТО ВС
+                                </label>
+                                {{ form.maintenance_date }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.issue_date.id_for_label }}">
+                                    Дата выдачи свидетельства CRS
+                                </label>
+                                {{ form.issue_date }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.certifying_staff_license.id_for_label }}">
+                                    Свидетельство специалиста по ТО
+                                </label>
+                                {{ form.certifying_staff_license }}
+                                <small class="text-muted d-block mt-1">Бессрочный номер свидетельства специалиста.</small>
+                            </div>
+                        </div>
+
+                        <!-- Блок 3: Параметры ВС -->
+                        <h5 class="text-primary font-weight-bold mb-3">
+                            <i class="bx bx-paper-plane me-1"></i>3. Данные воздушного судна и наработка
+                        </h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.aircraft_type.id_for_label }}">
+                                    Тип ВС
+                                </label>
+                                {{ form.aircraft_type }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.tail_number.id_for_label }}">
+                                    Рег. № ВС (бортовой)
+                                </label>
+                                {{ form.tail_number }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.factory_number.id_for_label }}">
+                                    Зав. № ВС
+                                </label>
+                                {{ form.factory_number }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.operating_hours.id_for_label }}">
+                                    Наработка ВС
+                                </label>
+                                {{ form.operating_hours }}
+                            </div>
+                        </div>
+
+                        <!-- Блок 4: Выполненные работы -->
+                        <h5 class="text-primary font-weight-bold mb-3">
+                            <i class="bx bx-wrench me-1"></i>4. Вид ТО и объем выполненных работ
+                        </h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.maintenance_work_scope.id_for_label }}">
+                                    Вид ТО (выполненные регламенты и работы)
+                                </label>
+                                {{ form.maintenance_work_scope }}
+                                <small class="text-muted d-block mt-1">
+                                    Перечень выполненных оперативных регламентов, периодических форм и дополнительных работ.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Блок 5: Подпись и Скан-копия -->
+                        <h5 class="text-primary font-weight-bold mb-3">
+                            <i class="bx bx-check-shield me-1"></i>5. Подпись и электронный скан
+                        </h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.signature_stamp.id_for_label }}">
+                                    Отметка о подписи / ПЭП
+                                </label>
+                                {{ form.signature_stamp }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.scan_file.id_for_label }}">
+                                    Электронный скан подписанного свидетельства
+                                </label>
+                                {{ form.scan_file }}
+                            </div>
+                        </div>
+
+                        <hr class="solid my-4">
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <a href="{% url 'hrdepartment_app:crs_certificate_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                <i class="bx bx-x me-1"></i>Отмена
+                            </a>
+                            <button type="submit" class="btn btn-success btn-touch font-weight-semibold">
+                                <i class="bx bx-check-circle me-1"></i>Оформить и зарегистрировать в журнале
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script>
+        $(document).ready(function () {
+            // Инициализация Select2 для карты-наряда и подтверждающего персонала
+            $('#id_outfit_card, #id_certifying_staff').select2({
+                theme: 'bootstrap',
+                width: '100%',
+                placeholder: 'Выберите значение...'
+            });
+
+            // Функция динамической подгрузки реквизитов карты-наряда
+            function loadOutfitCardData(cardId) {
+                if (!cardId) return;
+
+                var apiUrl = '/hr/api/outfit-card/' + cardId + '/crs-data/';
+                $.getJSON(apiUrl, function (data) {
+                    if (data) {
+                        function updateField(fieldId, value) {
+                            var $el = $('#' + fieldId);
+                            if ($el.length && value !== undefined && value !== null) {
+                                $el.val(value);
+                                $el.addClass('field-autofilled');
+                                setTimeout(function () {
+                                    $el.removeClass('field-autofilled');
+                                }, 1200);
+                            }
+                        }
+
+                        updateField('id_aircraft_type', data.aircraft_type);
+                        updateField('id_tail_number', data.tail_number);
+                        updateField('id_factory_number', data.factory_number);
+                        updateField('id_operating_hours', data.operating_hours);
+                        updateField('id_maintenance_work_scope', data.maintenance_work_scope);
+                        if (data.maintenance_date) {
+                            updateField('id_maintenance_date', data.maintenance_date);
+                        }
+
+                        if (data.certifying_staff_id) {
+                            var $staff = $('#id_certifying_staff');
+                            if (!$staff.val() || $staff.val() === '') {
+                                $staff.val(data.certifying_staff_id).trigger('change');
+                            }
+                        }
+                        if (data.certifying_staff_license) {
+                            updateField('id_certifying_staff_license', data.certifying_staff_license);
+                        }
+                    }
+                }).fail(function () {
+                    console.debug('Не удалось загрузить данные карты-наряда по API');
+                });
+            }
+
+            // Слушатель смены карты-наряда
+            $('#id_outfit_card').on('change', function () {
+                var cardId = $(this).val();
+                loadOutfitCardData(cardId);
+            });
+
+            // Если при загрузке страницы карта-наряд уже выбрана и поля еще пусты
+            var initialCardId = $('#id_outfit_card').val();
+            if (initialCardId && !$('#id_aircraft_type').val()) {
+                loadOutfitCardData(initialCardId);
+            }
+        });
+    </script>
+{% endblock %}

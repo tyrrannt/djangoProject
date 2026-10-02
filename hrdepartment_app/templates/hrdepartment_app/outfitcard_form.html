@@ -100,29 +100,78 @@
                         {% endif %}
 
                         <div class="row g-3">
+                            <!-- Секция 1: Основные реквизиты -->
+                            <div class="col-12 border-bottom pb-2 mb-2">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-file text-primary me-2"></i>1. Основные реквизиты карты-наряда
+                                </h5>
+                            </div>
+
                             <div class="col-12 col-md-4 col-lg-3">
-                                <label class="form-label" for="{{ form.outfit_card_date.id_for_label }}">Дата карты-наряда</label>
+                                <label class="form-label" for="{{ form.outfit_card_date.id_for_label }}">Дата начала ТО</label>
                                 {{ form.outfit_card_date }}
                             </div>
-                            <div class="col-12 col-md-4 col-lg-3">
-                                <label class="form-label" for="{{ form.outfit_card_number.id_for_label }}">Номер карты-наряда</label>
-                                {{ form.outfit_card_number }}
+                            <div class="col-12 col-md-4 col-lg-2">
+                                <label class="form-label" for="{{ form.start_time.id_for_label }}">Время начала (UTC)</label>
+                                {{ form.start_time }}
                             </div>
                             <div class="col-12 col-md-4 col-lg-3">
+                                <label class="form-label" for="{{ form.outfit_card_date_end.id_for_label }}">Дата окончания ТО</label>
+                                {{ form.outfit_card_date_end }}
+                            </div>
+                            <div class="col-12 col-md-4 col-lg-2">
+                                <label class="form-label" for="{{ form.end_time.id_for_label }}">Время окончания (UTC)</label>
+                                {{ form.end_time }}
+                            </div>
+                            <div class="col-12 col-md-4 col-lg-2">
+                                <label class="form-label" for="{{ form.outfit_card_number.id_for_label }}">Номер наряда</label>
+                                {{ form.outfit_card_number }}
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-4">
                                 <label class="form-label" for="{{ form.air_board.id_for_label }}">Воздушный борт</label>
                                 {{ form.air_board }}
                             </div>
-                            <div class="col-12 col-md-6 col-lg-3">
+                            <div class="col-12 col-md-6 col-lg-4">
                                 <label class="form-label" for="{{ form.outfit_card_place.id_for_label }}">МПД</label>
                                 {{ form.outfit_card_place }}
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-12 col-lg-4">
                                 <label class="form-label" for="{{ form.employee.id_for_label }}">Старший бригады</label>
                                 {{ form.employee }}
                             </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label" for="{{ form.outfit_card_date_end.id_for_label }}">Дата окончания работ</label>
-                                {{ form.outfit_card_date_end }}
+
+                            <!-- Секция 2: Наработка ВС -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <h5 class="font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-time text-primary me-2"></i>2. Наработка планера ВС на дату проведения ТО
+                                    </h5>
+                                    <span class="badge bg-light text-muted border">ФАП-367 (Ручной ввод / по шаблону)</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.flight_hours.id_for_label }}">Наработка СНЭ (ч)</label>
+                                {{ form.flight_hours }}
+                                <small class="form-text text-muted">С начала эксплуатации в часах</small>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.flight_hours_tsor.id_for_label }}">Наработка ППР (ч)</label>
+                                {{ form.flight_hours_tsor }}
+                                <small class="form-text text-muted">После последнего ремонта в часах</small>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.flight_cycles.id_for_label }}">Посадки / циклы</label>
+                                {{ form.flight_cycles }}
+                                <small class="form-text text-muted">Количество циклов с начала эксплуатации</small>
+                            </div>
+
+                            <!-- Секция 3: Состав регламентных работ -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-wrench text-primary me-2"></i>3. Состав регламентных работ
+                                </h5>
                             </div>
 
                             <div class="col-12 col-md-4">
@@ -136,6 +185,68 @@
                             <div class="col-12 col-md-4">
                                 <label class="form-label" for="{{ form.other_work.id_for_label }}">Другие работы</label>
                                 {{ form.other_work }}
+                            </div>
+
+                            <!-- Секция 4: Отложенные дефекты и контрольный облет -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <h5 class="font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-error-circle text-primary me-2"></i>4. Отложенные дефекты (MEL/CDL) и контрольный облет
+                                    </h5>
+                                    <span class="badge bg-light text-muted border">ФАП-145 (Приказ Минтранса РФ № 367)</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.deferred_defects.id_for_label }}">Перечень перенесенных дефектов</label>
+                                {{ form.deferred_defects }}
+                                <small class="form-text text-muted">Укажите отложенные дефекты, пункт MEL/CDL и установленный срок устранения</small>
+                            </div>
+                            <div class="col-12 col-md-3 d-flex flex-column justify-content-center">
+                                <label class="form-label mb-2">Согласование дефектов</label>
+                                <div class="form-check form-switch mt-1">
+                                    {{ form.deferred_defects_agreed }}
+                                    <label class="form-check-label font-weight-semibold" for="{{ form.deferred_defects_agreed.id_for_label }}">
+                                        Согласовано с эксплуатантом
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-3 d-flex flex-column justify-content-center">
+                                <label class="form-label mb-2">Контрольный облет (п. 17 CRS)</label>
+                                <div class="form-check form-switch mt-1">
+                                    {{ form.test_flight_required }}
+                                    <label class="form-check-label font-weight-semibold" for="{{ form.test_flight_required.id_for_label }}">
+                                        Требуется контрольный облет
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Секция 5: Подтверждающий персонал -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <h5 class="font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-badge-check text-primary me-2"></i>5. Подтверждающий персонал и Свидетельство о ТО (CRS)
+                                    </h5>
+                                    <span class="badge bg-light text-muted border">ФАП-145 (Приказ Минтранса РФ № 367)</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.certifying_staff.id_for_label }}">Специалист по ТО (Подтверждающий персонал)</label>
+                                {{ form.certifying_staff }}
+                                <small class="form-text text-muted">Специалист с бессрочным свидетельством и допуском по тестированию ТО ВС</small>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.crs_number.id_for_label }}">Номер Свидетельства о ТО (CRS) / допуска</label>
+                                {{ form.crs_number }}
+                                <small class="form-text text-muted">Номер CRS или персонального допуска организации</small>
+                            </div>
+
+                            <!-- Секция 6: Примечания и скан-копия -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-note text-primary me-2"></i>6. Примечания и скан-копия документа
+                                </h5>
                             </div>
 
                             <div class="col-12">

@@ -1,0 +1,447 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <!-- KPI Сводка по состоянию флота -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card card-modern border-0 shadow-sm h-100">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bx bx-plane text-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-semibold">ВС в строю</div>
+                        <h3 class="mb-0 font-weight-bold text-dark">{{ kpi_total }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-modern border-0 shadow-sm h-100">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-circle bg-success bg-opacity-10 text-success p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bx bx-check-circle text-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-semibold">В ресурсе</div>
+                        <h3 class="mb-0 font-weight-bold text-success">{{ kpi_ok }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-modern border-0 shadow-sm h-100">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-circle bg-warning bg-opacity-10 text-warning p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bx bx-time-five text-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-semibold">Подход к ТО</div>
+                        <h3 class="mb-0 font-weight-bold text-warning">{{ kpi_due }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-modern border-0 shadow-sm h-100">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bx bx-error text-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-semibold">Просрочено ТО</div>
+                        <h3 class="mb-0 font-weight-bold text-danger">{{ kpi_overdue }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная панель -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-tachometer text-primary me-2"></i>Учет наработки ВС и подходы к ТО
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Контроль налета СНЭ/ППР, циклов и расчет регламентных ТО (ФАП-367)</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-primary d-flex align-items-center font-weight-semibold px-3 py-2"
+                                data-bs-toggle="modal" data-bs-target="#addHoursModal">
+                            <i class="bx bx-plus-circle text-4 me-2"></i> Внести наработку
+                        </button>
+                        <a href="{% url 'hrdepartment_app:aircraft_hours_template' %}" class="btn btn-outline-secondary d-flex align-items-center font-weight-semibold px-3 py-2">
+                            <i class="bx bx-download text-4 me-2"></i> Шаблон Excel
+                        </a>
+                        <button type="button" class="btn btn-outline-primary d-flex align-items-center font-weight-semibold px-3 py-2"
+                                data-bs-toggle="modal" data-bs-target="#importHoursModal">
+                            <i class="bx bx-upload text-4 me-2"></i> Импорт из Excel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Навигационные вкладки -->
+                    <ul class="nav nav-tabs nav-tabs-modern mb-4" id="hoursTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active font-weight-semibold" id="approaches-tab" data-bs-toggle="tab"
+                                    data-bs-target="#approaches-pane" type="button" role="tab">
+                                <i class="bx bx-list-check me-2"></i>Парк ВС и подходы к ТО
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link font-weight-semibold" id="history-tab" data-bs-toggle="tab"
+                                    data-bs-target="#history-pane" type="button" role="tab">
+                                <i class="bx bx-history me-2"></i>История фиксации наработки
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="hoursTabsContent">
+                        <!-- Вкладка 1: Парк ВС и подходы к ТО -->
+                        <div class="tab-pane fade show active" id="approaches-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-ecommerce-simple table-striped table-hover mb-0" id="datatable-approaches" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Бортовой номер</th>
+                                            <th>Тип ВС</th>
+                                            <th>Заводской №</th>
+                                            <th>Налет СНЭ</th>
+                                            <th>Налет ППР</th>
+                                            <th>Посадки</th>
+                                            <th>Дата среза</th>
+                                            <th>Ближайший регламент</th>
+                                            <th>Статус подхода</th>
+                                            <th class="text-center">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Вкладка 2: История фиксации наработки -->
+                        <div class="tab-pane fade" id="history-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-ecommerce-simple table-striped table-hover mb-0" id="datatable-history" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Воздушное судно</th>
+                                            <th>Дата фиксации</th>
+                                            <th>Налет СНЭ</th>
+                                            <th>Налет ППР</th>
+                                            <th>Посадки</th>
+                                            <th>Источник</th>
+                                            <th>Примечание</th>
+                                            <th>Автор</th>
+                                            <th>Дата внесения</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Внести наработку ВС -->
+    <div class="modal fade" id="addHoursModal" tabindex="-1" aria-labelledby="addHoursModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title font-weight-bold" id="addHoursModalLabel">
+                        <i class="bx bx-plus-circle me-2"></i>Внести наработку воздушного судна
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'hrdepartment_app:aircraft_hours_add' %}" id="addHoursForm">
+                    {% csrf_token %}
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <label class="form-label font-weight-semibold">{{ tracking_form.air_board.label }} <span class="text-danger">*</span></label>
+                                {{ tracking_form.air_board }}
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label font-weight-semibold">{{ tracking_form.record_date.label }} <span class="text-danger">*</span></label>
+                                {{ tracking_form.record_date }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">{{ tracking_form.flight_hours.label }} <span class="text-danger">*</span></label>
+                                {{ tracking_form.flight_hours }}
+                                <small class="text-muted">Часы с начала эксплуатации</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">{{ tracking_form.flight_hours_tsor.label }}</label>
+                                {{ tracking_form.flight_hours_tsor }}
+                                <small class="text-muted">Часы после посл. ремонта</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">{{ tracking_form.flight_cycles.label }}</label>
+                                {{ tracking_form.flight_cycles }}
+                                <small class="text-muted">Количество посадок/циклов</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label font-weight-semibold">{{ tracking_form.notes.label }}</label>
+                                {{ tracking_form.notes }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light px-4 py-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary font-weight-semibold px-4">
+                            <i class="bx bx-check me-2"></i>Сохранить наработку
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Пакетный импорт из Excel/CSV -->
+    <div class="modal fade" id="importHoursModal" tabindex="-1" aria-labelledby="importHoursModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title font-weight-bold" id="importHoursModalLabel">
+                        <i class="bx bx-upload me-2"></i>Пакетный импорт наработки ВС
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'hrdepartment_app:aircraft_hours_import' %}" enctype="multipart/form-data" id="importHoursForm">
+                    {% csrf_token %}
+                    <div class="modal-body p-4">
+                        <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center">
+                            <i class="bx bx-info-circle text-4 me-2"></i>
+                            <div>
+                                Для безошибочной загрузки используйте <a href="{% url 'hrdepartment_app:aircraft_hours_template' %}" class="alert-link font-weight-bold">эталонный шаблон Excel</a> с предзаполненными ВС.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">{{ import_form.file.label }} <span class="text-danger">*</span></label>
+                            {{ import_form.file }}
+                            <small class="text-muted d-block mt-1">{{ import_form.file.help_text }}</small>
+                        </div>
+                        <div class="border rounded p-3 bg-light">
+                            <div class="small font-weight-semibold mb-2">Формат колонок в файле:</div>
+                            <ol class="small text-muted mb-0 ps-3">
+                                <li>Колонка A: Бортовой номер ВС (напр. <code>RA-24123</code>)</li>
+                                <li>Колонка B: Тип ВС (справочно)</li>
+                                <li>Колонка C: Дата среза (ДД.ММ.ГГГГ)</li>
+                                <li>Колонка D: Наработка СНЭ в часах (число)</li>
+                                <li>Колонка E: Наработка ППР в часах</li>
+                                <li>Колонка F: Посадки / циклы</li>
+                                <li>Колонка G: Примечание</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light px-4 py-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary font-weight-semibold px-4">
+                            <i class="bx bx-upload me-2"></i>Выполнить импорт
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Детализация всех подходов ВС -->
+    <div class="modal fade" id="approachesDetailModal" tabindex="-1" aria-labelledby="approachesDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <div>
+                        <h5 class="modal-title font-weight-bold text-dark" id="approachesDetailModalLabel">
+                            <i class="bx bx-calendar-event text-primary me-2"></i>Подходы к регламентному ТО ВС
+                        </h5>
+                        <div class="text-muted small" id="detailAircraftSubtitle">Загрузка...</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="detailLoadingSpinner" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <div class="text-muted mt-2">Выполняется расчет подходов к регламентам...</div>
+                    </div>
+                    <div id="detailContent" style="display: none;">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <small class="text-muted d-block">Бортовой номер</small>
+                                    <strong class="text-dark fs-6" id="detailRegNumber">—</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <small class="text-muted d-block">Тип ВС</small>
+                                    <strong class="text-dark fs-6" id="detailTypeProperty">—</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <small class="text-muted d-block">Текущий налет СНЭ</small>
+                                    <strong class="text-primary fs-6" id="detailCurrentHours">—</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <small class="text-muted d-block">Посадки / циклы</small>
+                                    <strong class="text-dark fs-6" id="detailCycles">—</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover mb-0" id="detailApproachesTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Код регламента</th>
+                                        <th>Наименование регламента</th>
+                                        <th class="text-end">Периодичность (ч)</th>
+                                        <th class="text-end">Целевой налет (ч)</th>
+                                        <th class="text-end">Остаток часов</th>
+                                        <th class="text-center">Лаг (-/+)</th>
+                                        <th class="text-center">Статус регламента</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailApproachesTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light px-4 py-3">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        $(document).ready(function () {
+            // 1. Инициализация таблицы сводных подходов ВС
+            var tableApproaches = $('#datatable-approaches').DataTable({
+                "ajax": "{% url 'hrdepartment_app:aircraft_hours_list' %}?tab=approaches",
+                "columns": [
+                    { "data": "registration_number", "render": function(data, type, row) {
+                        return '<strong class="text-primary">' + data + '</strong>';
+                    }},
+                    { "data": "type_property" },
+                    { "data": "factory_number" },
+                    { "data": "flight_hours", "render": function(data) {
+                        return '<strong>' + (data ? data.toFixed(1) : '0.0') + ' ч</strong>';
+                    }},
+                    { "data": "flight_hours_tsor", "render": function(data) {
+                        return (data ? data.toFixed(1) : '0.0') + ' ч';
+                    }},
+                    { "data": "flight_cycles" },
+                    { "data": "record_date" },
+                    { "data": "nearest_work" },
+                    { "data": "nearest_badge" },
+                    { "data": "pk", "orderable": false, "className": "text-center", "render": function(data, type, row) {
+                        return '<button type="button" class="btn btn-xs btn-outline-primary view-approaches-btn" data-pk="' + data + '">' +
+                               '<i class="bx bx-search-alt me-1"></i>Все подходы</button>';
+                    }}
+                ],
+                "order": [[8, "asc"], [3, "desc"]],
+                "pageLength": 25,
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json"
+                }
+            });
+
+            // 2. Инициализация таблицы истории наработки (ленивая загрузка при переключении вкладки)
+            var tableHistory = null;
+            $('#history-tab').on('shown.bs.tab', function () {
+                if (!tableHistory) {
+                    tableHistory = $('#datatable-history').DataTable({
+                        "ajax": "{% url 'hrdepartment_app:aircraft_hours_list' %}?tab=history",
+                        "columns": [
+                            { "data": "pk" },
+                            { "data": "air_board" },
+                            { "data": "record_date" },
+                            { "data": "flight_hours", "render": function(data) { return '<strong>' + data.toFixed(1) + ' ч</strong>'; } },
+                            { "data": "flight_hours_tsor", "render": function(data) { return data.toFixed(1) + ' ч'; } },
+                            { "data": "flight_cycles" },
+                            { "data": "source" },
+                            { "data": "notes" },
+                            { "data": "created_by" },
+                            { "data": "created_at" }
+                        ],
+                        "order": [[0, "desc"]],
+                        "pageLength": 25,
+                        "language": {
+                            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json"
+                        }
+                    });
+                }
+            });
+
+            // 3. Открытие модального окна детализации подходов ВС
+            $(document).on('click', '.view-approaches-btn', function() {
+                var pk = $(this).data('pk');
+                var modal = new bootstrap.Modal(document.getElementById('approachesDetailModal'));
+                modal.show();
+
+                $('#detailLoadingSpinner').show();
+                $('#detailContent').hide();
+
+                $.getJSON('/hr/api/aircraft-hours/' + pk + '/approaches/', function(res) {
+                    if (res.success) {
+                        var ac = res.aircraft;
+                        $('#detailRegNumber').text(ac.registration_number);
+                        $('#detailTypeProperty').text(ac.type_property);
+                        $('#detailCurrentHours').text(ac.flight_hours.toFixed(1) + ' ч');
+                        $('#detailCycles').text(ac.flight_cycles);
+                        $('#detailAircraftSubtitle').text('Борт ' + ac.registration_number + ' (' + ac.type_property + ') • Данные на ' + ac.record_date);
+
+                        var rows = '';
+                        if (res.approaches.length === 0) {
+                            rows = '<tr><td colspan="7" class="text-center text-muted py-4">Для данного типа ВС периодические работы не настроены.</td></tr>';
+                        } else {
+                            $.each(res.approaches, function(i, item) {
+                                var remClass = item.status === 'overdue' ? 'text-danger font-weight-bold' :
+                                              (item.status === 'due' ? 'text-warning font-weight-bold' : 'text-success font-weight-semibold');
+                                rows += '<tr>' +
+                                        '<td><span class="badge bg-light text-dark border">' + item.code + '</span></td>' +
+                                        '<td>' + item.name + '</td>' +
+                                        '<td class="text-end">' + item.ratio.toFixed(1) + ' ч</td>' +
+                                        '<td class="text-end font-weight-semibold">' + item.target_hours.toFixed(1) + ' ч</td>' +
+                                        '<td class="text-end ' + remClass + '">' + item.remaining_hours.toFixed(1) + ' ч</td>' +
+                                        '<td class="text-center">-' + item.lag_minus + ' / +' + item.lag_plus + ' ч</td>' +
+                                        '<td class="text-center">' + item.badge_html + '</td>' +
+                                        '</tr>';
+                            });
+                        }
+                        $('#detailApproachesTableBody').html(rows);
+
+                        $('#detailLoadingSpinner').hide();
+                        $('#detailContent').fadeIn(200);
+                    }
+                }).fail(function() {
+                    $('#detailLoadingSpinner').html('<div class="text-danger py-4"><i class="bx bx-error text-5 me-2"></i>Не удалось загрузить данные по ВС.</div>');
+                });
+            });
+        });
+    </script>
+{% endblock %}

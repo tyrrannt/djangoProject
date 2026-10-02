@@ -65,9 +65,11 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
             'user_work_profile', 'user_profile', 'ref_key', 'person_ref_key', 'passphrase', 'telegram_id', 'is_ppa')}),
         ('Permissions',
          {'fields': ('is_active', 'is_staff', 'is_superuser', 'personal_groups', 'groups', 'user_permissions', 'type_of_role')}),
+        ('Квалификация ТО ВС (ФАП-145 / ФАП-147)',
+         {'fields': ('maintenance_staff_certificate', 'allowed_aircraft_types')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
-    filter_horizontal = ('personal_groups', 'groups', 'user_permissions')
+    filter_horizontal = ('personal_groups', 'groups', 'user_permissions', 'allowed_aircraft_types')
 
     add_fieldsets = (
         (None, {

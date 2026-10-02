@@ -1,0 +1,167 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+    {% if messages %}
+        <div class="row">
+            <div class="col-12 mb-3">
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-book-bookmark text-primary me-2"></i>Журнал свидетельств о выполнении ТО ВС (CRS)
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">
+                            Реестр свидетельств о техническом обслуживании воздушных судов по ФАП-145 (Приказ Минтранса РФ № 367)
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'hrdepartment_app:crs_certificate_create' %}"
+                           class="btn btn-success btn-touch font-weight-semibold"
+                           title="Оформить и зарегистрировать новое Свидетельство о ТО ВС">
+                            <i class="bx bx-plus-circle me-1"></i>Выписать свидетельство CRS
+                        </a>
+                        <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
+                           class="btn btn-outline-primary btn-touch font-weight-semibold">
+                            <i class="bx bx-task me-1"></i>Карты-наряды
+                        </a>
+                    </div>
+                </header>
+
+                <div class="card-body p-4">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="table-responsive">
+                            <table class="table table-ecommerce-simple mb-0 table-hover align-middle"
+                                   id="datatable-crs-certificates"
+                                   style="width: 100%; min-width: 1100px;">
+                                <thead>
+                                <tr>
+                                    <th style="width: 5%;">№ п/п</th>
+                                    <th style="width: 9%;">Дата ТО ВС</th>
+                                    <th style="width: 8%;">Тип ВС</th>
+                                    <th style="width: 9%;">Рег. № ВС</th>
+                                    <th style="width: 8%;">Зав. № ВС</th>
+                                    <th style="width: 9%;">Наработка ВС</th>
+                                    <th style="width: 22%;">Вид ТО (выполненные работы)</th>
+                                    <th style="width: 9%;">№ свидетельства</th>
+                                    <th style="width: 11%;">Подпись персонала</th>
+                                    <th style="width: 8%;">Дата</th>
+                                    <th style="width: 6%;">Действия</th>
+                                </tr>
+                                </thead>
+                            </table>
+                        </div>
+
+                        <hr class="solid my-4 opacity-4">
+                        <div class="datatable-footer">
+                            <div class="row align-items-center justify-content-between">
+                                <div class="col-md-auto mb-2 mb-md-0">
+                                    <span class="text-muted small">
+                                        <i class="bx bx-info-circle me-1"></i>Нумерация свидетельств ведется ежегодно в формате: порядковый номер/год (без ведущих нулей).
+                                    </span>
+                                </div>
+                                <div class="col-lg-auto text-center">
+                                    <div class="results-info-wrapper"></div>
+                                </div>
+                                <div class="col-lg-auto">
+                                    <div class="pagination-wrapper"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        $(document).ready(function () {
+            // Колоночный поиск
+            $('#datatable-crs-certificates thead th').each(function (idx) {
+                if (idx < 10) {
+                    var title = $(this).text().trim();
+                    $(this).html('<input type="text" placeholder="' + title + '" class="form-control form-control-sm fs-7" style="min-width: 60px;" />');
+                }
+            });
+
+            var table = $('#datatable-crs-certificates').DataTable({
+                "initComplete": function () {
+                    this.api().columns().every(function () {
+                        var that = this;
+                        $('input', this.header()).on('keyup change clear', function () {
+                            if (that.search() !== this.value) {
+                                that.search(this.value).draw();
+                            }
+                        });
+                    });
+                },
+                "ordering": false,
+                "pageLength": 25,
+                "scrollX": true,
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                "ajax": "{% url 'hrdepartment_app:crs_certificate_list' %}",
+                "processing": true,
+                "serverSide": true,
+                "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+                "searching": true,
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData) {
+                    $(nRow).addClass('fs-6');
+                },
+                "columns": [
+                    {"data": "number_seq", "className": "text-center font-weight-bold"},
+                    {"data": "maintenance_date"},
+                    {"data": "aircraft_type", "className": "font-weight-semibold text-primary"},
+                    {"data": "tail_number", "className": "font-monospace"},
+                    {"data": "factory_number"},
+                    {"data": "operating_hours"},
+                    {"data": "maintenance_work_scope"},
+                    {"data": "certificate_number", "className": "font-weight-bold font-monospace text-dark text-center"},
+                    {
+                        "data": "certifying_staff_name",
+                        "render": function(data, type, row) {
+                            var lic = row.certifying_staff_license ? '<br><small class="text-muted">' + row.certifying_staff_license + '</small>' : '';
+                            return '<div>' + data + lic + '</div>';
+                        }
+                    },
+                    {"data": "issue_date"},
+                    {
+                        "data": "download_url",
+                        "className": "text-center",
+                        "render": function(data, type, row) {
+                            var btnDoc = '<a href="' + data + '" class="btn btn-sm btn-outline-primary py-1 px-2" title="Скачать Свидетельство CRS (.docx)">' +
+                                         '<i class="bx bxs-file-doc"></i></a>';
+                            var btnOutfit = row.outfit_url ? ' <a href="' + row.outfit_url + '" class="btn btn-sm btn-outline-secondary py-1 px-2 ms-1" title="Перейти к карте-наряду № ' + (row.outfit_number || '') + '">' +
+                                            '<i class="bx bx-task"></i></a>' : '';
+                            return btnDoc + btnOutfit;
+                        }
+                    },
+                ],
+            });
+        });
+    </script>
+{% endblock %}

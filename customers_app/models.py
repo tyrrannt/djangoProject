@@ -1053,6 +1053,20 @@ class DataBaseUser(AbstractUser):
         related_name="personal_group_users",
         help_text="Индивидуальные дополнительные группы доступа сотрудника (не сбрасываются при синхронизации по должности).",
     )
+    maintenance_staff_certificate = models.CharField(
+        verbose_name="Свидетельство специалиста по ТО ВС",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Номер бессрочного свидетельства специалиста по техническому обслуживанию ВС (например, III. № 0184728).",
+    )
+    allowed_aircraft_types = models.ManyToManyField(
+        "contracts_app.TypeProperty",
+        verbose_name="Типы ВС по свидетельству специалиста",
+        blank=True,
+        related_name="certifying_staff_users",
+        help_text="Типы воздушных судов, указанные в свидетельстве специалиста по ТО ВС.",
+    )
 
     def save(self, *args, **kwargs):
         """

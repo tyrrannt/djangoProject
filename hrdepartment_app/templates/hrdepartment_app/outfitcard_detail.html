@@ -264,6 +264,19 @@
         <input id="id_contract_number" value="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" hidden="hidden">
     {% endif %}
 
+    {% if messages %}
+        <div class="row">
+            <div class="col-12 mb-3">
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
     <div class="row">
         <div class="col-12 mb-4">
             <div class="card card-modern shadow-sm border-0">
@@ -272,7 +285,35 @@
                         <h4 class="card-title font-weight-bold text-dark mb-1">
                             <i class="bx bx-task text-primary me-2"></i>Карта-наряд № {{ object.outfit_card_number }} от {{ object.outfit_card_date|date:"d.m.Y" }} г.
                         </h4>
-                        <p class="card-subtitle text-muted mb-0">Карточка учета наряда на выполнение работ</p>
+                        <p class="card-subtitle text-muted mb-0">Карточка учета наряда на выполнение работ по ТО ВС</p>
+                    </div>
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        {% if object.crs_number %}
+                            <a href="{% url 'hrdepartment_app:crs_certificate_list' %}" class="badge bg-success text-white py-2 px-3 text-decoration-none font-weight-semibold" title="Свидетельство CRS выписано и занесено в журнал (нажмите для перехода в журнал)">
+                                <i class="bx bx-receipt me-1"></i>Свидетельство CRS № {{ object.crs_number }}
+                            </a>
+                        {% else %}
+                            <a href="{% url 'hrdepartment_app:crs_certificate_create' %}?outfit_card={{ object.pk }}"
+                               class="btn btn-sm btn-success btn-touch font-weight-semibold"
+                               title="Выписать и зарегистрировать Свидетельство о ТО (CRS) в журнале">
+                                <i class="bx bx-check-circle me-1"></i>Выписать свидетельство CRS
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'hrdepartment_app:outfit_card_crs_download' object.pk %}"
+                           class="btn btn-sm btn-outline-primary btn-touch font-weight-semibold"
+                           title="Скачать официальное Свидетельство CRS (Приложение № 1 к ФАП-145) в формате Word">
+                            <i class="bx bxs-file-doc me-1 text-primary"></i>Свидетельство CRS (.docx)
+                        </a>
+                        <a href="{% url 'hrdepartment_app:crs_certificate_list' %}"
+                           class="btn btn-sm btn-outline-secondary btn-touch font-weight-semibold"
+                           title="Перейти в журнал свидетельств о ТО ВС">
+                            <i class="bx bx-book-bookmark me-1"></i>Журнал CRS
+                        </a>
+                        {% if object.is_signed %}
+                            <span class="badge bg-success py-2 px-3"><i class="bx bx-check-shield me-1"></i>Подписан CRS (ФАП-145)</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark py-2 px-3"><i class="bx bx-time me-1"></i>В работе</span>
+                        {% endif %}
                     </div>
                 </header>
 
@@ -298,10 +339,123 @@
                         </div>
                         <div class="col-12 col-md-6">
                             <div class="attr-box">
-                                <div class="attr-label">Дата карты-наряда</div>
-                                <div class="attr-value">{{ object.outfit_card_date|date:"d.m.Y" }}</div>
+                                <div class="attr-label">Начало ТО (Дата и время UTC)</div>
+                                <div class="attr-value">
+                                    {{ object.outfit_card_date|date:"d.m.Y"|default:"—" }}
+                                    {% if object.start_time %}
+                                        <span class="text-primary font-monospace ms-1 font-weight-bold">{{ object.start_time|time:"H:i" }} UTC</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
+                        <div class="col-12 col-md-6">
+                            <div class="attr-box">
+                                <div class="attr-label">Окончание ТО (Дата и время UTC)</div>
+                                <div class="attr-value">
+                                    {{ object.outfit_card_date_end|date:"d.m.Y"|default:"—" }}
+                                    {% if object.end_time %}
+                                        <span class="text-primary font-monospace ms-1 font-weight-bold">{{ object.end_time|time:"H:i" }} UTC</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Наработка планера ВС (ФАП-367) -->
+                        <div class="col-12 col-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Наработка СНЭ (ч)</div>
+                                <div class="attr-value font-weight-bold text-primary">{{ object.flight_hours|default:"0.0" }} ч</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Наработка ППР (ч)</div>
+                                <div class="attr-value">{{ object.flight_hours_tsor|default:"—" }} {% if object.flight_hours_tsor %}ч{% endif %}</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="attr-box">
+                                <div class="attr-label">Посадки / циклы</div>
+                                <div class="attr-value">{{ object.flight_cycles|default:"0" }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Отложенные дефекты по MEL/CDL/AMM -->
+                        {% if object.deferred_defects %}
+                            <div class="col-12 col-md-8">
+                                <div class="attr-box border-warning">
+                                    <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+                                        <div class="attr-label text-warning mb-0">Отложенные дефекты (п. 16 CRS / ФАП-145)</div>
+                                        {% if object.deferred_defects_agreed %}
+                                            <span class="badge bg-success"><i class="bx bx-check me-1"></i>Согласовано с эксплуатантом</span>
+                                        {% else %}
+                                            <span class="badge bg-danger"><i class="bx bx-x me-1"></i>Не согласовано с эксплуатантом</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="attr-value text-dark" style="white-space: pre-wrap;">{{ object.deferred_defects }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Контрольный облет -->
+                        <div class="col-12 {% if object.deferred_defects %}col-md-4{% else %}col-md-12{% endif %}">
+                            <div class="attr-box">
+                                <div class="attr-label">Контрольный облет (п. 17 CRS)</div>
+                                <div class="attr-value">
+                                    {% if object.test_flight_required %}
+                                        <span class="badge bg-warning text-dark"><i class="bx bx-check me-1"></i>Требуется контрольный облет</span>
+                                    {% else %}
+                                        <span class="text-muted"><i class="bx bx-minus me-1"></i>Не требуется</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Подтверждающий персонал и CRS -->
+                        {% if object.certifying_staff or object.crs_number or object.is_signed %}
+                            <div class="col-12 col-md-6">
+                                <div class="attr-box">
+                                    <div class="attr-label">Специалист по ТО (Подтверждающий персонал)</div>
+                                    <div class="attr-value">
+                                        {% if object.certifying_staff %}
+                                            <i class="bx bx-user-check text-success me-1"></i>{{ object.certifying_staff|FIO_format }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="attr-box">
+                                    <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                        <div class="attr-label mb-0">Свидетельство о ТО (CRS) / Авторизация</div>
+                                        <a href="{% url 'hrdepartment_app:outfit_card_crs_download' object.pk %}"
+                                           class="btn btn-xs btn-outline-primary py-0 px-2 font-weight-semibold"
+                                           title="Скачать официальный бланк CRS по форме Приложения № 1 (.docx)">
+                                            <i class="bx bxs-file-doc me-1"></i>Бланк CRS (.docx)
+                                        </a>
+                                    </div>
+                                    <div class="attr-value">
+                                        {% if object.crs_number %}
+                                            <span class="font-monospace text-dark font-weight-bold">{{ object.crs_number }}</span>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                        {% if object.signed_at %}
+                                            <span class="text-muted small ms-2">({{ object.signed_at|date:"d.m.Y H:i" }})</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% if object.signature_hash %}
+                                <div class="col-12">
+                                    <div class="attr-box bg-light">
+                                        <div class="attr-label text-muted">Контрольная сумма неизменяемости SHA-256 (п. 40 ФАП-145 / Приказ Минтранса РФ № 367)</div>
+                                        <div class="attr-value font-monospace small text-muted text-break">{{ object.signature_hash }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endif %}
 
                         {% if object.operational_work.count > 0 %}
                             <div class="col-12">
@@ -384,6 +538,11 @@
                                     <i class="bx bx-edit text-4 me-2"></i> Изменить
                                 </a>
                             {% endif %}
+                            <a href="{% url 'hrdepartment_app:outfit_card_crs_download' object.pk %}"
+                               class="btn btn-outline-primary btn-touch font-weight-semibold"
+                               title="Скачать официальное Свидетельство CRS (Приложение № 1 к ФАП-367) в формате Word">
+                                <i class="bx bxs-file-doc text-4 me-2"></i> Свидетельство CRS (Word)
+                            </a>
                             {% if object.scan_document %}
                                 <button type="button" class="btn btn-outline-warning btn-touch font-weight-semibold"
                                         onclick="printPdfDocument('{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}', this)">

@@ -1,0 +1,119 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern shadow-sm border-0">
+                <div class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-repeat text-primary me-2"></i>Периодические работы
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">Справочник регламентных ТО по типам воздушных судов</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'hrdepartment_app:periodic_work_add' %}"
+                           class="btn btn-primary btn-px-4 py-2 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class='bx bx-plus-circle text-4 me-2'></i> Добавить работу
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="datatables-header-footer-wrapper">
+                        <table class="table table-ecommerce-simple table-striped table-hover mb-0" id="datatable-periodic-works"
+                               style="width: 100%; min-width: 900px;">
+                            <thead>
+                            <tr>
+                                <th style="width: 6%;">ID</th>
+                                <th style="width: 16%;">Тип ВС</th>
+                                <th style="width: 14%;">Код</th>
+                                <th style="width: 26%;">Наименование</th>
+                                <th style="width: 10%;">Норма-ч.</th>
+                                <th style="width: 8%;">Лаг -</th>
+                                <th style="width: 8%;">Лаг +</th>
+                                <th style="width: 12%;">Цвет</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        $(document).ready(function () {
+            $('#datatable-periodic-works thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<div class="mb-1 text-muted small fw-normal">' + title + '</div><input type="text" placeholder="Поиск..." class="form-control form-control-sm form-control-modern" />');
+            });
+
+            var table = $('#datatable-periodic-works').DataTable({
+                "processing": true,
+                "serverSide": false,
+                "scrollX": true,
+                "sDom": 'B<"row align-items-center my-2"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                "buttons": [
+                    { extend: 'copy', className: 'btn btn-sm btn-outline-secondary' },
+                    { extend: 'csv', className: 'btn btn-sm btn-outline-secondary' },
+                    { extend: 'excel', className: 'btn btn-sm btn-outline-secondary' },
+                    { extend: 'pdf', className: 'btn btn-sm btn-outline-secondary' },
+                    { extend: 'print', className: 'btn btn-sm btn-outline-secondary' }
+                ],
+                "ajax": "{% url 'hrdepartment_app:periodic_work_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "order": [[1, "asc"], [4, "asc"]],
+                "columns": [
+                    {"data": "pk", "className": "text-center fw-bold"},
+                    {"data": "air_bord_type", "className": "fw-semibold text-dark"},
+                    {"data": "code", "className": "fw-bold text-primary"},
+                    {"data": "name"},
+                    {"data": "ratio", "className": "text-end fw-semibold"},
+                    {"data": "lag_minus", "className": "text-center text-muted"},
+                    {"data": "lag_plus", "className": "text-center text-muted"},
+                    {"data": "color", "className": "text-center"}
+                ],
+                "fnRowCallback": function (nRow, aData) {
+                    var id = aData['pk'];
+                    var updateUrl = id + '/update/';
+                    $(nRow).attr("href", updateUrl);
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).attr('title', 'Кликните для редактирования регламента #' + id);
+                    $(nRow).click(function (e) {
+                        if (!$(e.target).closest('a, button').length) {
+                            window.location = updateUrl;
+                        }
+                    });
+                },
+                "initComplete": function () {
+                    this.api().columns().every(function () {
+                        var that = this;
+                        $('input', this.header()).on('keyup change clear', function () {
+                            if (that.search() !== this.value) {
+                                that.search(this.value).draw();
+                            }
+                        });
+                        $('input', this.header()).on('click', function (e) {
+                            e.stopPropagation();
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}

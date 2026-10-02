@@ -4,11 +4,13 @@ from typing import Dict, Any
 from decouple import config
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db.models import Q
 
-from contracts_app.models import Contract
+from contracts_app.models import Contract, Estate
 from core import logger
 from administration_app.utils import make_custom_field
+from django.utils import timezone
 from customers_app.models import (
     Division,
     DataBaseUser,
@@ -30,7 +32,8 @@ from hrdepartment_app.models import (
     ReportCard,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, Briefings,
     Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
-    StudentAgreement, TrainingProgram, TrainingUnit, PowerOfAttorney,
+    StudentAgreement, TrainingProgram, TrainingUnit, PowerOfAttorney, PeriodicWork, OperationalWork,
+    AircraftHoursTracking, HoursTrackingSource, MaintenanceReleaseCertificate,
 )
 
 # Дата начала применения валидации
@@ -2227,44 +2230,278 @@ class ReportCardForm(forms.ModelForm):
 
 
 class OutfitCardForm(forms.ModelForm):
-    outfit_card_place = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.filter(use_team_orders=True),
-                                               label="МПД")
+    """Форма создания и редактирования карты-наряда на ТО воздушного судна.
+
+    Обеспечивает валидацию и ввод реквизитов наряда, наработки планера ВС (СНЭ, ППР,
+    посадки), перенесенных дефектов (MEL/CDL/AMM) и данных подтверждающего персонала
+    в соответствии с требованиями Федеральных авиационных правил (Приказ Минтранса РФ № 367).
+
+    Args:
+        *args: Позиционные аргументы ModelForm.
+        **kwargs: Именованные аргументы, опционально содержащие 'user' (текущий пользователь).
+    """
+
+    outfit_card_place = forms.ModelChoiceField(
+        queryset=PlaceProductionActivity.objects.filter(use_team_orders=True),
+        label="МПД",
+    )
     employee = forms.ModelChoiceField(
-        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
-        label="Сотрудник")
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name"),
+        label="Ответственный / Старший бригады",
+    )
+    certifying_staff = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name"),
+        required=False,
+        label="Специалист подтверждающего персонала (CRS)",
+    )
 
     class Meta:
         model = OutfitCard
-        fields = ['outfit_card_date', 'outfit_card_number', 'employee', 'outfit_card_place',
-                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes', 'scan_document',
-                  'outfit_card_date_end']
+        fields = [
+            "outfit_card_date",
+            "start_time",
+            "outfit_card_number",
+            "employee",
+            "outfit_card_place",
+            "air_board",
+            "operational_work",
+            "periodic_work",
+            "other_work",
+            "notes",
+            "scan_document",
+            "outfit_card_date_end",
+            "end_time",
+            "flight_hours",
+            "flight_hours_tsor",
+            "flight_cycles",
+            "deferred_defects",
+            "deferred_defects_agreed",
+            "test_flight_required",
+            "certifying_staff",
+            "crs_number",
+        ]
         widgets = {
-            'notes': forms.Textarea(attrs={'rows': 4}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Особые отметки, замечания..."}),
+            "start_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "end_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "deferred_defects": forms.Textarea(
+                attrs={"rows": 3, "placeholder": "Перечень перенесенных дефектов по MEL/CDL/AMM..."}
+            ),
+            "deferred_defects_agreed": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "test_flight_required": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "flight_hours": forms.NumberInput(attrs={"step": "0.1", "min": "0", "placeholder": "0.0"}),
+            "flight_hours_tsor": forms.NumberInput(attrs={"step": "0.1", "min": "0", "placeholder": "0.0"}),
+            "flight_cycles": forms.NumberInput(attrs={"min": "0", "placeholder": "0"}),
+            "crs_number": forms.TextInput(attrs={"placeholder": "Номер свидетельства / CRS авторизации"}),
         }
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
-        self.user = kwargs.pop("user")
+        """Инициализация формы с ограничением прав бригады и стилизацией полей."""
+        self.user = kwargs.pop("user", None)
         super(OutfitCardForm, self).__init__(*args, **kwargs)
-        place = CreatingTeam.objects.filter(senior_brigade=self.user).exclude(cancellation=True).values_list(
-            'date_start', 'date_end', 'place', )
-        self.fields["employee"].queryset = DataBaseUser.objects.none()
-        self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.none()
-        for item in place:
-            if item[0] <= datetime.date.today() <= item[1]:
-                self.fields["employee"].queryset = DataBaseUser.objects.filter(pk=self.user.pk)
-                self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.filter(pk=item[2])
+
+        if self.user and not (getattr(self.user, "is_superuser", False) or getattr(self.user, "is_staff", False)):
+            place = (
+                CreatingTeam.objects.filter(senior_brigade=self.user)
+                .exclude(cancellation=True)
+                .values_list("date_start", "date_end", "place")
+            )
+            self.fields["employee"].queryset = DataBaseUser.objects.none()
+            self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.none()
+            for item in place:
+                if item[0] <= datetime.date.today() <= item[1]:
+                    self.fields["employee"].queryset = DataBaseUser.objects.filter(pk=self.user.pk)
+                    self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.filter(pk=item[2])
+        else:
+            self.fields["employee"].queryset = DataBaseUser.objects.filter(is_active=True).order_by("last_name")
+            self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
+
         for field in self.fields:
             make_custom_field(self.fields[field])
 
     def clean(self):
+        """Комплексная валидация дат, отложенных дефектов и допуска подтверждающего персонала (ФАП-145)."""
         cleaned_data = super(OutfitCardForm, self).clean()
-        if cleaned_data['outfit_card_date_end']:
-            if cleaned_data['outfit_card_date'] > cleaned_data['outfit_card_date_end']:
-                raise ValidationError("Дата окончания должна быть больше чем дата начала")
+        start_date = cleaned_data.get("outfit_card_date")
+        end_date = cleaned_data.get("outfit_card_date_end")
+
+        if start_date and end_date and start_date > end_date:
+            raise ValidationError("Дата окончания должна быть больше чем дата начала")
+
+        certifying_staff = cleaned_data.get("certifying_staff")
+        air_board = cleaned_data.get("air_board")
+        periodic_works = cleaned_data.get("periodic_work")
+        target_date = end_date or start_date or datetime.date.today()
+        aircraft_type = air_board.type_property if air_board else None
+        require_base = bool(periodic_works and periodic_works.exists())
+
+        if certifying_staff:
+            from flight_planning.services import get_certifying_staff_authorization
+
+            is_auth, doc_no, record = get_certifying_staff_authorization(
+                employee=certifying_staff,
+                aircraft_type=aircraft_type,
+                target_date=target_date,
+                require_base=require_base,
+            )
+
+            # Автоподстановка номера свидетельства / допуска CRS, если поле не заполнено вручную
+            if doc_no and not cleaned_data.get("crs_number"):
+                cleaned_data["crs_number"] = doc_no
+            elif not cleaned_data.get("crs_number") and getattr(certifying_staff, "maintenance_staff_certificate", ""):
+                cleaned_data["crs_number"] = certifying_staff.maintenance_staff_certificate
+
+        return cleaned_data
+
+
+class MaintenanceReleaseCertificateCreateForm(forms.ModelForm):
+    """Форма оформления и регистрации Свидетельства о ТО ВС (CRS) на портале.
+
+    Позволяет выбрать карту-наряд (OutfitCard) и подтверждающий персонал (DataBaseUser),
+    автоматически заполняя все параметры ВС, выполненные работы, наработку и даты.
+    Свидетельству присваивается независимый сквозной номер в формате <seq>/<YY>.
+    """
+
+    outfit_card = forms.ModelChoiceField(
+        queryset=OutfitCard.objects.all().order_by("-outfit_card_date", "-id"),
+        required=True,
+        label="Карта-наряд (основание)",
+        empty_label="— Выберите карту-наряд —",
+    )
+    certifying_staff = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name"),
+        required=True,
+        label="Подтверждающий персонал",
+        empty_label="— Выберите специалиста —",
+    )
+    maintenance_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="Дата выполнения ТО ВС",
+    )
+    issue_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="Дата свидетельства",
+    )
+    aircraft_type = forms.CharField(
+        required=False,
+        max_length=100,
+        label="Тип ВС",
+        widget=forms.TextInput(attrs={"placeholder": "Например: Ми-8Т, Ан-2"}),
+    )
+    tail_number = forms.CharField(
+        required=False,
+        max_length=50,
+        label="Рег. № ВС (бортовой)",
+        widget=forms.TextInput(attrs={"placeholder": "Например: RA-24022"}),
+    )
+    factory_number = forms.CharField(
+        required=False,
+        max_length=50,
+        label="Зав. № ВС",
+        widget=forms.TextInput(attrs={"placeholder": "Заводской номер планера"}),
+    )
+    operating_hours = forms.CharField(
+        required=False,
+        max_length=100,
+        label="Наработка ВС",
+        widget=forms.TextInput(attrs={"placeholder": "Например: 693 ч. 53 м."}),
+    )
+    maintenance_work_scope = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Перечень выполненных регламентов ТО, оперативных и дополнительных работ..."}),
+        label="Вид ТО (выполненные работы)",
+    )
+    certifying_staff_license = forms.CharField(
+        required=False,
+        max_length=100,
+        label="Свидетельство специалиста",
+        widget=forms.TextInput(attrs={"placeholder": "Номер бессрочного свидетельства специалиста по ТО ВС"}),
+    )
+    signature_stamp = forms.CharField(
+        required=False,
+        max_length=255,
+        label="Отметка о подписи / ПЭП",
+        widget=forms.TextInput(attrs={"placeholder": "[Оформлено в СЭД БАРКОЛ]"}),
+    )
+    scan_file = forms.FileField(
+        required=False,
+        label="Скан свидетельства (при наличии)",
+    )
+
+    class Meta:
+        model = MaintenanceReleaseCertificate
+        fields = [
+            "outfit_card",
+            "certifying_staff",
+            "maintenance_date",
+            "issue_date",
+            "aircraft_type",
+            "tail_number",
+            "factory_number",
+            "operating_hours",
+            "maintenance_work_scope",
+            "certifying_staff_license",
+            "signature_stamp",
+            "scan_file",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        """Инициализирует форму, стилизуя контролы и настраивая понятные текстовые метки."""
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+        self.fields["outfit_card"].label_from_instance = (
+            lambda obj: f"Наряд № {obj.outfit_card_number} от {obj.outfit_card_date:%d.%m.%Y} (Борт: {obj.air_board})"
+            if obj.outfit_card_date
+            else f"Наряд № {obj.outfit_card_number} (Борт: {obj.air_board})"
+        )
+        self.fields["certifying_staff"].label_from_instance = (
+            lambda u: f"{u.get_full_name()} [{u.maintenance_staff_certificate}]"
+            if getattr(u, "maintenance_staff_certificate", "")
+            else u.get_full_name()
+        )
+        if not self.initial.get("issue_date"):
+            self.initial["issue_date"] = timezone.now().date()
+        if not self.initial.get("signature_stamp"):
+            self.initial["signature_stamp"] = "[Оформлено в СЭД БАРКОЛ]"
+
+    def clean(self) -> Dict[str, Any]:
+        """Комплексная валидация и автоматическое дозаполнение реквизитов из карты-наряда.
+
+        Returns:
+            Dict[str, Any]: Очищенные данные формы с автозаполненными параметрами.
+        """
+        cleaned_data = super().clean()
+        card = cleaned_data.get("outfit_card")
+        staff = cleaned_data.get("certifying_staff")
+
+        if card:
+            from hrdepartment_app.services.crs_document_service import (
+                build_work_scope_text,
+                format_hours_minutes,
+            )
+            if not cleaned_data.get("maintenance_date"):
+                cleaned_data["maintenance_date"] = (
+                    card.outfit_card_date_end or card.outfit_card_date or timezone.now().date()
+                )
+            if not cleaned_data.get("aircraft_type") and card.air_board and card.air_board.type_property:
+                cleaned_data["aircraft_type"] = card.air_board.type_property.type_property
+            if not cleaned_data.get("tail_number") and card.air_board:
+                cleaned_data["tail_number"] = card.air_board.registration_number
+            if not cleaned_data.get("factory_number") and card.air_board:
+                cleaned_data["factory_number"] = card.air_board.factory_number or ""
+            if not cleaned_data.get("operating_hours"):
+                cleaned_data["operating_hours"] = format_hours_minutes(card.flight_hours)
+            if not cleaned_data.get("maintenance_work_scope"):
+                cleaned_data["maintenance_work_scope"] = build_work_scope_text(card)
+
+        if staff:
+            if not cleaned_data.get("certifying_staff_license") and getattr(staff, "maintenance_staff_certificate", ""):
+                cleaned_data["certifying_staff_license"] = staff.maintenance_staff_certificate
+
+        return cleaned_data
 
 
 class DataBaseUserEventAddForm(forms.ModelForm):
@@ -2783,3 +3020,181 @@ class PowerOfAttorneyForm(forms.ModelForm):
         # Применяем кастомную стилизацию ко всем полям
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+
+class PeriodicWorkForm(forms.ModelForm):
+    """Форма создания и редактирования периодических регламентных работ.
+
+    Attributes:
+        Meta: Мета-класс с привязкой к модели PeriodicWork и списком полей.
+    """
+
+    class Meta:
+        model = PeriodicWork
+        fields = (
+            "air_bord_type",
+            "code",
+            "name",
+            "ratio",
+            "lag_minus",
+            "lag_plus",
+            "color",
+            "description",
+        )
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Наименование регламента (например, МИ-8Т - Ф-1)"}),
+            "code": forms.TextInput(attrs={"placeholder": "Код регламента (например, Ф-1, 100 часов)"}),
+            "description": forms.Textarea(attrs={"rows": 3, "placeholder": "Подробное описание регламентных процедур"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Инициализирует форму и настраивает стилизацию виджетов Porto Admin."""
+        super().__init__(*args, **kwargs)
+        for field_name in self.fields:
+            make_custom_field(self.fields[field_name])
+        if "air_bord_type" in self.fields:
+            self.fields["air_bord_type"].widget.attrs.update(
+                {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+            )
+        if "color" in self.fields:
+            self.fields["color"].widget.attrs.update(
+                {"class": "form-control form-control-modern"}
+            )
+
+
+class OperationalWorkForm(forms.ModelForm):
+    """Форма создания и редактирования видов оперативных работ.
+
+    Attributes:
+        Meta: Мета-класс с привязкой к модели OperationalWork и списком полей.
+    """
+
+    class Meta:
+        model = OperationalWork
+        fields = (
+            "air_bord_type",
+            "code",
+            "name",
+            "description",
+        )
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Наименование оперативной работы"}),
+            "code": forms.TextInput(attrs={"placeholder": "Код работы (например, А1, А2)"}),
+            "description": forms.Textarea(attrs={"rows": 3, "placeholder": "Описание оперативных процедур"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Инициализирует форму и настраивает стилизацию виджетов Porto Admin."""
+        super().__init__(*args, **kwargs)
+        for field_name in self.fields:
+            make_custom_field(self.fields[field_name])
+        if "air_bord_type" in self.fields:
+            self.fields["air_bord_type"].widget.attrs.update(
+                {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+            )
+
+
+class AircraftHoursTrackingForm(forms.ModelForm):
+    """Форма ручной фиксации наработки воздушного судна (ФАП-367).
+
+    Обеспечивает ввод показателей налета планера СНЭ, ППР и количества посадок
+    с привязкой к конкретному борту ВС и дате фиксации.
+    """
+
+    air_board = forms.ModelChoiceField(
+        queryset=Estate.objects.filter(decommission_date__isnull=True, type_property__isnull=False)
+        .select_related("type_property")
+        .order_by("type_property__type_property", "registration_number"),
+        label="Воздушное судно",
+        empty_label="— Выберите воздушное судно —",
+    )
+
+    class Meta:
+        model = AircraftHoursTracking
+        fields = (
+            "air_board",
+            "record_date",
+            "flight_hours",
+            "flight_hours_tsor",
+            "flight_cycles",
+            "notes",
+        )
+        widgets = {
+            "record_date": forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": "form-control form-control-modern",
+                }
+            ),
+            "flight_hours": forms.NumberInput(
+                attrs={
+                    "step": "0.1",
+                    "min": "0",
+                    "placeholder": "0.0",
+                    "class": "form-control form-control-modern",
+                }
+            ),
+            "flight_hours_tsor": forms.NumberInput(
+                attrs={
+                    "step": "0.1",
+                    "min": "0",
+                    "placeholder": "0.0",
+                    "class": "form-control form-control-modern",
+                }
+            ),
+            "flight_cycles": forms.NumberInput(
+                attrs={
+                    "min": "0",
+                    "placeholder": "0",
+                    "class": "form-control form-control-modern",
+                }
+            ),
+            "notes": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Основание, источник данных или примечание...",
+                    "class": "form-control form-control-modern",
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы со стилизацией полей."""
+        super().__init__(*args, **kwargs)
+        for field_name in self.fields:
+            make_custom_field(self.fields[field_name])
+        if "air_board" in self.fields:
+            self.fields["air_board"].widget.attrs.update(
+                {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+            )
+        if not self.initial.get("record_date") and not self.instance.pk:
+            self.initial["record_date"] = datetime.date.today()
+
+    def clean_record_date(self):
+        """Валидация даты фиксации: запрет ввода дат из далекого будущего."""
+        rec_date = self.cleaned_data.get("record_date")
+        if rec_date and rec_date > datetime.date.today() + datetime.timedelta(days=1):
+            raise ValidationError("Дата фиксации наработки не может быть в будущем.")
+        return rec_date
+
+
+class AircraftHoursImportForm(forms.Form):
+    """Форма пакетной загрузки наработки ВС из файла Excel или CSV."""
+
+    file = forms.FileField(
+        label="Файл с данными наработки",
+        help_text="Поддерживаются файлы Excel (.xlsx) и CSV (.csv). Скачайте эталонный шаблон для заполнения.",
+        validators=[FileExtensionValidator(allowed_extensions=["xlsx", "csv"])],
+        widget=forms.FileInput(
+            attrs={
+                "class": "form-control form-control-modern",
+                "accept": ".xlsx,.csv",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы с применением стилей."""
+        super().__init__(*args, **kwargs)
+        make_custom_field(self.fields["file"])
+
