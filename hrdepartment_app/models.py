@@ -2837,6 +2837,38 @@ class OutfitCard(models.Model):
         default="",
         help_text="Контрольная сумма SHA-256 для гарантии неизменяемости по п. 40 ФАП-367",
     )
+    used_equipment = models.ManyToManyField(
+        "MaintenanceEquipment",
+        through="OutfitCardEquipmentUsage",
+        related_name="outfit_cards",
+        blank=True,
+        verbose_name="Использованное оборудование и инструмент",
+        help_text="Оборудование, КПА и специнструмент, использованные при выполнении ТО (ФАП-145, пп. 19-25)",
+    )
+
+    def clean(self) -> None:
+        """Выполняет нормативную проверку карты-наряда перед сохранением и закрытием.
+
+        Raises:
+            ValidationError: Если при закрытии наряда выявлены неисправные или просроченные приборы/оборудование.
+        """
+        super().clean()
+        if self.is_signed and self.pk:
+            target_date = self.outfit_card_date_end or self.outfit_card_date or timezone.now().date()
+            invalid_equipments = []
+            for usage in self.used_equipment_records.select_related("equipment").all():
+                is_allowed, reason = usage.equipment.can_be_used_for_maintenance(target_date)
+                if not is_allowed:
+                    invalid_equipments.append(
+                        f"{usage.equipment.name} (S/N: {usage.equipment.serial_number or 'б/н'}): {reason}"
+                    )
+            if invalid_equipments:
+                raise ValidationError({
+                    "is_signed": (
+                        "Невозможно закрыть наряд и выпустить CRS: использовано оборудование с нарушениями (ФАП-145, пп. 19–25): "
+                        + "; ".join(invalid_equipments)
+                    )
+                })
 
     def __str__(self) -> str:
         return self.outfit_card_number or f"Карта-наряд #{self.pk}"
@@ -2883,6 +2915,18 @@ class OutfitCard(models.Model):
             if self.air_board
             else "—"
         )
+        staff_badge = ""
+        if self.certifying_staff:
+            try:
+                from hrdepartment_app.services.outfit_card_release_service import get_staff_fap145_qualification_status
+                check_date = self.outfit_card_date_end or self.outfit_card_date
+                qual = get_staff_fap145_qualification_status(self.certifying_staff, check_date)
+                staff_badge = qual["badge_html"]
+            except Exception:
+                staff_badge = ""
+
+        eq_count = self.used_equipment_records.count()
+
         return {
             "pk": self.pk,
             "outfit_card_date": f"{self.outfit_card_date:%d.%m.%Y} г." if self.outfit_card_date else "—",
@@ -2892,6 +2936,8 @@ class OutfitCard(models.Model):
             "workers": self.get_workers(),
             "employee": format_name_initials(self.employee.title) if self.employee else "—",
             "certifying_staff": format_name_initials(self.certifying_staff.title) if self.certifying_staff else "—",
+            "certifying_staff_badge": staff_badge,
+            "equipment_count": eq_count,
             "flight_hours": float(self.flight_hours or 0.0),
             "flight_cycles": self.flight_cycles or 0,
             "is_signed": self.is_signed,
@@ -3716,6 +3762,679 @@ class OutfitCardComponent(models.Model):
                 self.installed_component.status = AviationComponentStatus.INSTALLED
                 self.installed_component.current_aircraft = self.outfit_card.air_board
                 self.installed_component.save(update_fields=["status", "current_aircraft", "updated_at"])
+
+
+class EquipmentType(models.TextChoices):
+    """Категории оборудования и инструментов для ТО ВС (Раздел III ФАП-145, п. 22)."""
+
+    MEASURING = "measuring", "Средство измерений (СИ, 102-ФЗ)"
+    CONTROL_TEST = "control_test", "Контрольно-поверочная аппаратура (КПА)"
+    SPECIAL_TOOL = "special_tool", "Специальный инструмент"
+    STANDARD_REFERENCE = "standard_reference", "Эталон / калибр / контрольный образец"
+    GROUND_EQUIPMENT = "ground_equipment", "Наземное оборудование ТО"
+    GENERAL_TOOL = "general_tool", "Общий инструмент"
+
+
+class EquipmentOperationalStatus(models.TextChoices):
+    """Эксплуатационный статус физического состояния оборудования (ФАП-145, пп. 19, 24, 25)."""
+
+    SERVICEABLE = "serviceable", "Исправен (годен к применению)"
+    DEFECTIVE = "defective", "Неисправен (п. 24 ФАП-145)"
+    IN_REPAIR = "in_repair", "В ремонте / на ТО"
+    QUARANTINED = "quarantined", "В изоляторе брака (карантин, п. 25 ФАП-145)"
+    SCRAPPED = "scrapped", "Списан"
+
+
+class EquipmentVerificationType(models.TextChoices):
+    """Вид метрологического контроля и оценки пригодности (ФАП-145, пп. 19, 20)."""
+
+    VERIFICATION = "verification", "Поверка (102-ФЗ)"
+    CALIBRATION = "calibration", "Калибровка"
+    INSPECTION = "inspection", "Проверка технического состояния"
+    NOT_REQUIRED = "not_required", "Метрологический контроль не требуется"
+
+
+class IntervalUnit(models.TextChoices):
+    """Единицы измерения межповерочного интервала."""
+
+    DAYS = "days", "дней"
+    MONTHS = "months", "месяцев"
+    YEARS = "years", "лет"
+
+
+class MaintenanceEquipment(models.Model):
+    """Оборудование, приборы, КПА и специнструмент для ТО ВС (ФАП-145, пп. 19–25).
+
+    Модель универсального реестра инструментов, средств измерений (102-ФЗ),
+    контрольно-поверочной аппаратуры (КПА) и наземного оборудования технического
+    обслуживания воздушных судов с дифференцированным контролем физического состояния,
+    изолятора брака (п. 25) и метрологических сроков действия поверки/калибровки.
+
+    Attributes:
+        name (str): Полное наименование оборудования/прибора/инструмента.
+        equipment_type (str): Категория (СИ по 102-ФЗ, КПА, специнструмент, эталон и др.).
+        part_number (str): Чертежный номер / модель (P/N).
+        serial_number (str): Заводской / серийный номер (S/N).
+        inventory_number (str): Инвентарный номер бухгалтерского учета.
+        marking_code (str): Код маркировки по системе маркировки ТО (п. 23 ФАП-145).
+        applicable_aircraft_types (ManyToManyField): Применимость к типам воздушных судов.
+        operational_status (str): Физическое состояние (исправен, неисправен, карантин, списан).
+        verification_type (str): Вид контроля (поверка по 102-ФЗ, калибровка, проверка, не требуется).
+        last_verification_date (date): Дата последней поверки/калибровки.
+        next_verification_date (date): Дата окончания действия текущей поверки/калибровки.
+        interval_value (int): Межповерочный / контрольный интервал.
+        interval_unit (str): Единица измерения интервала (дни, месяцы, годы).
+        interval_source (str): Основание интервала (РЭ изготовителя, методика поверки, 102-ФЗ).
+        arshin_verification_number (str): Номер записи во ФГИС «АРШИН» / Свидетельства о поверке.
+        verification_organization (str): Организация, проводившая поверку/калибровку.
+        certificate_scan (FileField): Электронный скан-образ свидетельства/сертификата.
+        location (str): Место нахождения / хранения (кладовая, участок, борт).
+        production_place (PlaceProductionActivity): Место производственной деятельности (МПД).
+        responsible_person (DataBaseUser): Лицо, ответственное за сохранность и метрологию.
+        notes (str): Особые отметки и примечания.
+        created_at (datetime): Дата внесения в реестр.
+        updated_at (datetime): Дата последнего обновления.
+    """
+
+    class Meta:
+        verbose_name = "Оборудование и инструмент ТО (ФАП-145)"
+        verbose_name_plural = "Реестр оборудования и инструментов ТО (ФАП-145)"
+        ordering = ("name", "serial_number")
+        indexes = [
+            models.Index(fields=["operational_status"], name="idx_eq_oper_status"),
+            models.Index(fields=["equipment_type"], name="idx_eq_type"),
+            models.Index(fields=["next_verification_date"], name="idx_eq_next_verif"),
+            models.Index(fields=["serial_number"], name="idx_eq_serial"),
+            models.Index(fields=["part_number"], name="idx_eq_part_num"),
+        ]
+
+    name = models.CharField(
+        verbose_name="Наименование оборудования / инструмента",
+        max_length=255,
+        help_text="Полное наименование оборудования, прибора или специального инструмента",
+    )
+    equipment_type = models.CharField(
+        verbose_name="Категория оборудования",
+        max_length=30,
+        choices=EquipmentType.choices,
+        default=EquipmentType.SPECIAL_TOOL,
+        db_index=True,
+        help_text="Категория оборудования по классификации п. 22 ФАП-145",
+    )
+    part_number = models.CharField(
+        verbose_name="Чертежный номер / модель (P/N)",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Part Number по каталогу изготовителя или маркировке",
+    )
+    serial_number = models.CharField(
+        verbose_name="Заводской / серийный номер (S/N)",
+        max_length=100,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Заводской или серийный номер изделия (при наличии)",
+    )
+    inventory_number = models.CharField(
+        verbose_name="Инвентарный номер",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Бухгалтерский или складской инвентарный номер",
+    )
+    marking_code = models.CharField(
+        verbose_name="Код маркировки (п. 23 ФАП-145)",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Индивидуальный идентификационный код маркировки согласно п. 23 ФАП-145",
+    )
+    applicable_aircraft_types = models.ManyToManyField(
+        "contracts_app.TypeProperty",
+        blank=True,
+        related_name="maintenance_equipments",
+        verbose_name="Применимость к типам ВС",
+        help_text="Типы воздушных судов, для ТО которых предназначен прибор/инструмент",
+    )
+    operational_status = models.CharField(
+        verbose_name="Эксплуатационный статус",
+        max_length=30,
+        choices=EquipmentOperationalStatus.choices,
+        default=EquipmentOperationalStatus.SERVICEABLE,
+        db_index=True,
+        help_text="Физическое состояние оборудования по пп. 19, 24, 25 ФАП-145",
+    )
+    verification_type = models.CharField(
+        verbose_name="Вид метрологического контроля",
+        max_length=30,
+        choices=EquipmentVerificationType.choices,
+        default=EquipmentVerificationType.NOT_REQUIRED,
+        db_index=True,
+        help_text="Вид обязательного метрологического подтверждения по п. 19, 20 ФАП-145",
+    )
+    last_verification_date = models.DateField(
+        verbose_name="Дата последней поверки/калибровки",
+        null=True,
+        blank=True,
+        help_text="Дата проведения последней поверки, калибровки или проверки состояния",
+    )
+    next_verification_date = models.DateField(
+        verbose_name="Дата очередной поверки/калибровки",
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Срок окончания действия текущей поверки/калибровки",
+    )
+    interval_value = models.PositiveIntegerField(
+        verbose_name="Межповерочный / контрольный интервал",
+        null=True,
+        blank=True,
+        help_text="Периодичность проведения поверки/калибровки",
+    )
+    interval_unit = models.CharField(
+        verbose_name="Единица интервала",
+        max_length=10,
+        choices=IntervalUnit.choices,
+        default=IntervalUnit.MONTHS,
+    )
+    interval_source = models.CharField(
+        verbose_name="Основание интервала",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Эксплуатационная документация изготовителя, методика поверки или регламент организации",
+    )
+    arshin_verification_number = models.CharField(
+        verbose_name="Номер во ФГИС «АРШИН» / Свидетельства",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Регистрационный номер свидетельства о поверке или записи в реестре ФГИС «АРШИН» (102-ФЗ)",
+    )
+    verification_organization = models.CharField(
+        verbose_name="Организация-поверитель",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Наименование аккредитованной метрологической службы / поверителя",
+    )
+    certificate_scan = models.FileField(
+        verbose_name="Скан свидетельства / сертификата",
+        upload_to="equipment_certificates/%Y/%m/",
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=["pdf", "jpg", "jpeg", "png"])],
+        help_text="Электронный скан документа о поверке/калибровке",
+    )
+    location = models.CharField(
+        verbose_name="Место хранения / нахождения",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Инструментальная кладовая, борт ВС, контейнер, участок ТО",
+    )
+    production_place = models.ForeignKey(
+        PlaceProductionActivity,
+        verbose_name="МПД приписки",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="equipments",
+        help_text="Место производственной деятельности постоянного базирования",
+    )
+    responsible_person = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Ответственное лицо",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="responsible_equipments",
+        help_text="Сотрудник, ответственный за сохранность и метрологический контроль",
+    )
+    notes = models.TextField(
+        verbose_name="Примечания",
+        blank=True,
+        default="",
+        help_text="Особые условия эксплуатации, поверки или хранения",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
+
+    def __str__(self) -> str:
+        ident = f"S/N: {self.serial_number}" if self.serial_number else f"P/N: {self.part_number or 'б/н'}"
+        return f"{self.name} ({ident})"
+
+    @property
+    def metrology_status(self) -> str:
+        """Вычисляет текущий метрологический статус оборудования на сегодня.
+
+        Returns:
+            str: Код статуса ('VALID', 'EXPIRING', 'EXPIRED', 'NOT_APPLICABLE', 'NOT_VERIFIED').
+        """
+        if self.verification_type == EquipmentVerificationType.NOT_REQUIRED:
+            return "NOT_APPLICABLE"
+        if not self.next_verification_date:
+            return "NOT_VERIFIED"
+        today = timezone.now().date()
+        if self.next_verification_date < today:
+            return "EXPIRED"
+        if (self.next_verification_date - today).days <= 30:
+            return "EXPIRING"
+        return "VALID"
+
+    @property
+    def days_until_verification(self) -> Optional[int]:
+        """Возвращает количество календарных дней до окончания действия поверки/калибровки.
+
+        Returns:
+            Optional[int]: Количество дней (отрицательное значение означает просрочку).
+        """
+        if not self.next_verification_date:
+            return None
+        return (self.next_verification_date - timezone.now().date()).days
+
+    @property
+    def is_metrology_valid(self) -> bool:
+        """Проверяет пригодность оборудования к применению на текущую дату."""
+        valid, _ = self.can_be_used_for_maintenance(timezone.now().date())
+        return valid
+
+    def can_be_used_for_maintenance(self, target_date: Optional[date] = None) -> Tuple[bool, str]:
+        """Проверяет пригодность оборудования для выполнения ТО на заданную дату по ФАП-145 (пп. 19-25).
+
+        Args:
+            target_date (Optional[date]): Дата выполнения работ (по умолчанию текущая дата).
+
+        Returns:
+            Tuple[bool, str]: Кортеж (разрешено_к_применению, текстовое_обоснование).
+        """
+        check_date = target_date or timezone.now().date()
+
+        # 1. Проверка физического состояния
+        if self.operational_status == EquipmentOperationalStatus.QUARANTINED:
+            return False, "Оборудование находится в изоляторе брака (карантин по п. 25 ФАП-145)"
+        if self.operational_status == EquipmentOperationalStatus.DEFECTIVE:
+            return False, "Оборудование признано неисправным (пп. 19, 24 ФАП-145)"
+        if self.operational_status == EquipmentOperationalStatus.IN_REPAIR:
+            return False, "Оборудование находится в ремонте / на ТО"
+        if self.operational_status == EquipmentOperationalStatus.SCRAPPED:
+            return False, "Оборудование списано"
+        if self.operational_status != EquipmentOperationalStatus.SERVICEABLE:
+            return False, f"Статус оборудования не позволяет применение: {self.get_operational_status_display()}"
+
+        # 2. Проверка метрологического контроля
+        if self.verification_type == EquipmentVerificationType.NOT_REQUIRED:
+            return True, "Метрологический контроль не требуется, инструмент исправен"
+
+        if not self.last_verification_date and not self.next_verification_date:
+            return False, "Отсутствуют сведения о проведенной поверке/калибровке (пп. 19, 20 ФАП-145)"
+
+        if self.next_verification_date and self.next_verification_date < check_date:
+            return False, (
+                f"Срок действия поверки/калибровки истек {self.next_verification_date:%d.%m.%Y} "
+                f"(на дату ТО {check_date:%d.%m.%Y})"
+            )
+
+        return True, "Оборудование исправно и поверено"
+
+    def clean(self) -> None:
+        """Валидирует непротиворечивость метрологических данных и основания интервала.
+
+        Raises:
+            ValidationError: При логических несоответствиях дат или отсутствии основания интервала.
+        """
+        super().clean()
+        if self.last_verification_date and self.next_verification_date:
+            if self.next_verification_date <= self.last_verification_date:
+                raise ValidationError({
+                    "next_verification_date": "Дата очередной поверки должна быть позже даты последней поверки."
+                })
+        if self.verification_type != EquipmentVerificationType.NOT_REQUIRED and self.interval_value:
+            if not self.interval_source.strip():
+                raise ValidationError({
+                    "interval_source": "При указании межповерочного интервала укажите его основание (РЭ изготовителя, методика поверки, 102-ФЗ)."
+                })
+
+    def get_data(self) -> Dict[str, Any]:
+        """Формирует данные для сериализации в DataTables.
+
+        Returns:
+            Dict[str, Any]: Словарь атрибутов оборудования для отображения в реестре.
+        """
+        status_map = {
+            "VALID": '<span class="badge bg-success text-white">Поверен (годен)</span>',
+            "EXPIRING": '<span class="badge bg-warning text-dark">Истекает поверка</span>',
+            "EXPIRED": '<span class="badge bg-danger text-white">Просрочен</span>',
+            "NOT_VERIFIED": '<span class="badge bg-secondary text-white">Не поверен</span>',
+            "NOT_APPLICABLE": '<span class="badge bg-light text-dark">Не требуется</span>',
+        }
+        return {
+            "pk": self.pk,
+            "name": self.name,
+            "part_number": self.part_number or "—",
+            "serial_number": self.serial_number or "—",
+            "inventory_number": self.inventory_number or "—",
+            "marking_code": self.marking_code or "—",
+            "equipment_type": self.get_equipment_type_display(),
+            "operational_status": self.get_operational_status_display(),
+            "verification_type": self.get_verification_type_display(),
+            "next_verification_date": (
+                f"{self.next_verification_date:%d.%m.%Y} г." if self.next_verification_date else "—"
+            ),
+            "metrology_badge": status_map.get(self.metrology_status, "—"),
+            "location": self.location or "—",
+            "responsible_person": (
+                format_name_initials(self.responsible_person.title) if self.responsible_person else "—"
+            ),
+        }
+
+
+class EquipmentVerificationRecord(models.Model):
+    """Журнал проведенных поверок, калибровок и проверок состояния оборудования (ФАП-145, пп. 19, 20).
+
+    Хранит полную историю метрологического контроля каждой единицы оборудования
+    с фиксацией номеров записей в ФГИС «АРШИН», результатов оценки пригодности и электронных
+    скан-копий свидетельств о поверке.
+
+    Attributes:
+        equipment (MaintenanceEquipment): Обслуживаемое оборудование / прибор.
+        verification_type (str): Вид выполненного контроля (поверка, калибровка, проверка состояния).
+        verification_date (date): Дата проведения поверки/калибровки.
+        valid_until (Optional[date]): Срок окончания действия свидетельства.
+        arshin_number (str): Номер записи в Федеральном информационном фонде ФГИС «АРШИН».
+        organization (str): Наименование аккредитованной организации-поверителя.
+        result_serviceable (bool): Признак пригодности к дальнейшему применению (годен / забракован).
+        certificate_scan (FileField): Электронный скан свидетельства о поверке.
+        notes (str): Служебные примечания и протокол поверки.
+        created_at (datetime): Дата фиксации записи в журнале.
+        created_by (DataBaseUser): Специалист, внесший запись.
+    """
+
+    class Meta:
+        verbose_name = "Запись о поверке оборудования"
+        verbose_name_plural = "Журнал поверок и калибровок оборудования"
+        ordering = ("-verification_date",)
+        indexes = [
+            models.Index(fields=["equipment", "-verification_date"], name="idx_verif_eq_date"),
+            models.Index(fields=["verification_date"], name="idx_verif_date"),
+        ]
+
+    equipment = models.ForeignKey(
+        MaintenanceEquipment,
+        verbose_name="Оборудование / прибор",
+        on_delete=models.CASCADE,
+        related_name="verification_records",
+    )
+    verification_type = models.CharField(
+        verbose_name="Вид контроля",
+        max_length=30,
+        choices=EquipmentVerificationType.choices,
+        default=EquipmentVerificationType.VERIFICATION,
+    )
+    verification_date = models.DateField(
+        verbose_name="Дата проведения",
+        help_text="Дата фактического выполнения поверки / калибровки",
+    )
+    valid_until = models.DateField(
+        verbose_name="Действительно до",
+        null=True,
+        blank=True,
+        help_text="Дата окончания действия свидетельства о поверке",
+    )
+    arshin_number = models.CharField(
+        verbose_name="Номер во ФГИС «АРШИН» / Свидетельства",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Номер свидетельства или записи в реестре ФГИС «АРШИН» (102-ФЗ)",
+    )
+    organization = models.CharField(
+        verbose_name="Организация, проводившая поверку",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Наименование аккредитованной метрологической службы / поверителя",
+    )
+    result_serviceable = models.BooleanField(
+        verbose_name="Годен к применению",
+        default=True,
+        help_text="Флаг успешного прохождения поверки (если False — прибор забракован)",
+    )
+    certificate_scan = models.FileField(
+        verbose_name="Скан свидетельства",
+        upload_to="equipment_verifications/%Y/%m/",
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=["pdf", "jpg", "jpeg", "png"])],
+        help_text="Скан свидетельства о поверке или извещения о непригодности",
+    )
+    notes = models.TextField(
+        verbose_name="Примечания",
+        blank=True,
+        default="",
+        help_text="Параметры погрешности, замечания поверителя",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата внесения", auto_now_add=True)
+    created_by = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Кто внес запись",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recorded_verifications",
+    )
+
+    def __str__(self) -> str:
+        status_txt = "Годен" if self.result_serviceable else "Забракован"
+        return f"{self.get_verification_type_display()} от {self.verification_date:%d.%m.%Y} ({status_txt})"
+
+    def clean(self) -> None:
+        """Валидирует корректность дат поверки."""
+        super().clean()
+        if self.valid_until and self.verification_date:
+            if self.valid_until <= self.verification_date:
+                raise ValidationError({
+                    "valid_until": "Срок действия поверки должен быть позже даты ее проведения."
+                })
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Сохраняет запись и актуализирует метрологические реквизиты связанного оборудования."""
+        super().save(*args, **kwargs)
+        if self.equipment:
+            eq = self.equipment
+            update_fields = ["updated_at"]
+            if not self.result_serviceable:
+                eq.operational_status = EquipmentOperationalStatus.QUARANTINED
+                update_fields.append("operational_status")
+            elif not eq.last_verification_date or self.verification_date >= eq.last_verification_date:
+                eq.last_verification_date = self.verification_date
+                update_fields.append("last_verification_date")
+                if self.valid_until:
+                    eq.next_verification_date = self.valid_until
+                    update_fields.append("next_verification_date")
+                if self.arshin_number:
+                    eq.arshin_verification_number = self.arshin_number
+                    update_fields.append("arshin_verification_number")
+                if self.organization:
+                    eq.verification_organization = self.organization
+                    update_fields.append("verification_organization")
+                if self.certificate_scan and not eq.certificate_scan:
+                    eq.certificate_scan = self.certificate_scan
+                    update_fields.append("certificate_scan")
+                if eq.operational_status in (EquipmentOperationalStatus.QUARANTINED, EquipmentOperationalStatus.DEFECTIVE):
+                    eq.operational_status = EquipmentOperationalStatus.SERVICEABLE
+                    update_fields.append("operational_status")
+            eq.save(update_fields=list(set(update_fields)))
+
+
+class OutfitCardEquipmentUsage(models.Model):
+    """Исторический снимок применения оборудования в карте-наряде (ФАП-145, пп. 19-25, 40).
+
+    Фиксирует неизменяемый аудит-снимок состояния оборудования, инструмента и метрологических
+    реквизитов на дату выполнения карты-наряда ТО ВС, защищая систему от искажения истории
+    при последующих переповерках или списании инструмента.
+
+    Attributes:
+        outfit_card (OutfitCard): Карта-наряд, в которой использовано оборудование.
+        equipment (MaintenanceEquipment): Использованная единица оборудования/инструмента.
+        equipment_name (str): Наименование инструмента на момент выполнения ТО.
+        part_number (str): Чертежный номер / модель (P/N) на момент ТО.
+        serial_number (str): Серийный / заводской номер (S/N) на момент ТО.
+        inventory_number (str): Инвентарный номер на момент ТО.
+        marking_code (str): Маркировочный код инструмента (п. 23 ФАП-145).
+        equipment_type (str): Категория оборудования на момент ТО.
+        verification_type (str): Вид метрологического контроля на момент ТО.
+        last_verification_date (Optional[date]): Дата последней поверки на момент ТО.
+        next_verification_date (Optional[date]): Срок действия поверки на момент ТО.
+        arshin_number (str): Номер записи ФГИС «АРШИН» на момент ТО.
+        is_valid_at_usage (bool): Признак пригодности и отсутствия просрочки на момент ТО.
+        validation_message (str): Результат проверки метрологической годности.
+        attached_by (DataBaseUser): Специалист, привязавший инструмент к наряду.
+        attached_at (datetime): Дата и время фиксации использования.
+        notes (str): Примечания по использованию (напр. технологический этап).
+    """
+
+    class Meta:
+        verbose_name = "Применение оборудования в наряде"
+        verbose_name_plural = "Применение оборудования в картах-нарядах (ФАП-145)"
+        ordering = ("outfit_card", "-attached_at")
+        indexes = [
+            models.Index(fields=["outfit_card"], name="idx_outfit_eq_card"),
+            models.Index(fields=["equipment"], name="idx_outfit_eq_inst"),
+        ]
+
+    outfit_card = models.ForeignKey(
+        OutfitCard,
+        verbose_name="Карта-наряд",
+        on_delete=models.CASCADE,
+        related_name="used_equipment_records",
+        help_text="Карта-наряд, при выполнении которой использовался прибор/инструмент",
+    )
+    equipment = models.ForeignKey(
+        MaintenanceEquipment,
+        verbose_name="Оборудование / прибор",
+        on_delete=models.PROTECT,
+        related_name="outfit_usages",
+        help_text="Использованная единица оборудования из реестра",
+    )
+    equipment_name = models.CharField(
+        verbose_name="Наименование (снимок)",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Наименование инструмента на дату проведения ТО",
+    )
+    part_number = models.CharField(
+        verbose_name="P/N (снимок)",
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    serial_number = models.CharField(
+        verbose_name="S/N (снимок)",
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    inventory_number = models.CharField(
+        verbose_name="Инв. № (снимок)",
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    marking_code = models.CharField(
+        verbose_name="Код маркировки (снимок)",
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    equipment_type = models.CharField(
+        verbose_name="Категория (снимок)",
+        max_length=30,
+        blank=True,
+        default="",
+    )
+    verification_type = models.CharField(
+        verbose_name="Вид контроля (снимок)",
+        max_length=30,
+        blank=True,
+        default="",
+    )
+    last_verification_date = models.DateField(
+        verbose_name="Дата поверки (снимок)",
+        null=True,
+        blank=True,
+    )
+    next_verification_date = models.DateField(
+        verbose_name="Действительно до (снимок)",
+        null=True,
+        blank=True,
+    )
+    arshin_number = models.CharField(
+        verbose_name="ФГИС АРШИН (снимок)",
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    is_valid_at_usage = models.BooleanField(
+        verbose_name="Годен на момент применения",
+        default=True,
+        help_text="Флаг пригодности прибора на дату проведения ТО",
+    )
+    validation_message = models.CharField(
+        verbose_name="Результат проверки метрологии",
+        max_length=255,
+        blank=True,
+        default="",
+    )
+    attached_by = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Специалист, зафиксировавший применение",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="attached_equipment_usages",
+    )
+    attached_at = models.DateTimeField(verbose_name="Дата и время фиксации", auto_now_add=True)
+    notes = models.CharField(
+        verbose_name="Примечания",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Этап или технологическая операция применения инструмента",
+    )
+
+    def __str__(self) -> str:
+        card_num = self.outfit_card.outfit_card_number or f"#{self.outfit_card_id}"
+        return f"{self.equipment_name or self.equipment.name} в наряде {card_num}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Фиксирует неизменяемый снимок метрологических реквизитов оборудования на момент добавления в наряд."""
+        if self.equipment and not self.equipment_name:
+            eq = self.equipment
+            self.equipment_name = eq.name
+            self.part_number = eq.part_number
+            self.serial_number = eq.serial_number
+            self.inventory_number = eq.inventory_number
+            self.marking_code = eq.marking_code
+            self.equipment_type = eq.equipment_type
+            self.verification_type = eq.verification_type
+            self.last_verification_date = eq.last_verification_date
+            self.next_verification_date = eq.next_verification_date
+            self.arshin_number = eq.arshin_verification_number
+
+            target_date = (
+                self.outfit_card.outfit_card_date_end
+                or self.outfit_card.outfit_card_date
+                or timezone.now().date()
+            ) if self.outfit_card else timezone.now().date()
+
+            is_valid, reason = eq.can_be_used_for_maintenance(target_date)
+            self.is_valid_at_usage = is_valid
+            self.validation_message = reason
+
+        super().save(*args, **kwargs)
 
 
 class CompanyMaintenanceCertificate(models.Model):

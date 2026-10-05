@@ -1340,6 +1340,16 @@ UNFOLD = {
                         "link": reverse_lazy("admin:hrdepartment_app_outfitcardcomponent_changelist"),
                     },
                     {
+                        "title": _("Оборудование и инструмент ТО (ФАП-145)"),
+                        "icon": "construction",
+                        "link": reverse_lazy("admin:hrdepartment_app_maintenanceequipment_changelist"),
+                    },
+                    {
+                        "title": _("Поверки оборудования (102-ФЗ)"),
+                        "icon": "straighten",
+                        "link": reverse_lazy("admin:hrdepartment_app_equipmentverificationrecord_changelist"),
+                    },
+                    {
                         "title": _("Учебные подразделения"),
                         "icon": "school",
                         "link": reverse_lazy("admin:hrdepartment_app_trainingunit_changelist"),
@@ -1803,6 +1813,8 @@ UNFOLD = {
                 "hrdepartment_app.outfitcardcomponent",
                 "hrdepartment_app.companymaintenancecertificate",
                 "hrdepartment_app.maintenancereleasecertificate",
+                "hrdepartment_app.maintenanceequipment",
+                "hrdepartment_app.equipmentverificationrecord",
                 "hrdepartment_app.trainingunit",
                 "hrdepartment_app.trainingprogram",
                 "hrdepartment_app.studentagreement",

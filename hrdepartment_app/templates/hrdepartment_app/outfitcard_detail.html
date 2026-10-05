@@ -419,6 +419,11 @@
                                     <div class="attr-value">
                                         {% if object.certifying_staff %}
                                             <i class="bx bx-user-check text-success me-1"></i>{{ object.certifying_staff|FIO_format }}
+                                            {% if object.certifying_staff.maintenance_staff_certificate %}
+                                                <div class="small text-muted mt-1">
+                                                    <i class="bx bx-id-card me-1"></i>Свидетельство: <span class="font-weight-semibold text-dark">{{ object.certifying_staff.maintenance_staff_certificate }}</span>
+                                                </div>
+                                            {% endif %}
                                         {% else %}
                                             —
                                         {% endif %}
@@ -500,6 +505,60 @@
                                 </div>
                             </div>
                         {% endif %}
+
+                        <!-- Метрологический учет оборудования и инструмента (ФАП-145, пп. 19-25) -->
+                        <div class="col-12">
+                            <div class="card border border-light shadow-none bg-light p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                    <div class="font-weight-bold text-dark">
+                                        <i class="bx bx-wrench text-primary me-1"></i>Использованное оборудование, приборы и инструмент (ФАП-145, пп. 19–25)
+                                    </div>
+                                    <span class="badge bg-primary text-white">Всего: {{ object.used_equipment_records.count }} ед.</span>
+                                </div>
+                                {% if object.used_equipment_records.all %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered bg-white mb-0 align-middle">
+                                            <thead class="table-light small text-muted">
+                                                <tr>
+                                                    <th>Наименование оборудования</th>
+                                                    <th>P/N / Модель</th>
+                                                    <th>S/N (заводской)</th>
+                                                    <th>Код маркировки</th>
+                                                    <th>Вид контроля</th>
+                                                    <th>Срок поверки</th>
+                                                    <th>АРШИН / Документ</th>
+                                                    <th>Статус годности</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="small">
+                                                {% for usage in object.used_equipment_records.all %}
+                                                    <tr>
+                                                        <td class="font-weight-semibold">{{ usage.equipment_name|default:usage.equipment.name }}</td>
+                                                        <td>{{ usage.part_number|default:"—" }}</td>
+                                                        <td class="font-monospace">{{ usage.serial_number|default:"—" }}</td>
+                                                        <td><span class="badge bg-light text-dark border">{{ usage.marking_code|default:"—" }}</span></td>
+                                                        <td>{{ usage.get_verification_type_display|default:usage.verification_type|default:"—" }}</td>
+                                                        <td>{{ usage.next_verification_date|date:"d.m.Y"|default:"Бессрочно" }}</td>
+                                                        <td class="font-monospace small">{{ usage.arshin_number|default:"—" }}</td>
+                                                        <td>
+                                                            {% if usage.is_valid_at_usage %}
+                                                                <span class="badge bg-success text-white"><i class="bx bx-check me-1"></i>Годен к ТО</span>
+                                                            {% else %}
+                                                                <span class="badge bg-danger text-white" title="{{ usage.validation_message }}"><i class="bx bx-x me-1"></i>Не годен</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted small py-1">
+                                        <i class="bx bx-info-circle me-1"></i>В карте-наряде не зафиксировано использование контрольно-поверочной аппаратуры или специального инструмента.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
 
                     {% if object.scan_document %}

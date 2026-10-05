@@ -52,6 +52,12 @@ from hrdepartment_app.models import (
     OutfitCardComponent,
     CompanyMaintenanceCertificate,
     MaintenanceReleaseCertificate,
+    MaintenanceEquipment,
+    EquipmentVerificationRecord,
+    OutfitCardEquipmentUsage,
+    EquipmentType,
+    EquipmentOperationalStatus,
+    EquipmentVerificationType,
 )
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
@@ -212,6 +218,29 @@ class OutfitCardComponentInline(TabularInline):
     )
 
 
+class OutfitCardEquipmentUsageInline(TabularInline):
+    """Инлайн использованного оборудования и инструмента в карте-наряде (ФАП-145, пп. 19-25)."""
+
+    model = OutfitCardEquipmentUsage
+    extra = 0
+    autocomplete_fields = ["equipment"]
+    readonly_fields = (
+        "part_number",
+        "serial_number",
+        "marking_code",
+        "is_valid_at_usage",
+        "validation_message",
+        "attached_at",
+    )
+    fields = (
+        "equipment",
+        "serial_number",
+        "is_valid_at_usage",
+        "validation_message",
+        "notes",
+    )
+
+
 @admin.register(OutfitCard)
 class OutfitCardAdmin(ActiveUsersFilterMixin, ModelAdmin):
     """Администрирование карт нарядов на ТО."""
@@ -222,7 +251,7 @@ class OutfitCardAdmin(ActiveUsersFilterMixin, ModelAdmin):
         ("outfit_card_date", RangeDateFilter),
     )
     search_fields = ["outfit_card_number"]
-    inlines = [OutfitCardComponentInline]
+    inlines = [OutfitCardComponentInline, OutfitCardEquipmentUsageInline]
     compressed_fields = True
     warn_unsaved_form = True
 
@@ -538,7 +567,183 @@ class MaintenanceReleaseCertificateAdmin(ActiveUsersFilterMixin, ModelAdmin):
     def display_staff(self, obj: MaintenanceReleaseCertificate) -> str:
         """ФИО и номер бессрочного свидетельства специалиста."""
         lic = f" [{obj.certifying_staff_license}]" if obj.certifying_staff_license else ""
-        return f"{obj.certifying_staff_name}{lic}"
+class EquipmentVerificationRecordInline(TabularInline):
+    """Инлайн записей о проведенных поверках и калибровках прибора."""
+
+    model = EquipmentVerificationRecord
+    extra = 0
+    fields = (
+        "verification_type",
+        "verification_date",
+        "valid_until",
+        "arshin_number",
+        "organization",
+        "result_serviceable",
+        "certificate_scan",
+    )
+
+
+@admin.register(MaintenanceEquipment)
+class MaintenanceEquipmentAdmin(ActiveUsersFilterMixin, ModelAdmin):
+    """Администрирование реестра оборудования, приборов, КПА и специнструмента (ФАП-145, пп. 19-25)."""
+
+    list_display = (
+        "display_eq_header",
+        "equipment_type",
+        "display_operational_status",
+        "display_metrology_badge",
+        "next_verification_date",
+        "location",
+        "display_responsible",
+    )
+    list_filter = (
+        "operational_status",
+        "equipment_type",
+        "verification_type",
+        ("next_verification_date", RangeDateFilter),
+        "production_place",
+    )
+    search_fields = [
+        "name",
+        "part_number",
+        "serial_number",
+        "inventory_number",
+        "marking_code",
+        "arshin_verification_number",
+        "location",
+    ]
+    autocomplete_fields = ["applicable_aircraft_types", "production_place", "responsible_person"]
+    readonly_fields = ("created_at", "updated_at")
+    inlines = [EquipmentVerificationRecordInline]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    fieldsets = (
+        (
+            "1. Идентификация оборудования (ФАП-145, пп. 22–23)",
+            {
+                "fields": (
+                    "name",
+                    "equipment_type",
+                    "part_number",
+                    "serial_number",
+                    "inventory_number",
+                    "marking_code",
+                    "applicable_aircraft_types",
+                )
+            },
+        ),
+        (
+            "2. Физическое состояние и хранение (ФАП-145, пп. 24–25)",
+            {
+                "fields": (
+                    "operational_status",
+                    "location",
+                    "production_place",
+                    "responsible_person",
+                )
+            },
+        ),
+        (
+            "3. Метрологический учет и поверка (102-ФЗ, ФАП-145, пп. 19–20)",
+            {
+                "fields": (
+                    "verification_type",
+                    "last_verification_date",
+                    "next_verification_date",
+                    ("interval_value", "interval_unit"),
+                    "interval_source",
+                    "arshin_verification_number",
+                    "verification_organization",
+                    "certificate_scan",
+                )
+            },
+        ),
+        (
+            "4. Служебная информация и примечания",
+            {
+                "classes": ("collapse",),
+                "fields": ("notes", ("created_at", "updated_at")),
+            },
+        ),
+    )
+
+    @display(description="Оборудование / Инструмент", header=True)
+    def display_eq_header(self, obj: MaintenanceEquipment) -> Tuple[str, str]:
+        """Возвращает наименование и серийный/чертежный номер."""
+        ident = f"S/N: {obj.serial_number or 'б/н'} | P/N: {obj.part_number or '—'}"
+        return obj.name, ident
+
+    @display(
+        description="Физический статус",
+        label={
+            EquipmentOperationalStatus.SERVICEABLE.value: "success",
+            EquipmentOperationalStatus.DEFECTIVE.value: "danger",
+            EquipmentOperationalStatus.IN_REPAIR.value: "warning",
+            EquipmentOperationalStatus.QUARANTINED.value: "danger",
+            EquipmentOperationalStatus.SCRAPPED.value: "secondary",
+        },
+    )
+    def display_operational_status(self, obj: MaintenanceEquipment) -> str:
+        """Цветной бейдж физического состояния."""
+        return obj.operational_status
+
+    @display(
+        description="Метрология",
+        label={
+            "VALID": "success",
+            "EXPIRING": "warning",
+            "EXPIRED": "danger",
+            "NOT_VERIFIED": "danger",
+            "NOT_APPLICABLE": "info",
+        },
+    )
+    def display_metrology_badge(self, obj: MaintenanceEquipment) -> str:
+        """Цветной бейдж срока поверки/калибровки."""
+        return obj.metrology_status
+
+    @admin.display(description="Ответственный")
+    def display_responsible(self, obj: MaintenanceEquipment) -> str:
+        """ФИО ответственного сотрудника."""
+        if obj.responsible_person:
+            return format_name_initials(obj.responsible_person.title)
+        return "—"
+
+
+@admin.register(EquipmentVerificationRecord)
+class EquipmentVerificationRecordAdmin(ActiveUsersFilterMixin, ModelAdmin):
+    """Администрирование журнала поверок и калибровок оборудования."""
+
+    list_display = (
+        "equipment",
+        "verification_type",
+        "verification_date",
+        "valid_until",
+        "arshin_number",
+        "organization",
+        "display_result",
+    )
+    list_filter = (
+        "verification_type",
+        "result_serviceable",
+        ("verification_date", RangeDateFilter),
+        ("valid_until", RangeDateFilter),
+    )
+    search_fields = [
+        "equipment__name",
+        "equipment__serial_number",
+        "equipment__part_number",
+        "arshin_number",
+        "organization",
+    ]
+    autocomplete_fields = ["equipment", "created_by"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Результат", boolean=True)
+    def display_result(self, obj: EquipmentVerificationRecord) -> bool:
+        """Признак годности к применению по результатам поверки."""
+        return obj.result_serviceable
 
 
 @admin.register(Medical)

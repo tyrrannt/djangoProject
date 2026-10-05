@@ -1842,6 +1842,277 @@ class MaintenanceReleaseCertificatePortalTests(TestCase):
         self.assertEqual(cert.certificate_number, card2.crs_number)
 
 
+class MaintenanceEquipmentAndReleaseServiceTests(TestCase):
+    """Тестирование метрологического учета оборудования (ФАП-145, пп. 19-25) и сервиса закрытия нарядов."""
+
+    def setUp(self):
+        """Подготовка тестовых данных."""
+        from contracts_app.models import Estate, TypeProperty
+        from hrdepartment_app.models import OutfitCard, PlaceProductionActivity
+
+        self.user = DataBaseUser.objects.create_user(
+            username="metrologist",
+            email="metro@barkol.ru",
+            password="pass",
+            first_name="Сергей",
+            last_name="Метрологов",
+            title="Метрологов С.И.",
+            maintenance_staff_certificate="Специалист ТО № 77-9988",
+        )
+        self.type_mi8 = TypeProperty.objects.create(type_property="Ми-8Т")
+        self.type_an2 = TypeProperty.objects.create(type_property="Ан-2")
+
+        self.board = Estate.objects.create(
+            registration_number="RA-24429",
+            factory_number="9904429",
+            type_property=self.type_mi8,
+            release_date=datetime.date(2015, 1, 1),
+        )
+        self.place = PlaceProductionActivity.objects.create(name="МПД Тахтамышево")
+
+        self.card = OutfitCard.objects.create(
+            outfit_card_number="127/ТО",
+            outfit_card_date=datetime.date(2026, 4, 10),
+            outfit_card_date_end=datetime.date(2026, 4, 10),
+            air_board=self.board,
+            outfit_card_place=self.place,
+            employee=self.user,
+            certifying_staff=self.user,
+            flight_hours=Decimal("750.5"),
+            other_work="Регламентные работы ТО Ф-9",
+        )
+
+        from hrdepartment_app.models import (
+            EquipmentType,
+            EquipmentOperationalStatus,
+            EquipmentVerificationType,
+            MaintenanceEquipment,
+        )
+
+        # 1. Годный динамометрический ключ
+        self.wrench = MaintenanceEquipment.objects.create(
+            name="Ключ динамометрический щелчковый",
+            equipment_type=EquipmentType.MEASURING,
+            part_number="TORQ-50-200",
+            serial_number="WR-8842",
+            inventory_number="ИНВ-00912",
+            marking_code="БАР-ИНСТР-042",
+            operational_status=EquipmentOperationalStatus.SERVICEABLE,
+            verification_type=EquipmentVerificationType.VERIFICATION,
+            last_verification_date=datetime.date(2026, 1, 15),
+            next_verification_date=datetime.date(2027, 1, 15),
+            interval_value=12,
+            interval_source="Методика поверки МИ 184-2023 / 102-ФЗ",
+            arshin_verification_number="АРШИН-2026-99120",
+            responsible_person=self.user,
+        )
+        self.wrench.applicable_aircraft_types.add(self.type_mi8)
+
+        # 2. Просроченный прибор КПА
+        self.expired_kpa = MaintenanceEquipment.objects.create(
+            name="Пульт проверки датчиков КПА-14",
+            equipment_type=EquipmentType.CONTROL_TEST,
+            part_number="KPA-14M",
+            serial_number="KPA-007",
+            operational_status=EquipmentOperationalStatus.SERVICEABLE,
+            verification_type=EquipmentVerificationType.CALIBRATION,
+            last_verification_date=datetime.date(2025, 1, 10),
+            next_verification_date=datetime.date(2026, 1, 10),  # просрочен на дату наряда (2026-04-10)
+            responsible_person=self.user,
+        )
+
+        # 3. Инструмент в изоляторе брака (п. 25 ФАП-145)
+        self.quarantined_tool = MaintenanceEquipment.objects.create(
+            name="Манометр шинный МШ-1",
+            equipment_type=EquipmentType.MEASURING,
+            part_number="MSH-10",
+            serial_number="MAN-666",
+            operational_status=EquipmentOperationalStatus.QUARANTINED,
+            verification_type=EquipmentVerificationType.VERIFICATION,
+            last_verification_date=datetime.date(2026, 1, 10),
+            next_verification_date=datetime.date(2027, 1, 10),
+            responsible_person=self.user,
+        )
+
+    def test_equipment_metrology_status_properties(self):
+        """Проверяет динамические свойства метрологического статуса и дней до поверки."""
+        self.assertEqual(self.wrench.metrology_status, "VALID")
+        self.assertTrue(self.wrench.is_metrology_valid)
+
+        is_allowed, reason = self.wrench.can_be_used_for_maintenance(datetime.date(2026, 4, 10))
+        self.assertTrue(is_allowed)
+        self.assertIn("исправно и поверено", reason)
+
+        # Проверка просроченного прибора
+        is_allowed_exp, reason_exp = self.expired_kpa.can_be_used_for_maintenance(datetime.date(2026, 4, 10))
+        self.assertFalse(is_allowed_exp)
+        self.assertIn("Срок действия поверки/калибровки истек", reason_exp)
+
+        # Проверка изолятора брака
+        is_allowed_quar, reason_quar = self.quarantined_tool.can_be_used_for_maintenance(datetime.date(2026, 4, 10))
+        self.assertFalse(is_allowed_quar)
+        self.assertIn("изоляторе брака", reason_quar)
+
+    def test_attach_equipment_creates_snapshot(self):
+        """Проверяет привязку оборудования к наряду с фиксацией исторического снимка."""
+        from hrdepartment_app.services.outfit_card_release_service import (
+            attach_equipment_to_outfit_card,
+            get_outfit_card_equipment_summary,
+        )
+
+        usage = attach_equipment_to_outfit_card(
+            outfit_card=self.card,
+            equipment=self.wrench,
+            user=self.user,
+            notes="Затяжка гаек крепления лопастей НВ",
+        )
+        self.assertEqual(usage.equipment_name, self.wrench.name)
+        self.assertEqual(usage.serial_number, "WR-8842")
+        self.assertEqual(usage.part_number, "TORQ-50-200")
+        self.assertEqual(usage.marking_code, "БАР-ИНСТР-042")
+        self.assertEqual(usage.arshin_number, "АРШИН-2026-99120")
+        self.assertTrue(usage.is_valid_at_usage)
+
+        summary = get_outfit_card_equipment_summary(self.card)
+        self.assertEqual(summary["total_count"], 1)
+        self.assertEqual(summary["valid_count"], 1)
+        self.assertEqual(summary["invalid_count"], 0)
+        self.assertTrue(summary["is_metrology_ready"])
+
+    def test_validation_blocks_outfit_card_with_expired_or_quarantined_equipment(self):
+        """Проверяет блокировку закрытия наряда при наличии просроченного оборудования."""
+        from django.core.exceptions import ValidationError
+        from hrdepartment_app.services.outfit_card_release_service import (
+            attach_equipment_to_outfit_card,
+            validate_outfit_card_for_release,
+            release_and_sign_outfit_card,
+        )
+
+        # Привязываем просроченный прибор
+        attach_equipment_to_outfit_card(self.card, self.expired_kpa, user=self.user)
+
+        # Проверка готовности к выпуску
+        is_valid, errors = validate_outfit_card_for_release(self.card)
+        self.assertFalse(is_valid)
+        self.assertTrue(any("Срок действия поверки/калибровки истек" in err for err in errors))
+
+        # Попытка транзакционного закрытия через сервис должна завершиться ValidationError
+        with self.assertRaises(ValidationError):
+            release_and_sign_outfit_card(self.card, certifying_staff=self.user)
+
+        # Попытка закрыть через model.clean() также вызывает ValidationError
+        self.card.is_signed = True
+        with self.assertRaises(ValidationError):
+            self.card.clean()
+
+    def test_equipment_verification_record_updates_equipment(self):
+        """Проверяет обновление реквизитов оборудования при регистрации новой поверки."""
+        from hrdepartment_app.models import (
+            EquipmentOperationalStatus,
+            EquipmentVerificationRecord,
+            EquipmentVerificationType,
+        )
+
+        # Прибор в карантине проходит успешную поверку
+        record = EquipmentVerificationRecord.objects.create(
+            equipment=self.quarantined_tool,
+            verification_type=EquipmentVerificationType.VERIFICATION,
+            verification_date=datetime.date(2026, 4, 1),
+            valid_until=datetime.date(2027, 4, 1),
+            arshin_number="АРШИН-НОВЫЙ-12345",
+            organization="ФБУ Томский ЦСМ",
+            result_serviceable=True,
+            created_by=self.user,
+        )
+
+        self.quarantined_tool.refresh_from_db()
+        self.assertEqual(self.quarantined_tool.last_verification_date, datetime.date(2026, 4, 1))
+        self.assertEqual(self.quarantined_tool.next_verification_date, datetime.date(2027, 4, 1))
+        self.assertEqual(self.quarantined_tool.arshin_verification_number, "АРШИН-НОВЫЙ-12345")
+        self.assertEqual(self.quarantined_tool.verification_organization, "ФБУ Томский ЦСМ")
+        self.assertEqual(self.quarantined_tool.operational_status, EquipmentOperationalStatus.SERVICEABLE)
+
+    def test_successful_release_and_sign_outfit_card_with_hash(self):
+        """Проверяет успешное подписание наряда с генерацией CRS и SHA-256 хэша."""
+        from hrdepartment_app.services.outfit_card_release_service import (
+            attach_equipment_to_outfit_card,
+            release_and_sign_outfit_card,
+        )
+
+        # Прикрепляем только годный прибор
+        attach_equipment_to_outfit_card(self.card, self.wrench, user=self.user)
+
+        certificate = release_and_sign_outfit_card(
+            outfit_card=self.card,
+            certifying_staff=self.user,
+            user_ip="192.168.1.100",
+        )
+
+        self.card.refresh_from_db()
+        self.assertTrue(self.card.is_signed)
+        self.assertIsNotNone(self.card.signed_at)
+        self.assertEqual(len(self.card.signature_hash), 64)  # 64 символа SHA-256
+        self.assertIsNotNone(certificate)
+        self.assertEqual(certificate.outfit_card, self.card)
+        self.assertEqual(certificate.certifying_staff, self.user)
+
+    def test_staff_fap145_qualification_and_6_months_validity(self):
+        """Проверяет расчет 6 месяцев допуска по результатам аттестации в testing_app."""
+        from django.utils import timezone
+        from testing_app.models import Testing, TestingGroup, TestingAssignment
+        from hrdepartment_app.services.outfit_card_release_service import get_staff_fap145_qualification_status
+
+        # Создаем мероприятие тестирования
+        testing_event = Testing.objects.create(
+            title="Периодическая проверка знаний по ФАП-145 (ТО ВС)",
+            order_number="ПР-145/26",
+            order_date=datetime.date(2026, 1, 1),
+            order_name="Приказ об аттестации ИТС",
+            start_datetime=timezone.make_aware(datetime.datetime(2026, 1, 1, 9, 0)),
+            end_datetime=timezone.make_aware(datetime.datetime(2026, 1, 31, 18, 0)),
+        )
+        group = TestingGroup.objects.create(testing=testing_event, name="Инженеры АТБ")
+
+        # Сотрудник успешно сдал тест 10 января 2026
+        exam_passed_dt = timezone.make_aware(datetime.datetime(2026, 1, 10, 14, 0))
+        assignment = TestingAssignment.objects.create(
+            testing=testing_event,
+            group=group,
+            employee=self.user,
+            assigned_job_title="Инженер по ТО ВС",
+            status=TestingAssignment.Status.PASSED,
+            passed_at=exam_passed_dt,
+            best_score=95.0,
+        )
+
+        # 1. Проверка на дату ТО 10 апреля 2026 (через 3 месяца после сдачи) -> допуск действителен (6 месяцев = до 10 июля)
+        qual_apr = get_staff_fap145_qualification_status(self.user, datetime.date(2026, 4, 10))
+        self.assertTrue(qual_apr["has_passed_exam"])
+        self.assertTrue(qual_apr["is_valid"])
+        self.assertEqual(qual_apr["valid_until"], datetime.date(2026, 7, 10))
+        self.assertEqual(qual_apr["status"], "VALID")
+        self.assertIn("Аттестован по ФАП-145", qual_apr["badge_html"])
+
+        # 2. Проверка на дату 1 августа 2026 (> 6 месяцев) -> допуск просрочен
+        qual_aug = get_staff_fap145_qualification_status(self.user, datetime.date(2026, 8, 1))
+        self.assertFalse(qual_aug["is_valid"])
+        self.assertEqual(qual_aug["status"], "EXPIRED")
+        self.assertIn("Допуск просрочен", qual_aug["badge_html"])
+
+    def test_staff_aircraft_type_mismatch_blocks_release(self):
+        """Проверяет блокировку выпуска ВС, если подтверждающий персонал не допущен к данному типу ВС."""
+        from hrdepartment_app.services.outfit_card_release_service import validate_outfit_card_for_release
+
+        # Ограничиваем допуск специалиста только самолетом Ан-2
+        self.user.allowed_aircraft_types.set([self.type_an2])
+
+        is_valid, errors = validate_outfit_card_for_release(self.card)
+        self.assertFalse(is_valid)
+        self.assertTrue(any("не имеет допуска к типу ВС" in err for err in errors))
+
+
+
+
 
 
 
