@@ -98,6 +98,7 @@ from hrdepartment_app.forms import (
     TrainingProgramQuickForm, TrainingUnitQuickForm, TrainingDebtReportForm, PowerOfAttorneyForm,
     PeriodicWorkForm, OperationalWorkForm, AircraftHoursTrackingForm, AircraftHoursImportForm,
     MaintenanceReleaseCertificateCreateForm, MaintenanceEquipmentForm, EquipmentVerificationRecordForm,
+    EquipmentTransferRequestForm, EquipmentAllocationFilterForm,
 )
 from contracts_app.models import Estate
 from hrdepartment_app.services.aircraft_maintenance_service import (
@@ -109,6 +110,7 @@ from hrdepartment_app.services.aircraft_maintenance_service import (
     import_aircraft_hours_from_csv,
 )
 from hrdepartment_app.services.crs_document_service import generate_crs_docx
+from hrdepartment_app.services.equipment_allocation import EquipmentAllocationService
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
@@ -135,6 +137,8 @@ from hrdepartment_app.models import (
     MaintenanceReleaseCertificate, CompanyMaintenanceCertificate,
     MaintenanceEquipment, EquipmentType, EquipmentOperationalStatus, EquipmentVerificationType,
     OutfitCardEquipmentUsage, EquipmentVerificationRecord,
+    EquipmentName, EquipmentTypeModel, MaintenanceWorkEquipmentRequirement,
+    EquipmentTransferRequest, EquipmentTransferStatus,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -8790,6 +8794,191 @@ class EquipmentVerificationRecordCreateView(LoginRequiredMixin, PermissionRequir
             context["target_equipment"] = MaintenanceEquipment.objects.filter(pk=eq_id).first()
         context["title"] = "Регистрация свидетельства о поверке/калибровке (102-ФЗ)"
         return context
+
+
+class EquipmentTypesByNameHTMXView(LoginRequiredMixin, View):
+    """HTMX-контроллер зависимого каскадного выбора типов/моделей СИ.
+
+    Принимает GET-параметр `name_id` (ID выбранного EquipmentName) или `name`
+    и возвращает список HTML-тегов <option> для элемента выбора типа оборудования (#id_type_model).
+    """
+
+    def get(self, request, *args, **kwargs) -> HttpResponse:
+        name_id = request.GET.get("name_id") or request.GET.get("equipment_name")
+        options = ['<option value="">--- Выберите утвержденный тип/модель СИ ---</option>']
+
+        if name_id:
+            qs = EquipmentTypeModel.objects.filter(equipment_name_id=name_id).order_by("name")
+            for item in qs:
+                options.append(
+                    f'<option value="{item.pk}" data-part="{item.part_number}" '
+                    f'data-interval="{item.default_interval_months}" '
+                    f'data-arshin="{item.arshin_type_number}">{item.name}</option>'
+                )
+        return HttpResponse("\n".join(options))
+
+
+class EquipmentAllocationDashboardView(LoginRequiredMixin, TemplateView):
+    """Интерактивный дашборд проверки готовности МПД к проведению ТО ВС (ФАП-145).
+
+    Позволяет инженерам ПТО и ведущим инженерам МПД выбрать форму ТО (ПТО / ОТО),
+    целевое место базирования и даты проведения для комплексной оценки обеспеченности
+    приборами, выявления дефицита и оперативного формирования заявок на перемещение.
+    """
+
+    template_name = "hrdepartment_app/equipment_allocation_dashboard.html"
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        form = EquipmentAllocationFilterForm(self.request.GET or None)
+
+        report = None
+        if form.is_valid():
+            work_type = form.cleaned_data["work_type"]
+            target_mpd = form.cleaned_data["target_mpd"]
+            date_start = form.cleaned_data["date_start"]
+            buffer_days = form.cleaned_data["safety_buffer_days"]
+
+            work_obj = None
+            if work_type == "periodic":
+                work_obj = form.cleaned_data.get("periodic_work")
+            else:
+                work_obj = form.cleaned_data.get("operational_work")
+
+            if work_obj and target_mpd:
+                service = EquipmentAllocationService(
+                    work_object=work_obj,
+                    target_mpd=target_mpd,
+                    target_date_start=date_start,
+                    safety_buffer_days=buffer_days,
+                )
+                report = service.calculate_allocation()
+
+        context["form"] = form
+        context["report"] = report
+        context["title"] = "Умный подбор оборудования ТО по МПД (ФАП-145)"
+        return context
+
+
+class EquipmentTransferRequestListView(LoginRequiredMixin, ListView):
+    """Реестр меж-МПД заявок на перемещение оборудования и специнструмента (ФАП-145)."""
+
+    model = EquipmentTransferRequest
+    template_name = "hrdepartment_app/equipment_transfer_list.html"
+    context_object_name = "transfers"
+
+    def get_queryset(self):
+        qs = (
+            EquipmentTransferRequest.objects.select_related(
+                "equipment",
+                "equipment__type_model",
+                "from_mpd",
+                "to_mpd",
+                "target_periodic_work",
+                "target_operational_work",
+                "created_by",
+            )
+            .order_by("-created_at")
+        )
+        status_filter = self.request.GET.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Реестр перемещений оборудования между МПД"
+        context["status_choices"] = EquipmentTransferStatus.choices
+        context["selected_status"] = self.request.GET.get("status", "")
+        return context
+
+
+class EquipmentTransferRequestCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """Создание заявки на меж-МПД перемещение инструмента под форму ТО."""
+
+    model = EquipmentTransferRequest
+    form_class = EquipmentTransferRequestForm
+    template_name = "hrdepartment_app/equipment_transfer_form.html"
+    permission_required = "hrdepartment_app.add_equipmenttransferrequest"
+
+    def has_permission(self) -> bool:
+        user = self.request.user
+        return bool(user.is_superuser or user.has_perm(self.permission_required))
+
+    def get_initial(self) -> Dict[str, Any]:
+        initial = super().get_initial()
+        eq_id = self.request.GET.get("equipment")
+        from_mpd_id = self.request.GET.get("from_mpd")
+        to_mpd_id = self.request.GET.get("to_mpd")
+        pw_id = self.request.GET.get("periodic_work")
+        ow_id = self.request.GET.get("operational_work")
+        req_date = self.request.GET.get("required_date")
+
+        if eq_id:
+            initial["equipment"] = eq_id
+        if from_mpd_id:
+            initial["from_mpd"] = from_mpd_id
+        if to_mpd_id:
+            initial["to_mpd"] = to_mpd_id
+        if pw_id:
+            initial["target_periodic_work"] = pw_id
+        if ow_id:
+            initial["target_operational_work"] = ow_id
+        if req_date:
+            try:
+                initial["required_date"] = req_date
+            except Exception:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Заявка #{self.object.pk} на перемещение прибора «{self.object.equipment.name}» "
+            f"успешно создана в статусе «{self.object.get_status_display()}»."
+        )
+        return response
+
+    def get_success_url(self) -> str:
+        return reverse("hrdepartment_app:equipment_transfer_list")
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Создание заявки на перемещение оборудования"
+        return context
+
+
+class EquipmentTransferRequestStatusUpdateView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Смена статуса заявки на меж-МПД перемещение инструмента."""
+
+    permission_required = "hrdepartment_app.change_equipmenttransferrequest"
+
+    def has_permission(self) -> bool:
+        user = self.request.user
+        return bool(user.is_superuser or user.has_perm(self.permission_required))
+
+    def post(self, request, pk: int, *args, **kwargs):
+        transfer = get_object_or_404(EquipmentTransferRequest, pk=pk)
+        new_status = request.POST.get("status")
+        tracking_number = request.POST.get("tracking_number")
+
+        if new_status and new_status in EquipmentTransferStatus.values:
+            transfer.status = new_status
+            if tracking_number is not None:
+                transfer.tracking_number = tracking_number
+            if new_status == EquipmentTransferStatus.DELIVERED:
+                transfer.equipment.production_place = transfer.to_mpd
+                transfer.equipment.save(update_fields=["production_place"])
+            elif new_status == EquipmentTransferStatus.RETURNED:
+                transfer.equipment.production_place = transfer.from_mpd
+                transfer.equipment.save(update_fields=["production_place"])
+            transfer.save()
+            messages.success(request, f"Статус заявки #{transfer.pk} обновлен: {transfer.get_status_display()}.")
+
+        return redirect(reverse("hrdepartment_app:equipment_transfer_list"))
+
 
 
 

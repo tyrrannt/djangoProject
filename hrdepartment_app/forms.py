@@ -35,7 +35,7 @@ from hrdepartment_app.models import (
     StudentAgreement, TrainingProgram, TrainingUnit, PowerOfAttorney, PeriodicWork, OperationalWork,
     AircraftHoursTracking, HoursTrackingSource, MaintenanceReleaseCertificate,
     MaintenanceEquipment, EquipmentOperationalStatus, EquipmentVerificationType, OutfitCardEquipmentUsage,
-    EquipmentVerificationRecord,
+    EquipmentVerificationRecord, EquipmentName, EquipmentTypeModel, EquipmentTransferRequest, EquipmentTransferStatus,
 )
 
 # Дата начала применения валидации
@@ -2637,6 +2637,7 @@ class MaintenanceEquipmentForm(forms.ModelForm):
     class Meta:
         model = MaintenanceEquipment
         fields = [
+            "type_model",
             "name",
             "equipment_type",
             "part_number",
@@ -2674,8 +2675,90 @@ class MaintenanceEquipmentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         """Инициализация формы со стилизацией полей виджетов через make_custom_field."""
         super().__init__(*args, **kwargs)
+        if "type_model" in self.fields:
+            self.fields["type_model"].queryset = EquipmentTypeModel.objects.select_related("equipment_name").order_by(
+                "equipment_name__name", "name"
+            )
+            self.fields["type_model"].empty_label = "--- Выберите утвержденный тип/модель СИ ---"
         for field_name, field in self.fields.items():
             make_custom_field(field)
+
+
+class EquipmentTransferRequestForm(forms.ModelForm):
+    """Форма создания и редактирования заявки на меж-МПД перемещение оборудования (ФАП-145)."""
+
+    class Meta:
+        model = EquipmentTransferRequest
+        fields = [
+            "equipment",
+            "from_mpd",
+            "to_mpd",
+            "target_periodic_work",
+            "target_operational_work",
+            "required_date",
+            "status",
+            "tracking_number",
+            "notes",
+        ]
+        widgets = {
+            "required_date": forms.DateInput(attrs={"type": "date"}),
+            "tracking_number": forms.TextInput(attrs={"placeholder": "Номер экспресс-накладной, рейс или сопроводительный документ"}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Служебные примечания для службы логистики..."}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            make_custom_field(field)
+
+
+class EquipmentAllocationFilterForm(forms.Form):
+    """Форма параметров подбора оборудования ТО на интерактивном дашборде."""
+
+    WORK_TYPE_CHOICES = (
+        ("periodic", "Периодическое ТО (ПТО)"),
+        ("operational", "Оперативное обслуживание (ОТО)"),
+    )
+
+    work_type = forms.ChoiceField(
+        label="Категория обслуживания",
+        choices=WORK_TYPE_CHOICES,
+        initial="periodic",
+    )
+    periodic_work = forms.ModelChoiceField(
+        label="Форма ПТО",
+        queryset=PeriodicWork.objects.all().select_related("air_bord_type").order_by("air_bord_type__type_property", "name"),
+        required=False,
+        empty_label="--- Выберите регламентную форму ПТО ---",
+    )
+    operational_work = forms.ModelChoiceField(
+        label="Форма ОТО",
+        queryset=OperationalWork.objects.all().select_related("air_bord_type").order_by("air_bord_type__type_property", "name"),
+        required=False,
+        empty_label="--- Выберите оперативное обслуживание ОТО ---",
+    )
+    target_mpd = forms.ModelChoiceField(
+        label="Целевое МПД проведения ТО",
+        queryset=PlaceProductionActivity.objects.all().order_by("name"),
+        empty_label="--- Выберите МПД проведения ТО ---",
+    )
+    date_start = forms.DateField(
+        label="Дата начала ТО",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        initial=timezone.now().date,
+    )
+    safety_buffer_days = forms.IntegerField(
+        label="Буфер надежности (дней)",
+        initial=7,
+        min_value=1,
+        max_value=90,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            make_custom_field(field)
+
 
 
 class EquipmentVerificationRecordForm(forms.ModelForm):

@@ -1,0 +1,188 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {% if object %}Редактирование заявки на перемещение №{{ object.pk }}{% else %}Создание заявки на перемещение оборудования{% endif %} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .btn-touch {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 col-xl-10 mx-auto">
+            <form class="ecommerce-form" method="post">
+                {% csrf_token %}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                {% if object %}
+                                    <i class="bx bx-edit text-primary me-2"></i>Редактирование заявки на перемещение №{{ object.pk }}
+                                {% else %}
+                                    <i class="bx bx-transfer-alt text-primary me-2"></i>Оформление заявки на перемещение оборудования между МПД
+                                {% endif %}
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">
+                                Логистика средств измерений и специнструмента для выполнения форм ТО ВС по пп. 19–25 ФАП-145
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{% url 'hrdepartment_app:equipment_transfer_list' %}" class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> К списку заявок
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <!-- Секция 1: Оборудование и точки маршрута -->
+                            <div class="col-12 border-bottom pb-2 mb-2">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-wrench text-primary me-2"></i>1. Единица оборудования и маршрут доставки
+                                </h5>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.equipment.id_for_label }}">
+                                    Единица оборудования ТО <span class="text-danger">*</span>
+                                </label>
+                                {{ form.equipment }}
+                                <small class="form-text text-muted">Выберите конкретный прибор или инструмент (по S/N и инвентарному номеру)</small>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.from_mpd.id_for_label }}">
+                                    <i class="bx bx-log-out-circle text-warning me-1"></i>МПД отправления (донор) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.from_mpd }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.to_mpd.id_for_label }}">
+                                    <i class="bx bx-log-in-circle text-success me-1"></i>МПД назначения (получатель) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.to_mpd }}
+                            </div>
+
+                            <!-- Секция 2: Привязка к форме ТО и сроки -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-calendar-event text-primary me-2"></i>2. Целевое назначение и сроки
+                                </h5>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.target_periodic_work.id_for_label }}">
+                                    Целевая форма ПТО
+                                </label>
+                                {{ form.target_periodic_work }}
+                                <small class="form-text text-muted">Если перемещение под периодическое ТО</small>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.target_operational_work.id_for_label }}">
+                                    Целевая форма ОТО
+                                </label>
+                                {{ form.target_operational_work }}
+                                <small class="form-text text-muted">Если перемещение под оперативное ТО</small>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.required_date.id_for_label }}">
+                                    Требуемая дата доставки <span class="text-danger">*</span>
+                                </label>
+                                {{ form.required_date }}
+                                <small class="form-text text-muted">Дата начала регламентных работ на МПД</small>
+                            </div>
+
+                            <!-- Секция 3: Статус и логистические реквизиты -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-package text-primary me-2"></i>3. Логистические реквизиты
+                                </h5>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.status.id_for_label }}">
+                                    Статус заявки <span class="text-danger">*</span>
+                                </label>
+                                {{ form.status }}
+                            </div>
+
+                            <div class="col-12 col-md-8">
+                                <label class="form-label" for="{{ form.tracking_number.id_for_label }}">
+                                    Номер накладной / авиарейса / трек-номер
+                                </label>
+                                {{ form.tracking_number }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.notes.id_for_label }}">
+                                    Служебные примечания и условия транспортировки
+                                </label>
+                                {{ form.notes }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Панель действий -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit" class="btn btn-success btn-touch font-weight-semibold">
+                                    <i class="bx bx-check-circle text-4 me-2"></i> Сохранить заявку
+                                </button>
+                                <a href="{% url 'hrdepartment_app:equipment_transfer_list' %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                            </div>
+                            <div>
+                                <a href="{% url 'hrdepartment_app:equipment_allocation_dashboard' %}"
+                                   class="btn btn-outline-primary btn-touch font-weight-semibold">
+                                    <i class="bx bx-radar text-4 me-2"></i> Вернуться к дашборду подбора
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

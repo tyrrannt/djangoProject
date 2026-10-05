@@ -1340,6 +1340,16 @@ UNFOLD = {
                         "link": reverse_lazy("admin:hrdepartment_app_outfitcardcomponent_changelist"),
                     },
                     {
+                        "title": _("Каталог наименований СИ и инструмента"),
+                        "icon": "inventory_2",
+                        "link": reverse_lazy("admin:hrdepartment_app_equipmentname_changelist"),
+                    },
+                    {
+                        "title": _("Типы и модели СИ (ФАП-145)"),
+                        "icon": "tune",
+                        "link": reverse_lazy("admin:hrdepartment_app_equipmenttypemodel_changelist"),
+                    },
+                    {
                         "title": _("Оборудование и инструмент ТО (ФАП-145)"),
                         "icon": "construction",
                         "link": reverse_lazy("admin:hrdepartment_app_maintenanceequipment_changelist"),
@@ -1348,6 +1358,16 @@ UNFOLD = {
                         "title": _("Поверки оборудования (102-ФЗ)"),
                         "icon": "straighten",
                         "link": reverse_lazy("admin:hrdepartment_app_equipmentverificationrecord_changelist"),
+                    },
+                    {
+                        "title": _("Табель оснащения работ ТО"),
+                        "icon": "checklist_rtl",
+                        "link": reverse_lazy("admin:hrdepartment_app_maintenanceworkequipmentrequirement_changelist"),
+                    },
+                    {
+                        "title": _("Перемещения оборудования (МПД)"),
+                        "icon": "local_shipping",
+                        "link": reverse_lazy("admin:hrdepartment_app_equipmenttransferrequest_changelist"),
                     },
                     {
                         "title": _("Учебные подразделения"),
@@ -1813,8 +1833,12 @@ UNFOLD = {
                 "hrdepartment_app.outfitcardcomponent",
                 "hrdepartment_app.companymaintenancecertificate",
                 "hrdepartment_app.maintenancereleasecertificate",
+                "hrdepartment_app.equipmentname",
+                "hrdepartment_app.equipmenttypemodel",
                 "hrdepartment_app.maintenanceequipment",
                 "hrdepartment_app.equipmentverificationrecord",
+                "hrdepartment_app.maintenanceworkequipmentrequirement",
+                "hrdepartment_app.equipmenttransferrequest",
                 "hrdepartment_app.trainingunit",
                 "hrdepartment_app.trainingprogram",
                 "hrdepartment_app.studentagreement",

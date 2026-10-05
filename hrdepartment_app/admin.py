@@ -58,6 +58,11 @@ from hrdepartment_app.models import (
     EquipmentType,
     EquipmentOperationalStatus,
     EquipmentVerificationType,
+    EquipmentName,
+    EquipmentTypeModel,
+    MaintenanceWorkEquipmentRequirement,
+    EquipmentTransferRequest,
+    EquipmentTransferStatus,
 )
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
@@ -567,6 +572,67 @@ class MaintenanceReleaseCertificateAdmin(ActiveUsersFilterMixin, ModelAdmin):
     def display_staff(self, obj: MaintenanceReleaseCertificate) -> str:
         """ФИО и номер бессрочного свидетельства специалиста."""
         lic = f" [{obj.certifying_staff_license}]" if obj.certifying_staff_license else ""
+        return f"{obj.certifying_staff.title}{lic}" if obj.certifying_staff else f"—{lic}"
+
+
+class EquipmentTypeModelInline(TabularInline):
+    """Инлайн-редактирование типов/моделей внутри карточки наименования оборудования."""
+
+    model = EquipmentTypeModel
+    extra = 0
+    fields = (
+        "name",
+        "part_number",
+        "arshin_type_number",
+        "measurement_range",
+        "accuracy_class",
+        "default_interval_months",
+    )
+    show_change_link = True
+
+
+@admin.register(EquipmentName)
+class EquipmentNameAdmin(ModelAdmin):
+    """Администрирование каталога обобщенных наименований оборудования и СИ (ФАП-145)."""
+
+    list_display = ("name", "category", "is_measuring_instrument", "display_types_count")
+    list_filter = ("category", "is_measuring_instrument")
+    search_fields = ["name", "description"]
+    inlines = [EquipmentTypeModelInline]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Кол-во типов/моделей")
+    def display_types_count(self, obj: EquipmentName) -> int:
+        return obj.type_models.count()
+
+
+@admin.register(EquipmentTypeModel)
+class EquipmentTypeModelAdmin(ModelAdmin):
+    """Администрирование утвержденных типов и моделей оборудования/СИ (ФАП-145, 102-ФЗ)."""
+
+    list_display = (
+        "name",
+        "equipment_name",
+        "part_number",
+        "arshin_type_number",
+        "measurement_range",
+        "accuracy_class",
+        "default_interval_months",
+        "display_aircraft_types",
+    )
+    list_filter = ("equipment_name", "default_interval_months")
+    search_fields = ["name", "part_number", "arshin_type_number", "equipment_name__name"]
+    autocomplete_fields = ["equipment_name", "applicable_aircraft_types"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Типы ВС")
+    def display_aircraft_types(self, obj: EquipmentTypeModel) -> str:
+        types = list(obj.applicable_aircraft_types.values_list("type_property", flat=True))
+        return ", ".join(types) if types else "Все типы ВС"
+
+
 class EquipmentVerificationRecordInline(TabularInline):
     """Инлайн записей о проведенных поверках и калибровках прибора."""
 
@@ -605,6 +671,8 @@ class MaintenanceEquipmentAdmin(ActiveUsersFilterMixin, ModelAdmin):
     )
     search_fields = [
         "name",
+        "type_model__name",
+        "type_model__equipment_name__name",
         "part_number",
         "serial_number",
         "inventory_number",
@@ -612,7 +680,7 @@ class MaintenanceEquipmentAdmin(ActiveUsersFilterMixin, ModelAdmin):
         "arshin_verification_number",
         "location",
     ]
-    autocomplete_fields = ["applicable_aircraft_types", "production_place", "responsible_person"]
+    autocomplete_fields = ["type_model", "applicable_aircraft_types", "production_place", "responsible_person"]
     readonly_fields = ("created_at", "updated_at")
     inlines = [EquipmentVerificationRecordInline]
     compressed_fields = True
@@ -623,6 +691,7 @@ class MaintenanceEquipmentAdmin(ActiveUsersFilterMixin, ModelAdmin):
             "1. Идентификация оборудования (ФАП-145, пп. 22–23)",
             {
                 "fields": (
+                    "type_model",
                     "name",
                     "equipment_type",
                     "part_number",
@@ -708,6 +777,111 @@ class MaintenanceEquipmentAdmin(ActiveUsersFilterMixin, ModelAdmin):
         if obj.responsible_person:
             return format_name_initials(obj.responsible_person.title)
         return "—"
+
+
+@admin.register(MaintenanceWorkEquipmentRequirement)
+class MaintenanceWorkEquipmentRequirementAdmin(ModelAdmin):
+    """Администрирование табелей обязательного оснащения работ ТО инструментом (ФАП-145)."""
+
+    list_display = (
+        "display_work_target",
+        "equipment_name",
+        "required_type",
+        "quantity",
+        "display_mandatory_badge",
+        "task_reference",
+    )
+    list_filter = ("is_mandatory", "equipment_name")
+    search_fields = [
+        "equipment_name__name",
+        "required_type__name",
+        "task_reference",
+        "periodic_work__name",
+        "periodic_work__code",
+        "operational_work__name",
+        "operational_work__code",
+    ]
+    autocomplete_fields = [
+        "periodic_work",
+        "operational_work",
+        "equipment_name",
+        "required_type",
+        "allowed_substitutes",
+    ]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Работа ТО (ПТО / ОТО)")
+    def display_work_target(self, obj: MaintenanceWorkEquipmentRequirement) -> str:
+        if obj.periodic_work:
+            return f"ПТО: {obj.periodic_work.name} ({obj.periodic_work.code or 'б/к'})"
+        if obj.operational_work:
+            return f"ОТО: {obj.operational_work.name} ({obj.operational_work.code or 'б/к'})"
+        return "Не привязано"
+
+    @display(description="Обязательность", label=True)
+    def display_mandatory_badge(self, obj: MaintenanceWorkEquipmentRequirement) -> Tuple[str, str]:
+        if obj.is_mandatory:
+            return "Критически обязателен", "danger"
+        return "Рекомендованный", "info"
+
+
+@admin.register(EquipmentTransferRequest)
+class EquipmentTransferRequestAdmin(ModelAdmin):
+    """Администрирование заявок на перемещение оборудования между МПД (ФАП-145)."""
+
+    list_display = (
+        "display_id_header",
+        "equipment",
+        "display_route",
+        "required_date",
+        "display_status_badge",
+        "tracking_number",
+        "created_by",
+    )
+    list_filter = ("status", "from_mpd", "to_mpd", ("required_date", RangeDateFilter))
+    search_fields = [
+        "equipment__name",
+        "equipment__serial_number",
+        "tracking_number",
+        "notes",
+        "from_mpd__name",
+        "to_mpd__name",
+    ]
+    autocomplete_fields = [
+        "equipment",
+        "from_mpd",
+        "to_mpd",
+        "target_periodic_work",
+        "target_operational_work",
+        "created_by",
+    ]
+    readonly_fields = ("created_at", "updated_at")
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Заявка")
+    def display_id_header(self, obj: EquipmentTransferRequest) -> str:
+        return f"Заявка #{obj.pk}"
+
+    @display(description="Маршрут перемещения")
+    def display_route(self, obj: EquipmentTransferRequest) -> str:
+        from_name = obj.from_mpd.short_name or obj.from_mpd.name
+        to_name = obj.to_mpd.short_name or obj.to_mpd.name
+        return f"{from_name} ➔ {to_name}"
+
+    @display(description="Статус логистики", label=True)
+    def display_status_badge(self, obj: EquipmentTransferRequest) -> Tuple[str, str]:
+        status_colors = {
+            EquipmentTransferStatus.DRAFT: ("Черновик", "secondary"),
+            EquipmentTransferStatus.REQUESTED: ("Запрошено", "warning"),
+            EquipmentTransferStatus.IN_TRANSIT: ("В пути", "info"),
+            EquipmentTransferStatus.DELIVERED: ("Доставлено", "success"),
+            EquipmentTransferStatus.RETURNED: ("Возвращено", "dark"),
+            EquipmentTransferStatus.CANCELED: ("Отменено", "danger"),
+        }
+        return status_colors.get(obj.status, (obj.get_status_display(), "info"))
+
 
 
 @admin.register(EquipmentVerificationRecord)
@@ -1303,6 +1477,16 @@ class OrderDescriptionAdmin(ActiveUsersFilterMixin, ModelAdmin):
         return self.add_fieldsets
 
 
+class MaintenanceWorkEquipmentRequirementInline(TabularInline):
+    """Инлайн табеля оснащения обязательным оборудованием и СИ."""
+
+    model = MaintenanceWorkEquipmentRequirement
+    extra = 0
+    fields = ("equipment_name", "required_type", "quantity", "is_mandatory", "task_reference")
+    autocomplete_fields = ["equipment_name", "required_type"]
+    show_change_link = True
+
+
 def copy_operational_work(modeladmin, request, queryset):
     for operational_work in queryset:
         operational_work.pk = None
@@ -1319,6 +1503,7 @@ class OperationalWorkAdmin(ActiveUsersFilterMixin, ModelAdmin):
     list_filter = ("air_bord_type",)
     search_fields = ["name", "code"]
     actions = [copy_operational_work]
+    inlines = [MaintenanceWorkEquipmentRequirementInline]
     compressed_fields = True
     warn_unsaved_form = True
 
@@ -1356,6 +1541,7 @@ class PeriodicWorkAdmin(ActiveUsersFilterMixin, ModelAdmin):
     list_filter = ("air_bord_type", "color")
     search_fields = ["name", "code"]
     actions = [copy_periodic_work]
+    inlines = [MaintenanceWorkEquipmentRequirementInline]
     compressed_fields = True
     warn_unsaved_form = True
 

@@ -79,6 +79,14 @@
                                 </h5>
                             </div>
 
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.type_model.id_for_label }}">
+                                    <i class="bx bx-bookmark-alt text-primary me-1"></i>Утвержденный тип / модель СИ (Справочник НСИ / ФГИС «АРШИН»)
+                                </label>
+                                {{ form.type_model }}
+                                <small class="form-text text-muted">При выборе утвержденного типа/модели из каталога НСИ наименование и заводские параметры подставляются автоматически</small>
+                            </div>
+
                             <div class="col-12 col-md-8">
                                 <label class="form-label" for="{{ form.name.id_for_label }}">Наименование прибора / инструмента <span class="text-danger">*</span></label>
                                 {{ form.name }}
@@ -236,3 +244,23 @@
         </div>
     </div>
 {% endblock %}
+
+{% block custom_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const typeModelSelect = document.getElementById('id_type_model');
+        const nameInput = document.getElementById('id_name');
+        if (typeModelSelect && nameInput) {
+            typeModelSelect.addEventListener('change', function () {
+                const selectedText = typeModelSelect.options[typeModelSelect.selectedIndex]?.text;
+                if (selectedText && selectedText.indexOf('---') === -1) {
+                    if (!nameInput.value || nameInput.value.trim() === '') {
+                        nameInput.value = selectedText.trim();
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+

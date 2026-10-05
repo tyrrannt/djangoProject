@@ -3802,6 +3802,152 @@ class IntervalUnit(models.TextChoices):
     YEARS = "years", "лет"
 
 
+class EquipmentName(models.Model):
+    """Справочник обобщенных наименований оборудования, СИ и инструмента (ФАП-145).
+
+    Представляет верхний (1-й) уровень нормативно-справочной классификации приборов,
+    средств измерений по 102-ФЗ, контрольно-поверочной аппаратуры (КПА) и специнструмента.
+    Объединяет различные марки и модификации под единым родовым наименованием
+    (например, 'Ареометр', 'Амперметр', 'Манометр', 'Динамометрический ключ').
+
+    Attributes:
+        name (str): Нормализованное наименование оборудования / СИ.
+        category (str): Категория по классификации п. 22 ФАП-145 (из EquipmentType).
+        is_measuring_instrument (bool): Признак средства измерений по 102-ФЗ.
+        description (str): Описание, правила эксплуатации и условия хранения.
+        created_at (datetime): Дата и время создания записи.
+        updated_at (datetime): Дата и время последнего обновления.
+    """
+
+    class Meta:
+        verbose_name = "Наименование оборудования и СИ"
+        verbose_name_plural = "Справочник наименований оборудования и СИ (ФАП-145)"
+        ordering = ("name",)
+
+    name = models.CharField(
+        verbose_name="Наименование оборудования / СИ",
+        max_length=150,
+        unique=True,
+        db_index=True,
+        help_text="Обобщенное наименование прибора или инструмента (напр. 'Ареометр', 'Амперметр')",
+    )
+    category = models.CharField(
+        verbose_name="Категория оборудования",
+        max_length=30,
+        choices=EquipmentType.choices,
+        default=EquipmentType.SPECIAL_TOOL,
+        db_index=True,
+        help_text="Категория оборудования по классификации п. 22 ФАП-145",
+    )
+    is_measuring_instrument = models.BooleanField(
+        verbose_name="СИ по 102-ФЗ",
+        default=True,
+        help_text="Признак отнесения к средствам измерений, требующим поверки/калибровки",
+    )
+    description = models.TextField(
+        verbose_name="Описание и правила хранения",
+        blank=True,
+        default="",
+        help_text="Общие требования к условиям применения, консервации и хранения",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class EquipmentTypeModel(models.Model):
+    """Справочник типов, марок и моделей оборудования и СИ (ФАП-145, 102-ФЗ).
+
+    Представляет средний (2-й) уровень классификации: конкретная конструктивная марка,
+    модель или тип средства измерения (например, для Ареометра — 'АЭ-1', 'АНТ-2', 'АЭТ-1';
+    для Амперметра — 'М42300', 'М42100'). Хранит нормативные метрологические свойства,
+    номер Государственного реестра утвержденных типов СИ (ФГИС «АРШИН») и применимость к типам ВС.
+
+    Attributes:
+        equipment_name (EquipmentName): Родовое наименование прибора.
+        name (str): Шифр, марка или модель (например, 'АЭ-1', 'М42300').
+        part_number (str): Чертежный номер / Part Number (P/N) по каталогу изготовителя.
+        arshin_type_number (str): Номер типа в Государственном реестре СИ РФ (ФГИС «АРШИН»).
+        measurement_range (str): Диапазон измерений (напр. '1000...1060 кг/м³', '0...30 В').
+        accuracy_class (str): Класс точности или предел допускаемой погрешности.
+        default_interval_months (int): Базовый межповерочный интервал в месяцах.
+        applicable_aircraft_types (ManyToManyField): Совместимость с типами ВС (пусто = универсально).
+        created_at (datetime): Дата и время создания записи.
+        updated_at (datetime): Дата и время последнего обновления.
+    """
+
+    class Meta:
+        verbose_name = "Тип / модель оборудования и СИ"
+        verbose_name_plural = "Справочник типов и моделей оборудования и СИ (ФАП-145)"
+        ordering = ("equipment_name__name", "name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["equipment_name", "name"],
+                name="uq_equipment_name_type_model",
+            )
+        ]
+
+    equipment_name = models.ForeignKey(
+        EquipmentName,
+        verbose_name="Наименование оборудования",
+        on_delete=models.PROTECT,
+        related_name="type_models",
+        help_text="Обобщенное наименование прибора/инструмента",
+    )
+    name = models.CharField(
+        verbose_name="Тип / модель СИ",
+        max_length=100,
+        help_text="Обозначение типа/модели (напр. 'АЭ-1', 'АНТ-2', 'М42300')",
+    )
+    part_number = models.CharField(
+        verbose_name="Чертежный номер / модель (P/N)",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="P/N по каталогу изготовителя или ГОСТ",
+    )
+    arshin_type_number = models.CharField(
+        verbose_name="Номер Госреестра СИ РФ",
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Номер записи типа СИ в реестре ФГИС «АРШИН»",
+    )
+    measurement_range = models.CharField(
+        verbose_name="Диапазон измерений",
+        max_length=150,
+        blank=True,
+        default="",
+        help_text="Диапазон измерений (напр. '1000...1060 кг/м³', '0...100 А')",
+    )
+    accuracy_class = models.CharField(
+        verbose_name="Класс точности / Погрешность",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Класс точности по ГОСТ или предел допускаемой погрешности",
+    )
+    default_interval_months = models.PositiveIntegerField(
+        verbose_name="Межповерочный интервал (мес.)",
+        default=12,
+        help_text="Утвержденный межповерочный интервал в месяцах по методике поверки",
+    )
+    applicable_aircraft_types = models.ManyToManyField(
+        "contracts_app.TypeProperty",
+        blank=True,
+        related_name="equipment_type_models",
+        verbose_name="Применимость к типам ВС",
+        help_text="Типы воздушных судов. Если список пуст — прибор применим ко всем типам ВС компании",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.equipment_name.name} {self.name}"
+
+
 class MaintenanceEquipment(models.Model):
     """Оборудование, приборы, КПА и специнструмент для ТО ВС (ФАП-145, пп. 19–25).
 
@@ -3852,6 +3998,15 @@ class MaintenanceEquipment(models.Model):
         verbose_name="Наименование оборудования / инструмента",
         max_length=255,
         help_text="Полное наименование оборудования, прибора или специального инструмента",
+    )
+    type_model = models.ForeignKey(
+        EquipmentTypeModel,
+        verbose_name="Тип / модель СИ",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="instances",
+        help_text="Ссылка на тип/модель из нормализованного справочника НСИ (ФАП-145)",
     )
     equipment_type = models.CharField(
         verbose_name="Категория оборудования",
@@ -4122,12 +4277,26 @@ class MaintenanceEquipment(models.Model):
             "next_verification_date": (
                 f"{self.next_verification_date:%d.%m.%Y} г." if self.next_verification_date else "—"
             ),
+            "type_model": str(self.type_model) if self.type_model else "—",
+            "type_model_id": self.type_model_id,
             "metrology_badge": status_map.get(self.metrology_status, "—"),
             "location": self.location or "—",
             "responsible_person": (
                 format_name_initials(self.responsible_person.title) if self.responsible_person else "—"
             ),
         }
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Сохраняет прибор с автоматической синхронизацией реквизитов из нормализованного типа."""
+        if self.type_model:
+            full_title = f"{self.type_model.equipment_name.name} {self.type_model.name}".strip()
+            if not self.name or self.name == "Оборудование без наименования":
+                self.name = full_title
+            if not self.part_number and self.type_model.part_number:
+                self.part_number = self.type_model.part_number
+            if not self.equipment_type and self.type_model.equipment_name.category:
+                self.equipment_type = self.type_model.equipment_name.category
+        super().save(*args, **kwargs)
 
     @property
     def verifications(self):
@@ -4444,6 +4613,247 @@ class OutfitCardEquipmentUsage(models.Model):
             self.validation_message = reason
 
         super().save(*args, **kwargs)
+
+
+class MaintenanceWorkEquipmentRequirement(models.Model):
+    """Нормативная потребность регламентных (ПТО) и оперативных (ОТО) работ в оборудовании (ФАП-145).
+
+    Формализует табель обязательного инструмента, СИ и КПА для выполнения конкретной формы ТО
+    (периодической PeriodicWork либо оперативной OperationalWork) согласно требованиям РО и РЭ ВС.
+    Определяет критичность обязательности (п. 40 ФАП-145), требуемый объем (quantity)
+    и допустимые взаимозаменяемые типы-аналоги (substitutes).
+
+    Attributes:
+        periodic_work (Optional[PeriodicWork]): Форма периодического ТО (ПТО).
+        operational_work (Optional[OperationalWork]): Форма оперативного обслуживания (ОТО).
+        equipment_name (EquipmentName): Родовое наименование требуемого инструмента / СИ.
+        required_type (Optional[EquipmentTypeModel]): Строго предписанный тип/модель СИ.
+        allowed_substitutes (ManyToManyField): Разрешенные взамен аналоги других типов/марок.
+        quantity (int): Требуемое количество единиц (шт.).
+        is_mandatory (bool): Критичность инструмента для допуска к ТО.
+        task_reference (str): Ссылка на пункт РО / регламента ТО / технологической карты.
+        created_at (datetime): Дата создания требования.
+        updated_at (datetime): Дата обновления.
+    """
+
+    class Meta:
+        verbose_name = "Требование работы ТО к оборудованию"
+        verbose_name_plural = "Табель оснащения работ ТО оборудованием (ФАП-145)"
+        ordering = ("periodic_work", "operational_work", "equipment_name__name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["periodic_work", "equipment_name", "required_type"],
+                condition=models.Q(periodic_work__isnull=False),
+                name="uq_req_periodic_work_name_type",
+            ),
+            models.UniqueConstraint(
+                fields=["operational_work", "equipment_name", "required_type"],
+                condition=models.Q(operational_work__isnull=False),
+                name="uq_req_operational_work_name_type",
+            ),
+        ]
+
+    periodic_work = models.ForeignKey(
+        PeriodicWork,
+        verbose_name="Форма периодического ТО (ПТО)",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="equipment_requirements",
+        help_text="Регламентная форма ТО (напр. 'Ф-1', '100 ч', '300 ч')",
+    )
+    operational_work = models.ForeignKey(
+        OperationalWork,
+        verbose_name="Форма оперативного ТО (ОТО)",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="equipment_requirements",
+        help_text="Оперативное обслуживание (напр. 'Встречное', 'Предполетное')",
+    )
+    equipment_name = models.ForeignKey(
+        EquipmentName,
+        verbose_name="Наименование оборудования / СИ",
+        on_delete=models.PROTECT,
+        related_name="work_requirements",
+        help_text="Обобщенное наименование прибора (напр. 'Ареометр', 'Манометр')",
+    )
+    required_type = models.ForeignKey(
+        EquipmentTypeModel,
+        verbose_name="Требуемый тип / модель (если строго)",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="required_in_works",
+        help_text="Если пусто — допускается любой исправный тип данного наименования",
+    )
+    allowed_substitutes = models.ManyToManyField(
+        EquipmentTypeModel,
+        blank=True,
+        related_name="substitute_for_requirements",
+        verbose_name="Допустимые взаимозаменяемые аналоги (типы)",
+        help_text="Список утвержденных типов СИ, которые разрешено применять взамен основного",
+    )
+    quantity = models.PositiveIntegerField(
+        verbose_name="Требуемое количество (шт.)",
+        default=1,
+        help_text="Минимальное необходимое количество исправных единиц на МПД",
+    )
+    is_mandatory = models.BooleanField(
+        verbose_name="Критически обязательный инструмент",
+        default=True,
+        help_text="Без данного инструмента выполнение ТО и выпуск ВС категорически запрещены (п. 40 ФАП-145)",
+    )
+    task_reference = models.CharField(
+        verbose_name="Пункт РО / техкарты",
+        max_length=150,
+        blank=True,
+        default="",
+        help_text="Ссылка на пункт регламента ТО или технологической карты РО",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
+
+    def __str__(self) -> str:
+        work_name = str(self.periodic_work or self.operational_work or "Без работы")
+        type_str = f" [{self.required_type.name}]" if self.required_type else ""
+        return f"{work_name} -> {self.equipment_name.name}{type_str} ({self.quantity} шт.)"
+
+    def clean(self) -> None:
+        """Валидирует взаимоисключаемость привязки к форме ТО и соответствие типа наименованию."""
+        super().clean()
+        from django.core.exceptions import ValidationError
+
+        if not bool(self.periodic_work) ^ bool(self.operational_work):
+            raise ValidationError(
+                "Требование должно быть привязано либо к форме ПТО (PeriodicWork), "
+                "либо к форме ОТО (OperationalWork) — строго к одной из них."
+            )
+        if self.required_type and self.required_type.equipment_name_id != self.equipment_name_id:
+            raise ValidationError(
+                f"Указанный тип '{self.required_type}' не относится к наименованию '{self.equipment_name}'."
+            )
+
+
+class EquipmentTransferStatus(models.TextChoices):
+    """Статусы жизненного цикла заявки на меж-МПД перемещение инструмента."""
+
+    DRAFT = "draft", "Черновик"
+    REQUESTED = "requested", "Запрошено (ожидает отправки)"
+    IN_TRANSIT = "in_transit", "В пути (отправлено с МПД-донора)"
+    DELIVERED = "delivered", "Доставлено на целевое МПД"
+    RETURNED = "returned", "Возвращено на МПД базирования"
+    CANCELED = "canceled", "Отменено"
+
+
+class EquipmentTransferRequest(models.Model):
+    """Заявка на меж-МПД перемещение оборудования и СИ под выполнение ТО ВС (ФАП-145).
+
+    Фиксирует электронную заявку на доставку приборов/инструментов с ближайших МПД-доноров
+    на целевое МПД для обеспечения комплектности формы ТО. Отслеживает маршрут,
+    требуемую дату доставки, трек-номер накладной и статус логистики.
+
+    Attributes:
+        equipment (MaintenanceEquipment): Перемещаемая единица оборудования/СИ.
+        from_mpd (PlaceProductionActivity): МПД отправления (донор).
+        to_mpd (PlaceProductionActivity): Целевое МПД (получатель).
+        target_periodic_work (Optional[PeriodicWork]): Форма ПТО, под которую запрошен инструмент.
+        target_operational_work (Optional[OperationalWork]): Форма ОТО, под которую запрошен инструмент.
+        required_date (date): Дата, к которой прибор должен прибыть на целевое МПД.
+        status (str): Статус перемещения (EquipmentTransferStatus).
+        tracking_number (str): Номер транспортной накладной / рейса / отправления.
+        notes (str): Служебные примечания и указания логисту.
+        created_by (DataBaseUser): Инициатор заявки (инженер ПТО / ведущий инженер МПД).
+        created_at (datetime): Дата и время создания заявки.
+        updated_at (datetime): Дата и время последнего обновления.
+    """
+
+    class Meta:
+        verbose_name = "Заявка на перемещение оборудования"
+        verbose_name_plural = "Реестр перемещений оборудования между МПД (ФАП-145)"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["status"], name="idx_eq_transfer_status"),
+            models.Index(fields=["required_date"], name="idx_eq_transfer_req_date"),
+        ]
+
+    equipment = models.ForeignKey(
+        MaintenanceEquipment,
+        verbose_name="Оборудование / прибор",
+        on_delete=models.PROTECT,
+        related_name="transfer_requests",
+        help_text="Конкретная единица прибора/инструмента из реестра ТО",
+    )
+    from_mpd = models.ForeignKey(
+        PlaceProductionActivity,
+        verbose_name="МПД отправления (донор)",
+        on_delete=models.PROTECT,
+        related_name="equipment_transfers_out",
+        help_text="Точка базирования, откуда перемещается прибор",
+    )
+    to_mpd = models.ForeignKey(
+        PlaceProductionActivity,
+        verbose_name="Целевое МПД (получатель)",
+        on_delete=models.PROTECT,
+        related_name="equipment_transfers_in",
+        help_text="МПД, где запланировано выполнение технического обслуживания",
+    )
+    target_periodic_work = models.ForeignKey(
+        PeriodicWork,
+        verbose_name="Форма ПТО",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="equipment_transfers",
+        help_text="Планируемая периодическая работа ТО ВС",
+    )
+    target_operational_work = models.ForeignKey(
+        OperationalWork,
+        verbose_name="Форма ОТО",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="equipment_transfers",
+        help_text="Планируемая оперативная работа ТО ВС",
+    )
+    required_date = models.DateField(
+        verbose_name="Требуемая дата доставки",
+        help_text="Планируемая дата начала ТО, к которой инструмент должен быть на месте",
+    )
+    status = models.CharField(
+        verbose_name="Статус логистики",
+        max_length=20,
+        choices=EquipmentTransferStatus.choices,
+        default=EquipmentTransferStatus.REQUESTED,
+        db_index=True,
+    )
+    tracking_number = models.CharField(
+        verbose_name="Номер накладной / трек",
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Номер экспресс-накладной, борт рейса или сопроводительного документа",
+    )
+    notes = models.TextField(
+        verbose_name="Примечания",
+        blank=True,
+        default="",
+        help_text="Служебные пометки (условия транспортировки, габариты и т.д.)",
+    )
+    created_by = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Инициатор",
+        on_delete=models.PROTECT,
+        related_name="created_equipment_transfers",
+        help_text="Специалист, оформивший заявку на меж-МПД доставку",
+    )
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
+
+    def __str__(self) -> str:
+        from_name = self.from_mpd.short_name or self.from_mpd.name
+        to_name = self.to_mpd.short_name or self.to_mpd.name
+        return f"Заявка #{self.pk}: {self.equipment.name} ({from_name} -> {to_name}) [{self.get_status_display()}]"
 
 
 class CompanyMaintenanceCertificate(models.Model):

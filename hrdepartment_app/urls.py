@@ -21,7 +21,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     MaintenanceReleaseCertificateCreateView, OutfitCardCRSDataApiView, \
     MaintenanceEquipmentListView, MaintenanceEquipmentDetailView, \
     MaintenanceEquipmentCreateView, MaintenanceEquipmentUpdateView, MaintenanceEquipmentDeleteView, \
-    EquipmentVerificationRecordCreateView, \
+    EquipmentVerificationRecordCreateView, EquipmentTypesByNameHTMXView, EquipmentAllocationDashboardView, \
+    EquipmentTransferRequestListView, EquipmentTransferRequestCreateView, EquipmentTransferRequestStatusUpdateView, \
     ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
     unacknowledge_document, seasonality_report, export_seasonality_data, absence_analysis, export_absence_data, \
     employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
@@ -202,6 +203,11 @@ urlpatterns = [
     path('equipment/<int:pk>/update/', MaintenanceEquipmentUpdateView.as_view(), name='equipment_update'),
     path('equipment/<int:pk>/delete/', MaintenanceEquipmentDeleteView.as_view(), name='equipment_delete'),
     path('equipment/verification/create/', EquipmentVerificationRecordCreateView.as_view(), name='equipment_verification_create'),
+    path('equipment/types-by-name/', EquipmentTypesByNameHTMXView.as_view(), name='equipment_types_by_name'),
+    path('equipment/allocation/', EquipmentAllocationDashboardView.as_view(), name='equipment_allocation_dashboard'),
+    path('equipment/transfers/', EquipmentTransferRequestListView.as_view(), name='equipment_transfer_list'),
+    path('equipment/transfers/create/', EquipmentTransferRequestCreateView.as_view(), name='equipment_transfer_create'),
+    path('equipment/transfers/<int:pk>/status/', EquipmentTransferRequestStatusUpdateView.as_view(), name='equipment_transfer_status_update'),
     path('acknowledge/', acknowledge_document, name='acknowledge_document'),
     path('unacknowledge/', unacknowledge_document, name='unacknowledge_document'),
     path("seasonality-report/", seasonality_report, name="seasonality-report"),
