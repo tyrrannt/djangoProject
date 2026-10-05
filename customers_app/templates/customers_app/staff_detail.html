@@ -96,6 +96,11 @@
                                        aria-selected="false">
                                         <i class="bx bxs-buildings me-2"></i> Рабочий профиль
                                     </a>
+                                    <a class="nav-link" id="maintenance-tab" data-bs-toggle="pill"
+                                       data-bs-target="#maintenance" role="tab" aria-controls="maintenance"
+                                       aria-selected="false">
+                                        <i class="bx bx-wrench me-2"></i> Квалификация ТО ВС
+                                    </a>
                                 </div>
 
                             </div>
@@ -342,10 +347,12 @@
                                                            value="{{ object.user_work_profile.job|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                     {% if perms.customers_app.change_jobs or user.is_superuser %}
-                                                        <a href="{% url 'customers_app:jobs_update' object.user_work_profile.job.pk %}"
-                                                           class="btn btn-outline-secondary edit-icon-link">
-                                                            <i class='bx bxs-edit h4 mb-0'></i>
-                                                        </a>
+                                                        {% if object.user_work_profile.job %}
+                                                            <a href="{% url 'customers_app:jobs_update' object.user_work_profile.job.pk %}"
+                                                               class="btn btn-outline-secondary edit-icon-link">
+                                                                <i class='bx bxs-edit h4 mb-0'></i>
+                                                            </a>
+                                                        {% endif %}
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -386,6 +393,36 @@
                                                 <input type="text" class="form-control form-control-modern" disabled
                                                        name="user_access" id="id_user_access"
                                                        value="{{ object.user_access.name }}"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ВКЛАДКА 5: КВАЛИФИКАЦИЯ ТО ВС (ФАП-145 / ФАП-147) -->
+                                    <div class="tab-pane fade" id="maintenance" role="tabpanel"
+                                         aria-labelledby="maintenance-tab">
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Свидетельство специалиста по ТО ВС</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="maintenance_staff_certificate" id="id_maintenance_staff_certificate"
+                                                       value="{{ object.maintenance_staff_certificate|empty_item }}"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-start pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold pt-1">Типы ВС по свидетельству</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                {% if object.allowed_aircraft_types.exists %}
+                                                    <div class="d-flex flex-wrap gap-2 pt-1">
+                                                        {% for ac in object.allowed_aircraft_types.all %}
+                                                            <span class="badge badge-primary px-3 py-2 text-2 font-weight-semibold">
+                                                                <i class="bx bxs-plane-alt me-1"></i>{{ ac.type_property }}
+                                                            </span>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% else %}
+                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                           value="Данные отсутствуют..."/>
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>

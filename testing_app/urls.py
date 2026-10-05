@@ -34,6 +34,7 @@ urlpatterns = [
     path("events/<int:pk>/manual-assign/", views.TestingEventManualAssignView.as_view(), name="event_manual_assign"),
     path("events/<int:pk>/remove-assign/<int:assign_id>/", views.TestingEventRemoveAssignView.as_view(), name="event_remove_assign"),
     path("events/<int:pk>/change-status/", views.TestingEventStatusChangeView.as_view(), name="event_status_change"),
+    path("events/<int:pk>/blank/download/", views.DownloadTestingEventBlankView.as_view(), name="event_blank_download"),
 
     # Движок тестирования и прохождение теста (Этап 4)
     path("assignment/<int:assignment_id>/start/", views.StartTestAttemptView.as_view(), name="start_attempt"),

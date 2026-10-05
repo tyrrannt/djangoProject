@@ -46,6 +46,36 @@
                 <i class="bx bx-file fs-5"></i> CSV
             </a>
 
+            <!-- Дропдаун бланков Word (.docx) -->
+            <div class="dropdown">
+                <button class="btn btn-outline-info dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Печатные бланки в формате Word">
+                    <i class="bx bxs-file-doc fs-5"></i> Бланк теста (Word)
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><h6 class="dropdown-header">Печатный бланк (для сотрудников)</h6></li>
+                    {% for grp in event.groups.all %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'testing_app:event_blank_download' event.id %}?group_id={{ grp.id }}">
+                                <i class="bx bx-file text-primary"></i> Бланк: {{ grp.name }}
+                            </a>
+                        </li>
+                    {% empty %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'testing_app:event_blank_download' event.id %}">
+                                <i class="bx bx-file text-primary"></i> Скачать общий бланк теста
+                            </a>
+                        </li>
+                    {% endfor %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Для экзаменационной комиссии</h6></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 text-danger font-weight-semibold" href="{% url 'testing_app:event_blank_download' event.id %}?with_answers=1">
+                            <i class="bx bx-check-shield text-danger"></i> Ключ к тесту (с ответами)
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
             <!-- Дропдаун смены статуса -->
             <div class="dropdown">
                 <button class="btn btn-dark dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -481,7 +511,7 @@
                                 <th style="width: 140px;" class="text-center">Способ</th>
                                 <th style="width: 130px;" class="text-center">Статус</th>
                                 <th style="width: 90px;" class="text-center">Попыток</th>
-                                <th style="width: 80px;" class="text-center">Действия</th>
+                                <th style="width: 110px;" class="text-center">Действия</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -522,16 +552,22 @@
                                     {{ assign.attempts_used }} / {{ event.max_attempts }}
                                 </td>
                                 <td class="text-center">
-                                    {% if assign.attempts_used == 0 %}
-                                        <form method="post" action="{% url 'testing_app:event_remove_assign' event.id assign.id %}" onsubmit="return confirm('Исключить сотрудника из тестирования?');">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Исключить">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
-                                        </form>
-                                    {% else %}
-                                        <span class="text-muted small" title="Нельзя удалить начатую попытку">—</span>
-                                    {% endif %}
+                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <a href="{% url 'testing_app:download_blank' assign.id %}" class="btn btn-sm btn-outline-primary py-0 px-2" title="Скачать заполненный бланк (DOCX)">
+                                            <i class="bx bx-file"></i>
+                                        </a>
+                                        <a href="{% url 'testing_app:download_blank' assign.id %}?with_answers=1" class="btn btn-sm btn-outline-info py-0 px-2" title="Скачать ключ с ответами для комиссии (DOCX)">
+                                            <i class="bx bx-check-shield"></i>
+                                        </a>
+                                        {% if assign.attempts_used == 0 %}
+                                            <form method="post" action="{% url 'testing_app:event_remove_assign' event.id assign.id %}" onsubmit="return confirm('Исключить сотрудника из тестирования?');" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Исключить">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}

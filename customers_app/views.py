@@ -38,7 +38,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
     process_group, process_group_interval, seconds_to_hhmm, get_active_user, get_today_data_delta, \
     get_jsons_data_filter, get_task_title_with_icon
-from contracts_app.models import TypeDocuments, Contract
+from contracts_app.models import TypeDocuments, Contract, TypeProperty
 from contracts_app.templatetags.custom import FIO_format
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_vacation_days, prepare_consent_context
@@ -1575,9 +1575,24 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 
 class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
+    """Детальный просмотр профиля сотрудника на корпоративном портале.
+
+    Отображает структурированные данные сотрудника: личные данные,
+    контактную информацию, паспортные и учетные данные, рабочий профиль,
+    а также квалификационные свидетельства и допущенные типы ВС (ФАП-145 / ФАП-147).
+    """
+
+    template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчанию
     model = DataBaseUser
     permission_required = 'customers_app.view_databaseuser'
+
+    def get_queryset(self):
+        """Оптимизирует выборку сотрудника с предзагрузкой связанных типов ВС.
+
+        Returns:
+            QuerySet[DataBaseUser]: Оптимизированная выборка пользователей.
+        """
+        return super().get_queryset().prefetch_related('allowed_aircraft_types')
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
@@ -1612,11 +1627,23 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     #             self.get_context_data(context)
     #     return super(StaffDetail, self).get(request, *args, **kwargs)
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекстные данные детальной карточки сотрудника.
+
+        Args:
+            **kwargs: Дополнительные именованные аргументы контекста.
+
+        Returns:
+            Dict[str, Any]: Контекст шаблона staff_detail.html.
+        """
         context = super().get_context_data(**kwargs)
         user_object = self.get_object()
-        context['birthday_difference'] = get_today_data_delta(user_object.birthday, 1)
-        context['employment_difference'] = get_today_data_delta(user_object.user_work_profile.date_of_employment, 0)
+        context['birthday_difference'] = get_today_data_delta(user_object.birthday, 1) if user_object.birthday else ""
+        context['employment_difference'] = (
+            get_today_data_delta(user_object.user_work_profile.date_of_employment, 0)
+            if (user_object.user_work_profile and user_object.user_work_profile.date_of_employment)
+            else ""
+        )
         # Получаем параметр запроса 'value'
         value = self.request.GET.get('update')
 
@@ -1640,10 +1667,25 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
 
 class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """Редактирование профиля сотрудника на корпоративном портале.
+
+    Предоставляет веб-интерфейс обновления персональных, контактных,
+    трудовых данных и квалификационных отметок ТО ВС (ФАП-145 / ФАП-147)
+    без перехода в панель Django Unfold Admin.
+    """
+
     template_name = 'customers_app/staff_form.html'
     model = DataBaseUser
     form_class = StaffUpdateForm
     permission_required = 'customers_app.change_databaseuser'
+
+    def get_queryset(self):
+        """Оптимизирует выборку сотрудника с предзагрузкой связанных типов ВС.
+
+        Returns:
+            QuerySet[DataBaseUser]: Оптимизированная выборка пользователей.
+        """
+        return super().get_queryset().prefetch_related('allowed_aircraft_types')
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
@@ -1673,7 +1715,15 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             form.save()
         return HttpResponseRedirect(reverse('customers_app:staff', args=[self.object.pk]))
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекстные данные формы редактирования сотрудника.
+
+        Args:
+            **kwargs: Дополнительные именованные аргументы контекста.
+
+        Returns:
+            Dict[str, Any]: Контекст шаблона staff_form.html со справочниками.
+        """
         context = super(StaffUpdate, self).get_context_data(**kwargs)
         context['all_gender'] = DataBaseUser.type_of_gender
         context['all_type_user'] = DataBaseUser.type_of
@@ -1681,6 +1731,7 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         context['all_job'] = Job.objects.all()
         context['all_access'] = AccessLevel.objects.all().reverse()
         context['all_citizenship'] = Citizenships.objects.all()
+        context['all_aircraft_types'] = TypeProperty.objects.all().order_by('type_property')
         return context
 
     def post(self, request, *args, **kwargs):
@@ -1696,11 +1747,13 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             obj_user = DataBaseUser.objects.get(pk=kwargs['pk'])
             # Формируем словарь записей, которые будем записывать, поля job и division обрабатываем отдельно
             work_kwargs = {
-                'date_of_employment': content['date_of_employment'] if content['date_of_employment'] != '' else None,
-                'internal_phone': content['internal_phone'],
-                'personal_work_schedule_start': content['personal_work_schedule_start'],
-                'personal_work_schedule_end': content['personal_work_schedule_end'],
+                'date_of_employment': content['date_of_employment'] if content.get('date_of_employment') else None,
+                'internal_phone': content.get('internal_phone', ''),
             }
+            if content.get('personal_work_schedule_start'):
+                work_kwargs['personal_work_schedule_start'] = content['personal_work_schedule_start']
+            if content.get('personal_work_schedule_end'):
+                work_kwargs['personal_work_schedule_end'] = content['personal_work_schedule_end']
             # ПАРОЛИ: обновляем ТОЛЬКО если поле явно пришло в запросе
             if 'work_email_password' in content:
                 work_kwargs['work_email_password'] = content['work_email_password']

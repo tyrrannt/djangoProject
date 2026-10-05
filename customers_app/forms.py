@@ -22,6 +22,7 @@ from .models import (
     AccessLevel,
     Affiliation, CounteragentDocuments, BiometricConsent,
 )
+from contracts_app.models import TypeProperty
 from django import forms
 
 
@@ -588,11 +589,37 @@ class JobsUpdateForm(forms.ModelForm):
 
 
 class StaffUpdateForm(forms.ModelForm):
+    """Форма редактирования учетной записи сотрудника на портале.
+
+    Позволяет изменять персональные данные, контактную информацию,
+    права доступа, а также квалификационные данные подтверждающего
+    персонала ТО ВС (ФАП-145 / ФАП-147) без обращения к панели администратора.
+
+    Attributes:
+        user_access (ModelChoiceField): Уровень доступа пользователя.
+        allowed_aircraft_types (ModelMultipleChoiceField): Множественный выбор типов ВС
+            согласно квалификационным отметкам свидетельства специалиста по ТО.
+    """
+
     user_access = forms.ModelChoiceField(
-        queryset=AccessLevel.objects.all(), required=False
+        queryset=AccessLevel.objects.all(), required=False, label="Права доступа"
     )
     user_access.widget.attrs.update(
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    allowed_aircraft_types = forms.ModelMultipleChoiceField(
+        queryset=TypeProperty.objects.all().order_by("type_property"),
+        required=False,
+        label="Типы ВС по свидетельству специалиста",
+        help_text="Типы воздушных судов, указанные в свидетельстве специалиста по ТО ВС.",
+        widget=forms.SelectMultiple(
+            attrs={
+                "class": "form-control form-control-modern",
+                "data-plugin-selectTwo": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{"placeholder": "Выберите типы ВС...", "allowClear": true, "width": "100%"}',
+            }
+        ),
     )
 
     class Meta:
@@ -614,10 +641,21 @@ class StaffUpdateForm(forms.ModelForm):
             "avatar",
             "is_staff",
             "is_superuser",
-            "type_of_role"
+            "type_of_role",
+            "maintenance_staff_certificate",
+            "allowed_aircraft_types",
         )
 
     def __init__(self, *args, **kwargs):
+        """Инициализирует виджеты и параметры полей формы сотрудника.
+
+        Настраивает стилизацию Porto Admin для полей формы, переключатели iOS-switch
+        для булевых атрибутов и Select2-виджет для разрешенных типов воздушных судов.
+
+        Args:
+            *args: Позиционные аргументы родительского конструктора ModelForm.
+            **kwargs: Именованные аргументы родительского конструктора ModelForm.
+        """
         super(StaffUpdateForm, self).__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs["class"] = "form-control form-control-modern"
@@ -631,6 +669,22 @@ class StaffUpdateForm(forms.ModelForm):
         self.fields["is_superuser"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+        if "allowed_aircraft_types" in self.fields:
+            self.fields["allowed_aircraft_types"].widget.attrs.update(
+                {
+                    "class": "form-control form-control-modern",
+                    "data-plugin-selectTwo": True,
+                    "multiple": "multiple",
+                    "data-plugin-options": '{"placeholder": "Выберите типы ВС...", "allowClear": true, "width": "100%"}',
+                }
+            )
+        if "maintenance_staff_certificate" in self.fields:
+            self.fields["maintenance_staff_certificate"].widget.attrs.update(
+                {
+                    "class": "form-control form-control-modern",
+                    "placeholder": "например, III. № 1234567",
+                }
+            )
 
 
 class ChangeAvatarUpdateForm(forms.ModelForm):

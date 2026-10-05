@@ -67,6 +67,7 @@ from testing_app.services.material_service import (
 )
 from testing_app.services.blank_service import (
     generate_filled_testing_blank_bytes,
+    generate_event_testing_blank_bytes,
     send_testing_blank_by_email,
 )
 from administration_app.utils import get_client_ip, get_device_info
@@ -1098,9 +1099,9 @@ class DownloadTestingBlankView(LoginRequiredMixin, View):
     """Выгрузка предзаполненного бланка тестирования в формате DOCX.
 
     Генерирует официальный Word-документ бланка итогового тестирования
-    с автоматической подстановкой ФИО, должности по приказу и даты.
-    Доступно сотруднику с момента начала мероприятия (фаза обучения/подготовки)
-    и ответственному менеджеру.
+    с автоматической подстановкой ФИО, должности по приказу, даты, титульным планом
+    и полным перечнем вопросов с чекбоксами ☐ для письменной сдачи теста.
+    Для проверяющих/комиссии доступна выгрузка ключа с правильными ответами (?with_answers=1).
     """
 
     def get(self, request, assignment_id: int, *args, **kwargs) -> HttpResponse:
@@ -1130,8 +1131,17 @@ class DownloadTestingBlankView(LoginRequiredMixin, View):
             messages.error(request, "Мероприятие находится в статусе черновика.")
             return redirect("testing_app:my_tests")
 
+        with_answers = request.GET.get("with_answers") in ("1", "true", "True")
+        # Обычный сотрудник не может скачивать ключ правильных ответов
+        if with_answers and not is_manager:
+            with_answers = False
+
         try:
-            docx_bytes, filename = generate_filled_testing_blank_bytes(assignment, user=request.user)
+            docx_bytes, filename = generate_filled_testing_blank_bytes(
+                assignment,
+                user=request.user,
+                with_answers=with_answers,
+            )
         except Exception as exc:
             messages.error(request, f"Ошибка формирования бланка DOCX: {str(exc)}")
             return redirect("testing_app:my_tests")
@@ -1148,8 +1158,86 @@ class DownloadTestingBlankView(LoginRequiredMixin, View):
         TestingAuditLog.objects.create(
             user=request.user,
             action="download_testing_blank",
-            object_repr=f"Скачивание бланка DOCX для назначения #{assignment.id} ({assignment.employee})",
-            details={"assignment_id": assignment.id, "testing_id": assignment.testing_id},
+            object_repr=(
+                f"Скачивание бланка DOCX {'(с ответами) ' if with_answers else ''}"
+                f"для назначения #{assignment.id} ({assignment.employee})"
+            ),
+            details={
+                "assignment_id": assignment.id,
+                "testing_id": assignment.testing_id,
+                "with_answers": with_answers,
+            },
+        )
+        return response
+
+
+class DownloadTestingEventBlankView(LoginRequiredMixin, TestingManagerRequiredMixin, View):
+    """Выгрузка бланка тестирования мероприятия в формате DOCX.
+
+    Позволяет менеджеру тестирования или члену комиссии выгрузить общий печатный
+    бланк теста для тиражирования и сдачи от руки либо экзаменационный ключ с
+    правильными ответами для проверки комиссии (?with_answers=1).
+    """
+
+    def get(self, request, pk: int, *args, **kwargs) -> HttpResponse:
+        """Обрабатывает запрос на скачивание общего бланка мероприятия.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+            pk (int): Идентификатор мероприятия тестирования.
+
+        Returns:
+            HttpResponse: Поток файла DOCX с заголовком Content-Disposition.
+        """
+        testing = get_object_or_404(
+            Testing.objects.prefetch_related("groups", "category_settings"),
+            pk=pk,
+        )
+
+        group_id = request.GET.get("group_id")
+        group: Optional[TestingGroup] = None
+        if group_id:
+            group = get_object_or_404(TestingGroup, pk=group_id, testing=testing)
+        else:
+            group = testing.groups.first()
+
+        with_answers = request.GET.get("with_answers") in ("1", "true", "True")
+        include_plan = request.GET.get("include_plan", "1") not in ("0", "false", "False")
+
+        try:
+            docx_bytes, filename = generate_event_testing_blank_bytes(
+                testing=testing,
+                group=group,
+                user=request.user,
+                with_answers=with_answers,
+                include_plan_page=include_plan,
+            )
+        except Exception as exc:
+            messages.error(request, f"Ошибка формирования бланка мероприятия DOCX: {str(exc)}")
+            return redirect("testing_app:event_detail", pk=testing.pk)
+
+        response = HttpResponse(
+            docx_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        ascii_fallback = "event_blank_testing.docx"
+        encoded_filename = quote(filename)
+        response["Content-Disposition"] = f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{encoded_filename}'
+        response["Content-Length"] = str(len(docx_bytes))
+
+        TestingAuditLog.objects.create(
+            user=request.user,
+            action="download_event_blank",
+            object_repr=(
+                f"Скачивание бланка мероприятия DOCX {'(с ответами) ' if with_answers else ''}"
+                f"для мероприятия #{testing.id} ({testing.title})"
+            ),
+            details={
+                "testing_id": testing.id,
+                "group_id": group.id if group else None,
+                "with_answers": with_answers,
+                "include_plan": include_plan,
+            },
         )
         return response
 
