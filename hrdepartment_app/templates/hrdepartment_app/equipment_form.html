@@ -1,0 +1,238 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {% if object %}Редактирование: {{ object.name }}{% else %}Регистрация оборудования ТО{% endif %} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .btn-touch {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <form class="ecommerce-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                {% if object %}
+                                    <i class="bx bx-edit text-primary me-2"></i>Редактирование: {{ object.name }}
+                                {% else %}
+                                    <i class="bx bx-plus-circle text-primary me-2"></i>Регистрация нового оборудования и инструмента ТО (ФАП-145)
+                                {% endif %}
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">
+                                Учет средств измерений (102-ФЗ), контрольно-поверочной аппаратуры и специнструмента по пп. 19–25 ФАП-145
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{% if object %}{% url 'hrdepartment_app:equipment_detail' object.pk %}{% else %}{% url 'hrdepartment_app:equipment_list' %}{% endif %}"
+                               class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <!-- Секция 1: Идентификация и технические параметры -->
+                            <div class="col-12 border-bottom pb-2 mb-2">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-id-card text-primary me-2"></i>1. Идентификационные данные и технические параметры
+                                </h5>
+                            </div>
+
+                            <div class="col-12 col-md-8">
+                                <label class="form-label" for="{{ form.name.id_for_label }}">Наименование прибора / инструмента <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.equipment_type.id_for_label }}">Категория (п. 22 ФАП-145) <span class="text-danger">*</span></label>
+                                {{ form.equipment_type }}
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.part_number.id_for_label }}">Чертежный номер (P/N)</label>
+                                {{ form.part_number }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.serial_number.id_for_label }}">Заводской / серийный номер (S/N)</label>
+                                {{ form.serial_number }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.marking_code.id_for_label }}">Код маркировки (п. 23 ФАП-145)</label>
+                                {{ form.marking_code }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.inventory_number.id_for_label }}">Инвентарный номер</label>
+                                {{ form.inventory_number }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.applicable_aircraft_types.id_for_label }}">Применимость к типам ВС (п. 21 ФАП-145)</label>
+                                {{ form.applicable_aircraft_types }}
+                                <small class="form-text text-muted">Если прибор универсальный и применим ко всем типам ВС, оставьте поле пустым</small>
+                            </div>
+
+                            <!-- Секция 2: Эксплуатационный статус и привязка -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-map-pin text-primary me-2"></i>2. Физическое состояние и место базирования
+                                </h5>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.operational_status.id_for_label }}">Эксплуатационный статус <span class="text-danger">*</span></label>
+                                {{ form.operational_status }}
+                                <small class="form-text text-muted">Неисправные приборы переводятся в изолятор брака по п. 25 ФАП-145</small>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.production_place.id_for_label }}">МПД постоянного базирования</label>
+                                {{ form.production_place }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.location.id_for_label }}">Место хранения / нахождения</label>
+                                {{ form.location }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.responsible_person.id_for_label }}">Ответственное лицо</label>
+                                {{ form.responsible_person }}
+                            </div>
+
+                            <!-- Секция 3: Метрологический учет -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <h5 class="font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-shield-quarter text-primary me-2"></i>3. Метрологический контроль (102-ФЗ)
+                                    </h5>
+                                    <span class="badge bg-light text-muted border">ФГИС «АРШИН» / Методика поверки</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.verification_type.id_for_label }}">Вид метрологического контроля <span class="text-danger">*</span></label>
+                                {{ form.verification_type }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.last_verification_date.id_for_label }}">Дата последней поверки/калибровки</label>
+                                {{ form.last_verification_date }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.next_verification_date.id_for_label }}">Дата очередной поверки/калибровки</label>
+                                {{ form.next_verification_date }}
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.interval_value.id_for_label }}">Межповерочный интервал</label>
+                                {{ form.interval_value }}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="{{ form.interval_unit.id_for_label }}">Единица интервала</label>
+                                {{ form.interval_unit }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.interval_source.id_for_label }}">Основание интервала</label>
+                                {{ form.interval_source }}
+                                <small class="form-text text-muted">РЭ изготовителя, методика поверки, регламент организации</small>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.arshin_verification_number.id_for_label }}">Номер во ФГИС «АРШИН» / Свидетельства</label>
+                                {{ form.arshin_verification_number }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.verification_organization.id_for_label }}">Организация-поверитель (ЦСМ)</label>
+                                {{ form.verification_organization }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.certificate_scan.id_for_label }}">Скан свидетельства / сертификата (.pdf, .jpg):</label>
+                                {{ form.certificate_scan }}
+                            </div>
+
+                            <!-- Секция 4: Примечания -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <h5 class="font-weight-bold text-dark mb-0">
+                                    <i class="bx bx-note text-primary me-2"></i>4. Примечания и особые условия
+                                </h5>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.notes.id_for_label }}">Особые примечания</label>
+                                {{ form.notes }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Панель кнопок -->
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="submit" class="btn btn-success btn-touch font-weight-semibold">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                                <a href="{% if object %}{% url 'hrdepartment_app:equipment_detail' object.pk %}{% else %}{% url 'hrdepartment_app:equipment_list' %}{% endif %}"
+                                   class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                    <i class="bx bx-x text-4 me-2"></i> Отмена
+                                </a>
+                                <a href="{% url 'hrdepartment_app:equipment_list' %}"
+                                   class="btn btn-outline-dark btn-touch font-weight-semibold">
+                                    <i class="bx bx-list-ul text-4 me-2"></i> К реестру оборудования
+                                </a>
+                            </div>
+                            {% if object.pk %}
+                                {% if user.is_superuser or perms.hrdepartment_app.delete_maintenanceequipment %}
+                                    <div>
+                                        <a href="{% url 'hrdepartment_app:equipment_delete' object.pk %}"
+                                           class="btn btn-outline-danger btn-touch font-weight-semibold"
+                                           onclick="return confirm('Вы уверены, что хотите удалить данную единицу оборудования из реестра?');">
+                                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

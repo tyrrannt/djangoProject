@@ -4129,6 +4129,15 @@ class MaintenanceEquipment(models.Model):
             ),
         }
 
+    @property
+    def verifications(self):
+        """Возвращает QuerySet записей журнала поверок (псевдоним для verification_records).
+
+        Returns:
+            QuerySet: Записи о поверках и калибровках прибора.
+        """
+        return self.verification_records.all()
+
 
 class EquipmentVerificationRecord(models.Model):
     """Журнал проведенных поверок, калибровок и проверок состояния оборудования (ФАП-145, пп. 19, 20).

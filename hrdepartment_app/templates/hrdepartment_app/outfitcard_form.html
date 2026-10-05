@@ -221,11 +221,29 @@
                                 </div>
                             </div>
 
-                            <!-- Секция 5: Подтверждающий персонал -->
+                            <!-- Секция 5: Оборудование, КПА и специнструмент -->
                             <div class="col-12 border-bottom pb-2 mb-2 pt-3">
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                     <h5 class="font-weight-bold text-dark mb-0">
-                                        <i class="bx bx-badge-check text-primary me-2"></i>5. Подтверждающий персонал и Свидетельство о ТО (CRS)
+                                        <i class="bx bx-wrench text-primary me-2"></i>5. Контрольно-поверочная аппаратура, средства измерений и специнструмент
+                                    </h5>
+                                    <span class="badge bg-light text-muted border">ФАП-145 (пп. 19–25, 102-ФЗ)</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.used_equipment.id_for_label }}">Применявшиеся приборы и специнструмент</label>
+                                {{ form.used_equipment }}
+                                <small class="form-text text-muted">
+                                    Выберите из реестра исправные приборы, КПА и инструмент, фактически применявшиеся при выполнении работ. В списке отображаются наименование, P/N, заводской номер S/N, индивидуальный код маркировки (п. 23) и срок действия поверки/калибровки.
+                                </small>
+                            </div>
+
+                            <!-- Секция 6: Подтверждающий персонал -->
+                            <div class="col-12 border-bottom pb-2 mb-2 pt-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <h5 class="font-weight-bold text-dark mb-0">
+                                        <i class="bx bx-badge-check text-primary me-2"></i>6. Подтверждающий персонал и Свидетельство о ТО (CRS)
                                     </h5>
                                     <span class="badge bg-light text-muted border">ФАП-145 (Приказ Минтранса РФ № 367)</span>
                                 </div>
@@ -242,10 +260,10 @@
                                 <small class="form-text text-muted">Номер CRS или персонального допуска организации</small>
                             </div>
 
-                            <!-- Секция 6: Примечания и скан-копия -->
+                            <!-- Секция 7: Примечания и скан-копия -->
                             <div class="col-12 border-bottom pb-2 mb-2 pt-3">
                                 <h5 class="font-weight-bold text-dark mb-0">
-                                    <i class="bx bx-note text-primary me-2"></i>6. Примечания и скан-копия документа
+                                    <i class="bx bx-note text-primary me-2"></i>7. Примечания и скан-копия документа
                                 </h5>
                             </div>
 

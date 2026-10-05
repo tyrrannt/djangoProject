@@ -1,0 +1,282 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }} // Баркол
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .stat-card {
+            border-radius: 8px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .btn-touch {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Метрологические индикаторы -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card border-0 shadow-sm bg-white h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-weight-bold">Всего оборудования</span>
+                        <h3 class="font-weight-bold text-dark mb-0 mt-1">{{ total_count }}</h3>
+                        <small class="text-muted">в реестре ТО ВС</small>
+                    </div>
+                    <div class="rounded-circle bg-light p-3 text-primary">
+                        <i class="bx bx-wrench fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card border-0 shadow-sm bg-white h-100 border-start border-success border-4">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-weight-bold">Годно к применению</span>
+                        <h3 class="font-weight-bold text-success mb-0 mt-1">{{ serviceable_count }}</h3>
+                        <small class="text-muted">исправно и поверено</small>
+                    </div>
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 text-success">
+                        <i class="bx bx-check-shield fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card border-0 shadow-sm bg-white h-100 border-start border-warning border-4">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-weight-bold">Истекает поверка (≤30 дн)</span>
+                        <h3 class="font-weight-bold text-warning mb-0 mt-1">{{ expiring_count }}</h3>
+                        <small class="text-muted">требуется отправка в ЦСМ</small>
+                    </div>
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 text-warning">
+                        <i class="bx bx-time-five fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card border-0 shadow-sm bg-white h-100 border-start border-danger border-4">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-weight-bold">Просрочено / Брак</span>
+                        <h3 class="font-weight-bold text-danger mb-0 mt-1">{{ expired_count|add:quarantined_count }}</h3>
+                        <small class="text-muted">изолятор брака (п. 25)</small>
+                    </div>
+                    <div class="rounded-circle bg-danger bg-opacity-10 p-3 text-danger">
+                        <i class="bx bx-error-alt fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная таблица оборудования -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-tachometer text-primary me-2"></i>Реестр оборудования, КПА и инструмента ТО (ФАП-145)
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">
+                            Учет средств измерений (102-ФЗ), контрольно-поверочной аппаратуры и специнструмента по пп. 19–25 ФАП-145
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        {% if user.is_superuser or perms.hrdepartment_app.add_maintenanceequipment %}
+                            <a href="{% url 'hrdepartment_app:equipment_create' %}"
+                               class="btn btn-success btn-touch font-weight-semibold"
+                               title="Зарегистрировать новый прибор или инструмент в реестре ТО">
+                                <i class="bx bx-plus-circle me-1"></i> Добавить прибор
+                            </a>
+                        {% endif %}
+                        {% if user.is_superuser or perms.hrdepartment_app.add_equipmentverificationrecord %}
+                            <a href="{% url 'hrdepartment_app:equipment_verification_create' %}"
+                               class="btn btn-outline-primary btn-touch font-weight-semibold"
+                               title="Зарегистрировать свидетельство о поверке/калибровке на портале">
+                                <i class="bx bx-check-double me-1"></i> Новая поверка
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
+                           class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                            <i class="bx bx-task me-1"></i> Карты-наряды
+                        </a>
+                    </div>
+                </header>
+
+                <div class="card-body p-4">
+                    <!-- Панель фильтров и поиска -->
+                    <form method="get" class="row g-3 align-items-center mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
+                                <input type="text"
+                                       name="q"
+                                       class="form-control"
+                                       placeholder="Поиск по названию, P/N, S/N, маркировке, АРШИН..."
+                                       value="{{ search_query }}">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <select name="status" class="form-select">
+                                <option value="">Все физические статусы</option>
+                                <option value="serviceable" {% if selected_status == 'serviceable' %}selected{% endif %}>Исправен / Годен</option>
+                                <option value="defective" {% if selected_status == 'defective' %}selected{% endif %}>Неисправен</option>
+                                <option value="quarantined" {% if selected_status == 'quarantined' %}selected{% endif %}>В изоляторе брака (п. 25)</option>
+                                <option value="in_calibration" {% if selected_status == 'in_calibration' %}selected{% endif %}>На поверке/калибровке</option>
+                                <option value="scrapped" {% if selected_status == 'scrapped' %}selected{% endif %}>Списан</option>
+                            </select>
+                        </div>
+                        <div class="col-auto d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-touch">
+                                <i class="bx bx-filter-alt me-1"></i> Применить
+                            </button>
+                            {% if search_query or selected_status %}
+                                <a href="{% url 'hrdepartment_app:equipment_list' %}" class="btn btn-outline-secondary btn-touch">
+                                    <i class="bx bx-reset me-1"></i> Сбросить
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+
+                    <!-- Таблица списка оборудования -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="min-width: 1100px;">
+                            <thead class="table-light small text-muted text-uppercase">
+                                <tr>
+                                    <th style="width: 25%;">Наименование / Категория</th>
+                                    <th style="width: 12%;">P/N (чертежный)</th>
+                                    <th style="width: 12%;">S/N (заводской)</th>
+                                    <th style="width: 10%;">Код маркировки</th>
+                                    <th style="width: 10%;">Применимость к ВС</th>
+                                    <th style="width: 13%;">Статус поверки</th>
+                                    <th style="width: 10%;">АРШИН / Документ</th>
+                                    <th style="width: 8%;" class="text-end">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for eq in equipments %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'hrdepartment_app:equipment_detail' eq.pk %}" class="font-weight-bold text-dark text-decoration-none">
+                                                {{ eq.name }}
+                                            </a>
+                                            <div class="small text-muted">
+                                                <i class="bx bx-tag me-1"></i>{{ eq.get_equipment_type_display }}
+                                                {% if eq.production_place %}
+                                                    | <i class="bx bx-map-pin me-1"></i>{{ eq.production_place.name }}
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if eq.part_number %}
+                                                <span class="font-monospace text-dark">{{ eq.part_number }}</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if eq.serial_number %}
+                                                <span class="font-monospace text-dark font-weight-semibold">{{ eq.serial_number }}</span>
+                                            {% else %}
+                                                <span class="text-muted">б/н</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if eq.marking_code %}
+                                                <span class="badge bg-light text-dark border font-monospace">{{ eq.marking_code }}</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for t in eq.applicable_aircraft_types.all %}
+                                                <span class="badge bg-light text-primary border me-1 mb-1">{{ t.type_property }}</span>
+                                            {% empty %}
+                                                <span class="text-muted small">Все типы ВС</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% if eq.operational_status == 'quarantined' %}
+                                                <span class="badge bg-danger text-white"><i class="bx bx-block me-1"></i>Изолятор брака</span>
+                                            {% elif eq.operational_status == 'defective' %}
+                                                <span class="badge bg-danger text-white"><i class="bx bx-x-circle me-1"></i>Неисправен</span>
+                                            {% elif eq.operational_status == 'in_calibration' %}
+                                                <span class="badge bg-info text-white"><i class="bx bx-loader-alt me-1"></i>На поверке</span>
+                                            {% elif eq.metrology_status == 'EXPIRED' %}
+                                                <span class="badge bg-danger text-white"><i class="bx bx-error me-1"></i>Просрочен</span>
+                                                <div class="small text-danger">до {{ eq.next_verification_date|date:"d.m.Y" }}</div>
+                                            {% elif eq.metrology_status == 'EXPIRING' %}
+                                                <span class="badge bg-warning text-dark"><i class="bx bx-time me-1"></i>Истекает</span>
+                                                <div class="small text-muted">до {{ eq.next_verification_date|date:"d.m.Y" }}</div>
+                                            {% elif eq.metrology_status == 'VALID' %}
+                                                <span class="badge bg-success text-white"><i class="bx bx-check-circle me-1"></i>Годен к ТО</span>
+                                                <div class="small text-muted">до {{ eq.next_verification_date|date:"d.m.Y" }}</div>
+                                            {% else %}
+                                                <span class="badge bg-secondary text-white">Без поверки</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if eq.arshin_verification_number %}
+                                                <span class="small font-monospace text-truncate d-inline-block" style="max-width: 140px;" title="{{ eq.arshin_verification_number }}">
+                                                    {{ eq.arshin_verification_number }}
+                                                </span>
+                                            {% elif eq.certificate_scan %}
+                                                <a href="{{ eq.certificate_scan.url }}" target="_blank" class="btn btn-xs btn-outline-info" title="Скан свидетельства">
+                                                    <i class="bx bx-file"></i> Скан
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{% url 'hrdepartment_app:equipment_detail' eq.pk %}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Открыть паспорт оборудования">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                            {% if user.is_superuser or perms.hrdepartment_app.change_maintenanceequipment %}
+                                                <a href="{% url 'hrdepartment_app:equipment_update' eq.pk %}"
+                                                   class="btn btn-sm btn-outline-secondary"
+                                                   title="Редактировать карточку оборудования">
+                                                    <i class="bx bx-edit"></i>
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            <i class="bx bx-info-circle fs-3 d-block mb-1"></i>
+                                            Оборудование не найдено. Измените параметры фильтрации или добавьте прибор.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

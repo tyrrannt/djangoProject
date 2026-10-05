@@ -1,0 +1,141 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Регистрация свидетельства о поверке оборудования // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .btn-touch {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 col-xl-10 mx-auto">
+            <form class="ecommerce-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-check-double text-primary me-2"></i>Регистрация свидетельства о поверке / калибровке (102-ФЗ)
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">
+                                {% if target_equipment %}
+                                    Внесение сведений о поверке для: <strong>{{ target_equipment.name }}</strong> (P/N: {{ target_equipment.part_number|default:"—" }}, S/N: {{ target_equipment.serial_number|default:"б/н" }})
+                                {% else %}
+                                    Внесение сведений о проведенной поверке или калибровке оборудования ТО ВС
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{% if target_equipment %}{% url 'hrdepartment_app:equipment_detail' target_equipment.pk %}{% else %}{% url 'hrdepartment_app:equipment_list' %}{% endif %}"
+                               class="btn btn-outline-secondary btn-touch">
+                                <i class="bx bx-arrow-back me-1"></i> Отмена
+                            </a>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div class="font-weight-bold mb-1"><i class="bx bx-error-circle me-1"></i> Пожалуйста, исправьте следующие ошибки:</div>
+                                <ul class="mb-0 ps-3">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label" for="{{ form.equipment.id_for_label }}">Оборудование / прибор <span class="text-danger">*</span></label>
+                                {{ form.equipment }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.verification_type.id_for_label }}">Вид метрологического контроля <span class="text-danger">*</span></label>
+                                {{ form.verification_type }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.verification_date.id_for_label }}">Дата проведения поверки <span class="text-danger">*</span></label>
+                                {{ form.verification_date }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.valid_until.id_for_label }}">Срок действия (действительно до)</label>
+                                {{ form.valid_until }}
+                                <small class="form-text text-muted">Если поверка бессрочная, оставьте поле пустым</small>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.arshin_number.id_for_label }}">Номер во ФГИС «АРШИН» / Свидетельства</label>
+                                {{ form.arshin_number }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.organization.id_for_label }}">Организация-поверитель (ЦСМ)</label>
+                                {{ form.organization }}
+                            </div>
+
+                            <div class="col-12 col-md-6 d-flex flex-column justify-content-center">
+                                <label class="form-label mb-2">Результат метрологического контроля</label>
+                                <div class="form-check form-switch mt-1">
+                                    {{ form.result_serviceable }}
+                                    <label class="form-check-label font-weight-semibold ms-2" for="{{ form.result_serviceable.id_for_label }}">
+                                        Прибор признан годным к применению
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">При отметке «Годен» статус прибора автоматически переводится из изолятора брака в исправный</small>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.certificate_scan.id_for_label }}">Скан свидетельства (.pdf, .jpg):</label>
+                                {{ form.certificate_scan }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form.notes.id_for_label }}">Примечания / Параметры погрешности</label>
+                                {{ form.notes }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-light px-4 py-3 border-top rounded-bottom">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <button type="submit" class="btn btn-success btn-touch font-weight-semibold">
+                                <i class="bx bx-save text-4 me-2"></i> Зарегистрировать поверку
+                            </button>
+                            <a href="{% if target_equipment %}{% url 'hrdepartment_app:equipment_detail' target_equipment.pk %}{% else %}{% url 'hrdepartment_app:equipment_list' %}{% endif %}"
+                               class="btn btn-outline-secondary btn-touch font-weight-semibold">
+                                <i class="bx bx-x text-4 me-2"></i> Отмена
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Any
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from decouple import config
 from django import forms
@@ -34,6 +34,8 @@ from hrdepartment_app.models import (
     Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
     StudentAgreement, TrainingProgram, TrainingUnit, PowerOfAttorney, PeriodicWork, OperationalWork,
     AircraftHoursTracking, HoursTrackingSource, MaintenanceReleaseCertificate,
+    MaintenanceEquipment, EquipmentOperationalStatus, EquipmentVerificationType, OutfitCardEquipmentUsage,
+    EquipmentVerificationRecord,
 )
 
 # Дата начала применения валидации
@@ -2229,12 +2231,45 @@ class ReportCardForm(forms.ModelForm):
         }
 
 
+class MaintenanceEquipmentChoiceField(forms.ModelMultipleChoiceField):
+    """Поле множественного выбора оборудования ТО с подробным метрологическим описанием.
+
+    Отображает в выпадающем списке наименование оборудования, чертежный номер (P/N),
+    заводской/серийный номер (S/N), код индивидуальной маркировки (п. 23 ФАП-145)
+    и срок окончания действия текущей поверки или калибровки.
+    """
+
+    def label_from_instance(self, obj: MaintenanceEquipment) -> str:
+        """Формирует информативную подпись для выпадающего списка выбора прибора.
+
+        Args:
+            obj (MaintenanceEquipment): Объект оборудования из реестра ТО.
+
+        Returns:
+            str: Строковое представление с P/N, S/N, маркировкой и сроком поверки.
+        """
+        parts = [obj.name]
+        if obj.part_number:
+            parts.append(f"P/N: {obj.part_number}")
+        if obj.serial_number:
+            parts.append(f"S/N: {obj.serial_number}")
+        if obj.marking_code:
+            parts.append(f"№ {obj.marking_code}")
+        if obj.next_verification_date:
+            parts.append(f"поверка до {obj.next_verification_date.strftime('%d.%m.%Y')}")
+        else:
+            parts.append("бессрочно / без поверки")
+        return " | ".join(parts)
+
+
 class OutfitCardForm(forms.ModelForm):
     """Форма создания и редактирования карты-наряда на ТО воздушного судна.
 
     Обеспечивает валидацию и ввод реквизитов наряда, наработки планера ВС (СНЭ, ППР,
-    посадки), перенесенных дефектов (MEL/CDL/AMM) и данных подтверждающего персонала
-    в соответствии с требованиями Федеральных авиационных правил (Приказ Минтранса РФ № 367).
+    посадки), перенесенных дефектов (MEL/CDL/AMM), данных подтверждающего персонала,
+    а также прикрепление контрольно-поверочной аппаратуры и специнструмента
+    в соответствии с требованиями Федеральных авиационных правил (Приказ Минтранса РФ № 367,
+    пп. 19–25 и 102-ФЗ).
 
     Args:
         *args: Позиционные аргументы ModelForm.
@@ -2253,6 +2288,14 @@ class OutfitCardForm(forms.ModelForm):
         queryset=DataBaseUser.objects.filter(is_active=True).order_by("last_name"),
         required=False,
         label="Специалист подтверждающего персонала (CRS)",
+    )
+    used_equipment = MaintenanceEquipmentChoiceField(
+        queryset=MaintenanceEquipment.objects.filter(
+            operational_status=EquipmentOperationalStatus.SERVICEABLE
+        ).order_by("name"),
+        required=False,
+        label="Использованное оборудование, КПА и специнструмент (ФАП-145, пп. 19–25)",
+        help_text="Выберите средства измерений, КПА и инструмент, фактически применявшиеся при ТО",
     )
 
     class Meta:
@@ -2296,7 +2339,7 @@ class OutfitCardForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        """Инициализация формы с ограничением прав бригады и стилизацией полей."""
+        """Инициализация формы с ограничением прав бригады, загрузкой оборудования и стилизацией."""
         self.user = kwargs.pop("user", None)
         super(OutfitCardForm, self).__init__(*args, **kwargs)
 
@@ -2316,11 +2359,23 @@ class OutfitCardForm(forms.ModelForm):
             self.fields["employee"].queryset = DataBaseUser.objects.filter(is_active=True).order_by("last_name")
             self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
 
+        if self.instance and self.instance.pk:
+            current_eq = self.instance.used_equipment.all()
+            self.fields["used_equipment"].initial = current_eq
+            current_eq_ids = list(current_eq.values_list("pk", flat=True))
+            self.fields["used_equipment"].queryset = MaintenanceEquipment.objects.filter(
+                Q(operational_status=EquipmentOperationalStatus.SERVICEABLE)
+                | Q(pk__in=current_eq_ids)
+            ).order_by("name")
+
+            if self.instance.is_signed:
+                self.fields["used_equipment"].disabled = True
+
         for field in self.fields:
             make_custom_field(self.fields[field])
 
     def clean(self):
-        """Комплексная валидация дат, отложенных дефектов и допуска подтверждающего персонала (ФАП-145)."""
+        """Комплексная валидация дат, отложенных дефектов, допуска персонала и оборудования (ФАП-145)."""
         cleaned_data = super(OutfitCardForm, self).clean()
         start_date = cleaned_data.get("outfit_card_date")
         end_date = cleaned_data.get("outfit_card_date_end")
@@ -2351,7 +2406,73 @@ class OutfitCardForm(forms.ModelForm):
             elif not cleaned_data.get("crs_number") and getattr(certifying_staff, "maintenance_staff_certificate", ""):
                 cleaned_data["crs_number"] = certifying_staff.maintenance_staff_certificate
 
+        # Проверка применимости выбранного оборудования к типу обслуживаемого ВС (п. 21 ФАП-145)
+        selected_equipments = cleaned_data.get("used_equipment")
+        if selected_equipments and aircraft_type:
+            for eq in selected_equipments:
+                if (
+                    eq.applicable_aircraft_types.exists()
+                    and not eq.applicable_aircraft_types.filter(pk=aircraft_type.pk).exists()
+                ):
+                    self.add_error(
+                        "used_equipment",
+                        f"Оборудование «{eq.name}» (P/N: {eq.part_number or '—'}) не применимо к типу ВС "
+                        f"«{aircraft_type}» согласно реестру оборудования ТО (ФАП-145, п. 21)."
+                    )
+
         return cleaned_data
+
+    def save(self, commit=True):
+        """Сохраняет карту-наряд и синхронизирует использованное оборудование ТО.
+
+        Создает или актуализирует неизменяемые исторические снимки (OutfitCardEquipmentUsage)
+        для каждого выбранного инструмента через attach_equipment_to_outfit_card.
+        """
+        instance = super().save(commit=commit)
+
+        def save_equipment():
+            if not instance.is_signed and "used_equipment" in self.cleaned_data:
+                from hrdepartment_app.services.outfit_card_release_service import (
+                    attach_equipment_to_outfit_card,
+                    detach_equipment_from_outfit_card,
+                )
+
+                selected_equipments = list(self.cleaned_data.get("used_equipment") or [])
+                selected_ids = {eq.pk for eq in selected_equipments}
+
+                current_usages = {
+                    usage.equipment_id: usage
+                    for usage in instance.used_equipment_records.all()
+                }
+                current_ids = set(current_usages.keys())
+
+                # Удаляем приборы, которые были исключены
+                for eq_id in (current_ids - selected_ids):
+                    usage_to_delete = current_usages[eq_id]
+                    detach_equipment_from_outfit_card(instance, usage_to_delete.pk)
+
+                # Добавляем или обновляем снимки для выбранных приборов
+                for eq in selected_equipments:
+                    if eq.pk not in current_ids:
+                        attach_equipment_to_outfit_card(
+                            outfit_card=instance,
+                            equipment=eq,
+                            user=self.user,
+                        )
+
+        if commit:
+            save_equipment()
+        else:
+            old_save_m2m = getattr(self, "save_m2m", None)
+
+            def new_save_m2m():
+                if old_save_m2m:
+                    old_save_m2m()
+                save_equipment()
+
+            self.save_m2m = new_save_m2m
+
+        return instance
 
 
 class MaintenanceReleaseCertificateCreateForm(forms.ModelForm):
@@ -2502,6 +2623,94 @@ class MaintenanceReleaseCertificateCreateForm(forms.ModelForm):
                 cleaned_data["certifying_staff_license"] = staff.maintenance_staff_certificate
 
         return cleaned_data
+
+
+class MaintenanceEquipmentForm(forms.ModelForm):
+    """Форма создания и редактирования единицы оборудования ТО ВС на портале (ФАП-145).
+
+    Позволяет вносить и обновлять паспортные, эксплуатационные и метрологические данные
+    оборудования, контрольно-поверочной аппаратуры и специального инструмента
+    в соответствии с требованиями Федеральных авиационных правил (Приказ Минтранса РФ № 367)
+    и Федерального закона от 26.06.2008 № 102-ФЗ.
+    """
+
+    class Meta:
+        model = MaintenanceEquipment
+        fields = [
+            "name",
+            "equipment_type",
+            "part_number",
+            "serial_number",
+            "inventory_number",
+            "marking_code",
+            "applicable_aircraft_types",
+            "operational_status",
+            "verification_type",
+            "last_verification_date",
+            "next_verification_date",
+            "interval_value",
+            "interval_unit",
+            "interval_source",
+            "arshin_verification_number",
+            "verification_organization",
+            "certificate_scan",
+            "location",
+            "production_place",
+            "responsible_person",
+            "notes",
+        ]
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Особые примечания, условия хранения или поверки..."}),
+            "interval_source": forms.TextInput(attrs={"placeholder": "РЭ изготовителя, методика поверки, регламент организации..."}),
+            "arshin_verification_number": forms.TextInput(attrs={"placeholder": "Номер свидетельства или записи в реестре ФГИС «АРШИН»"}),
+            "marking_code": forms.TextInput(attrs={"placeholder": "Индивидуальный номер маркировки/бирки (п. 23 ФАП-145)"}),
+            "part_number": forms.TextInput(attrs={"placeholder": "P/N чертежный номер изделия"}),
+            "serial_number": forms.TextInput(attrs={"placeholder": "S/N заводской номер"}),
+            "inventory_number": forms.TextInput(attrs={"placeholder": "Бухгалтерский инвентарный номер"}),
+            "location": forms.TextInput(attrs={"placeholder": "Инструментальная кладовая, участок, контейнер..."}),
+            "verification_organization": forms.TextInput(attrs={"placeholder": "Наименование организации-поверителя / ЦСМ"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы со стилизацией полей виджетов через make_custom_field."""
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            make_custom_field(field)
+
+
+class EquipmentVerificationRecordForm(forms.ModelForm):
+    """Форма регистрации свидетельства о поверке/калибровке оборудования на портале (102-ФЗ).
+
+    Позволяет внести результаты метрологического контроля, данные аккредитованного поверителя,
+    номер записи во ФГИС «АРШИН» и прикрепить электронный скан документа.
+    При сохранении автоматически обновляет даты очередной поверки и выводит прибор из изолятора брака.
+    """
+
+    class Meta:
+        model = EquipmentVerificationRecord
+        fields = [
+            "equipment",
+            "verification_type",
+            "verification_date",
+            "valid_until",
+            "arshin_number",
+            "organization",
+            "result_serviceable",
+            "certificate_scan",
+            "notes",
+        ]
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Результаты измерений, протокол поверки..."}),
+            "arshin_number": forms.TextInput(attrs={"placeholder": "Регистрационный номер во ФГИС «АРШИН»"}),
+            "organization": forms.TextInput(attrs={"placeholder": "ФБУ ЦСМ или аккредитованная метрологическая служба"}),
+            "result_serviceable": forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы со стилизацией полей виджетов через make_custom_field."""
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            make_custom_field(field)
 
 
 class DataBaseUserEventAddForm(forms.ModelForm):

@@ -1,0 +1,343 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ equipment.name }} // Оборудование ТО
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .btn-touch {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+        .param-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .param-value {
+            font-size: 1rem;
+            color: #0f172a;
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <!-- Верхняя плашка с заголовком -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h4 class="card-title font-weight-bold text-dark mb-0">
+                                <i class="bx bx-tachometer text-primary me-2"></i>{{ equipment.name }}
+                            </h4>
+                            {% if equipment.operational_status == 'quarantined' %}
+                                <span class="badge bg-danger text-white"><i class="bx bx-block me-1"></i>Изолятор брака (п. 25)</span>
+                            {% elif equipment.operational_status == 'defective' %}
+                                <span class="badge bg-danger text-white"><i class="bx bx-x-circle me-1"></i>Неисправен</span>
+                            {% elif equipment.operational_status == 'in_calibration' %}
+                                <span class="badge bg-info text-white"><i class="bx bx-loader-alt me-1"></i>На поверке</span>
+                            {% elif equipment.metrology_status == 'EXPIRED' %}
+                                <span class="badge bg-danger text-white"><i class="bx bx-error me-1"></i>Поверка просрочена</span>
+                            {% elif equipment.metrology_status == 'EXPIRING' %}
+                                <span class="badge bg-warning text-dark"><i class="bx bx-time me-1"></i>Истекает срок (≤30 дн)</span>
+                            {% elif equipment.metrology_status == 'VALID' %}
+                                <span class="badge bg-success text-white"><i class="bx bx-check-circle me-1"></i>Годен к выполнению ТО ВС</span>
+                            {% endif %}
+                        </div>
+                        <p class="card-subtitle text-muted mb-0">
+                            Паспорт оборудования, метрологический статус и история применения по ФАП-145 (пп. 19–25)
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'hrdepartment_app:equipment_list' %}" class="btn btn-outline-secondary btn-touch">
+                            <i class="bx bx-arrow-back me-1"></i> К реестру
+                        </a>
+                        {% if user.is_superuser or perms.hrdepartment_app.change_maintenanceequipment %}
+                            <a href="{% url 'hrdepartment_app:equipment_update' equipment.pk %}"
+                               class="btn btn-primary btn-touch">
+                                <i class="bx bx-edit me-1"></i> Редактировать карточку
+                            </a>
+                        {% endif %}
+                    </div>
+                </header>
+
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- Левая колонка: Идентификационные данные -->
+                        <div class="col-12 col-lg-6">
+                            <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="bx bx-id-card text-primary me-2"></i>1. Идентификационные и технические параметры
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="param-label">Чертежный номер (P/N)</div>
+                                    <div class="param-value font-monospace">{{ equipment.part_number|default:"—" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Заводской номер (S/N)</div>
+                                    <div class="param-value font-monospace">{{ equipment.serial_number|default:"б/н" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Код маркировки (п. 23)</div>
+                                    <div class="param-value">
+                                        {% if equipment.marking_code %}
+                                            <span class="badge bg-light text-dark border font-monospace">{{ equipment.marking_code }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Инвентарный номер</div>
+                                    <div class="param-value font-monospace">{{ equipment.inventory_number|default:"—" }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="param-label">Категория оборудования</div>
+                                    <div class="param-value">{{ equipment.get_equipment_type_display }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="param-label">Применимость к типам ВС</div>
+                                    <div class="param-value mt-1">
+                                        {% for t in equipment.applicable_aircraft_types.all %}
+                                            <span class="badge bg-light text-primary border me-1">{{ t.type_property }}</span>
+                                        {% empty %}
+                                            <span class="text-muted">Универсальный инструмент (применим ко всем типам ВС)</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">МПД приписки</div>
+                                    <div class="param-value">{{ equipment.production_place.name|default:"—" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Место хранения</div>
+                                    <div class="param-value">{{ equipment.location|default:"—" }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="param-label">Ответственное лицо</div>
+                                    <div class="param-value">{{ equipment.responsible_person.get_full_name|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Правая колонка: Метрологический учет -->
+                        <div class="col-12 col-lg-6">
+                            <h5 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="bx bx-shield-quarter text-primary me-2"></i>2. Метрологический контроль (102-ФЗ)
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="param-label">Вид контроля</div>
+                                    <div class="param-value">{{ equipment.get_verification_type_display }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Физическое состояние</div>
+                                    <div class="param-value">{{ equipment.get_operational_status_display }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Дата последней поверки</div>
+                                    <div class="param-value">{{ equipment.last_verification_date|date:"d.m.Y"|default:"—" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Дата очередной поверки</div>
+                                    <div class="param-value text-primary font-weight-bold">
+                                        {{ equipment.next_verification_date|date:"d.m.Y"|default:"Бессрочно / Не требуется" }}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Межповерочный интервал</div>
+                                    <div class="param-value">
+                                        {% if equipment.interval_value %}
+                                            {{ equipment.interval_value }} {{ equipment.get_interval_unit_display }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Основание интервала</div>
+                                    <div class="param-value small">{{ equipment.interval_source|default:"Эксплуатационная документация" }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="param-label">Номер во ФГИС «АРШИН» / Свидетельства</div>
+                                    <div class="param-value font-monospace text-primary">
+                                        {{ equipment.arshin_verification_number|default:"—" }}
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="param-label">Организация-поверитель</div>
+                                    <div class="param-value">{{ equipment.verification_organization|default:"—" }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="param-label">Скан свидетельства / сертификата</div>
+                                    <div class="param-value mt-1">
+                                        {% if equipment.certificate_scan %}
+                                            <a href="{{ equipment.certificate_scan.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                <i class="bx bx-download me-1"></i> Скачать скан свидетельства (.pdf)
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted small">Электронный скан документа не прикреплен</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if equipment.notes %}
+                            <div class="col-12">
+                                <div class="alert alert-light border mb-0">
+                                    <strong class="text-dark"><i class="bx bx-note me-1"></i>Особые примечания:</strong>
+                                    {{ equipment.notes }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- История поверок (EquipmentVerificationRecord) -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title font-weight-bold text-dark mb-0">
+                        <i class="bx bx-history text-primary me-2"></i>История метрологических поверок и проверок
+                    </h5>
+                    {% if user.is_superuser or perms.hrdepartment_app.add_equipmentverificationrecord %}
+                        <a href="{% url 'hrdepartment_app:equipment_verification_create' %}?equipment={{ equipment.pk }}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bx bx-plus me-1"></i> Зарегистрировать новую поверку
+                        </a>
+                    {% endif %}
+                </header>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted text-uppercase">
+                                <tr>
+                                    <th>Дата поверки</th>
+                                    <th>Вид контроля</th>
+                                    <th>Срок действия до</th>
+                                    <th>ФГИС «АРШИН» / Свидетельство</th>
+                                    <th>Организация-поверитель</th>
+                                    <th>Результат</th>
+                                    <th>Скан</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for v in verifications %}
+                                    <tr>
+                                        <td class="font-weight-semibold">{{ v.verification_date|date:"d.m.Y" }}</td>
+                                        <td>{{ v.get_verification_type_display }}</td>
+                                        <td class="text-primary font-weight-bold">{{ v.valid_until|date:"d.m.Y"|default:"Бессрочно" }}</td>
+                                        <td class="font-monospace small">{{ v.arshin_number|default:"—" }}</td>
+                                        <td>{{ v.organization|default:"—" }}</td>
+                                        <td>
+                                            {% if v.result_serviceable %}
+                                                <span class="badge bg-success text-white"><i class="bx bx-check me-1"></i>Годен</span>
+                                            {% else %}
+                                                <span class="badge bg-danger text-white"><i class="bx bx-x me-1"></i>Брак / Не годен</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if v.certificate_scan %}
+                                                <a href="{{ v.certificate_scan.url }}" target="_blank" class="btn btn-xs btn-outline-info">
+                                                    <i class="bx bx-file"></i> Скан
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-3 text-muted">
+                                            Записи о поверках отсутствуют.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- История применения в картах-нарядах ТО ВС -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4">
+                    <h5 class="card-title font-weight-bold text-dark mb-0">
+                        <i class="bx bx-task text-primary me-2"></i>История применения прибора в картах-нарядах ТО ВС
+                    </h5>
+                </header>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted text-uppercase">
+                                <tr>
+                                    <th>Карта-наряд</th>
+                                    <th>Дата ТО</th>
+                                    <th>Воздушный борт</th>
+                                    <th>Специалист / Бригада</th>
+                                    <th>Статус годности на дату ТО</th>
+                                    <th>Примечание к операции</th>
+                                    <th class="text-end">Переход</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in usages %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'hrdepartment_app:outfit_card_detail' u.outfit_card.pk %}" class="font-weight-bold text-dark">
+                                                № {{ u.outfit_card.outfit_card_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ u.outfit_card.outfit_card_date|date:"d.m.Y" }}</td>
+                                        <td>
+                                            {% if u.outfit_card.air_board %}
+                                                <span class="badge bg-light text-primary border">{{ u.outfit_card.air_board.registration_number }}</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ u.attached_by.get_full_name|default:u.outfit_card.employee.get_full_name|default:"—" }}</td>
+                                        <td>
+                                            {% if u.is_valid_at_usage %}
+                                                <span class="badge bg-success text-white"><i class="bx bx-check me-1"></i>Годен к ТО</span>
+                                            {% else %}
+                                                <span class="badge bg-danger text-white"><i class="bx bx-x me-1"></i>Не годен</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="small">{{ u.notes|default:"—" }}</td>
+                                        <td class="text-end">
+                                            <a href="{% url 'hrdepartment_app:outfit_card_detail' u.outfit_card.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-3 text-muted">
+                                            Прибор пока не фиксировался в закрытых картах-нарядах.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -97,7 +97,7 @@ from hrdepartment_app.forms import (
     LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm, StudentAgreementForm,
     TrainingProgramQuickForm, TrainingUnitQuickForm, TrainingDebtReportForm, PowerOfAttorneyForm,
     PeriodicWorkForm, OperationalWorkForm, AircraftHoursTrackingForm, AircraftHoursImportForm,
-    MaintenanceReleaseCertificateCreateForm,
+    MaintenanceReleaseCertificateCreateForm, MaintenanceEquipmentForm, EquipmentVerificationRecordForm,
 )
 from contracts_app.models import Estate
 from hrdepartment_app.services.aircraft_maintenance_service import (
@@ -133,6 +133,8 @@ from hrdepartment_app.models import (
     TrainingProgram, TrainingUnit, PowerOfAttorney, PeriodicWork, OperationalWork,
     AircraftHoursTracking, HoursTrackingSource,
     MaintenanceReleaseCertificate, CompanyMaintenanceCertificate,
+    MaintenanceEquipment, EquipmentType, EquipmentOperationalStatus, EquipmentVerificationType,
+    OutfitCardEquipmentUsage, EquipmentVerificationRecord,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -8546,5 +8548,249 @@ class OutfitCardCRSDataApiView(LoginRequiredMixin, View):
             "certifying_staff_license": getattr(staff, "maintenance_staff_certificate", "") if staff else "",
         }
         return JsonResponse(data)
+
+
+class MaintenanceEquipmentListView(LoginRequiredMixin, ListView):
+    """Представление реестра оборудования, средств измерений и специнструмента ТО ВС (ФАП-145).
+
+    Обеспечивает оперативный контроль метрологического состояния (поверка/калибровка),
+    фильтрацию по физическому статусу, поиск по P/N, S/N, кодам маркировки и номерам ФГИС «АРШИН».
+    """
+
+    model = MaintenanceEquipment
+    template_name = "hrdepartment_app/equipment_list.html"
+    context_object_name = "equipments"
+
+    def get_queryset(self):
+        """Возвращает оптимизированный QuerySet оборудования с предзагрузкой связей."""
+        qs = (
+            MaintenanceEquipment.objects.select_related("production_place", "responsible_person")
+            .prefetch_related("applicable_aircraft_types")
+            .order_by("name")
+        )
+        status_filter = self.request.GET.get("status")
+        if status_filter:
+            qs = qs.filter(operational_status=status_filter)
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(name__icontains=q)
+                | Q(part_number__icontains=q)
+                | Q(serial_number__icontains=q)
+                | Q(marking_code__icontains=q)
+                | Q(arshin_verification_number__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст с агрегированными метрологическими показателями."""
+        context = super().get_context_data(**kwargs)
+        all_eq = MaintenanceEquipment.objects.all()
+        today = timezone.now().date()
+        warning_date = today + timedelta(days=30)
+
+        total_count = all_eq.count()
+        serviceable_count = all_eq.filter(operational_status=EquipmentOperationalStatus.SERVICEABLE).count()
+        quarantined_count = all_eq.filter(
+            Q(operational_status=EquipmentOperationalStatus.QUARANTINED)
+            | Q(operational_status=EquipmentOperationalStatus.DEFECTIVE)
+        ).count()
+        expiring_count = all_eq.filter(
+            operational_status=EquipmentOperationalStatus.SERVICEABLE,
+            next_verification_date__gte=today,
+            next_verification_date__lte=warning_date,
+        ).count()
+        expired_count = all_eq.filter(
+            operational_status=EquipmentOperationalStatus.SERVICEABLE,
+            next_verification_date__lt=today,
+        ).count()
+
+        context.update({
+            "title": "Реестр оборудования, КПА и специнструмента ТО ВС (ФАП-145)",
+            "total_count": total_count,
+            "serviceable_count": serviceable_count,
+            "quarantined_count": quarantined_count,
+            "expiring_count": expiring_count,
+            "expired_count": expired_count,
+            "today": today,
+            "selected_status": self.request.GET.get("status", ""),
+            "search_query": self.request.GET.get("q", ""),
+        })
+        return context
+
+
+class MaintenanceEquipmentDetailView(LoginRequiredMixin, DetailView):
+    """Детальный просмотр карточки оборудования, паспорта, истории поверок и применения в ТО."""
+
+    model = MaintenanceEquipment
+    template_name = "hrdepartment_app/equipment_detail.html"
+    context_object_name = "equipment"
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует расширенный контекст с историей поверок и нарядов."""
+        context = super().get_context_data(**kwargs)
+        eq = self.object
+        context["verifications"] = eq.verification_records.select_related("created_by").order_by("-verification_date")
+        context["usages"] = (
+            OutfitCardEquipmentUsage.objects.filter(equipment=eq)
+            .select_related("outfit_card", "attached_by")
+            .order_by("-attached_at")[:30]
+        )
+        context["title"] = f"Карточка оборудования: {eq.name}"
+        context["today"] = timezone.now().date()
+        return context
+
+
+class MaintenanceEquipmentCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """Представление создания нового оборудования/инструмента ТО ВС на портале.
+
+    Доступ регулируется наличием разрешения 'hrdepartment_app.add_maintenanceequipment'
+    либо статусом суперпользователя (is_superuser). Статус is_staff недостаточен.
+    """
+
+    model = MaintenanceEquipment
+    form_class = MaintenanceEquipmentForm
+    template_name = "hrdepartment_app/equipment_form.html"
+    permission_required = "hrdepartment_app.add_maintenanceequipment"
+    success_url = reverse_lazy("hrdepartment_app:equipment_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права доступа: только суперпользователь или наличие явного права."""
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return user.is_superuser or user.has_perm(self.permission_required)
+
+    def form_valid(self, form):
+        """Обрабатывает успешное сохранение формы и выводит уведомление."""
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Оборудование «{self.object.name}» (P/N: {self.object.part_number or '—'}) успешно зарегистрировано в реестре ТО!"
+        )
+        return response
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст формы."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Регистрация нового оборудования ТО (ФАП-145)"
+        return context
+
+
+class MaintenanceEquipmentUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """Представление редактирования карточки оборудования ТО ВС на портале.
+
+    Доступ регулируется наличием разрешения 'hrdepartment_app.change_maintenanceequipment'
+    либо статусом суперпользователя (is_superuser). Статус is_staff недостаточен.
+    """
+
+    model = MaintenanceEquipment
+    form_class = MaintenanceEquipmentForm
+    template_name = "hrdepartment_app/equipment_form.html"
+    permission_required = "hrdepartment_app.change_maintenanceequipment"
+    success_url = reverse_lazy("hrdepartment_app:equipment_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права доступа: только суперпользователь или наличие явного права."""
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return user.is_superuser or user.has_perm(self.permission_required)
+
+    def form_valid(self, form):
+        """Обрабатывает успешное сохранение формы и выводит уведомление."""
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Карточка оборудования «{self.object.name}» успешно обновлена!"
+        )
+        return response
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст формы."""
+        context = super().get_context_data(**kwargs)
+        context["title"] = f"Редактирование оборудования: {self.object.name}"
+        return context
+
+
+class MaintenanceEquipmentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    """Представление удаления оборудования из реестра при наличии права delete."""
+
+    model = MaintenanceEquipment
+    permission_required = "hrdepartment_app.delete_maintenanceequipment"
+    success_url = reverse_lazy("hrdepartment_app:equipment_list")
+
+    def has_permission(self) -> bool:
+        """Проверяет права доступа: только суперпользователь или наличие явного права."""
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return user.is_superuser or user.has_perm(self.permission_required)
+
+    def form_valid(self, form):
+        """Уведомление об успешном удалении."""
+        obj_name = self.object.name
+        response = super().form_valid(form)
+        messages.success(self.request, f"Оборудование «{obj_name}» удалено из реестра.")
+        return response
+
+
+class EquipmentVerificationRecordCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """Представление регистрации новой поверки/калибровки оборудования на портале (102-ФЗ).
+
+    Доступ регулируется наличием разрешения 'hrdepartment_app.add_equipmentverificationrecord'
+    либо статусом суперпользователя (is_superuser). Статус is_staff недостаточен.
+    """
+
+    model = EquipmentVerificationRecord
+    form_class = EquipmentVerificationRecordForm
+    template_name = "hrdepartment_app/equipment_verification_form.html"
+    permission_required = "hrdepartment_app.add_equipmentverificationrecord"
+
+    def has_permission(self) -> bool:
+        """Проверяет права доступа: только суперпользователь или наличие явного права."""
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return user.is_superuser or user.has_perm(self.permission_required)
+
+    def get_initial(self) -> Dict[str, Any]:
+        """Предзаполняет связанное оборудование, если передан параметр equipment в GET."""
+        initial = super().get_initial()
+        eq_id = self.request.GET.get("equipment")
+        if eq_id:
+            try:
+                initial["equipment"] = MaintenanceEquipment.objects.get(pk=eq_id)
+            except MaintenanceEquipment.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        """Привязывает автора записи и выполняет редирект в карточку оборудования."""
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Запись о поверке прибора «{self.object.equipment.name}» успешно внесена. "
+            f"Срок действия обновлен до {self.object.valid_until.strftime('%d.%m.%Y') if self.object.valid_until else 'бессрочно'}."
+        )
+        return response
+
+    def get_success_url(self) -> str:
+        """Перенаправляет пользователя в детальный паспорт прибора."""
+        if self.object and self.object.equipment_id:
+            return reverse("hrdepartment_app:equipment_detail", kwargs={"pk": self.object.equipment_id})
+        return reverse("hrdepartment_app:equipment_list")
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст формы."""
+        context = super().get_context_data(**kwargs)
+        eq_id = self.request.GET.get("equipment")
+        if eq_id:
+            context["target_equipment"] = MaintenanceEquipment.objects.filter(pk=eq_id).first()
+        context["title"] = "Регистрация свидетельства о поверке/калибровке (102-ФЗ)"
+        return context
+
+
 
 
