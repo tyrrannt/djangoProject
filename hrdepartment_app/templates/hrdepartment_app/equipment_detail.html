@@ -338,6 +338,52 @@
                     </div>
                 </div>
             </div>
+
+            <!-- История меж-МПД перемещений -->
+            {% if equipment.transfer_requests.exists %}
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title font-weight-bold text-dark mb-0">
+                            <i class="bx bx-transfer-alt text-primary me-2"></i>История меж-МПД перемещений
+                        </h5>
+                        <a href="{% url 'hrdepartment_app:equipment_transfer_list' %}" class="btn btn-sm btn-outline-primary btn-touch py-1 px-3">
+                            В реестр перемещений
+                        </a>
+                    </header>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted small text-uppercase">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Маршрут</th>
+                                        <th>Срок доставки</th>
+                                        <th>Статус</th>
+                                        <th>Трек-номер</th>
+                                        <th>Инициатор</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tr in equipment.transfer_requests.all %}
+                                        <tr>
+                                            <td><strong>#{{ tr.pk }}</strong></td>
+                                            <td>
+                                                <span class="badge bg-secondary text-white">{{ tr.from_mpd.short_name|default:tr.from_mpd.name }}</span>
+                                                <i class="bx bx-right-arrow-alt text-muted mx-1"></i>
+                                                <span class="badge bg-primary text-white">{{ tr.to_mpd.short_name|default:tr.to_mpd.name }}</span>
+                                            </td>
+                                            <td>{{ tr.required_date|date:"d.m.Y" }}</td>
+                                            <td><span class="badge bg-light text-dark border">{{ tr.get_status_display }}</span></td>
+                                            <td>{{ tr.tracking_number|default:"—" }}</td>
+                                            <td class="small">{{ tr.created_by.title|default:tr.created_by.username }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

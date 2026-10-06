@@ -16,6 +16,7 @@ from typing import Optional, List, Dict, Any, Tuple, Union
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from django.utils import timezone
+from django.db import transaction
 from django.db.models import Q
 
 from hrdepartment_app.models import (
@@ -507,3 +508,88 @@ class EquipmentAllocationService:
 
         all_busy = (busy_m2m | busy_audit | busy_transfers) - {None}
         return all_busy
+
+
+@transaction.atomic
+def copy_work_equipment_requirements(
+    source_work: Union[PeriodicWork, OperationalWork],
+    target_work: Union[PeriodicWork, OperationalWork],
+    mode: str = "append",
+) -> Tuple[int, int]:
+    """Копирует или тиражирует нормативы табеля оснащения между формами ТО ВС (ФАП-145).
+
+    Позволяет перенести утвержденный комплект требований из одной формы ТО
+    (например, 'Ми-8Т - Ф-1') в другую форму ('Ми-8Т - Ф-2' или оперативное обслуживание)
+    в режиме дополнения (пропуская существующие позиции) или полной перезаписи.
+
+    Args:
+        source_work (Union[PeriodicWork, OperationalWork]): Исходная форма ТО с требованиями.
+        target_work (Union[PeriodicWork, OperationalWork]): Целевая форма ТО, куда копируются нормативы.
+        mode (str): Режим копирования ('append' - дополнить, 'replace' - перезаписать с удалением). Defaults to 'append'.
+
+    Returns:
+        Tuple[int, int]: Кортеж (число_созданных_позиций, число_пропущенных_дубликатов).
+
+    Raises:
+        ValueError: Если указан некорректный режим копирования или исходная форма совпадает с целевой.
+    """
+    if source_work == target_work:
+        raise ValueError("Исходная форма ТО совпадает с целевой формой.")
+
+    if mode not in ("append", "replace"):
+        raise ValueError(f"Неизвестный режим копирования: {mode}. Ожидается 'append' или 'replace'.")
+
+    is_target_periodic = isinstance(target_work, PeriodicWork)
+
+    if mode == "replace":
+        target_work.equipment_requirements.all().delete()
+
+    created_count = 0
+    skipped_count = 0
+
+    source_requirements = source_work.equipment_requirements.select_related(
+        "equipment_name", "required_type"
+    ).prefetch_related("allowed_substitutes").all()
+
+    for src_req in source_requirements:
+        lookup_kwargs = {
+            "equipment_name": src_req.equipment_name,
+            "required_type": src_req.required_type,
+        }
+        if is_target_periodic:
+            lookup_kwargs["periodic_work"] = target_work
+        else:
+            lookup_kwargs["operational_work"] = target_work
+
+        existing = MaintenanceWorkEquipmentRequirement.objects.filter(**lookup_kwargs).first()
+        if existing and mode == "append":
+            skipped_count += 1
+            continue
+
+        if existing:
+            target_req = existing
+            target_req.quantity = src_req.quantity
+            target_req.is_mandatory = src_req.is_mandatory
+            target_req.task_reference = src_req.task_reference
+            target_req.save()
+        else:
+            target_req = MaintenanceWorkEquipmentRequirement.objects.create(
+                periodic_work=target_work if is_target_periodic else None,
+                operational_work=None if is_target_periodic else target_work,
+                equipment_name=src_req.equipment_name,
+                required_type=src_req.required_type,
+                quantity=src_req.quantity,
+                is_mandatory=src_req.is_mandatory,
+                task_reference=src_req.task_reference,
+            )
+
+        substitutes = list(src_req.allowed_substitutes.all())
+        if substitutes:
+            target_req.allowed_substitutes.set(substitutes)
+        else:
+            target_req.allowed_substitutes.clear()
+
+        created_count += 1
+
+    return created_count, skipped_count
+

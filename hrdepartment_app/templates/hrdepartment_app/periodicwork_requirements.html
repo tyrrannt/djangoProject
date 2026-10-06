@@ -136,7 +136,12 @@
                             Определяет комплектность СИ, КПА и специнструмента для допуска МПД по п. 40 ФАП-145
                         </span>
                     </div>
-                    <span class="badge bg-primary rounded-pill px-3 py-2">Позиций в табеле: {{ requirements|length }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-touch" data-bs-toggle="modal" data-bs-target="#copyRequirementsModal">
+                            <i class="bx bx-copy me-1"></i> Скопировать из другой формы
+                        </button>
+                        <span class="badge bg-primary rounded-pill px-3 py-2">Позиций в табеле: {{ requirements|length }}</span>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -315,6 +320,60 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно копирования табеля из другой формы ТО -->
+    <div class="modal fade" id="copyRequirementsModal" tabindex="-1" aria-labelledby="copyRequirementsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form method="post" action="{% url 'hrdepartment_app:periodic_work_requirements_copy' periodic_work.pk %}">
+                    {% csrf_token %}
+                    {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
+                    {% if target_mpd %}<input type="hidden" name="target_mpd" value="{{ target_mpd }}">{% endif %}
+                    {% if date_start %}<input type="hidden" name="date_start" value="{{ date_start }}">{% endif %}
+
+                    <div class="modal-header bg-light">
+                        <h5 class="modal-title font-weight-bold text-dark" id="copyRequirementsModalLabel">
+                            <i class="bx bx-copy text-primary me-2"></i>Скопировать табель оснащения СИ
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-info py-2 px-3 small mb-3">
+                            <i class="bx bx-info-circle me-1"></i> Вы можете скопировать утвержденный табель оснащения из другой формы ТО (например, между сходными регламентами или типами ВС).
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold text-dark">
+                                {{ copy_form.source_work.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ copy_form.source_work }}
+                            <div class="form-text small text-muted">В списке отображаются только формы ТО с уже заполненным табелем.</div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label font-weight-semibold text-dark mb-2">
+                                {{ copy_form.mode.label }}
+                            </label>
+                            {% for radio in copy_form.mode %}
+                                <div class="form-check mb-2">
+                                    {{ radio.tag }}
+                                    <label class="form-check-label text-dark" for="{{ radio.id_for_label }}">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary btn-touch" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary btn-touch font-weight-semibold">
+                            <i class="bx bx-copy me-1"></i> Выполнить копирование
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -29,6 +29,7 @@ from hrdepartment_app.models import (
     OutfitCard,
     OutfitCardEquipmentUsage,
 )
+from hrdepartment_app.services.equipment_allocation import EquipmentAllocationService
 
 logger = logging.getLogger(__name__)
 
@@ -393,6 +394,122 @@ def get_outfit_card_equipment_summary(outfit_card: OutfitCard) -> Dict[str, Any]
         "invalid_count": invalid_count,
         "invalid_items": invalid_items,
         "is_metrology_ready": invalid_count == 0,
+        "target_date": target_date,
+    }
+
+
+def get_outfit_card_requirements_allocation(outfit_card: OutfitCard) -> Dict[str, Any]:
+    """Анализирует обеспеченность карты-наряда средствами измерений и специнструментом (ФАП-145).
+
+    Сопоставляет нормативные требования утвержденных табелей оснащения для регламентных (ПТО)
+    и оперативных (ОТО) работ карты-наряда с фактическим наличием приборов на целевом МПД,
+    их метрологическим статусом и фактом фактического закрепления за данным нарядом.
+
+    Args:
+        outfit_card (OutfitCard): Карта-наряд на ТО ВС.
+
+    Returns:
+        Dict[str, Any]: Сводный отчет обеспеченности:
+            - 'has_requirements' (bool): Заданы ли нормативные требования в табелях;
+            - 'readiness_percentage' (float): Общий процент обеспеченности МПД (0..100);
+            - 'is_fully_ready' (bool): Готов ли целевой МПД на 100%;
+            - 'has_mandatory_deficit' (bool): Есть ли дефицит критически обязательного СИ;
+            - 'work_reports' (List[Dict]): Список отчетов по каждой форме ТО;
+            - 'used_equipment_ids' (Set[int]): ID приборов, уже добавленных в наряд;
+            - 'total_requirements_count' (int): Общее число позиций;
+            - 'satisfied_count' (int): Число удовлетворенных требований;
+            - 'deficit_count' (int): Число дефицитных позиций;
+            - 'mandatory_deficit_count' (int): Число дефицитных обязательных позиций.
+    """
+    target_mpd = outfit_card.outfit_card_place
+    target_date = outfit_card.outfit_card_date_end or outfit_card.outfit_card_date or timezone.now().date()
+
+    periodic_works = list(outfit_card.periodic_work.all())
+    operational_works = list(outfit_card.operational_work.all())
+    all_works = periodic_works + operational_works
+
+    used_records = outfit_card.used_equipment_records.select_related("equipment", "equipment__type_model").all()
+    used_equipment_ids = {r.equipment_id for r in used_records}
+
+    work_reports: List[Dict[str, Any]] = []
+    total_reqs = 0
+    satisfied_reqs = 0
+    deficit_reqs = 0
+    mandatory_deficits = 0
+
+    has_any_requirements = False
+
+    for work_obj in all_works:
+        if not work_obj.equipment_requirements.exists():
+            work_reports.append({
+                "work": work_obj,
+                "work_name": str(work_obj),
+                "is_periodic": hasattr(work_obj, "periodic_work_requirements") or work_obj in periodic_works,
+                "has_requirements": False,
+                "report": None,
+                "items_detail": [],
+            })
+            continue
+
+        has_any_requirements = True
+        service = EquipmentAllocationService(
+            work_object=work_obj,
+            target_mpd=target_mpd,
+            target_date_start=target_date,
+        )
+        rep = service.calculate_allocation()
+
+        total_reqs += rep.total_requirements_count
+        satisfied_reqs += rep.satisfied_requirements_count
+        deficit_reqs += rep.deficit_items_count
+        mandatory_deficits += rep.mandatory_deficit_count
+
+        items_detail = []
+        for it in rep.items:
+            is_attached_to_card = False
+            attached_equipment_sn = ""
+            for rec in used_records:
+                eq = rec.equipment
+                if not eq:
+                    continue
+                matches_type = bool(it.required_type_id and eq.type_model_id == it.required_type_id)
+                matches_sub = bool(eq.type_model and eq.type_model.name in it.allowed_substitutes)
+                matches_name = bool(eq.type_model and eq.type_model.equipment_name_id == it.equipment_name_id)
+
+                if (matches_type or matches_sub or matches_name):
+                    is_attached_to_card = True
+                    attached_equipment_sn = f"{eq.name} (S/N {eq.serial_number or 'б/н'})"
+                    break
+
+            items_detail.append({
+                "item": it,
+                "is_attached_to_card": is_attached_to_card,
+                "attached_equipment_sn": attached_equipment_sn,
+            })
+
+        work_reports.append({
+            "work": work_obj,
+            "work_name": str(work_obj),
+            "is_periodic": hasattr(work_obj, "periodic_work_requirements") or work_obj in periodic_works,
+            "has_requirements": True,
+            "report": rep,
+            "items_detail": items_detail,
+        })
+
+    readiness = 100.0 if total_reqs == 0 else round((satisfied_reqs / total_reqs) * 100, 1)
+
+    return {
+        "has_requirements": has_any_requirements,
+        "readiness_percentage": readiness,
+        "is_fully_ready": mandatory_deficits == 0 and deficit_reqs == 0,
+        "has_mandatory_deficit": mandatory_deficits > 0,
+        "work_reports": work_reports,
+        "used_equipment_ids": used_equipment_ids,
+        "total_requirements_count": total_reqs,
+        "satisfied_count": satisfied_reqs,
+        "deficit_count": deficit_reqs,
+        "mandatory_deficit_count": mandatory_deficits,
+        "target_mpd": target_mpd,
         "target_date": target_date,
     }
 

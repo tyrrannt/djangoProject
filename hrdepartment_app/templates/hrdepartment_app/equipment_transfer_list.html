@@ -19,6 +19,23 @@
             border-radius: 6px;
             transition: all 0.2s ease;
         }
+        .kpi-card {
+            border-radius: 10px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+        }
+        .kpi-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
     </style>
 {% endblock %}
 
@@ -32,10 +49,13 @@
                         <i class="bx bx-transfer-alt text-primary me-2"></i>Реестр меж-МПД перемещений оборудования
                     </h3>
                     <p class="text-muted mb-0">
-                        Отслеживание логистики и доставки средств измерений и специнструмента между точками базирования (ФАП-145)
+                        Оперативное обеспечение технического обслуживания ВС поверенным инструментом между точками базирования (ФАП-145)
                     </p>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="{% url 'hrdepartment_app:equipment_list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-cube me-1"></i> Реестр оборудования
+                    </a>
                     <a href="{% url 'hrdepartment_app:equipment_allocation_dashboard' %}" class="btn btn-outline-primary btn-touch">
                         <i class="bx bx-radar me-1"></i> Дашборд подбора
                     </a>
@@ -45,24 +65,151 @@
                 </div>
             </div>
 
-            <!-- Фильтр по статусу -->
-            <div class="card card-modern shadow-sm border-0 mb-4">
-                <div class="card-body p-3 d-flex flex-wrap gap-2 align-items-center">
-                    <span class="text-muted small font-weight-bold me-2">Фильтр по статусу:</span>
-                    <a href="{% url 'hrdepartment_app:equipment_transfer_list' %}"
-                       class="btn btn-sm {% if not selected_status %}btn-dark{% else %}btn-outline-secondary{% endif %}">
-                        Все заявки
-                    </a>
-                    {% for code, label in status_choices %}
-                        <a href="{% url 'hrdepartment_app:equipment_transfer_list' %}?status={{ code }}"
-                           class="btn btn-sm {% if selected_status == code %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-                            {{ label }}
-                        </a>
-                    {% endfor %}
+            <!-- Уведомления системы -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show mb-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bx {% if message.tags == 'error' %}bx-error-circle{% else %}bx-check-circle{% endif %} fs-4 me-2"></i>
+                            <div>{{ message }}</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Аналитические KPI-карточки статусов -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card kpi-card border-0 shadow-sm bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small font-weight-semibold text-uppercase d-block">Всего заявок</span>
+                                <span class="h4 font-weight-bold text-dark mb-0">{{ kpi_total|default:0 }}</span>
+                            </div>
+                            <div class="kpi-icon bg-light text-primary">
+                                <i class="bx bx-file"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card kpi-card border-0 shadow-sm bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small font-weight-semibold text-uppercase d-block">Запрошено</span>
+                                <span class="h4 font-weight-bold text-warning mb-0">{{ kpi_requested|default:0 }}</span>
+                            </div>
+                            <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
+                                <i class="bx bx-time"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card kpi-card border-0 shadow-sm bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small font-weight-semibold text-uppercase d-block">В пути</span>
+                                <span class="h4 font-weight-bold text-info mb-0">{{ kpi_in_transit|default:0 }}</span>
+                            </div>
+                            <div class="kpi-icon bg-info bg-opacity-10 text-info">
+                                <i class="bx bx-paper-plane"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card kpi-card border-0 shadow-sm bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small font-weight-semibold text-uppercase d-block">Доставлено на МПД</span>
+                                <span class="h4 font-weight-bold text-success mb-0">{{ kpi_delivered|default:0 }}</span>
+                            </div>
+                            <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                                <i class="bx bx-check-double"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card kpi-card border-0 shadow-sm bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small font-weight-semibold text-uppercase d-block">Возвращено</span>
+                                <span class="h4 font-weight-bold text-secondary mb-0">{{ kpi_returned|default:0 }}</span>
+                            </div>
+                            <div class="kpi-icon bg-secondary bg-opacity-10 text-secondary">
+                                <i class="bx bx-archive"></i>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Таблица заявок -->
+            <!-- Расширенная панель фильтрации -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small font-weight-bold text-muted">Поиск по оборудованию / треку:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bx bx-search"></i></span>
+                                <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Прибор, S/N, трек...">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label class="form-label small font-weight-bold text-muted">МПД отправления (донор):</label>
+                            <select name="from_mpd" class="form-select">
+                                <option value="">Все точки отправления</option>
+                                {% for mpd in mpd_list %}
+                                    <option value="{{ mpd.pk }}" {% if selected_from_mpd == mpd.pk|stringformat:"s" %}selected{% endif %}>
+                                        {{ mpd.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label class="form-label small font-weight-bold text-muted">Целевое МПД (куда):</label>
+                            <select name="to_mpd" class="form-select">
+                                <option value="">Все целевые МПД</option>
+                                {% for mpd in mpd_list %}
+                                    <option value="{{ mpd.pk }}" {% if selected_to_mpd == mpd.pk|stringformat:"s" %}selected{% endif %}>
+                                        {{ mpd.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label class="form-label small font-weight-bold text-muted">Статус логистики:</label>
+                            <select name="status" class="form-select">
+                                <option value="">Любой статус</option>
+                                {% for code, label in status_choices %}
+                                    <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1 btn-touch">
+                                <i class="bx bx-filter-alt me-1"></i> Применить
+                            </button>
+                            {% if selected_status or selected_from_mpd or selected_to_mpd or search_query %}
+                                <a href="{% url 'hrdepartment_app:equipment_transfer_list' %}" class="btn btn-outline-secondary btn-touch" title="Сбросить все фильтры">
+                                    <i class="bx bx-reset"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Таблица перемещений -->
             <div class="card card-modern shadow-sm border-0 mb-4">
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -70,12 +217,12 @@
                             <thead class="table-light text-muted small text-uppercase">
                                 <tr>
                                     <th style="width: 5%;">#</th>
-                                    <th style="width: 25%;">Прибор / Инструмент</th>
-                                    <th style="width: 20%;">Маршрут (МПД)</th>
-                                    <th style="width: 12%;">Срок доставки</th>
+                                    <th style="width: 25%;">Прибор / Оборудование</th>
+                                    <th style="width: 20%;">Маршрут перемещения</th>
+                                    <th style="width: 12%;">Требуемый срок</th>
                                     <th style="width: 15%;">Статус логистики</th>
                                     <th style="width: 13%;">Инициатор / Трек</th>
-                                    <th style="width: 10%;" class="text-end">Действия</th>
+                                    <th style="width: 10%;" class="text-end">Управление</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,17 +239,26 @@
                                                 S/N: <strong>{{ item.equipment.serial_number|default:"б/н" }}</strong>
                                                 {% if item.equipment.part_number %}| P/N: {{ item.equipment.part_number }}{% endif %}
                                             </div>
+                                            {% if item.equipment.next_verification_date %}
+                                                <div class="small text-muted">
+                                                    Поверка до: <span class="text-dark">{{ item.equipment.next_verification_date|date:"d.m.Y" }}</span>
+                                                </div>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <span class="badge bg-secondary text-white me-1">{{ item.from_mpd.short_name|default:item.from_mpd.name }}</span>
+                                                <span class="badge bg-secondary text-white me-1" title="МПД отправления">{{ item.from_mpd.short_name|default:item.from_mpd.name }}</span>
                                                 <i class="bx bx-right-arrow-alt text-muted mx-1"></i>
-                                                <span class="badge bg-primary text-white">{{ item.to_mpd.short_name|default:item.to_mpd.name }}</span>
+                                                <span class="badge bg-primary text-white" title="Целевое МПД назначения">{{ item.to_mpd.short_name|default:item.to_mpd.name }}</span>
                                             </div>
                                             {% if item.target_periodic_work %}
-                                                <div class="small text-muted mt-1">Под форму: {{ item.target_periodic_work.name }}</div>
+                                                <div class="small text-muted mt-1">
+                                                    <i class="bx bx-wrench me-1"></i>ПТО: <strong>{{ item.target_periodic_work.name }}</strong>
+                                                </div>
                                             {% elif item.target_operational_work %}
-                                                <div class="small text-muted mt-1">Под ОТО: {{ item.target_operational_work.name }}</div>
+                                                <div class="small text-muted mt-1">
+                                                    <i class="bx bx-cog me-1"></i>ОТО: <strong>{{ item.target_operational_work.name }}</strong>
+                                                </div>
                                             {% endif %}
                                         </td>
                                         <td>
@@ -115,7 +271,7 @@
                                             {% elif item.status == 'in_transit' %}
                                                 <span class="badge bg-info text-white"><i class="bx bx-paper-plane me-1"></i>В пути</span>
                                             {% elif item.status == 'delivered' %}
-                                                <span class="badge bg-success text-white"><i class="bx bx-check-double me-1"></i>Доставлено</span>
+                                                <span class="badge bg-success text-white"><i class="bx bx-check-double me-1"></i>Доставлено на МПД</span>
                                             {% elif item.status == 'returned' %}
                                                 <span class="badge bg-secondary text-white"><i class="bx bx-archive me-1"></i>Возвращено</span>
                                             {% elif item.status == 'canceled' %}
@@ -127,76 +283,147 @@
                                         <td>
                                             <div class="small text-dark">{{ item.created_by.title|default:item.created_by.username }}</div>
                                             {% if item.tracking_number %}
-                                                <span class="badge bg-light text-muted border font-weight-normal mt-1">
-                                                    Трек: {{ item.tracking_number }}
+                                                <span class="badge bg-light text-primary border font-weight-normal mt-1 d-inline-block text-truncate" style="max-width: 150px;">
+                                                    <i class="bx bx-barcode me-1"></i>{{ item.tracking_number }}
                                                 </span>
+                                            {% endif %}
+                                            {% if item.notes %}
+                                                <div class="small text-muted text-truncate mt-1" style="max-width: 150px;" title="{{ item.notes }}">
+                                                    {{ item.notes }}
+                                                </div>
                                             {% endif %}
                                         </td>
                                         <td class="text-end">
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                    Статус
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                                    {% if item.status == 'requested' %}
-                                                        <li>
-                                                            <form method="post" action="{% url 'hrdepartment_app:equipment_transfer_status_update' item.pk %}">
-                                                                {% csrf_token %}
-                                                                <input type="hidden" name="status" value="in_transit">
-                                                                <button type="submit" class="dropdown-item text-info">
-                                                                    <i class="bx bx-paper-plane me-2"></i> Отметить: В пути
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                    {% endif %}
-                                                    {% if item.status == 'in_transit' or item.status == 'requested' %}
-                                                        <li>
-                                                            <form method="post" action="{% url 'hrdepartment_app:equipment_transfer_status_update' item.pk %}">
-                                                                {% csrf_token %}
-                                                                <input type="hidden" name="status" value="delivered">
-                                                                <button type="submit" class="dropdown-item text-success">
-                                                                    <i class="bx bx-check-circle me-2"></i> Отметить: Доставлено на МПД
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                    {% endif %}
-                                                    {% if item.status == 'delivered' %}
-                                                        <li>
-                                                            <form method="post" action="{% url 'hrdepartment_app:equipment_transfer_status_update' item.pk %}">
-                                                                {% csrf_token %}
-                                                                <input type="hidden" name="status" value="returned">
-                                                                <button type="submit" class="dropdown-item text-secondary">
-                                                                    <i class="bx bx-undo me-2"></i> Отметить: Возвращено на базу
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                    {% endif %}
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <form method="post" action="{% url 'hrdepartment_app:equipment_transfer_status_update' item.pk %}">
-                                                            {% csrf_token %}
-                                                            <input type="hidden" name="status" value="canceled">
-                                                            <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="bx bx-x-circle me-2"></i> Отменить заявку
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#statusModal"
+                                                    data-id="{{ item.pk }}"
+                                                    data-status="{{ item.status }}"
+                                                    data-tracking="{{ item.tracking_number }}"
+                                                    data-name="{{ item.equipment.name }}"
+                                                    title="Изменить статус заявки">
+                                                <i class="bx bx-edit-alt me-1"></i> Статус
+                                            </button>
                                         </td>
                                     </tr>
                                 {% empty %}
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">
-                                            Заявок на меж-МПД перемещение оборудования пока нет.
+                                        <td colspan="7" class="text-center text-muted py-5">
+                                            <i class="bx bx-transfer fs-1 mb-2 d-block text-secondary"></i>
+                                            Заявок на меж-МПД перемещение оборудования не найдено.<br>
+                                            Для создания заявки воспользуйтесь кнопкой «Новая заявка» или оформите перемещение из дашборда подбора.
                                         </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Пагинация -->
+                    {% if is_paginated %}
+                        <div class="card-footer bg-light py-3 px-4 d-flex justify-content-between align-items-center">
+                            <span class="small text-muted">
+                                Показано записей: {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ paginator.count }}
+                            </span>
+                            <nav aria-label="Пагинация реестра заявок">
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_from_mpd %}&from_mpd={{ selected_from_mpd }}{% endif %}{% if selected_to_mpd %}&to_mpd={{ selected_to_mpd }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Назад</a>
+                                        </li>
+                                    {% endif %}
+                                    {% for num in paginator.page_range %}
+                                        {% if num == page_obj.number %}
+                                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_from_mpd %}&from_mpd={{ selected_from_mpd }}{% endif %}{% if selected_to_mpd %}&to_mpd={{ selected_to_mpd }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_from_mpd %}&from_mpd={{ selected_from_mpd }}{% endif %}{% if selected_to_mpd %}&to_mpd={{ selected_to_mpd }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Вперед</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Модальное окно изменения статуса заявки -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form method="post" id="statusForm" action="">
+                    {% csrf_token %}
+                    <div class="modal-header bg-light">
+                        <h5 class="modal-title font-weight-bold text-dark" id="statusModalLabel">
+                            <i class="bx bx-transfer text-primary me-2"></i>Изменение статуса перемещения
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div id="modalTransferTitle" class="fw-bold text-primary mb-3"></div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold text-dark">Новый статус заявки <span class="text-danger">*</span></label>
+                            <select name="status" id="statusSelect" class="form-select" required>
+                                {% for code, label in status_choices %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small text-muted">
+                                При статусе «Доставлено» прибор автоматически закрепляется за целевым МПД; при «Возвращено» — возвращается на базу-донор.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold text-dark">Номер накладной / рейса / трек-номер:</label>
+                            <input type="text" name="tracking_number" id="trackingInput" class="form-control" placeholder="Номер ЭРН, багажной квитанции или борт...">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label font-weight-semibold text-dark">Служебное примечание / комментарий:</label>
+                            <textarea name="notes" id="notesInput" class="form-control" rows="3" placeholder="Укажите подробности отправки или фактического получения на МПД..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary btn-touch" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary btn-touch font-weight-semibold">
+                            <i class="bx bx-check me-1"></i> Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var statusModalEl = document.getElementById('statusModal');
+            if (statusModalEl) {
+                statusModalEl.addEventListener('show.bs.modal', function(event) {
+                    var btn = event.relatedTarget;
+                    var transferId = btn.getAttribute('data-id');
+                    var currentStatus = btn.getAttribute('data-status');
+                    var tracking = btn.getAttribute('data-tracking') || '';
+                    var eqName = btn.getAttribute('data-name') || '';
+
+                    document.getElementById('modalTransferTitle').textContent = 'Заявка #' + transferId + ': ' + eqName;
+                    document.getElementById('statusForm').action = '/hr/equipment/transfers/' + transferId + '/status/';
+                    document.getElementById('statusSelect').value = currentStatus;
+                    document.getElementById('trackingInput').value = tracking;
+                    document.getElementById('notesInput').value = '';
+                });
+            }
+        });
+    </script>
 {% endblock %}

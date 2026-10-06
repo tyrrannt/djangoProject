@@ -2847,6 +2847,46 @@ class MaintenanceWorkEquipmentRequirementForm(forms.ModelForm):
         return cleaned_data
 
 
+class MaintenanceWorkRequirementsCopyForm(forms.Form):
+    """Форма тиражирования и копирования утвержденного табеля оснащения между регламентами ТО (ФАП-145).
+
+    Позволяет выбрать форму ТО-источник (содержащую нормативы) и режим переноса
+    (дополнение существующих или полная перезапись табеля).
+    """
+
+    source_work = forms.ModelChoiceField(
+        queryset=PeriodicWork.objects.none(),
+        label="Форма ТО — источник требований",
+        empty_label="--- Выберите форму ТО с заполненным табелем ---",
+        required=True,
+    )
+    mode = forms.ChoiceField(
+        choices=[
+            ("append", "Дополнить текущий табель (добавить недостающие приборы)"),
+            ("replace", "Полная перезапись (удалить текущие позиции и скопировать всё заново)"),
+        ],
+        initial="append",
+        label="Режим копирования",
+        widget=forms.RadioSelect,
+        required=True,
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы с исключением текущей работы из списка доноров."""
+        current_work = kwargs.pop("current_work", None)
+        super().__init__(*args, **kwargs)
+        qs = (
+            PeriodicWork.objects.filter(equipment_requirements__isnull=False)
+            .distinct()
+            .select_related("air_bord_type")
+            .order_by("air_bord_type__type_property", "code")
+        )
+        if current_work and getattr(current_work, "pk", None):
+            qs = qs.exclude(pk=current_work.pk)
+        self.fields["source_work"].queryset = qs
+        make_custom_field(self.fields["source_work"])
+
+
 
 class EquipmentVerificationRecordForm(forms.ModelForm):
     """Форма регистрации свидетельства о поверке/калибровке оборудования на портале (102-ФЗ).

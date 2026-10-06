@@ -507,6 +507,158 @@
                         {% endif %}
 
                         <!-- Метрологический учет оборудования и инструмента (ФАП-145, пп. 19-25) -->
+                        <!-- Контроль обеспеченности табеля регламента ТО (ФАП-145) -->
+                        <div class="col-12">
+                            <div class="card border {% if requirements_allocation.has_mandatory_deficit %}border-danger{% elif not requirements_allocation.is_fully_ready %}border-warning{% else %}border-success{% endif %} shadow-none bg-white p-3 mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="font-weight-bold text-dark fs-6">
+                                            <i class="bx bx-shield-quarter text-primary me-1"></i>Обеспеченность табеля оснащения ТО на МПД {{ object.outfit_card_place|default:"" }}
+                                        </div>
+                                        {% if requirements_allocation.has_requirements %}
+                                            {% if requirements_allocation.is_fully_ready %}
+                                                <span class="badge bg-success text-white py-1 px-2">
+                                                    <i class="bx bx-check-circle me-1"></i>100% готовность МПД
+                                                </span>
+                                            {% elif requirements_allocation.has_mandatory_deficit %}
+                                                <span class="badge bg-danger text-white py-1 px-2">
+                                                    <i class="bx bx-error me-1"></i>Дефицит обязательного СИ (п. 40 ФАП-145)
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark py-1 px-2">
+                                                    <i class="bx bx-time me-1"></i>Готовность {{ requirements_allocation.readiness_percentage }}%
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary text-white py-1 px-2">Табель не задан</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if object.periodic_work.first %}
+                                            <a href="{% url 'hrdepartment_app:periodic_work_requirements' object.periodic_work.first.pk %}?return_to=outfit_card"
+                                               class="btn btn-xs btn-outline-primary py-1 px-2">
+                                                <i class="bx bx-wrench me-1"></i>Настроить табель
+                                            </a>
+                                            <a href="{% url 'hrdepartment_app:equipment_allocation_dashboard' %}?work_type=periodic&periodic_work={{ object.periodic_work.first.pk }}&target_mpd={{ object.outfit_card_place.pk|default:'' }}&date_start={{ object.outfit_card_date|date:'Y-m-d'|default:'' }}"
+                                               class="btn btn-xs btn-outline-info py-1 px-2">
+                                                <i class="bx bx-radar me-1"></i>Подбор на дашборде
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'hrdepartment_app:equipment_transfer_list' %}"
+                                           class="btn btn-xs btn-outline-secondary py-1 px-2">
+                                            <i class="bx bx-transfer-alt me-1"></i>Перемещения
+                                        </a>
+                                    </div>
+                                </div>
+
+                                {% if requirements_allocation.has_requirements %}
+                                    <div class="table-responsive mt-2">
+                                        <table class="table table-sm table-hover table-bordered mb-0 align-middle">
+                                            <thead class="table-light small text-muted">
+                                                <tr>
+                                                    <th>Форма ТО / Пункт РО</th>
+                                                    <th>Требуемое СИ / Инструмент</th>
+                                                    <th>Тип / Аналоги</th>
+                                                    <th class="text-center">Норма</th>
+                                                    <th>Статус на МПД</th>
+                                                    <th>Включен в наряд</th>
+                                                    <th class="text-end">Рекомендация / Логистика</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="small">
+                                                {% for wr in requirements_allocation.work_reports %}
+                                                    {% if wr.has_requirements %}
+                                                        {% for row in wr.items_detail %}
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="font-weight-semibold text-dark">{{ wr.work_name }}</div>
+                                                                    <div class="small text-muted">{{ row.item.task_reference|default:"Общий регламент" }}</div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="font-weight-bold text-dark">{{ row.item.name }}</div>
+                                                                    {% if row.item.is_mandatory %}
+                                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle font-weight-normal">
+                                                                            Обязательный (п. 40)
+                                                                        </span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    <div class="text-dark">{{ row.item.required_type_name }}</div>
+                                                                    {% if row.item.allowed_substitute_names %}
+                                                                        <div class="small text-muted">Аналоги: {{ row.item.allowed_substitute_names|join:", " }}</div>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td class="text-center font-weight-bold">{{ row.item.required_quantity }} шт.</td>
+                                                                <td>
+                                                                    {% if row.item.status == 'AVAILABLE' %}
+                                                                        <span class="badge bg-success text-white"><i class="bx bx-check me-1"></i>В наличии ({{ row.item.allocated_count }} шт.)</span>
+                                                                        {% if row.item.allocated_instances %}
+                                                                            <div class="small text-muted mt-1">
+                                                                                S/N: {% for inst in row.item.allocated_instances %}{{ inst.serial_number }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                                                            </div>
+                                                                        {% endif %}
+                                                                    {% elif row.item.status == 'PARTIALLY_AVAILABLE' %}
+                                                                        <span class="badge bg-warning text-dark"><i class="bx bx-error me-1"></i>Частично ({{ row.item.allocated_count }}/{{ row.item.required_quantity }})</span>
+                                                                    {% elif row.item.status == 'EXPIRED_LOCAL' %}
+                                                                        <span class="badge bg-danger text-white"><i class="bx bx-time me-1"></i>Истекла поверка</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-danger text-white"><i class="bx bx-x me-1"></i>Дефицит на МПД</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    {% if row.is_attached_to_card %}
+                                                                        <span class="badge bg-success text-white">
+                                                                            <i class="bx bx-check-double me-1"></i>Закреплен
+                                                                        </span>
+                                                                        <div class="small text-muted mt-1">{{ row.attached_equipment_sn }}</div>
+                                                                    {% else %}
+                                                                        {% if row.item.status == 'AVAILABLE' %}
+                                                                            <span class="badge bg-light text-warning border">
+                                                                                <i class="bx bx-time me-1"></i>Не добавлен в наряд
+                                                                            </span>
+                                                                        {% else %}
+                                                                            <span class="badge bg-light text-danger border">
+                                                                                <i class="bx bx-x me-1"></i>Отсутствует
+                                                                            </span>
+                                                                        {% endif %}
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    {% if row.item.deficit_count > 0 and row.item.donors %}
+                                                                        {% with donor=row.item.donors.0 %}
+                                                                            <a href="{% url 'hrdepartment_app:equipment_transfer_create' %}?equipment={{ donor.equipment_id }}&from_mpd={{ donor.mpd_id }}&to_mpd={{ object.outfit_card_place_id }}&required_date={{ object.outfit_card_date|date:'Y-m-d'|default:'' }}"
+                                                                               class="btn btn-xs btn-outline-primary py-0 px-2"
+                                                                               title="Заказать доставку с {{ donor.mpd_name }} ({{ donor.distance_km }} км)">
+                                                                                <i class="bx bx-paper-plane me-1"></i>Запросить с {{ donor.mpd_name }}
+                                                                            </a>
+                                                                        {% endwith %}
+                                                                    {% elif row.item.status == 'AVAILABLE' and not row.is_attached_to_card %}
+                                                                        <span class="text-success small"><i class="bx bx-check"></i>Готов к привязке</span>
+                                                                    {% elif row.is_attached_to_card %}
+                                                                        <span class="text-muted small"><i class="bx bx-check-double text-success"></i>Учтен в CRS</span>
+                                                                    {% else %}
+                                                                        <span class="text-muted small">—</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted small py-2">
+                                        <i class="bx bx-info-circle me-1"></i>
+                                        Для выполняемых работ табель обязательного оснащения еще не задан. 
+                                        {% if object.periodic_work.first %}
+                                            Вы можете <a href="{% url 'hrdepartment_app:periodic_work_requirements' object.periodic_work.first.pk %}" class="fw-bold text-primary">настроить табель оснащения регламента</a> или скопировать его из типовой формы ТО.
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
                         <div class="col-12">
                             <div class="card border border-light shadow-none bg-light p-3">
                                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">

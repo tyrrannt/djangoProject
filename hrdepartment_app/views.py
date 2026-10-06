@@ -99,7 +99,7 @@ from hrdepartment_app.forms import (
     PeriodicWorkForm, OperationalWorkForm, AircraftHoursTrackingForm, AircraftHoursImportForm,
     MaintenanceReleaseCertificateCreateForm, MaintenanceEquipmentForm, EquipmentVerificationRecordForm,
     EquipmentTransferRequestForm, EquipmentAllocationFilterForm, EquipmentExcelImportForm,
-    MaintenanceWorkEquipmentRequirementForm,
+    MaintenanceWorkEquipmentRequirementForm, MaintenanceWorkRequirementsCopyForm,
 )
 from contracts_app.models import Estate
 from hrdepartment_app.services.aircraft_maintenance_service import (
@@ -111,7 +111,10 @@ from hrdepartment_app.services.aircraft_maintenance_service import (
     import_aircraft_hours_from_csv,
 )
 from hrdepartment_app.services.crs_document_service import generate_crs_docx
-from hrdepartment_app.services.equipment_allocation import EquipmentAllocationService
+from hrdepartment_app.services.equipment_allocation import (
+    EquipmentAllocationService,
+    copy_work_equipment_requirements,
+)
 from hrdepartment_app.services.equipment_import import EquipmentExcelImportService
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -5550,8 +5553,25 @@ class OutfitCardUpdateView(PermissionRequiredMixin, LoginRequiredMixin,
 
 
 class OutfitCardDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """Детальное представление карты-наряда на ТО ВС (ФАП-145)."""
+
     model = OutfitCard
     permission_required = "hrdepartment_app.view_outfitcard"
+
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        """Формирует контекст детальной карточки, включая аудит табеля оснащения СИ."""
+        context = super().get_context_data(**kwargs)
+        outfit_card = self.object
+
+        from hrdepartment_app.services.outfit_card_release_service import (
+            get_outfit_card_equipment_summary,
+            get_outfit_card_requirements_allocation,
+        )
+
+        context["equipment_summary"] = get_outfit_card_equipment_summary(outfit_card)
+        context["requirements_allocation"] = get_outfit_card_requirements_allocation(outfit_card)
+        context["title"] = f"Карта-наряд № {outfit_card.outfit_card_number}"
+        return context
 
 
 class OutfitCardDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
@@ -7954,10 +7974,12 @@ class PeriodicWorkRequirementsView(LoginRequiredMixin, PermissionRequiredMixin, 
         ).prefetch_related("allowed_substitutes").all()
 
         form = MaintenanceWorkEquipmentRequirementForm(periodic_work=periodic_work)
+        copy_form = MaintenanceWorkRequirementsCopyForm(current_work=periodic_work)
         context = {
             "periodic_work": periodic_work,
             "requirements": requirements,
             "form": form,
+            "copy_form": copy_form,
             "title": f"Табель оснащения СИ: {periodic_work}",
             "return_to": request.GET.get("return_to", ""),
             "target_mpd": request.GET.get("target_mpd", ""),
@@ -7996,12 +8018,14 @@ class PeriodicWorkRequirementsView(LoginRequiredMixin, PermissionRequiredMixin, 
         requirements = periodic_work.equipment_requirements.select_related(
             "equipment_name", "required_type"
         ).prefetch_related("allowed_substitutes").all()
+        copy_form = MaintenanceWorkRequirementsCopyForm(current_work=periodic_work)
 
         messages.error(request, "Ошибка при добавлении требования к оборудованию. Пожалуйста, проверьте поля формы.")
         context = {
             "periodic_work": periodic_work,
             "requirements": requirements,
             "form": form,
+            "copy_form": copy_form,
             "title": f"Табель оснащения СИ: {periodic_work}",
             "return_to": return_to,
             "target_mpd": target_mpd,
@@ -8043,6 +8067,66 @@ class PeriodicWorkRequirementDeleteView(LoginRequiredMixin, PermissionRequiredMi
                 redirect_url += "?" + "&".join(params)
             return redirect(redirect_url)
         return redirect("hrdepartment_app:periodic_work_list")
+
+
+class PeriodicWorkRequirementsCopyView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Копирование и тиражирование утвержденного табеля оснащения из другой формы ТО (ФАП-145)."""
+
+    permission_required = "hrdepartment_app.change_periodicwork"
+
+    def has_permission(self) -> bool:
+        """Проверяет права доступа к модификации регламентов ТО."""
+        user = self.request.user
+        return bool(user.is_authenticated and (user.is_superuser or user.is_staff or user.has_perm(self.permission_required)))
+
+    def post(self, request, pk: int, *args, **kwargs) -> HttpResponse:
+        """Обрабатывает POST-запрос на копирование табеля оснащения."""
+        target_work = get_object_or_404(PeriodicWork.objects.select_related("air_bord_type"), pk=pk)
+        form = MaintenanceWorkRequirementsCopyForm(request.POST, current_work=target_work)
+
+        return_to = request.POST.get("return_to", "")
+        target_mpd = request.POST.get("target_mpd", "")
+        date_start = request.POST.get("date_start", "")
+
+        redirect_url = reverse("hrdepartment_app:periodic_work_requirements", kwargs={"pk": pk})
+        params = []
+        if return_to:
+            params.append(f"return_to={return_to}")
+        if target_mpd:
+            params.append(f"target_mpd={target_mpd}")
+        if date_start:
+            params.append(f"date_start={date_start}")
+        if params:
+            redirect_url += "?" + "&".join(params)
+
+        if form.is_valid():
+            source_work = form.cleaned_data["source_work"]
+            mode = form.cleaned_data["mode"]
+            try:
+                created_count, skipped_count = copy_work_equipment_requirements(
+                    source_work=source_work,
+                    target_work=target_work,
+                    mode=mode,
+                )
+                if mode == "replace":
+                    messages.success(
+                        request,
+                        f"Табель успешно перезаписан: скопировано {created_count} требований из регламента «{source_work}»."
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Табель дополнен: добавлено {created_count} новых требований из «{source_work}» "
+                        f"(пропущено {skipped_count} уже имеющихся)."
+                    )
+            except Exception as e:
+                logger.error(f"Error copying requirements: {e}")
+                messages.error(request, f"Ошибка при копировании требований: {e}")
+        else:
+            messages.error(request, "Ошибка валидации формы копирования. Выберите форму ТО-источник.")
+
+        return redirect(redirect_url)
+
 
 
 class OperationalWorkList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
@@ -8986,6 +9070,7 @@ class EquipmentTransferRequestListView(LoginRequiredMixin, ListView):
     model = EquipmentTransferRequest
     template_name = "hrdepartment_app/equipment_transfer_list.html"
     context_object_name = "transfers"
+    paginate_by = 30
 
     def get_queryset(self):
         qs = (
@@ -9003,13 +9088,44 @@ class EquipmentTransferRequestListView(LoginRequiredMixin, ListView):
         status_filter = self.request.GET.get("status")
         if status_filter:
             qs = qs.filter(status=status_filter)
+
+        from_mpd_id = self.request.GET.get("from_mpd")
+        if from_mpd_id:
+            qs = qs.filter(from_mpd_id=from_mpd_id)
+
+        to_mpd_id = self.request.GET.get("to_mpd")
+        if to_mpd_id:
+            qs = qs.filter(to_mpd_id=to_mpd_id)
+
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(equipment__name__icontains=q)
+                | Q(equipment__serial_number__icontains=q)
+                | Q(tracking_number__icontains=q)
+                | Q(notes__icontains=q)
+            )
+
         return qs
 
     def get_context_data(self, **kwargs) -> Dict[str, Any]:
         context = super().get_context_data(**kwargs)
+        all_transfers = EquipmentTransferRequest.objects.all()
+
         context["title"] = "Реестр перемещений оборудования между МПД"
         context["status_choices"] = EquipmentTransferStatus.choices
         context["selected_status"] = self.request.GET.get("status", "")
+        context["selected_from_mpd"] = self.request.GET.get("from_mpd", "")
+        context["selected_to_mpd"] = self.request.GET.get("to_mpd", "")
+        context["search_query"] = self.request.GET.get("q", "").strip()
+        context["mpd_list"] = PlaceProductionActivity.objects.all().order_by("name")
+
+        # KPI-метрики для аналитических карточек
+        context["kpi_total"] = all_transfers.count()
+        context["kpi_requested"] = all_transfers.filter(status=EquipmentTransferStatus.REQUESTED).count()
+        context["kpi_in_transit"] = all_transfers.filter(status=EquipmentTransferStatus.IN_TRANSIT).count()
+        context["kpi_delivered"] = all_transfers.filter(status=EquipmentTransferStatus.DELIVERED).count()
+        context["kpi_returned"] = all_transfers.filter(status=EquipmentTransferStatus.RETURNED).count()
         return context
 
 
@@ -9083,11 +9199,18 @@ class EquipmentTransferRequestStatusUpdateView(LoginRequiredMixin, PermissionReq
         transfer = get_object_or_404(EquipmentTransferRequest, pk=pk)
         new_status = request.POST.get("status")
         tracking_number = request.POST.get("tracking_number")
+        notes = request.POST.get("notes")
 
         if new_status and new_status in EquipmentTransferStatus.values:
             transfer.status = new_status
-            if tracking_number is not None:
-                transfer.tracking_number = tracking_number
+            if tracking_number is not None and tracking_number.strip():
+                transfer.tracking_number = tracking_number.strip()
+            if notes and notes.strip():
+                timestamp = timezone.now().strftime("%d.%m.%Y %H:%M")
+                author = request.user.title or request.user.username
+                new_note = f"[{timestamp} {author}]: {notes.strip()}"
+                transfer.notes = f"{transfer.notes}\n{new_note}".strip() if transfer.notes else new_note
+
             if new_status == EquipmentTransferStatus.DELIVERED:
                 transfer.equipment.production_place = transfer.to_mpd
                 transfer.equipment.save(update_fields=["production_place"])
@@ -9095,7 +9218,7 @@ class EquipmentTransferRequestStatusUpdateView(LoginRequiredMixin, PermissionReq
                 transfer.equipment.production_place = transfer.from_mpd
                 transfer.equipment.save(update_fields=["production_place"])
             transfer.save()
-            messages.success(request, f"Статус заявки #{transfer.pk} обновлен: {transfer.get_status_display()}.")
+            messages.success(request, f"Статус заявки #{transfer.pk} обновлен: «{transfer.get_status_display()}».")
 
         return redirect(reverse("hrdepartment_app:equipment_transfer_list"))
 
