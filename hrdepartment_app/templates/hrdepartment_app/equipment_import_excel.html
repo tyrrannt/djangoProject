@@ -1,0 +1,377 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }} // Баркол
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .stat-card {
+            border-radius: 8px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .btn-touch {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        .spec-table th {
+            background-color: #f8fafc;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #64748b;
+        }
+        .spec-table td {
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+        .result-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Верхние индикаторы состояния базы данных -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card stat-card border-0 shadow-sm bg-white h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-weight-bold">Оборудование в БД</span>
+                        <h3 class="font-weight-bold text-dark mb-0 mt-1">{{ total_equipment_count }}</h3>
+                        <small class="text-muted">экземпляров СИ и инструмента</small>
+                    </div>
+                    <div class="rounded-circle bg-light p-3 text-primary">
+                        <i class="bx bx-wrench fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card stat-card border-0 shadow-sm bg-white h-100 border-start border-info border-4">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-weight-bold">Типы и модели (НСИ)</span>
+                        <h3 class="font-weight-bold text-info mb-0 mt-1">{{ total_types_count }}</h3>
+                        <small class="text-muted">утвержденных марок/моделей СИ</small>
+                    </div>
+                    <div class="rounded-circle bg-info bg-opacity-10 p-3 text-info">
+                        <i class="bx bx-category fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card stat-card border-0 shadow-sm bg-white h-100 border-start border-success border-4">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-weight-bold">Журнал поверок</span>
+                        <h3 class="font-weight-bold text-success mb-0 mt-1">{{ total_verifications_count }}</h3>
+                        <small class="text-muted">исторических записей поверок/калибровок</small>
+                    </div>
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 text-success">
+                        <i class="bx bx-check-shield fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная форма импорта -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <header class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h4 class="card-title font-weight-bold text-dark mb-1">
+                            <i class="bx bx-file-blank text-success me-2"></i>Пакетный импорт метрологического графика из Excel
+                        </h4>
+                        <p class="card-subtitle text-muted mb-0">
+                            Автоматическая 3-уровневая нормализация реестра оборудования по требованиям ФАП-145 и 102-ФЗ
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{% url 'hrdepartment_app:equipment_list' %}"
+                           class="btn btn-outline-secondary btn-touch">
+                            <i class="bx bx-arrow-back me-1"></i> Вернуться к реестру
+                        </a>
+                    </div>
+                </header>
+
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm border-0 mb-4">
+                            <h6 class="alert-heading font-weight-bold mb-2">
+                                <i class="bx bx-error-circle me-1"></i> Ошибки заполнения формы:
+                            </h6>
+                            <ul class="mb-0">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" class="needs-validation">
+                        {% csrf_token %}
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-12 col-lg-6">
+                                <label for="{{ form.excel_file.id_for_label }}" class="form-label">
+                                    {{ form.excel_file.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.excel_file }}
+                                {% if form.excel_file.help_text %}
+                                    <div class="form-text text-muted small mt-1">{{ form.excel_file.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="{{ form.sheet_name.id_for_label }}" class="form-label">
+                                    {{ form.sheet_name.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.sheet_name }}
+                                {% if form.sheet_name.help_text %}
+                                    <div class="form-text text-muted small mt-1">{{ form.sheet_name.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-3 d-flex flex-column justify-content-center">
+                                <div class="form-check form-switch pt-3">
+                                    {{ form.dry_run }}
+                                    <label class="form-check-label font-weight-bold ms-2" for="{{ form.dry_run.id_for_label }}">
+                                        {{ form.dry_run.label }}
+                                    </label>
+                                </div>
+                                <div class="form-text text-muted small mt-1">{{ form.dry_run.help_text }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Информационный блок архитектуры импорта -->
+                        <div class="alert alert-info bg-light border border-info border-opacity-25 rounded p-3 mb-4">
+                            <h6 class="font-weight-bold text-dark mb-2">
+                                <i class="bx bx-info-circle text-info me-1"></i> Автоматическая трехуровневая нормализация данных:
+                            </h6>
+                            <div class="row g-2 small text-muted">
+                                <div class="col-12 col-md-4">
+                                    <strong>1. Каталог наименований:</strong> автоматическое определение категории (СИ по 102-ФЗ, КПА, специнструмент, наземное оборудование).
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <strong>2. Типы и модели (НСИ):</strong> сохранение класса точности, диапазона измерений, номера Госреестра СИ РФ и МПИ.
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <strong>3. Экземпляры и поверки:</strong> разделение серийного номера и маркировки по п. 23 ФАП-145, привязка МПД и создание записи поверки.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-3">
+                            <button type="submit" class="btn btn-success btn-touch font-weight-semibold shadow-sm">
+                                <i class="bx bx-upload me-1"></i> Начать импорт реестра
+                            </button>
+                            <a href="{% url 'hrdepartment_app:equipment_list' %}" class="btn btn-light btn-touch text-secondary">
+                                Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок результатов импорта (если отчет сформирован) -->
+    {% if report %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-modern shadow-sm border-0 mb-4">
+                    <header class="card-header bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
+                        <div>
+                            <h4 class="card-title font-weight-bold text-dark mb-1">
+                                <i class="bx bx-receipt text-primary me-2"></i>Результаты обработки книги Excel
+                            </h4>
+                            <p class="card-subtitle text-muted mb-0">
+                                {% if report.dry_run %}
+                                    <span class="badge bg-warning text-dark"><i class="bx bx-test-tube me-1"></i>Тестовый прогон (Dry-Run)</span> — изменения в БД не вносились
+                                {% else %}
+                                    <span class="badge bg-success"><i class="bx bx-check-circle me-1"></i>Боевой режим</span> — данные успешно сохранены в базе данных
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-dark border p-2">
+                                <i class="bx bx-time me-1"></i>{{ report.start_time|date:"d.m.Y H:i:s" }}
+                            </span>
+                        </div>
+                    </header>
+
+                    <div class="card-body p-4">
+                        <!-- Карточки статистики отчета -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <div class="p-3 bg-light rounded text-center">
+                                    <span class="text-muted small text-uppercase">Прочитано</span>
+                                    <h4 class="font-weight-bold text-dark mb-0 mt-1">{{ report.total_rows_read }}</h4>
+                                    <small class="text-muted">строк Excel</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <div class="p-3 bg-light rounded text-center border-start border-success border-3">
+                                    <span class="text-muted small text-uppercase">Создано приборов</span>
+                                    <h4 class="font-weight-bold text-success mb-0 mt-1">{{ report.created_equipment_count }}</h4>
+                                    <small class="text-muted">экземпляров</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <div class="p-3 bg-light rounded text-center border-start border-primary border-3">
+                                    <span class="text-muted small text-uppercase">Обновлено</span>
+                                    <h4 class="font-weight-bold text-primary mb-0 mt-1">{{ report.updated_equipment_count }}</h4>
+                                    <small class="text-muted">существующих</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <div class="p-3 bg-light rounded text-center border-start border-info border-3">
+                                    <span class="text-muted small text-uppercase">Новых типов СИ</span>
+                                    <h4 class="font-weight-bold text-info mb-0 mt-1">{{ report.types_created }}</h4>
+                                    <small class="text-muted">моделей (Ур. 2)</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <div class="p-3 bg-light rounded text-center border-start border-warning border-3">
+                                    <span class="text-muted small text-uppercase">Новых баз МПД</span>
+                                    <h4 class="font-weight-bold text-warning mb-0 mt-1">{{ report.places_created }}</h4>
+                                    <small class="text-muted">точек ТО</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <div class="p-3 bg-light rounded text-center border-start border-secondary border-3">
+                                    <span class="text-muted small text-uppercase">Записей поверок</span>
+                                    <h4 class="font-weight-bold text-dark mb-0 mt-1">{{ report.verifications_recorded }}</h4>
+                                    <small class="text-muted">в журнал 102-ФЗ</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Предупреждения и ошибки -->
+                        {% if report.errors %}
+                            <div class="alert alert-danger shadow-sm border-0 mb-4">
+                                <h6 class="alert-heading font-weight-bold mb-2">
+                                    <i class="bx bx-error me-1"></i> Ошибки при обработке строк ({{ report.errors|length }}):
+                                </h6>
+                                <ul class="mb-0 small">
+                                    {% for err in report.errors %}
+                                        <li>{{ err }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if report.warnings %}
+                            <div class="alert alert-warning shadow-sm border-0 mb-4">
+                                <h6 class="alert-heading font-weight-bold mb-2">
+                                    <i class="bx bx-info-circle me-1"></i> Предупреждения ({{ report.warnings|length }}):
+                                </h6>
+                                <ul class="mb-0 small">
+                                    {% for warn in report.warnings %}
+                                        <li>{{ warn }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <!-- Таблица обработанных записей (первые 200 или все) -->
+                        <h6 class="font-weight-bold text-dark mb-3">
+                            <i class="bx bx-list-check text-primary me-1"></i> Журнал обработанных позиций реестра
+                            <small class="text-muted font-weight-normal">(всего записей в отчете: {{ report.row_results|length }})</small>
+                        </h6>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover spec-table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;" class="text-center">№ стр.</th>
+                                        <th style="width: 50px;" class="text-center">№ в граф.</th>
+                                        <th>Наименование (Ур. 1)</th>
+                                        <th>Тип / модель (Ур. 2)</th>
+                                        <th>Заводской / марк. номер</th>
+                                        <th>МПД базирования</th>
+                                        <th class="text-center">Состояние</th>
+                                        <th class="text-center">Результат</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in report.row_results %}
+                                        <tr>
+                                            <td class="text-center text-muted small">{{ row.row_index }}</td>
+                                            <td class="text-center font-weight-bold text-secondary">{{ row.raw_number|default:"-" }}</td>
+                                            <td class="font-weight-semibold text-dark">{{ row.equipment_name }}</td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border">{{ row.type_model_name }}</span>
+                                            </td>
+                                            <td>
+                                                {% if row.serial_number %}
+                                                    <code>{{ row.serial_number }}</code>
+                                                {% else %}
+                                                    <span class="text-muted small">б/н</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="small text-muted">{{ row.mpd_name }}</td>
+                                            <td class="text-center">
+                                                {% if row.status == 'serviceable' %}
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Исправен</span>
+                                                {% elif row.status == 'defective' %}
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Неисправен</span>
+                                                {% elif row.status == 'scrapped' %}
+                                                    <span class="badge bg-dark-subtle text-dark border border-dark-subtle">Списан</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">{{ row.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if row.is_created %}
+                                                    <span class="badge bg-success result-badge"><i class="bx bx-plus me-1"></i>Создан</span>
+                                                {% else %}
+                                                    <span class="badge bg-primary result-badge"><i class="bx bx-refresh me-1"></i>Обновлен</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted py-4">
+                                                Записи не сформированы.
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

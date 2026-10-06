@@ -78,12 +78,31 @@
 
             <!-- Форма фильтрации и параметров подбора -->
             <div class="card card-modern shadow-sm border-0 mb-4">
-                <div class="card-header bg-light py-3 px-4">
+                <div class="card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center">
                     <h5 class="card-title font-weight-bold text-dark mb-0">
                         <i class="bx bx-filter-alt text-primary me-2"></i>Параметры планируемого ТО
                     </h5>
+                    {% if selected_work_obj and work_type == 'periodic' %}
+                        <a href="{% url 'hrdepartment_app:periodic_work_requirements' selected_work_obj.pk %}?return_to=dashboard&target_mpd={{ form.target_mpd.value|default:'' }}&date_start={{ form.date_start.value|default:'' }}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bx bx-wrench me-1"></i> Табель оснащения формы «{{ selected_work_obj.code }}»
+                        </a>
+                    {% endif %}
                 </div>
                 <div class="card-body p-4">
+                    {% if form.errors %}
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <div class="fw-bold mb-1"><i class="bx bx-error-circle me-1"></i> Ошибка в параметрах формы:</div>
+                            <ul class="mb-0 ps-3">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endif %}
                     <form method="get" action="{% url 'hrdepartment_app:equipment_allocation_dashboard' %}">
                         <div class="row g-3">
                             <div class="col-12 col-md-3">
@@ -169,8 +188,25 @@
                 </div>
 
                 <!-- Детализированный табель обеспечения -->
+                {% if report.total_requirements_count == 0 %}
+                    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between p-3 mb-4 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-info-circle fs-3 me-2"></i>
+                            <div>
+                                <strong>Табель оснащения пуст:</strong> Для формы ТО «{{ report.work_name }}» еще не сформирован перечень обязательных СИ и инструмента.
+                            </div>
+                        </div>
+                        {% if report.work_category == 'PERIODIC' %}
+                            <a href="{% url 'hrdepartment_app:periodic_work_requirements' report.work_id %}?return_to=dashboard&target_mpd={{ report.target_mpd_id }}&date_start={{ form.date_start.value|default:report.target_date_start|date:'d.m.Y' }}"
+                               class="btn btn-warning btn-sm font-weight-bold">
+                                <i class="bx bx-wrench me-1"></i> Настроить табель оснащения
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
                 <div class="card card-modern shadow-sm border-0 mb-4">
-                    <div class="card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div>
                             <h5 class="card-title font-weight-bold text-dark mb-0">
                                 <i class="bx bx-list-check text-primary me-2"></i>Ведомость укомплектованности: {{ report.work_name }} ({{ report.target_mpd_name }})
@@ -179,6 +215,14 @@
                                 Период ТО: с {{ report.target_date_start }} по {{ report.target_date_end }} (с учетом буфера {{ report.safety_buffer_days }} дн.)
                             </span>
                         </div>
+                        {% if report.work_category == 'PERIODIC' %}
+                            <div>
+                                <a href="{% url 'hrdepartment_app:periodic_work_requirements' report.work_id %}?return_to=dashboard&target_mpd={{ report.target_mpd_id }}&date_start={{ form.date_start.value|default:report.target_date_start|date:'d.m.Y' }}"
+                                   class="btn btn-outline-primary btn-sm btn-touch">
+                                    <i class="bx bx-wrench me-1"></i> Редактировать табель оснащения
+                                </a>
+                            </div>
+                        {% endif %}
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -305,7 +349,14 @@
                                     {% empty %}
                                         <tr>
                                             <td colspan="6" class="text-center text-muted py-4">
-                                                Для выбранной работы ТО в табеле оснащения пока не зарегистрировано нормативных требований.
+                                                <i class="bx bx-folder-open fs-2 mb-2 d-block text-secondary"></i>
+                                                Для выбранной работы ТО в табеле оснащения пока не зарегистрировано нормативных требований.<br>
+                                                {% if report.work_category == 'PERIODIC' %}
+                                                    <a href="{% url 'hrdepartment_app:periodic_work_requirements' report.work_id %}?return_to=dashboard&target_mpd={{ report.target_mpd_id }}&date_start={{ form.date_start.value|default:report.target_date_start|date:'d.m.Y' }}"
+                                                       class="btn btn-sm btn-primary mt-2">
+                                                        <i class="bx bx-wrench me-1"></i> Сформировать табель оснащения регламента
+                                                    </a>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -339,6 +390,9 @@
 
             if (workTypeSelect) {
                 workTypeSelect.addEventListener("change", toggleWorkContainers);
+                if (window.jQuery) {
+                    $('#id_work_type').on('change', toggleWorkContainers);
+                }
                 toggleWorkContainers();
             }
         });

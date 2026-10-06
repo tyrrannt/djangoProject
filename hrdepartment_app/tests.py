@@ -1842,7 +1842,7 @@ class MaintenanceReleaseCertificatePortalTests(TestCase):
         self.assertEqual(cert.certificate_number, card2.crs_number)
 
 
-from .tests_metrology import (
+from .tests.tests_metrology import (
     MaintenanceEquipmentAndReleaseServiceTests,
     MaintenanceEquipmentPortalPermissionTests,
 )

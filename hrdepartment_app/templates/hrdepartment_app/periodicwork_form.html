@@ -68,7 +68,12 @@
                             </h4>
                             <p class="card-subtitle text-muted mb-0">Справочник периодических регламентных работ воздушных судов</p>
                         </div>
-                        <div>
+                        <div class="d-flex gap-2">
+                            {% if object %}
+                                <a href="{% url 'hrdepartment_app:periodic_work_requirements' object.pk %}" class="btn btn-primary btn-touch">
+                                    <i class="bx bx-wrench me-1"></i> Табель оснащения СИ
+                                </a>
+                            {% endif %}
                             <a href="{% url 'hrdepartment_app:periodic_work_list' %}" class="btn btn-outline-secondary btn-touch">
                                 <i class="bx bx-arrow-back me-1"></i> К списку
                             </a>
@@ -147,6 +152,11 @@
                                 <button type="submit" class="btn btn-success btn-touch font-weight-semibold">
                                     <i class="bx bx-save text-4 me-2"></i> Сохранить
                                 </button>
+                                {% if object %}
+                                    <a href="{% url 'hrdepartment_app:periodic_work_requirements' object.pk %}" class="btn btn-outline-primary btn-touch font-weight-semibold">
+                                        <i class="bx bx-wrench text-4 me-2"></i> Табель оснащения СИ
+                                    </a>
+                                {% endif %}
                                 <a href="{% url 'hrdepartment_app:periodic_work_list' %}" class="btn btn-outline-secondary btn-touch font-weight-semibold">
                                     <i class="bx bx-x text-4 me-2"></i> Отмена
                                 </a>

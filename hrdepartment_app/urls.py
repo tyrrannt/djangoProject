@@ -21,6 +21,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     MaintenanceReleaseCertificateCreateView, OutfitCardCRSDataApiView, \
     MaintenanceEquipmentListView, MaintenanceEquipmentDetailView, \
     MaintenanceEquipmentCreateView, MaintenanceEquipmentUpdateView, MaintenanceEquipmentDeleteView, \
+    EquipmentImportExcelView, \
     EquipmentVerificationRecordCreateView, EquipmentTypesByNameHTMXView, EquipmentAllocationDashboardView, \
     EquipmentTransferRequestListView, EquipmentTransferRequestCreateView, EquipmentTransferRequestStatusUpdateView, \
     ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
@@ -37,6 +38,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     StudentAgreementDetailView, StudentAgreementUpdateView, StudentAgreementDeleteView, generate_student_agreement, \
     PoaListView, PoaCreateView, PoaDetailView, PoaUpdateView, PoaMarkReceivedView, PoaMarkReceivedDeleteView, \
     PeriodicWorkList, PeriodicWorkAdd, PeriodicWorkUpdate, PeriodicWorkDelete, \
+    PeriodicWorkRequirementsView, PeriodicWorkRequirementDeleteView, \
     OperationalWorkList, OperationalWorkAdd, OperationalWorkUpdate, OperationalWorkDelete, \
     AircraftHoursListView, AircraftHoursAddView, AircraftHoursExcelTemplateDownloadView, \
     AircraftHoursImportView, AircraftMaintenanceApproachesAPIView
@@ -99,6 +101,8 @@ urlpatterns = [
     path('periodicwork/add/', PeriodicWorkAdd.as_view(), name='periodic_work_add'),
     path('periodicwork/<int:pk>/update/', PeriodicWorkUpdate.as_view(), name='periodic_work_update'),
     path('periodicwork/<int:pk>/delete/', PeriodicWorkDelete.as_view(), name='periodic_work_delete'),
+    path('periodicwork/<int:pk>/requirements/', PeriodicWorkRequirementsView.as_view(), name='periodic_work_requirements'),
+    path('periodicwork/requirements/<int:pk>/delete/', PeriodicWorkRequirementDeleteView.as_view(), name='periodic_work_requirement_delete'),
     path('operationalwork/', OperationalWorkList.as_view(), name='operational_work_list'),
     path('operationalwork/add/', OperationalWorkAdd.as_view(), name='operational_work_add'),
     path('operationalwork/<int:pk>/update/', OperationalWorkUpdate.as_view(), name='operational_work_update'),
@@ -199,6 +203,7 @@ urlpatterns = [
     path('api/outfit-card/<int:pk>/crs-data/', OutfitCardCRSDataApiView.as_view(), name='api_outfit_card_crs_data'),
     path('equipment/', MaintenanceEquipmentListView.as_view(), name='equipment_list'),
     path('equipment/create/', MaintenanceEquipmentCreateView.as_view(), name='equipment_create'),
+    path('equipment/import-excel/', EquipmentImportExcelView.as_view(), name='equipment_import_excel'),
     path('equipment/<int:pk>/', MaintenanceEquipmentDetailView.as_view(), name='equipment_detail'),
     path('equipment/<int:pk>/update/', MaintenanceEquipmentUpdateView.as_view(), name='equipment_update'),
     path('equipment/<int:pk>/delete/', MaintenanceEquipmentDeleteView.as_view(), name='equipment_delete'),

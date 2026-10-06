@@ -98,7 +98,8 @@ from hrdepartment_app.forms import (
     TrainingProgramQuickForm, TrainingUnitQuickForm, TrainingDebtReportForm, PowerOfAttorneyForm,
     PeriodicWorkForm, OperationalWorkForm, AircraftHoursTrackingForm, AircraftHoursImportForm,
     MaintenanceReleaseCertificateCreateForm, MaintenanceEquipmentForm, EquipmentVerificationRecordForm,
-    EquipmentTransferRequestForm, EquipmentAllocationFilterForm,
+    EquipmentTransferRequestForm, EquipmentAllocationFilterForm, EquipmentExcelImportForm,
+    MaintenanceWorkEquipmentRequirementForm,
 )
 from contracts_app.models import Estate
 from hrdepartment_app.services.aircraft_maintenance_service import (
@@ -111,6 +112,7 @@ from hrdepartment_app.services.aircraft_maintenance_service import (
 )
 from hrdepartment_app.services.crs_document_service import generate_crs_docx
 from hrdepartment_app.services.equipment_allocation import EquipmentAllocationService
+from hrdepartment_app.services.equipment_import import EquipmentExcelImportService
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
@@ -7928,6 +7930,121 @@ class PeriodicWorkDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView
         return context
 
 
+class PeriodicWorkRequirementsView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Управление табелем оснащения оборудованием и СИ для формы периодического ТО (ФАП-145).
+
+    Позволяет инженерам ПТО просматривать состав обязательных приборов и инструментов,
+    указывать требуемые типы/модели СИ (EquipmentTypeModel), допустимые аналоги,
+    количество и пункт технологической карты регламента.
+    """
+
+    permission_required = "hrdepartment_app.change_periodicwork"
+    template_name = "hrdepartment_app/periodicwork_requirements.html"
+
+    def has_permission(self) -> bool:
+        """Проверяет права доступа: суперпользователь, staff или явное право."""
+        user = self.request.user
+        return bool(user.is_authenticated and (user.is_superuser or user.is_staff or user.has_perm(self.permission_required)))
+
+    def get(self, request, pk: int, *args, **kwargs) -> HttpResponse:
+        """Отображает текущий табель оснащения и форму добавления нового требования."""
+        periodic_work = get_object_or_404(PeriodicWork.objects.select_related("air_bord_type"), pk=pk)
+        requirements = periodic_work.equipment_requirements.select_related(
+            "equipment_name", "required_type"
+        ).prefetch_related("allowed_substitutes").all()
+
+        form = MaintenanceWorkEquipmentRequirementForm(periodic_work=periodic_work)
+        context = {
+            "periodic_work": periodic_work,
+            "requirements": requirements,
+            "form": form,
+            "title": f"Табель оснащения СИ: {periodic_work}",
+            "return_to": request.GET.get("return_to", ""),
+            "target_mpd": request.GET.get("target_mpd", ""),
+            "date_start": request.GET.get("date_start", ""),
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, pk: int, *args, **kwargs) -> HttpResponse:
+        """Обрабатывает добавление новой позиции в табель оснащения регламента."""
+        periodic_work = get_object_or_404(PeriodicWork.objects.select_related("air_bord_type"), pk=pk)
+        form = MaintenanceWorkEquipmentRequirementForm(request.POST, periodic_work=periodic_work)
+
+        return_to = request.POST.get("return_to", "")
+        target_mpd = request.POST.get("target_mpd", "")
+        date_start = request.POST.get("date_start", "")
+
+        if form.is_valid():
+            req = form.save()
+            messages.success(
+                request,
+                f"Позиция «{req.equipment_name.name}» (тип: {req.required_type.name if req.required_type else 'любой'}) "
+                f"успешно добавлена в табель регламента {periodic_work}."
+            )
+            redirect_url = reverse("hrdepartment_app:periodic_work_requirements", kwargs={"pk": pk})
+            params = []
+            if return_to:
+                params.append(f"return_to={return_to}")
+            if target_mpd:
+                params.append(f"target_mpd={target_mpd}")
+            if date_start:
+                params.append(f"date_start={date_start}")
+            if params:
+                redirect_url += "?" + "&".join(params)
+            return redirect(redirect_url)
+
+        requirements = periodic_work.equipment_requirements.select_related(
+            "equipment_name", "required_type"
+        ).prefetch_related("allowed_substitutes").all()
+
+        messages.error(request, "Ошибка при добавлении требования к оборудованию. Пожалуйста, проверьте поля формы.")
+        context = {
+            "periodic_work": periodic_work,
+            "requirements": requirements,
+            "form": form,
+            "title": f"Табель оснащения СИ: {periodic_work}",
+            "return_to": return_to,
+            "target_mpd": target_mpd,
+            "date_start": date_start,
+        }
+        return render(request, self.template_name, context)
+
+
+class PeriodicWorkRequirementDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Удаление требования из табеля оснащения регламентной работы."""
+
+    permission_required = "hrdepartment_app.change_periodicwork"
+
+    def has_permission(self) -> bool:
+        user = self.request.user
+        return bool(user.is_authenticated and (user.is_superuser or user.is_staff or user.has_perm(self.permission_required)))
+
+    def post(self, request, pk: int, *args, **kwargs) -> HttpResponse:
+        req = get_object_or_404(MaintenanceWorkEquipmentRequirement, pk=pk)
+        work_pk = req.periodic_work_id
+        eq_title = str(req.equipment_name)
+        req.delete()
+        messages.success(request, f"Позиция «{eq_title}» удалена из табеля оснащения.")
+
+        return_to = request.POST.get("return_to", "")
+        target_mpd = request.POST.get("target_mpd", "")
+        date_start = request.POST.get("date_start", "")
+
+        if work_pk:
+            redirect_url = reverse("hrdepartment_app:periodic_work_requirements", kwargs={"pk": work_pk})
+            params = []
+            if return_to:
+                params.append(f"return_to={return_to}")
+            if target_mpd:
+                params.append(f"target_mpd={target_mpd}")
+            if date_start:
+                params.append(f"date_start={date_start}")
+            if params:
+                redirect_url += "?" + "&".join(params)
+            return redirect(redirect_url)
+        return redirect("hrdepartment_app:periodic_work_list")
+
+
 class OperationalWorkList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """Отображение реестра видов оперативных регламентных работ."""
 
@@ -8833,13 +8950,14 @@ class EquipmentAllocationDashboardView(LoginRequiredMixin, TemplateView):
         form = EquipmentAllocationFilterForm(self.request.GET or None)
 
         report = None
+        work_obj = None
+        work_type = None
         if form.is_valid():
             work_type = form.cleaned_data["work_type"]
             target_mpd = form.cleaned_data["target_mpd"]
             date_start = form.cleaned_data["date_start"]
             buffer_days = form.cleaned_data["safety_buffer_days"]
 
-            work_obj = None
             if work_type == "periodic":
                 work_obj = form.cleaned_data.get("periodic_work")
             else:
@@ -8856,6 +8974,8 @@ class EquipmentAllocationDashboardView(LoginRequiredMixin, TemplateView):
 
         context["form"] = form
         context["report"] = report
+        context["selected_work_obj"] = work_obj
+        context["work_type"] = work_type
         context["title"] = "Умный подбор оборудования ТО по МПД (ФАП-145)"
         return context
 
@@ -8978,6 +9098,103 @@ class EquipmentTransferRequestStatusUpdateView(LoginRequiredMixin, PermissionReq
             messages.success(request, f"Статус заявки #{transfer.pk} обновлен: {transfer.get_status_display()}.")
 
         return redirect(reverse("hrdepartment_app:equipment_transfer_list"))
+
+
+class EquipmentImportExcelView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Представление пакетного импорта реестра оборудования и метрологического графика из Excel.
+
+    Обеспечивает загрузку книг Excel (.xlsx, .xlsm), выбор рабочего листа,
+    режим предварительного тестирования (dry-run) и боевой записи с формированием
+    интерактивного отчета об изменениях (создано/обновлено/записей поверок).
+    Доступ регулируется наличием разрешения 'hrdepartment_app.add_maintenanceequipment'
+    либо статусом суперпользователя.
+
+    Attributes:
+        permission_required (str): Идентификатор требуемого разрешения Django.
+        template_name (str): Путь к шаблону формы и отчета импорта.
+    """
+
+    permission_required = "hrdepartment_app.add_maintenanceequipment"
+    template_name = "hrdepartment_app/equipment_import_excel.html"
+
+    def has_permission(self) -> bool:
+        """Проверяет права доступа текущего пользователя.
+
+        Returns:
+            bool: True, если пользователь суперпользователь или обладает правом add_maintenanceequipment.
+        """
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return bool(user.is_superuser or user.has_perm(self.permission_required))
+
+    def get(self, request, *args, **kwargs) -> HttpResponse:
+        """Отображает форму загрузки файла Excel и сводную статистику базы данных.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса.
+
+        Returns:
+            HttpResponse: Отрендеренная HTML-страница с формой загрузки.
+        """
+        form = EquipmentExcelImportForm()
+        context = {
+            "title": "Пакетный импорт оборудования и СИ из Excel (ФАП-145)",
+            "form": form,
+            "total_equipment_count": MaintenanceEquipment.objects.count(),
+            "total_types_count": EquipmentTypeModel.objects.count(),
+            "total_verifications_count": EquipmentVerificationRecord.objects.count(),
+            "report": None,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs) -> HttpResponse:
+        """Обрабатывает загруженный файл книги Excel и выполняет импорт.
+
+        Args:
+            request (HttpRequest): Объект HTTP-запроса с файлом в request.FILES.
+
+        Returns:
+            HttpResponse: Отрендеренная HTML-страница со сводным отчетом об импорте.
+        """
+        form = EquipmentExcelImportForm(request.POST, request.FILES)
+        report = None
+        if form.is_valid():
+            uploaded_file = form.cleaned_data["excel_file"]
+            sheet_name = form.cleaned_data["sheet_name"]
+            dry_run = form.cleaned_data["dry_run"]
+
+            service = EquipmentExcelImportService()
+            report = service.import_from_excel(
+                file_path_or_obj=uploaded_file,
+                sheet_name=sheet_name,
+                dry_run=dry_run,
+            )
+
+            if report.is_success:
+                mode_str = "в режиме симуляции (база данных не изменена)" if dry_run else "в боевом режиме (данные записаны)"
+                messages.success(
+                    request,
+                    f"Импорт файла «{uploaded_file.name}» успешно выполнен {mode_str}. "
+                    f"Обработано строк: {report.total_rows_read}, создано: {report.created_equipment_count}, "
+                    f"обновлено: {report.updated_equipment_count}, записей поверок: {report.verifications_recorded}."
+                )
+            else:
+                messages.error(
+                    request,
+                    f"При импорте файла «{uploaded_file.name}» возникли ошибки. См. детальный журнал ниже."
+                )
+
+        context = {
+            "title": "Пакетный импорт оборудования и СИ из Excel (ФАП-145)",
+            "form": form,
+            "total_equipment_count": MaintenanceEquipment.objects.count(),
+            "total_types_count": EquipmentTypeModel.objects.count(),
+            "total_verifications_count": EquipmentVerificationRecord.objects.count(),
+            "report": report,
+        }
+        return render(request, self.template_name, context)
+
 
 
 

@@ -1,0 +1,321 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }} // Отдел кадров
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .btn-touch {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        .badge-fap {
+            font-size: 0.82rem;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            if ($.fn.select2) {
+                $('[data-plugin-selectTwo]').select2({
+                    theme: 'bootstrap'
+                });
+            }
+
+            // Каскадная фильтрация типов СИ при смене родового наименования
+            const nameSelect = $('#id_equipment_name');
+            const typeSelect = $('#id_required_type');
+
+            nameSelect.on('change', function() {
+                const nameId = $(this).val();
+                if (!nameId) {
+                    typeSelect.html('<option value="">--- Любой исправный тип данного наименования ---</option>');
+                    if ($.fn.select2) {
+                        typeSelect.trigger('change.select2');
+                    }
+                    return;
+                }
+
+                $.ajax({
+                    url: "{% url 'hrdepartment_app:equipment_types_by_name' %}",
+                    data: { 'name_id': nameId },
+                    success: function(html) {
+                        typeSelect.html('<option value="">--- Любой исправный тип данного наименования ---</option>' + html);
+                        if ($.fn.select2) {
+                            typeSelect.trigger('change.select2');
+                        }
+                    },
+                    error: function() {
+                        console.error('Ошибка загрузки типов СИ для выбранного наименования');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 col-xl-11 mx-auto">
+            <!-- Шапка и навигация -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-bold text-dark mb-1">
+                        <i class="bx bx-wrench text-primary me-2"></i>Табель оснащения СИ и оборудования формы ТО
+                    </h3>
+                    <p class="text-muted mb-0">
+                        <strong>{{ periodic_work.air_bord_type|default:"Любой тип ВС" }}</strong> — Регламент:
+                        <span class="badge bg-primary text-white font-weight-bold ms-1">{{ periodic_work.code }}</span>
+                        <span class="text-dark ms-2 font-weight-semibold">«{{ periodic_work.name }}»</span>
+                        {% if periodic_work.ratio %}
+                            <span class="badge bg-light text-dark border ms-2">Норма: {{ periodic_work.ratio }} ч.</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if return_to == 'dashboard' %}
+                        <a href="{% url 'hrdepartment_app:equipment_allocation_dashboard' %}?work_type=periodic&periodic_work={{ periodic_work.pk }}{% if target_mpd %}&target_mpd={{ target_mpd }}{% endif %}{% if date_start %}&date_start={{ date_start }}{% endif %}"
+                           class="btn btn-outline-primary btn-touch">
+                            <i class="bx bx-arrow-back me-1"></i> Вернуться к проверке обеспеченности МПД
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'hrdepartment_app:periodic_work_update' periodic_work.pk %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bx bx-edit me-1"></i> Параметры работы
+                    </a>
+                    <a href="{% url 'hrdepartment_app:periodic_work_list' %}" class="btn btn-outline-dark btn-touch">
+                        <i class="bx bx-list-ul me-1"></i> Реестр регламентов
+                    </a>
+                </div>
+            </div>
+
+            <!-- Уведомления и системные сообщения -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show mb-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bx {% if message.tags == 'error' %}bx-error-circle{% else %}bx-check-circle{% endif %} fs-4 me-2"></i>
+                            <div>{{ message }}</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Карточка 1: Действующий табель оснащения формы -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title font-weight-bold text-dark mb-0">
+                            <i class="bx bx-list-check text-primary me-2"></i>Нормативные требования регламента к оборудованию
+                        </h5>
+                        <span class="text-muted small">
+                            Определяет комплектность СИ, КПА и специнструмента для допуска МПД по п. 40 ФАП-145
+                        </span>
+                    </div>
+                    <span class="badge bg-primary rounded-pill px-3 py-2">Позиций в табеле: {{ requirements|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th style="width: 5%;" class="text-center">#</th>
+                                    <th style="width: 25%;">Наименование инструмента / СИ</th>
+                                    <th style="width: 20%;">Предписанный тип / марка</th>
+                                    <th style="width: 20%;">Допустимые аналоги (заменители)</th>
+                                    <th style="width: 8%;" class="text-center">Кол-во</th>
+                                    <th style="width: 12%;">Обязательность</th>
+                                    <th style="width: 10%;" class="text-end pe-4">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in requirements %}
+                                    <tr>
+                                        <td class="text-center text-muted fw-bold">{{ forloop.counter }}</td>
+                                        <td>
+                                            <div class="fw-bold text-dark">{{ req.equipment_name.name }}</div>
+                                            {% if req.task_reference %}
+                                                <div class="text-muted small">
+                                                    <i class="bx bx-book-open me-1"></i>{{ req.task_reference }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if req.required_type %}
+                                                <span class="fw-semibold text-primary">{{ req.required_type.name }}</span>
+                                                {% if req.required_type.arshin_type_number %}
+                                                    <div class="text-muted small">АРШИН: {{ req.required_type.arshin_type_number }}</div>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted fst-italic">Любой утвержденный тип</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for sub in req.allowed_substitutes.all %}
+                                                <span class="badge bg-light text-dark border me-1 mb-1">{{ sub.name }}</span>
+                                            {% empty %}
+                                                <span class="text-muted small">—</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary px-2 py-1 fs-6">{{ req.quantity }} шт.</span>
+                                        </td>
+                                        <td>
+                                            {% if req.is_mandatory %}
+                                                <span class="badge bg-danger badge-fap">
+                                                    <i class="bx bx-shield-check me-1"></i>Обязательно (п. 40)
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-info text-dark badge-fap">
+                                                    <i class="bx bx-info-circle me-1"></i>Рекомендовано
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <form method="post" action="{% url 'hrdepartment_app:periodic_work_requirement_delete' req.pk %}"
+                                                  onsubmit="return confirm('Удалить позицию «{{ req.equipment_name.name }}» из табеля оснащения данного регламента?');"
+                                                  class="d-inline">
+                                                {% csrf_token %}
+                                                {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
+                                                {% if target_mpd %}<input type="hidden" name="target_mpd" value="{{ target_mpd }}">{% endif %}
+                                                {% if date_start %}<input type="hidden" name="date_start" value="{{ date_start }}">{% endif %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить из табеля">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="bx bx-folder-open fs-2 mb-2 d-block"></i>
+                                            В табеле оснащения для данного регламента еще нет нормативных требований.<br>
+                                            Добавьте требуемые приборы и специнструмент через форму ниже.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Карточка 2: Добавление нового требования в табель -->
+            <div class="card card-modern shadow-sm border-0 mb-4">
+                <div class="card-header bg-light py-3 px-4">
+                    <h5 class="card-title font-weight-bold text-dark mb-0">
+                        <i class="bx bx-plus-circle text-success me-2"></i>Добавить требование к оборудованию / СИ
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <div class="fw-bold mb-1"><i class="bx bx-error-circle me-1"></i> Ошибки валидации:</div>
+                            <ul class="mb-0 ps-3">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'hrdepartment_app:periodic_work_requirements' periodic_work.pk %}">
+                        {% csrf_token %}
+                        {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
+                        {% if target_mpd %}<input type="hidden" name="target_mpd" value="{{ target_mpd }}">{% endif %}
+                        {% if date_start %}<input type="hidden" name="date_start" value="{{ date_start }}">{% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.equipment_name.id_for_label }}">
+                                    Родовое наименование инструмента / СИ <span class="text-danger">*</span>
+                                </label>
+                                {{ form.equipment_name }}
+                                <small class="form-text text-muted">Выберите категорию прибора (напр., Амперметр, Вольтметр, Манометр)</small>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.required_type.id_for_label }}">
+                                    Требуемый тип / марка СИ
+                                </label>
+                                {{ form.required_type }}
+                                <small class="form-text text-muted">Если регламент допускает любой тип данного прибора — оставьте пустым</small>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.allowed_substitutes.id_for_label }}">
+                                    Разрешенные типы-аналоги (заменители)
+                                </label>
+                                {{ form.allowed_substitutes }}
+                                <small class="form-text text-muted">Выберите альтернативные типы СИ, допустимые технологической картой</small>
+                            </div>
+
+                            <div class="col-12 col-md-2">
+                                <label class="form-label" for="{{ form.quantity.id_for_label }}">
+                                    Требуемое кол-во (шт.) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.quantity }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="{{ form.task_reference.id_for_label }}">
+                                    Пункт РО / техкарты
+                                </label>
+                                {{ form.task_reference }}
+                                <small class="form-text text-muted">Ссылка на технологическую карту или пункт РО</small>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check form-switch mt-2">
+                                    {{ form.is_mandatory }}
+                                    <label class="form-check-label fw-bold ms-2" for="{{ form.is_mandatory.id_for_label }}">
+                                        Обязательное оборудование по п. 40 ФАП-145 (без которого выпуск ВС запрещен)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 pt-3 border-top d-flex justify-content-between align-items-center">
+                                <button type="submit" class="btn btn-success btn-touch font-weight-semibold">
+                                    <i class="bx bx-plus-circle text-4 me-2"></i> Добавить в табель оснащения
+                                </button>
+                                {% if return_to == 'dashboard' %}
+                                    <a href="{% url 'hrdepartment_app:equipment_allocation_dashboard' %}?work_type=periodic&periodic_work={{ periodic_work.pk }}{% if target_mpd %}&target_mpd={{ target_mpd }}{% endif %}{% if date_start %}&date_start={{ date_start }}{% endif %}"
+                                       class="btn btn-outline-primary btn-touch">
+                                        <i class="bx bx-check-double me-1"></i> Перейти к расчету обеспеченности МПД
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

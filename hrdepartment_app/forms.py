@@ -36,6 +36,7 @@ from hrdepartment_app.models import (
     AircraftHoursTracking, HoursTrackingSource, MaintenanceReleaseCertificate,
     MaintenanceEquipment, EquipmentOperationalStatus, EquipmentVerificationType, OutfitCardEquipmentUsage,
     EquipmentVerificationRecord, EquipmentName, EquipmentTypeModel, EquipmentTransferRequest, EquipmentTransferStatus,
+    MaintenanceWorkEquipmentRequirement,
 )
 
 # Дата начала применения валидации
@@ -2744,8 +2745,9 @@ class EquipmentAllocationFilterForm(forms.Form):
     )
     date_start = forms.DateField(
         label="Дата начала ТО",
-        widget=forms.DateInput(attrs={"type": "date"}),
         initial=timezone.now().date,
+        input_formats=["%d.%m.%Y", "%Y-%m-%d", "%d/%m/%Y"],
+        help_text="Дата планируемого начала проведения работ",
     )
     safety_buffer_days = forms.IntegerField(
         label="Буфер надежности (дней)",
@@ -2758,6 +2760,91 @@ class EquipmentAllocationFilterForm(forms.Form):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             make_custom_field(field)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        work_type = cleaned_data.get("work_type")
+        periodic_work = cleaned_data.get("periodic_work")
+        operational_work = cleaned_data.get("operational_work")
+
+        if work_type == "periodic" and not periodic_work:
+            self.add_error("periodic_work", "Для периодического ТО выберите регламентную форму (ПТО).")
+        elif work_type == "operational" and not operational_work:
+            self.add_error("operational_work", "Для оперативного ТО выберите форму обслуживания (ОТО).")
+
+        return cleaned_data
+
+
+class MaintenanceWorkEquipmentRequirementForm(forms.ModelForm):
+    """Форма добавления и редактирования требования табеля оснащения ТО к оборудованию (ФАП-145).
+
+    Позволяет инженеру ПТО закрепить за конкретной формой периодического или оперативного ТО
+    обязательное наименование оборудования (EquipmentName), строгий тип/модель СИ (EquipmentTypeModel),
+    список взаимозаменяемых типов-аналогов (allowed_substitutes), требуемое количество и критичность.
+    """
+
+    class Meta:
+        model = MaintenanceWorkEquipmentRequirement
+        fields = [
+            "equipment_name",
+            "required_type",
+            "allowed_substitutes",
+            "quantity",
+            "is_mandatory",
+            "task_reference",
+        ]
+        widgets = {
+            "task_reference": forms.TextInput(attrs={"placeholder": "Пункт РО или техкарты (напр. 'РО п. 4.2.1')"}),
+            "is_mandatory": forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы с ограничением выбора моделей по наименованию."""
+        self.periodic_work = kwargs.pop("periodic_work", None)
+        self.operational_work = kwargs.pop("operational_work", None)
+        super().__init__(*args, **kwargs)
+        if self.periodic_work and not self.instance.periodic_work_id:
+            self.instance.periodic_work = self.periodic_work
+        if self.operational_work and not self.instance.operational_work_id:
+            self.instance.operational_work = self.operational_work
+        self.fields["equipment_name"].empty_label = "--- Выберите наименование инструмента/СИ ---"
+        self.fields["equipment_name"].queryset = EquipmentName.objects.all().order_by("name")
+
+        self.fields["required_type"].empty_label = "--- Любой исправный тип данного наименования ---"
+        self.fields["required_type"].queryset = EquipmentTypeModel.objects.select_related("equipment_name").order_by("equipment_name__name", "name")
+
+        self.fields["allowed_substitutes"].queryset = EquipmentTypeModel.objects.select_related("equipment_name").order_by("equipment_name__name", "name")
+
+        eq_name_id = None
+        if self.is_bound:
+            eq_name_id = self.data.get("equipment_name")
+        elif self.instance and self.instance.pk and self.instance.equipment_name_id:
+            eq_name_id = self.instance.equipment_name_id
+
+        if eq_name_id:
+            try:
+                self.fields["required_type"].queryset = EquipmentTypeModel.objects.filter(equipment_name_id=eq_name_id).order_by("name")
+                self.fields["allowed_substitutes"].queryset = EquipmentTypeModel.objects.filter(equipment_name_id=eq_name_id).order_by("name")
+            except (ValueError, TypeError):
+                pass
+
+        for field_name, field in self.fields.items():
+            if field_name != "is_mandatory":
+                make_custom_field(field)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        equipment_name = cleaned_data.get("equipment_name")
+        required_type = cleaned_data.get("required_type")
+
+        if equipment_name and required_type:
+            if required_type.equipment_name_id != equipment_name.pk:
+                self.add_error(
+                    "required_type",
+                    f"Тип «{required_type.name}» не относится к наименованию «{equipment_name.name}»."
+                )
+
+        return cleaned_data
 
 
 
@@ -2794,6 +2881,54 @@ class EquipmentVerificationRecordForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             make_custom_field(field)
+
+
+class EquipmentExcelImportForm(forms.Form):
+    """Форма пакетного импорта оборудования и средств измерений из Excel (.xlsx / .xlsm).
+
+    Обеспечивает загрузку книги Excel с метрологическим графиком, выбор листа,
+    режима тестового прогона (Dry-Run) и первичную валидацию файла.
+
+    Attributes:
+        excel_file: Загружаемый файл книги Excel (.xlsx, .xlsm).
+        sheet_name: Имя рабочего листа для импорта.
+        dry_run: Режим симуляции без фиксации изменений в базе данных.
+    """
+
+    excel_file = forms.FileField(
+        label="Файл Excel с метрологическим графиком (.xlsx / .xlsm)",
+        help_text="Поддерживаются книги Excel (.xlsx, .xlsm), содержащие столбцы реестра СИ и инструмента",
+        widget=forms.FileInput(attrs={"accept": ".xlsx,.xlsm"}),
+    )
+    sheet_name = forms.CharField(
+        label="Имя рабочего листа",
+        max_length=150,
+        initial="Все СИ и Инструмент",
+        help_text="Наименование вкладки Excel, из которой выполняется загрузка",
+    )
+    dry_run = forms.BooleanField(
+        label="Тестовый прогон (Dry-Run)",
+        required=False,
+        initial=True,
+        help_text="Если флаг установлен, выполняется проверка файла и вывод отчета без записи в базу данных",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Инициализация формы с применением единой стилизации make_custom_field."""
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if field_name != "dry_run":
+                make_custom_field(field)
+
+    def clean_excel_file(self):
+        """Валидация формата загружаемого файла по расширению."""
+        uploaded = self.cleaned_data.get("excel_file")
+        if uploaded:
+            ext = uploaded.name.rsplit(".", 1)[-1].lower() if "." in uploaded.name else ""
+            if ext not in ("xlsx", "xlsm"):
+                raise ValidationError("Разрешены только файлы электронных таблиц Microsoft Excel (.xlsx, .xlsm).")
+        return uploaded
 
 
 class DataBaseUserEventAddForm(forms.ModelForm):
