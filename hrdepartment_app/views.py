@@ -28,10 +28,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, QuerySet
 from django.db.models.functions import ExtractMonth, ExtractYear
 from django.forms import inlineformset_factory
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, FileResponse
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, FileResponse, HttpRequest
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
@@ -116,6 +116,7 @@ from hrdepartment_app.services.equipment_allocation import (
     copy_work_equipment_requirements,
 )
 from hrdepartment_app.services.equipment_import import EquipmentExcelImportService
+from hrdepartment_app.services.equipment_export import export_maintenance_equipment_to_excel
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
@@ -8755,40 +8756,136 @@ class OutfitCardCRSDataApiView(LoginRequiredMixin, View):
         return JsonResponse(data)
 
 
+def filter_maintenance_equipment_queryset(
+    request: HttpRequest,
+) -> Tuple[QuerySet[MaintenanceEquipment], Dict[str, Any]]:
+    """Фильтрует набор оборудования, КПА и инструмента ТО ВС на основе параметров GET-запроса.
+
+    Унифицирует логику отбора для интерактивного веб-реестра и официальной печатной ведомости Excel.
+
+    Args:
+        request (HttpRequest): Входящий HTTP-запрос с возможными GET-параметрами фильтрации.
+
+    Returns:
+        Tuple[QuerySet[MaintenanceEquipment], Dict[str, Any]]: Кортеж, содержащий:
+            - QuerySet[MaintenanceEquipment]: Оптимизированная выборка оборудования;
+            - Dict[str, Any]: Словарь разобранных параметров фильтрации и текстовой сводки filter_summary.
+    """
+    qs = (
+        MaintenanceEquipment.objects.select_related(
+            "production_place",
+            "responsible_person",
+            "type_model",
+            "type_model__equipment_name",
+        )
+        .prefetch_related("applicable_aircraft_types")
+        .order_by("name")
+    )
+    today = timezone.now().date()
+    warning_date = today + timedelta(days=30)
+    filter_descriptions: List[str] = []
+
+    # 1. Текстовый поиск
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q)
+            | Q(part_number__icontains=q)
+            | Q(serial_number__icontains=q)
+            | Q(marking_code__icontains=q)
+            | Q(arshin_verification_number__icontains=q)
+            | Q(type_model__name__icontains=q)
+            | Q(type_model__equipment_name__name__icontains=q)
+        )
+        filter_descriptions.append(f"Поиск: «{q}»")
+
+    # 2. Физический статус (operational_status)
+    status_filter = request.GET.get("status", "").strip()
+    if status_filter:
+        qs = qs.filter(operational_status=status_filter)
+        status_label = dict(EquipmentOperationalStatus.choices).get(status_filter, status_filter)
+        filter_descriptions.append(f"Статус: {status_label}")
+
+    # 3. МПД базирования (production_place)
+    mpd_raw = request.GET.get("mpd", "").strip() or request.GET.get("production_place", "").strip()
+    selected_mpd = None
+    if mpd_raw and mpd_raw.isdigit():
+        selected_mpd = int(mpd_raw)
+        qs = qs.filter(production_place_id=selected_mpd)
+        place = PlaceProductionActivity.objects.filter(pk=selected_mpd).first()
+        if place:
+            filter_descriptions.append(f"МПД: {place.name}")
+
+    # 4. Категория оборудования (equipment_type)
+    category_filter = request.GET.get("category", "").strip() or request.GET.get("equipment_type", "").strip()
+    if category_filter:
+        qs = qs.filter(equipment_type=category_filter)
+        cat_label = dict(EquipmentType.choices).get(category_filter, category_filter)
+        filter_descriptions.append(f"Категория: {cat_label}")
+
+    # 5. Метрологический статус (metrology_status)
+    metro_filter = request.GET.get("metrology_status", "").strip()
+    if metro_filter == "VALID":
+        qs = qs.filter(
+            Q(operational_status=EquipmentOperationalStatus.SERVICEABLE)
+            & (
+                Q(verification_type=EquipmentVerificationType.NOT_REQUIRED)
+                | Q(next_verification_date__gte=today)
+            )
+        )
+        filter_descriptions.append("Метрология: Годен к применению")
+    elif metro_filter == "EXPIRING":
+        qs = qs.filter(
+            operational_status=EquipmentOperationalStatus.SERVICEABLE,
+            next_verification_date__gte=today,
+            next_verification_date__lte=warning_date,
+        )
+        filter_descriptions.append("Метрология: Истекает поверка (≤30 дн.)")
+    elif metro_filter == "EXPIRED":
+        qs = qs.filter(
+            ~Q(verification_type=EquipmentVerificationType.NOT_REQUIRED)
+            & (
+                Q(next_verification_date__lt=today)
+                | Q(next_verification_date__isnull=True)
+                | Q(operational_status__in=[EquipmentOperationalStatus.DEFECTIVE, EquipmentOperationalStatus.QUARANTINED])
+            )
+        )
+        filter_descriptions.append("Метрология: Просрочено / Изолятор брака")
+    elif metro_filter == "NOT_REQUIRED":
+        qs = qs.filter(verification_type=EquipmentVerificationType.NOT_REQUIRED)
+        filter_descriptions.append("Метрология: Контроль не требуется")
+
+    filter_summary = "  |  ".join(filter_descriptions) if filter_descriptions else "Все записи (без ограничений)"
+
+    filter_params = {
+        "search_query": q,
+        "selected_status": status_filter,
+        "selected_mpd": selected_mpd or "",
+        "selected_category": category_filter,
+        "selected_metrology_status": metro_filter,
+        "filter_summary": filter_summary,
+    }
+    return qs, filter_params
+
+
 class MaintenanceEquipmentListView(LoginRequiredMixin, ListView):
     """Представление реестра оборудования, средств измерений и специнструмента ТО ВС (ФАП-145).
 
     Обеспечивает оперативный контроль метрологического состояния (поверка/калибровка),
-    фильтрацию по физическому статусу, поиск по P/N, S/N, кодам маркировки и номерам ФГИС «АРШИН».
+    фильтрацию по физическому статусу, МПД, категории и поиск по P/N, S/N, кодам маркировки и номерам ФГИС «АРШИН».
     """
 
     model = MaintenanceEquipment
     template_name = "hrdepartment_app/equipment_list.html"
     context_object_name = "equipments"
 
-    def get_queryset(self):
-        """Возвращает оптимизированный QuerySet оборудования с предзагрузкой связей."""
-        qs = (
-            MaintenanceEquipment.objects.select_related("production_place", "responsible_person")
-            .prefetch_related("applicable_aircraft_types")
-            .order_by("name")
-        )
-        status_filter = self.request.GET.get("status")
-        if status_filter:
-            qs = qs.filter(operational_status=status_filter)
-        q = self.request.GET.get("q", "").strip()
-        if q:
-            qs = qs.filter(
-                Q(name__icontains=q)
-                | Q(part_number__icontains=q)
-                | Q(serial_number__icontains=q)
-                | Q(marking_code__icontains=q)
-                | Q(arshin_verification_number__icontains=q)
-            )
+    def get_queryset(self) -> QuerySet[MaintenanceEquipment]:
+        """Возвращает оптимизированный QuerySet оборудования с учетом примененных фильтров."""
+        qs, self.filter_params = filter_maintenance_equipment_queryset(self.request)
         return qs
 
-    def get_context_data(self, **kwargs) -> Dict[str, Any]:
-        """Формирует контекст с агрегированными метрологическими показателями."""
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """Формирует контекст с агрегированными метрологическими показателями и справочниками."""
         context = super().get_context_data(**kwargs)
         all_eq = MaintenanceEquipment.objects.all()
         today = timezone.now().date()
@@ -8810,6 +8907,14 @@ class MaintenanceEquipmentListView(LoginRequiredMixin, ListView):
             next_verification_date__lt=today,
         ).count()
 
+        production_places = PlaceProductionActivity.objects.order_by("name")
+        equipment_types = EquipmentType.choices
+        operational_statuses = EquipmentOperationalStatus.choices
+
+        filter_params = getattr(self, "filter_params", None)
+        if not filter_params:
+            _, filter_params = filter_maintenance_equipment_queryset(self.request)
+
         context.update({
             "title": "Реестр оборудования, КПА и специнструмента ТО ВС (ФАП-145)",
             "total_count": total_count,
@@ -8818,10 +8923,51 @@ class MaintenanceEquipmentListView(LoginRequiredMixin, ListView):
             "expiring_count": expiring_count,
             "expired_count": expired_count,
             "today": today,
-            "selected_status": self.request.GET.get("status", ""),
-            "search_query": self.request.GET.get("q", ""),
+            "production_places": production_places,
+            "equipment_types": equipment_types,
+            "operational_statuses": operational_statuses,
+            "search_query": filter_params.get("search_query", ""),
+            "selected_status": filter_params.get("selected_status", ""),
+            "selected_mpd": filter_params.get("selected_mpd", ""),
+            "selected_category": filter_params.get("selected_category", ""),
+            "selected_metrology_status": filter_params.get("selected_metrology_status", ""),
+            "filter_summary": filter_params.get("filter_summary", ""),
+            "filtered_count": self.object_list.count() if hasattr(self, "object_list") else total_count,
         })
         return context
+
+
+class EquipmentExportExcelView(LoginRequiredMixin, View):
+    """Выгрузка ведомости оборудования, КПА и специнструмента ТО в Excel для печати (ФАП-145).
+
+    Генерирует стилизованный Excel-файл (.xlsx) с оптимизацией под печать (A4, альбомная ориентация,
+    вписывание по ширине, повторение шапки на каждом листе, колонтитулы с нумерацией страниц,
+    цветовая маркировка поверок и блок подписей должностных лиц ИАС).
+    """
+
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        """Обрабатывает GET-запрос выгрузки ведомости оборудования в Excel.
+
+        Args:
+            request (HttpRequest): Входящий HTTP-запрос с фильтрами реестра.
+
+        Returns:
+            HttpResponse: Потоковый файл Excel со стилизованной печатной ведомостью.
+        """
+        qs, filter_params = filter_maintenance_equipment_queryset(request)
+
+        user = request.user
+        generated_by = (
+            getattr(user, "title", None)
+            or user.get_full_name()
+            or user.username
+        )
+
+        return export_maintenance_equipment_to_excel(
+            queryset=qs,
+            filters_summary=filter_params.get("filter_summary"),
+            generated_by=generated_by,
+        )
 
 
 class MaintenanceEquipmentDetailView(LoginRequiredMixin, DetailView):

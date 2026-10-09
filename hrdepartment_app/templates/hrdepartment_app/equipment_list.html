@@ -122,6 +122,11 @@
                                 <i class="bx bx-check-double me-1"></i> Новая поверка
                             </a>
                         {% endif %}
+                        <a href="{% url 'hrdepartment_app:equipment_export_excel' %}?{{ request.GET.urlencode }}"
+                           class="btn btn-outline-dark btn-touch font-weight-semibold"
+                           title="Сформировать и скачать официальную печатную ведомость в Excel (A4 Альбомная)">
+                            <i class="bx bx-printer me-1 text-primary"></i> Печать в Excel
+                        </a>
                         <a href="{% url 'hrdepartment_app:equipment_allocation_dashboard' %}"
                            class="btn btn-outline-info btn-touch font-weight-semibold"
                            title="Дашборд обеспеченности МПД оборудованием под формы ТО">
@@ -141,36 +146,82 @@
 
                 <div class="card-body p-4">
                     <!-- Панель фильтров и поиска -->
-                    <form method="get" class="row g-3 align-items-center mb-4">
-                        <div class="col-12 col-md-4">
+                    <form method="get" class="row g-2 align-items-center mb-4 p-3 bg-light rounded-3 border">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small text-muted mb-1 font-weight-semibold">Поиск оборудования</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
                                 <input type="text"
                                        name="q"
                                        class="form-control"
-                                       placeholder="Поиск по названию, P/N, S/N, маркировке, АРШИН..."
+                                       placeholder="P/N, S/N, название, АРШИН..."
                                        value="{{ search_query }}">
                             </div>
                         </div>
-                        <div class="col-12 col-md-3">
-                            <select name="status" class="form-select">
-                                <option value="">Все физические статусы</option>
-                                <option value="serviceable" {% if selected_status == 'serviceable' %}selected{% endif %}>Исправен / Годен</option>
-                                <option value="defective" {% if selected_status == 'defective' %}selected{% endif %}>Неисправен</option>
-                                <option value="quarantined" {% if selected_status == 'quarantined' %}selected{% endif %}>В изоляторе брака (п. 25)</option>
-                                <option value="in_calibration" {% if selected_status == 'in_calibration' %}selected{% endif %}>На поверке/калибровке</option>
-                                <option value="scrapped" {% if selected_status == 'scrapped' %}selected{% endif %}>Списан</option>
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label class="form-label small text-muted mb-1 font-weight-semibold">Участок ТО (МПД)</label>
+                            <select name="mpd" class="form-select">
+                                <option value="">Все участки ТО (МПД)</option>
+                                {% for place in production_places %}
+                                    <option value="{{ place.pk }}" {% if selected_mpd == place.pk %}selected{% endif %}>
+                                        {{ place.name }}
+                                    </option>
+                                {% endfor %}
                             </select>
                         </div>
-                        <div class="col-auto d-flex gap-2">
-                            <button type="submit" class="btn btn-primary btn-touch">
-                                <i class="bx bx-filter-alt me-1"></i> Применить
-                            </button>
-                            {% if search_query or selected_status %}
-                                <a href="{% url 'hrdepartment_app:equipment_list' %}" class="btn btn-outline-secondary btn-touch">
-                                    <i class="bx bx-reset me-1"></i> Сбросить
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label class="form-label small text-muted mb-1 font-weight-semibold">Категория (ФАП-145)</label>
+                            <select name="category" class="form-select">
+                                <option value="">Все категории</option>
+                                {% for val, label in equipment_types %}
+                                    <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label class="form-label small text-muted mb-1 font-weight-semibold">Статус поверки</label>
+                            <select name="metrology_status" class="form-select">
+                                <option value="">Все статусы поверки</option>
+                                <option value="VALID" {% if selected_metrology_status == 'VALID' %}selected{% endif %}>Годен к ТО</option>
+                                <option value="EXPIRING" {% if selected_metrology_status == 'EXPIRING' %}selected{% endif %}>Истекает (≤30 дн.)</option>
+                                <option value="EXPIRED" {% if selected_metrology_status == 'EXPIRED' %}selected{% endif %}>Просрочен / Изолятор</option>
+                                <option value="NOT_REQUIRED" {% if selected_metrology_status == 'NOT_REQUIRED' %}selected{% endif %}>Не требуется</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="form-label small text-muted mb-1 font-weight-semibold">Физический статус</label>
+                            <select name="status" class="form-select">
+                                <option value="">Все физ. статусы</option>
+                                {% for val, label in operational_statuses %}
+                                    <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top mt-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="submit" class="btn btn-primary btn-touch font-weight-semibold">
+                                    <i class="bx bx-filter-alt me-1"></i> Применить
+                                </button>
+                                {% if search_query or selected_status or selected_mpd or selected_category or selected_metrology_status %}
+                                    <a href="{% url 'hrdepartment_app:equipment_list' %}" class="btn btn-outline-secondary btn-touch">
+                                        <i class="bx bx-reset me-1"></i> Сбросить
+                                    </a>
+                                {% endif %}
+                                <span class="text-muted small ms-2">
+                                    <i class="bx bx-info-circle me-1"></i>{{ filter_summary }} (в выборке: <strong>{{ equipments|length }}</strong> ед.)
+                                </span>
+                            </div>
+                            <div>
+                                <a href="{% url 'hrdepartment_app:equipment_export_excel' %}?{{ request.GET.urlencode }}"
+                                   class="btn btn-success btn-touch font-weight-semibold shadow-sm"
+                                   title="Сформировать официальную печатную ведомость в формате Excel (A4 Альбомная)">
+                                    <i class="bx bxs-file-export me-1"></i> Выгрузить в Excel для печати
                                 </a>
-                            {% endif %}
+                            </div>
                         </div>
                     </form>
 
