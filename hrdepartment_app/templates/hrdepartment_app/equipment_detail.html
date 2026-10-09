@@ -105,9 +105,17 @@
                                     <div class="param-label">Инвентарный номер</div>
                                     <div class="param-value font-monospace">{{ equipment.inventory_number|default:"—" }}</div>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-6">
                                     <div class="param-label">Категория оборудования</div>
                                     <div class="param-value">{{ equipment.get_equipment_type_display }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Диапазон измерений</div>
+                                    <div class="param-value">{{ equipment.measurement_range|default:"—" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="param-label">Класс точности / Погрешность</div>
+                                    <div class="param-value">{{ equipment.accuracy_class|default:"—" }}</div>
                                 </div>
                                 <div class="col-12">
                                     <div class="param-label">Применимость к типам ВС</div>
