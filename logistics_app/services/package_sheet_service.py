@@ -107,12 +107,12 @@ class PackageSheetGenerator:
         return Image(buffer, width=size_pt, height=size_pt)
 
     @classmethod
-    def generate_pdf(cls, package: Package, base_url: str = "https://portal.barkol.ru") -> bytes:
+    def generate_pdf(cls, package: Package, base_url: str = "https://corp.barkol.ru") -> bytes:
         """Формирует PDF-документ описи вложения посылки (алиас для generate_packing_slip_pdf).
 
         Args:
             package (Package): Экземпляр посылки с заполненными позициями.
-            base_url (str): Базовый URL портала для QR-кода. Defaults to "https://portal.barkol.ru".
+            base_url (str): Базовый URL портала для QR-кода. Defaults to "https://corp.barkol.ru".
 
         Returns:
             bytes: Бинарные данные PDF документа.
@@ -120,12 +120,12 @@ class PackageSheetGenerator:
         return cls.generate_packing_slip_pdf(package=package, base_url=base_url)
 
     @classmethod
-    def generate_packing_slip_pdf(cls, package: Package, base_url: str = "https://portal.barkol.ru") -> bytes:
+    def generate_packing_slip_pdf(cls, package: Package, base_url: str = "https://corp.barkol.ru") -> bytes:
         """Формирует официальный PDF-документ описи вложения формата A4.
 
         Args:
             package (Package): Экземпляр посылки с заполненными позициями.
-            base_url (str): Базовый URL портала для QR-кода. Defaults to "https://portal.barkol.ru".
+            base_url (str): Базовый URL портала для QR-кода. Defaults to "https://corp.barkol.ru".
 
         Returns:
             bytes: Бинарные данные PDF документа.
@@ -226,7 +226,7 @@ class PackageSheetGenerator:
             [
                 [
                     Paragraph(
-                        "<b>ООО «АВИАКОМПАНИЯ «БАРКОЛ»</b><br/>"
+                        "<b>ООО АВИАКОМПАНИЯ «БАРКОЛ»</b><br/>"
                         "<font size='8' color='#64748b'>СЛУЖБА МАТЕРИАЛЬНО-ТЕХНИЧЕСКОГО ОБЕСПЕЧЕНИЯ И ЛОГИСТИКИ</font>",
                         style_header_company,
                     ),
