@@ -34,6 +34,7 @@ from logistics_app.models import (
 from logistics_app.services.docflow_notification_service import DocFlowNotificationService
 from logistics_app.services.docflow_routing_service import DocFlowRoutingService
 from logistics_app.services.docflow_version_service import DocFlowVersionService
+from logistics_app.forms import InternalPackageForm
 from logistics_app.services import (
     PackageService,
     PackageSheetGenerator,
@@ -628,5 +629,209 @@ class ShipmentServicesTestCase(TestCase):
         resp_pdf = self.client.get(reverse("logistics_app:package_sheet_pdf", kwargs={"pk": pkg.pk}))
         self.assertEqual(resp_pdf.status_code, 200)
         self.assertEqual(resp_pdf["Content-Type"], "application/pdf")
+
+    def test_trips_for_destination_api(self) -> None:
+        """Проверяет фильтрацию открытых будущих рейсов по МПД назначения через API."""
+        self.client.force_login(self.user_dispatcher)
+        today = datetime.date.today()
+        tomorrow = today + datetime.timedelta(days=1)
+        yesterday = today - datetime.timedelta(days=1)
+
+        # 1. Будущий рейс на Сургут
+        trip_future_surgut = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=tomorrow,
+            destinations=[self.mpd_surgut],
+        )
+
+        # 2. Прошедший рейс на Сургут
+        trip_past_surgut = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=yesterday,
+            destinations=[self.mpd_surgut],
+        )
+
+        # 3. Будущий рейс только на Ноябрьск
+        trip_future_noyabrsk = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=tomorrow,
+            destinations=[self.mpd_noyabrsk],
+        )
+
+        # Запрос рейсов для Сургута
+        resp = self.client.get(
+            reverse("logistics_app:api_trips_for_destination"),
+            {"mpd_id": self.mpd_surgut.pk},
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["status"], "ok")
+        trip_ids = [t["id"] for t in data["trips"]]
+        self.assertIn(trip_future_surgut.pk, trip_ids)
+        self.assertNotIn(trip_past_surgut.pk, trip_ids)
+        self.assertNotIn(trip_future_noyabrsk.pk, trip_ids)
+
+        # Запрос для МПД, куда рейсов нет
+        mpd_unknown = PlaceProductionActivity.objects.create(name="Неизвестный МПД")
+        resp_empty = self.client.get(
+            reverse("logistics_app:api_trips_for_destination"),
+            {"mpd_id": mpd_unknown.pk},
+        )
+        self.assertEqual(resp_empty.status_code, 200)
+        self.assertEqual(resp_empty.json()["trips"], [])
+
+    def test_packages_for_trip_api(self) -> None:
+        """Проверяет динамический подбор посылок из очереди под МПД маршрута и дату рейса."""
+        self.client.force_login(self.user_dispatcher)
+        today = datetime.date.today()
+        planned_trip_date = today + datetime.timedelta(days=2)
+
+        # 1. Посылка на Сургут, создана сегодня (дата <= даты рейса)
+        pkg_surgut_ok = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            items_data=[{"name": "Труба", "quantity_sent": 1}],
+        )
+
+        # 2. Посылка на Ноябрьск
+        pkg_noyabrsk = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_noyabrsk,
+            items_data=[{"name": "Клапан", "quantity_sent": 2}],
+        )
+
+        # 3. Посылка на Сургут с будущей датой оформления (позже даты рейса)
+        future_date = planned_trip_date + datetime.timedelta(days=5)
+        pkg_surgut_late = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            items_data=[{"name": "Поздний груз", "quantity_sent": 1}],
+        )
+        Package.objects.filter(pk=pkg_surgut_late.pk).update(
+            created_at=timezone.make_aware(datetime.datetime.combine(future_date, datetime.time.min))
+        )
+
+        # Запрос подбора для рейса на Сургут
+        resp = self.client.get(
+            reverse("logistics_app:api_packages_for_trip"),
+            {
+                "planned_date": planned_trip_date.strftime("%d.%m.%Y"),
+                "mpd_ids": str(self.mpd_surgut.pk),
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["status"], "ok")
+        pkg_ids = [p["id"] for p in data["packages"]]
+        self.assertIn(pkg_surgut_ok.pk, pkg_ids)
+        self.assertNotIn(pkg_noyabrsk.pk, pkg_ids)
+        self.assertNotIn(pkg_surgut_late.pk, pkg_ids)
+
+    def test_internal_package_form_validation(self) -> None:
+        """Проверяет валидацию формы посылки на соответствие рейса и МПД."""
+        today = datetime.date.today()
+        tomorrow = today + datetime.timedelta(days=1)
+        yesterday = today - datetime.timedelta(days=1)
+
+        trip_surgut = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=tomorrow,
+            destinations=[self.mpd_surgut],
+        )
+        trip_noyabrsk = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=tomorrow,
+            destinations=[self.mpd_noyabrsk],
+        )
+        trip_past = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=yesterday,
+            destinations=[self.mpd_surgut],
+        )
+
+        # 1. Корректные данные: рейс заезжает на выбранный МПД
+        form_valid = InternalPackageForm(data={
+            "destination": self.mpd_surgut.pk,
+            "origin_custom": "Центральный склад",
+            "trip": trip_surgut.pk,
+            "places_count": 1,
+            "urgency": Package.Urgency.NORMAL,
+            "package_type": Package.PackageType.BOX,
+        })
+        self.assertTrue(form_valid.is_valid(), form_valid.errors)
+
+        # 2. Несоответствие: рейс не заезжает на Сургут
+        form_wrong_trip = InternalPackageForm(data={
+            "destination": self.mpd_surgut.pk,
+            "origin_custom": "Центральный склад",
+            "trip": trip_noyabrsk.pk,
+            "places_count": 1,
+            "urgency": Package.Urgency.NORMAL,
+            "package_type": Package.PackageType.BOX,
+        })
+        self.assertFalse(form_wrong_trip.is_valid())
+        self.assertIn("trip", form_wrong_trip.errors)
+
+        # 3. Прошедшая дата рейса
+        form_past_trip = InternalPackageForm(data={
+            "destination": self.mpd_surgut.pk,
+            "origin_custom": "Центральный склад",
+            "trip": trip_past.pk,
+            "places_count": 1,
+            "urgency": Package.Urgency.NORMAL,
+            "package_type": Package.PackageType.BOX,
+        })
+        self.assertFalse(form_past_trip.is_valid())
+        self.assertIn("trip", form_past_trip.errors)
+
+    def test_trip_create_attaches_selected_packages(self) -> None:
+        """Проверяет привязку подобранных посылок при создании рейса."""
+        self.client.force_login(self.user_dispatcher)
+        pkg_1 = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            items_data=[{"name": "Посылка 1"}],
+        )
+        pkg_2 = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            items_data=[{"name": "Посылка 2"}],
+        )
+
+        today_str = datetime.date.today().strftime("%d.%m.%Y")
+        post_data = {
+            "planned_date": today_str,
+            "origin_custom": "Центральный склад",
+            "vehicle_type": ShipmentTrip.VehicleType.COMPANY_CAR,
+            "vehicle_model": "ГАЗель",
+            "vehicle_reg_number": "В123ОР 777",
+            "driver_name": "Иванов И.И.",
+            "driver_phone": "+7 999 000-00-00",
+            "comment": "Тестовый рейс",
+            # Формсет остановок
+            "stops-TOTAL_FORMS": "1",
+            "stops-INITIAL_FORMS": "0",
+            "stops-MIN_NUM_FORMS": "0",
+            "stops-MAX_NUM_FORMS": "1000",
+            "stops-0-mpd": str(self.mpd_surgut.pk),
+            "stops-0-stop_order": "1",
+            "stops-0-comment": "",
+            # Посылки для привязки
+            "packages_selection_active": "1",
+            "attach_packages": [str(pkg_1.pk), str(pkg_2.pk)],
+        }
+
+        resp = self.client.post(reverse("logistics_app:trip_add"), post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        created_trip = ShipmentTrip.objects.latest("created_at")
+        pkg_1.refresh_from_db()
+        pkg_2.refresh_from_db()
+
+        self.assertEqual(pkg_1.trip, created_trip)
+        self.assertEqual(pkg_1.status, Package.Status.ASSIGNED_TO_TRIP)
+        self.assertEqual(pkg_2.trip, created_trip)
+        self.assertEqual(pkg_2.status, Package.Status.ASSIGNED_TO_TRIP)
+        self.assertEqual(created_trip.packages.count(), 2)
 
 

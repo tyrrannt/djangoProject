@@ -95,7 +95,17 @@
                             Рейс автомобиля
                         </label>
                         {{ form.trip|add_class:"form-select" }}
-                        <div class="form-text">Если машина не выбрана, посылка встанет в очередь ожидания</div>
+                        <div id="trip-helper-message" class="form-text">
+                            {% if form.trip.field.queryset.exists %}
+                                Выберите рейс или оставьте для очереди ожидания
+                            {% else %}
+                                {% if form.destination.value %}
+                                    <span class="text-warning"><i class="bx bx-info-circle me-1"></i>На выбранный МПД нет открытых рейсов (от сегодня и позже). Посылка будет поставлена в очередь.</span>
+                                {% else %}
+                                    Сначала выберите МПД назначения, чтобы увидеть доступные рейсы
+                                {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="col-12 col-md-4">
@@ -280,6 +290,84 @@
                     if (row) row.remove();
                 }
             });
+        }
+
+        // Динамическая фильтрация и подгрузка открытых рейсов по выбранному МПД назначения
+        const destinationSelect = document.getElementById('id_destination');
+        const tripSelect = document.getElementById('id_trip');
+        const tripHelperMsg = document.getElementById('trip-helper-message');
+
+        function updateTripsForDestination(destinationId, preselectedTripId) {
+            if (!tripSelect) return;
+
+            if (!destinationId) {
+                tripSelect.innerHTML = '<option value="">— Сначала выберите МПД назначения —</option>';
+                if (tripHelperMsg) {
+                    tripHelperMsg.innerHTML = 'Сначала выберите МПД назначения, чтобы увидеть доступные рейсы';
+                }
+                return;
+            }
+
+            tripSelect.disabled = true;
+            if (tripHelperMsg) {
+                tripHelperMsg.innerHTML = '<span class="text-muted"><i class="bx bx-loader-alt bx-spin me-1"></i>Загрузка открытых рейсов на выбранный МПД...</span>';
+            }
+
+            fetch(`{% url 'logistics_app:api_trips_for_destination' %}?mpd_id=${destinationId}`)
+                .then(response => response.json())
+                .then(data => {
+                    tripSelect.innerHTML = '';
+                    if (data.status === 'ok' && data.trips && data.trips.length > 0) {
+                        const defaultOpt = document.createElement('option');
+                        defaultOpt.value = '';
+                        defaultOpt.textContent = '— Не назначать (поставить в очередь ожидания) —';
+                        tripSelect.appendChild(defaultOpt);
+
+                        data.trips.forEach(trip => {
+                            const opt = document.createElement('option');
+                            opt.value = trip.id;
+                            opt.textContent = trip.text;
+                            if (preselectedTripId && String(trip.id) === String(preselectedTripId)) {
+                                opt.selected = true;
+                            }
+                            tripSelect.appendChild(opt);
+                        });
+
+                        tripSelect.disabled = false;
+                        if (tripHelperMsg) {
+                            tripHelperMsg.innerHTML = `<span class="text-success"><i class="bx bx-check-circle me-1"></i>Найдено рейсов: ${data.trips.length}. Выберите нужный рейс или оставьте в очереди ожидания.</span>`;
+                        }
+                    } else {
+                        const emptyOpt = document.createElement('option');
+                        emptyOpt.value = '';
+                        emptyOpt.textContent = '— Нет запланированных рейсов на этот МПД —';
+                        tripSelect.appendChild(emptyOpt);
+                        tripSelect.disabled = false;
+
+                        if (tripHelperMsg) {
+                            tripHelperMsg.innerHTML = '<span class="text-warning"><i class="bx bx-info-circle me-1"></i>На выбранный МПД нет открытых рейсов (от сегодня и позже). Посылка будет поставлена в очередь ожидания.</span>';
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Ошибка загрузки рейсов:', err);
+                    tripSelect.disabled = false;
+                    if (tripHelperMsg) {
+                        tripHelperMsg.innerHTML = '<span class="text-danger">Не удалось загрузить список рейсов</span>';
+                    }
+                });
+        }
+
+        if (destinationSelect && tripSelect) {
+            destinationSelect.addEventListener('change', function () {
+                updateTripsForDestination(this.value, '');
+            });
+
+            // Инициализация при первичной загрузке страницы (редактирование или повторный показ с ошибками)
+            if (destinationSelect.value) {
+                const initialTripId = "{{ object.trip_id|default:'' }}" || tripSelect.value;
+                updateTripsForDestination(destinationSelect.value, initialTripId);
+            }
         }
     });
 </script>

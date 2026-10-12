@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory
+from django.utils import timezone
 
 from administration_app.utils import make_custom_field
 from customers_app.models import Counteragent, DataBaseUser, Division
@@ -205,7 +206,12 @@ TripStopFormSet = inlineformset_factory(
 
 
 class InternalPackageForm(forms.ModelForm):
-    """Форма оформления посылки на МПД с выбором открытого рейса."""
+    """Форма оформления посылки на МПД с динамической фильтрацией открытых рейсов.
+
+    Автоматически ограничивает доступные для выбора рейсы теми, которые следуют через
+    выбранный МПД назначения, имеют плановую дату отправления не ранее текущей даты
+    и находятся в статусе формирования или консолидации.
+    """
 
     class Meta:
         model = Package
@@ -232,15 +238,88 @@ class InternalPackageForm(forms.ModelForm):
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Инициализирует форму и настраивает динамический QuerySet рейсов под выбранный МПД.
+
+        Args:
+            *args (Any): Позиционные аргументы.
+            **kwargs (Any): Именованные аргументы.
+        """
         super().__init__(*args, **kwargs)
-        self.fields["trip"].queryset = ShipmentTrip.objects.filter(
-            status__in=[ShipmentTrip.Status.PLANNING, ShipmentTrip.Status.CONSOLIDATED]
-        ).order_by("planned_date")
-        self.fields["trip"].empty_label = "— Не назначать (поставить в очередь ожидания) —"
         self.fields["destination"].required = True
+        self.fields["trip"].required = False
+
+        today = timezone.now().date()
+        dest_id: Optional[int] = None
+
+        if self.data and "destination" in self.data:
+            try:
+                dest_id = int(self.data.get("destination") or 0)
+            except (ValueError, TypeError):
+                dest_id = None
+        elif self.instance and self.instance.destination_id:
+            dest_id = self.instance.destination_id
+
+        if dest_id:
+            trip_qs = (
+                ShipmentTrip.objects.filter(
+                    status__in=[ShipmentTrip.Status.PLANNING, ShipmentTrip.Status.CONSOLIDATED],
+                    planned_date__gte=today,
+                    stops__mpd_id=dest_id,
+                )
+                .order_by("planned_date", "trip_number")
+                .distinct()
+            )
+            if self.instance and self.instance.trip_id:
+                trip_qs = (
+                    (trip_qs | ShipmentTrip.objects.filter(pk=self.instance.trip_id))
+                    .order_by("planned_date", "trip_number")
+                    .distinct()
+                )
+            self.fields["trip"].queryset = trip_qs
+            if not trip_qs.exists():
+                self.fields["trip"].empty_label = "— Нет запланированных рейсов на этот МПД —"
+            else:
+                self.fields["trip"].empty_label = "— Не назначать (поставить в очередь ожидания) —"
+        else:
+            self.fields["trip"].queryset = ShipmentTrip.objects.none()
+            self.fields["trip"].empty_label = "— Сначала выберите МПД назначения —"
 
         for field in self.fields.values():
             make_custom_field(field)
+
+    def clean(self) -> Dict[str, Any]:
+        """Выполняет проверку соответствия рейса выбранному МПД назначения и дате выезда.
+
+        Returns:
+            Dict[str, Any]: Очищенные данные формы.
+        """
+        cleaned_data = super().clean()
+        destination = cleaned_data.get("destination")
+        trip = cleaned_data.get("trip")
+
+        if trip and destination:
+            # Проверка наличия точки МПД в остановках маршрута
+            if not trip.stops.filter(mpd=destination).exists():
+                self.add_error(
+                    "trip",
+                    f"Рейс № {trip.trip_number} не следует через выбранный МПД «{destination.name}».",
+                )
+
+            # Проверка даты: рейс должен быть не ранее сегодняшнего дня (если не был назначен ранее)
+            is_same_trip = bool(self.instance and self.instance.trip_id == trip.id)
+            if not is_same_trip and trip.planned_date < timezone.now().date():
+                self.add_error(
+                    "trip",
+                    f"Рейс № {trip.trip_number} имеет прошедшую дату отправления ({trip.planned_date.strftime('%d.%m.%Y')}).",
+                )
+
+            if trip.status not in [ShipmentTrip.Status.PLANNING, ShipmentTrip.Status.CONSOLIDATED]:
+                self.add_error(
+                    "trip",
+                    f"Рейс № {trip.trip_number} находится в статусе «{trip.get_status_display()}» и закрыт для добавления посылок.",
+                )
+
+        return cleaned_data
 
 
 class PackageItemForm(forms.ModelForm):

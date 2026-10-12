@@ -1,6 +1,7 @@
 """Контроллеры представлений для внутренних рейсов, посылок и приемочного контроля на МПД."""
 
 import logging
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -174,9 +175,20 @@ class ShipmentTripCreateView(LoginRequiredMixin, CreateView):
                 stops_formset.instance = trip
                 stops_formset.save()
 
+                # Автоматическая привязка выбранных при формировании рейса посылок
+                attach_package_ids = self.request.POST.getlist("attach_packages")
+                if attach_package_ids:
+                    pkgs_to_attach = Package.objects.filter(
+                        pk__in=attach_package_ids,
+                        status=Package.Status.AWAITING_SHIPMENT,
+                    )
+                    for pkg in pkgs_to_attach:
+                        PackageService.attach_to_trip(package=pkg, trip=trip, user=self.request.user)
+
             messages.success(
                 self.request,
-                f"Заявка на рейс № {trip.trip_number} успешно сформирована. Укажите посылки для отправки.",
+                f"Заявка на рейс № {trip.trip_number} успешно сформирована. "
+                f"Прикреплено посылок: {trip.packages.count()} шт.",
             )
             return redirect("logistics_app:trip_detail", pk=trip.pk)
 
@@ -205,7 +217,7 @@ class ShipmentTripUpdateView(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form: ShipmentTripForm) -> HttpResponse:
-        """Сохраняет обновленные данные рейса и промежуточных остановок.
+        """Сохраняет обновленные данные рейса и синхронизирует прикрепленные посылки.
 
         Args:
             form (ShipmentTripForm): Заполненная форма.
@@ -220,6 +232,28 @@ class ShipmentTripUpdateView(LoginRequiredMixin, UpdateView):
             with transaction.atomic():
                 trip = form.save()
                 stops_formset.save()
+
+                # Синхронизация прикрепленных посылок при редактировании рейса
+                if "packages_selection_active" in self.request.POST:
+                    selected_pkg_ids = [
+                        int(x) for x in self.request.POST.getlist("attach_packages") if x.isdigit()
+                    ]
+                    # 1. Привязываем вновь выбранные посылки из очереди
+                    new_pkgs = Package.objects.filter(
+                        pk__in=selected_pkg_ids,
+                        status=Package.Status.AWAITING_SHIPMENT,
+                    )
+                    for pkg in new_pkgs:
+                        PackageService.attach_to_trip(package=pkg, trip=trip, user=self.request.user)
+
+                    # 2. Исключаем снятые с выбора посылки, ранее привязанные к рейсу
+                    pkgs_to_detach = trip.packages.exclude(pk__in=selected_pkg_ids)
+                    for pkg in pkgs_to_detach:
+                        PackageService.detach_from_trip(
+                            package=pkg,
+                            user=self.request.user,
+                            reason="Исключена диспетчером при редактировании параметров рейса",
+                        )
 
             messages.success(self.request, f"Параметры рейса № {trip.trip_number} успешно обновлены.")
             return redirect("logistics_app:trip_detail", pk=trip.pk)
@@ -251,9 +285,13 @@ class ShipmentTripDetailView(LoginRequiredMixin, DetailView):
             .order_by("-urgency", "destination__name")
         )
 
-        # Доступные для прикрепления посылки из очереди
+        # Доступные для прикрепления посылки из очереди:
+        # фильтруются строго по МПД маршрута заезда рейса и дате создания не позднее даты выезда машины
+        stop_mpd_ids = list(trip.stops.values_list("mpd_id", flat=True))
         context["available_packages"] = Package.objects.filter(
-            status=Package.Status.AWAITING_SHIPMENT
+            status=Package.Status.AWAITING_SHIPMENT,
+            destination_id__in=stop_mpd_ids,
+            created_at__date__lte=trip.planned_date,
         ).select_related("origin", "destination", "sender")
 
         # Итоговая статистика по грузу
@@ -331,6 +369,147 @@ class ShipmentTripActionView(LoginRequiredMixin, View):
             messages.error(request, f"Ошибка выполнения действия: {exc}")
 
         return redirect("logistics_app:trip_detail", pk=trip.pk)
+
+
+# ==============================================================================
+# ИНТЕРАКТИВНЫЕ AJAX API ЭНДПОИНТЫ ДИНАМИЧЕСКОЙ СВЯЗКИ РЕЙСОВ И ПОСЫЛОК
+# ==============================================================================
+
+class TripsForDestinationApiView(LoginRequiredMixin, View):
+    """AJAX API получения списка будущих открытых рейсов, следующих через указанный МПД."""
+
+    def get(self, request: HttpRequest) -> JsonResponse:
+        """Возвращает JSON со списком подходящих открытых рейсов по идентификатору МПД назначения.
+
+        Args:
+            request (HttpRequest): Входящий HTTP-запрос с GET-параметром mpd_id.
+
+        Returns:
+            JsonResponse: Список рейсов со структурой id, trip_number, planned_date, text.
+        """
+        mpd_id_raw = request.GET.get("mpd_id", "").strip()
+        if not mpd_id_raw:
+            return JsonResponse({"status": "ok", "trips": []})
+
+        try:
+            mpd_id = int(mpd_id_raw)
+        except (ValueError, TypeError):
+            return JsonResponse({"status": "error", "message": "Некорректный ID МПД."}, status=400)
+
+        today = timezone.now().date()
+        trips = (
+            ShipmentTrip.objects.filter(
+                status__in=[ShipmentTrip.Status.PLANNING, ShipmentTrip.Status.CONSOLIDATED],
+                planned_date__gte=today,
+                stops__mpd_id=mpd_id,
+            )
+            .select_related("driver_user", "origin_point")
+            .order_by("planned_date", "trip_number")
+            .distinct()
+        )
+
+        trips_data: List[Dict[str, Any]] = []
+        for trip in trips:
+            trips_data.append(
+                {
+                    "id": trip.id,
+                    "trip_number": trip.trip_number,
+                    "planned_date": trip.planned_date.strftime("%d.%m.%Y"),
+                    "driver": trip.driver_display,
+                    "vehicle": trip.vehicle_display,
+                    "origin": trip.origin_display,
+                    "text": (
+                        f"Рейс № {trip.trip_number} от {trip.planned_date.strftime('%d.%m.%Y')} "
+                        f"({trip.vehicle_display}, вод. {trip.driver_display})"
+                    ),
+                }
+            )
+
+        return JsonResponse({"status": "ok", "count": len(trips_data), "trips": trips_data})
+
+
+class PackagesForTripApiView(LoginRequiredMixin, View):
+    """AJAX API подбора посылок из очереди ожидания под маршрут (МПД) и дату отправки рейса."""
+
+    def get(self, request: HttpRequest) -> JsonResponse:
+        """Возвращает JSON с посылками, ожидающими отправки на указанные МПД не позднее даты рейса.
+
+        Args:
+            request (HttpRequest): Входящий запрос с параметрами mpd_ids, planned_date, trip_id.
+
+        Returns:
+            JsonResponse: Список подобранных посылок со статусом и атрибутами.
+        """
+        raw_mpds = request.GET.getlist("mpd_ids") or request.GET.getlist("mpd_ids[]")
+        if not raw_mpds and request.GET.get("mpd_ids"):
+            raw_mpds = [x.strip() for x in request.GET.get("mpd_ids").split(",") if x.strip()]
+
+        mpd_ids: List[int] = []
+        for item in raw_mpds:
+            try:
+                val = int(item)
+                if val not in mpd_ids:
+                    mpd_ids.append(val)
+            except (ValueError, TypeError):
+                continue
+
+        planned_date_raw = request.GET.get("planned_date", "").strip()
+        planned_date: Optional[date] = None
+        if planned_date_raw:
+            for fmt in ("%d.%m.%Y", "%Y-%m-%d"):
+                try:
+                    planned_date = datetime.strptime(planned_date_raw, fmt).date()
+                    break
+                except ValueError:
+                    pass
+
+        if not mpd_ids or not planned_date:
+            return JsonResponse({"status": "ok", "count": 0, "packages": []})
+
+        trip_id_raw = request.GET.get("trip_id", "").strip()
+        trip_id: Optional[int] = None
+        if trip_id_raw:
+            try:
+                trip_id = int(trip_id_raw)
+            except (ValueError, TypeError):
+                trip_id = None
+
+        base_filter = Q(
+            status=Package.Status.AWAITING_SHIPMENT,
+            destination_id__in=mpd_ids,
+            created_at__date__lte=planned_date,
+        )
+        if trip_id:
+            base_filter |= Q(trip_id=trip_id)
+
+        packages_qs = (
+            Package.objects.filter(base_filter)
+            .select_related("origin", "destination", "sender", "recipient", "trip")
+            .order_by("-urgency", "created_at")
+            .distinct()
+        )
+
+        packages_data: List[Dict[str, Any]] = []
+        for pkg in packages_qs:
+            packages_data.append(
+                {
+                    "id": pkg.id,
+                    "track_number": pkg.track_number,
+                    "destination": pkg.destination_display,
+                    "destination_id": pkg.destination_id,
+                    "sender": pkg.sender_display,
+                    "recipient": pkg.recipient_display,
+                    "urgency": pkg.get_urgency_display(),
+                    "urgency_code": pkg.urgency,
+                    "places_count": pkg.places_count,
+                    "weight_kg": str(pkg.weight_kg) if pkg.weight_kg is not None else "—",
+                    "description": pkg.description,
+                    "created_at": pkg.created_at.strftime("%d.%m.%Y"),
+                    "already_attached": bool(trip_id and pkg.trip_id == trip_id),
+                }
+            )
+
+        return JsonResponse({"status": "ok", "count": len(packages_data), "packages": packages_data})
 
 
 # ==============================================================================

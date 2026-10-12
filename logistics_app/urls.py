@@ -16,11 +16,13 @@ from logistics_app.views_shipment import (
     PackageReceiveView,
     PackageSheetPdfView,
     PackageUpdateView,
+    PackagesForTripApiView,
     ShipmentTripActionView,
     ShipmentTripCreateView,
     ShipmentTripDetailView,
     ShipmentTripListView,
     ShipmentTripUpdateView,
+    TripsForDestinationApiView,
 )
 from logistics_app.views_docflow import (
     DocFlowAddCommentView,
@@ -72,6 +74,10 @@ urlpatterns = [
     path("package/<int:pk>/pdf/", PackageSheetPdfView.as_view(), name="package_sheet_pdf"),
     path("package/<int:pk>/attach-trip/", PackageAttachTripView.as_view(), name="package_attach_trip"),
     path("package/<int:pk>/detach-trip/", PackageDetachTripView.as_view(), name="package_detach_trip"),
+
+    # Интерактивные AJAX API эндпоинты
+    path("api/trips-for-destination/", TripsForDestinationApiView.as_view(), name="api_trips_for_destination"),
+    path("api/packages-for-trip/", PackagesForTripApiView.as_view(), name="api_packages_for_trip"),
 
     # Электронный документооборот (СЭД)
     path("docflow/", DocFlowDocumentListView.as_view(), name="docflow_list"),

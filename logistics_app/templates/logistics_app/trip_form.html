@@ -285,6 +285,57 @@
                     </div>
                 </div>
             </div>
+        <!-- Блок автоматического подбора посылок из очереди ожидания -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-modern shadow-sm border-0 mb-4" id="matched-packages-card">
+                    <header class="card-header bg-light py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                                <i class="bx bx-package text-primary me-2"></i>Подбор посылок из очереди ожидания для данного рейса
+                            </h5>
+                            <span id="matched-packages-badge" class="badge bg-secondary">0</span>
+                        </div>
+                        <div id="matched-packages-actions" class="d-none">
+                            <button type="button" class="btn btn-xs btn-outline-primary" id="btn-select-all-pkgs">
+                                <i class="bx bx-check-double me-1"></i>Выбрать все
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary" id="btn-unselect-all-pkgs">
+                                <i class="bx bx-x me-1"></i>Снять выбор
+                            </button>
+                        </div>
+                    </header>
+                    <div class="card-body p-3">
+                        <input type="hidden" name="packages_selection_active" value="1">
+                        <div id="matched-packages-empty" class="text-muted small py-3 text-center">
+                            <i class="bx bx-info-circle fs-4 text-secondary d-block mb-1"></i>
+                            Укажите дату отправления и хотя бы один МПД в маршруте заезда, чтобы автоматически подобрать ожидающие отправки посылки.
+                        </div>
+                        <div id="matched-packages-loading" class="text-muted small py-3 text-center d-none">
+                            <i class="bx bx-loader-alt bx-spin fs-4 text-primary d-block mb-1"></i>
+                            Поиск подходящих посылок в очереди ожидания...
+                        </div>
+                        <div id="matched-packages-table-wrapper" class="table-responsive d-none">
+                            <table class="table table-hover table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;">Вкл.</th>
+                                        <th style="width: 15%;">Трек-номер</th>
+                                        <th style="width: 20%;">Куда (МПД)</th>
+                                        <th style="width: 25%;">Отправитель / Получатель</th>
+                                        <th style="width: 12%;">Срочность</th>
+                                        <th style="width: 13%;">Вес / Мест</th>
+                                        <th style="width: 15%;">Оформлена</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="matched-packages-tbody">
+                                    <!-- Динамическое наполнение через JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Sticky Footer Action Bar -->
@@ -347,6 +398,7 @@
                 container.appendChild(newRow);
                 initDatepicker(newRow);
                 totalFormsInput.value = currentCount + 1;
+                fetchMatchedPackages();
             });
         }
 
@@ -361,6 +413,9 @@
                     $(this).val(formatted);
                     $(this).attr('value', formatted);
                 }
+                if (this.id === 'id_planned_date') {
+                    fetchMatchedPackages();
+                }
             });
 
             // Prevent clearing on focusout if valid DD.MM.YYYY string is present
@@ -369,8 +424,173 @@
                 if (val && /^\d{2}\.\d{2}\.\d{4}$/.test(val.trim())) {
                     $(this).attr('value', val.trim());
                 }
+                if (this.id === 'id_planned_date') {
+                    fetchMatchedPackages();
+                }
             });
         }
+
+        // Автоматический подбор подходящих посылок под дату отправления и МПД маршрута
+        const plannedDateInput = document.getElementById('id_planned_date');
+        const btnSelectAll = document.getElementById('btn-select-all-pkgs');
+        const btnUnselectAll = document.getElementById('btn-unselect-all-pkgs');
+
+        function fetchMatchedPackages() {
+            const dateVal = plannedDateInput ? plannedDateInput.value.trim() : '';
+            const mpdSelects = document.querySelectorAll('#stops-container select[name$="-mpd"]');
+            const mpdIds = [];
+
+            mpdSelects.forEach(function (sel) {
+                const row = sel.closest('.stop-row');
+                const deleteCheck = row ? row.querySelector('input[type="checkbox"][name$="-DELETE"]:checked') : null;
+                if (!deleteCheck && sel.value && !mpdIds.includes(sel.value)) {
+                    mpdIds.push(sel.value);
+                }
+            });
+
+            const loadingEl = document.getElementById('matched-packages-loading');
+            const emptyEl = document.getElementById('matched-packages-empty');
+            const tableWrap = document.getElementById('matched-packages-table-wrapper');
+            const actionsEl = document.getElementById('matched-packages-actions');
+            const badgeEl = document.getElementById('matched-packages-badge');
+            const tbody = document.getElementById('matched-packages-tbody');
+
+            if (!dateVal || mpdIds.length === 0) {
+                if (loadingEl) loadingEl.classList.add('d-none');
+                if (tableWrap) tableWrap.classList.add('d-none');
+                if (actionsEl) {
+                    actionsEl.classList.add('d-none');
+                    actionsEl.classList.remove('d-flex');
+                }
+                if (emptyEl) {
+                    emptyEl.innerHTML = '<i class="bx bx-info-circle fs-4 text-secondary d-block mb-1"></i>Укажите дату отправления и хотя бы один МПД в маршруте заезда, чтобы автоматически подобрать ожидающие отправки посылки.';
+                    emptyEl.classList.remove('d-none');
+                }
+                if (badgeEl) {
+                    badgeEl.textContent = '0';
+                    badgeEl.className = 'badge bg-secondary';
+                }
+                return;
+            }
+
+            // Показываем индикатор загрузки
+            if (emptyEl) emptyEl.classList.add('d-none');
+            if (tableWrap) tableWrap.classList.add('d-none');
+            if (loadingEl) loadingEl.classList.remove('d-none');
+
+            const query = new URLSearchParams();
+            query.set('planned_date', dateVal);
+            mpdIds.forEach(function (id) {
+                query.append('mpd_ids', id);
+            });
+            const tripId = "{{ object.pk|default:'' }}";
+            if (tripId) {
+                query.set('trip_id', tripId);
+            }
+
+            fetch(`{% url 'logistics_app:api_packages_for_trip' %}?${query.toString()}`)
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (loadingEl) loadingEl.classList.add('d-none');
+
+                    if (data.status === 'ok' && data.packages && data.packages.length > 0) {
+                        if (badgeEl) {
+                            badgeEl.textContent = data.count;
+                            badgeEl.className = 'badge bg-success';
+                        }
+                        if (actionsEl) {
+                            actionsEl.classList.remove('d-none');
+                            actionsEl.classList.add('d-flex');
+                        }
+                        if (emptyEl) emptyEl.classList.add('d-none');
+                        if (tableWrap) tableWrap.classList.remove('d-none');
+
+                        if (tbody) {
+                            tbody.innerHTML = '';
+                            data.packages.forEach(function (pkg) {
+                                const tr = document.createElement('tr');
+                                let urgencyBadge = '<span class="badge bg-secondary">Обычная</span>';
+                                if (pkg.urgency_code === 'CRITICAL') {
+                                    urgencyBadge = '<span class="badge bg-danger">Критическая</span>';
+                                } else if (pkg.urgency_code === 'URGENT') {
+                                    urgencyBadge = '<span class="badge bg-warning text-dark">Срочная</span>';
+                                }
+
+                                tr.innerHTML = `
+                                    <td style="text-align: center;">
+                                        <input type="checkbox" name="attach_packages" value="${pkg.id}" ${pkg.already_attached || true ? 'checked' : ''} class="pkg-checkbox form-check-input">
+                                    </td>
+                                    <td>
+                                        <strong class="font-monospace text-primary">${pkg.track_number}</strong>
+                                        ${pkg.already_attached ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">В рейсе</span>' : ''}
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">${pkg.destination}</span></td>
+                                    <td>
+                                        <div class="small"><strong>От:</strong> ${pkg.sender}</div>
+                                        <div class="small text-muted"><strong>Кому:</strong> ${pkg.recipient || '—'}</div>
+                                    </td>
+                                    <td>${urgencyBadge}</td>
+                                    <td class="small">${pkg.places_count} мест / ${pkg.weight_kg} кг</td>
+                                    <td class="small text-muted">${pkg.created_at}</td>
+                                `;
+                                tbody.appendChild(tr);
+                            });
+                        }
+                    } else {
+                        if (badgeEl) {
+                            badgeEl.textContent = '0';
+                            badgeEl.className = 'badge bg-secondary';
+                        }
+                        if (actionsEl) {
+                            actionsEl.classList.add('d-none');
+                            actionsEl.classList.remove('d-flex');
+                        }
+                        if (tableWrap) tableWrap.classList.add('d-none');
+                        if (emptyEl) {
+                            emptyEl.innerHTML = '<i class="bx bx-info-circle fs-4 text-secondary d-block mb-1"></i>В очереди ожидания нет посылок для выбранных МПД и даты отправления (оформленных не позднее даты выезда).';
+                            emptyEl.classList.remove('d-none');
+                        }
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Ошибка подбора посылок под рейс:', err);
+                    if (loadingEl) loadingEl.classList.add('d-none');
+                });
+        }
+
+        // Слушатели событий
+        if (plannedDateInput) {
+            plannedDateInput.addEventListener('change', fetchMatchedPackages);
+            plannedDateInput.addEventListener('input', fetchMatchedPackages);
+        }
+
+        if (container) {
+            container.addEventListener('change', function (e) {
+                if (e.target && (e.target.matches('select[name$="-mpd"]') || e.target.matches('input[name$="-DELETE"]'))) {
+                    fetchMatchedPackages();
+                }
+            });
+            container.addEventListener('click', function (e) {
+                if (e.target && e.target.closest('.remove-new-row')) {
+                    setTimeout(fetchMatchedPackages, 50);
+                }
+            });
+        }
+
+        if (btnSelectAll) {
+            btnSelectAll.addEventListener('click', function () {
+                document.querySelectorAll('.pkg-checkbox').forEach(function (cb) { cb.checked = true; });
+            });
+        }
+
+        if (btnUnselectAll) {
+            btnUnselectAll.addEventListener('click', function () {
+                document.querySelectorAll('.pkg-checkbox').forEach(function (cb) { cb.checked = false; });
+            });
+        }
+
+        // Первичный опрос при загрузке страницы
+        fetchMatchedPackages();
     });
 </script>
 {% endblock %}
