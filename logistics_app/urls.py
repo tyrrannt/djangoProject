@@ -1,13 +1,26 @@
 from django.urls import path
 
 from logistics_app.views import (
-    PackageCreateView,
-    PackageListView,
     WayBillCreateView,
     WayBillDeleteView,
     WayBillDetailView,
     WayBillListView,
     WayBillUpdateView,
+)
+from logistics_app.views_shipment import (
+    PackageAttachTripView,
+    PackageCreateView,
+    PackageDetailView,
+    PackageDetachTripView,
+    PackageListView,
+    PackageReceiveView,
+    PackageSheetPdfView,
+    PackageUpdateView,
+    ShipmentTripActionView,
+    ShipmentTripCreateView,
+    ShipmentTripDetailView,
+    ShipmentTripListView,
+    ShipmentTripUpdateView,
 )
 from logistics_app.views_docflow import (
     DocFlowAddCommentView,
@@ -38,6 +51,13 @@ from logistics_app.views_docflow import (
 app_name = "logistics_app"
 
 urlpatterns = [
+    # Рейсы и доставка автотранспортом на МПД
+    path("trips/", ShipmentTripListView.as_view(), name="trip_list"),
+    path("trips/add/", ShipmentTripCreateView.as_view(), name="trip_add"),
+    path("trips/<int:pk>/", ShipmentTripDetailView.as_view(), name="trip_detail"),
+    path("trips/<int:pk>/update/", ShipmentTripUpdateView.as_view(), name="trip_update"),
+    path("trips/<int:pk>/action/", ShipmentTripActionView.as_view(), name="trip_action"),
+
     # Транспортные накладные и посылки
     path("waybill/", WayBillListView.as_view(), name="waybill_list"),
     path("waybill/add/", WayBillCreateView.as_view(), name="waybill_add"),
@@ -46,6 +66,12 @@ urlpatterns = [
     path("waybill/<int:pk>/delete/", WayBillDeleteView.as_view(), name="waybill_delete"),
     path("package/", PackageListView.as_view(), name="package_list"),
     path("package/add/", PackageCreateView.as_view(), name="package_add"),
+    path("package/<int:pk>/", PackageDetailView.as_view(), name="package_detail"),
+    path("package/<int:pk>/update/", PackageUpdateView.as_view(), name="package_update"),
+    path("package/<int:pk>/receive/", PackageReceiveView.as_view(), name="package_receive"),
+    path("package/<int:pk>/pdf/", PackageSheetPdfView.as_view(), name="package_sheet_pdf"),
+    path("package/<int:pk>/attach-trip/", PackageAttachTripView.as_view(), name="package_attach_trip"),
+    path("package/<int:pk>/detach-trip/", PackageDetachTripView.as_view(), name="package_detach_trip"),
 
     # Электронный документооборот (СЭД)
     path("docflow/", DocFlowDocumentListView.as_view(), name="docflow_list"),

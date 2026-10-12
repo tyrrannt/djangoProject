@@ -434,6 +434,65 @@ class DocFlowNotificationService:
         return cls.send_html_notification_email(subject, html, emails)
 
     @classmethod
+    def send_sla_warning_email(
+        cls,
+        recipient_email: str,
+        step: DocFlowRouteStep,
+        hours_remaining: float,
+    ) -> int:
+        """Отправляет персональное предупреждение о приближении дедлайна или просрочке SLA.
+
+        Args:
+            recipient_email (str): Email адрес получателя.
+            step (DocFlowRouteStep): Этап согласования.
+            hours_remaining (float): Количество оставшихся часов до дедлайна (отрицательное при просрочке).
+
+        Returns:
+            int: Количество успешно отправленных писем (1 или 0).
+        """
+        if not recipient_email:
+            return 0
+
+        is_overdue = hours_remaining <= 0
+        due_str = step.due_date.strftime("%d.%m.%Y %H:%M") if step.due_date else "Не установлен"
+
+        if is_overdue:
+            subject = f"Срочно: Просрочено согласование документа {step.document.reg_number or step.document.title}"
+            greeting = (
+                f"Внимание: Превышен нормативный срок рассмотрения этапа "
+                f"<strong>«{step.step_name}»</strong> по документу <strong>«{step.document.title}»</strong> (дедлайн был {due_str})."
+            )
+            header_title = "Просрочка согласования документа"
+        else:
+            subject = f"Внимание: До истечения срока согласования документа {step.document.reg_number or step.document.title} осталось менее 24 часов"
+            greeting = (
+                f"Напоминаем, что срок рассмотрения этапа <strong>«{step.step_name}»</strong> "
+                f"по документу <strong>«{step.document.title}»</strong> истекает <strong>{due_str}</strong>."
+            )
+            header_title = "Приближение дедлайна SLA"
+
+        rows = f"""
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px 0; color: #64748b;">Документ:</td>
+                <td style="padding: 10px 0; font-weight: 600;">{step.document.reg_number or step.document.title}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px 0; color: #64748b;">Срок (дедлайн):</td>
+                <td style="padding: 10px 0; font-weight: 600; color: {'#dc2626' if is_overdue else '#d97706'};">{due_str}</td>
+            </tr>
+        """
+
+        html = cls._build_email_template(
+            header_title=header_title,
+            greeting_text=greeting,
+            document_info_rows=rows,
+            action_button_url=f"/logistics/docflow/{step.document.id}/",
+            action_button_text="Рассмотреть документ",
+        )
+
+        return cls.send_html_notification_email(subject, html, [recipient_email])
+
+    @classmethod
     def check_sla_deadlines(cls) -> Dict[str, Any]:
         """Мониторинг соблюдения SLA: выявление приближающихся дедлайнов и просрочек.
 

@@ -900,6 +900,11 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     {
+                        "title": _("Рейсы на МПД"),
+                        "icon": "route",
+                        "link": reverse_lazy("admin:logistics_app_shipmenttrip_changelist"),
+                    },
+                    {
                         "title": _("Путевые листы"),
                         "icon": "local_shipping",
                         "link": reverse_lazy("admin:logistics_app_waybill_changelist"),
@@ -908,6 +913,16 @@ UNFOLD = {
                         "title": _("Посылки"),
                         "icon": "package_2",
                         "link": reverse_lazy("admin:logistics_app_package_changelist"),
+                    },
+                    {
+                        "title": _("Описи вложений"),
+                        "icon": "inventory_2",
+                        "link": reverse_lazy("admin:logistics_app_packageitem_changelist"),
+                    },
+                    {
+                        "title": _("Журнал трекинга"),
+                        "icon": "timeline",
+                        "link": reverse_lazy("admin:logistics_app_packageeventlog_changelist"),
                     },
                     {
                         "title": _("Изображения посылок"),
@@ -1854,8 +1869,11 @@ UNFOLD = {
                 "logistics_app.docflowapprovallog",
                 "logistics_app.docflowcomment",
                 "logistics_app.waybill",
+                "logistics_app.shipmenttrip",
                 "logistics_app.package",
+                "logistics_app.packageitem",
                 "logistics_app.packageimage",
+                "logistics_app.packageeventlog",
                 "logistics_app.nomenclature",
                 "logistics_app.nomenclaturegroup",
                 "logistics_app.nomenclatureunit",

@@ -5,7 +5,14 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
 
+from unittest.mock import patch
+
+from decimal import Decimal
+import datetime
+from django.urls import reverse
+
 from customers_app.models import DataBaseUser, Division
+from hrdepartment_app.models import PlaceProductionActivity
 from logistics_app.models import (
     DocFlowApprovalLog,
     DocFlowDocument,
@@ -16,10 +23,22 @@ from logistics_app.models import (
     DocFlowRouteStep,
     DocFlowRouteStepTemplate,
     DocFlowRouteTemplate,
+    Package,
+    PackageEventLog,
+    PackageImage,
+    PackageItem,
+    ShipmentCounter,
+    ShipmentTrip,
+    TripStop,
 )
 from logistics_app.services.docflow_notification_service import DocFlowNotificationService
 from logistics_app.services.docflow_routing_service import DocFlowRoutingService
 from logistics_app.services.docflow_version_service import DocFlowVersionService
+from logistics_app.services import (
+    PackageService,
+    PackageSheetGenerator,
+    ShipmentTripService,
+)
 
 
 class DocFlowServicesTestCase(TestCase):
@@ -27,6 +46,13 @@ class DocFlowServicesTestCase(TestCase):
 
     def setUp(self) -> None:
         """Подготовка тестовых данных."""
+        self.email_patcher = patch(
+            "mailbox_app.services.email_service.UniversalEmailService.send_async_email",
+            return_value=True,
+        )
+        self.email_patcher.start()
+        self.addCleanup(self.email_patcher.stop)
+
         self.division = Division.objects.create(name="Юридический отдел", code="LAW_01")
         self.initiator = DataBaseUser.objects.create_user(
             username="initiator_user",
@@ -364,5 +390,243 @@ class DocFlowServicesTestCase(TestCase):
 
         doc.refresh_from_db()
         self.assertEqual(doc.status, DocFlowDocument.Status.APPROVED)
+
+
+class ShipmentServicesTestCase(TestCase):
+    """Набор тестов для проверки бизнес-логики рейсов, посылок, описи и приемки на МПД."""
+
+    def setUp(self) -> None:
+        """Подготовка тестовых сущностей пользователей, МПД и подразделений."""
+        self.user_dispatcher = DataBaseUser.objects.create_user(
+            username="dispatcher_user",
+            password="testpassword123",
+            first_name="Алексей",
+            last_name="Логистов",
+        )
+        self.user_driver = DataBaseUser.objects.create_user(
+            username="driver_user",
+            password="testpassword123",
+            first_name="Иван",
+            last_name="Шоферов",
+        )
+        self.user_sender = DataBaseUser.objects.create_user(
+            username="sender_user",
+            password="testpassword123",
+            first_name="Сергей",
+            last_name="Отправителев",
+        )
+        self.user_receiver = DataBaseUser.objects.create_user(
+            username="receiver_user",
+            password="testpassword123",
+            first_name="Дмитрий",
+            last_name="Получателев",
+        )
+
+        self.mpd_surgut = PlaceProductionActivity.objects.create(name="МПД «Сургут»")
+        self.mpd_noyabrsk = PlaceProductionActivity.objects.create(name="МПД «Ноябрьск»")
+
+    def test_shipment_counter_generation(self) -> None:
+        """Проверяет генерацию номеров рейсов и трек-номеров посылок с инкрементом."""
+        trip_num_1 = ShipmentCounter.generate_number("TRIP", year=2026)
+        trip_num_2 = ShipmentCounter.generate_number("TRIP", year=2026)
+        self.assertEqual(trip_num_1, "РЕЙС-2026/0001")
+        self.assertEqual(trip_num_2, "РЕЙС-2026/0002")
+
+        pkg_num_1 = ShipmentCounter.generate_number("PACKAGE", year=2026)
+        pkg_num_2 = ShipmentCounter.generate_number("PACKAGE", year=2026)
+        self.assertEqual(pkg_num_1, "ПКГ-2026/00001")
+        self.assertEqual(pkg_num_2, "ПКГ-2026/00002")
+
+    def test_trip_full_lifecycle(self) -> None:
+        """Проверяет полный жизненный цикл рейса: создание, привязка посылок, выезд, прибытие на МПД и завершение."""
+        today = datetime.date.today()
+
+        # 1. Создание рейса
+        trip = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=today,
+            origin_custom="Центральный склад (Москва)",
+            destinations=[self.mpd_surgut, self.mpd_noyabrsk],
+            vehicle_type=ShipmentTrip.VehicleType.COMPANY_CAR,
+            vehicle_model="ГАЗель Next",
+            vehicle_reg_number="А123БВ 777",
+            driver_user=self.user_driver,
+            comment="Срочная доставка запчастей",
+        )
+        self.assertTrue(trip.trip_number.startswith("РЕЙС-"))
+        self.assertEqual(trip.status, ShipmentTrip.Status.PLANNING)
+        self.assertEqual(trip.stops.count(), 2)
+
+        # 2. Создание двух посылок (одна на Сургут, вторая на Ноябрьск)
+        pkg_surgut = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            recipient=self.user_receiver,
+            trip=trip,
+            urgency=Package.Urgency.URGENT,
+            package_type=Package.PackageType.BOX,
+            places_count=1,
+            items_data=[
+                {"name": "Датчик давления", "part_number": "DPS-100", "quantity_sent": 2, "unit": "шт."},
+                {"name": "Комплект прокладок", "part_number": "GSK-45", "quantity_sent": 5, "unit": "компл."},
+            ],
+        )
+        self.assertEqual(pkg_surgut.status, Package.Status.ASSIGNED_TO_TRIP)
+        self.assertEqual(pkg_surgut.items.count(), 2)
+
+        pkg_noyabrsk = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_noyabrsk,
+            recipient=self.user_receiver,
+            trip=trip,
+            urgency=Package.Urgency.NORMAL,
+            package_type=Package.PackageType.PALLET,
+            places_count=1,
+            items_data=[
+                {"name": "Блок управления", "part_number": "ECU-90", "quantity_sent": 1, "unit": "шт."},
+            ],
+        )
+        self.assertEqual(trip.packages.count(), 2)
+
+        # 3. Консолидация рейса
+        ShipmentTripService.consolidate_trip(trip, self.user_dispatcher)
+        trip.refresh_from_db()
+        self.assertEqual(trip.status, ShipmentTrip.Status.CONSOLIDATED)
+
+        # 4. Отправка машины в рейс (выезд)
+        ShipmentTripService.start_trip(trip, self.user_dispatcher)
+        trip.refresh_from_db()
+        self.assertEqual(trip.status, ShipmentTrip.Status.IN_TRANSIT)
+        self.assertIsNotNone(trip.actual_departure_at)
+
+        # Посылки автоматически перешли в IN_TRANSIT
+        pkg_surgut.refresh_from_db()
+        pkg_noyabrsk.refresh_from_db()
+        self.assertEqual(pkg_surgut.status, Package.Status.IN_TRANSIT)
+        self.assertEqual(pkg_noyabrsk.status, Package.Status.IN_TRANSIT)
+
+        # 5. Прибытие на первую точку (Сургут)
+        ShipmentTripService.arrive_at_stop(trip, self.mpd_surgut, self.user_driver)
+        pkg_surgut.refresh_from_db()
+        pkg_noyabrsk.refresh_from_db()
+
+        # Посылка в Сургут перешла в статус ожидания приемки на МПД
+        self.assertEqual(pkg_surgut.status, Package.Status.DELIVERED_AT_MPD)
+        # Посылка в Ноябрьск осталась в пути
+        self.assertEqual(pkg_noyabrsk.status, Package.Status.IN_TRANSIT)
+
+        # 6. Приемка груза на МПД Сургут в полном объеме
+        items_rec = [
+            {"id": item.id, "quantity_received": item.quantity_sent, "item_status": PackageItem.ItemStatus.ACCEPTED}
+            for item in pkg_surgut.items.all()
+        ]
+        PackageService.receive_package_on_mpd(
+            package=pkg_surgut,
+            user=self.user_receiver,
+            items_reception=items_rec,
+            reception_comment="Все места целы, замечаний нет.",
+        )
+        pkg_surgut.refresh_from_db()
+        self.assertEqual(pkg_surgut.status, Package.Status.RECEIVED_FULL)
+        self.assertFalse(pkg_surgut.has_discrepancy)
+        self.assertIsNotNone(pkg_surgut.received_at)
+        self.assertEqual(pkg_surgut.received_by, self.user_receiver)
+
+        # 7. Прибытие на вторую точку (Ноябрьск) и приемка с недостачей
+        ShipmentTripService.arrive_at_stop(trip, self.mpd_noyabrsk, self.user_driver)
+        pkg_noyabrsk.refresh_from_db()
+        self.assertEqual(pkg_noyabrsk.status, Package.Status.DELIVERED_AT_MPD)
+
+        item_ecu = pkg_noyabrsk.items.first()
+        PackageService.receive_package_on_mpd(
+            package=pkg_noyabrsk,
+            user=self.user_receiver,
+            items_reception=[
+                {
+                    "id": item_ecu.id,
+                    "quantity_received": 0,
+                    "item_status": PackageItem.ItemStatus.SHORTAGE,
+                    "discrepancy_comment": "Коробка вскрыта, блок отсутствует",
+                }
+            ],
+            reception_comment="Составлен коммерческий акт недостачи № 12",
+        )
+        pkg_noyabrsk.refresh_from_db()
+        self.assertEqual(pkg_noyabrsk.status, Package.Status.RECEIVED_WITH_DISCREPANCY)
+        self.assertTrue(pkg_noyabrsk.has_discrepancy)
+
+        # 8. Завершение рейса
+        ShipmentTripService.complete_trip(trip, self.user_dispatcher)
+        trip.refresh_from_db()
+        self.assertEqual(trip.status, ShipmentTrip.Status.COMPLETED)
+        self.assertIsNotNone(trip.actual_completed_at)
+
+    def test_cancel_trip_returns_packages_to_queue(self) -> None:
+        """Проверяет, что при отмене рейса посылки автоматически возвращаются в очередь ожидания."""
+        trip = ShipmentTripService.create_trip(
+            dispatcher=self.user_dispatcher,
+            planned_date=datetime.date.today(),
+            destinations=[self.mpd_surgut],
+        )
+        pkg = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            trip=trip,
+        )
+        self.assertEqual(pkg.status, Package.Status.ASSIGNED_TO_TRIP)
+
+        ShipmentTripService.cancel_trip(trip, self.user_dispatcher, reason="Поломка ТС")
+        trip.refresh_from_db()
+        pkg.refresh_from_db()
+
+        self.assertEqual(trip.status, ShipmentTrip.Status.CANCELLED)
+        self.assertIsNone(pkg.trip)
+        self.assertEqual(pkg.status, Package.Status.AWAITING_SHIPMENT)
+
+    def test_package_pdf_generation(self) -> None:
+        """Проверяет корректность генерации PDF-описи вложения с QR-кодом."""
+        pkg = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            items_data=[
+                {"name": "Вал приводной", "part_number": "SH-789", "serial_number": "SN-001", "quantity_sent": 1, "unit": "шт."},
+            ],
+        )
+        pdf_bytes = PackageSheetGenerator.generate_pdf(pkg)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(len(pdf_bytes) > 1000)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
+    def test_package_views_http(self) -> None:
+        """Проверяет доступность контроллеров представлений рейсов и посылок."""
+        self.client.force_login(self.user_dispatcher)
+
+        # Реестр рейсов
+        resp_trips = self.client.get(reverse("logistics_app:trip_list"))
+        self.assertEqual(resp_trips.status_code, 200)
+
+        # Реестр посылок
+        resp_packages = self.client.get(reverse("logistics_app:package_list"))
+        self.assertEqual(resp_packages.status_code, 200)
+
+        # Создание посылки через View
+        pkg = PackageService.create_package(
+            sender=self.user_sender,
+            destination=self.mpd_surgut,
+            items_data=[{"name": "Болт", "quantity_sent": 10, "unit": "шт."}],
+        )
+
+        # Карточка посылки
+        resp_detail = self.client.get(reverse("logistics_app:package_detail", kwargs={"pk": pkg.pk}))
+        self.assertEqual(resp_detail.status_code, 200)
+
+        # Мобильный экран приемки
+        resp_receive = self.client.get(reverse("logistics_app:package_receive", kwargs={"pk": pkg.pk}))
+        self.assertEqual(resp_receive.status_code, 200)
+
+        # Печать PDF
+        resp_pdf = self.client.get(reverse("logistics_app:package_sheet_pdf", kwargs={"pk": pkg.pk}))
+        self.assertEqual(resp_pdf.status_code, 200)
+        self.assertEqual(resp_pdf["Content-Type"], "application/pdf")
 
 

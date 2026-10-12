@@ -1,0 +1,444 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Посылка {{ package.track_number }} // Логистика
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target: 44px;
+        --brand-navy: #002b49;
+        --brand-sky: #0284c7;
+    }
+    .btn-touch {
+        min-height: var(--touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .metric-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+    }
+    .metric-value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--brand-navy);
+    }
+    .metric-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 600;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 32px;
+        margin-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: 10px;
+        top: 24px;
+        bottom: -20px;
+        width: 2px;
+        background: #e2e8f0;
+    }
+    .timeline-item:last-child::before {
+        display: none;
+    }
+    .timeline-icon {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid var(--brand-sky);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .timeline-icon.success {
+        border-color: #10b981;
+    }
+    .timeline-icon.danger {
+        border-color: #ef4444;
+    }
+    .timeline-icon.warning {
+        border-color: #f59e0b;
+    }
+    .photo-thumb {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+    .photo-thumb:hover {
+        transform: scale(1.03);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'logistics_app:package_list' %}" class="btn btn-sm btn-outline-secondary" title="Назад к реестру">
+                    <i class="bx bx-arrow-back"></i>
+                </a>
+                <h2 class="h4 font-weight-bold text-dark mb-0">
+                    <i class="bx bx-package text-primary me-2"></i>Посылка № {{ package.track_number }}
+                </h2>
+
+                <!-- Status Badge -->
+                {% if package.status == 'DRAFT' %}
+                    <span class="badge bg-secondary px-3 py-2">Черновик</span>
+                {% elif package.status == 'AWAITING_SHIPMENT' %}
+                    <span class="badge bg-warning text-dark px-3 py-2"><i class="bx bx-time me-1"></i>В очереди на отправку</span>
+                {% elif package.status == 'ASSIGNED_TO_TRIP' %}
+                    <span class="badge bg-info text-white px-3 py-2"><i class="bx bx-car me-1"></i>Включена в рейс</span>
+                {% elif package.status == 'IN_TRANSIT' %}
+                    <span class="badge bg-primary text-white px-3 py-2"><i class="bx bx-navigation me-1"></i>В пути</span>
+                {% elif package.status == 'DELIVERED_AT_MPD' %}
+                    <span class="badge bg-warning text-dark px-3 py-2"><i class="bx bx-map-pin me-1"></i>Ожидает приемки на МПД</span>
+                {% elif package.status == 'RECEIVED_FULL' %}
+                    <span class="badge bg-success text-white px-3 py-2"><i class="bx bx-check-double me-1"></i>Принята полностью</span>
+                {% elif package.status == 'RECEIVED_WITH_DISCREPANCY' %}
+                    <span class="badge bg-danger text-white px-3 py-2"><i class="bx bx-error me-1"></i>Принята с расхождениями</span>
+                {% endif %}
+
+                <!-- Urgency Badge -->
+                {% if package.urgency == 'CRITICAL' %}
+                    <span class="badge bg-danger px-2 py-1">КРИТИЧЕСКИ СРОЧНО (AOG)</span>
+                {% elif package.urgency == 'URGENT' %}
+                    <span class="badge bg-warning text-dark px-2 py-1">Срочно</span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-0 d-none d-md-block">
+                Маршрут: <strong>{{ package.origin_display }} → {{ package.destination_display }}</strong> |
+                Отправитель: <strong>{{ package.sender_display }}</strong> |
+                Создана: {{ package.created_at|date:"d.m.Y H:i" }}
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'logistics_app:package_sheet_pdf' pk=package.pk %}" class="btn btn-outline-secondary btn-touch" target="_blank" title="Распечатать опись вложения с QR-кодом">
+                <i class="bx bx-printer me-1"></i>
+                <span class="d-none d-sm-inline">Опись вложения (PDF)</span>
+                <span class="d-inline d-sm-none">PDF</span>
+            </a>
+
+            {% if can_receive %}
+                <a href="{% url 'logistics_app:package_receive' pk=package.pk %}" class="btn btn-success btn-touch shadow-sm" title="Принять посылку на МПД">
+                    <i class="bx bx-check-double me-1"></i>
+                    <span>Принять груз на МПД</span>
+                </a>
+            {% endif %}
+
+            {% if package.status in 'DRAFT,AWAITING_SHIPMENT,ASSIGNED_TO_TRIP' %}
+                <a href="{% url 'logistics_app:package_update' pk=package.pk %}" class="btn btn-outline-primary btn-touch" title="Редактировать">
+                    <i class="bx bx-edit me-1"></i>Изменить
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Metrics Bar -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="metric-box">
+                <div class="metric-value">{{ items.count }}</div>
+                <div class="metric-label">Позиций в описи</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-box">
+                <div class="metric-value">{{ package.places_count }}</div>
+                <div class="metric-label">Грузовых мест</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-box">
+                <div class="metric-value">{{ package.weight_kg|default:"—" }} <span style="font-size: 0.9rem;">кг</span></div>
+                <div class="metric-label">Вес груза</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-box">
+                <div class="metric-value">
+                    {% if package.delivery_duration_hours %}
+                        {{ package.delivery_duration_hours }} <span style="font-size: 0.9rem;">ч.</span>
+                    {% elif package.shipped_at %}
+                        <span class="text-primary" style="font-size: 1rem;">В пути</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </div>
+                <div class="metric-label">Время доставки</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Route & Details Card -->
+        <div class="col-12 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 h-100">
+                <div class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-map text-primary me-2"></i>Маршрут и параметры отправки
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted" style="width: 38%;">Пункт отправления:</td>
+                                <td class="font-weight-bold text-dark">{{ package.origin_display }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Пункт назначения (МПД):</td>
+                                <td class="font-weight-bold text-primary">{{ package.destination_display }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Рейс автомобиля:</td>
+                                <td>
+                                    {% if package.trip %}
+                                        <a href="{% url 'logistics_app:trip_detail' pk=package.trip.pk %}" class="font-weight-bold text-primary text-decoration-none">
+                                            <i class="bx bx-car me-1"></i>Рейс № {{ package.trip.trip_number }} (выезд {{ package.trip.planned_date|date:"d.m.Y" }})
+                                        </a>
+                                        <div class="text-muted small">ТС: {{ package.trip.vehicle_display }}, водитель: {{ package.trip.driver_display }}</div>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="bx bx-time me-1"></i>Не назначен (в очереди)</span>
+                                        {% if available_trips and package.status == 'AWAITING_SHIPMENT' %}
+                                            <form method="post" action="{% url 'logistics_app:package_attach_trip' pk=package.pk %}" class="d-inline ms-2">
+                                                {% csrf_token %}
+                                                <select name="trip_id" class="form-select form-select-sm d-inline-block w-auto py-0 px-2" required>
+                                                    <option value="">— Назначить рейс —</option>
+                                                    {% for tr in available_trips %}
+                                                        <option value="{{ tr.id }}">Рейс {{ tr.trip_number }} ({{ tr.planned_date|date:"d.m" }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-2">OK</button>
+                                            </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Вид упаковки:</td>
+                                <td>{{ package.get_package_type_display }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Отправитель:</td>
+                                <td>
+                                    <strong>{{ package.sender_display }}</strong>
+                                    {% if package.sender_division %}
+                                        <div class="text-muted small">{{ package.sender_division.name }}</div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Назначенный получатель:</td>
+                                <td><strong>{{ package.recipient_display }}</strong></td>
+                            </tr>
+                            {% if package.received_by %}
+                                <tr>
+                                    <td class="text-muted">Фактически принял:</td>
+                                    <td>
+                                        <strong class="text-success">{{ package.received_by_display }}</strong>
+                                        <div class="text-muted small">Время приемки: {{ package.received_at|date:"d.m.Y H:i" }}</div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                            {% if package.description %}
+                                <tr>
+                                    <td class="text-muted">Описание содержимого:</td>
+                                    <td class="small">{{ package.description|linebreaksbr }}</td>
+                                </tr>
+                            {% endif %}
+                            {% if package.reception_comment %}
+                                <tr>
+                                    <td class="text-muted">Акт / замечания приемки:</td>
+                                    <td class="small {% if package.has_discrepancy %}text-danger font-weight-bold{% endif %}">
+                                        {{ package.reception_comment|linebreaksbr }}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tracking Timeline Card -->
+        <div class="col-12 col-lg-6">
+            <div class="card card-modern shadow-sm border-0 h-100">
+                <div class="card-header bg-light py-3">
+                    <h5 class="card-title text-dark mb-0 font-weight-bold">
+                        <i class="bx bx-history text-primary me-2"></i>История движения и трекинг груза
+                    </h5>
+                </div>
+                <div class="card-body p-3" style="max-height: 400px; overflow-y: auto;">
+                    {% for event in event_logs %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon {% if event.event_type in 'RECEIVED_FULL' %}success{% elif event.event_type in 'RECEIVED_DISCREPANCY,REJECTED' %}danger{% elif event.event_type in 'SHIPPED,ARRIVED_AT_MPD' %}warning{% endif %}">
+                                <i class="bx {% if event.event_type in 'RECEIVED_FULL' %}bx-check text-success{% elif event.event_type in 'RECEIVED_DISCREPANCY' %}bx-error text-danger{% elif event.event_type == 'SHIPPED' %}bx-car text-warning{% else %}bx-circle text-primary{% endif %}" style="font-size: 11px;"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong class="text-dark small">{{ event.get_event_type_display }}</strong>
+                                    <span class="text-muted small font-monospace">{{ event.timestamp|date:"d.m.Y H:i" }}</span>
+                                </div>
+                                <div class="text-muted small mt-1">{{ event.message }}</div>
+                                {% if event.user %}
+                                    <div class="text-muted small font-italic">Исполнитель: {{ event.user.get_full_name|default:event.user.username }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center text-muted py-3">Записей в журнале трекинга пока нет</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Package Items (Опись вложения) -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title text-dark mb-0 font-weight-bold">
+                <i class="bx bx-list-check text-primary me-2"></i>Построчная опись вложения груза ({{ items.count }} позиций)
+            </h5>
+            <div>
+                <a href="{% url 'logistics_app:package_sheet_pdf' pk=package.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                    <i class="bx bx-printer me-1"></i>Печать описи
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%;">№</th>
+                            <th style="width: 32%;">Наименование ТМЦ / Запчасти / Груза</th>
+                            <th style="width: 15%;">Каталожный номер (P/N)</th>
+                            <th style="width: 15%;">Заводской номер (S/N)</th>
+                            <th style="width: 10%; text-align: center;">Отправлено</th>
+                            <th style="width: 10%; text-align: center;">Принято</th>
+                            <th style="width: 13%;">Статус сверки</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr {% if item.has_issue %}class="table-danger"{% endif %}>
+                                <td class="font-monospace text-muted">{{ item.item_order }}</td>
+                                <td>
+                                    <div class="font-weight-bold text-dark">{{ item.name }}</div>
+                                    {% if item.sender_comment %}
+                                        <div class="text-muted small">Примечание: {{ item.sender_comment }}</div>
+                                    {% endif %}
+                                    {% if item.discrepancy_comment %}
+                                        <div class="text-danger small font-weight-bold">
+                                            <i class="bx bx-error me-1"></i>Замечание приемщика: {{ item.discrepancy_comment }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="font-monospace small">{{ item.part_number|default:"—" }}</td>
+                                <td class="font-monospace small">{{ item.serial_number|default:"—" }}</td>
+                                <td style="text-align: center;">
+                                    <strong>{{ item.quantity_sent }}</strong> {{ item.unit }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% if item.quantity_received is not None %}
+                                        <strong {% if item.quantity_received < item.quantity_sent %}class="text-danger"{% else %}class="text-success"{% endif %}>
+                                            {{ item.quantity_received }}
+                                        </strong> {{ item.unit }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.item_status == 'ACCEPTED' %}
+                                        <span class="badge bg-success text-white"><i class="bx bx-check me-1"></i>Принято</span>
+                                    {% elif item.item_status == 'SHORTAGE' %}
+                                        <span class="badge bg-danger text-white"><i class="bx bx-minus-circle me-1"></i>Недостача</span>
+                                    {% elif item.item_status == 'DAMAGED' %}
+                                        <span class="badge bg-danger text-white"><i class="bx bx-error me-1"></i>Повреждено</span>
+                                    {% elif item.item_status == 'EXCESS' %}
+                                        <span class="badge bg-info text-white"><i class="bx bx-plus-circle me-1"></i>Излишек</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border">Ожидает</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-3 text-muted">Позиции описи не указаны</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photos Gallery -->
+    {% if photos_shipment or photos_reception %}
+        <div class="card card-modern shadow-sm border-0 mb-4">
+            <div class="card-header bg-light py-3">
+                <h5 class="card-title text-dark mb-0 font-weight-bold">
+                    <i class="bx bx-image text-primary me-2"></i>Фотофиксация посылки
+                </h5>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    {% for photo in photos_shipment %}
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-2 text-center bg-light">
+                                <a href="{{ photo.image.url }}" target="_blank">
+                                    <img src="{{ photo.image.url }}" alt="{{ photo.caption }}" class="photo-thumb mb-1">
+                                </a>
+                                <div class="badge bg-info text-white mb-1">При упаковке</div>
+                                <div class="text-muted small text-truncate" title="{{ photo.caption }}">{{ photo.caption|default:"Без описания" }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    {% for photo in photos_reception %}
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-2 text-center bg-light">
+                                <a href="{{ photo.image.url }}" target="_blank">
+                                    <img src="{{ photo.image.url }}" alt="{{ photo.caption }}" class="photo-thumb mb-1">
+                                </a>
+                                <div class="badge bg-success text-white mb-1">При приемке на МПД</div>
+                                <div class="text-muted small text-truncate" title="{{ photo.caption }}">{{ photo.caption|default:"Без описания" }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

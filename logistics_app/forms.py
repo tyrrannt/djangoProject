@@ -6,6 +6,7 @@ from django.forms import BaseInlineFormSet, inlineformset_factory
 
 from administration_app.utils import make_custom_field
 from customers_app.models import Counteragent, DataBaseUser, Division
+from hrdepartment_app.models import PlaceProductionActivity
 from logistics_app.models import (
     DocFlowApprovalLog,
     DocFlowComment,
@@ -17,6 +18,11 @@ from logistics_app.models import (
     DocFlowRouteStepTemplate,
     DocFlowRouteTemplate,
     Package,
+    PackageEventLog,
+    PackageImage,
+    PackageItem,
+    ShipmentTrip,
+    TripStop,
     WayBill,
 )
 
@@ -27,18 +33,9 @@ class WayBillCreateForm(forms.ModelForm):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
-        # self.user = kwargs.pop("user")
-        # Выбрать из списка бизнес-процессов имеющих право согласования
         super(WayBillCreateForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
-        # self.fields["content"].widget.attrs.update(
-        #     {"class": "ui-widget"}
-        # )
 
 
 class WayBillForm(forms.ModelForm):
@@ -48,12 +45,6 @@ class WayBillForm(forms.ModelForm):
                   'executor', 'urgency']
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
-        # self.user = kwargs.pop("user")
-        # Выбрать из списка бизнес-процессов имеющих право согласования
         super(WayBillForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
@@ -69,13 +60,6 @@ class WayBillUpdateForm(forms.ModelForm):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
-
-        # self.user = kwargs.pop("user")
-        # Выбрать из списка бизнес-процессов имеющих право согласования
         super(WayBillUpdateForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
@@ -87,22 +71,179 @@ class PackageCreateForm(forms.ModelForm):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
-
-        # self.user = kwargs.pop("user")
-        # Выбрать из списка бизнес-процессов имеющих право согласования
         super(PackageCreateForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
 
 
-# PackageInlineFormSet = inlineformset_factory(Package, WayBill, form=PackageCreateForm, extra=1)
-WayBillInlineFormSet = inlineformset_factory(Package, WayBill, form=WayBillForm, fk_name='package_number',
-                                             extra=1, can_delete=True, can_delete_extra=True,
-                                             formset=BaseInlineFormSet, )
+# ==============================================================================
+# ФОРМЫ РЕЙСОВ, ВНУТРЕННИХ ПОСЫЛОК И ПРИЕМОЧНОГО КОНТРОЛЯ
+# ==============================================================================
+
+class ShipmentTripForm(forms.ModelForm):
+    """Форма создания и редактирования заявки на рейс машины на МПД."""
+
+    class Meta:
+        model = ShipmentTrip
+        fields = [
+            "planned_date",
+            "origin_point",
+            "origin_custom",
+            "vehicle_type",
+            "vehicle_model",
+            "vehicle_reg_number",
+            "driver_user",
+            "driver_name",
+            "driver_phone",
+            "comment",
+        ]
+        widgets = {
+            "planned_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "comment": forms.Textarea(attrs={
+                "rows": 3,
+                "class": "form-control",
+                "placeholder": "Маршрут, особенности погрузки, промежуточные заезды...",
+            }),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            make_custom_field(field)
+
+
+class TripStopForm(forms.ModelForm):
+    """Форма добавления промежуточной точки/МПД в маршрут рейса."""
+
+    class Meta:
+        model = TripStop
+        fields = ["mpd", "stop_order", "planned_arrival_date", "comment"]
+        widgets = {
+            "planned_arrival_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "stop_order": forms.NumberInput(attrs={"class": "form-control", "style": "max-width: 90px;"}),
+            "comment": forms.TextInput(attrs={"class": "form-control", "placeholder": "Примечание к заезду"}),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            make_custom_field(field)
+
+
+TripStopFormSet = inlineformset_factory(
+    ShipmentTrip,
+    TripStop,
+    form=TripStopForm,
+    extra=1,
+    can_delete=True,
+    can_delete_extra=True,
+)
+
+
+class InternalPackageForm(forms.ModelForm):
+    """Форма оформления посылки на МПД с выбором открытого рейса."""
+
+    class Meta:
+        model = Package
+        fields = [
+            "destination",
+            "origin",
+            "origin_custom",
+            "trip",
+            "recipient",
+            "urgency",
+            "package_type",
+            "weight_kg",
+            "places_count",
+            "description",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={
+                "rows": 2,
+                "class": "form-control",
+                "placeholder": "Краткое назначение посылки...",
+            }),
+            "weight_kg": forms.NumberInput(attrs={"class": "form-control", "step": "0.1", "placeholder": "0.0"}),
+            "places_count": forms.NumberInput(attrs={"class": "form-control", "min": "1"}),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["trip"].queryset = ShipmentTrip.objects.filter(
+            status__in=[ShipmentTrip.Status.PLANNING, ShipmentTrip.Status.CONSOLIDATED]
+        ).order_by("planned_date")
+        self.fields["trip"].empty_label = "— Не назначать (поставить в очередь ожидания) —"
+        self.fields["destination"].required = True
+
+        for field in self.fields.values():
+            make_custom_field(field)
+
+
+class PackageItemForm(forms.ModelForm):
+    """Форма позиции в описи вложения посылки."""
+
+    class Meta:
+        model = PackageItem
+        fields = [
+            "name",
+            "part_number",
+            "serial_number",
+            "quantity_sent",
+            "unit",
+            "sender_comment",
+        ]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Наименование ТМЦ / запчасти / документа"}),
+            "part_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "P/N"}),
+            "serial_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "S/N"}),
+            "quantity_sent": forms.NumberInput(attrs={"class": "form-control", "step": "1", "min": "0.01", "style": "max-width: 100px;"}),
+            "unit": forms.TextInput(attrs={"class": "form-control", "style": "max-width: 80px;", "placeholder": "шт."}),
+            "sender_comment": forms.TextInput(attrs={"class": "form-control", "placeholder": "Примечание"}),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            make_custom_field(field)
+
+
+PackageItemFormSet = inlineformset_factory(
+    Package,
+    PackageItem,
+    form=PackageItemForm,
+    extra=1,
+    can_delete=True,
+    can_delete_extra=True,
+)
+
+
+class MultipleFileInput(forms.FileInput):
+    """Виджет выбора нескольких файлов."""
+    allow_multiple_selected = True
+
+
+class PackageReceptionForm(forms.Form):
+    """Форма приемочного контроля посылки на МПД."""
+
+    reception_comment = forms.CharField(
+        label="Акт приемки / Общие замечания",
+        required=False,
+        widget=forms.Textarea(attrs={
+            "rows": 3,
+            "class": "form-control",
+            "placeholder": "Зафиксируйте состояние упаковки, пломб или причины претензий...",
+        }),
+    )
+    photos = forms.FileField(
+        label="Фотофиксация приемки",
+        required=False,
+        widget=MultipleFileInput(attrs={
+            "multiple": True,
+            "class": "form-control",
+            "accept": "image/*",
+        }),
+        help_text="Можно прикрепить несколько фото тары или поврежденных деталей прямо с камеры телефона",
+    )
 
 
 # ==============================================================================

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def check_docflow_sla_deadlines_task(self) -> int:
+def check_docflow_sla_deadlines_task(self=None) -> int:
     """Периодическая задача Celery Beat для контроля SLA и дедлайнов этапов согласования СЭД.
 
     Проверяет все активные этапы согласования (IN_PROGRESS) с установленным due_date.
@@ -22,7 +22,7 @@ def check_docflow_sla_deadlines_task(self) -> int:
     отправляет уведомление согласующему лицу и логирует предупреждение.
 
     Args:
-        self: Экземпляр текущей запущенной задачи Celery.
+        self: Экземпляр текущей запущенной задачи Celery. Defaults to None.
 
     Returns:
         int: Количество отправленных уведомлений по SLA.

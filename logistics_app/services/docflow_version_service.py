@@ -136,15 +136,15 @@ class DocFlowVersionService:
 
         file_hash, file_size = cls.calculate_file_hash_and_size(file_obj)
 
-        if not version_number:
-            version_number = cls.calculate_next_version_number(
-                current_version=doc_file.current_version_number,
-                is_reviewer_edit=is_reviewer_edit,
-            )
-
         with transaction.atomic():
             # Блокируем родительский контейнер файла
             doc_file_locked = DocFlowFile.objects.select_for_update().get(id=doc_file.id)
+
+            if not version_number:
+                version_number = cls.calculate_next_version_number(
+                    current_version=doc_file_locked.current_version_number,
+                    is_reviewer_edit=is_reviewer_edit,
+                )
 
             file_version = DocFlowFileVersion.objects.create(
                 doc_file=doc_file_locked,
@@ -160,6 +160,7 @@ class DocFlowVersionService:
             # Обновляем текущую версию в контейнере файла
             doc_file_locked.current_version_number = version_number
             doc_file_locked.save(update_fields=["current_version_number"])
+            doc_file.current_version_number = version_number
 
             # Фиксируем загрузку в неизменяемом журнале аудита
             action_desc = "Согласующим лицом загружена редакция с правками" if is_reviewer_edit else "Загружена новая версия файла"

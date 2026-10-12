@@ -4161,6 +4161,34 @@ class MaintenanceEquipment(models.Model):
         return f"{self.name} ({ident})"
 
     @property
+    def measurement_range(self) -> str:
+        """Диапазон измерений оборудования из нормализованной модели каталога (ФАП-145).
+
+        Returns:
+            str: Диапазон измерений (например, '0...10 А', '1100-1300 кг/м³') либо пустая строка.
+        """
+        try:
+            if self.type_model and self.type_model.measurement_range:
+                return self.type_model.measurement_range
+        except Exception:
+            pass
+        return ""
+
+    @property
+    def accuracy_class(self) -> str:
+        """Класс точности или предел допускаемой погрешности СИ (ФАП-145, 102-ФЗ).
+
+        Returns:
+            str: Класс точности (например, '1,5', '0,5') либо пустая строка.
+        """
+        try:
+            if self.type_model and self.type_model.accuracy_class:
+                return self.type_model.accuracy_class
+        except Exception:
+            pass
+        return ""
+
+    @property
     def metrology_status(self) -> str:
         """Вычисляет текущий метрологический статус оборудования на сегодня.
 

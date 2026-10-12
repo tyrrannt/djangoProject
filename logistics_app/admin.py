@@ -18,7 +18,12 @@ from logistics_app.models import (
     NomenclatureGroup,
     NomenclatureUnit,
     Package,
+    PackageEventLog,
     PackageImage,
+    PackageItem,
+    ShipmentCounter,
+    ShipmentTrip,
+    TripStop,
     WayBill,
 )
 from unfold.admin import ModelAdmin, TabularInline
@@ -80,49 +85,323 @@ class WayBillAdmin(ModelAdmin):
         return str(obj.urgency) if obj.urgency else "—"
 
 
-@admin.register(PackageImage)
-class PackageImageAdmin(ModelAdmin):
-    """Панель управления изображениями посылок."""
+# ==============================================================================
+# РЕЙСЫ АВТОТРАНСПОРТА И ОСТАНОВКИ НА МПД
+# ==============================================================================
 
-    list_display = ("date_of_creation", "package", "caption")
-    search_fields = ("caption", "package__number_of_dispatch")
+class TripStopInline(TabularInline):
+    """Встроенный список промежуточных остановок на МПД по маршруту рейса."""
+
+    model = TripStop
+    extra = 1
+    fields = ("stop_order", "mpd", "planned_arrival_date", "status", "comment")
+    autocomplete_fields = ["mpd"]
+
+
+@admin.register(ShipmentTrip)
+class ShipmentTripAdmin(ModelAdmin):
+    """Панель управления рейсами автотранспорта на МПД."""
+
+    list_display = (
+        "trip_number",
+        "planned_date",
+        "origin_display_name",
+        "vehicle_info",
+        "driver_info",
+        "status_badge",
+        "packages_count_badge",
+        "created_at",
+    )
+    list_filter = (
+        "status",
+        "vehicle_type",
+        ("planned_date", RangeDateFilter),
+        ("created_at", RangeDateFilter),
+    )
+    search_fields = (
+        "trip_number",
+        "vehicle_model",
+        "vehicle_reg_number",
+        "driver_name",
+        "driver_user__title",
+        "comment",
+    )
+    autocomplete_fields = ["dispatcher", "driver_user", "origin_point"]
+    inlines = [TripStopInline]
     compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Откуда")
+    def origin_display_name(self, obj: ShipmentTrip) -> str:
+        return obj.origin_display
+
+    @display(description="Транспорт")
+    def vehicle_info(self, obj: ShipmentTrip) -> str:
+        return obj.vehicle_display
+
+    @display(description="Водитель")
+    def driver_info(self, obj: ShipmentTrip) -> str:
+        return obj.driver_display
+
+    @display(description="Посылок")
+    def packages_count_badge(self, obj: ShipmentTrip) -> str:
+        return f"{obj.packages_count} шт."
+
+    @display(
+        description="Статус рейса",
+        label={
+            "PLANNING": "warning",
+            "CONSOLIDATED": "info",
+            "IN_TRANSIT": "primary",
+            "ARRIVED": "secondary",
+            "COMPLETED": "success",
+            "CANCELLED": "danger",
+        },
+    )
+    def status_badge(self, obj: ShipmentTrip) -> str:
+        return obj.get_status_display()
+
+
+# ==============================================================================
+# ПОСЫЛКИ, ОПИСЬ ВЛОЖЕНИЯ И ПРИЕМОЧНЫЙ КОНТРОЛЬ
+# ==============================================================================
+
+class PackageItemInline(TabularInline):
+    """Встроенный список позиций описи вложения в карточке посылки."""
+
+    model = PackageItem
+    extra = 1
+    fields = (
+        "item_order",
+        "name",
+        "part_number",
+        "serial_number",
+        "quantity_sent",
+        "unit",
+        "quantity_received",
+        "item_status",
+        "discrepancy_comment",
+    )
+
+
+class PackageImageInline(TabularInline):
+    """Встроенный список фотографий вложения и приемки."""
+
+    model = PackageImage
+    extra = 0
+    fields = ("image", "stage", "caption", "uploaded_by", "created_at")
+    readonly_fields = ("created_at",)
+
+
+class PackageEventLogInline(TabularInline):
+    """Встроенная хронология трекинга жизненного цикла посылки."""
+
+    model = PackageEventLog
+    extra = 0
+    fields = ("timestamp", "event_type", "user", "location", "message")
+    readonly_fields = ("timestamp", "event_type", "user", "location", "message")
+    can_delete = False
 
 
 @admin.register(Package)
 class PackageAdmin(ModelAdmin):
-    """Панель управления посылками."""
+    """Панель управления посылками и сборными грузами на МПД."""
 
     list_display = (
-        "number_of_dispatch",
-        "date_of_dispatch",
-        "place_of_dispatch",
-        "get_executor",
-        "type_badge",
+        "get_package_header",
+        "origin_display_name",
+        "destination_display_name",
+        "trip_display_name",
+        "sender_name",
+        "recipient_name",
+        "status_badge",
+        "urgency_badge",
+        "created_at",
     )
     list_filter = (
-        "type_of_dispatch",
-        ("date_of_dispatch", RangeDateFilter),
+        "status",
+        "urgency",
+        "package_type",
+        "has_discrepancy",
+        ("created_at", RangeDateFilter),
     )
-    search_fields = ("number_of_dispatch", "place_of_dispatch", "executor__title")
+    search_fields = (
+        "track_number",
+        "number_of_dispatch",
+        "destination__name",
+        "origin__name",
+        "origin_custom",
+        "sender__title",
+        "recipient__title",
+        "description",
+    )
+    autocomplete_fields = [
+        "destination",
+        "origin",
+        "sender",
+        "sender_division",
+        "recipient",
+        "trip",
+        "received_by",
+        "place_of_dispatch",
+        "executor",
+    ]
+    inlines = [PackageItemInline, PackageImageInline, PackageEventLogInline]
     compressed_fields = True
     warn_unsaved_form = True
 
+    @display(header=True, description="Посылка")
+    def get_package_header(self, obj: Package) -> list:
+        num = obj.track_number or obj.number_of_dispatch or f"ID:{obj.pk}"
+        desc = obj.description[:35] if obj.description else f"{obj.places_count} мест, {obj.get_package_type_display()}"
+        return [f"№ {num}", desc]
+
+    @display(description="Откуда")
+    def origin_display_name(self, obj: Package) -> str:
+        return obj.origin_display
+
+    @display(description="Куда")
+    def destination_display_name(self, obj: Package) -> str:
+        return obj.destination_display
+
+    @display(description="Рейс")
+    def trip_display_name(self, obj: Package) -> str:
+        return obj.trip.trip_number if obj.trip else "—"
+
+    @display(description="Отправитель")
+    def sender_name(self, obj: Package) -> str:
+        return format_name_initials(obj.sender.title) if obj.sender else "—"
+
+    @display(description="Получатель")
+    def recipient_name(self, obj: Package) -> str:
+        return format_name_initials(obj.recipient.title) if obj.recipient else "—"
+
     @display(
-        description="Тип отправления",
+        description="Статус",
         label={
-            "regular": "info",
-            "valuable": "warning",
-            "documents": "success",
+            "DRAFT": "base",
+            "AWAITING_SHIPMENT": "warning",
+            "ASSIGNED_TO_TRIP": "info",
+            "IN_TRANSIT": "primary",
+            "DELIVERED_AT_MPD": "warning",
+            "RECEIVED_FULL": "success",
+            "RECEIVED_WITH_DISCREPANCY": "danger",
+            "REJECTED": "danger",
+            "RETURNED": "base",
         },
     )
-    def type_badge(self, obj: Package) -> str:
-        """Цветной бейдж типа отправления."""
-        return str(obj.type_of_dispatch) if obj.type_of_dispatch else "—"
+    def status_badge(self, obj: Package) -> str:
+        return obj.get_status_display()
+
+    @display(
+        description="Срочность",
+        label={
+            "NORMAL": "base",
+            "URGENT": "warning",
+            "CRITICAL": "danger",
+        },
+    )
+    def urgency_badge(self, obj: Package) -> str:
+        return obj.get_urgency_display()
+
+
+@admin.register(PackageItem)
+class PackageItemAdmin(ModelAdmin):
+    """Панель управления позициями описей посылок."""
+
+    list_display = (
+        "package",
+        "item_order",
+        "name",
+        "part_number",
+        "serial_number",
+        "quantity_sent",
+        "quantity_received",
+        "unit",
+        "item_status_badge",
+    )
+    list_filter = ("item_status",)
+    search_fields = ("name", "part_number", "serial_number", "package__track_number")
+    autocomplete_fields = ["package"]
+    compressed_fields = True
+
+    @display(
+        description="Статус при приемке",
+        label={
+            "PENDING": "base",
+            "ACCEPTED": "success",
+            "SHORTAGE": "danger",
+            "DAMAGED": "danger",
+            "EXCESS": "info",
+        },
+    )
+    def item_status_badge(self, obj: PackageItem) -> str:
+        return obj.get_item_status_display()
+
+
+@admin.register(PackageImage)
+class PackageImageAdmin(ModelAdmin):
+    """Панель управления фотографиями посылок."""
+
+    list_display = ("package", "stage_badge", "caption", "uploaded_by", "created_at")
+    list_filter = ("stage", ("created_at", RangeDateFilter))
+    search_fields = ("caption", "package__track_number")
+    autocomplete_fields = ["package", "item", "uploaded_by"]
+    compressed_fields = True
+
+    @display(
+        description="Этап",
+        label={
+            "SHIPMENT": "info",
+            "RECEPTION": "success",
+        },
+    )
+    def stage_badge(self, obj: PackageImage) -> str:
+        return obj.get_stage_display()
+
+
+@admin.register(PackageEventLog)
+class PackageEventLogAdmin(ModelAdmin):
+    """Панель аудита трекинга и событий движения посылок."""
+
+    list_display = ("timestamp", "package", "event_type_badge", "user_name", "location", "message")
+    list_filter = ("event_type", ("timestamp", RangeDateFilter))
+    search_fields = ("package__track_number", "user__title", "message", "location")
+    readonly_fields = ("package", "event_type", "user", "timestamp", "location", "message")
+    compressed_fields = True
 
     @display(description="Исполнитель")
-    def get_executor(self, obj: Package) -> str:
-        return format_name_initials(obj.executor.title) if obj.executor else ""
+    def user_name(self, obj: PackageEventLog) -> str:
+        return format_name_initials(obj.user.title) if obj.user else "—"
+
+    @display(
+        description="Событие",
+        label={
+            "CREATED": "base",
+            "READY": "info",
+            "ATTACHED_TO_TRIP": "info",
+            "REMOVED_FROM_TRIP": "warning",
+            "SHIPPED": "primary",
+            "ARRIVED_AT_MPD": "warning",
+            "RECEIVED_FULL": "success",
+            "RECEIVED_DISCREPANCY": "danger",
+            "REJECTED": "danger",
+            "PHOTO_ADDED": "info",
+            "COMMENT_ADDED": "base",
+        },
+    )
+    def event_type_badge(self, obj: PackageEventLog) -> str:
+        return obj.get_event_type_display()
+
+
+@admin.register(ShipmentCounter)
+class ShipmentCounterAdmin(ModelAdmin):
+    """Панель управления счетчиками автонумерации рейсов и посылок."""
+
+    list_display = ("year", "counter_type", "last_number")
+    list_filter = ("year", "counter_type")
+    ordering = ("-year", "counter_type")
+    compressed_fields = True
 
 
 @admin.register(Grade)

@@ -4,11 +4,17 @@ from logistics_app.services.docflow_notification_service import DocFlowNotificat
 from logistics_app.services.docflow_routing_service import DocFlowRoutingService
 from logistics_app.services.docflow_sheet_service import DocFlowSheetGenerator
 from logistics_app.services.docflow_version_service import DocFlowVersionService
+from logistics_app.services.package_service import PackageService
+from logistics_app.services.package_sheet_service import PackageSheetGenerator
+from logistics_app.services.shipment_trip_service import ShipmentTripService
 
 __all__ = [
     "DocFlowRoutingService",
     "DocFlowVersionService",
     "DocFlowNotificationService",
     "DocFlowSheetGenerator",
+    "ShipmentTripService",
+    "PackageService",
+    "PackageSheetGenerator",
 ]
 

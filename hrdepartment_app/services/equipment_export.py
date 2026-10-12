@@ -246,42 +246,58 @@ def export_maintenance_equipment_to_excel(
         row_bg = zebra_fill if is_even else None
 
         # 1. Наименование и модель
-        if eq.type_model and eq.type_model.equipment_name:
-            eq_name = eq.type_model.equipment_name.name
-            type_model_str = eq.type_model.name
+        type_model = getattr(eq, "type_model", None)
+        if type_model and getattr(type_model, "equipment_name", None):
+            eq_name = type_model.equipment_name.name
+            type_model_str = type_model.name
         else:
-            eq_name = eq.name
+            eq_name = getattr(eq, "name", "—")
             type_model_str = "—"
 
         # 2. Категория
-        category_str = eq.get_equipment_type_display()
+        category_str = eq.get_equipment_type_display() if hasattr(eq, "get_equipment_type_display") else "—"
 
         # 3. P/N и S/N
-        pn_str = eq.part_number or (eq.type_model.part_number if eq.type_model else "") or "—"
-        sn_str = eq.serial_number or "б/н"
-        marking_str = eq.marking_code or "—"
+        pn_str = (
+            getattr(eq, "part_number", "")
+            or (getattr(type_model, "part_number", "") if type_model else "")
+            or "—"
+        )
+        sn_str = getattr(eq, "serial_number", "") or "б/н"
+        marking_str = getattr(eq, "marking_code", "") or "—"
 
         # 3.1. Диапазон измерений и класс точности (ФАП-145, 102-ФЗ)
-        range_str = eq.measurement_range or "—"
-        accuracy_str = eq.accuracy_class or "—"
+        range_val = getattr(eq, "measurement_range", None)
+        if not range_val and type_model:
+            range_val = getattr(type_model, "measurement_range", None)
+        range_str = range_val or "—"
+
+        accuracy_val = getattr(eq, "accuracy_class", None)
+        if not accuracy_val and type_model:
+            accuracy_val = getattr(type_model, "accuracy_class", None)
+        accuracy_str = accuracy_val or "—"
 
         # 4. Применимость к ВС
-        ac_types = [t.type_property for t in eq.applicable_aircraft_types.all()]
+        ac_types = [t.type_property for t in eq.applicable_aircraft_types.all()] if hasattr(eq, "applicable_aircraft_types") else []
         ac_types_str = ", ".join(ac_types) if ac_types else "Все типы ВС"
 
         # 5. МПД и размещение
-        mpd_str = eq.production_place.name if eq.production_place else "—"
-        location_str = eq.location or "—"
+        prod_place = getattr(eq, "production_place", None)
+        mpd_str = prod_place.name if prod_place else "—"
+        location_str = getattr(eq, "location", "") or "—"
 
         # 6. Вид контроля и даты
-        ctrl_type_str = eq.get_verification_type_display()
-        last_date_str = eq.last_verification_date.strftime("%d.%m.%Y") if eq.last_verification_date else "—"
-        interval_str = str(eq.interval_value) if eq.interval_value else "—"
-        next_date_str = eq.next_verification_date.strftime("%d.%m.%Y") if eq.next_verification_date else "—"
+        ctrl_type_str = eq.get_verification_type_display() if hasattr(eq, "get_verification_type_display") else "—"
+        last_date = getattr(eq, "last_verification_date", None)
+        last_date_str = last_date.strftime("%d.%m.%Y") if last_date else "—"
+        interval_val = getattr(eq, "interval_value", None)
+        interval_str = str(interval_val) if interval_val else "—"
+        next_date = getattr(eq, "next_verification_date", None)
+        next_date_str = next_date.strftime("%d.%m.%Y") if next_date else "—"
 
         # 7. Метрологический статус и остаток дней
-        metrology_code = eq.metrology_status
-        days_left = eq.days_until_verification
+        metrology_code = getattr(eq, "metrology_status", None)
+        days_left = getattr(eq, "days_until_verification", None)
 
         if metrology_code == "NOT_APPLICABLE":
             status_text = "Не требуется (исправен)"
@@ -313,18 +329,19 @@ def export_maintenance_equipment_to_excel(
             count_expired += 1
 
         # 8. Номер свидетельства и поверитель
-        arshin_str = eq.arshin_verification_number or "—"
-        org_str = eq.verification_organization or "—"
+        arshin_str = getattr(eq, "arshin_verification_number", "") or "—"
+        org_str = getattr(eq, "verification_organization", "") or "—"
 
         # 9. Физический статус
-        phys_status_str = eq.get_operational_status_display()
+        phys_status_str = eq.get_operational_status_display() if hasattr(eq, "get_operational_status_display") else "—"
 
         # 10. Ответственный и примечания
         resp_person = "—"
-        if eq.responsible_person:
-            resp_person = eq.responsible_person.title or eq.responsible_person.get_full_name() or eq.responsible_person.username
+        responsible = getattr(eq, "responsible_person", None)
+        if responsible:
+            resp_person = getattr(responsible, "title", None) or responsible.get_full_name() or responsible.username
 
-        notes_str = eq.notes or ""
+        notes_str = getattr(eq, "notes", "") or ""
 
         # Запись значений в строку (22 колонки)
         row_values = [
@@ -368,7 +385,7 @@ def export_maintenance_equipment_to_excel(
                 # Столбец метрологического статуса
                 cell.fill = status_fill
                 cell.font = status_font
-            elif col_idx == 20 and eq.operational_status in (
+            elif col_idx == 20 and getattr(eq, "operational_status", None) in (
                 EquipmentOperationalStatus.DEFECTIVE,
                 EquipmentOperationalStatus.QUARANTINED,
             ):

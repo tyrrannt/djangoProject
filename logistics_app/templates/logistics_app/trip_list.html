@@ -1,0 +1,379 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title|default:"Рейсы и доставка на МПД" }} // Логистика
+{% endblock %}
+
+{% block custom_css %}
+<style>
+    :root {
+        --touch-target: 44px;
+        --brand-navy: #002b49;
+        --brand-sky: #0284c7;
+    }
+    .btn-touch {
+        min-height: var(--touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 18px;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-touch:hover {
+        transform: translateY(-1px);
+    }
+    .logistics-nav-pills {
+        gap: 8px;
+    }
+    .logistics-nav-pills .nav-link {
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 600;
+        color: #475569;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .logistics-nav-pills .nav-link:hover {
+        background: #f1f5f9;
+        color: var(--brand-navy);
+    }
+    .logistics-nav-pills .nav-link.active {
+        background-color: var(--brand-navy);
+        color: #ffffff;
+        border-color: var(--brand-navy);
+        box-shadow: 0 4px 12px rgba(0, 43, 73, 0.15);
+    }
+    .stat-card {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 16px;
+        transition: all 0.2s ease;
+    }
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .route-badge {
+        font-size: 0.85rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background-color: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h2 class="h4 font-weight-bold text-dark mb-1">
+                <i class="bx bx-car text-primary me-2"></i>{{ title }}
+            </h2>
+            <p class="text-muted small mb-0 d-none d-md-block">Планирование поездок автомобилей, заезды на МПД и учет сборных партий посылок</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'logistics_app:trip_add' %}" class="btn btn-primary btn-touch shadow-sm" aria-label="Запланировать рейс" title="Запланировать рейс">
+                <i class="bx bx-plus me-1"></i>
+                <span class="d-none d-sm-inline">Запланировать рейс</span>
+                <span class="d-inline d-sm-none">Создать</span>
+            </a>
+            <a href="{% url 'logistics_app:package_add' %}" class="btn btn-outline-primary btn-touch" aria-label="Оформить посылку" title="Оформить посылку">
+                <i class="bx bx-package me-1"></i>
+                <span class="d-none d-sm-inline">Оформить посылку</span>
+                <span class="d-inline d-sm-none">Посылка</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Sub Navigation -->
+    <nav class="logistics-nav-pills d-flex flex-wrap mb-4" aria-label="Навигация раздела логистики">
+        <a href="{% url 'logistics_app:trip_list' %}" class="nav-link active">
+            <i class="bx bx-car me-2"></i>
+            <span>Рейсы на МПД</span>
+        </a>
+        <a href="{% url 'logistics_app:package_list' %}" class="nav-link">
+            <i class="bx bx-package me-2"></i>
+            <span>Посылки и отправки</span>
+            {% if pending_packages_count > 0 %}
+                <span class="badge bg-danger rounded-pill ms-2">{{ pending_packages_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'logistics_app:waybill_list' %}" class="nav-link">
+            <i class="bx bx-file me-2"></i>
+            <span>Транспортные накладные</span>
+        </a>
+        <a href="{% url 'logistics_app:docflow_list' %}" class="nav-link">
+            <i class="bx bx-file-blank me-2"></i>
+            <span>Электронный документооборот (СЭД)</span>
+        </a>
+    </nav>
+
+    <!-- KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-bold">Активные рейсы</div>
+                        <div class="h3 font-weight-bold mb-0 text-primary">{{ count_active }}</div>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle">
+                        <i class="bx bx-car font-size-24"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-bold">Планируются</div>
+                        <div class="h3 font-weight-bold mb-0 text-warning">{{ count_planning }}</div>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle">
+                        <i class="bx bx-time font-size-24"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card border-start border-4 border-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-bold">В пути на МПД</div>
+                        <div class="h3 font-weight-bold mb-0 text-info">{{ count_in_transit }}</div>
+                    </div>
+                    <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle">
+                        <i class="bx bx-navigation font-size-24"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card border-start border-4 border-danger">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase font-weight-bold">Посылки в очереди</div>
+                        <div class="h3 font-weight-bold mb-0 text-danger">{{ pending_packages_count }}</div>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-circle">
+                        <i class="bx bx-package font-size-24"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <!-- Status Tabs -->
+                <ul class="nav nav-pills" role="tablist">
+                    <li class="nav-item">
+                        <a href="?tab=active{% if search_query %}&q={{ search_query }}{% endif %}" class="nav-link {% if active_tab == 'active' %}active{% endif %}">
+                            Активные <span class="badge bg-secondary ms-1">{{ count_active }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="?tab=planning{% if search_query %}&q={{ search_query }}{% endif %}" class="nav-link {% if active_tab == 'planning' %}active{% endif %}">
+                            Планируются <span class="badge bg-secondary ms-1">{{ count_planning }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="?tab=in_transit{% if search_query %}&q={{ search_query }}{% endif %}" class="nav-link {% if active_tab == 'in_transit' %}active{% endif %}">
+                            В пути <span class="badge bg-secondary ms-1">{{ count_in_transit }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="?tab=completed{% if search_query %}&q={{ search_query }}{% endif %}" class="nav-link {% if active_tab == 'completed' %}active{% endif %}">
+                            Архив / Завершенные <span class="badge bg-secondary ms-1">{{ count_completed }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="?tab=all{% if search_query %}&q={{ search_query }}{% endif %}" class="nav-link {% if active_tab == 'all' %}active{% endif %}">
+                            Все рейсы <span class="badge bg-secondary ms-1">{{ count_all }}</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Search form -->
+                <form method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+                    <input type="hidden" name="tab" value="{{ active_tab }}">
+                    <div class="input-group">
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Поиск по номеру, водителю, МПД..." aria-label="Поиск рейсов">
+                        <button type="submit" class="btn btn-outline-secondary" title="Искать">
+                            <i class="bx bx-search"></i>
+                        </button>
+                        {% if search_query %}
+                            <a href="?tab={{ active_tab }}" class="btn btn-outline-danger" title="Сбросить">
+                                <i class="bx bx-x"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trips Table -->
+    <div class="card card-modern shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="width: 100%;">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 15%;">Номер рейса</th>
+                            <th style="width: 13%;">Дата выезда</th>
+                            <th style="width: 25%;">Маршрут (Заезды на МПД)</th>
+                            <th style="width: 20%;">Транспорт / Водитель</th>
+                            <th style="width: 12%;">Груз</th>
+                            <th style="width: 15%;">Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trip in trips %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'logistics_app:trip_detail' pk=trip.pk %}" class="font-monospace font-weight-bold text-primary text-decoration-none d-block">
+                                        <i class="bx bx-car me-1"></i>{{ trip.trip_number }}
+                                    </a>
+                                    <span class="text-muted small">Диспетчер: {{ trip.dispatcher.get_full_name|default:trip.dispatcher.username }}</span>
+                                </td>
+                                <td>
+                                    <div class="font-monospace text-dark font-weight-bold">
+                                        <i class="bx bx-calendar me-1 text-primary"></i>{{ trip.planned_date|date:"d.m.Y" }}
+                                    </div>
+                                    {% if trip.actual_departure_at %}
+                                        <div class="text-muted small" title="Фактическое время выезда">
+                                            Выезд: {{ trip.actual_departure_at|date:"d.m H:i" }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="mb-1 text-muted small">
+                                        <strong>Откуда:</strong> {{ trip.origin_display }}
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                                        <strong class="small text-muted">Куда:</strong>
+                                        {% for stop in trip.stops.all %}
+                                            <span class="route-badge">
+                                                <span class="badge bg-primary text-white rounded-circle p-1 me-1" style="width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;">{{ stop.stop_order }}</span>
+                                                {{ stop.mpd.name }}
+                                                {% if stop.status == 'ARRIVED' %}
+                                                    <i class="bx bx-check text-success" title="Прибыл"></i>
+                                                {% elif stop.status == 'DISCHARGED' %}
+                                                    <i class="bx bx-check-double text-success" title="Разгружен"></i>
+                                                {% endif %}
+                                            </span>
+                                            {% if not forloop.last %}
+                                                <i class="bx bx-right-arrow-alt text-muted"></i>
+                                            {% endif %}
+                                        {% empty %}
+                                            <span class="text-muted small">Точки заезда не указаны</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="font-weight-bold text-dark">{{ trip.vehicle_display }}</div>
+                                    <div class="text-muted small">
+                                        <i class="bx bx-user me-1"></i>{{ trip.driver_display }}
+                                        {% if trip.driver_phone %}
+                                            <span class="text-muted">({{ trip.driver_phone }})</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <span class="badge bg-light text-dark border font-weight-bold">
+                                            <i class="bx bx-package me-1 text-primary"></i>{{ trip.packages_count }} посылок
+                                        </span>
+                                    </div>
+                                    <div class="text-muted small mt-1">
+                                        {{ trip.total_places }} мест / {{ trip.total_weight_kg|default:"0" }} кг
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        {% if trip.status == 'PLANNING' %}
+                                            <span class="badge bg-warning text-dark"><i class="bx bx-time me-1"></i>Планирование</span>
+                                        {% elif trip.status == 'CONSOLIDATED' %}
+                                            <span class="badge bg-info text-white"><i class="bx bx-check-circle me-1"></i>Скомплектован</span>
+                                        {% elif trip.status == 'IN_TRANSIT' %}
+                                            <span class="badge bg-primary text-white"><i class="bx bx-navigation me-1"></i>В пути</span>
+                                        {% elif trip.status == 'ARRIVED' %}
+                                            <span class="badge bg-secondary text-white"><i class="bx bx-map-pin me-1"></i>На точке МПД</span>
+                                        {% elif trip.status == 'COMPLETED' %}
+                                            <span class="badge bg-success text-white"><i class="bx bx-check-double me-1"></i>Завершен</span>
+                                        {% elif trip.status == 'CANCELLED' %}
+                                            <span class="badge bg-danger text-white"><i class="bx bx-x me-1"></i>Отменен</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mt-2">
+                                        <a href="{% url 'logistics_app:trip_detail' pk=trip.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 12px;">
+                                            Открыть <i class="bx bx-chevron-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bx bx-car font-size-48 d-block mb-2 text-secondary"></i>
+                                    <h5>Рейсы не найдены</h5>
+                                    <p class="small mb-3">Запланируйте отправку автомобиля на МПД для комплектации посылок</p>
+                                    <a href="{% url 'logistics_app:trip_add' %}" class="btn btn-primary btn-touch">
+                                        <i class="bx bx-plus me-1"></i>Запланировать рейс
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                    <div class="text-muted small">
+                        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} (всего {{ page_obj.paginator.count }} записей)
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&tab={{ active_tab }}{% if search_query %}&q={{ search_query }}{% endif %}">«</a>
+                            </li>
+                        {% endif %}
+                        {% for p in page_obj.paginator.page_range %}
+                            {% if p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+                                <li class="page-item {% if page_obj.number == p %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ p }}&tab={{ active_tab }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ p }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&tab={{ active_tab }}{% if search_query %}&q={{ search_query }}{% endif %}">»</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -9,18 +9,18 @@
 {% block custom_css %}
 <style>
     :root {
-        --touch-target-size: 44px;
-        --sed-brand-navy: #002b49;
-        --sed-accent-sky: #0284c7;
+        --touch-target: 44px;
+        --brand-navy: #002b49;
+        --brand-sky: #0284c7;
     }
     .btn-touch {
-        min-height: var(--touch-target-size);
+        min-height: var(--touch-target);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 8px 16px;
+        padding: 8px 18px;
         font-weight: 600;
-        border-radius: 6px;
+        border-radius: 8px;
         transition: all 0.2s ease-in-out;
     }
     .btn-touch:hover {
@@ -43,53 +43,129 @@
     }
     .logistics-nav-pills .nav-link:hover {
         background: #f1f5f9;
-        color: var(--sed-brand-navy);
+        color: var(--brand-navy);
     }
     .logistics-nav-pills .nav-link.active {
-        background-color: var(--sed-brand-navy);
+        background-color: var(--brand-navy);
         color: #ffffff;
-        border-color: var(--sed-brand-navy);
+        border-color: var(--brand-navy);
         box-shadow: 0 4px 12px rgba(0, 43, 73, 0.15);
+    }
+    .stat-card {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 14px 16px;
+        transition: all 0.2s ease;
+    }
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
-    <!-- Navigation & Action Header -->
+    <!-- Header -->
     <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <div>
             <h2 class="h4 font-weight-bold text-dark mb-1">
-                <i class="bx bx-package text-primary me-2"></i>{{ title|default:"Реестр посылок и отправок" }}
+                <i class="bx bx-package text-primary me-2"></i>{{ title }}
             </h2>
-            <p class="text-muted small mb-0 d-none d-md-block">Учет сборных грузов, отправленных посылок и трек-номеров</p>
+            <p class="text-muted small mb-0 d-none d-md-block">Учет сборных грузов, внутренних посылок на МПД, описи вложения и приемочного контроля</p>
         </div>
         <div class="d-flex gap-2">
-            {% if user|has_group:"Старшие бригад" or user.is_superuser %}
-                <a href="{% url 'logistics_app:package_add' %}" class="btn btn-primary btn-touch" aria-label="Добавить отправку" title="Добавить отправку">
-                    <i class="bx bx-plus me-1"></i>
-                    <span class="d-none d-sm-inline">Добавить отправку</span>
-                    <span class="d-inline d-sm-none">Добавить</span>
-                </a>
-            {% endif %}
+            <a href="{% url 'logistics_app:package_add' %}" class="btn btn-primary btn-touch shadow-sm" aria-label="Оформить отправку" title="Оформить отправку">
+                <i class="bx bx-plus me-1"></i>
+                <span class="d-none d-sm-inline">Оформить посылку</span>
+                <span class="d-inline d-sm-none">Создать</span>
+            </a>
+            <a href="{% url 'logistics_app:trip_add' %}" class="btn btn-outline-primary btn-touch" aria-label="Запланировать рейс" title="Запланировать рейс">
+                <i class="bx bx-car me-1"></i>
+                <span class="d-none d-sm-inline">Запланировать рейс</span>
+                <span class="d-inline d-sm-none">Рейс</span>
+            </a>
         </div>
     </header>
 
-    <!-- Sub Nav -->
-    <nav class="logistics-nav-pills d-flex flex-wrap mb-3" aria-label="Навигация раздела логистики">
-        <a href="{% url 'logistics_app:waybill_list' %}" class="nav-link">
-            <i class="bx bx-file me-2"></i>
-            <span>Транспортные накладные</span>
+    <!-- Sub Navigation -->
+    <nav class="logistics-nav-pills d-flex flex-wrap mb-4" aria-label="Навигация раздела логистики">
+        <a href="{% url 'logistics_app:trip_list' %}" class="nav-link">
+            <i class="bx bx-car me-2"></i>
+            <span>Рейсы на МПД</span>
         </a>
         <a href="{% url 'logistics_app:package_list' %}" class="nav-link active">
             <i class="bx bx-package me-2"></i>
             <span>Посылки и отправки</span>
+            {% if count_queue > 0 %}
+                <span class="badge bg-danger rounded-pill ms-2">{{ count_queue }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'logistics_app:waybill_list' %}" class="nav-link">
+            <i class="bx bx-file me-2"></i>
+            <span>Транспортные накладные</span>
         </a>
         <a href="{% url 'logistics_app:docflow_list' %}" class="nav-link">
             <i class="bx bx-file-blank me-2"></i>
             <span>Электронный документооборот (СЭД)</span>
         </a>
     </nav>
+
+    <!-- KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-2">
+            <div class="stat-card border-start border-4 border-secondary">
+                <div class="text-muted small text-uppercase font-weight-bold">Все посылки</div>
+                <div class="h4 font-weight-bold mb-0 text-dark">{{ count_all }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card border-start border-4 border-warning">
+                <div class="text-muted small text-uppercase font-weight-bold">В очереди (ждут рейс)</div>
+                <div class="h4 font-weight-bold mb-0 text-warning">{{ count_queue }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card border-start border-4 border-primary">
+                <div class="text-muted small text-uppercase font-weight-bold">В пути / В рейсе</div>
+                <div class="h4 font-weight-bold mb-0 text-primary">{{ count_in_transit }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card border-start border-4 border-info">
+                <div class="text-muted small text-uppercase font-weight-bold">Доставлены (ждут приемки)</div>
+                <div class="h4 font-weight-bold mb-0 text-info">{{ count_reception }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card border-start border-4 border-success">
+                <div class="text-muted small text-uppercase font-weight-bold">Приняты на МПД</div>
+                <div class="h4 font-weight-bold mb-0 text-success">{{ count_received }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Trips Banner (if any) -->
+    {% if active_trips %}
+        <div class="alert alert-info border-0 shadow-sm d-flex justify-content-between align-items-center mb-4 p-3 rounded-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-white p-2 rounded-circle text-info">
+                    <i class="bx bx-car font-size-24"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0 font-weight-bold text-dark">Ближайшие запланированные рейсы на МПД:</h6>
+                    <span class="text-muted small">
+                        {% for t in active_trips %}
+                            <strong>Рейс {{ t.trip_number }}</strong> ({{ t.planned_date|date:"d.m" }}: {{ t.origin_display }} → {{ t.stops.all|join:", " }}){% if not forloop.last %}; {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'logistics_app:trip_list' %}" class="btn btn-sm btn-info text-white text-nowrap ms-2">
+                Все рейсы <i class="bx bx-right-arrow-alt ms-1"></i>
+            </a>
+        </div>
+    {% endif %}
 
     <!-- Table Card -->
     <div class="card card-modern shadow-sm border-0 mb-4">
@@ -98,11 +174,11 @@
                 <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="width: 100%;">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 15%;">Дата отправки</th>
-                            <th style="width: 20%;">Номер посылки / Трек</th>
+                            <th style="width: 15%;">Дата</th>
+                            <th style="width: 22%;">Номер / Трек</th>
                             <th style="width: 25%;">Куда отправляется</th>
-                            <th style="width: 20%;">Исполнитель</th>
-                            <th style="width: 20%;">Тип отправки</th>
+                            <th style="width: 18%;">Отправитель / Исполнитель</th>
+                            <th style="width: 20%;">Статус посылки</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -126,7 +202,7 @@
                 "ajax": "{% url 'logistics_app:package_list' %}",
                 "processing": true,
                 "serverSide": true,
-                "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+                "lengthMenu": [[15, 25, 50, 100], [15, 25, 50, 100]],
                 "searching": true,
                 "stateSave": true,
                 "language": {
@@ -141,8 +217,9 @@
                     },
                     {
                         "data": "number_of_dispatch",
-                        "render": function(data) {
-                            return '<strong class="text-primary font-monospace">' + (data || '—') + '</strong>';
+                        "render": function(data, type, row) {
+                            var link = '/logistics/package/' + row.pk + '/';
+                            return '<a href="' + link + '" class="text-primary font-monospace font-weight-bold text-decoration-none"><i class="bx bx-package me-1"></i>' + (data || '—') + '</a>';
                         }
                     },
                     {
@@ -154,8 +231,23 @@
                     {"data": "executor"},
                     {
                         "data": "type_of_dispatch",
-                        "render": function(data) {
-                            return data ? '<span class="badge bg-light text-dark border">' + data + '</span>' : '—';
+                        "render": function(data, type, row) {
+                            var badgeClass = "bg-light text-dark border";
+                            if (data && data.indexOf("Принята") !== -1) {
+                                badgeClass = "bg-success text-white";
+                            } else if (data && data.indexOf("пути") !== -1) {
+                                badgeClass = "bg-primary text-white";
+                            } else if (data && data.indexOf("ожидает") !== -1) {
+                                badgeClass = "bg-warning text-dark";
+                            } else if (data && data.indexOf("расхождениями") !== -1) {
+                                badgeClass = "bg-danger text-white";
+                            }
+                            var pdfUrl = '/logistics/package/' + row.pk + '/pdf/';
+                            return '<div class="d-flex align-items-center justify-content-between">' +
+                                   '<span class="badge ' + badgeClass + '">' + (data || '—') + '</span>' +
+                                   '<a href="' + pdfUrl + '" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-1 ms-2" title="Скачать опись вложения">' +
+                                   '<i class="bx bx-printer"></i></a>' +
+                                   '</div>';
                         }
                     }
                 ]

@@ -257,8 +257,8 @@ class DocFlowSheetGenerator:
 
         counteragent_str = document.counteragent.name if document.counteragent else "Внутренний документ"
         deadline_str = document.deadline.strftime("%d.%m.%Y %H:%M") if document.deadline else "Не установлен"
-        initiator_name = document.initiator.title or document.initiator.get_full_name() or document.initiator.username
-        responsible_name = document.responsible.title or document.responsible.get_full_name() or document.responsible.username
+        initiator_name = (document.initiator.title or document.initiator.get_full_name() or document.initiator.username) if document.initiator else "—"
+        responsible_name = (document.responsible.title or document.responsible.get_full_name() or document.responsible.username) if document.responsible else "Не назначен"
 
         meta_data = [
             [

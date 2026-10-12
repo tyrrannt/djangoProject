@@ -146,64 +146,907 @@ class WayBill(models.Model):
         }
 
 
-class Package(models.Model):
+# ==============================================================================
+# ВНУТРЕННЯЯ ЛОГИСТИКА: РЕЙСЫ НА МПД, ПОСЫЛКИ, ОПИСЬ И ПРИЕМКА
+# ==============================================================================
+
+class ShipmentCounter(models.Model):
+    """Потокобезопасный счетчик регистрационных номеров для рейсов и посылок.
+
+    Attributes:
+        year (PositiveIntegerField): Календарный год регистрации.
+        counter_type (CharField): Тип счетчика ('TRIP' для рейсов, 'PACKAGE' для посылок).
+        last_number (PositiveIntegerField): Последний выданный порядковый номер.
+    """
+
+    year = models.PositiveIntegerField(verbose_name="Календарный год")
+    counter_type = models.CharField(max_length=20, verbose_name="Тип счетчика")
+    last_number = models.PositiveIntegerField(default=0, verbose_name="Последний номер")
+
     class Meta:
-        verbose_name = 'Посылка'
-        verbose_name_plural = 'Посылки'
-        ordering = ["-date_of_dispatch"]
+        verbose_name = "Счетчик номеров логистики"
+        verbose_name_plural = "Счетчики номеров логистики"
+        constraints = [
+            models.UniqueConstraint(fields=["year", "counter_type"], name="unique_shipment_counter_year_type")
+        ]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление счетчика."""
+        return f"{self.counter_type} ({self.year}): {self.last_number}"
+
+    @classmethod
+    def generate_number(cls, counter_type: str, year: Optional[int] = None) -> str:
+        """Транзакционно генерирует следующий уникальный номер с блокировкой строки.
+
+        Args:
+            counter_type (str): Тип счетчика ('TRIP' или 'PACKAGE').
+            year (Optional[int]): Год нумерации (по умолчанию текущий).
+
+        Returns:
+            str: Сгенерированный строковый номер вида 'РЕЙС-2026/0001' или 'ПКГ-2026/00001'.
+        """
+        if year is None:
+            year = timezone.now().year
+
+        with transaction.atomic():
+            counter, _ = cls.objects.select_for_update().get_or_create(
+                year=year,
+                counter_type=counter_type,
+                defaults={"last_number": 0},
+            )
+            counter.last_number += 1
+            counter.save(update_fields=["last_number"])
+
+            if counter_type == "TRIP":
+                return f"РЕЙС-{year}/{counter.last_number:04d}"
+            else:
+                return f"ПКГ-{year}/{counter.last_number:05d}"
+
+
+class ShipmentTrip(models.Model):
+    """Заявка на рейс / Маршрутный лист автомобиля на МПД.
+
+    Описывает рейс машины (собственной или наемной), которая может заезжать
+    на несколько МПД для доставки и забора посылок.
+
+    Attributes:
+        trip_number (CharField): Уникальный номер рейса вида РЕЙС-2026/0001.
+        planned_date (DateField): Плановая дата выезда.
+        actual_departure_at (DateTimeField): Фактическое время отправления.
+        actual_completed_at (DateTimeField): Фактическое время завершения рейса.
+        origin_point (ForeignKey): Пункт отправления (база или МПД).
+        origin_custom (CharField): Название пункта отправления текстом (по умолчанию Москва).
+        vehicle_type (CharField): Тип используемого транспорта.
+        vehicle_model (CharField): Марка и модель транспортного средства.
+        vehicle_reg_number (CharField): Государственный регистрационный номер ТС.
+        driver_user (ForeignKey): Водитель (если является штатным сотрудником).
+        driver_name (CharField): ФИО водителя / экспедитора / перевозчика.
+        driver_phone (CharField): Контактный телефон водителя.
+        dispatcher (ForeignKey): Логист/диспетчер, сформировавший заявку.
+        status (CharField): Текущий статус рейса.
+        comment (TextField): Маршрутные указания и примечания.
+        created_at (DateTimeField): Время создания записи.
+        updated_at (DateTimeField): Время последнего обновления.
+    """
+
+    class Status(models.TextChoices):
+        """Статусы жизненного цикла рейса."""
+        PLANNING = "PLANNING", "Планируется (сбор заявок)"
+        CONSOLIDATED = "CONSOLIDATED", "Скомплектован (погрузка)"
+        IN_TRANSIT = "IN_TRANSIT", "В пути"
+        ARRIVED = "ARRIVED", "Прибыл в пункт назначения"
+        COMPLETED = "COMPLETED", "Завершен"
+        CANCELLED = "CANCELLED", "Отменен"
+
+    class VehicleType(models.TextChoices):
+        """Типы транспортных средств и способов доставки."""
+        COMPANY_CAR = "COMPANY_CAR", "Собственный автотранспорт АК"
+        HIRED_CAR = "HIRED_CAR", "Наемный автотранспорт"
+        AIRCRAFT = "AIRCRAFT", "Авиарейс (борт АК)"
+        CARRIER = "CARRIER", "Транспортная компания (СДЭК/ДЛ)"
+        COURIER = "COURIER", "Курьер / Сотрудник (поезд/пеший)"
+
+    trip_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        verbose_name="Номер рейса"
+    )
+    planned_date = models.DateField(verbose_name="Плановая дата отправки")
+    actual_departure_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Фактическое время выезда"
+    )
+    actual_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Фактическое время завершения"
+    )
+    origin_point = models.ForeignKey(
+        PlaceProductionActivity,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="trips_departed",
+        verbose_name="Пункт отправления (МПД/База)"
+    )
+    origin_custom = models.CharField(
+        max_length=255,
+        blank=True,
+        default="Центральный склад (Москва)",
+        verbose_name="Пункт отправления (наименование)"
+    )
+    vehicle_type = models.CharField(
+        max_length=30,
+        choices=VehicleType.choices,
+        default=VehicleType.COMPANY_CAR,
+        verbose_name="Тип транспорта"
+    )
+    vehicle_model = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        verbose_name="Марка / Модель ТС"
+    )
+    vehicle_reg_number = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        verbose_name="Гос. номер ТС"
+    )
+    driver_user = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="trips_as_driver",
+        verbose_name="Водитель (сотрудник)"
+    )
+    driver_name = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="ФИО водителя / экспедитора"
+    )
+    driver_phone = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        verbose_name="Телефон водителя"
+    )
+    dispatcher = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.PROTECT,
+        related_name="dispatched_trips",
+        verbose_name="Диспетчер / Логист"
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.PLANNING,
+        db_index=True,
+        verbose_name="Статус рейса"
+    )
+    comment = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Маршрут и примечания"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создан")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлен")
+
+    class Meta:
+        verbose_name = "Рейс / Маршрутный лист"
+        verbose_name_plural = "Рейсы / Маршрутные листы"
+        ordering = ["-planned_date", "-created_at"]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление рейса."""
+        return f"{self.trip_number} от {self.planned_date.strftime('%d.%m.%Y')} ({self.get_status_display()})"
+
+    @property
+    def origin_display(self) -> str:
+        """Возвращает наименование пункта отправления рейса."""
+        if self.origin_point:
+            return self.origin_point.name
+        return self.origin_custom or "База / Склад (Москва)"
+
+    @property
+    def driver_display(self) -> str:
+        """Возвращает форматированное наименование водителя с приоритетом профиля."""
+        if self.driver_user:
+            return self.driver_user.title or self.driver_user.get_full_name() or self.driver_user.username
+        return self.driver_name or "Не назначен"
+
+    @property
+    def vehicle_display(self) -> str:
+        """Возвращает текстовое описание автомобиля."""
+        parts = [p for p in [self.vehicle_model, self.vehicle_reg_number] if p]
+        return " ".join(parts) if parts else self.get_vehicle_type_display()
+
+    @property
+    def packages_count(self) -> int:
+        """Возвращает количество прикрепленных к рейсу посылок."""
+        return self.packages.count()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Автоматически генерирует номер рейса при создании."""
+        if not self.trip_number:
+            year = self.planned_date.year if self.planned_date else timezone.now().year
+            self.trip_number = ShipmentCounter.generate_number("TRIP", year=year)
+        super().save(*args, **kwargs)
+
+
+class TripStop(models.Model):
+    """Точка маршрута / остановка рейса на конкретном МПД.
+
+    Attributes:
+        trip (ForeignKey): Ссылка на рейс ShipmentTrip.
+        mpd (ForeignKey): МПД назначения из hrdepartment_app.PlaceProductionActivity.
+        stop_order (PositiveIntegerField): Порядковый номер заезда по маршруту.
+        planned_arrival_date (DateField): Плановая дата прибытия на точку.
+        status (CharField): Статус прохождения точки.
+        comment (CharField): Примечание к остановке.
+    """
+
+    class Status(models.TextChoices):
+        """Статусы остановки на МПД."""
+        PENDING = "PENDING", "Ожидает прибытия"
+        ARRIVED = "ARRIVED", "Прибыл на точку"
+        DISCHARGED = "DISCHARGED", "Разгружен / Приемка завершена"
+        SKIPPED = "SKIPPED", "Пропущен"
+
+    trip = models.ForeignKey(
+        ShipmentTrip,
+        on_delete=models.CASCADE,
+        related_name="stops",
+        verbose_name="Рейс"
+    )
+    mpd = models.ForeignKey(
+        PlaceProductionActivity,
+        on_delete=models.PROTECT,
+        related_name="trip_stops",
+        verbose_name="МПД назначения"
+    )
+    stop_order = models.PositiveIntegerField(default=1, verbose_name="Порядок заезда")
+    planned_arrival_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Плановая дата прибытия"
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name="Статус точки"
+    )
+    comment = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Примечание к остановке"
+    )
+
+    class Meta:
+        verbose_name = "Остановка рейса (МПД)"
+        verbose_name_plural = "Остановки рейса (МПД)"
+        ordering = ["trip", "stop_order"]
+        constraints = [
+            models.UniqueConstraint(fields=["trip", "mpd"], name="unique_trip_mpd_stop")
+        ]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление остановки."""
+        return f"{self.trip.trip_number} — #{self.stop_order}: {self.mpd.name}"
+
+
+class Package(models.Model):
+    """Учетная карточка посылки / внутреннего грузового места.
+
+    Обеспечивает сквозной учет отправлений как из офиса на МПД, так и обратно
+    с МПД на базу, а также между различными МПД компании.
+
+    Attributes:
+        track_number (CharField): Уникальный трек-номер посылки вида ПКГ-2026/00001.
+        number_of_dispatch (CharField): Устаревшее поле номера для обратной совместимости.
+        trip (ForeignKey): Привязанный рейс автомобиля ShipmentTrip.
+        origin (ForeignKey): МПД отправления (null, если отправка с центральной базы).
+        origin_custom (CharField): Название пункта отправления текстом.
+        destination (ForeignKey): МПД назначения.
+        place_of_dispatch (ForeignKey): Алиас назначения для обратной совместимости.
+        sender (ForeignKey): Инициатор отправки (DataBaseUser).
+        sender_division (ForeignKey): Подразделение отправителя.
+        recipient (ForeignKey): Назначенный получатель на МПД.
+        status (CharField): Статус жизненного цикла посылки.
+        urgency (CharField): Приоритет срочности.
+        package_type (CharField): Тип тары/упаковки груза.
+        description (TextField): Краткое описание содержимого / назначение.
+        weight_kg (DecimalField): Вес посылки в килограммах.
+        places_count (PositiveIntegerField): Количество физических мест.
+        shipped_at (DateTimeField): Время фактической погрузки и отправки.
+        received_at (DateTimeField): Время фактической приемки на МПД.
+        received_by (ForeignKey): Сотрудник, фактически принявший посылку.
+        reception_comment (TextField): Итоговый акт/замечания при приемке.
+        has_discrepancy (BooleanField): Флаг наличия недостачи/дефектов/брака.
+        qr_code_data (CharField): Данные для генерации QR-кода быстрой приемки.
+        executor (ForeignKey): Назначенный исполнитель (обратная совместимость).
+        type_of_dispatch (CharField): Способ отправки (обратная совместимость).
+        date_of_creation (DateField): Дата создания записи.
+        date_of_dispatch (DateField): Дата отправки (обратная совместимость).
+        created_at (DateTimeField): Точная дата и время создания.
+        updated_at (DateTimeField): Дата и время последнего обновления.
+    """
+
+    class Meta:
+        verbose_name = "Посылка"
+        verbose_name_plural = "Посылки"
+        ordering = ["-created_at", "-date_of_creation"]
+
+    class Status(models.TextChoices):
+        """Статусы жизненного цикла посылки."""
+        DRAFT = "DRAFT", "Черновик"
+        AWAITING_SHIPMENT = "AWAITING_SHIPMENT", "Готова (ожидает рейс)"
+        ASSIGNED_TO_TRIP = "ASSIGNED_TO_TRIP", "Включена в рейс"
+        IN_TRANSIT = "IN_TRANSIT", "В пути"
+        DELIVERED_AT_MPD = "DELIVERED_AT_MPD", "Доставлена на МПД (ожидает приемки)"
+        RECEIVED_FULL = "RECEIVED_FULL", "Принята полностью"
+        RECEIVED_WITH_DISCREPANCY = "RECEIVED_WITH_DISCREPANCY", "Принята с расхождениями"
+        REJECTED = "REJECTED", "Отклонена / Не принята"
+        RETURNED = "RETURNED", "Возврат отправителю"
+
+    class Urgency(models.TextChoices):
+        """Срочность доставки посылки."""
+        NORMAL = "NORMAL", "Обычная"
+        URGENT = "URGENT", "Срочно"
+        CRITICAL = "CRITICAL", "Критически срочно (AOG / Простой ВС)"
+
+    class PackageType(models.TextChoices):
+        """Вид упаковки и тары груза."""
+        BOX = "BOX", "Коробка"
+        BAG = "BAG", "Мешок"
+        CONTAINER = "CONTAINER", "Контейнер / Ящик"
+        PALLET = "PALLET", "Паллета"
+        DOCUMENTS = "DOCUMENTS", "Пакет с документами"
+        OVERSIZED = "OVERSIZED", "Крупногабарит / Нестандарт"
 
     TYPE_OF_SENDING = (
         ("0", "Логистическая компания"),
         ("1", "Водитель"),
         ("2", "Сотрудник"),
     )
-    # При миграции указать 1 и вставить timezone.now()
-    date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True)
-    date_of_dispatch = models.DateField(verbose_name='Дата отправки', null=True, blank=True)
-    place_of_dispatch = models.ForeignKey(PlaceProductionActivity, verbose_name='Точка назначения',
-                                          on_delete=models.SET_NULL, null=True, blank=True)
-    number_of_dispatch = models.CharField(verbose_name='Номер посылки', max_length=37, default='')
-    executor = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Исполнитель",
-                                 on_delete=models.SET_NULL, null=True, blank=True, related_name="dispatch_executor")
-    type_of_dispatch = models.CharField(max_length=100, verbose_name="Тип отправки",
-                                        choices=TYPE_OF_SENDING, default="0")
 
-    def get_data(self):
-        """
-        Получает данные из экземпляра ReportCard.
+    # Идентификаторы
+    track_number = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Трек-номер"
+    )
+    number_of_dispatch = models.CharField(
+        max_length=50,
+        default="",
+        blank=True,
+        verbose_name="Номер посылки (legacy)"
+    )
 
-        :return: словарь, содержащий следующие данные:
-            - "pk": первичный ключ экземпляра ReportCard.
-            - "employee": форматированные инициалы имени сотрудника.
-            - "report_card_day": день табеля в формате "ДД.ММ.ГГГГ"
-            - "start_time": время начала в формате "ЧЧ:ММ"
-            - "end_time": время окончания в формате "ЧЧ:ММ"
-            - "reason_adjustment": причина корректировки.
-            - "record_type": отображение типа записи.
-        """
+    # Привязка к рейсу
+    trip = models.ForeignKey(
+        ShipmentTrip,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="packages",
+        verbose_name="Рейс машины"
+    )
+
+    # Маршрут: Откуда -> Куда
+    origin = models.ForeignKey(
+        PlaceProductionActivity,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="packages_origin",
+        verbose_name="Пункт отправления (МПД)"
+    )
+    origin_custom = models.CharField(
+        max_length=255,
+        blank=True,
+        default="Центральный склад (Москва)",
+        verbose_name="Иной пункт отправления"
+    )
+    destination = models.ForeignKey(
+        PlaceProductionActivity,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="packages_destination",
+        verbose_name="Пункт назначения (МПД)"
+    )
+    place_of_dispatch = models.ForeignKey(
+        PlaceProductionActivity,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="legacy_packages",
+        verbose_name="Точка назначения (legacy)"
+    )
+
+    # Участники процесса
+    sender = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="packages_as_sender",
+        verbose_name="Отправитель"
+    )
+    sender_division = models.ForeignKey(
+        Division,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Подразделение отправителя"
+    )
+    recipient = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="packages_as_recipient",
+        verbose_name="Назначенный получатель на МПД"
+    )
+    executor = models.ForeignKey(
+        DataBaseUser,
+        max_length=100,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dispatch_executor",
+        verbose_name="Исполнитель (legacy)"
+    )
+
+    # Статусы и характеристики
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        db_index=True,
+        verbose_name="Статус посылки"
+    )
+    urgency = models.CharField(
+        max_length=20,
+        choices=Urgency.choices,
+        default=Urgency.NORMAL,
+        verbose_name="Срочность"
+    )
+    package_type = models.CharField(
+        max_length=30,
+        choices=PackageType.choices,
+        default=PackageType.BOX,
+        verbose_name="Вид упаковки"
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Краткое описание груза"
+    )
+    weight_kg = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Вес (кг)"
+    )
+    places_count = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Количество мест"
+    )
+    type_of_dispatch = models.CharField(
+        max_length=100,
+        choices=TYPE_OF_SENDING,
+        default="0",
+        verbose_name="Тип отправки (legacy)"
+    )
+
+    # Временные метки и фиксация приемки
+    shipped_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Фактическое время отправки"
+    )
+    received_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Фактическое время приемки"
+    )
+    received_by = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="packages_received_person",
+        verbose_name="Фактически принял на МПД"
+    )
+    reception_comment = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Акт / замечания при приемке"
+    )
+    has_discrepancy = models.BooleanField(
+        default=False,
+        verbose_name="Есть расхождения / недостача"
+    )
+    qr_code_data = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        verbose_name="Данные QR-кода"
+    )
+
+    date_of_creation = models.DateField(
+        auto_now_add=True,
+        verbose_name="Дата создания (legacy)"
+    )
+    date_of_dispatch = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Дата отправки (legacy)"
+    )
+    created_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Дата и время создания"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата и время обновления"
+    )
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление посылки."""
+        num = self.track_number or self.number_of_dispatch or f"ID:{self.pk}"
+        dest = self.destination.name if self.destination else (self.place_of_dispatch.name if self.place_of_dispatch else "МПД не указан")
+        return f"{num} → {dest} ({self.get_status_display()})"
+
+    @property
+    def origin_display(self) -> str:
+        """Возвращает наименование пункта отправления."""
+        if self.origin:
+            return self.origin.name
+        return self.origin_custom or "База / Склад (Москва)"
+
+    @property
+    def destination_display(self) -> str:
+        """Возвращает наименование пункта назначения."""
+        if self.destination:
+            return self.destination.name
+        if self.place_of_dispatch:
+            return self.place_of_dispatch.name
+        return "Не указан"
+
+    @property
+    def sender_display(self) -> str:
+        """Возвращает форматированное наименование отправителя."""
+        if self.sender:
+            return self.sender.title or self.sender.get_full_name() or self.sender.username
+        return "Не указан"
+
+    @property
+    def recipient_display(self) -> str:
+        """Возвращает форматированное наименование получателя на МПД."""
+        if self.recipient:
+            return self.recipient.title or self.recipient.get_full_name() or self.recipient.username
+        return "Ответственный сотрудник МПД"
+
+    @property
+    def received_by_display(self) -> str:
+        """Возвращает сотрудника, фактически принявшего посылку."""
+        if self.received_by:
+            return self.received_by.title or self.received_by.get_full_name() or self.received_by.username
+        return "—"
+
+    @property
+    def items_count(self) -> int:
+        """Возвращает количество позиций в описи вложения."""
+        return self.items.count()
+
+    @property
+    def delivery_duration_hours(self) -> Optional[float]:
+        """Возвращает фактическую длительность доставки в часах."""
+        if self.shipped_at and self.received_at:
+            delta = self.received_at - self.shipped_at
+            return round(delta.total_seconds() / 3600.0, 1)
+        return None
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Автоматически генерирует трек-номер и синхронизирует поля обратной совместимости."""
+        if not self.track_number:
+            year = timezone.now().year
+            self.track_number = ShipmentCounter.generate_number("PACKAGE", year=year)
+
+        if not self.number_of_dispatch:
+            self.number_of_dispatch = self.track_number
+
+        # Синхронизация полей назначения
+        if self.destination and not self.place_of_dispatch:
+            self.place_of_dispatch = self.destination
+        elif self.place_of_dispatch and not self.destination:
+            self.destination = self.place_of_dispatch
+
+        if not self.qr_code_data:
+            self.qr_code_data = f"BARKOL-PKG:{self.track_number}"
+
+        super().save(*args, **kwargs)
+
+    def get_data(self) -> Dict[str, Any]:
+        """Сохраняет обратную совместимость для AJAX-сериализатора get_data()."""
+        dest_name = self.destination_display
+        exec_name = format_name_initials(self.executor.title) if self.executor else (
+            format_name_initials(self.sender.title) if self.sender else ""
+        )
+        dispatch_dt = self.shipped_at.date() if self.shipped_at else (
+            self.date_of_dispatch or self.created_at.date()
+        )
         return {
             "pk": self.pk,
-            "date_of_dispatch": f"{self.date_of_dispatch:%d.%m.%Y} г.",
-            "number_of_dispatch": self.number_of_dispatch,
-            "place_of_dispatch": self.place_of_dispatch.name,
-            "executor": format_name_initials(self.executor.title) if self.executor else '',
-            "type_of_dispatch": self.get_type_of_dispatch_display(),
+            "date_of_dispatch": f"{dispatch_dt:%d.%m.%Y} г.",
+            "number_of_dispatch": self.track_number or self.number_of_dispatch,
+            "place_of_dispatch": dest_name,
+            "executor": exec_name,
+            "type_of_dispatch": self.get_status_display(),
         }
 
 
-def image_directory_path(instance, filename):
-    year = instance.date_of_creation
-    return f"logist/PKG/{year.year}/{year.month}/{filename}"
+class PackageItem(models.Model):
+    """Позиция в описи вложения посылки.
+
+    Описывает конкретный предмет/деталь/ТМЦ с возможностью построчной сверки
+    при приемке на МПД.
+
+    Attributes:
+        package (ForeignKey): Ссылка на родительскую посылку Package.
+        item_order (PositiveIntegerField): Порядковый номер строки в описи.
+        name (CharField): Наименование ТМЦ / запчасти / документа.
+        part_number (CharField): Каталожный / чертежный номер (P/N).
+        serial_number (CharField): Заводской / серийный номер (S/N).
+        quantity_sent (DecimalField): Количество отправленных единиц.
+        unit (CharField): Единица измерения (шт., компл., кг, упак.).
+        sender_comment (CharField): Примечание или назначение отправителя.
+        quantity_received (DecimalField): Фактически принятое количество на МПД.
+        item_status (CharField): Статус сверки позиции при приемке.
+        discrepancy_comment (TextField): Подробные замечания при расхождении.
+    """
+
+    class ItemStatus(models.TextChoices):
+        """Статусы позиции при приемочном контроле на МПД."""
+        PENDING = "PENDING", "Ожидает приемки"
+        ACCEPTED = "ACCEPTED", "Принято без замечаний"
+        SHORTAGE = "SHORTAGE", "Недостача (не вложено)"
+        DAMAGED = "DAMAGED", "Повреждено / дефект"
+        EXCESS = "EXCESS", "Излишек"
+
+    package = models.ForeignKey(
+        Package,
+        on_delete=models.CASCADE,
+        related_name="items",
+        verbose_name="Посылка"
+    )
+    item_order = models.PositiveIntegerField(default=1, verbose_name="№ п/п")
+    name = models.CharField(
+        max_length=300,
+        verbose_name="Наименование ТМЦ / груза"
+    )
+    part_number = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Каталожный номер / P/N"
+    )
+    serial_number = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Заводской номер / S/N"
+    )
+    quantity_sent = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=1,
+        verbose_name="Отправлено"
+    )
+    unit = models.CharField(
+        max_length=50,
+        default="шт.",
+        verbose_name="Ед. изм."
+    )
+    sender_comment = models.CharField(
+        max_length=300,
+        blank=True,
+        default="",
+        verbose_name="Примечание отправителя"
+    )
+    quantity_received = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Принято фактически"
+    )
+    item_status = models.CharField(
+        max_length=30,
+        choices=ItemStatus.choices,
+        default=ItemStatus.PENDING,
+        verbose_name="Статус при приемке"
+    )
+    discrepancy_comment = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Замечания принимающего"
+    )
+
+    class Meta:
+        verbose_name = "Позиция описи посылки"
+        verbose_name_plural = "Позиции описи посылки"
+        ordering = ["package", "item_order"]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление позиции описи."""
+        return f"#{self.item_order}. {self.name} ({self.quantity_sent} {self.unit})"
+
+    @property
+    def has_issue(self) -> bool:
+        """Возвращает True, если по позиции зафиксирована недостача или дефект."""
+        return self.item_status in [self.ItemStatus.SHORTAGE, self.ItemStatus.DAMAGED]
+
+
+def image_directory_path(instance: "PackageImage", filename: str) -> str:
+    """Генерирует структурированный путь сохранения фотографий посылок."""
+    now = timezone.now()
+    pkg_id = instance.package_id or "general"
+    return f"logist/PKG/{now.year}/{now.month:02d}/{pkg_id}/{filename}"
+
 
 class PackageImage(models.Model):
+    """Фотография к посылке (при упаковке отправителем или при приемке на МПД).
+
+    Attributes:
+        date_of_creation (DateField): Дата загрузки (legacy).
+        image (ImageField): Файл фотографии.
+        caption (CharField): Описание / подпись к снимку.
+        package (ForeignKey): Родительская посылка.
+        item (ForeignKey): Связанная конкретная позиция с дефектом.
+        stage (CharField): Этап фотофиксации (отправка / приемка).
+        uploaded_by (ForeignKey): Сотрудник, загрузивший снимок.
+        created_at (DateTimeField): Дата и время загрузки.
+    """
+
+    class Stage(models.TextChoices):
+        """Этапы фотофиксации содержимого."""
+        SHIPMENT = "SHIPMENT", "При упаковке / отправке"
+        RECEPTION = "RECEPTION", "При приемке на МПД"
+
+    date_of_creation = models.DateField(
+        auto_now_add=True,
+        verbose_name="Дата создания (legacy)"
+    )
+    image = models.ImageField(
+        upload_to=image_directory_path,
+        verbose_name="Фотография"
+    )
+    caption = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Подпись к фото"
+    )
+    package = models.ForeignKey(
+        Package,
+        on_delete=models.CASCADE,
+        related_name="photos",
+        verbose_name="Посылка"
+    )
+    item = models.ForeignKey(
+        PackageItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="photos",
+        verbose_name="Связанная позиция"
+    )
+    stage = models.CharField(
+        max_length=20,
+        choices=Stage.choices,
+        default=Stage.SHIPMENT,
+        verbose_name="Этап съемки"
+    )
+    uploaded_by = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Автор снимка"
+    )
+    created_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Дата и время загрузки"
+    )
+
     class Meta:
-        verbose_name = "Фотографию к посылке"
-        verbose_name_plural = "Фотографии к посылкам"
-        ordering = ["-date_of_creation"]
-    date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True)
-    image = models.ImageField(verbose_name='', upload_to=image_directory_path)
-    caption = models.CharField(verbose_name='', max_length=200, default='')
-    package = models.ForeignKey(Package, verbose_name='', on_delete=models.CASCADE)
+        verbose_name = "Фотография посылки"
+        verbose_name_plural = "Фотографии посылок"
+        ordering = ["-created_at", "-date_of_creation"]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление фотографии."""
+        return f"Фото к {self.package} ({self.get_stage_display()})"
+
+
+class PackageEventLog(models.Model):
+    """Неизменяемый журнал аудита и трекинга жизненного цикла посылки.
+
+    Attributes:
+        package (ForeignKey): Отслеживаемая посылка.
+        event_type (CharField): Тип зафиксированного события.
+        user (ForeignKey): Сотрудник, инициировавший событие.
+        timestamp (DateTimeField): Точное время наступления события.
+        message (TextField): Человекочитаемое описание события.
+        location (CharField): Местоположение / пункт фиксации.
+    """
+
+    class EventType(models.TextChoices):
+        """Типы регистрируемых событий трекинга."""
+        CREATED = "CREATED", "Посылка сформирована отправителем"
+        READY = "READY", "Посылка готова к отправке (в очереди)"
+        ATTACHED_TO_TRIP = "ATTACHED_TO_TRIP", "Включена в рейс автомобиля"
+        REMOVED_FROM_TRIP = "REMOVED_FROM_TRIP", "Исключена из рейса"
+        SHIPPED = "SHIPPED", "Отправлена (машина выехала)"
+        ARRIVED_AT_MPD = "ARRIVED_AT_MPD", "Доставлена на МПД"
+        RECEIVED_FULL = "RECEIVED_FULL", "Принята на МПД без замечаний"
+        RECEIVED_DISCREPANCY = "RECEIVED_DISCREPANCY", "Принята на МПД с расхождениями"
+        REJECTED = "REJECTED", "Отклонена получателем"
+        PHOTO_ADDED = "PHOTO_ADDED", "Прикреплена фотография"
+        COMMENT_ADDED = "COMMENT_ADDED", "Добавлен комментарий"
+
+    package = models.ForeignKey(
+        Package,
+        on_delete=models.CASCADE,
+        related_name="event_logs",
+        verbose_name="Посылка"
+    )
+    event_type = models.CharField(
+        max_length=50,
+        choices=EventType.choices,
+        verbose_name="Тип события"
+    )
+    user = models.ForeignKey(
+        DataBaseUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Пользователь"
+    )
+    timestamp = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Время события"
+    )
+    message = models.TextField(verbose_name="Описание события")
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Местоположение"
+    )
+
+    class Meta:
+        verbose_name = "Событие трекинга посылки"
+        verbose_name_plural = "События трекинга посылок"
+        ordering = ["-timestamp"]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление записи трекинга."""
+        return f"{self.timestamp.strftime('%d.%m.%Y %H:%M')} — {self.get_event_type_display()}"
 
 
 # ==============================================================================
@@ -587,7 +1430,7 @@ class DocFlowDocument(models.Model):
             year = self.reg_date.year if self.reg_date else timezone.now().year
             if not self.reg_date:
                 self.reg_date = timezone.now().date()
-            if self.doc_type_id and not self.flow_type:
+            if self.doc_type_id:
                 self.flow_type = self.doc_type.category
             self.reg_number = DocFlowNumberCounter.generate_number(self.flow_type, year=year)
             if save and self.pk:
@@ -603,7 +1446,7 @@ class DocFlowDocument(models.Model):
             *args (Any): Позиционные аргументы сохранения Django ORM.
             **kwargs (Any): Именованные аргументы сохранения Django ORM.
         """
-        if self.doc_type_id and not self.flow_type:
+        if self.doc_type_id and (not self.flow_type or self._state.adding):
             self.flow_type = self.doc_type.category
         super().save(*args, **kwargs)
 
