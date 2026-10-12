@@ -396,13 +396,14 @@ class TripsForDestinationApiView(LoginRequiredMixin, View):
         except (ValueError, TypeError):
             return JsonResponse({"status": "error", "message": "Некорректный ID МПД."}, status=400)
 
-        today = timezone.now().date()
+        today = timezone.localdate()
         trips = (
             ShipmentTrip.objects.filter(
-                status__in=[ShipmentTrip.Status.PLANNING, ShipmentTrip.Status.CONSOLIDATED],
-                planned_date__gte=today,
-                stops__mpd_id=mpd_id,
+                Q(stops__mpd_id=mpd_id)
+                & (Q(planned_date__gte=today) | Q(stops__planned_arrival_date__gte=today))
+                & Q(status__in=[ShipmentTrip.Status.PLANNING, ShipmentTrip.Status.CONSOLIDATED, ShipmentTrip.Status.IN_TRANSIT])
             )
+            .exclude(status__in=[ShipmentTrip.Status.COMPLETED, ShipmentTrip.Status.CANCELLED])
             .select_related("driver_user", "origin_point")
             .order_by("planned_date", "trip_number")
             .distinct()

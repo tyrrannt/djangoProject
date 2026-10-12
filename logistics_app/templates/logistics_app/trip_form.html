@@ -443,8 +443,9 @@
             mpdSelects.forEach(function (sel) {
                 const row = sel.closest('.stop-row');
                 const deleteCheck = row ? row.querySelector('input[type="checkbox"][name$="-DELETE"]:checked') : null;
-                if (!deleteCheck && sel.value && !mpdIds.includes(sel.value)) {
-                    mpdIds.push(sel.value);
+                const val = (window.jQuery && $(sel).length) ? $(sel).val() : sel.value;
+                if (!deleteCheck && val && !mpdIds.includes(val)) {
+                    mpdIds.push(val);
                 }
             });
 
@@ -565,6 +566,11 @@
         }
 
         if (container) {
+            if (window.jQuery) {
+                $('#stops-container').on('change select2:select select2:clear', 'select[name$="-mpd"], input[name$="-DELETE"]', function () {
+                    fetchMatchedPackages();
+                });
+            }
             container.addEventListener('change', function (e) {
                 if (e.target && (e.target.matches('select[name$="-mpd"]') || e.target.matches('input[name$="-DELETE"]'))) {
                     fetchMatchedPackages();

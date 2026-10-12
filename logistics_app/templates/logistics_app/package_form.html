@@ -302,6 +302,10 @@
 
             if (!destinationId) {
                 tripSelect.innerHTML = '<option value="">— Сначала выберите МПД назначения —</option>';
+                tripSelect.disabled = false;
+                if (window.jQuery) {
+                    $(tripSelect).prop('disabled', false).val('').trigger('change');
+                }
                 if (tripHelperMsg) {
                     tripHelperMsg.innerHTML = 'Сначала выберите МПД назначения, чтобы увидеть доступные рейсы';
                 }
@@ -309,14 +313,18 @@
             }
 
             tripSelect.disabled = true;
+            if (window.jQuery) {
+                $(tripSelect).prop('disabled', true).trigger('change');
+            }
             if (tripHelperMsg) {
                 tripHelperMsg.innerHTML = '<span class="text-muted"><i class="bx bx-loader-alt bx-spin me-1"></i>Загрузка открытых рейсов на выбранный МПД...</span>';
             }
 
-            fetch(`{% url 'logistics_app:api_trips_for_destination' %}?mpd_id=${destinationId}`)
+            fetch(`{% url 'logistics_app:api_trips_for_destination' %}?mpd_id=${encodeURIComponent(destinationId)}`)
                 .then(response => response.json())
                 .then(data => {
                     tripSelect.innerHTML = '';
+                    let selectedVal = '';
                     if (data.status === 'ok' && data.trips && data.trips.length > 0) {
                         const defaultOpt = document.createElement('option');
                         defaultOpt.value = '';
@@ -329,11 +337,20 @@
                             opt.textContent = trip.text;
                             if (preselectedTripId && String(trip.id) === String(preselectedTripId)) {
                                 opt.selected = true;
+                                selectedVal = String(trip.id);
                             }
                             tripSelect.appendChild(opt);
                         });
 
                         tripSelect.disabled = false;
+                        if (window.jQuery) {
+                            $(tripSelect).prop('disabled', false);
+                            if (selectedVal) {
+                                $(tripSelect).val(selectedVal);
+                            }
+                            $(tripSelect).trigger('change');
+                        }
+
                         if (tripHelperMsg) {
                             tripHelperMsg.innerHTML = `<span class="text-success"><i class="bx bx-check-circle me-1"></i>Найдено рейсов: ${data.trips.length}. Выберите нужный рейс или оставьте в очереди ожидания.</span>`;
                         }
@@ -343,6 +360,9 @@
                         emptyOpt.textContent = '— Нет запланированных рейсов на этот МПД —';
                         tripSelect.appendChild(emptyOpt);
                         tripSelect.disabled = false;
+                        if (window.jQuery) {
+                            $(tripSelect).prop('disabled', false).val('').trigger('change');
+                        }
 
                         if (tripHelperMsg) {
                             tripHelperMsg.innerHTML = '<span class="text-warning"><i class="bx bx-info-circle me-1"></i>На выбранный МПД нет открытых рейсов (от сегодня и позже). Посылка будет поставлена в очередь ожидания.</span>';
@@ -352,21 +372,45 @@
                 .catch(err => {
                     console.error('Ошибка загрузки рейсов:', err);
                     tripSelect.disabled = false;
+                    if (window.jQuery) {
+                        $(tripSelect).prop('disabled', false).trigger('change');
+                    }
                     if (tripHelperMsg) {
                         tripHelperMsg.innerHTML = '<span class="text-danger">Не удалось загрузить список рейсов</span>';
                     }
                 });
         }
 
+        function onDestinationChange() {
+            let val = '';
+            if (window.jQuery && $(destinationSelect).length) {
+                val = $(destinationSelect).val() || '';
+            } else if (destinationSelect) {
+                val = destinationSelect.value || '';
+            }
+            updateTripsForDestination(val, '');
+        }
+
         if (destinationSelect && tripSelect) {
-            destinationSelect.addEventListener('change', function () {
-                updateTripsForDestination(this.value, '');
-            });
+            if (window.jQuery) {
+                $(destinationSelect).on('change select2:select select2:clear', onDestinationChange);
+            }
+            destinationSelect.addEventListener('change', onDestinationChange);
 
             // Инициализация при первичной загрузке страницы (редактирование или повторный показ с ошибками)
-            if (destinationSelect.value) {
-                const initialTripId = "{{ object.trip_id|default:'' }}" || tripSelect.value;
-                updateTripsForDestination(destinationSelect.value, initialTripId);
+            let initialDestId = destinationSelect.value;
+            if (!initialDestId && window.jQuery && $(destinationSelect).length) {
+                initialDestId = $(destinationSelect).val() || '';
+            }
+            if (initialDestId) {
+                let initialTripId = "{{ object.trip_id|default:'' }}";
+                if (!initialTripId && tripSelect) {
+                    initialTripId = tripSelect.value;
+                }
+                if (!initialTripId && window.jQuery && $(tripSelect).length) {
+                    initialTripId = $(tripSelect).val() || '';
+                }
+                updateTripsForDestination(initialDestId, initialTripId);
             }
         }
     });
