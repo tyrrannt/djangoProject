@@ -220,23 +220,24 @@
                 </div>
 
                 <!-- Template for dynamic additions -->
-                <table class="d-none">
-                    <tbody id="empty-item-row">
-                        <tr class="item-row" data-form-index="__prefix__">
-                            <td>{{ items_formset.empty_form.name|add_class:"form-control form-control-sm" }}</td>
-                            <td>{{ items_formset.empty_form.part_number|add_class:"form-control form-control-sm font-monospace" }}</td>
-                            <td>{{ items_formset.empty_form.serial_number|add_class:"form-control form-control-sm font-monospace" }}</td>
-                            <td>{{ items_formset.empty_form.quantity_sent|add_class:"form-control form-control-sm" }}</td>
-                            <td>{{ items_formset.empty_form.unit|add_class:"form-control form-control-sm" }}</td>
-                            <td>{{ items_formset.empty_form.sender_comment|add_class:"form-control form-control-sm" }}</td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm text-danger remove-item-btn p-0" title="Удалить">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <template id="empty-item-row">
+                    <tr class="item-row" data-form-index="__prefix__">
+                        <td>
+                            {% for hidden in items_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            {{ items_formset.empty_form.name|add_class:"form-control form-control-sm" }}
+                        </td>
+                        <td>{{ items_formset.empty_form.part_number|add_class:"form-control form-control-sm font-monospace" }}</td>
+                        <td>{{ items_formset.empty_form.serial_number|add_class:"form-control form-control-sm font-monospace" }}</td>
+                        <td>{{ items_formset.empty_form.quantity_sent|add_class:"form-control form-control-sm" }}</td>
+                        <td>{{ items_formset.empty_form.unit|add_class:"form-control form-control-sm" }}</td>
+                        <td>{{ items_formset.empty_form.sender_comment|add_class:"form-control form-control-sm" }}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm text-danger remove-item-btn p-0" title="Удалить">
+                                <i class="bx bx-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </template>
             </div>
         </div>
 

@@ -34,7 +34,11 @@ from logistics_app.models import (
 from logistics_app.services.docflow_notification_service import DocFlowNotificationService
 from logistics_app.services.docflow_routing_service import DocFlowRoutingService
 from logistics_app.services.docflow_version_service import DocFlowVersionService
-from logistics_app.forms import InternalPackageForm
+from logistics_app.forms import (
+    InternalPackageForm,
+    PackageItemForm,
+    PackageItemFormSet,
+)
 from logistics_app.services import (
     PackageService,
     PackageSheetGenerator,
@@ -833,5 +837,81 @@ class ShipmentServicesTestCase(TestCase):
         self.assertEqual(pkg_2.trip, created_trip)
         self.assertEqual(pkg_2.status, Package.Status.ASSIGNED_TO_TRIP)
         self.assertEqual(created_trip.packages.count(), 2)
+
+    def test_package_create_with_items_formset(self) -> None:
+        """Проверяет отправку формы создания посылки с позициями описи (целые и дробные количества)."""
+        self.client.force_login(self.user_sender)
+
+        # 1. Проверка формы позиции описи PackageItemForm
+        valid_form_int = PackageItemForm(data={
+            "name": "Болт М8",
+            "part_number": "B-008",
+            "quantity_sent": "5",
+            "unit": "шт.",
+        })
+        self.assertTrue(valid_form_int.is_valid(), valid_form_int.errors)
+        self.assertEqual(valid_form_int.cleaned_data["quantity_sent"], Decimal("5"))
+
+        valid_form_dec = PackageItemForm(data={
+            "name": "Масло авиационное",
+            "part_number": "OIL-MS20",
+            "quantity_sent": "2.5",
+            "unit": "л",
+        })
+        self.assertTrue(valid_form_dec.is_valid(), valid_form_dec.errors)
+        self.assertEqual(valid_form_dec.cleaned_data["quantity_sent"], Decimal("2.5"))
+
+        invalid_form_zero = PackageItemForm(data={
+            "name": "Тест",
+            "quantity_sent": "0",
+            "unit": "шт.",
+        })
+        self.assertFalse(invalid_form_zero.is_valid())
+        self.assertIn("quantity_sent", invalid_form_zero.errors)
+
+        # 2. POST запрос на создание посылки с формсетом описи
+        post_data = {
+            "destination": str(self.mpd_surgut.pk),
+            "origin_custom": "Центральный склад (Москва)",
+            "urgency": Package.Urgency.NORMAL,
+            "package_type": Package.PackageType.BOX,
+            "places_count": "1",
+            "weight_kg": "3.5",
+            "description": "Запчасти для ТО",
+            # Управление формсетом
+            "items-TOTAL_FORMS": "2",
+            "items-INITIAL_FORMS": "0",
+            "items-MIN_NUM_FORMS": "0",
+            "items-MAX_NUM_FORMS": "1000",
+            # Строка 0: 10 шт.
+            "items-0-name": "Прокладка клапана",
+            "items-0-part_number": "GSK-101",
+            "items-0-serial_number": "",
+            "items-0-quantity_sent": "10",
+            "items-0-unit": "шт.",
+            "items-0-sender_comment": "",
+            # Строка 1: 1.5 кг
+            "items-1-name": "Смазка литиевая",
+            "items-1-part_number": "GREASE-01",
+            "items-1-serial_number": "",
+            "items-1-quantity_sent": "1.5",
+            "items-1-unit": "кг",
+            "items-1-sender_comment": "В тубе",
+        }
+
+        resp = self.client.post(reverse("logistics_app:package_add"), post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        created_pkg = Package.objects.latest("created_at")
+        self.assertEqual(created_pkg.destination, self.mpd_surgut)
+        self.assertEqual(created_pkg.items.count(), 2)
+
+        item1 = created_pkg.items.get(name="Прокладка клапана")
+        self.assertEqual(item1.quantity_sent, Decimal("10"))
+        self.assertEqual(item1.unit, "шт.")
+
+        item2 = created_pkg.items.get(name="Смазка литиевая")
+        self.assertEqual(item2.quantity_sent, Decimal("1.5"))
+        self.assertEqual(item2.unit, "кг")
 
 

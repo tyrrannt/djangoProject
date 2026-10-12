@@ -1,4 +1,4 @@
-import re
+from decimal import Decimal
 from typing import Any, Dict, Optional
 
 from django import forms
@@ -328,6 +328,19 @@ class InternalPackageForm(forms.ModelForm):
 class PackageItemForm(forms.ModelForm):
     """Форма позиции в описи вложения посылки."""
 
+    quantity_sent = forms.DecimalField(
+        min_value=Decimal("0.01"),
+        initial=Decimal("1"),
+        label="Количество",
+        widget=forms.NumberInput(attrs={
+            "class": "form-control",
+            "step": "any",
+            "min": "0.01",
+            "style": "max-width: 100px;",
+            "placeholder": "1",
+        }),
+    )
+
     class Meta:
         model = PackageItem
         fields = [
@@ -342,12 +355,17 @@ class PackageItemForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Наименование ТМЦ / запчасти / документа"}),
             "part_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "P/N"}),
             "serial_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "S/N"}),
-            "quantity_sent": forms.NumberInput(attrs={"class": "form-control", "step": "1", "min": "0.01", "style": "max-width: 100px;"}),
             "unit": forms.TextInput(attrs={"class": "form-control", "style": "max-width: 80px;", "placeholder": "шт."}),
             "sender_comment": forms.TextInput(attrs={"class": "form-control", "placeholder": "Примечание"}),
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Инициализирует форму позиции описи с адаптивной стилизацией полей.
+
+        Args:
+            *args (Any): Позиционные аргументы формы.
+            **kwargs (Any): Именованные аргументы формы.
+        """
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             make_custom_field(field)

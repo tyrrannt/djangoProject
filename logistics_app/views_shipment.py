@@ -646,7 +646,7 @@ class PackageCreateView(LoginRequiredMixin, CreateView):
         Returns:
             HttpResponse: Редирект на карточку созданной посылки.
         """
-        context = self.get_context_data()
+        context = self.get_context_data(form=form)
         items_formset = context["items_formset"]
 
         if items_formset.is_valid():
@@ -698,7 +698,8 @@ class PackageCreateView(LoginRequiredMixin, CreateView):
             )
             return redirect("logistics_app:package_detail", pk=package.pk)
 
-        return self.render_to_response(self.get_context_data(form=form))
+        messages.error(self.request, "Пожалуйста, проверьте правильность заполнения описи вложения.")
+        return self.render_to_response(context)
 
 
 class PackageUpdateView(LoginRequiredMixin, UpdateView):
@@ -754,7 +755,7 @@ class PackageUpdateView(LoginRequiredMixin, UpdateView):
         Returns:
             HttpResponse: Редирект на детальный просмотр посылки.
         """
-        context = self.get_context_data()
+        context = self.get_context_data(form=form)
         items_formset = context["items_formset"]
 
         if items_formset.is_valid():
@@ -765,7 +766,8 @@ class PackageUpdateView(LoginRequiredMixin, UpdateView):
             messages.success(self.request, f"Посылка {package.track_number} успешно обновлена.")
             return redirect("logistics_app:package_detail", pk=package.pk)
 
-        return self.render_to_response(self.get_context_data(form=form))
+        messages.error(self.request, "Пожалуйста, проверьте правильность заполнения описи вложения.")
+        return self.render_to_response(context)
 
 
 class PackageDetailView(LoginRequiredMixin, DetailView):
