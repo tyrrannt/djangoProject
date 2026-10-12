@@ -179,3 +179,29 @@
             </div>
 </div>
 {% endblock %}
+
+{% block custom_script %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.jQuery) {
+            $(document).on('changeDate', '[data-plugin-datepicker]', function (e) {
+                if (e.date && !isNaN(e.date.getTime())) {
+                    var d = ('0' + e.date.getDate()).slice(-2);
+                    var m = ('0' + (e.date.getMonth() + 1)).slice(-2);
+                    var y = e.date.getFullYear();
+                    var formatted = d + '.' + m + '.' + y;
+                    $(this).val(formatted);
+                    $(this).attr('value', formatted);
+                }
+            });
+
+            $(document).on('blur focusout', '[data-plugin-datepicker]', function () {
+                var val = $(this).val();
+                if (val && /^\d{2}\.\d{2}\.\d{4}$/.test(val.trim())) {
+                    $(this).attr('value', val.trim());
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

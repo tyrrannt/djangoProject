@@ -1187,7 +1187,7 @@ def make_custom_field(f: forms.Field) -> forms.Field:
             "type": "text",
             "autocomplete": "off",
             "data-date-language": "ru",
-            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "todayBtn": true, "clearBtn": true, "autoclose": true}',
+            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "language": "ru", "todayBtn": true, "clearBtn": true, "autoclose": true, "todayHighlight": true, "forceParse": false}',
         }),
         (forms.DateTimeField, {
             "class": "form-control form-control-modern",
@@ -1195,7 +1195,7 @@ def make_custom_field(f: forms.Field) -> forms.Field:
             "type": "text",
             "autocomplete": "off",
             "data-date-language": "ru",
-            "data-plugin-options": '{"format": "dd.mm.yyyy hh:ii", "autoclose": true, "todayBtn": true, "minuteStep": 1}',
+            "data-plugin-options": '{"format": "dd.mm.yyyy hh:ii", "language": "ru", "autoclose": true, "todayBtn": true, "minuteStep": 1, "forceParse": false}',
         }),
         (forms.BooleanField, {
             "class": "todo-check",
@@ -1225,8 +1225,22 @@ def make_custom_field(f: forms.Field) -> forms.Field:
             f.widget.attrs.update(attrs)
 
             if isinstance(f, forms.DateField):
-                if hasattr(f.widget, 'format') and not f.widget.format:
+                f.widget.input_type = 'text'
+                if hasattr(f.widget, 'format'):
                     f.widget.format = '%d.%m.%Y'
+                if not hasattr(f, 'input_formats') or not f.input_formats:
+                    f.input_formats = ['%d.%m.%Y', '%d.%m.%y', '%Y-%m-%d']
+                elif '%d.%m.%Y' not in f.input_formats:
+                    f.input_formats = ['%d.%m.%Y'] + list(f.input_formats)
+
+            if isinstance(f, forms.DateTimeField):
+                f.widget.input_type = 'text'
+                if hasattr(f.widget, 'format'):
+                    f.widget.format = '%d.%m.%Y %H:%M'
+                if not hasattr(f, 'input_formats') or not f.input_formats:
+                    f.input_formats = ['%d.%m.%Y %H:%M', '%d.%m.%Y %H:%M:%S', '%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M']
+                elif '%d.%m.%Y %H:%M' not in f.input_formats:
+                    f.input_formats = ['%d.%m.%Y %H:%M'] + list(f.input_formats)
 
             if isinstance(f, forms.ModelMultipleChoiceField):
                 if 'size' in f.widget.attrs:

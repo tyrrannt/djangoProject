@@ -31,6 +31,20 @@ class WayBillCreateForm(forms.ModelForm):
     class Meta:
         model = WayBill
         fields = '__all__'
+        widgets = {
+            "document_date": forms.DateInput(
+                format="%d.%m.%Y",
+                attrs={
+                    "type": "text",
+                    "class": "form-control form-control-modern",
+                    "autocomplete": "off",
+                    "placeholder": "ДД.ММ.ГГГГ",
+                    "data-plugin-datepicker": "true",
+                    "data-date-language": "ru",
+                    "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "language": "ru", "todayBtn": true, "clearBtn": true, "autoclose": true, "todayHighlight": true, "forceParse": false}',
+                },
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
         super(WayBillCreateForm, self).__init__(*args, **kwargs)
@@ -43,6 +57,20 @@ class WayBillForm(forms.ModelForm):
         model = WayBill
         fields = ['document_date', 'place_of_departure', 'comment', 'place_division', 'sender', 'state', 'responsible',
                   'executor', 'urgency']
+        widgets = {
+            "document_date": forms.DateInput(
+                format="%d.%m.%Y",
+                attrs={
+                    "type": "text",
+                    "class": "form-control form-control-modern",
+                    "autocomplete": "off",
+                    "placeholder": "ДД.ММ.ГГГГ",
+                    "data-plugin-datepicker": "true",
+                    "data-date-language": "ru",
+                    "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "language": "ru", "todayBtn": true, "clearBtn": true, "autoclose": true, "todayHighlight": true, "forceParse": false}',
+                },
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
         super(WayBillForm, self).__init__(*args, **kwargs)
@@ -58,6 +86,20 @@ class WayBillUpdateForm(forms.ModelForm):
     class Meta:
         model = WayBill
         fields = '__all__'
+        widgets = {
+            "document_date": forms.DateInput(
+                format="%d.%m.%Y",
+                attrs={
+                    "type": "text",
+                    "class": "form-control form-control-modern",
+                    "autocomplete": "off",
+                    "placeholder": "ДД.ММ.ГГГГ",
+                    "data-plugin-datepicker": "true",
+                    "data-date-language": "ru",
+                    "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "language": "ru", "todayBtn": true, "clearBtn": true, "autoclose": true, "todayHighlight": true, "forceParse": false}',
+                },
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
         super(WayBillUpdateForm, self).__init__(*args, **kwargs)
@@ -98,7 +140,18 @@ class ShipmentTripForm(forms.ModelForm):
             "comment",
         ]
         widgets = {
-            "planned_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "planned_date": forms.DateInput(
+                format="%d.%m.%Y",
+                attrs={
+                    "type": "text",
+                    "class": "form-control form-control-modern",
+                    "autocomplete": "off",
+                    "placeholder": "ДД.ММ.ГГГГ",
+                    "data-plugin-datepicker": "true",
+                    "data-date-language": "ru",
+                    "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "language": "ru", "todayBtn": true, "clearBtn": true, "autoclose": true, "todayHighlight": true, "forceParse": false}',
+                },
+            ),
             "comment": forms.Textarea(attrs={
                 "rows": 3,
                 "class": "form-control",
@@ -119,7 +172,18 @@ class TripStopForm(forms.ModelForm):
         model = TripStop
         fields = ["mpd", "stop_order", "planned_arrival_date", "comment"]
         widgets = {
-            "planned_arrival_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "planned_arrival_date": forms.DateInput(
+                format="%d.%m.%Y",
+                attrs={
+                    "type": "text",
+                    "class": "form-control form-control-modern",
+                    "autocomplete": "off",
+                    "placeholder": "ДД.ММ.ГГГГ",
+                    "data-plugin-datepicker": "true",
+                    "data-date-language": "ru",
+                    "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "language": "ru", "todayBtn": true, "clearBtn": true, "autoclose": true, "todayHighlight": true, "forceParse": false}',
+                },
+            ),
             "stop_order": forms.NumberInput(attrs={"class": "form-control", "style": "max-width: 90px;"}),
             "comment": forms.TextInput(attrs={"class": "form-control", "placeholder": "Примечание к заезду"}),
         }
@@ -327,7 +391,18 @@ class DocFlowDocumentForm(forms.ModelForm):
             "title": forms.TextInput(attrs={"placeholder": "Введите тему или краткое наименование документа"}),
             "description": forms.Textarea(attrs={"rows": 4, "placeholder": "Подробное описание, примечания или сопроводительный текст"}),
             "counteragent_contact_email": forms.EmailInput(attrs={"placeholder": "email@counteragent.ru"}),
-            "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "deadline": forms.DateTimeInput(
+                format="%d.%m.%Y %H:%M",
+                attrs={
+                    "type": "text",
+                    "class": "form-control form-control-modern",
+                    "autocomplete": "off",
+                    "placeholder": "ДД.ММ.ГГГГ ЧЧ:ММ",
+                    "data-plugin-datetimepicker": "true",
+                    "data-date-language": "ru",
+                    "data-plugin-options": '{"format": "dd.mm.yyyy hh:ii", "language": "ru", "autoclose": true, "todayBtn": true, "minuteStep": 5, "forceParse": false}',
+                },
+            ),
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

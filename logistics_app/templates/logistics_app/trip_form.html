@@ -310,6 +310,17 @@
         const emptyFormTpl = document.getElementById('empty-stop-form').innerHTML;
         const totalFormsInput = document.getElementById('id_stops-TOTAL_FORMS');
 
+        // Function to initialize datepicker on dynamically added inputs
+        function initDatepicker(element) {
+            if (window.jQuery && typeof $.fn.themePluginDatePicker === 'function') {
+                $(element).find('[data-plugin-datepicker]').each(function () {
+                    var $this = $(this);
+                    var opts = $this.data('plugin-options') || {};
+                    $this.themePluginDatePicker(opts);
+                });
+            }
+        }
+
         if (addBtn && totalFormsInput && container) {
             addBtn.addEventListener('click', function () {
                 let currentCount = parseInt(totalFormsInput.value, 10);
@@ -334,7 +345,30 @@
                 }
 
                 container.appendChild(newRow);
+                initDatepicker(newRow);
                 totalFormsInput.value = currentCount + 1;
+            });
+        }
+
+        // Global protection against date value reset on blur
+        if (window.jQuery) {
+            $(document).on('changeDate', '[data-plugin-datepicker]', function (e) {
+                if (e.date && !isNaN(e.date.getTime())) {
+                    var d = ('0' + e.date.getDate()).slice(-2);
+                    var m = ('0' + (e.date.getMonth() + 1)).slice(-2);
+                    var y = e.date.getFullYear();
+                    var formatted = d + '.' + m + '.' + y;
+                    $(this).val(formatted);
+                    $(this).attr('value', formatted);
+                }
+            });
+
+            // Prevent clearing on focusout if valid DD.MM.YYYY string is present
+            $(document).on('blur focusout', '[data-plugin-datepicker]', function () {
+                var val = $(this).val();
+                if (val && /^\d{2}\.\d{2}\.\d{4}$/.test(val.trim())) {
+                    $(this).attr('value', val.trim());
+                }
             });
         }
     });

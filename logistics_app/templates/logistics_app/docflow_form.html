@@ -380,7 +380,9 @@
         </div>
     </form>
 </div>
+{% endblock %}
 
+{% block custom_script %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const modeRadios = document.querySelectorAll('input[name="route_mode"]');
@@ -409,6 +411,39 @@
         });
 
         updateRouteVisibility();
+
+        if (window.jQuery) {
+            $(document).on('changeDate', '[data-plugin-datepicker]', function (e) {
+                if (e.date && !isNaN(e.date.getTime())) {
+                    var d = ('0' + e.date.getDate()).slice(-2);
+                    var m = ('0' + (e.date.getMonth() + 1)).slice(-2);
+                    var y = e.date.getFullYear();
+                    var formatted = d + '.' + m + '.' + y;
+                    $(this).val(formatted);
+                    $(this).attr('value', formatted);
+                }
+            });
+
+            $(document).on('changeDate', '[data-plugin-datetimepicker]', function (e) {
+                if (e.date && !isNaN(e.date.getTime())) {
+                    var d = ('0' + e.date.getDate()).slice(-2);
+                    var m = ('0' + (e.date.getMonth() + 1)).slice(-2);
+                    var y = e.date.getFullYear();
+                    var h = ('0' + e.date.getHours()).slice(-2);
+                    var min = ('0' + e.date.getMinutes()).slice(-2);
+                    var formatted = d + '.' + m + '.' + y + ' ' + h + ':' + min;
+                    $(this).val(formatted);
+                    $(this).attr('value', formatted);
+                }
+            });
+
+            $(document).on('blur focusout', '[data-plugin-datepicker], [data-plugin-datetimepicker]', function () {
+                var val = $(this).val();
+                if (val && val.trim().length >= 10) {
+                    $(this).attr('value', val.trim());
+                }
+            });
+        }
     });
 </script>
 {% endblock %}
