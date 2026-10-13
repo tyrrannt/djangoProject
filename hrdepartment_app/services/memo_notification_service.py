@@ -206,7 +206,7 @@ class MemoNotificationService:
             elif event_type == "LOCATION_SET":
                 return cls._notify_location_set(process)
             elif event_type == "ORDER_ISSUED":
-                return cls._notify_order_issued(process)
+                return cls._notify_order_issued(process, extra_context=extra_context)
             elif event_type == "ORIGINALS_RECEIVED":
                 return cls._notify_originals_received(process)
             elif event_type == "TRANSFERRED_TO_ACCOUNTING":
@@ -419,8 +419,26 @@ class MemoNotificationService:
         return True
 
     @classmethod
-    def _notify_order_issued(cls, process: ApprovalOficialMemoProcess) -> bool:
-        """Формирует служебное задание (PDF/XLSX) и отправляет сотруднику, инициатору и в летную службу."""
+    def _notify_order_issued(
+        cls,
+        process: ApprovalOficialMemoProcess,
+        extra_context: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Формирует служебное задание (PDF/XLSX) и отправляет целевым адресатам.
+
+        Поддерживает разделение адресатов через параметр target_mode в extra_context:
+            - 'employee': строго командируемому сотруднику (кнопка «Повторное уведомление»),
+            - 'executor': строго ответственному исполнителю (кнопка «Письмо исполнителю»),
+            - 'flight_common': строго на общую почту летной службы (кнопка «Письмо на общую почту»),
+            - None: штатная первичная рассылка всем участникам при издании приказа.
+
+        Args:
+            process (ApprovalOficialMemoProcess): Процесс служебной записки.
+            extra_context (Optional[Dict[str, Any]]): Дополнительный контекст с режимом получателя.
+
+        Returns:
+            bool: True при успешной обработке, False при отсутствии приказа.
+        """
         doc = process.document
         person = doc.person
         executor = process.person_executor
@@ -485,17 +503,30 @@ class MemoNotificationService:
                 "mimetype": "application/pdf" if attachment_filename.endswith(".pdf") else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             }]
 
-        # Список получателей email
-        recipients = []
-        if person.email:
-            recipients.append(person.email)
-        if executor and executor.email and executor.email not in recipients:
-            recipients.append(executor.email)
+        target_mode = (extra_context or {}).get("target_mode")
+        fly_email = getattr(settings, "FLIGHT_DEPARTMENT_EMAIL", "fly@barkol.ru")
 
-        # Если это СПК (летный состав), добавляем fly@barkol.ru
-        if doc.type_trip == "2":
-            fly_email = getattr(settings, "FLIGHT_DEPARTMENT_EMAIL", "fly@barkol.ru")
-            if fly_email not in recipients:
+        # Список получателей email с учетом целевого режима адресации
+        recipients: List[str] = []
+        if target_mode == "employee":
+            # Кнопка «Повторное уведомление»: строго командируемому сотруднику
+            if person.email:
+                recipients.append(person.email)
+        elif target_mode == "executor":
+            # Кнопка «Письмо исполнителю»: строго ответственному исполнителю
+            if executor and executor.email:
+                recipients.append(executor.email)
+        elif target_mode == "flight_common":
+            # Кнопка «Письмо на общую почту»: строго на общую почту летной службы
+            if fly_email:
+                recipients.append(fly_email)
+        else:
+            # Штатная рассылка при первичном издании приказа: уведомляем всех участников
+            if person.email:
+                recipients.append(person.email)
+            if executor and executor.email and executor.email not in recipients:
+                recipients.append(executor.email)
+            if doc.type_trip == "2" and fly_email not in recipients:
                 recipients.append(fly_email)
 
         if recipients:
@@ -506,8 +537,10 @@ class MemoNotificationService:
                 attachments=attachments_payload,
             )
 
-        # Отправка Telegram командируемому
-        if person.telegram_id and cls.is_telegram_memo_notifications_enabled(person.telegram_id):
+        # Отправка Telegram командируемому:
+        # Только при первичном издании приказа (target_mode is None) или при повторном уведомлении сотруднику ('employee')
+        send_tg_to_employee = target_mode in (None, "employee")
+        if send_tg_to_employee and person.telegram_id and cls.is_telegram_memo_notifications_enabled(person.telegram_id):
             tg_text = (
                 f"✈️ <b>Вам оформлена служебная {type_trip_title}!</b>\n\n"
                 f"Приказ: <b>№ {order.document_number} от {order.document_date.strftime('%d.%m.%Y')}</b>\n"

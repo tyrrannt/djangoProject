@@ -178,6 +178,148 @@ class MemoNotificationServiceTests(SimpleTestCase):
                 self.assertTrue(mock_email.called)
                 self.assertTrue(mock_tg.called)
 
+    def _create_mock_order_process(self):
+        """Вспомогательный метод для создания мока процесса с изданным приказом."""
+        from unittest.mock import MagicMock
+        import datetime
+
+        process = MagicMock()
+        process.pk = 100
+        process.order.document_number = "105-ОК"
+        process.order.document_date = datetime.date(2026, 10, 1)
+        process.document.person.email = "ivanov@barkol.ru"
+        process.document.person.gender = "male"
+        process.document.person.telegram_id = "777888"
+        process.document.person.__str__.return_value = "Иванов И.И."
+        process.document.type_trip = "2"  # СПК (летный состав)
+        process.document.period_from = datetime.date(2026, 10, 10)
+        process.document.period_for = datetime.date(2026, 10, 15)
+        process.document.purpose_trip = "Выполнение лесоавиационных работ"
+        process.document.place_production_activity.all.return_value = []
+        process.person_executor.email = "petrov@barkol.ru"
+        process.person_executor.__str__.return_value = "Петров П.П."
+        process.person_distributor = None
+        process.accommodation = "1"
+        return process
+
+    @patch("hrdepartment_app.models.ApprovalOficialMemoProcess.objects.filter")
+    @patch("hrdepartment_app.services.memo_notification_service.MemoNotificationService.is_telegram_memo_notifications_enabled", return_value=True)
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalTelegramService.send_message_sync")
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalEmailService.send_async_email")
+    def test_notify_order_issued_target_mode_employee(self, mock_email, mock_tg, mock_pref, mock_filter):
+        """Проверяет, что при target_mode='employee' письмо уходит строго командируемому и шлется TG."""
+        from unittest.mock import patch
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+
+        mock_filter.return_value.update.return_value = 1
+        process = self._create_mock_order_process()
+        with patch.object(MemoNotificationService, "_generate_memo_documents", return_value=(None, None)):
+            res = MemoNotificationService._notify_order_issued(process, extra_context={"target_mode": "employee"})
+            self.assertTrue(res)
+            mock_email.assert_called_once()
+            call_kwargs = mock_email.call_args[1]
+            self.assertEqual(call_kwargs["recipient_list"], ["ivanov@barkol.ru"])
+            self.assertTrue(mock_tg.called)
+
+    @patch("hrdepartment_app.models.ApprovalOficialMemoProcess.objects.filter")
+    @patch("hrdepartment_app.services.memo_notification_service.MemoNotificationService.is_telegram_memo_notifications_enabled", return_value=True)
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalTelegramService.send_message_sync")
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalEmailService.send_async_email")
+    def test_notify_order_issued_target_mode_executor(self, mock_email, mock_tg, mock_pref, mock_filter):
+        """Проверяет, что при target_mode='executor' письмо уходит строго исполнителю, а TG сотруднику не шлется."""
+        from unittest.mock import patch
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+
+        mock_filter.return_value.update.return_value = 1
+        process = self._create_mock_order_process()
+        with patch.object(MemoNotificationService, "_generate_memo_documents", return_value=(None, None)):
+            res = MemoNotificationService._notify_order_issued(process, extra_context={"target_mode": "executor"})
+            self.assertTrue(res)
+            mock_email.assert_called_once()
+            call_kwargs = mock_email.call_args[1]
+            self.assertEqual(call_kwargs["recipient_list"], ["petrov@barkol.ru"])
+            self.assertFalse(mock_tg.called)
+
+    @patch("hrdepartment_app.models.ApprovalOficialMemoProcess.objects.filter")
+    @patch("hrdepartment_app.services.memo_notification_service.MemoNotificationService.is_telegram_memo_notifications_enabled", return_value=True)
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalTelegramService.send_message_sync")
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalEmailService.send_async_email")
+    def test_notify_order_issued_target_mode_flight_common(self, mock_email, mock_tg, mock_pref, mock_filter):
+        """Проверяет, что при target_mode='flight_common' письмо уходит строго на общую почту летной службы."""
+        from unittest.mock import patch
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+
+        mock_filter.return_value.update.return_value = 1
+        process = self._create_mock_order_process()
+        with patch.object(MemoNotificationService, "_generate_memo_documents", return_value=(None, None)):
+            res = MemoNotificationService._notify_order_issued(process, extra_context={"target_mode": "flight_common"})
+            self.assertTrue(res)
+            mock_email.assert_called_once()
+            call_kwargs = mock_email.call_args[1]
+            self.assertEqual(call_kwargs["recipient_list"], ["fly@barkol.ru"])
+            self.assertFalse(mock_tg.called)
+
+    @patch("hrdepartment_app.models.ApprovalOficialMemoProcess.objects.filter")
+    @patch("hrdepartment_app.services.memo_notification_service.MemoNotificationService.is_telegram_memo_notifications_enabled", return_value=True)
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalTelegramService.send_message_sync")
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalEmailService.send_async_email")
+    def test_notify_order_issued_broadcast_default(self, mock_email, mock_tg, mock_pref, mock_filter):
+        """Проверяет, что при штатном первичном издании приказа (target_mode=None) письмо уходит всем участникам."""
+        from unittest.mock import patch
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+
+        mock_filter.return_value.update.return_value = 1
+        process = self._create_mock_order_process()
+        with patch.object(MemoNotificationService, "_generate_memo_documents", return_value=(None, None)):
+            res = MemoNotificationService._notify_order_issued(process, extra_context=None)
+            self.assertTrue(res)
+            mock_email.assert_called_once()
+            call_kwargs = mock_email.call_args[1]
+            self.assertEqual(call_kwargs["recipient_list"], ["ivanov@barkol.ru", "petrov@barkol.ru", "fly@barkol.ru"])
+            self.assertTrue(mock_tg.called)
+
+    @patch("hrdepartment_app.services.memo_notification_service.MemoNotificationService.dispatch_event")
+    def test_send_mail_triggers_dispatch_with_target_mode(self, mock_dispatch):
+        """Проверяет, что вызов send_mail передает корректный target_mode в extra_context."""
+        from hrdepartment_app.models import ApprovalOficialMemoProcess
+        from unittest.mock import MagicMock
+
+        mock_process = MagicMock()
+        mock_process.pk = 55
+        mock_process.process_accepted = True
+        mock_process.document.person.email = "ivanov@barkol.ru"
+        mock_process.person_executor.email = "petrov@barkol.ru"
+
+        # trigger = 1: Повторное уведомление
+        success, info = ApprovalOficialMemoProcess.send_mail(mock_process, title="Повторное уведомление", trigger=1)
+        self.assertTrue(success)
+        mock_dispatch.assert_called_with(
+            55,
+            "ORDER_ISSUED",
+            extra_context={"target_mode": "employee"},
+            force=True,
+        )
+
+        # trigger = 2: Письмо исполнителю
+        success, info = ApprovalOficialMemoProcess.send_mail(mock_process, title="Письмо исполнителю", trigger=2)
+        self.assertTrue(success)
+        mock_dispatch.assert_called_with(
+            55,
+            "ORDER_ISSUED",
+            extra_context={"target_mode": "executor"},
+            force=True,
+        )
+
+        # trigger = 3: Письмо на общую почту
+        success, info = ApprovalOficialMemoProcess.send_mail(mock_process, title="Письмо на общую почту", trigger=3)
+        self.assertTrue(success)
+        mock_dispatch.assert_called_with(
+            55,
+            "ORDER_ISSUED",
+            extra_context={"target_mode": "flight_common"},
+            force=True,
+        )
+
     def test_approval_process_initial_state_tracking(self):
         """Проверяет корректность фиксации исходного состояния в _initial_state."""
         from hrdepartment_app.models import ApprovalOficialMemoProcess

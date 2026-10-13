@@ -1464,7 +1464,19 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             if not self.process_accepted:
                 return False, "Приказ по служебной поездке еще не издан."
 
-            MemoNotificationService.dispatch_event(self.pk, "ORDER_ISSUED", force=force)
+            target_modes = {
+                1: "employee",
+                2: "executor",
+                3: "flight_common",
+            }
+            extra_context = {"target_mode": target_modes.get(trigger)}
+
+            MemoNotificationService.dispatch_event(
+                self.pk,
+                "ORDER_ISSUED",
+                extra_context=extra_context,
+                force=force,
+            )
             mail_to = ""
             if trigger == 2:
                 mail_to = self.person_executor.email if self.person_executor else ""
