@@ -920,6 +920,16 @@ UNFOLD = {
                         "link": reverse_lazy("admin:logistics_app_packageitem_changelist"),
                     },
                     {
+                        "title": _("Каталог грузов (НСИ)"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:logistics_app_cargoitemcatalog_changelist"),
+                    },
+                    {
+                        "title": _("Категории грузов"),
+                        "icon": "label",
+                        "link": reverse_lazy("admin:logistics_app_cargocategory_changelist"),
+                    },
+                    {
                         "title": _("Журнал трекинга"),
                         "icon": "timeline",
                         "link": reverse_lazy("admin:logistics_app_packageeventlog_changelist"),
@@ -1872,6 +1882,8 @@ UNFOLD = {
                 "logistics_app.shipmenttrip",
                 "logistics_app.package",
                 "logistics_app.packageitem",
+                "logistics_app.cargoitemcatalog",
+                "logistics_app.cargocategory",
                 "logistics_app.packageimage",
                 "logistics_app.packageeventlog",
                 "logistics_app.nomenclature",

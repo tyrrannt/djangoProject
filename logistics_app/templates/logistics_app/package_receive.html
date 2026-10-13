@@ -147,12 +147,30 @@
             <div class="reception-card" id="card-item-{{ item.id }}">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
-                        <span class="badge bg-secondary mb-1">№ {{ item.item_order }}</span>
+                        <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="badge bg-secondary">№ {{ item.item_order }}</span>
+                            {% if item.catalog_item %}
+                                <span class="badge bg-label-primary"><i class="bx {{ item.catalog_item.category.icon|default:'bx-package' }} me-1"></i>{{ item.catalog_item.category.name }}</span>
+                            {% elif item.maintenance_equipment %}
+                                <span class="badge bg-label-warning"><i class="bx bx-wrench me-1"></i>Инструмент ТО (ФАП-145)</span>
+                            {% elif item.docflow_document %}
+                                <span class="badge bg-label-info"><i class="bx bx-file me-1"></i>СЭД документ</span>
+                            {% endif %}
+                        </div>
                         <div class="item-header">{{ item.name }}</div>
                         <div class="text-muted small font-monospace">
                             {% if item.part_number %}P/N: <strong>{{ item.part_number }}</strong>{% endif %}
                             {% if item.serial_number %} | S/N: <strong>{{ item.serial_number }}</strong>{% endif %}
                         </div>
+                        {% if item.item_specs %}
+                            <div class="small text-muted mt-1">
+                                {% if item.item_specs.doc_number %}Документ № <strong>{{ item.item_specs.doc_number }}</strong>{% endif %}
+                                {% if item.item_specs.doc_date %} от {{ item.item_specs.doc_date }}{% endif %}
+                                {% if item.item_specs.grade %}<span class="badge bg-light text-dark border ms-1">{{ item.item_specs.grade }}</span>{% endif %}
+                                {% if item.item_specs.batch_number %}<span class="ms-1">партия: {{ item.item_specs.batch_number }}</span>{% endif %}
+                                {% if item.item_specs.verification_status %}<span class="badge bg-label-info ms-1">{{ item.item_specs.verification_status }}</span>{% endif %}
+                            </div>
+                        {% endif %}
                     </div>
                     <div class="text-end">
                         <span class="badge bg-light text-dark border p-2">

@@ -799,6 +799,186 @@ class Package(models.Model):
         }
 
 
+
+class CargoCategory(models.Model):
+    """Категория номенклатуры грузов с декларативной схемой атрибутов.
+
+    Определяет классификацию отправлений (документы, АТИ, специнструмент, ГСМ)
+    и мета-описание динамических характеристик для формы ввода и печатных документов.
+
+    Attributes:
+        code (CharField): Уникальный машиночитаемый строковый код категории.
+        name (CharField): Человекочитаемое наименование категории.
+        icon (CharField): CSS-класс иконки интерфейса (Boxicons).
+        description (TextField): Подробное описание назначения категории.
+        fields_schema (JSONField): Декларативное описание полей спецификации
+            (список словарей с ключами key, label, type, required, options, print).
+        is_active (BooleanField): Признак доступности категории для выбора.
+        sort_order (PositiveIntegerField): Порядок сортировки в выпадающих списках.
+    """
+
+    class Code(models.TextChoices):
+        DOCUMENT = "DOCUMENT", "Документы и корреспонденция"
+        AIRCRAFT_PART = "AIRCRAFT_PART", "Авиационные детали и АТИ"
+        TOOL_EQUIPMENT = "TOOL_EQUIPMENT", "Специнструмент и КПА (ФАП-145)"
+        MATERIAL_CHEMICAL = "MATERIAL_CHEMICAL", "Расходные материалы, ГСМ и химия"
+        HOUSEHOLD_IT = "HOUSEHOLD_IT", "Хозяйственное имущество и оргтехника"
+        OTHER = "OTHER", "Прочие грузы"
+
+    code = models.CharField(
+        max_length=50,
+        unique=True,
+        choices=Code.choices,
+        verbose_name="Код категории"
+    )
+    name = models.CharField(
+        max_length=150,
+        verbose_name="Наименование категории"
+    )
+    icon = models.CharField(
+        max_length=50,
+        default="bx-package",
+        verbose_name="Иконка (Boxicons)"
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Описание категории"
+    )
+    fields_schema = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Спецификация полей (JSON Schema)",
+        help_text="Список словарей с описанием атрибутов: key, label, type, required, options, print"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активна"
+    )
+    sort_order = models.PositiveIntegerField(
+        default=10,
+        verbose_name="Порядок сортировки"
+    )
+
+    class Meta:
+        verbose_name = "Категория грузов"
+        verbose_name_plural = "Категории грузов"
+        ordering = ["sort_order", "name"]
+
+    def __str__(self) -> str:
+        """Возвращает наименование категории."""
+        return self.name
+
+
+class CargoItemCatalog(models.Model):
+    """Позиция номенклатурного справочника грузов и отправлений.
+
+    Служит мастер-каталогом типовых отправлений для быстрого автоподбора
+    при формировании посылок без необходимости многократного ручного ввода.
+
+    Attributes:
+        category (ForeignKey): Ссылка на категорию груза.
+        name (CharField): Полное наименование номенклатуры/детали/документа.
+        article (CharField): Внутренний номенклатурный номер или артикул.
+        part_number (CharField): Каталожный / чертежный номер (P/N).
+        default_unit (CharField): Единица измерения по умолчанию.
+        default_weight_kg (DecimalField): Ориентировочный вес единицы груза (кг).
+        specifications (JSONField): Базовые типовые характеристики (шаблон).
+        is_reusable (BooleanField): Флаг доступности для выбора в посылках.
+        linked_equipment_type (ForeignKey): Связь с типом СИ из реестра ТО.
+        linked_nomenclature (ForeignKey): Связь со складской номенклатурой.
+        created_at (DateTimeField): Дата создания позиции.
+        updated_at (DateTimeField): Дата последнего обновления.
+    """
+
+    category = models.ForeignKey(
+        CargoCategory,
+        on_delete=models.PROTECT,
+        related_name="catalog_items",
+        verbose_name="Категория"
+    )
+    name = models.CharField(
+        max_length=300,
+        db_index=True,
+        verbose_name="Наименование номенклатуры / предмета / детали"
+    )
+    article = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Внутренний артикул / номенклатурный номер"
+    )
+    part_number = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Чертежный / каталожный номер (P/N)"
+    )
+    default_unit = models.CharField(
+        max_length=50,
+        default="шт.",
+        verbose_name="Основная ед. изм."
+    )
+    default_weight_kg = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        verbose_name="Ориентировочный вес единицы (кг)"
+    )
+    specifications = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Базовые характеристики номенклатуры"
+    )
+    is_reusable = models.BooleanField(
+        default=True,
+        verbose_name="Доступен для повторного выбора"
+    )
+    linked_equipment_type = models.ForeignKey(
+        "hrdepartment_app.EquipmentTypeModel",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cargo_catalog_links",
+        verbose_name="Связанный тип/модель СИ ТО"
+    )
+    linked_nomenclature = models.ForeignKey(
+        "logistics_app.Nomenclature",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cargo_catalog_links",
+        verbose_name="Связанная номенклатура склада"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Создан"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Обновлен"
+    )
+
+    class Meta:
+        verbose_name = "Позиция каталога грузов"
+        verbose_name_plural = "Каталог номенклатуры грузов"
+        ordering = ["category__sort_order", "name"]
+        indexes = [
+            models.Index(fields=["name"], name="idx_cargo_item_name"),
+            models.Index(fields=["part_number"], name="idx_cargo_item_pn"),
+            models.Index(fields=["article"], name="idx_cargo_item_art"),
+        ]
+
+    def __str__(self) -> str:
+        """Возвращает строковое представление позиции каталога."""
+        if self.part_number:
+            return f"{self.name} (P/N: {self.part_number})"
+        return self.name
+
+
 class PackageItem(models.Model):
     """Позиция в описи вложения посылки.
 
@@ -807,12 +987,16 @@ class PackageItem(models.Model):
 
     Attributes:
         package (ForeignKey): Ссылка на родительскую посылку Package.
+        catalog_item (ForeignKey): Ссылка на мастер-позицию из каталога грузов.
+        maintenance_equipment (ForeignKey): Связанный инструмент ТО (ФАП-145).
+        docflow_document (ForeignKey): Связанный документ СЭД.
         item_order (PositiveIntegerField): Порядковый номер строки в описи.
         name (CharField): Наименование ТМЦ / запчасти / документа.
         part_number (CharField): Каталожный / чертежный номер (P/N).
         serial_number (CharField): Заводской / серийный номер (S/N).
         quantity_sent (DecimalField): Количество отправленных единиц.
         unit (CharField): Единица измерения (шт., компл., кг, упак.).
+        item_specs (JSONField): Индивидуальные характеристики экземпляра.
         sender_comment (CharField): Примечание или назначение отправителя.
         quantity_received (DecimalField): Фактически принятое количество на МПД.
         item_status (CharField): Статус сверки позиции при приемке.
@@ -832,6 +1016,30 @@ class PackageItem(models.Model):
         on_delete=models.CASCADE,
         related_name="items",
         verbose_name="Посылка"
+    )
+    catalog_item = models.ForeignKey(
+        CargoItemCatalog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="package_items",
+        verbose_name="Позиция из каталога грузов"
+    )
+    maintenance_equipment = models.ForeignKey(
+        "hrdepartment_app.MaintenanceEquipment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="package_items",
+        verbose_name="Связанный прибор / инструмент ТО (ФАП-145)"
+    )
+    docflow_document = models.ForeignKey(
+        "logistics_app.DocFlowDocument",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="package_items",
+        verbose_name="Связанный документ СЭД"
     )
     item_order = models.PositiveIntegerField(default=1, verbose_name="№ п/п")
     name = models.CharField(
@@ -860,6 +1068,11 @@ class PackageItem(models.Model):
         max_length=50,
         default="шт.",
         verbose_name="Ед. изм."
+    )
+    item_specs = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Индивидуальные характеристики экземпляра"
     )
     sender_comment = models.CharField(
         max_length=300,
@@ -899,6 +1112,33 @@ class PackageItem(models.Model):
     def has_issue(self) -> bool:
         """Возвращает True, если по позиции зафиксирована недостача или дефект."""
         return self.item_status in [self.ItemStatus.SHORTAGE, self.ItemStatus.DAMAGED]
+
+    @property
+    def summary_display(self) -> str:
+        """Формирует компактное информативное строковое представление позиции описи.
+
+        Returns:
+            str: Строка с наименованием, P/N, S/N и ключевыми реквизитами спецификации.
+        """
+        parts = [self.name]
+        if self.part_number:
+            parts.append(f"P/N: {self.part_number}")
+        if self.serial_number:
+            parts.append(f"S/N: {self.serial_number}")
+
+        if isinstance(self.item_specs, dict):
+            if self.item_specs.get("doc_number"):
+                parts.append(f"№ {self.item_specs['doc_number']}")
+            if self.item_specs.get("doc_date"):
+                parts.append(f"от {self.item_specs['doc_date']}")
+            if self.item_specs.get("grade"):
+                parts.append(str(self.item_specs["grade"]))
+            if self.item_specs.get("is_original") is not None:
+                parts.append("Оригинал" if self.item_specs["is_original"] else "Копия")
+            if self.item_specs.get("batch_number"):
+                parts.append(f"партия {self.item_specs['batch_number']}")
+
+        return " | ".join(parts)
 
 
 def image_directory_path(instance: "PackageImage", filename: str) -> str:

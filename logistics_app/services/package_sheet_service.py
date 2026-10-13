@@ -324,9 +324,33 @@ class PackageSheetGenerator:
 
         if items:
             for item in items:
+                name_text = f"<b>{item.name}</b>"
+                specs_snippets = []
+                if item.catalog_item:
+                    specs_snippets.append(f"<font color='#0284c7'>[{item.catalog_item.category.name}]</font>")
+                elif item.maintenance_equipment:
+                    specs_snippets.append("<font color='#d97706'>[Инструмент ТО]</font>")
+                elif item.docflow_document:
+                    specs_snippets.append("<font color='#0284c7'>[СЭД документ]</font>")
+
+                if isinstance(item.item_specs, dict) and item.item_specs:
+                    if item.item_specs.get("doc_number"):
+                        specs_snippets.append(f"№ {item.item_specs['doc_number']}")
+                    if item.item_specs.get("doc_date"):
+                        specs_snippets.append(f"от {item.item_specs['doc_date']}")
+                    if item.item_specs.get("grade"):
+                        specs_snippets.append(f"кат: {item.item_specs['grade']}")
+                    if item.item_specs.get("batch_number"):
+                        specs_snippets.append(f"парт. {item.item_specs['batch_number']}")
+                    if item.item_specs.get("verification_status"):
+                        specs_snippets.append(f"({item.item_specs['verification_status']})")
+
+                if specs_snippets:
+                    name_text += f"<br/><font size='7' color='#475569'>{' | '.join(specs_snippets)}</font>"
+
                 items_table_data.append([
                     Paragraph(str(item.item_order), style_cell_center),
-                    Paragraph(f"<b>{item.name}</b>", style_cell),
+                    Paragraph(name_text, style_cell),
                     Paragraph(item.part_number or "—", style_cell_center),
                     Paragraph(item.serial_number or "—", style_cell_center),
                     Paragraph(f"<b>{item.quantity_sent:g}</b>", style_cell_center),

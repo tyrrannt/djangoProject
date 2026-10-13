@@ -27,6 +27,8 @@ from logistics_app.forms import (
     TripStopFormSet,
 )
 from logistics_app.models import (
+    CargoCategory,
+    CargoItemCatalog,
     Package,
     PackageEventLog,
     PackageImage,
@@ -35,6 +37,7 @@ from logistics_app.models import (
     TripStop,
 )
 from logistics_app.services import (
+    CargoSearchService,
     PackageService,
     PackageSheetGenerator,
     ShipmentTripService,
@@ -999,3 +1002,123 @@ class PackageSheetPdfView(LoginRequiredMixin, View):
             logger.exception("Ошибка при генерации описи вложения для посылки %s: %s", package.track_number, exc)
             messages.error(request, f"Не удалось сформировать печатную форму: {exc}")
             return redirect("logistics_app:package_detail", pk=package.pk)
+
+
+# ==============================================================================
+# AJAX API ДЛЯ КАТАЛОГА ГРУЗОВ И СВЯЗАННЫХ СИСТЕМ
+# ==============================================================================
+
+class CargoCatalogSearchApiView(LoginRequiredMixin, View):
+    """AJAX API для сквозного поиска номенклатуры грузов для Select2."""
+
+    def get(self, request: HttpRequest) -> JsonResponse:
+        """Возвращает JSON-список подходящих позиций номенклатуры.
+
+        Args:
+            request (HttpRequest): GET-запрос с параметрами `q` (поисковая строка)
+                и опциональным `category` (код категории).
+
+        Returns:
+            JsonResponse: Словарь {"results": [...]}.
+        """
+        query = request.GET.get("q", "").strip()
+        category_code = request.GET.get("category", "").strip() or None
+        limit_param = request.GET.get("limit", "25")
+        try:
+            limit = min(int(limit_param), 50)
+        except (ValueError, TypeError):
+            limit = 25
+
+        results = CargoSearchService.search(
+            query=query,
+            category_code=category_code,
+            limit=limit,
+        )
+        return JsonResponse({"results": results})
+
+
+class CargoCatalogQuickCreateApiView(LoginRequiredMixin, View):
+    """AJAX API быстрого создания новой номенклатурной позиции в каталоге грузов."""
+
+    def post(self, request: HttpRequest) -> JsonResponse:
+        """Создает новую запись в CargoItemCatalog на лету из формы отправки.
+
+        Args:
+            request (HttpRequest): POST-запрос с полями name, category_code, part_number,
+                article, unit, weight_kg, specifications.
+
+        Returns:
+            JsonResponse: {"status": "success", "item": {...}} или {"status": "error", "message": "..."}.
+        """
+        import json
+
+        data = request.POST
+        if not data and request.body:
+            try:
+                data = json.loads(request.body.decode("utf-8"))
+            except Exception:
+                data = {}
+
+        name = data.get("name", "").strip()
+        category_code = data.get("category_code", "").strip() or "OTHER"
+        part_number = data.get("part_number", "").strip()
+        article = data.get("article", "").strip()
+        unit = data.get("unit", "").strip() or "шт."
+        weight_raw = data.get("weight_kg")
+        weight_kg = None
+        if weight_raw:
+            try:
+                weight_kg = Decimal(str(weight_raw).replace(",", "."))
+            except Exception:
+                weight_kg = None
+
+        specs = data.get("specifications")
+        if isinstance(specs, str):
+            try:
+                specs = json.loads(specs)
+            except Exception:
+                specs = {}
+        elif not isinstance(specs, dict):
+            specs = {}
+
+        try:
+            item = CargoSearchService.quick_create(
+                name=name,
+                category_code=category_code,
+                part_number=part_number,
+                article=article,
+                unit=unit,
+                weight_kg=weight_kg,
+                specifications=specs,
+            )
+            serialized = CargoSearchService._serialize_catalog_item(item)
+            return JsonResponse({"status": "success", "item": serialized})
+        except Exception as exc:
+            logger.exception("Ошибка при быстром создании позиции в каталоге: %s", exc)
+            return JsonResponse({"status": "error", "message": str(exc)}, status=400)
+
+
+class CargoCategoriesListApiView(LoginRequiredMixin, View):
+    """AJAX API получения перечня доступных категорий грузов с их схемами полей."""
+
+    def get(self, request: HttpRequest) -> JsonResponse:
+        """Возвращает список активных категорий грузов и их полей спецификации.
+
+        Args:
+            request (HttpRequest): Запрос.
+
+        Returns:
+            JsonResponse: {"categories": [...]}.
+        """
+        categories = CargoCategory.objects.filter(is_active=True).order_by("sort_order", "name")
+        data = [
+            {
+                "code": cat.code,
+                "name": cat.name,
+                "icon": cat.icon,
+                "description": cat.description,
+                "fields_schema": cat.fields_schema,
+            }
+            for cat in categories
+        ]
+        return JsonResponse({"categories": data})

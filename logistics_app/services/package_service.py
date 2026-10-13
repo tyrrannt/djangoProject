@@ -274,6 +274,22 @@ class PackageService:
                 item.discrepancy_comment = comment
                 item.save(update_fields=["quantity_received", "item_status", "discrepancy_comment"])
 
+                # Синхронизация жизненного цикла инструмента ТО (ФАП-145) при успешной приемке
+                if (
+                    item.maintenance_equipment
+                    and status == PackageItem.ItemStatus.ACCEPTED
+                    and package.destination
+                ):
+                    eq = item.maintenance_equipment
+                    eq.production_place = package.destination
+                    eq.save(update_fields=["production_place", "updated_at"])
+                    logger.info(
+                        "Местонахождение инструмента ТО %s (S/N %s) обновлено на МПД %s",
+                        eq.name,
+                        eq.serial_number,
+                        package.destination.name,
+                    )
+
             # 2. Сохранение прикрепленных фотографий приемки
             if photos:
                 for photo_file in photos:

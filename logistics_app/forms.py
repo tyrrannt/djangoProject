@@ -8,8 +8,10 @@ from django.utils import timezone
 
 from administration_app.utils import make_custom_field
 from customers_app.models import Counteragent, DataBaseUser, Division
-from hrdepartment_app.models import PlaceProductionActivity
+from hrdepartment_app.models import MaintenanceEquipment, PlaceProductionActivity
 from logistics_app.models import (
+    CargoCategory,
+    CargoItemCatalog,
     DocFlowApprovalLog,
     DocFlowComment,
     DocFlowDocument,
@@ -326,7 +328,11 @@ class InternalPackageForm(forms.ModelForm):
 
 
 class PackageItemForm(forms.ModelForm):
-    """Форма позиции в описи вложения посылки."""
+    """Форма позиции в описи вложения посылки с поддержкой каталога грузов.
+
+    Позволяет связывать позиции описи с каталогом CargoItemCatalog, специнструментом
+    ТО MaintenanceEquipment или документами СЭД DocFlowDocument, либо вводить свободный текст.
+    """
 
     quantity_sent = forms.DecimalField(
         min_value=Decimal("0.01"),
@@ -340,10 +346,32 @@ class PackageItemForm(forms.ModelForm):
             "placeholder": "1",
         }),
     )
+    catalog_item = forms.ModelChoiceField(
+        queryset=CargoItemCatalog.objects.all(),
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+    maintenance_equipment = forms.ModelChoiceField(
+        queryset=MaintenanceEquipment.objects.all(),
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+    docflow_document = forms.ModelChoiceField(
+        queryset=DocFlowDocument.objects.all(),
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+    item_specs_raw = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+    )
 
     class Meta:
         model = PackageItem
         fields = [
+            "catalog_item",
+            "maintenance_equipment",
+            "docflow_document",
             "name",
             "part_number",
             "serial_number",
@@ -352,23 +380,61 @@ class PackageItemForm(forms.ModelForm):
             "sender_comment",
         ]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Наименование ТМЦ / запчасти / документа"}),
-            "part_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "P/N"}),
-            "serial_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "S/N"}),
-            "unit": forms.TextInput(attrs={"class": "form-control", "style": "max-width: 80px;", "placeholder": "шт."}),
-            "sender_comment": forms.TextInput(attrs={"class": "form-control", "placeholder": "Примечание"}),
+            "name": forms.TextInput(attrs={"class": "form-control item-name-input", "placeholder": "Наименование ТМЦ / запчасти / документа"}),
+            "part_number": forms.TextInput(attrs={"class": "form-control item-pn-input", "placeholder": "P/N"}),
+            "serial_number": forms.TextInput(attrs={"class": "form-control item-sn-input", "placeholder": "S/N"}),
+            "unit": forms.TextInput(attrs={"class": "form-control item-unit-input", "style": "max-width: 80px;", "placeholder": "шт."}),
+            "sender_comment": forms.TextInput(attrs={"class": "form-control item-comment-input", "placeholder": "Примечание"}),
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Инициализирует форму позиции описи с адаптивной стилизацией полей.
 
         Args:
-            *args (Any): Позиционные аргументы формы.
-            **kwargs (Any): Именованные аргументы формы.
+            *args (Any): Позиционные аргументы.
+            **kwargs (Any): Именованные аргументы.
         """
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             make_custom_field(field)
+        if self.instance and self.instance.pk and self.instance.item_specs:
+            import json
+            try:
+                self.initial["item_specs_raw"] = json.dumps(self.instance.item_specs, ensure_ascii=False)
+            except Exception:
+                pass
+
+    def clean(self) -> Dict[str, Any]:
+        """Обрабатывает и валидирует характеристики строки описи.
+
+        Returns:
+            Dict[str, Any]: Очищенные данные формы.
+        """
+        cleaned_data = super().clean()
+        specs_raw = cleaned_data.get("item_specs_raw")
+        if specs_raw:
+            import json
+            try:
+                cleaned_data["item_specs"] = json.loads(specs_raw)
+            except Exception:
+                cleaned_data["item_specs"] = {}
+        return cleaned_data
+
+    def save(self, commit: bool = True) -> PackageItem:
+        """Сохраняет позицию описи с сохранением JSON-спецификаций.
+
+        Args:
+            commit (bool): Флаг фиксации в БД. Defaults to True.
+
+        Returns:
+            PackageItem: Сохраненный объект позиции.
+        """
+        instance: PackageItem = super().save(commit=False)
+        if "item_specs" in self.cleaned_data:
+            instance.item_specs = self.cleaned_data["item_specs"]
+        if commit:
+            instance.save()
+        return instance
 
 
 PackageItemFormSet = inlineformset_factory(

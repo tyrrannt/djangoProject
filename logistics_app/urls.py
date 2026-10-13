@@ -8,6 +8,9 @@ from logistics_app.views import (
     WayBillUpdateView,
 )
 from logistics_app.views_shipment import (
+    CargoCatalogQuickCreateApiView,
+    CargoCatalogSearchApiView,
+    CargoCategoriesListApiView,
     PackageAttachTripView,
     PackageCreateView,
     PackageDetailView,
@@ -78,6 +81,9 @@ urlpatterns = [
     # Интерактивные AJAX API эндпоинты
     path("api/trips-for-destination/", TripsForDestinationApiView.as_view(), name="api_trips_for_destination"),
     path("api/packages-for-trip/", PackagesForTripApiView.as_view(), name="api_packages_for_trip"),
+    path("api/cargo-catalog/search/", CargoCatalogSearchApiView.as_view(), name="api_cargo_catalog_search"),
+    path("api/cargo-catalog/quick-create/", CargoCatalogQuickCreateApiView.as_view(), name="api_cargo_catalog_quick_create"),
+    path("api/cargo-categories/", CargoCategoriesListApiView.as_view(), name="api_cargo_categories_list"),
 
     # Электронный документооборот (СЭД)
     path("docflow/", DocFlowDocumentListView.as_view(), name="docflow_list"),

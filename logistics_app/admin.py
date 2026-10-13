@@ -3,6 +3,8 @@ from django.utils.html import format_html
 
 from administration_app.utils import format_name_initials
 from logistics_app.models import (
+    CargoCategory,
+    CargoItemCatalog,
     DocFlowApprovalLog,
     DocFlowComment,
     DocFlowDocument,
@@ -173,6 +175,7 @@ class PackageItemInline(TabularInline):
     extra = 1
     fields = (
         "item_order",
+        "catalog_item",
         "name",
         "part_number",
         "serial_number",
@@ -182,6 +185,7 @@ class PackageItemInline(TabularInline):
         "item_status",
         "discrepancy_comment",
     )
+    autocomplete_fields = ["catalog_item"]
 
 
 class PackageImageInline(TabularInline):
@@ -305,6 +309,50 @@ class PackageAdmin(ModelAdmin):
         return obj.get_urgency_display()
 
 
+@admin.register(CargoCategory)
+class CargoCategoryAdmin(ModelAdmin):
+    """Панель управления категориями номенклатуры грузов."""
+
+    list_display = (
+        "name",
+        "code",
+        "icon",
+        "sort_order",
+        "is_active",
+        "items_count_display",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("name", "code", "description")
+    ordering = ("sort_order", "name")
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    @display(description="Позиций в каталоге")
+    def items_count_display(self, obj: CargoCategory) -> int:
+        return obj.catalog_items.count()
+
+
+@admin.register(CargoItemCatalog)
+class CargoItemCatalogAdmin(ModelAdmin):
+    """Панель управления номенклатурным справочником грузов."""
+
+    list_display = (
+        "name",
+        "category",
+        "part_number",
+        "article",
+        "default_unit",
+        "default_weight_kg",
+        "is_reusable",
+        "created_at",
+    )
+    list_filter = ("category", "is_reusable")
+    search_fields = ("name", "part_number", "article")
+    autocomplete_fields = ["category", "linked_nomenclature"]
+    compressed_fields = True
+    warn_unsaved_form = True
+
+
 @admin.register(PackageItem)
 class PackageItemAdmin(ModelAdmin):
     """Панель управления позициями описей посылок."""
@@ -312,6 +360,7 @@ class PackageItemAdmin(ModelAdmin):
     list_display = (
         "package",
         "item_order",
+        "catalog_item",
         "name",
         "part_number",
         "serial_number",
@@ -320,9 +369,9 @@ class PackageItemAdmin(ModelAdmin):
         "unit",
         "item_status_badge",
     )
-    list_filter = ("item_status",)
+    list_filter = ("item_status", "catalog_item__category")
     search_fields = ("name", "part_number", "serial_number", "package__track_number")
-    autocomplete_fields = ["package"]
+    autocomplete_fields = ["package", "catalog_item"]
     compressed_fields = True
 
     @display(

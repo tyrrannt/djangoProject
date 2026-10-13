@@ -12,8 +12,10 @@ import datetime
 from django.urls import reverse
 
 from customers_app.models import DataBaseUser, Division
-from hrdepartment_app.models import PlaceProductionActivity
+from hrdepartment_app.models import MaintenanceEquipment, PlaceProductionActivity
 from logistics_app.models import (
+    CargoCategory,
+    CargoItemCatalog,
     DocFlowApprovalLog,
     DocFlowDocument,
     DocFlowDocumentType,
@@ -40,6 +42,7 @@ from logistics_app.forms import (
     PackageItemFormSet,
 )
 from logistics_app.services import (
+    CargoSearchService,
     PackageService,
     PackageSheetGenerator,
     ShipmentTripService,
@@ -913,5 +916,181 @@ class ShipmentServicesTestCase(TestCase):
         item2 = created_pkg.items.get(name="Смазка литиевая")
         self.assertEqual(item2.quantity_sent, Decimal("1.5"))
         self.assertEqual(item2.unit, "кг")
+
+
+class CargoCatalogTestCase(TestCase):
+    """Набор тестов для проверки универсального каталога грузов и связанных сервисов."""
+
+    def setUp(self) -> None:
+        """Подготовка тестовых данных."""
+        self.user = DataBaseUser.objects.create_user(
+            username="dispatcher_user",
+            password="testpassword",
+            first_name="Алексей",
+            last_name="Логистов",
+            title="Логистов Алексей",
+        )
+        self.client.force_login(self.user)
+
+        self.mpd_moscow = PlaceProductionActivity.objects.create(name="База Москва")
+        self.mpd_surgut = PlaceProductionActivity.objects.create(name="МПД Сургут")
+
+        # Получаем категории (созданные миграцией 0025)
+        self.cat_doc = CargoCategory.objects.get_or_create(
+            code=CargoCategory.Code.DOCUMENT,
+            defaults={"name": "Документы и корреспонденция", "icon": "bx-file"},
+        )[0]
+        self.cat_part = CargoCategory.objects.get_or_create(
+            code=CargoCategory.Code.AIRCRAFT_PART,
+            defaults={"name": "Авиационные детали и АТИ", "icon": "bx-paper-plane"},
+        )[0]
+        self.cat_tool = CargoCategory.objects.get_or_create(
+            code=CargoCategory.Code.TOOL_EQUIPMENT,
+            defaults={"name": "Специнструмент и КПА (ФАП-145)", "icon": "bx-wrench"},
+        )[0]
+
+        # Создаем тестовую позицию в каталоге
+        self.catalog_shaft = CargoItemCatalog.objects.create(
+            category=self.cat_part,
+            name="Вал привода насоса",
+            part_number="8-1930-00",
+            article="АРТ-4819",
+            default_unit="шт.",
+            default_weight_kg=Decimal("4.500"),
+            specifications={"grade": "1-я категория (Новое)", "aircraft_type": "Ми-8Т"},
+        )
+
+        # Создаем тестовый специнструмент ТО
+        self.equipment = MaintenanceEquipment.objects.create(
+            name="Мегаомметр М4100/3",
+            part_number="М4100-3",
+            serial_number="EQ-8891",
+            marking_code="ТО-042",
+            production_place=self.mpd_moscow,
+            next_verification_date=timezone.now().date() + datetime.timedelta(days=90),
+        )
+
+        # Создаем тестовый документ СЭД
+        self.doc_type = DocFlowDocumentType.objects.create(name="Договор подряда", code="CONTRACT")
+        self.docflow = DocFlowDocument.objects.create(
+            doc_type=self.doc_type,
+            reg_number="ДОГ-2026/01",
+            title="Договор поставки оборудования",
+            initiator=self.user,
+            responsible=self.user,
+        )
+
+    def test_cargo_search_service(self) -> None:
+        """Проверяет сквозной поиск по мастер-каталогу, специнструменту и документам СЭД."""
+        # 1. Поиск по чертежному номеру детали
+        res_part = CargoSearchService.search("8-1930")
+        self.assertTrue(any(r["part_number"] == "8-1930-00" for r in res_part))
+
+        # 2. Поиск по специнструменту
+        res_tool = CargoSearchService.search("EQ-8891")
+        self.assertTrue(any(r["source"] == "EQUIPMENT" and r["serial_number"] == "EQ-8891" for r in res_tool))
+
+        # 3. Поиск по СЭД
+        res_doc = CargoSearchService.search("ДОГ-2026")
+        self.assertTrue(any(r["source"] == "DOCFLOW" for r in res_doc))
+
+    def test_quick_create_and_api(self) -> None:
+        """Проверяет быстрое создание номенклатуры через сервис и AJAX API."""
+        item = CargoSearchService.quick_create(
+            name="Кран сливной",
+            category_code=CargoCategory.Code.AIRCRAFT_PART,
+            part_number="6300-10",
+            unit="шт.",
+        )
+        self.assertEqual(item.name, "Кран сливной")
+        self.assertEqual(item.category.code, CargoCategory.Code.AIRCRAFT_PART)
+
+        # Тест AJAX POST api_cargo_catalog_quick_create
+        resp = self.client.post(reverse("logistics_app:api_cargo_catalog_quick_create"), {
+            "name": "Тройник дюритовый",
+            "category_code": CargoCategory.Code.AIRCRAFT_PART,
+            "part_number": "TR-05",
+            "unit": "шт.",
+        })
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(data["item"]["name"], "Тройник дюритовый")
+
+        # Тест AJAX GET api_cargo_categories_list
+        resp_cats = self.client.get(reverse("logistics_app:api_cargo_categories_list"))
+        self.assertEqual(resp_cats.status_code, 200)
+        self.assertTrue(len(resp_cats.json()["categories"]) >= 3)
+
+    def test_equipment_lifecycle_sync_on_receive(self) -> None:
+        """Проверяет синхронизацию местоположения инструмента ТО при приемке посылки на МПД."""
+        pkg = Package.objects.create(
+            sender=self.user,
+            origin=self.mpd_moscow,
+            destination=self.mpd_surgut,
+            status=Package.Status.IN_TRANSIT,
+        )
+
+        item = PackageItem.objects.create(
+            package=pkg,
+            maintenance_equipment=self.equipment,
+            name=self.equipment.name,
+            part_number=self.equipment.part_number,
+            serial_number=self.equipment.serial_number,
+            quantity_sent=Decimal("1"),
+            unit="шт.",
+        )
+
+        # Исходное местоположение инструмента - Москва
+        self.assertEqual(self.equipment.production_place, self.mpd_moscow)
+
+        # Приемка посылки на МПД Сургут
+        items_reception = [{
+            "id": item.id,
+            "quantity_received": "1",
+            "item_status": PackageItem.ItemStatus.ACCEPTED,
+        }]
+
+        received_pkg = PackageService.receive_package_on_mpd(
+            package=pkg,
+            user=self.user,
+            items_reception=items_reception,
+        )
+        self.assertEqual(received_pkg.status, Package.Status.RECEIVED_FULL)
+
+        # Проверяем, что в MaintenanceEquipment местонахождение автоматически сменилось на Сургут
+        self.equipment.refresh_from_db()
+        self.assertEqual(self.equipment.production_place, self.mpd_surgut)
+
+    def test_package_item_summary_and_pdf(self) -> None:
+        """Проверяет формирование summary_display и генерацию описи вложения PDF."""
+        pkg = Package.objects.create(
+            sender=self.user,
+            destination=self.mpd_surgut,
+        )
+
+        item = PackageItem.objects.create(
+            package=pkg,
+            catalog_item=self.catalog_shaft,
+            name=self.catalog_shaft.name,
+            part_number=self.catalog_shaft.part_number,
+            serial_number="SN-771",
+            quantity_sent=Decimal("1"),
+            unit="шт.",
+            item_specs={"grade": "1-я категория", "doc_number": "14-25"},
+        )
+
+        # Проверяем информативный summary_display
+        summary = item.summary_display
+        self.assertIn("Вал привода насоса", summary)
+        self.assertIn("P/N: 8-1930-00", summary)
+        self.assertIn("S/N: SN-771", summary)
+        self.assertIn("1-я категория", summary)
+
+        # Проверяем генерацию PDF
+        pdf_bytes = PackageSheetGenerator.generate_pdf(pkg)
+        self.assertTrue(len(pdf_bytes) > 1000)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
 
 
