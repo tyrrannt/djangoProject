@@ -448,36 +448,66 @@ class MemoNotificationService:
             logger.warning("[MemoNotify:ORDER] Приказ не привязан к процессу ID=%d", process.pk)
             return False
 
-        # Генерация документа во временную директорию
-        xlsx_path, pdf_path = cls._generate_memo_documents(process)
+        is_extension = str(getattr(doc, "official_memo_type", "1")) == "2"
 
-        # Выбираем результирующий файл вложения (предпочтительно PDF, с откатом на XLSX)
-        attachment_path = pdf_path if (pdf_path and os.path.exists(pdf_path)) else xlsx_path
+        xlsx_path, pdf_path = None, None
+        attachment_path = None
         attachment_bytes = None
-        attachment_filename = f"Служебное_задание_Приказ_{order.document_number}.pdf" if (pdf_path and os.path.exists(pdf_path)) else f"Служебное_задание_{order.document_number}.xlsx"
+        attachment_filename = None
 
-        if attachment_path and os.path.exists(attachment_path):
-            with open(attachment_path, "rb") as f:
-                attachment_bytes = f.read()
+        if not is_extension:
+            # Генерация документа во временную директорию только для первичного направления
+            xlsx_path, pdf_path = cls._generate_memo_documents(process)
 
-        logger.info(
-            f"[MemoNotify:OrderIssued] Для процесса ID={process.pk} выбран файл вложения: {attachment_filename} "
-            f"(путь: {attachment_path}, размер: {len(attachment_bytes) if attachment_bytes else 0} байт)"
-        )
+            # Выбираем результирующий файл вложения (предпочтительно PDF, с откатом на XLSX)
+            attachment_path = pdf_path if (pdf_path and os.path.exists(pdf_path)) else xlsx_path
+            attachment_filename = (
+                f"Служебное_задание_Приказ_{order.document_number}.pdf"
+                if (pdf_path and os.path.exists(pdf_path))
+                else f"Служебное_задание_{order.document_number}.xlsx"
+            )
+
+            if attachment_path and os.path.exists(attachment_path):
+                with open(attachment_path, "rb") as f:
+                    attachment_bytes = f.read()
+
+            logger.info(
+                f"[MemoNotify:OrderIssued] Для процесса ID={process.pk} выбран файл вложения: {attachment_filename} "
+                f"(путь: {attachment_path}, размер: {len(attachment_bytes) if attachment_bytes else 0} байт)"
+            )
+        else:
+            logger.info(
+                f"[MemoNotify:OrderIssued] Процесс ID={process.pk} является продлением (official_memo_type='2'). "
+                f"Формирование и отправка нового файла служебного задания пропущены (действует исходное задание)."
+            )
 
         # Формирование контекста письма
         delta = doc.period_for - doc.period_from
         places = [p.name for p in doc.place_production_activity.all()]
         type_trip_title = "поездку" if doc.type_trip == "1" else "командировку"
+        type_trip_second = "поездки" if doc.type_trip == "1" else "командировки"
+
+        if is_extension:
+            type_trip_text = f"Вам продлена служебная {type_trip_title}"
+            type_trip_variant = f"продлении служебной {type_trip_second}"
+            type_trip_variant_second = f"продление служебной {type_trip_second}"
+            subject_mail = f"Продление служебной {type_trip_second}. Приказ № {order.document_number}"
+            type_trip_extension = "Обратите внимание: служебное задание остаётся прежним, повторное оформление файла не требуется."
+        else:
+            type_trip_text = f"Вы направляетесь в служебную {type_trip_title}"
+            type_trip_variant = f"направлении в служебную {type_trip_title}"
+            type_trip_variant_second = f"направление в служебную {type_trip_title}"
+            subject_mail = f"Направление в служебную {type_trip_title}. Приказ № {order.document_number}"
+            type_trip_extension = ""
 
         email_context = {
             "greetings": "Уважаемый" if person.gender == "male" else "Уважаемая",
             "person": str(person),
             "place": ", ".join(places),
-            "type_trip": f"Вы направляетесь в служебную {type_trip_title}",
-            "type_trip_variant": f"направлении в служебную {type_trip_title}",
-            "type_trip_variant_second": f"направление в служебную {type_trip_title}",
-            "type_trip_second": "поездки" if doc.type_trip == "1" else "командировки",
+            "type_trip": type_trip_text,
+            "type_trip_variant": type_trip_variant,
+            "type_trip_variant_second": type_trip_variant_second,
+            "type_trip_second": type_trip_second,
             "purpose_trip": str(doc.purpose_trip),
             "order_number": str(order.document_number),
             "order_date": order.document_date.strftime("%d.%m.%Y"),
@@ -489,18 +519,21 @@ class MemoNotificationService:
             "mail_to_copy": str(executor.email if executor else ""),
             "person_distributor": format_name_initials(process.person_distributor) if process.person_distributor else "",
             "Year": str(datetime.datetime.today().year),
-            "type_trip_extension": "",
+            "type_trip_extension": type_trip_extension,
         }
 
         html_content = render_to_string("hrdepartment_app/email_template.html", email_context)
-        subject_mail = f"Направление в служебную {type_trip_title}. Приказ № {order.document_number}"
 
         attachments_payload = None
-        if attachment_bytes:
+        if attachment_bytes and attachment_filename:
             attachments_payload = [{
                 "filename": attachment_filename,
                 "content": attachment_bytes,
-                "mimetype": "application/pdf" if attachment_filename.endswith(".pdf") else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "mimetype": (
+                    "application/pdf"
+                    if attachment_filename.endswith(".pdf")
+                    else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ),
             }]
 
         target_mode = (extra_context or {}).get("target_mode")
@@ -541,16 +574,26 @@ class MemoNotificationService:
         # Только при первичном издании приказа (target_mode is None) или при повторном уведомлении сотруднику ('employee')
         send_tg_to_employee = target_mode in (None, "employee")
         if send_tg_to_employee and person.telegram_id and cls.is_telegram_memo_notifications_enabled(person.telegram_id):
-            tg_text = (
-                f"✈️ <b>Вам оформлена служебная {type_trip_title}!</b>\n\n"
-                f"Приказ: <b>№ {order.document_number} от {order.document_date.strftime('%d.%m.%Y')}</b>\n"
-                f"Место: {', '.join(places)}\n"
-                f"Сроки: {doc.period_from.strftime('%d.%m.%Y')} — {doc.period_for.strftime('%d.%m.%Y')}\n"
-                f"Проживание: {email_context['accommodation']}\n"
-            )
+            if is_extension:
+                tg_text = (
+                    f"🔄 <b>Вам продлена служебная {type_trip_title}!</b>\n\n"
+                    f"Приказ: <b>№ {order.document_number} от {order.document_date.strftime('%d.%m.%Y')}</b>\n"
+                    f"Место: {', '.join(places)}\n"
+                    f"Новый срок: {doc.period_from.strftime('%d.%m.%Y')} — {doc.period_for.strftime('%d.%m.%Y')}\n"
+                    f"Проживание: {email_context['accommodation']}\n\n"
+                    f"ℹ️ <i>Служебное задание остаётся прежним, повторное оформление файла не требуется.</i>"
+                )
+            else:
+                tg_text = (
+                    f"✈️ <b>Вам оформлена служебная {type_trip_title}!</b>\n\n"
+                    f"Приказ: <b>№ {order.document_number} от {order.document_date.strftime('%d.%m.%Y')}</b>\n"
+                    f"Место: {', '.join(places)}\n"
+                    f"Сроки: {doc.period_from.strftime('%d.%m.%Y')} — {doc.period_for.strftime('%d.%m.%Y')}\n"
+                    f"Проживание: {email_context['accommodation']}\n"
+                )
             UniversalTelegramService.send_message_sync(chat_id=person.telegram_id, text=tg_text)
 
-            if attachment_path and os.path.exists(attachment_path):
+            if not is_extension and attachment_path and os.path.exists(attachment_path):
                 UniversalTelegramService.send_document_sync(
                     chat_id=person.telegram_id,
                     document_path=attachment_path,
@@ -779,6 +822,14 @@ class MemoNotificationService:
         person = doc.person
         order = process.order
 
+        memo_type_str = str(getattr(doc, "official_memo_type", "1"))
+        if memo_type_str != "1":
+            logger.info(
+                f"[MemoNotify:DocGen] Для СЗ ID={process.pk} с типом official_memo_type='{memo_type_str}' "
+                f"генерация печатных форм служебного задания не требуется (действует первичное задание)."
+            )
+            return None, None
+
         # Определение шаблона
         division_affil_pk = getattr(
             getattr(getattr(person, "user_work_profile", None), "job", None),
@@ -841,7 +892,7 @@ class MemoNotificationService:
 
         file_name = None
         memo_type_str = str(getattr(doc, "official_memo_type", "1"))
-        if memo_type_str in ("1", "2"):
+        if memo_type_str == "1":
             output_dir = str(pathlib.Path.joinpath(settings.BASE_DIR, "media"))
 
             soffice_bin = cls._find_soffice_binary()

@@ -320,6 +320,55 @@ class MemoNotificationServiceTests(SimpleTestCase):
             force=True,
         )
 
+    @patch("hrdepartment_app.models.ApprovalOficialMemoProcess.objects.filter")
+    @patch("hrdepartment_app.services.memo_notification_service.MemoNotificationService.is_telegram_memo_notifications_enabled", return_value=True)
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalTelegramService.send_document_sync")
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalTelegramService.send_message_sync")
+    @patch("hrdepartment_app.services.memo_notification_service.UniversalEmailService.send_async_email")
+    def test_notify_order_issued_extension_no_document_generation(
+        self, mock_email, mock_tg_msg, mock_tg_doc, mock_pref, mock_filter
+    ):
+        """Проверяет, что при продлении (official_memo_type='2') файл не генерируется и не прикрепляется."""
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+        from unittest.mock import patch
+
+        mock_filter.return_value.update.return_value = 1
+        process = self._create_mock_order_process()
+        process.document.official_memo_type = "2"  # Продление
+
+        with patch.object(MemoNotificationService, "_generate_memo_documents") as mock_gen:
+            res = MemoNotificationService._notify_order_issued(process, extra_context=None)
+            self.assertTrue(res)
+            mock_gen.assert_not_called()
+
+            # Email отправлен без вложений
+            mock_email.assert_called_once()
+            call_kwargs = mock_email.call_args[1]
+            self.assertIsNone(call_kwargs["attachments"])
+            self.assertIn("Продление", call_kwargs["subject"])
+            self.assertIn("Вам продлена служебная", call_kwargs["html_message"])
+            self.assertIn("служебное задание остаётся прежним", call_kwargs["html_message"])
+
+            # В Telegram отправлено только сообщение, документ не отправлялся
+            mock_tg_msg.assert_called_once()
+            tg_text = mock_tg_msg.call_args[1]["text"]
+            self.assertIn("Вам продлена служебная", tg_text)
+            self.assertIn("Служебное задание остаётся прежним", tg_text)
+            mock_tg_doc.assert_not_called()
+
+    def test_generate_memo_documents_skips_extension(self):
+        """Проверяет, что метод _generate_memo_documents возвращает (None, None) для продлений."""
+        from hrdepartment_app.services.memo_notification_service import MemoNotificationService
+        from unittest.mock import MagicMock
+
+        mock_process = MagicMock()
+        mock_process.pk = 77
+        mock_process.document.official_memo_type = "2"
+
+        xlsx_path, pdf_path = MemoNotificationService._generate_memo_documents(mock_process)
+        self.assertIsNone(xlsx_path)
+        self.assertIsNone(pdf_path)
+
     def test_approval_process_initial_state_tracking(self):
         """Проверяет корректность фиксации исходного состояния в _initial_state."""
         from hrdepartment_app.models import ApprovalOficialMemoProcess
