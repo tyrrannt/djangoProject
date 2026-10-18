@@ -377,3 +377,82 @@ class EquipmentExportExcelTests(TestCase):
         self.assertEqual(ws.cell(row=8, column=8).value, "0 - 10А")
         self.assertEqual(ws.cell(row=8, column=9).value, "1,5")
         wb.close()
+
+    def test_export_handles_missing_attributes_gracefully(self) -> None:
+        """Проверяет отказоустойчивость сервиса экспорта при отсутствии атрибутов measurement_range/accuracy_class.
+
+        Имитирует ситуацию устаревшей модели в памяти или отсутствия свойства на экземпляре MaintenanceEquipment,
+        гарантируя отсутствие исключения AttributeError и корректное получение значений из type_model.
+        """
+        # Создаем класс-обертку без свойств measurement_range и accuracy_class
+        class MockLegacyEquipment:
+            def __init__(self, original: MaintenanceEquipment) -> None:
+                self._orig = original
+                self.pk = original.pk
+                self.name = original.name
+                self.type_model = original.type_model
+                self.part_number = original.part_number
+                self.serial_number = original.serial_number
+                self.marking_code = original.marking_code
+                self.production_place = original.production_place
+                self.location = original.location
+                self.interval_value = original.interval_value
+                self.last_verification_date = original.last_verification_date
+                self.next_verification_date = original.next_verification_date
+                self.operational_status = original.operational_status
+                self.metrology_status = original.metrology_status
+                self.days_until_verification = original.days_until_verification
+                self.arshin_verification_number = original.arshin_verification_number
+                self.verification_organization = original.verification_organization
+                self.responsible_person = original.responsible_person
+                self.notes = original.notes
+                self.applicable_aircraft_types = original.applicable_aircraft_types
+
+            def get_equipment_type_display(self) -> str:
+                return self._orig.get_equipment_type_display()
+
+            def get_verification_type_display(self) -> str:
+                return self._orig.get_verification_type_display()
+
+            def get_operational_status_display(self) -> str:
+                return self._orig.get_operational_status_display()
+
+        class MockQuerySet:
+            def __init__(self, items: list) -> None:
+                self._items = items
+
+            def count(self) -> int:
+                return len(self._items)
+
+            def select_related(self, *args: Any, **kwargs: Any) -> "MockQuerySet":
+                return self
+
+            def prefetch_related(self, *args: Any, **kwargs: Any) -> "MockQuerySet":
+                return self
+
+            def __iter__(self):
+                return iter(self._items)
+
+        mock_legacy = MockLegacyEquipment(self.eq_valid)
+        self.assertFalse(hasattr(mock_legacy, "measurement_range"))
+        self.assertFalse(hasattr(mock_legacy, "accuracy_class"))
+
+        mock_qs = MockQuerySet([mock_legacy])
+        response = export_maintenance_equipment_to_excel(
+            queryset=mock_qs,  # type: ignore[arg-type]
+            filters_summary="Тест обратной совместимости",
+            generated_by="Тестировщик",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+        wb = openpyxl.load_workbook(io.BytesIO(response.content))
+        ws = wb.active
+        # Проверяем, что значение диапазона и класса точности получено через fallback на type_model
+        self.assertEqual(ws.cell(row=8, column=8).value, "0 - 10А")
+        self.assertEqual(ws.cell(row=8, column=9).value, "1,5")
+        wb.close()
