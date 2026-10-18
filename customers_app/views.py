@@ -371,7 +371,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         else:
             context['birthday_difference'] = None
 
-        if hasattr(user_obj, 'user_work_profile') and user_obj.user_work_profile and user_obj.user_work_profile.date_of_employment:
+        if hasattr(user_obj,
+                   'user_work_profile') and user_obj.user_work_profile and user_obj.user_work_profile.date_of_employment:
             context['employment_difference'] = get_today_data_delta(user_obj.user_work_profile.date_of_employment, 0)
         else:
             context['employment_difference'] = None
@@ -1525,8 +1526,10 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False).exclude(
-            is_ppa=True)
+        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_ppa=True)
+        # Если не суперадмин — исключаем неактивных
+        if not self.request.user.is_superuser:
+            qs = qs.exclude(is_active=False)
         return qs
 
     def get(self, request, *args, **kwargs):
@@ -1565,8 +1568,16 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(
-                is_active=False).exclude(is_ppa=True)
+            baseusers = (
+                DataBaseUser.objects.all()
+                .order_by('last_name')
+                .exclude(username='proxmox')
+                .exclude(is_ppa=True)
+            )
+            # Добавляем такую же проверку для JSON / AJAX ответа:
+            if not request.user.is_superuser:
+                baseusers = baseusers.exclude(is_active=False)
+
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
             return JsonResponse(response)
@@ -2258,12 +2269,12 @@ def generate_employee_file(request, pk: int) -> HttpResponse:
 
     # Проверка прав доступа: суперпользователь, сотрудники группы password/ИТ или просмотр собственной памятки
     is_allowed = (
-        request.user.is_superuser
-        or request.user.is_staff
-        or request.user.pk == db_user.pk
-        or request.user.groups.filter(
-            name__in=["password", "Администраторы почты", "ИТ", "IT"]
-        ).exists()
+            request.user.is_superuser
+            or request.user.is_staff
+            or request.user.pk == db_user.pk
+            or request.user.groups.filter(
+        name__in=["password", "Администраторы почты", "ИТ", "IT"]
+    ).exists()
     )
     if not is_allowed:
         raise PermissionDenied("У вас нет прав для просмотра учетных данных сотрудника.")
@@ -2393,6 +2404,7 @@ def inactive_users_report(request):
         })
 
     return render(request, 'customers_app/inactive_users.html', {'report': dict(report_data)})
+
 
 class ApartmentsUsageReportView(TemplateView):
     """
@@ -2735,6 +2747,7 @@ def _export_report_csv(apartments_data, date_start, date_end):
 
     return response
 
+
 ############## Согласия на ПНД и БД #############################
 
 class BiometricConsentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -2806,7 +2819,6 @@ class BiometricConsentDetailView(LoginRequiredMixin, PermissionRequiredMixin, De
         return context
 
 
-
 class GenerateConsentDocumentView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'customers_app.view_biometricconsent'
 
@@ -2843,6 +2855,7 @@ class GenerateConsentDocumentView(LoginRequiredMixin, PermissionRequiredMixin, V
         except Exception as e:
             messages.error(request, f'Ошибка при генерации документа: {str(e)}')
             return redirect('biometric_consent:detail', pk=consent.pk)
+
 
 class BiometricConsentCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """
@@ -3119,4 +3132,3 @@ class ApartmentOccupancyReportView(LoginRequiredMixin, TemplateView):
 class DataBaseUserViewSet(viewsets.ModelViewSet):
     queryset = DataBaseUser.objects.all()
     serializer_class = DataBaseUserSerializer
-
