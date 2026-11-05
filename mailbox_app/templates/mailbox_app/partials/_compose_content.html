@@ -196,6 +196,40 @@
                 </div>
             </div>
 
+            <!-- Скрытые поля пересылки письма -->
+            {{ form.forward_uid }}
+            {{ form.forward_folder }}
+
+            <!-- Вложения из пересылаемого письма -->
+            {% if forward_attachments %}
+            <div class="mail-forward-attachments-card p-3 bg-light rounded border border-primary border-opacity-25 mb-4" id="forwardAttachmentsBlock">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <label class="font-weight-semibold text-dark m-0 d-flex align-items-center gap-1 font-size-14">
+                        <i class="bx bx-share text-primary font-size-18"></i> Вложения из пересылаемого письма (<span id="forwardAttachmentsCount">{{ forward_attachments|length }}</span>)
+                    </label>
+                    <small class="text-muted font-size-12">Будут отправлены вместе с письмом. Нажмите <i class="bx bx-x text-danger"></i>, чтобы исключить файл</small>
+                </div>
+                <div class="d-flex flex-wrap gap-2" id="forwardAttachmentsList">
+                    {% for att in forward_attachments %}
+                        <div class="badge bg-white text-dark border p-2 d-inline-flex align-items-center gap-2 shadow-sm font-size-13 forward-attachment-chip" id="forward_att_{{ att.part_index }}" style="border-radius: 6px;">
+                            <input type="hidden" name="forward_parts" value="{{ att.part_index }}">
+                            <i class="{{ att.file_icon|default:'bx bx-file text-primary font-size-16' }}"></i>
+                            <span class="text-truncate" style="max-width: 220px;" title="{{ att.filename }}">{{ att.filename }}</span>
+                            <span class="text-muted font-size-11">({{ att.size_human }})</span>
+                            {% if att.risk_badge_class %}
+                                <span class="{{ att.risk_badge_class }} font-size-10 py-0 px-1" title="{{ att.risk_tooltip }}">
+                                    <i class="{{ att.risk_icon }} font-size-10"></i> {{ att.ext_label }}
+                                </span>
+                            {% endif %}
+                            <button type="button" class="btn-close ms-1 font-size-10 btn-remove-forward-att" 
+                                    onclick="removeForwardAttachment('forward_att_{{ att.part_index }}')" 
+                                    style="width: 8px; height: 8px;" title="Исключить из пересылки" aria-label="Исключить"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Вложения файлов с Drag & Drop -->
             <div class="mail-attachments-card p-3 bg-light rounded border mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">

@@ -1117,6 +1117,74 @@ class ImapMailService:
 
         return None
 
+    def download_multiple_attachments(
+        self, folder_name: str, uid: int, part_indices: List[int]
+    ) -> List[Tuple[str, str, bytes]]:
+        """Извлекает несколько бинарных вложений из сообщения за один сетевой запрос к IMAP.
+
+        Args:
+            folder_name (str): Папка письма.
+            uid (int): Идентификатор сообщения.
+            part_indices (List[int]): Список порядковых индексов частей письма.
+
+        Returns:
+            List[Tuple[str, str, bytes]]: Список кортежей (filename, content_type, payload_bytes).
+        """
+        if not self.client or not part_indices:
+            return []
+
+        target_set = set(part_indices)
+        status, _ = self.client.select(f'"{folder_name}"', readonly=True)
+        if status != "OK":
+            return []
+
+        fetch_queries = ["(RFC822)", "(BODY.PEEK[])", "(BODY[])"]
+        data = None
+        for q in fetch_queries:
+            status, res_data = self.client.uid("fetch", str(uid), q)
+            if status == "OK" and res_data and res_data != [None]:
+                if any(isinstance(x, tuple) and len(x) >= 2 for x in res_data):
+                    data = res_data
+                    break
+
+        if not data:
+            return []
+
+        raw_email = None
+        for response_part in data:
+            if isinstance(response_part, tuple) and len(response_part) > 1:
+                raw_email = response_part[1]
+                break
+
+        if not raw_email:
+            return []
+
+        msg = email.message_from_bytes(raw_email)
+        results: List[Tuple[str, str, bytes]] = []
+
+        if msg.is_multipart():
+            for current_idx, part in enumerate(msg.walk()):
+                if current_idx in target_set:
+                    content_type = part.get_content_type()
+                    filename = decode_str(part.get_filename())
+                    if not filename:
+                        ext = content_type.split("/")[-1] if "/" in content_type else "dat"
+                        filename = f"attachment_{current_idx}.{ext}"
+                    payload = part.get_payload(decode=True)
+                    if payload is not None:
+                        results.append((filename, content_type, payload))
+        elif 0 in target_set:
+            content_type = msg.get_content_type()
+            filename = decode_str(msg.get_filename())
+            if not filename:
+                ext = content_type.split("/")[-1] if "/" in content_type else "dat"
+                filename = f"attachment_0.{ext}"
+            payload = msg.get_payload(decode=True)
+            if payload is not None:
+                results.append((filename, content_type, payload))
+
+        return results
+
     def toggle_flag(self, folder_name: str, uid: int, flag_name: str = "\\Flagged") -> bool:
         """Переключает флаг письма (например, важность) по UID.
 

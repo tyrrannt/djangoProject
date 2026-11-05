@@ -22,6 +22,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_sameorigin
@@ -802,6 +803,8 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
                             initial["subject"] = orig_subj if orig_subj.startswith("Re:") else f"Re: {orig_subj}"
                             initial["body_html"] = f"{default_paragraph}{signature}<br><br>{quote_block}"
                         elif forward_uid:
+                            initial["forward_uid"] = forward_uid
+                            initial["forward_folder"] = folder
                             initial["subject"] = orig_subj if orig_subj.startswith("Fwd:") else f"Fwd: {orig_subj}"
                             initial["body_html"] = f"{default_paragraph}{signature}<br><br>{quote_block}"
             except Exception as e:
@@ -821,9 +824,20 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
         context = super().get_context_data(**kwargs)
         account = self.get_account()
         folders = []
+        forward_attachments = []
+        forward_uid = self.request.GET.get("forward_uid") or self.request.POST.get("forward_uid") or ""
+        forward_folder = self.request.GET.get("folder") or self.request.POST.get("forward_folder") or "INBOX"
+
         try:
             with self.get_imap_service(account) as imap_svc:
                 folders = imap_svc.get_folders()
+                if forward_uid and str(forward_uid).isdigit():
+                    try:
+                        original_mail = imap_svc.get_message_detail(forward_folder, int(forward_uid))
+                        if original_mail:
+                            forward_attachments = original_mail.get("attachments", [])
+                    except Exception as fwd_err:
+                        logger.warning(f"[Mailbox] Ошибка загрузки вложений пересылаемого письма: {fwd_err}")
         except Exception:
             pass
 
@@ -851,6 +865,9 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
             "current_folder": "compose",
             "scheduled_count": self.get_scheduled_count(),
             "draft_uid": self.request.GET.get("draft_uid", ""),
+            "forward_uid": forward_uid if (forward_uid and str(forward_uid).isdigit()) else "",
+            "forward_folder": forward_folder,
+            "forward_attachments": forward_attachments,
             "mail_templates": templates,
             "mail_templates_json": json.dumps(templates),
             "corporate_signature": corp_sig,
@@ -876,12 +893,40 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
         send_mode = form.cleaned_data.get("send_mode") or "now"
         scheduled_at = form.cleaned_data.get("scheduled_at")
         draft_uid_val = self.request.POST.get("draft_uid")
+        forward_uid_val = form.cleaned_data.get("forward_uid") or self.request.POST.get("forward_uid")
+        forward_folder_val = form.cleaned_data.get("forward_folder") or self.request.POST.get("forward_folder") or "INBOX"
+        forward_parts_raw = self.request.POST.getlist("forward_parts")
+
+        # Извлечение пересылаемых вложений из оригинального письма на IMAP
+        forwarded_attachments = []
+        if forward_uid_val and str(forward_uid_val).isdigit() and forward_parts_raw:
+            part_indices = [int(p) for p in forward_parts_raw if str(p).isdigit()]
+            if part_indices:
+                try:
+                    with self.get_imap_service(account) as imap_svc:
+                        forwarded_attachments = imap_svc.download_multiple_attachments(
+                            forward_folder_val, int(forward_uid_val), part_indices
+                        )
+                except Exception as fwd_dl_err:
+                    logger.warning(
+                        f"[Mailbox] Не удалось выгрузить вложения пересылаемого письма UID {forward_uid_val}: {fwd_dl_err}"
+                    )
 
         # Если выбрана отправка по расписанию
         if send_mode == "scheduled" and scheduled_at:
             from mailbox_app.services.scheduled_mail_service import create_scheduled_email
 
-            uploaded_files = self.request.FILES.getlist("attachments")
+            uploaded_files = list(self.request.FILES.getlist("attachments"))
+            for fname, ctype, payload in forwarded_attachments:
+                if payload is not None:
+                    uploaded_files.append(
+                        SimpleUploadedFile(
+                            name=fname,
+                            content=payload,
+                            content_type=ctype or "application/octet-stream",
+                        )
+                    )
+
             try:
                 scheduled_email = create_scheduled_email(
                     user=self.request.user,
@@ -919,9 +964,9 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
         cc_list = [addr.strip() for addr in cc_raw.replace(";", ",").split(",") if addr.strip()] if cc_raw else []
         bcc_list = [addr.strip() for addr in bcc_raw.replace(";", ",").split(",") if addr.strip()] if bcc_raw else []
 
-        # Обработка файлов вложений
+        # Обработка файлов вложений (пересылаемые + новые загруженные)
         uploaded_files = self.request.FILES.getlist("attachments")
-        attachments = []
+        attachments = list(forwarded_attachments)
         for f in uploaded_files:
             attachments.append((f.name, f.content_type, f.read()))
 

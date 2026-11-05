@@ -105,6 +105,14 @@ class MailComposeForm(forms.Form):
             "%d.%m.%Y %H:%M",
         ],
     )
+    forward_uid = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "mailForwardUid"}),
+    )
+    forward_folder = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "mailForwardFolder"}),
+    )
 
     def clean(self):
         """Выполняет кросс-валидацию полей формы с проверкой времени отправки.
