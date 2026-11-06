@@ -146,6 +146,8 @@ class SmtpMailService:
         cc_list: Optional[Union[str, List[str]]] = None,
         bcc_list: Optional[Union[str, List[str]]] = None,
         attachments: Optional[List[Tuple[str, str, bytes]]] = None,
+        is_important: bool = False,
+        request_read_receipt: bool = False,
     ) -> bool:
         """Формирует и отправляет почтовое сообщение.
 
@@ -157,6 +159,8 @@ class SmtpMailService:
             cc_list (str | list[str], optional): Список или строка адресов в копии.
             bcc_list (str | list[str], optional): Список или строка адресов в скрытой копии.
             attachments (list[tuple[str, str, bytes]], optional): Список вложений (filename, content_type, data).
+            is_important (bool, optional): Флаг высокой важности (X-Priority: 1, Importance: High).
+            request_read_receipt (bool, optional): Запросить подтверждение о прочтении (Disposition-Notification-To).
 
         Returns:
             bool: True в случае успешной отправки.
@@ -183,6 +187,16 @@ class SmtpMailService:
             msg["Cc"] = cc_header
         msg["Date"] = formatdate(localtime=True)
         msg["Message-ID"] = make_msgid(domain=self.email.split("@")[-1] if "@" in self.email else "barkol.ru")
+
+        # Заголовки приоритета и уведомления о прочтении
+        if is_important:
+            msg["X-Priority"] = "1 (Highest)"
+            msg["Importance"] = "High"
+            msg["Priority"] = "urgent"
+
+        if request_read_receipt and clean_from_email:
+            msg["Disposition-Notification-To"] = clean_from_email
+            msg["Return-Receipt-To"] = clean_from_email
 
         # Текстовая и HTML часть
         msg_alternative = MIMEMultipart("alternative")

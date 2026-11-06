@@ -113,6 +113,16 @@ class MailComposeForm(forms.Form):
         required=False,
         widget=forms.HiddenInput(attrs={"id": "mailForwardFolder"}),
     )
+    is_important = forms.BooleanField(
+        label="Высокая важность",
+        required=False,
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "mailIsImportant"}),
+    )
+    request_read_receipt = forms.BooleanField(
+        label="Запросить уведомление о прочтении",
+        required=False,
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "mailRequestReceipt"}),
+    )
 
     def clean(self):
         """Выполняет кросс-валидацию полей формы с проверкой времени отправки.

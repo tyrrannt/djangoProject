@@ -14,7 +14,7 @@ import socket
 import ssl
 import time
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from urllib.parse import quote
 import zipfile
 
@@ -741,7 +741,8 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
         initial = super().get_initial()
         account = self.get_account()
 
-        reply_uid = self.request.GET.get("reply_uid")
+        reply_all_uid = self.request.GET.get("reply_all_uid")
+        reply_uid = self.request.GET.get("reply_uid") or reply_all_uid
         forward_uid = self.request.GET.get("forward_uid")
         draft_uid = self.request.GET.get("draft_uid")
         folder = self.request.GET.get("folder", "INBOX")
@@ -802,6 +803,41 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
                             initial["to"] = orig_from
                             initial["subject"] = orig_subj if orig_subj.startswith("Re:") else f"Re: {orig_subj}"
                             initial["body_html"] = f"{default_paragraph}{signature}<br><br>{quote_block}"
+
+                            # Режим «Ответить всем» (Reply All): сбор всех остальных участников в поле Cc
+                            if reply_all_uid:
+                                from email.utils import formataddr, getaddresses
+
+                                my_emails = set()
+                                if account and account.email:
+                                    my_emails.add(account.email.strip().lower())
+                                if self.request.user and self.request.user.email:
+                                    my_emails.add(self.request.user.email.strip().lower())
+
+                                author_email = (original_mail.get("from_email") or "").strip().lower()
+                                if author_email:
+                                    my_emails.add(author_email)
+
+                                combined_raw = f"{original_mail.get('to_raw', '')}, {original_mail.get('cc_raw', '')}"
+                                parsed_addrs = getaddresses([combined_raw])
+                                cc_unique = []
+                                seen_emails = set()
+                                for disp_name, raw_addr in parsed_addrs:
+                                    clean_addr = raw_addr.strip().lower()
+                                    if (
+                                            clean_addr
+                                            and "@" in clean_addr
+                                            and clean_addr not in my_emails
+                                            and clean_addr not in seen_emails
+                                    ):
+                                        seen_emails.add(clean_addr)
+                                        if disp_name and disp_name.strip() and disp_name.strip() != raw_addr.strip():
+                                            cc_unique.append(formataddr((disp_name.strip(), raw_addr.strip())))
+                                        else:
+                                            cc_unique.append(raw_addr.strip())
+
+                                if cc_unique:
+                                    initial["cc"] = ", ".join(cc_unique)
                         elif forward_uid:
                             initial["forward_uid"] = forward_uid
                             initial["forward_folder"] = folder
@@ -892,9 +928,12 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
         body_html = form.cleaned_data.get("body_html", "")
         send_mode = form.cleaned_data.get("send_mode") or "now"
         scheduled_at = form.cleaned_data.get("scheduled_at")
+        is_important = form.cleaned_data.get("is_important", False)
+        request_read_receipt = form.cleaned_data.get("request_read_receipt", False)
         draft_uid_val = self.request.POST.get("draft_uid")
         forward_uid_val = form.cleaned_data.get("forward_uid") or self.request.POST.get("forward_uid")
-        forward_folder_val = form.cleaned_data.get("forward_folder") or self.request.POST.get("forward_folder") or "INBOX"
+        forward_folder_val = form.cleaned_data.get("forward_folder") or self.request.POST.get(
+            "forward_folder") or "INBOX"
         forward_parts_raw = self.request.POST.getlist("forward_parts")
 
         # Извлечение пересылаемых вложений из оригинального письма на IMAP
@@ -939,6 +978,8 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
                     cc_recipients=cc_raw,
                     bcc_recipients=bcc_raw,
                     uploaded_files=uploaded_files,
+                    is_important=is_important,
+                    request_read_receipt=request_read_receipt,
                 )
                 if draft_uid_val and str(draft_uid_val).isdigit():
                     try:
@@ -980,6 +1021,8 @@ class MailboxComposeView(HtmxResponseMixin, MailboxBaseMixin, FormView):
                 cc_list=cc_list,
                 bcc_list=bcc_list,
                 attachments=attachments,
+                is_important=is_important,
+                request_read_receipt=request_read_receipt,
             )
 
             # Если ранее был сохранен черновик — удаляем его из папки черновиков
@@ -1417,7 +1460,8 @@ class MailboxDownloadAttachmentsZipView(MailboxBaseMixin, View):
                 ascii_fallback = f"attachments_UID{uid}.zip"
 
                 response = HttpResponse(buffer.getvalue(), content_type="application/zip")
-                response["Content-Disposition"] = f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{safe_encoded}'
+                response[
+                    "Content-Disposition"] = f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{safe_encoded}'
                 return response
         except Exception as e:
             logger.error(f"[Mailbox] Ошибка упаковки вложений в ZIP для UID {uid}: {e}", exc_info=True)
@@ -3086,11 +3130,11 @@ class KerioAdminUsersListView(MailboxAdminAccessMixin, View):
         users_list.sort(
             key=lambda u: (
                 (
-                    u.get("fullName")
-                    or (u.get("django_user") and u["django_user"].get_full_name())
-                    or u.get("loginName")
-                    or u.get("email")
-                    or ""
+                        u.get("fullName")
+                        or (u.get("django_user") and u["django_user"].get_full_name())
+                        or u.get("loginName")
+                        or u.get("email")
+                        or ""
                 )
                 .strip()
                 .casefold()
@@ -3231,7 +3275,8 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
         try:
             with service.client:
                 mailing_lists = service.get_mailing_lists()
-                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if
+                              ml.get("id")]
         except Exception as err:
             logger.warning(f"[KerioAdminUserCreateView] Не удалось загрузить списки рассылки: {err}")
 
@@ -3263,7 +3308,8 @@ class KerioAdminUserCreateView(MailboxAdminAccessMixin, View):
         try:
             with service.client:
                 mailing_lists = service.get_mailing_lists()
-                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if
+                              ml.get("id")]
         except Exception as err:
             logger.warning(f"[KerioAdminUserCreateView] Не удалось загрузить списки рассылки: {err}")
 
@@ -3411,8 +3457,10 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
                 full_email = f"{clean_login}@barkol.ru"
 
                 mailing_lists = service.get_mailing_lists()
-                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
-                user_ml_ids = service.get_user_mailing_lists(user_id=actual_id, email=full_email, domain_name="barkol.ru")
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if
+                              ml.get("id")]
+                user_ml_ids = service.get_user_mailing_lists(user_id=actual_id, email=full_email,
+                                                             domain_name="barkol.ru")
         except Exception as err:
             logger.error(f"[KerioAdmin] Не удалось найти пользователя '{user_id}': {err}", exc_info=True)
             messages.error(request, f"Не удалось найти пользователя «{user_id}» в Kerio Connect: {err}")
@@ -3482,7 +3530,8 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
         try:
             with service.client:
                 mailing_lists = service.get_mailing_lists()
-                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if ml.get("id")]
+                ml_choices = [(str(ml.get("id")), f"{ml.get('name')} ({ml.get('email')})") for ml in mailing_lists if
+                              ml.get("id")]
         except Exception as err:
             logger.warning(f"[KerioAdminUserUpdateView] Не удалось загрузить списки рассылки: {err}")
 
@@ -3560,7 +3609,8 @@ class KerioAdminUserUpdateView(MailboxAdminAccessMixin, View):
                         else:
                             sync_1c_note = f" (замечание синхронизации: {sync_res.get('message', '')})"
 
-                messages.success(request, f"Параметры пользователя «{login_name}» успешно обновлены в Kerio Connect!{sync_1c_note}")
+                messages.success(request,
+                                 f"Параметры пользователя «{login_name}» успешно обновлены в Kerio Connect!{sync_1c_note}")
                 return redirect("mailbox_app:kerio_admin_users")
             except Exception as err:
                 logger.error(f"[KerioAdmin] Ошибка обновления пользователя '{user_id}': {err}", exc_info=True)
@@ -3742,7 +3792,8 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
                 res = service.audit_mailboxes_sync(domain_name=domain_name)
                 return JsonResponse(res)
             except Exception as err:
-                logger.error(f"[KerioAdmin] Ошибка аудита синхронизации Kerio Connect и ISPmanager: {err}", exc_info=True)
+                logger.error(f"[KerioAdmin] Ошибка аудита синхронизации Kerio Connect и ISPmanager: {err}",
+                             exc_info=True)
                 return JsonResponse({"success": False, "message": f"Ошибка проведения аудита: {err}"}, status=500)
 
         elif action == "create_isp_mailbox":
@@ -3797,7 +3848,8 @@ class KerioAdminActionAPIView(MailboxAdminAccessMixin, View):
                 else:
                     action_text = "настроено"
 
-                msg = res.get("message") or f"Правило ретрансляции «Доставка SMTP» для '{login_name}' успешно {action_text}!"
+                msg = res.get(
+                    "message") or f"Правило ретрансляции «Доставка SMTP» для '{login_name}' успешно {action_text}!"
                 return JsonResponse({
                     "success": True,
                     "message": msg,

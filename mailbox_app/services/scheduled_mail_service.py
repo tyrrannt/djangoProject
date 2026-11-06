@@ -30,6 +30,8 @@ def create_scheduled_email(
     cc_recipients: str = "",
     bcc_recipients: str = "",
     uploaded_files: Optional[List[Any]] = None,
+    is_important: bool = False,
+    request_read_receipt: bool = False,
 ) -> ScheduledEmail:
     """Создает запись отложенного письма и сохраняет прикрепленные файлы.
 
@@ -44,6 +46,8 @@ def create_scheduled_email(
         cc_recipients (str, optional): Адреса в копии через запятую.
         bcc_recipients (str, optional): Адреса в скрытой копии через запятую.
         uploaded_files (list[Any], optional): Список загруженных файлов (UploadedFile).
+        is_important (bool, optional): Флаг высокой важности письма.
+        request_read_receipt (bool, optional): Флаг запроса уведомления о прочтении.
 
     Returns:
         ScheduledEmail: Созданный экземпляр модели отложенного письма.
@@ -75,6 +79,8 @@ def create_scheduled_email(
             subject=subject.strip() if subject else "(Без темы)",
             body_html=body_html or "",
             body_text=body_text or "",
+            is_important=is_important,
+            request_read_receipt=request_read_receipt,
             scheduled_at=scheduled_at,
             status=ScheduledEmail.STATUS_PENDING,
             **acc_kw,
@@ -191,6 +197,8 @@ def send_single_scheduled_email(scheduled_email_id: int) -> bool:
             cc_list=cc_list,
             bcc_list=bcc_list,
             attachments=attachments_payload if attachments_payload else None,
+            is_important=getattr(scheduled_email, "is_important", False),
+            request_read_receipt=getattr(scheduled_email, "request_read_receipt", False),
         )
 
         with transaction.atomic():

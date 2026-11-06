@@ -136,6 +136,22 @@
                 {{ form.subject }}
             </div>
 
+            <!-- Опции важности и уведомления о прочтении -->
+            <div class="d-flex align-items-center gap-3 flex-wrap mt-2 mb-2 px-1">
+                <div class="form-check form-check-inline d-flex align-items-center gap-1 m-0">
+                    {{ form.is_important }}
+                    <label class="form-check-label font-size-12 text-muted cursor-pointer user-select-none" for="mailIsImportant" title="Письмо будет помечено высокой важностью (High Priority)">
+                        <i class="bx bx-error-circle text-danger"></i> Важное сообщение
+                    </label>
+                </div>
+                <div class="form-check form-check-inline d-flex align-items-center gap-1 m-0">
+                    {{ form.request_read_receipt }}
+                    <label class="form-check-label font-size-12 text-muted cursor-pointer user-select-none" for="mailRequestReceipt" title="Запросить подтверждение от почтового клиента получателя при прочтении">
+                        <i class="bx bx-check-double text-primary"></i> Уведомление о прочтении
+                    </label>
+                </div>
+            </div>
+
             <!-- Поле Текст сообщения -->
             <div class="mailbox-form-row mb-4 mt-3">
                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
@@ -211,7 +227,7 @@
                 </div>
                 <div class="d-flex flex-wrap gap-2" id="forwardAttachmentsList">
                     {% for att in forward_attachments %}
-                        <div class="badge bg-white text-dark border p-2 d-inline-flex align-items-center gap-2 shadow-sm font-size-13 forward-attachment-chip" id="forward_att_{{ att.part_index }}" style="border-radius: 6px;">
+                        <div class="badge bg-white text-dark border p-2 d-inline-flex align-items-center gap-2 shadow-sm font-size-13 forward-attachment-chip" id="forward_att_{{ att.part_index }}" data-size="{{ att.size }}" style="border-radius: 6px;">
                             <input type="hidden" name="forward_parts" value="{{ att.part_index }}">
                             <i class="{{ att.file_icon|default:'bx bx-file text-primary font-size-16' }}"></i>
                             <span class="text-truncate" style="max-width: 220px;" title="{{ att.filename }}">{{ att.filename }}</span>
@@ -240,7 +256,15 @@
                         <span id="attachmentsSummary" class="badge bg-white text-secondary border d-none font-size-11 py-1 px-2">
                             Файлов: <strong id="attachmentsCount">0</strong> (<span id="attachmentsTotalSize">0 КБ</span>)
                         </span>
-                        <small class="text-muted font-size-12">Перетащите файлы или выберите на диске</small>
+                        <small class="text-muted font-size-12">Перетащите файлы, вставьте скриншот из буфера (Ctrl+V) или выберите на диске</small>
+                    </div>
+                </div>
+
+                <!-- Предупреждение о превышении максимального суммарного размера файлов (25 МБ) -->
+                <div id="attachmentsLimitAlert" class="alert alert-danger d-none d-flex align-items-center gap-2 py-2 px-3 mb-2 font-size-12" role="alert">
+                    <i class="bx bx-error-circle font-size-18 flex-shrink-0"></i>
+                    <div>
+                        <strong>Превышен лимит вложений (25 МБ).</strong> Суммарный объем: <span id="attachmentsLimitCurrentSize">0 МБ</span>. Уменьшите размер файлов или воспользуйтесь файловым хранилищем.
                     </div>
                 </div>
 
@@ -253,12 +277,12 @@
                         <i class="bx bx-cloud-upload text-primary" style="font-size: 38px;"></i>
                     </div>
                     <div class="dropzone-text">
-                        <span class="fw-semibold text-dark font-size-14">Перетащите файлы сюда</span>
+                        <span class="fw-semibold text-dark font-size-14">Перетащите файлы сюда или вставьте скриншот (Ctrl+V)</span>
                         <span class="text-muted font-size-13"> или </span>
                         <span class="text-primary font-size-14 fw-semibold text-decoration-underline">выберите на компьютере</span>
                     </div>
                     <div class="text-muted small mt-1 font-size-11">
-                        Документы (PDF, DOCX, XLSX), сканы, архивы (ZIP) и изображения любого размера
+                        Документы (PDF, DOCX, XLSX), сканы, архивы (ZIP) и изображения любого размера (до 25 МБ)
                     </div>
                 </div>
 
@@ -278,8 +302,8 @@
                 </a>
 
                 <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
-                    <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2 shadow-sm" style="border-radius: 6px;">
-                        <i class="bx bx-paper-plane font-size-17"></i> <span>Отправить</span>
+                    <button type="submit" class="btn btn-primary px-4 py-2 font-weight-semibold d-flex align-items-center gap-2 shadow-sm" id="bottomSendMailBtn" style="border-radius: 6px;">
+                        <i class="bx bx-paper-plane font-size-17" id="bottomSendBtnIcon"></i> <span id="bottomSendBtnText">Отправить</span>
                     </button>
                 </div>
             </div>
@@ -375,6 +399,22 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Всплывающий тост отложенной отмены отправки (Undo Send) -->
+    <div id="undoSendToast" class="undo-send-toast shadow-lg d-none align-items-center justify-content-between p-3 bg-dark text-white rounded-3">
+        <div class="d-flex align-items-center gap-2">
+            <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+            <span class="font-size-13">Письмо будет отправлено через <strong id="undoCountdownSec" class="text-warning font-size-14">5</strong> сек...</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 ms-3">
+            <button type="button" class="btn btn-warning btn-sm fw-bold px-3 py-1 shadow-sm font-size-12" id="btnUndoSend" onclick="cancelPendingSend()">
+                <i class="bx bx-undo me-1"></i> Отменить
+            </button>
+            <button type="button" class="btn btn-outline-light btn-sm px-2 py-1 font-size-12" id="btnSendRightNow" onclick="executeActualSend()">
+                Отправить сейчас
+            </button>
         </div>
     </div>
 </div>

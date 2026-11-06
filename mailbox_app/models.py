@@ -547,6 +547,14 @@ class ScheduledEmail(models.Model):
         blank=True,
         default="",
     )
+    is_important = models.BooleanField(
+        verbose_name="Высокая важность",
+        default=False,
+    )
+    request_read_receipt = models.BooleanField(
+        verbose_name="Запросить уведомление о прочтении",
+        default=False,
+    )
     scheduled_at = models.DateTimeField(
         verbose_name="Запланировано на",
         db_index=True,

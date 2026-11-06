@@ -36,8 +36,19 @@
                    hx-target="#mailboxMainContent"
                    hx-swap="outerHTML"
                    hx-push-url="true"
-                   class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+                   class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm"
+                   title="Ответить только отправителю">
                     <i class="bx bx-reply font-size-16"></i> <span>Ответить</span>
+                </a>
+
+                <a href="{% url 'mailbox_app:compose' %}?reply_all_uid={{ email.uid }}&folder={{ current_folder }}"
+                   hx-get="{% url 'mailbox_app:compose' %}?reply_all_uid={{ email.uid }}&folder={{ current_folder }}"
+                   hx-target="#mailboxMainContent"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm"
+                   title="Ответить отправителю и всем участникам в копии">
+                    <i class="bx bx-reply-all font-size-16"></i> <span class="d-none d-sm-inline">Ответить всем</span>
                 </a>
 
                 <a href="{% url 'mailbox_app:compose' %}?forward_uid={{ email.uid }}&folder={{ current_folder }}"
