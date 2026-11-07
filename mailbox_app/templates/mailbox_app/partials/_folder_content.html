@@ -58,12 +58,7 @@
                                value="{{ search_query }}"
                                placeholder="Поиск писем..."
                                autocomplete="off"
-                               hx-get="{% url 'mailbox_app:folder' current_folder %}"
-                               hx-trigger="keyup changed delay:450ms, search"
-                               hx-target="#mailboxMainContent"
-                               hx-swap="outerHTML"
-                               hx-push-url="true"
-                               hx-include="closest form">
+                               aria-label="Поиск писем">
 
                         <!-- Кнопка выпадающего меню расширенного поиска и фильтра по дате -->
                         <button class="btn btn-outline-secondary dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Параметры поиска и фильтр по дате">
@@ -131,12 +126,13 @@
                             </div>
                         </div>
 
-                        <button class="btn btn-primary" type="submit" title="Искать">
-                            <i class="bx bx-search"></i>
+                        <button class="btn btn-primary d-inline-flex align-items-center justify-content-center" type="submit" title="Искать (Enter)">
+                            <i class="bx bx-search search-icon"></i>
+                            <span class="spinner-border spinner-border-sm search-spinner d-none" role="status" aria-hidden="true"></span>
                         </button>
                         {% if search_query or date_range != 'all' or q_scope != 'all' %}
-                            <a href="{% url 'mailbox_app:folder' current_folder %}{% if filter_by and filter_by != 'all' %}?filter={{ filter_by }}{% endif %}"
-                               hx-get="{% url 'mailbox_app:folder' current_folder %}{% if filter_by and filter_by != 'all' %}?filter={{ filter_by }}{% endif %}"
+                            <a href="{% url 'mailbox_app:folder' current_folder %}?{% if filter_by and filter_by != 'all' %}filter={{ filter_by }}&{% endif %}{% if sort_by %}sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}"
+                               hx-get="{% url 'mailbox_app:folder' current_folder %}?{% if filter_by and filter_by != 'all' %}filter={{ filter_by }}&{% endif %}{% if sort_by %}sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}"
                                hx-target="#mailboxMainContent"
                                hx-swap="outerHTML"
                                hx-push-url="true"
