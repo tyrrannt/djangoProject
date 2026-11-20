@@ -5,7 +5,6 @@ from django.core.management.base import BaseCommand
 
 from customers_app.models import ConsentType, DataBaseUser, DocumentSigner
 
-
 DEFAULT_CONSENT_TYPES = [
     {
         "code": "biometric",
@@ -32,7 +31,7 @@ DEFAULT_CONSENT_TYPES = [
         "requires_signer": True,
         "is_required_on_hire": True,
         "sort_order": 30,
-        "description": "Соглашение о неразглашении конфиденциальной информации (подписывается директором или первым заместителем).",
+        "description": "Соглашение о неразглашении конфиденциальной информации (подписывается Генеральным директором или Первым заместителем генерального директора-исполнительный директор).",
     },
     {
         "code": "commercial_secret",
@@ -59,7 +58,7 @@ DEFAULT_CONSENT_TYPES = [
         "requires_signer": True,
         "is_required_on_hire": True,
         "sort_order": 60,
-        "description": "Договор о полной индивидуальной материальной ответственности (подписывается директором или первым заместителем).",
+        "description": "Договор о полной индивидуальной материальной ответственности (подписывается Генеральным директором или Первым заместителем генерального директора-исполнительный директор).",
     },
 ]
 
