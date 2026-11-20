@@ -738,9 +738,14 @@ UNFOLD = {
                         "link": reverse_lazy("admin:customers_app_biometricconsent_changelist"),
                     },
                     {
-                        "title": _("Типы согласий"),
+                        "title": _("Типы согласий и документов"),
                         "icon": "assignment_turned_in",
                         "link": reverse_lazy("admin:customers_app_consenttype_changelist"),
+                    },
+                    {
+                        "title": _("Подписанты документов"),
+                        "icon": "draw",
+                        "link": reverse_lazy("admin:customers_app_documentsigner_changelist"),
                     },
                     {
                         "title": _("Вредные условия труда"),
@@ -1768,6 +1773,7 @@ UNFOLD = {
                 "customers_app.affiliation",
                 "customers_app.biometricconsent",
                 "customers_app.consenttype",
+                "customers_app.documentsigner",
                 "customers_app.harmfulworkingconditions",
                 "customers_app.vacationschedule",
                 "customers_app.vacationschedulelist",

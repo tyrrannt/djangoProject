@@ -103,6 +103,54 @@
                                         {% endif %}
                                     </div>
                                 </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.employment_contract_number.id_for_label }}">Номер трудового договора</label>
+                                        {{ form.employment_contract_number }}
+                                        <small class="text-muted">Опционально — подставляется из карточки сотрудника</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.employment_contract_date.id_for_label }}">Дата трудового договора</label>
+                                        {{ form.employment_contract_date }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Блок подписанта и доверенностей (для договоров и соглашений) -->
+                            <div class="p-3 mb-3 rounded border" id="singleSignerSection" style="background-color: #f0f9ff; border-color: #bae6fd !important;">
+                                <h6 class="fw-bold mb-3" style="color: #002b49;">
+                                    <i class="bx bx-edit-alt me-1 text-primary"></i> Подписант от работодателя и доверенность(и)
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-0">
+                                            <label for="{{ form.signer.id_for_label }}">Подписант (Директор / Заместитель)</label>
+                                            {{ form.signer }}
+                                            {% if form.signer.errors %}
+                                                <div class="text-danger small mt-1">{{ form.signer.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="singleCharterNotice" class="alert alert-success py-2 px-3 mb-0 mt-md-4 d-none">
+                                            <i class="bx bx-check-shield me-1"></i>
+                                            Действует на основании <strong>Устава</strong> — доверенность не требуется.
+                                        </div>
+                                        <div id="singlePoaBlock" class="d-none">
+                                            <label for="{{ form.powers_of_attorney.id_for_label }}">
+                                                Доверенность(и) из реестра портала <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.powers_of_attorney }}
+                                            {% if form.powers_of_attorney.errors %}
+                                                <div class="text-danger small mt-1">{{ form.powers_of_attorney.errors }}</div>
+                                            {% endif %}
+                                            <small class="text-muted">Удерживайте Ctrl для выбора нескольких доверенностей</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="row">
@@ -183,4 +231,68 @@
             box-shadow: 0 0 0 0.2rem rgba(2, 132, 199, 0.15);
         }
     </style>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        (function () {
+            'use strict';
+            const signerRequiredIds = {{ signer_required_type_ids|default:"[]"|safe }};
+            const typeSelect = document.getElementById('id_consent_type');
+            const signerSelect = document.getElementById('id_signer');
+            const poaSelect = document.getElementById('id_powers_of_attorney');
+            const section = document.getElementById('singleSignerSection');
+            const charterNotice = document.getElementById('singleCharterNotice');
+            const poaBlock = document.getElementById('singlePoaBlock');
+
+            function updateSectionVisibility() {
+                if (!typeSelect || !section) return;
+                const val = parseInt(typeSelect.value, 10);
+                const needsSigner = signerRequiredIds.indexOf(val) !== -1;
+                section.classList.toggle('d-none', !needsSigner);
+            }
+
+            function loadPoas(signerId) {
+                if (!signerId) {
+                    charterNotice.classList.add('d-none');
+                    poaBlock.classList.add('d-none');
+                    return;
+                }
+                const selectedBefore = Array.from(poaSelect.selectedOptions).map(o => o.value);
+                fetch('/users/api/signer/' + encodeURIComponent(signerId) + '/poas/', {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.acts_by_charter) {
+                        charterNotice.classList.remove('d-none');
+                        poaBlock.classList.add('d-none');
+                    } else {
+                        charterNotice.classList.add('d-none');
+                        poaBlock.classList.remove('d-none');
+                        poaSelect.innerHTML = '';
+                        (data.poas || []).forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = String(item.id);
+                            opt.textContent = item.label;
+                            if (selectedBefore.indexOf(String(item.id)) !== -1) opt.selected = true;
+                            poaSelect.appendChild(opt);
+                        });
+                    }
+                });
+            }
+
+            if (typeSelect) {
+                typeSelect.addEventListener('change', updateSectionVisibility);
+                if (window.jQuery) window.jQuery(typeSelect).on('select2:select select2:clear', updateSectionVisibility);
+                updateSectionVisibility();
+            }
+            if (signerSelect) {
+                signerSelect.addEventListener('change', function () { loadPoas(this.value); });
+                if (window.jQuery) window.jQuery(signerSelect).on('select2:select select2:clear', function () { loadPoas(this.value); });
+                if (signerSelect.value) loadPoas(signerSelect.value);
+            }
+        })();
+    </script>
 {% endblock %}

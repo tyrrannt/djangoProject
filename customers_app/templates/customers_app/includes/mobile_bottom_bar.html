@@ -339,6 +339,18 @@
                     </div>
                 </a>
 
+                <!-- Ознакомительная экскурсия по порталу -->
+                <a href="#" class="quick-action-btn mb-2"
+                   onclick="if(window.startBarkolOnboardingTour) window.startBarkolOnboardingTour(event); return false;">
+                    <div class="quick-action-icon bg-primary text-white">
+                        <i class="bx bx-compass"></i>
+                    </div>
+                    <div>
+                        <div>Экскурсия по порталу</div>
+                        <small class="text-muted font-weight-normal">Краткий обзор возможностей системы</small>
+                    </div>
+                </a>
+
                 <!-- Игры и развлечения: Тетрис -->
                 <a href="{% url 'customers_app:game' %}" class="quick-action-btn mb-2">
                     <div class="quick-action-icon bg-success text-white">

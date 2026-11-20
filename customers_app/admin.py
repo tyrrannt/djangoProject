@@ -37,7 +37,7 @@ from .models import (
     VacationSchedule,
     CounteragentDocuments,
     UserStats,
-    Apartments, ApartmentBooking, BiometricConsent, ConsentType,
+    Apartments, ApartmentBooking, BiometricConsent, ConsentType, DocumentSigner,
     PushSubscription, UserPasskey, UserCertificate,
     OrgStructure, OrgStructureNode, OrgNodeLeadershipHistory,
 )
@@ -67,6 +67,8 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
          {'fields': ('is_active', 'is_staff', 'is_superuser', 'personal_groups', 'groups', 'user_permissions', 'type_of_role')}),
         ('Квалификация ТО ВС (ФАП-145 / ФАП-147)',
          {'fields': ('maintenance_staff_certificate', 'allowed_aircraft_types')}),
+        ('Ознакомительная экскурсия (Onboarding)',
+         {'fields': ('onboarding_completed', 'onboarding_completed_at')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     filter_horizontal = ('personal_groups', 'groups', 'user_permissions', 'allowed_aircraft_types')
@@ -776,17 +778,39 @@ class CounteragentAdmin(ModelAdmin):
     merge_duplicates_with_diagnosis.short_description = "Объединить с диагностикой"
 
 
+@admin.register(DocumentSigner)
+class DocumentSignerAdmin(ModelAdmin):
+    """Администрирование подписантов кадровых документов от работодателя."""
+
+    list_display = (
+        "short_name",
+        "position_genitive",
+        "employee",
+        "acts_by_charter",
+        "is_default",
+        "is_active",
+        "sort_order",
+    )
+    list_filter = ("acts_by_charter", "is_default", "is_active")
+    search_fields = ("short_name", "full_name_genitive", "position_genitive")
+    autocomplete_fields = ("employee",)
+    compressed_fields = True
+    warn_unsaved_form = True
+
+
 @admin.register(BiometricConsent)
 class BiometricConsentAdmin(ModelAdmin):
-    list_display = ['display_consent_header', 'consent_type', 'consent_date', 'display_active', 'scanned_copy_link']
+    list_display = ['display_consent_header', 'consent_type', 'signer', 'consent_date', 'display_active', 'scanned_copy_link']
     list_filter = [
         'is_active',
         'consent_type',
+        'signer',
         ('consent_date', RangeDateFilter),
     ]
     search_fields = ['consent_number', 'employee__last_name', 'employee__first_name', 'employee_full_name']
     date_hierarchy = 'consent_date'
     readonly_fields = ['created_at', 'updated_at', 'created_by']
+    filter_horizontal = ['powers_of_attorney']
     compressed_fields = True
     warn_unsaved_form = True
 
@@ -803,6 +827,9 @@ class BiometricConsentAdmin(ModelAdmin):
     fieldsets = (
         ('Основная информация', {
             'fields': ('employee', 'consent_type', 'consent_number', 'consent_date', )
+        }),
+        ('Подписант от работодателя и доверенности', {
+            'fields': ('signer', 'powers_of_attorney', 'employment_contract_number', 'employment_contract_date')
         }),
         ('Данные сотрудника на момент подписания', {
             'fields': ('employee_full_name', 'employee_position')
@@ -855,7 +882,7 @@ class ConsentTypeAdmin(ModelAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name', 'code', 'description', 'is_active')
+            'fields': ('name', 'code', 'number_prefix', 'description', 'is_active', 'requires_signer', 'is_required_on_hire')
         }),
         ('Шаблон документа', {
             'fields': ('template',),

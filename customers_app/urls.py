@@ -6,6 +6,8 @@ from . import api_views
 from . import webauthn_views
 from . import cades_views
 from . import views_org_structure
+from . import views_onboarding
+from . import views_onboarding_docs
 from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
     BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
     BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView, \
@@ -52,6 +54,9 @@ urlpatterns = [
     path('api/cert/list/', cades_views.cades_cert_list, name='cades_cert_list'),
     path('api/cert/register/verify/', cades_views.cades_cert_register, name='cades_cert_register'),
     path('api/cert/<int:pk>/delete/', cades_views.cades_cert_delete, name='cades_cert_delete'),
+    # Интерактивная ознакомительная экскурсия по порталу (Onboarding Tour)
+    path('api/onboarding/complete/', views_onboarding.onboarding_complete_api, name='onboarding_complete'),
+    path('api/onboarding/reset/', views_onboarding.onboarding_reset_api, name='onboarding_reset'),
     path("", views.index, name="index"),
     path("login/", views.login, name="login"),
     path("logout/", views.logout, name="logout"),
@@ -127,8 +132,9 @@ urlpatterns = [
     path('apartments-usage-report/', ApartmentsUsageReportView.as_view(), name='apartments_usage_report'),
     path('apartment-occupancy-report/', ApartmentOccupancyReportView.as_view(), name='apartment_occupancy_report'),
 
-    # Стандартные CRUD
+    # Стандартные CRUD и пакетная генерация документов при приёме
     path('biometric/', BiometricConsentListView.as_view(), name='biometric_consent_list'),
+    path('biometric/hire-package/', views_onboarding_docs.HirePackageGenerateView.as_view(), name='hire_package_generate'),
     path('biometric/<int:pk>/', BiometricConsentDetailView.as_view(), name='biometric_consent_detail'),
     path('biometric/create/', BiometricConsentCreateView.as_view(), name='biometric_consent_create'),
     path('biometric/<int:pk>/edit/', BiometricConsentUpdateView.as_view(), name='biometric_consent_edit'),
@@ -144,6 +150,7 @@ urlpatterns = [
     # API
     path('api/employee/<int:employee_id>/consent-status/', ApiGetEmployeeConsentStatusView.as_view(),
          name='api_consent_status'),
+    path('api/signer/<int:signer_id>/poas/', views_onboarding_docs.api_signer_poas, name='api_signer_poas'),
 
     # Организационная структура компании (Конструктор блок-схемы & API)
     path('org-structure/', views_org_structure.OrgStructureBuilderView.as_view(), name='org_structure_builder'),

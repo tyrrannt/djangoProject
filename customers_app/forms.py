@@ -772,6 +772,8 @@ class CounteragentDocumentsUpdateForm(forms.ModelForm):
 
 
 class BiometricConsentForm(forms.ModelForm):
+    """Форма создания и редактирования согласия / кадрового документа сотрудника."""
+
     class Meta:
         model = BiometricConsent
         fields = [
@@ -779,6 +781,10 @@ class BiometricConsentForm(forms.ModelForm):
             'consent_type',
             'consent_number',
             'consent_date',
+            'signer',
+            'powers_of_attorney',
+            'employment_contract_number',
+            'employment_contract_date',
             'employee_full_name',
             'employee_position',
             'comment',
@@ -787,9 +793,11 @@ class BiometricConsentForm(forms.ModelForm):
             'revocation_date',
         ]
 
-
     def __init__(self, *args, **kwargs):
+        """Инициализирует поля формы, виджеты и списки подписантов и доверенностей."""
         super().__init__(*args, **kwargs)
+        from customers_app.models import ConsentType, DocumentSigner
+        from hrdepartment_app.models import PowerOfAttorney
 
         for field in self.fields:
             make_custom_field(self.fields[field])
@@ -798,39 +806,151 @@ class BiometricConsentForm(forms.ModelForm):
         self.fields['comment'].required = False
         self.fields['consent_number'].required = False
         self.fields['employee_full_name'].required = False
+        self.fields['employee_position'].required = False
         self.fields['scanned_copy'].required = False
         self.fields['revocation_date'].required = False
+        self.fields['signer'].required = False
+        self.fields['powers_of_attorney'].required = False
+        self.fields['employment_contract_number'].required = False
+        self.fields['employment_contract_date'].required = False
+
+        self.fields['consent_type'].queryset = ConsentType.objects.filter(is_active=True).order_by('sort_order', 'name')
+        self.fields['signer'].queryset = DocumentSigner.objects.filter(is_active=True).order_by('-is_default', 'sort_order', 'short_name')
+        self.fields['powers_of_attorney'].queryset = PowerOfAttorney.objects.filter(
+            cancellation_date__isnull=True
+        ).order_by('-issue_date', '-number')
+        self.fields['powers_of_attorney'].widget.attrs.update({
+            'class': 'form-select',
+            'size': '4',
+        })
 
         # Ограничиваем выбор только активными пользователями
         if self.instance.pk:
-            # При редактировании сохраняем текущего сотрудника в списке,
-            # даже если его позже деактивировали (иначе форма упадёт с ошибкой валидации)
             self.fields['employee'].queryset = DataBaseUser.objects.filter(
                 Q(is_active=True) | Q(pk=self.instance.employee_id)
             )
         else:
-            # При создании показываем только активных
             self.fields['employee'].queryset = DataBaseUser.objects.filter(is_active=True)
+            default_signer = DocumentSigner.objects.filter(is_active=True, is_default=True).first()
+            if default_signer and not self.initial.get('signer'):
+                self.initial['signer'] = default_signer
 
         # Если это редактирование, блокируем изменение сотрудника
         if self.instance and self.instance.pk:
             self.fields['employee'].widget.attrs['readonly'] = True
             self.fields['consent_number'].widget.attrs['readonly'] = True
 
-    # def clean(self):
-    #     cleaned_data = super().clean()
-    #     is_active = cleaned_data.get('is_active')
-    #     revocation_date = cleaned_data.get('revocation_date')
-    #
-    #     # Если согласие активно, дата отзыва должна быть пустой
-    #     if is_active and revocation_date:
-    #         raise ValidationError('У активного согласия не может быть даты отзыва')
-    #
-    #     # Если согласие не активно, проверяем дату отзыва
-    #     if not is_active and not revocation_date:
-    #         raise ValidationError('Для отозванного согласия необходимо указать дату отзыва')
-    #
-    #     return cleaned_data
+    def clean(self):
+        """Валидирует обязательность подписанта и доверенности(ей) для договоров и соглашений."""
+        cleaned_data = super().clean()
+        consent_type = cleaned_data.get('consent_type')
+        signer = cleaned_data.get('signer')
+        poas = cleaned_data.get('powers_of_attorney')
+
+        if consent_type and consent_type.requires_signer:
+            if not signer:
+                self.add_error(
+                    'signer',
+                    'Для выбранного типа документа необходимо указать подписанта от работодателя.'
+                )
+            elif not signer.acts_by_charter and (not poas or len(poas) == 0):
+                self.add_error(
+                    'powers_of_attorney',
+                    f'Подписант {signer.short_name} действует по доверенности — выберите одну или несколько доверенностей из реестра.'
+                )
+        elif signer and not signer.acts_by_charter and (not poas or len(poas) == 0):
+            self.add_error(
+                'powers_of_attorney',
+                f'При указании подписанта {signer.short_name} необходимо выбрать доверенность(и), на основании которых он действует.'
+            )
+
+        return cleaned_data
+
+
+class HirePackageForm(forms.Form):
+    """Форма пакетного формирования документов при приёме сотрудника на работу (ZIP)."""
+
+    employee = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True).order_by('last_name', 'first_name'),
+        label="Сотрудник",
+    )
+    consent_date = forms.DateField(
+        label="Дата подписания документов",
+        input_formats=["%d.%m.%Y", "%Y-%m-%d"],
+    )
+    employment_contract_number = forms.CharField(
+        label="Номер трудового договора",
+        max_length=50,
+        required=False,
+        help_text="Если оставить пустым — подставится из карточки сотрудника.",
+    )
+    employment_contract_date = forms.DateField(
+        label="Дата трудового договора",
+        required=False,
+        input_formats=["%d.%m.%Y", "%Y-%m-%d"],
+        help_text="Если оставить пустым — подставится из карточки сотрудника или даты подписания.",
+    )
+    consent_types = forms.ModelMultipleChoiceField(
+        queryset=None,
+        label="Документы для включения в пакет",
+        widget=forms.CheckboxSelectMultiple,
+    )
+    signer = forms.ModelChoiceField(
+        queryset=None,
+        label="Подписант от работодателя (для договора и соглашения)",
+        required=False,
+    )
+    powers_of_attorney = forms.ModelMultipleChoiceField(
+        queryset=None,
+        label="Доверенность(и) подписанта",
+        required=False,
+        help_text="Удерживайте Ctrl для выбора нескольких доверенностей.",
+    )
+    comment = forms.CharField(
+        label="Комментарий",
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Настраивает актуальные выборки типов документов, подписантов и доверенностей."""
+        super().__init__(*args, **kwargs)
+        from customers_app.models import ConsentType, DocumentSigner
+        from hrdepartment_app.models import PowerOfAttorney
+
+        self.fields['consent_types'].queryset = ConsentType.objects.filter(is_active=True).order_by('sort_order', 'name')
+        self.fields['signer'].queryset = DocumentSigner.objects.filter(is_active=True).order_by('-is_default', 'sort_order', 'short_name')
+        self.fields['powers_of_attorney'].queryset = PowerOfAttorney.objects.filter(
+            cancellation_date__isnull=True
+        ).order_by('-issue_date', '-number')
+
+        for fname in ('employee', 'consent_date', 'employment_contract_number', 'employment_contract_date', 'signer'):
+            make_custom_field(self.fields[fname])
+
+        self.fields['powers_of_attorney'].widget.attrs.update({
+            'class': 'form-select',
+            'size': '5',
+        })
+
+    def clean(self):
+        """Проверяет выбор подписанта и доверенности(ей), если в пакет входят договор или соглашение."""
+        cleaned_data = super().clean()
+        selected_types = cleaned_data.get('consent_types')
+        signer = cleaned_data.get('signer')
+        poas = cleaned_data.get('powers_of_attorney')
+
+        needs_signer = bool(selected_types and any(t.requires_signer for t in selected_types))
+        if needs_signer and not signer:
+            self.add_error(
+                'signer',
+                'Среди выбранных документов есть договор или соглашение — необходимо указать подписанта от работодателя.'
+            )
+        if signer and not signer.acts_by_charter and (not poas or len(poas) == 0):
+            self.add_error(
+                'powers_of_attorney',
+                f'Подписант {signer.short_name} действует по доверенности — укажите доверенность(и) из реестра портала.'
+            )
+        return cleaned_data
 
 
 class BiometricConsentFilterForm(forms.Form):

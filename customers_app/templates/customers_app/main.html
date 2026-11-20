@@ -95,6 +95,8 @@
     <link rel="stylesheet" href="{% static 'admin_templates/css/skins/default.css' %}"/>
     <link rel="stylesheet" href="{% static_version 'admin_templates/css/custom.css' %}"/>
     <link rel="stylesheet" href="{% static_version 'customers_app/css/mobile_app.css' %}"/>
+    <link rel="stylesheet" href="{% static 'vendor/driverjs/driver.css' %}"/>
+    <link rel="stylesheet" href="{% static_version 'customers_app/css/onboarding_tour.css' %}"/>
 
     {% block custom_css %}
     {% endblock %}
@@ -145,7 +147,9 @@
             {% block notifications %}
                 <div class="header-right">
                     <span class="separator"></span>
-                    {% include 'customers_app/includes/notifications.html' %}
+                    <div id="header-notifications-box" class="d-inline-flex align-items-center">
+                        {% include 'customers_app/includes/notifications.html' %}
+                    </div>
                     <span class="separator"></span>
                     {% include 'customers_app/includes/user-dropdown-menu.html' %}
                 </div>
@@ -279,6 +283,19 @@
     <script src="{% static_version 'customers_app/js/mailbox_notifications.js' %}"></script>
     <script src="{% static_version 'customers_app/js/mailbox_actions.js' %}"></script>
     <script src="{% static_version 'customers_app/js/mailbox_compose.js' %}"></script>
+
+    {% if user.is_authenticated and user.pk %}
+    <!-- Конфигурация и движок ознакомительной экскурсии по порталу (Onboarding Tour) -->
+    <div id="barkol-onboarding-config"
+         class="d-none"
+         data-should-auto-start="{% if not user.onboarding_completed and not user.is_ppa %}true{% else %}false{% endif %}"
+         data-completed="{% if user.onboarding_completed %}true{% else %}false{% endif %}"
+         data-user-name="{{ user.first_name|default:user.username }}"
+         data-complete-url="{% url 'customers_app:onboarding_complete' %}">
+    </div>
+    <script src="{% static 'vendor/driverjs/driver.js.iife.js' %}"></script>
+    <script src="{% static_version 'customers_app/js/onboarding_tour.js' %}"></script>
+    {% endif %}
 
 
 

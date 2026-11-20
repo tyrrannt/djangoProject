@@ -1,0 +1,303 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="row align-items-center mb-3 pb-2 border-bottom">
+                        <div class="col-12 col-md-7">
+                            <h2 class="mb-1 fw-bold" style="color: #002b49;">
+                                <i class="bx bx-package text-primary me-2"></i>{{ title }}
+                            </h2>
+                            <p class="text-muted small mb-0">
+                                Автоматическое создание записей в реестре и пакетная выгрузка заполненных Word-документов одним ZIP-архивом
+                            </p>
+                        </div>
+                        <div class="col-12 col-md-5 text-md-end mt-2 mt-md-0">
+                            <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> К реестру документов
+                            </a>
+                        </div>
+                    </div>
+
+                    <form method="post" id="hirePackageForm" class="mt-3">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Секция 1: Сотрудник и реквизиты трудового договора -->
+                        <div class="p-3 mb-4 rounded border bg-light bg-opacity-50">
+                            <h5 class="fw-bold mb-3" style="color: #002b49;">
+                                <i class="bx bx-user me-1 text-primary"></i> 1. Данные сотрудника и даты
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.employee.id_for_label }}" class="form-label fw-semibold">
+                                        Сотрудник <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.employee }}
+                                    {% if form.employee.errors %}
+                                        <div class="text-danger small mt-1">{{ form.employee.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.consent_date.id_for_label }}" class="form-label fw-semibold">
+                                        Дата подписания документов <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.consent_date }}
+                                    {% if form.consent_date.errors %}
+                                        <div class="text-danger small mt-1">{{ form.consent_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.employment_contract_number.id_for_label }}" class="form-label fw-semibold">
+                                        Номер трудового договора
+                                    </label>
+                                    {{ form.employment_contract_number }}
+                                    <small class="text-muted">Если не указан — подставляется из карточки сотрудника</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.employment_contract_date.id_for_label }}" class="form-label fw-semibold">
+                                        Дата трудового договора
+                                    </label>
+                                    {{ form.employment_contract_date }}
+                                    <small class="text-muted">Если не указана — подставляется дата подписания</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Секция 2: Состав пакета документов -->
+                        <div class="p-3 mb-4 rounded border bg-light bg-opacity-50">
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <h5 class="fw-bold mb-0" style="color: #002b49;">
+                                    <i class="bx bx-list-check me-1 text-primary"></i> 2. Состав пакета документов <span class="text-danger">*</span>
+                                </h5>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" id="btnSelectAllDocs">Выбрать все</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btnClearAllDocs">Снять все</button>
+                                </div>
+                            </div>
+                            {% if form.consent_types.errors %}
+                                <div class="alert alert-danger py-2">{{ form.consent_types.errors }}</div>
+                            {% endif %}
+                            <div class="row g-2" id="consentTypesChecklist">
+                                {% for ctype in active_types %}
+                                    <div class="col-12 col-md-6">
+                                        <label class="d-flex align-items-start gap-2 p-2 rounded border bg-white h-100 cursor-pointer doc-type-card">
+                                            <input type="checkbox"
+                                                   class="form-check-input mt-1 doc-type-checkbox"
+                                                   name="consent_types"
+                                                   value="{{ ctype.pk }}"
+                                                   data-requires-signer="{% if ctype.requires_signer %}true{% else %}false{% endif %}"
+                                                   {% if ctype.pk|stringformat:"s" in form.consent_types.value or ctype in form.consent_types.value or not form.is_bound and ctype.is_required_on_hire %}checked{% endif %}>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold text-dark">{{ ctype.name }}</div>
+                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    <span class="badge bg-light text-dark border">{{ ctype.number_prefix }}</span>
+                                                    {% if ctype.requires_signer %}
+                                                        <span class="badge bg-info text-dark">
+                                                            <i class="bx bx-pen me-1"></i>Нужен подписант
+                                                        </span>
+                                                    {% endif %}
+                                                    {% if ctype.template %}
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                            <i class="bx bxs-file-doc me-1"></i>Шаблон готов
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                                            <i class="bx bx-info-circle me-1"></i>Без файла шаблона
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                {% empty %}
+                                    <div class="col-12 text-muted">Активные типы документов не настроены.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Секция 3: Подписант от работодателя и доверенности -->
+                        <div class="p-3 mb-4 rounded border" id="signerSection" style="background-color: #f0f9ff; border-color: #bae6fd !important;">
+                            <h5 class="fw-bold mb-3" style="color: #002b49;">
+                                <i class="bx bx-edit-alt me-1 text-primary"></i> 3. Подписант от работодателя и доверенность(и)
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.signer.id_for_label }}" class="form-label fw-semibold">
+                                        Подписант (Директор / Первый заместитель) <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.signer }}
+                                    {% if form.signer.errors %}
+                                        <div class="text-danger small mt-1">{{ form.signer.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div id="charterNotice" class="alert alert-success py-2 px-3 mb-0 mt-md-4 d-none">
+                                        <i class="bx bx-check-shield me-1"></i>
+                                        Подписант действует на основании <strong>Устава</strong> — выбор доверенности не требуется.
+                                    </div>
+
+                                    <div id="poaSelectorBlock" class="d-none">
+                                        <label for="{{ form.powers_of_attorney.id_for_label }}" class="form-label fw-semibold">
+                                            Доверенность(и) из реестра портала <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.powers_of_attorney }}
+                                        {% if form.powers_of_attorney.errors %}
+                                            <div class="text-danger small mt-1">{{ form.powers_of_attorney.errors }}</div>
+                                        {% endif %}
+                                        <small class="text-muted d-block mt-1">
+                                            Удерживайте <strong>Ctrl</strong> (или <strong>Cmd</strong>), чтобы выбрать несколько доверенностей.
+                                            Данные подтягиваются из раздела «Доверенности».
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Комментарий -->
+                        <div class="mb-4">
+                            <label for="{{ form.comment.id_for_label }}" class="form-label fw-semibold">Комментарий (опционально)</label>
+                            {{ form.comment }}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg px-4">
+                                <i class="bx bxs-file-archive me-1"></i> Сформировать и скачать пакет (ZIP)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .doc-type-card {
+            cursor: pointer;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .doc-type-card:hover {
+            border-color: #0284c7 !important;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.12);
+        }
+    </style>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        (function () {
+            'use strict';
+            const signerSelect = document.getElementById('id_signer');
+            const poaSelect = document.getElementById('id_powers_of_attorney');
+            const signerSection = document.getElementById('signerSection');
+            const charterNotice = document.getElementById('charterNotice');
+            const poaBlock = document.getElementById('poaSelectorBlock');
+            const checkboxes = document.querySelectorAll('.doc-type-checkbox');
+
+            function updateSignerVisibility() {
+                let needsSigner = false;
+                checkboxes.forEach(function (cb) {
+                    if (cb.checked && cb.dataset.requiresSigner === 'true') {
+                        needsSigner = true;
+                    }
+                });
+                if (signerSection) {
+                    signerSection.classList.toggle('d-none', !needsSigner);
+                }
+            }
+
+            function loadSignerPoas(signerId) {
+                if (!signerId) {
+                    charterNotice.classList.add('d-none');
+                    poaBlock.classList.add('d-none');
+                    return;
+                }
+                const selectedBefore = Array.from(poaSelect.selectedOptions).map(o => o.value);
+                fetch('/users/api/signer/' + encodeURIComponent(signerId) + '/poas/', {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function (resp) { return resp.json(); })
+                .then(function (data) {
+                    if (data.acts_by_charter) {
+                        charterNotice.classList.remove('d-none');
+                        poaBlock.classList.add('d-none');
+                    } else {
+                        charterNotice.classList.add('d-none');
+                        poaBlock.classList.remove('d-none');
+                        poaSelect.innerHTML = '';
+                        if (data.poas && data.poas.length) {
+                            data.poas.forEach(function (item) {
+                                const opt = document.createElement('option');
+                                opt.value = String(item.id);
+                                opt.textContent = item.label;
+                                if (selectedBefore.indexOf(String(item.id)) !== -1) {
+                                    opt.selected = true;
+                                }
+                                poaSelect.appendChild(opt);
+                            });
+                        } else {
+                            const opt = document.createElement('option');
+                            opt.disabled = true;
+                            opt.textContent = 'Нет активных доверенностей в реестре «Доверенности»';
+                            poaSelect.appendChild(opt);
+                        }
+                    }
+                })
+                .catch(function () {
+                    poaBlock.classList.remove('d-none');
+                });
+            }
+
+            document.getElementById('btnSelectAllDocs')?.addEventListener('click', function () {
+                checkboxes.forEach(cb => cb.checked = true);
+                updateSignerVisibility();
+            });
+            document.getElementById('btnClearAllDocs')?.addEventListener('click', function () {
+                checkboxes.forEach(cb => cb.checked = false);
+                updateSignerVisibility();
+            });
+
+            checkboxes.forEach(function (cb) {
+                cb.addEventListener('change', updateSignerVisibility);
+            });
+
+            if (signerSelect) {
+                signerSelect.addEventListener('change', function () {
+                    loadSignerPoas(this.value);
+                });
+                if (window.jQuery) {
+                    window.jQuery(signerSelect).on('select2:select select2:clear', function () {
+                        loadSignerPoas(this.value);
+                    });
+                }
+                if (signerSelect.value) {
+                    loadSignerPoas(signerSelect.value);
+                }
+            }
+
+            updateSignerVisibility();
+        })();
+    </script>
+{% endblock %}

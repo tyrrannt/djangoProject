@@ -2820,41 +2820,35 @@ class BiometricConsentDetailView(LoginRequiredMixin, PermissionRequiredMixin, De
 
 
 class GenerateConsentDocumentView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Генерирует и отдаёт заполненный Word/Excel-документ по записи согласия/документа."""
+
     permission_required = 'customers_app.view_biometricconsent'
 
     def get(self, request, pk):
-        consent = get_object_or_404(BiometricConsent, pk=pk)
+        """Формирует заполненный шаблон и возвращает его вложением."""
+        from customers_app.services_onboarding_docs import render_consent_document
+
+        consent = get_object_or_404(
+            BiometricConsent.objects.select_related('employee', 'consent_type', 'consent_type__template', 'signer')
+            .prefetch_related('powers_of_attorney'),
+            pk=pk,
+        )
 
         if not consent.consent_type or not consent.consent_type.template:
-            messages.error(request, 'Для этого согласия не настроен шаблон документа')
-            return redirect('biometric_consent:detail', pk=consent.pk)
-
-        template = consent.consent_type.template
-        context = prepare_consent_context(consent)
+            messages.error(request, 'Для этого типа документа не настроен шаблон')
+            return redirect('customers_app:biometric_consent_detail', pk=consent.pk)
 
         try:
-            # Используем TemplateService
-            if template.template_type == 'word':
-                buffer = TemplateService.render_word_template(template.unique_code, context)
-                file_extension = 'docx'
-                content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            else:
-                buffer = TemplateService.render_excel_template(template.unique_code, context)
-                file_extension = 'xlsx'
-                content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
-            filename = f"Согласие_{consent.consent_number}_{datetime.datetime.now().strftime('%Y%m%d')}.{file_extension}"
-
+            buffer, filename, content_type = render_consent_document(consent)
             return FileResponse(
                 buffer,
                 as_attachment=True,
                 filename=filename,
-                content_type=content_type
+                content_type=content_type,
             )
-
         except Exception as e:
             messages.error(request, f'Ошибка при генерации документа: {str(e)}')
-            return redirect('biometric_consent:detail', pk=consent.pk)
+            return redirect('customers_app:biometric_consent_detail', pk=consent.pk)
 
 
 class BiometricConsentCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -2890,7 +2884,11 @@ class BiometricConsentCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cr
 
         # Генерация номера согласия, если не заполнен
         if not form.instance.consent_number:
-            form.instance.consent_number = self.generate_consent_number()
+            from customers_app.services_onboarding_docs import generate_consent_number
+            form.instance.consent_number = generate_consent_number(
+                consent_type=form.instance.consent_type,
+                target_date=form.instance.consent_date,
+            )
 
         response = super().form_valid(form)
         messages.success(self.request, f'Согласие №{form.instance.consent_number} успешно создано')
@@ -2921,8 +2919,12 @@ class BiometricConsentCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cr
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Создание согласия на биометрию'
+        from customers_app.models import ConsentType
+        context['title'] = 'Создание документа / согласия сотрудника'
         context['button_text'] = 'Создать'
+        context['signer_required_type_ids'] = list(
+            ConsentType.objects.filter(is_active=True, requires_signer=True).values_list('pk', flat=True)
+        )
         return context
 
     def get_success_url(self):
@@ -2954,8 +2956,12 @@ class BiometricConsentUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Up
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Редактирование согласия на биометрию'
+        from customers_app.models import ConsentType
+        context['title'] = 'Редактирование документа / согласия'
         context['button_text'] = 'Сохранить'
+        context['signer_required_type_ids'] = list(
+            ConsentType.objects.filter(is_active=True, requires_signer=True).values_list('pk', flat=True)
+        )
         return context
 
     def get_success_url(self):

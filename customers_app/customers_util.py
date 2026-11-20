@@ -616,8 +616,17 @@ def get_vacation_days(self, dates):
 
 
 def prepare_consent_context(consent):
-    """
-    Подготовка контекста данных для заполнения шаблона согласия
+    """Формирует полный контекст переменных для заполнения Word-шаблонов согласий и документов при приёме.
+
+    Поддерживает как исторические англоязычные ключи, так и русскоязычные
+    переменные ``docxtpl`` (``{{фио}}``, ``{{фио_кратко}}``, ``{{должность}}``,
+    ``{{паспорт}}``, ``{{номер}}``, ``{{дата}}``, ``{{подписант_*}}``).
+
+    Args:
+        consent (BiometricConsent): Экземпляр оформленного согласия/документа сотрудника.
+
+    Returns:
+        dict: Словарь переменных для рендеринга через ``TemplateService.render_word_template``.
     """
     from datetime import datetime
 
@@ -631,9 +640,71 @@ def prepare_consent_context(consent):
     work_profile = employee.user_work_profile
     personal_profile = employee.user_profile
 
+    # Краткое ФИО формата «И.О. Фамилия» (например, «В.А. Кузнецов»)
+    first_initial = f"{employee.first_name[0]}." if employee.first_name else ""
+    surname_initial = f"{employee.surname[0]}." if employee.surname else ""
+    short_fio = f"{first_initial}{surname_initial} {employee.last_name or ''}".strip() or consent.employee_full_name
+
+    # Реквизиты трудового договора (приоритет: поле документа -> карточка сотрудника)
+    contract_number = (
+        getattr(consent, 'employment_contract_number', '')
+        or getattr(employee, 'employment_contract_number', '')
+        or ''
+    )
+    contract_date_obj = (
+        getattr(consent, 'employment_contract_date', None)
+        or getattr(employee, 'employment_contract_date', None)
+        or consent.consent_date
+    )
+    contract_date_str = contract_date_obj.strftime('%d.%m.%Y') if contract_date_obj else consent_date_str
+
+    # Реквизиты подписанта от работодателя и доверенностей
+    signer = getattr(consent, 'signer', None)
+    poas = list(consent.powers_of_attorney.all()) if consent.pk else []
+    if signer:
+        signer_position_gen = signer.position_genitive
+        signer_fio_gen = signer.full_name_genitive
+        signer_fio_short = signer.short_name
+        signer_basis = signer.format_acting_basis(poas)
+        signer_in_person = f"{signer_position_gen} {signer_fio_gen}, действующего на основании {signer_basis}"
+    else:
+        signer_position_gen = ''
+        signer_fio_gen = ''
+        signer_fio_short = ''
+        signer_basis = ''
+        signer_in_person = ''
+
+    # Паспортные данные (если заполнены)
+    passport_series = ''
+    passport_number = ''
+    passport_issued_by = ''
+    passport_issue_date = ''
+    passport_issue_code = ''
+    passport_full = ''
+
+    if personal_profile and personal_profile.passport:
+        passport = personal_profile.passport
+        passport_series = getattr(passport, 'series', '') or ''
+        passport_number = getattr(passport, 'number', '') or ''
+        passport_issued_by = getattr(passport, 'issued_by_whom', '') or ''
+        raw_issue_date = getattr(passport, 'date_of_issue', None)
+        passport_issue_date = raw_issue_date.strftime('%d.%m.%Y') if raw_issue_date else ''
+        passport_issue_code = getattr(passport, 'division_code', '') or ''
+
+        parts = []
+        if passport_series or passport_number:
+            parts.append(f"Паспорт гражданина РФ, серия {passport_series} № {passport_number}".strip())
+        if passport_issue_date or passport_issued_by:
+            parts.append(f"выдан {passport_issue_date} {passport_issued_by}".strip())
+        if passport_issue_code:
+            parts.append(f"код подразделения {passport_issue_code}")
+        passport_full = ", ".join(parts)
+
+    employee_address = consent.employee.address or ''
+
     # Формируем контекст
     context = {
-        # Данные согласия
+        # Данные согласия / документа (EN)
         'consent_number': consent.consent_number,
         'consent_date': consent_date_str,
         'consent_date_full': consent.consent_date.strftime('%d %B %Y') if consent.consent_date else '',
@@ -642,24 +713,25 @@ def prepare_consent_context(consent):
         'consent_type_name': consent.consent_type.name if consent.consent_type else '',
         'consent_type_description': consent.consent_type.description if consent.consent_type else '',
 
-        # Данные сотрудника
+        # Данные сотрудника (EN)
         'employee_full_name': consent.employee_full_name,
+        'employee_short_name': short_fio,
         'employee_last_name': employee.last_name or '',
         'employee_first_name': employee.first_name or '',
         'employee_surname': employee.surname or '',
         'employee_position': consent.employee_position,
         'employee_service_number': employee.service_number or '',
 
-        # Паспортные данные (если есть)
-        'passport_series': '',
-        'passport_number': '',
-        'passport_issued_by': '',
-        'passport_issue_date': '',
+        # Паспортные данные (EN)
+        'passport_series': passport_series,
+        'passport_number': passport_number,
+        'passport_issued_by': passport_issued_by,
+        'passport_issue_date': passport_issue_date,
+        'passport_issue_code': passport_issue_code,
+        'passport_full': passport_full,
 
-        # Адрес
-        'employee_address': consent.employee.address or '',
-
-        # Контактные данные
+        # Адрес и контакты
+        'employee_address': employee_address,
         'employee_phone': employee.personal_phone or '',
         'employee_email': employee.email or '',
 
@@ -672,25 +744,40 @@ def prepare_consent_context(consent):
         'inn': personal_profile.inn if personal_profile else '',
         'oms': personal_profile.oms if personal_profile else '',
 
-        # Комментарий
-        'comment': consent.comment or '',
+        # Подписант и доверенность (EN)
+        'signer_position_genitive': signer_position_gen,
+        'signer_full_name_genitive': signer_fio_gen,
+        'signer_short_name': signer_fio_short,
+        'signer_acting_basis': signer_basis,
+        'signer_in_person': signer_in_person,
 
-        # Текущая дата
+        # Комментарий и текущая дата
+        'comment': consent.comment or '',
         'current_date': datetime.now().strftime('%d.%m.%Y'),
         'current_date_full': datetime.now().strftime('%d %B %Y'),
-    }
 
-    # Заполняем паспортные данные, если есть
-    if personal_profile and personal_profile.passport:
-        passport = personal_profile.passport
-        context.update({
-            'passport_series': getattr(passport, 'series', ''),
-            'passport_number': getattr(passport, 'number', ''),
-            'passport_issued_by': getattr(passport, 'issued_by_whom', ''),
-            'passport_issue_date': getattr(passport, 'date_of_issue', '').strftime('%d.%m.%Y') if getattr(passport,
-                                                                                                       'date_of_issue',
-                                                                                                       None) else '',
-            'passport_issue_code': getattr(passport, 'division_code', ''),
-        })
+        # Русскоязычные переменные для шаблонов Word (docxtpl)
+        'фио': consent.employee_full_name,
+        'фио_кратко': short_fio,
+        'должность': consent.employee_position or '',
+        'паспорт': passport_full,
+        'паспорт_серия': passport_series,
+        'паспорт_номер': passport_number,
+        'паспорт_кем_выдан': passport_issued_by,
+        'паспорт_дата_выдачи': passport_issue_date,
+        'паспорт_код_подразделения': passport_issue_code,
+        'адрес': employee_address,
+        'номер': contract_number,
+        'дата': contract_date_str,
+        'трудовой_договор_номер': contract_number,
+        'трудовой_договор_дата': contract_date_str,
+        'номер_документа': consent.consent_number,
+        'дата_документа': consent_date_str,
+        'подписант_должность_род': signer_position_gen,
+        'подписант_фио_род': signer_fio_gen,
+        'подписант_фио_кратко': signer_fio_short,
+        'подписант_основание': signer_basis,
+        'подписант_в_лице': signer_in_person,
+    }
 
     return context

@@ -95,6 +95,14 @@
 
             <li class="divider"></li>
 
+            <!-- Ознакомительная экскурсия по порталу -->
+            <li>
+                <a role="menuitem" tabindex="-1" href="#" onclick="if(window.startBarkolOnboardingTour) window.startBarkolOnboardingTour(event); return false;">
+                    <i class="bx bx-compass me-2 text-info"></i>
+                    <span>Экскурсия по порталу</span>
+                </a>
+            </li>
+
             <!-- Игры и развлечения -->
             <li>
                 <a role="menuitem" tabindex="-1" href="{% url 'customers_app:game' %}">

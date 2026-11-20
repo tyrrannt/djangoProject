@@ -764,6 +764,22 @@ class ConsentType(models.Model):
         default=True,
         help_text="Отметьте, если этот тип согласия используется"
     )
+    requires_signer = models.BooleanField(
+        verbose_name="Требуется подписант от работодателя",
+        default=False,
+        help_text="Включите для договоров и соглашений, подписываемых директором или представителем по доверенности."
+    )
+    number_prefix = models.CharField(
+        verbose_name="Префикс нумерации",
+        max_length=12,
+        default="БС",
+        help_text="Префикс номера документа (например: БС, ПД, СКИ, ОКТ, ВУ, ДМО)."
+    )
+    is_required_on_hire = models.BooleanField(
+        verbose_name="Входит в пакет при приёме на работу",
+        default=True,
+        help_text="Отметьте, чтобы документ автоматически выбирался при формировании пакета при приёме."
+    )
 
     # Сортировка
     sort_order = models.PositiveIntegerField(
@@ -809,14 +825,120 @@ class ConsentType(models.Model):
         super().save(*args, **kwargs)
 
 
-class BiometricConsent(models.Model):
-    """
-    Согласие на обработку биометрических персональных данных
+class DocumentSigner(models.Model):
+    """Подписант кадровых документов и договоров со стороны работодателя.
+
+    Позволяет централизованно хранить реквизиты директора и уполномоченных
+    заместителей без дублирования шаблонов Word. Если подписант действует не по
+    Уставу (``acts_by_charter=False``), при оформлении документа обязательно
+    выбирается одна или несколько доверенностей из реестра ``PowerOfAttorney``.
     """
 
     class Meta:
-        verbose_name = "Согласие на обработку биометрии"
-        verbose_name_plural = "Согласия на обработку биометрии"
+        verbose_name = "Подписант от работодателя"
+        verbose_name_plural = "Подписанты от работодателя"
+        ordering = ["-is_default", "sort_order", "short_name"]
+
+    employee = models.ForeignKey(
+        "DataBaseUser",
+        verbose_name="Сотрудник (подписант)",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="signer_profiles",
+        help_text="Привязка к сотруднику портала для автоматического подбора его доверенностей.",
+    )
+    full_name_genitive = models.CharField(
+        verbose_name="ФИО в родительном падеже",
+        max_length=255,
+        help_text="Например: Бархотова Виктора Сергеевича / Шмакова Дмитрия Александровича.",
+    )
+    short_name = models.CharField(
+        verbose_name="Краткое ФИО (для блока подписей)",
+        max_length=100,
+        help_text="Например: В.С. Бархотов / Д.А. Шмаков.",
+    )
+    position_genitive = models.CharField(
+        verbose_name="Должность в родительном падеже",
+        max_length=255,
+        help_text="Например: генерального директора / первого заместителя генерального директора-исполнительного директора.",
+    )
+    acts_by_charter = models.BooleanField(
+        verbose_name="Действует на основании Устава",
+        default=False,
+        help_text="Если отмечено, доверенность не требуется (для Генерального директора).",
+    )
+    is_default = models.BooleanField(
+        verbose_name="Подписант по умолчанию",
+        default=False,
+        help_text="Автоматически подставляется в формах оформления документов.",
+    )
+    is_active = models.BooleanField(
+        verbose_name="Активен",
+        default=True,
+    )
+    sort_order = models.PositiveIntegerField(
+        verbose_name="Порядок сортировки",
+        default=0,
+    )
+
+    def __str__(self) -> str:
+        """Возвращает читаемое представление подписанта с основанием полномочий."""
+        basis = "Устав" if self.acts_by_charter else "по доверенности"
+        return f"{self.short_name} ({basis})"
+
+    def format_acting_basis(self, powers_of_attorney=None) -> str:
+        """Формирует юридическую формулировку основания полномочий для шаблонов Word.
+
+        Args:
+            powers_of_attorney: Итерируемая коллекция или QuerySet объектов
+                ``hrdepartment_app.models.PowerOfAttorney``.
+
+        Returns:
+            str: Строка основания («Устава» или «Доверенности <номера> от <дата>г.»).
+        """
+        if self.acts_by_charter:
+            return "Устава"
+
+        poas = list(powers_of_attorney) if powers_of_attorney is not None else []
+        if not poas:
+            return "Доверенности"
+
+        # Сортируем по дате выдачи и номеру по возрастанию для предсказуемого порядка
+        poas.sort(key=lambda p: (p.issue_date or datetime.date.min, str(p.number or "").strip()))
+
+        # Группируем доверенности по дате выдачи, чтобы номера одной даты выводились через запятую
+        grouped_by_date = {}
+        for poa in poas:
+            date_key = poa.issue_date.strftime("%d.%m.%Y") if poa.issue_date else ""
+            grouped_by_date.setdefault(date_key, []).append(str(poa.number).strip())
+
+        if len(grouped_by_date) == 1:
+            date_str, numbers = next(iter(grouped_by_date.items()))
+            numbers_joined = ", ".join(numbers)
+            if date_str:
+                return f"Доверенности {numbers_joined} от {date_str}г."
+            return f"Доверенности {numbers_joined}"
+
+        parts = []
+        for date_str, numbers in grouped_by_date.items():
+            numbers_joined = ", ".join(numbers)
+            if date_str:
+                parts.append(f"{numbers_joined} от {date_str}г.")
+            else:
+                parts.append(numbers_joined)
+        return "Доверенностей " + ", ".join(parts)
+
+
+class BiometricConsent(models.Model):
+    """
+    Согласия и кадровые документы сотрудника при приёме на работу
+    (биометрия, ПД, КИ, коммерческая тайна, воинский учёт, мат. ответственность).
+    """
+
+    class Meta:
+        verbose_name = "Документ / согласие сотрудника"
+        verbose_name_plural = "Согласия и документы при приёме"
         ordering = ['-consent_date']
         constraints = [
             models.UniqueConstraint(fields=['consent_number'], name='unique_consent_number')
@@ -871,6 +993,37 @@ class BiometricConsent(models.Model):
         help_text="Должность на момент подписания"
     )
 
+    # Подписант от работодателя и доверенности (для договоров и соглашений)
+    signer = models.ForeignKey(
+        "DocumentSigner",
+        verbose_name="Подписант от работодателя",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="signed_consents",
+        help_text="Директор или первый заместитель, подписывающий договор/соглашение.",
+    )
+    powers_of_attorney = models.ManyToManyField(
+        "hrdepartment_app.PowerOfAttorney",
+        verbose_name="Доверенности подписанта",
+        blank=True,
+        related_name="signed_consents",
+        help_text="Доверенность или несколько доверенностей, на основании которых действует подписант.",
+    )
+    employment_contract_number = models.CharField(
+        verbose_name="Номер трудового договора",
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Если не указан — подставляется из карточки сотрудника.",
+    )
+    employment_contract_date = models.DateField(
+        verbose_name="Дата трудового договора",
+        null=True,
+        blank=True,
+        help_text="Если не указана — подставляется из карточки сотрудника или даты документа.",
+    )
+
     # Комментарий
     comment = models.TextField(
         verbose_name="Комментарий",
@@ -880,10 +1033,12 @@ class BiometricConsent(models.Model):
 
     # Скан документа с подписью
     scanned_copy = models.FileField(
-        verbose_name="Скан согласия с подписью",
+        verbose_name="Скан документа с подписью",
         upload_to=get_biometric_consent_upload_path,
+        blank=True,
+        null=True,
         validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])],
-        help_text="Загрузите скан подписанного согласия (PDF, JPG, PNG)"
+        help_text="Загрузите скан подписанного документа (PDF, JPG, PNG)"
     )
 
     # Автоматические поля
@@ -1066,6 +1221,17 @@ class DataBaseUser(AbstractUser):
         blank=True,
         related_name="certifying_staff_users",
         help_text="Типы воздушных судов, указанные в свидетельстве специалиста по ТО ВС.",
+    )
+    onboarding_completed = models.BooleanField(
+        verbose_name="Ознакомительная экскурсия пройдена",
+        default=False,
+        help_text="Отметка о прохождении или пропуске ознакомительной экскурсии по корпоративному порталу.",
+    )
+    onboarding_completed_at = models.DateTimeField(
+        verbose_name="Дата прохождения экскурсии",
+        null=True,
+        blank=True,
+        help_text="Дата и время завершения ознакомительной экскурсии по порталу.",
     )
 
     def save(self, *args, **kwargs):
