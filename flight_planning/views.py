@@ -840,7 +840,6 @@ def get_my_assignments_api(request):
 
 @login_required
 @flight_planner_required
-@csrf_exempt
 @require_http_methods(["POST"])
 def assign_pilot_api(request):
     """Назначает пилота на диапазон дат для МПД с проверкой конфликтов.
@@ -954,7 +953,6 @@ def assign_pilot_api(request):
 
 @login_required
 @flight_planner_required
-@csrf_exempt
 @require_http_methods(["POST"])
 def resolve_conflict_api(request):
     """Разрешает конфликт назначений — удаляет старые конфликтующие назначения и создает новые.
@@ -1024,7 +1022,6 @@ def resolve_conflict_api(request):
 
 @login_required
 @flight_planner_required
-@csrf_exempt
 @require_http_methods(["POST"])
 def remove_assignments_api(request):
     """Удаляет назначения пилотов по списку идентификаторов.
@@ -2270,7 +2267,6 @@ def aircraft_basing_report_view(request):
 
 @login_required
 @flight_planner_required
-@csrf_exempt
 @require_http_methods(["POST"])
 def batch_swap_aircraft_api(request):
     """API эндпоинт для пакетной замены борта ВС в экипажах на интервал дат.

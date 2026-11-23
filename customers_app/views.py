@@ -137,8 +137,8 @@ def generate_qr_code(request, current_url):
     # Генерируем уникальный токен для авторизации
     token = get_random_string(length=32)
 
-    # Сохраняем токен в кеше с привязкой к пользователю
-    cache.set(token, request.user.id, timeout=30)  # Токен действителен 5 минут
+    # Сохраняем токен в кеше с изолированным префиксом и привязкой к пользователю
+    cache.set(f"qr_auth_token:{token}", request.user.id, timeout=30)
 
     # Создаем параметры для URL
     params = {
@@ -178,20 +178,41 @@ def generate_qr_code(request, current_url):
 
 
 def auth_with_token(request):
+    """Авторизует пользователя по одноразовому QR-токену с защитой от Open Redirect.
+
+    Проверяет префикс ключа кэша ``qr_auth_token:<token>``, активность учётной
+    записи (``is_active=True``) и безопасность целевого URL перенаправления
+    через ``url_has_allowed_host_and_scheme``.
+
+    Args:
+        request (HttpRequest): Входящий HTTP GET-запрос с параметрами ``token`` и ``next``.
+
+    Returns:
+        HttpResponseRedirect: Перенаправление на безопасный внутренний URL или страницу входа.
+    """
+    from django.utils.http import url_has_allowed_host_and_scheme
+
     token = request.GET.get('token')
-    next_url = request.GET.get('next')
+    next_url = request.GET.get('next') or '/'
     if token:
-        user_id = cache.get(token)
+        cache_key = f"qr_auth_token:{token}"
+        user_id = cache.get(cache_key)
         if user_id:
+            cache.delete(cache_key)  # Удаляем одноразовый токен сразу после чтения
             try:
-                user = DataBaseUser.objects.get(id=user_id)
+                user = DataBaseUser.objects.get(id=user_id, is_active=True)
                 user.backend = 'django.contrib.auth.backends.ModelBackend'
                 auth.login(request, user)
-                cache.delete(token)  # Удаляем токен после использования
-                return redirect(next_url)  # Перенаправляем на указанный URL
+                if not url_has_allowed_host_and_scheme(
+                    url=next_url,
+                    allowed_hosts={request.get_host()},
+                    require_https=request.is_secure(),
+                ):
+                    next_url = '/'
+                return redirect(next_url)
             except DataBaseUser.DoesNotExist:
                 pass
-    return redirect('customers_app:login')  # Перенаправляем на страницу входа, если токен недействителен
+    return redirect('customers_app:login')
 
 
 class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -2298,8 +2319,9 @@ def game(request):
     return render(request, 'customers_app/tetris.html')
 
 
-@csrf_exempt  # Уберите этот декоратор в production
+@login_required
 def save_stats(request):
+    """Сохраняет результат мини-игры авторизованного сотрудника с проверкой CSRF."""
     if request.method == 'POST':
         try:
             # Чтение JSON-данных из тела запроса
@@ -2318,13 +2340,12 @@ def save_stats(request):
             lines_cleared = int(lines_cleared)
 
             # Сохранение статистики
-            stats = UserStats.objects.create(
+            UserStats.objects.create(
                 user=request.user,
                 score=score,
                 level=level,
                 lines_cleared=lines_cleared
             )
-            stats.save()
 
             return JsonResponse({'status': 'success'})
         except (ValueError, json.JSONDecodeError) as e:
@@ -2332,8 +2353,9 @@ def save_stats(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
-@csrf_exempt
+@login_required
 def get_leaderboard(request):
+    """Возвращает таблицу лидеров мини-игры только для авторизованных пользователей."""
     if request.method == 'GET':
         try:
             # Общий победитель (пользователь с максимальным счетом)

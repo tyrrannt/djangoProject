@@ -5474,8 +5474,8 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
                 rc.place_report_card.set([self.object.time_sheets_place.pk])
 
 
+@login_required
 @require_POST
-@csrf_exempt
 def filter_outfit_cards(request):
     time_sheets_place_id = request.POST.get('time_sheets_place')
     if time_sheets_place_id:

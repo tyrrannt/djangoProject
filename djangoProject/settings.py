@@ -28,8 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 if not config("DEVELOPMENT", default=False, cast=bool):
-    # Устанавливаем SESSION_ENGINE на использование подписанных кук
-    SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+    # Хранение сессий в Redis (позволяет принудительно завершать сессии PWA на сервере)
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'default'
 
 SECRET_KEY = config("SECRET_KEY")
 SECRET_KEY_FALLBACKS = config("SECRET_KEY_FALLBACKS", default="", cast=lambda v: [s.strip() for s in v.split(",") if s.strip()])
