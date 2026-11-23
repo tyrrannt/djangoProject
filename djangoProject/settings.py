@@ -227,6 +227,10 @@ STATICFILES_DIRS = [
 MEDIA_URL = "/media/"
 MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, "media")
 
+# Флаг включения нативного мобильного REST API (Android/iOS, Swagger, JWT).
+# По умолчанию отключён, так как портал переведён на PWA.
+ENABLE_MOBILE_API = config("ENABLE_MOBILE_API", default=False, cast=bool)
+
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PERMISSION_CLASSES': [

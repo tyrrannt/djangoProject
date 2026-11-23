@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -29,17 +30,9 @@ app_name = "customers_app"
 
 urlpatterns = [
     path("auth-check/", views.auth_check),
-    path('api/', include(router.urls)),
-    path('api/v1/profile/', api_views.UserProfileAPIView.as_view(), name='api_profile'),
-    path('api/profile/payroll/', api_views.PayrollAPIView.as_view(), name='api_payroll'),
-    path('api/profile/work-time/', api_views.WorkTimeAPIView.as_view(), name='api_work_time'),
-    path('api/profile/report-card/add/', api_views.ReportCardManualCreateAPIView.as_view(), name='api_report_card_add'),
-    path('api/profile/report-card/', api_views.ReportCardManualListAPIView.as_view(), name='api_report_card_list'),
-    path('api/profile/report-card/<int:pk>/', api_views.ReportCardManualDetailAPIView.as_view(), name='api_report_card_detail'),
+    # PWA Web Push (активно используется pwa_manager.js)
     path('api/push/vapid-key/', api_views.VapidKeyAPIView.as_view(), name='api_push_vapid_key'),
     path('api/push/subscribe/', api_views.PushSubscriptionAPIView.as_view(), name='api_push_subscribe'),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # Passkeys / WebAuthn Endpoints
     path('api/passkey/register/options/', webauthn_views.webauthn_register_options, name='passkey_register_options'),
     path('api/passkey/register/verify/', webauthn_views.webauthn_register_verify, name='passkey_register_verify'),
@@ -161,6 +154,21 @@ urlpatterns = [
     path('api/org-structure/node/assign-leader/', views_org_structure.OrgStructureAssignLeaderApiView.as_view(), name='api_org_structure_assign_leader'),
     path('api/org-structure/node/<int:node_id>/history/', views_org_structure.OrgStructureNodeHistoryApiView.as_view(), name='api_org_structure_node_history'),
     path('api/org-structure/create-version/', views_org_structure.OrgStructureCreateVersionApiView.as_view(), name='api_org_structure_create_version'),
+]
+
+# Нативное мобильное REST API (Android/iOS) и JWT — подключается только при ENABLE_MOBILE_API=True
+if getattr(settings, "ENABLE_MOBILE_API", False):
+    urlpatterns += [
+        path('api/', include(router.urls)),
+        path('api/v1/profile/', api_views.UserProfileAPIView.as_view(), name='api_profile'),
+        path('api/profile/payroll/', api_views.PayrollAPIView.as_view(), name='api_payroll'),
+        path('api/profile/work-time/', api_views.WorkTimeAPIView.as_view(), name='api_work_time'),
+        path('api/profile/report-card/add/', api_views.ReportCardManualCreateAPIView.as_view(), name='api_report_card_add'),
+        path('api/profile/report-card/', api_views.ReportCardManualListAPIView.as_view(), name='api_report_card_list'),
+        path('api/profile/report-card/<int:pk>/', api_views.ReportCardManualDetailAPIView.as_view(), name='api_report_card_detail'),
+        path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+        path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    ]
 
     # path(
     #     "password/<int:pk>/update/",
@@ -188,4 +196,3 @@ urlpatterns = [
     #     AffiliationDeleteView.as_view(),
     #     name="affiliation-delete",
     # ),
-]

@@ -3135,6 +3135,15 @@ class ApartmentOccupancyReportView(LoginRequiredMixin, TemplateView):
 
 
 # ----------------------------------------- DRF -----------------------------------------
-class DataBaseUserViewSet(viewsets.ModelViewSet):
+class DataBaseUserViewSet(viewsets.ReadOnlyModelViewSet):
+    """Ограниченный read-only ViewSet справочника пользователей (только для администраторов).
+
+    Доступ разрешён исключительно администраторам (``IsAdminUser``),
+    операции создания, модификации и удаления отключены.
+    """
+
+    from rest_framework import permissions as drf_permissions
+
     queryset = DataBaseUser.objects.all()
     serializer_class = DataBaseUserSerializer
+    permission_classes = [drf_permissions.IsAdminUser]

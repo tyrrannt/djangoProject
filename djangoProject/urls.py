@@ -41,11 +41,6 @@ urlpatterns = [
     path('bklproxmoxadmin/', admin.site.urls),
     path('my-ip/', administration_views.check_my_ip, name='direct_my_ip'),
 
-    # API Schema & UI
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-
     # Direct Org Structure API Routes
     path('api/org-structure/data/', views_org_structure.OrgStructureDataApiView.as_view(), name='api_org_structure_data_direct'),
     path('api/org-structure/save-layout/', views_org_structure.OrgStructureSaveLayoutApiView.as_view(), name='api_org_structure_save_layout_direct'),
@@ -60,24 +55,32 @@ urlpatterns = [
     path('hr/', include('hrdepartment_app.urls')),
     path('logistics/', include('logistics_app.urls')),
     path('chat/', include('chat_app.urls')),
-    path('api/chat/', include('chat_app.api_urls')),
     path('portal/', include('administration_app.urls')),
     path('mirage/', include('telegram_app.urls')),
     path('tasks/', include('tasks_app.urls')),
     path('tickets/', include('tickets_app.urls')),
-    path('api/', include('tickets_app.api_urls')),
     path('equipment/', include('ppequipment_app.urls')),
     path('pass/', include('password_manager.urls')),
-    path('api/passwords/', include('password_manager.api_urls')),
     path('map/', include('map_viewer.urls')),
-    path('api/maps/', include('map_viewer.api_urls')),
     path('flight/', include('flight_planning.urls')),
     path('finance/', include('finance_app.urls')),
-    path('api/finance/', include('finance_app.api_urls')),
     path('mail/', include('mailbox_app.urls')),
     path('testing/', include('testing_app.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls'), name="ck_editor_5_upload_file"),
 ]
+
+# Нативное мобильное REST API и Swagger UI подключаются только при ENABLE_MOBILE_API=True
+if getattr(settings, "ENABLE_MOBILE_API", False):
+    urlpatterns += [
+        path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+        path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+        path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+        path('api/chat/', include('chat_app.api_urls')),
+        path('api/', include('tickets_app.api_urls')),
+        path('api/passwords/', include('password_manager.api_urls')),
+        path('api/maps/', include('map_viewer.api_urls')),
+        path('api/finance/', include('finance_app.api_urls')),
+    ]
 
 if settings.DEBUG:
     urlpatterns += [
