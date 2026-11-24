@@ -2,6 +2,7 @@
 """Сервисный слой генерации кадровых документов и пакетной выгрузки при приёме на работу."""
 
 import io
+import logging
 import re
 import zipfile
 from datetime import date
@@ -12,6 +13,8 @@ from django.db import transaction
 from administration_app.services import TemplateService
 from customers_app.customers_util import prepare_consent_context
 from customers_app.models import BiometricConsent, ConsentType, DataBaseUser, DocumentSigner
+
+logger = logging.getLogger(__name__)
 
 
 def _sanitize_filename(name: str) -> str:
@@ -105,6 +108,7 @@ def generate_hire_package_zip(
     employment_contract_number: str = "",
     employment_contract_date: Optional[date] = None,
     comment: str = "",
+    errors_out: Optional[List[str]] = None,
 ) -> Tuple[io.BytesIO, List[BiometricConsent], List[str]]:
     """Создаёт пакет записей документов при приёме на работу и собирает их в ZIP-архив.
 
@@ -165,9 +169,18 @@ def generate_hire_package_zip(
                 try:
                     doc_buf, filename, _ = render_consent_document(consent)
                     zf.writestr(filename, doc_buf.getvalue())
-                except Exception:
+                except Exception as exc:
+                    logger.exception(
+                        "Ошибка рендеринга шаблона для типа документа '%s' (template=%s)",
+                        ctype.name,
+                        getattr(ctype.template, "unique_code", None),
+                    )
+                    if errors_out is not None:
+                        errors_out.append(f"{ctype.name}: {exc}")
                     skipped_without_template.append(ctype.name)
             else:
+                if errors_out is not None:
+                    errors_out.append(f"{ctype.name}: не привязан шаблон документа")
                 skipped_without_template.append(ctype.name)
 
     zip_buffer.seek(0)

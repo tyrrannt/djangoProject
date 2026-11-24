@@ -124,6 +124,7 @@ class HirePackageGenerateView(LoginRequiredMixin, PermissionRequiredMixin, FormV
         contract_date = form.cleaned_data.get("employment_contract_date")
         comment = form.cleaned_data.get("comment") or ""
 
+        render_errors = []
         zip_buffer, created_consents, skipped = generate_hire_package_zip(
             employee=employee,
             consent_types=consent_types,
@@ -134,14 +135,16 @@ class HirePackageGenerateView(LoginRequiredMixin, PermissionRequiredMixin, FormV
             employment_contract_number=contract_number,
             employment_contract_date=contract_date,
             comment=comment,
+            errors_out=render_errors,
         )
 
-        # Если ни один из выбранных документов не имеет шаблона, возвращаемся в список с уведомлением
+        # Если ни один из выбранных документов не удалось сформировать, возвращаемся в список с подробной причиной
         if len(skipped) == len(created_consents):
+            details = "; ".join(render_errors) if render_errors else "не привязан Word-шаблон"
             messages.warning(
                 self.request,
-                f"Создано записей в реестре: {len(created_consents)}, но ни у одного типа не привязан Word-шаблон. "
-                "Загрузите шаблоны в админ-панели (Шаблоны документов).",
+                f"Создано записей в реестре: {len(created_consents)}, но файлы не сформированы ({details}). "
+                "Проверьте шаблоны в админ-панели (Шаблоны документов).",
             )
             return redirect("customers_app:biometric_consent_list")
 

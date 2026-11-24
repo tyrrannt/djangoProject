@@ -647,8 +647,8 @@ def prepare_consent_context(consent):
 
     # Реквизиты трудового договора (приоритет: поле документа -> карточка сотрудника)
     contract_number = (
-        getattr(consent, 'employment_contract_number', '')
-        or getattr(employee, 'employment_contract_number', '')
+        getattr(consent, 'employment_contract', '')
+        or getattr(employee, 'employment_contract', '')
         or ''
     )
     contract_date_obj = (
