@@ -142,7 +142,7 @@
                             <i class="fas fa-users-cog me-1"></i>Категории персонала
                         </a>
                     {% endif %}
-                    <a href="{% url 'customers_app:payroll_export_excel' %}?year={{ year }}&month={{ month }}&division={{ selected_division }}&staff_category={{ selected_staff_category }}&q={{ search|urlencode }}"
+                    <a href="{% url 'customers_app:payroll_export_excel' %}?year={{ year }}&month={{ month }}&division={{ selected_division }}&staff_category={{ selected_staff_category }}&q={{ search|urlencode }}&compare_years={{ compare_years_count }}"
                        class="btn btn-outline-success btn-sm">
                         <i class="fas fa-file-excel me-1"></i>Выгрузить в Excel
                     </a>
@@ -416,12 +416,28 @@
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                             <div>
                                 <h5 class="fw-bold text-primary mb-0">
-                                    Сравнительный отчёт по группам персонала: {{ shmakov_report.prev_year }} г. vs {{ shmakov_report.curr_year }} г.
+                                    Сравнительный отчёт по группам персонала: {{ shmakov_report.years_label }} гг.
                                 </h5>
                                 <div class="small text-muted">
                                     Источник: КНД 1151162. Работники по договорам ГПХ и без категории автоматически включены в «Прочий персонал».
                                 </div>
                             </div>
+                            <form method="get" class="d-flex align-items-center gap-2">
+                                <input type="hidden" name="year" value="{{ year }}">
+                                <input type="hidden" name="month" value="{{ month }}">
+                                <input type="hidden" name="division" value="{{ selected_division }}">
+                                <input type="hidden" name="staff_category" value="{{ selected_staff_category }}">
+                                <input type="hidden" name="q" value="{{ search }}">
+                                <input type="hidden" name="tab" value="shmakov">
+                                <label for="compareYearsSelect" class="small fw-semibold text-muted mb-0">Сравнивать лет:</label>
+                                <select id="compareYearsSelect" name="compare_years" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                    {% for n in compare_years_options %}
+                                        <option value="{{ n }}" {% if n == compare_years_count %}selected{% endif %}>
+                                            {{ n }}{% if n == 2 %} (по умолч.){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
                         </div>
 
                         {% if shmakov_report.months_rows %}
@@ -454,7 +470,7 @@
                             <div class="row g-4">
                                 <div class="col-12 col-lg-6">
                                     <div class="border rounded-3 p-3 bg-white h-100">
-                                        <h6 class="fw-semibold mb-3">Общий ФОТ по месяцам: {{ shmakov_report.prev_year }} vs {{ shmakov_report.curr_year }}</h6>
+                                        <h6 class="fw-semibold mb-3">Общий ФОТ по месяцам: {{ shmakov_report.years_label }}</h6>
                                         <div style="height: 280px;">
                                             <canvas id="shmakovFotChart"></canvas>
                                         </div>
@@ -462,32 +478,26 @@
                                 </div>
                                 <div class="col-12 col-lg-6">
                                     <div class="border rounded-3 p-3 bg-white h-100">
-                                        <h6 class="fw-semibold mb-3">Фактическая численность персонала по месяцам: {{ shmakov_report.prev_year }} vs {{ shmakov_report.curr_year }} (чел.)</h6>
+                                        <h6 class="fw-semibold mb-3">Фактическая численность персонала по месяцам: {{ shmakov_report.years_label }} (чел.)</h6>
                                         <div style="height: 280px;">
                                             <canvas id="shmakovRealCountChart"></canvas>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-12 col-lg-6">
-                                    <div class="border rounded-3 p-3 bg-white h-100">
-                                        <h6 class="fw-semibold mb-3">Структура персонала по месяцам ({{ shmakov_report.prev_year }} г., % и чел.)</h6>
-                                        <div style="height: 280px;">
-                                            <canvas id="shmakovSharePrevChart"></canvas>
+                                {% for y in shmakov_report.years %}
+                                    <div class="col-12 col-lg-6">
+                                        <div class="border rounded-3 p-3 bg-white h-100">
+                                            <h6 class="fw-semibold mb-3">Структура персонала по месяцам ({{ y }} г., % и чел.)</h6>
+                                            <div style="height: 280px;">
+                                                <canvas id="shmakovShareChart_{{ y }}"></canvas>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="col-12 col-lg-6">
-                                    <div class="border rounded-3 p-3 bg-white h-100">
-                                        <h6 class="fw-semibold mb-3">Структура персонала по месяцам ({{ shmakov_report.curr_year }} г., % и чел.)</h6>
-                                        <div style="height: 280px;">
-                                            <canvas id="shmakovShareCurrChart"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
+                                {% endfor %}
                             </div>
                         {% else %}
                             <div class="alert alert-info mb-0">
-                                Нет данных КНД 1151162 за {{ shmakov_report.prev_year }}–{{ shmakov_report.curr_year }} годы.
+                                Нет данных КНД 1151162 за {{ shmakov_report.years_label }} годы.
                             </div>
                         {% endif %}
                     </div>
@@ -1349,66 +1359,74 @@
                 if (!thead || !tbody || !shmakovRaw.months) return;
 
                 const activeSpecs = columnSpecs.filter(s => s.enabled);
-                const py = shmakovRaw.prev_year;
-                const cy = shmakovRaw.curr_year;
+                const years = (shmakovRaw.years && shmakovRaw.years.length) ? shmakovRaw.years : [shmakovRaw.prev_year, shmakovRaw.curr_year];
+                const colsPerGroup = years.length + 1;
 
                 let h1 = `<tr><th rowspan="2" class="align-middle">Месяц</th>`;
                 activeSpecs.forEach(s => {
-                    h1 += `<th colspan="3" class="text-center bg-primary-subtle">${s.label}</th>`;
+                    h1 += `<th colspan="${colsPerGroup}" class="text-center bg-primary-subtle">${s.label}</th>`;
                 });
-                h1 += `<th colspan="3" class="text-center bg-success-subtle">Всего по выбранным</th></tr>`;
+                h1 += `<th colspan="${colsPerGroup}" class="text-center bg-success-subtle">Всего по выбранным</th></tr>`;
 
+                const yearHeadersHtml = years.map(y => `<th class="text-end">${y} ₽</th>`).join('') + `<th class="text-end">Δ %</th>`;
                 let h2 = `<tr>`;
                 activeSpecs.forEach(() => {
-                    h2 += `<th class="text-end">${py} ₽</th><th class="text-end">${cy} ₽</th><th class="text-end">Δ %</th>`;
+                    h2 += yearHeadersHtml;
                 });
-                h2 += `<th class="text-end">${py} ₽</th><th class="text-end">${cy} ₽</th><th class="text-end">Δ %</th></tr>`;
+                h2 += yearHeadersHtml + `</tr>`;
                 thead.innerHTML = h1 + h2;
 
-                const colTotals = activeSpecs.map(() => ({ prev: 0, curr: 0 }));
-                let grandPrev = 0;
-                let grandCurr = 0;
-                const chartPrevTotals = [];
-                const chartCurrTotals = [];
+                const colTotals = activeSpecs.map(() => years.map(() => 0));
+                const grandTotals = years.map(() => 0);
+                const chartTotalsByYear = years.map(() => []);
 
                 let bodyHtml = '';
                 shmakovRaw.months.forEach(m => {
                     const sColor = getSeasonColor(m.month);
                     const isSeasonEnd = (m.month === 2 || m.month === 5 || m.month === 8 || m.month === 11);
                     const rowStyle = isSeasonEnd ? ' style="border-bottom: 2px solid #475569;"' : '';
-                    let rowPrevTotal = 0;
-                    let rowCurrTotal = 0;
+                    const rowYearTotals = years.map(() => 0);
                     let rowHtml = `<tr${rowStyle}><td class="fw-semibold" style="background-color: ${sColor};">${m.month_name}</td>`;
 
                     activeSpecs.forEach((spec, idx) => {
-                        let pSum = 0;
-                        let cSum = 0;
-                        spec.groups.forEach(g => {
-                            const cell = m.groups[g];
-                            if (cell) {
-                                pSum += cell.prev;
-                                cSum += cell.curr;
-                            }
+                        const sums = years.map((y, yi) => {
+                            let s = 0;
+                            spec.groups.forEach(g => {
+                                const cell = m.groups[g];
+                                if (cell) {
+                                    if (cell.by_year && cell.by_year[String(y)] !== undefined) {
+                                        s += cell.by_year[String(y)];
+                                    } else if (yi === 0 && years.length === 2) {
+                                        s += (cell.prev || 0);
+                                    } else if (yi === years.length - 1) {
+                                        s += (cell.curr || 0);
+                                    }
+                                }
+                            });
+                            colTotals[idx][yi] += s;
+                            rowYearTotals[yi] += s;
+                            return s;
                         });
-                        colTotals[idx].prev += pSum;
-                        colTotals[idx].curr += cSum;
-                        rowPrevTotal += pSum;
-                        rowCurrTotal += cSum;
 
-                        const d = fmtDelta(pSum, cSum);
-                        rowHtml += `<td class="text-end text-muted">${fmtMoney(pSum)}</td>`;
-                        rowHtml += `<td class="text-end fw-semibold">${fmtMoney(cSum)}</td>`;
+                        sums.forEach((val, yi) => {
+                            const cls = (yi === sums.length - 1) ? 'fw-semibold' : 'text-muted';
+                            rowHtml += `<td class="text-end ${cls}">${fmtMoney(val)}</td>`;
+                        });
+                        const prevVal = sums.length >= 2 ? sums[sums.length - 2] : 0;
+                        const currVal = sums[sums.length - 1] || 0;
+                        const d = fmtDelta(prevVal, currVal);
                         rowHtml += `<td class="text-end ${d.cls}">${d.text}</td>`;
                     });
 
-                    grandPrev += rowPrevTotal;
-                    grandCurr += rowCurrTotal;
-                    chartPrevTotals.push(rowPrevTotal);
-                    chartCurrTotals.push(rowCurrTotal);
-
-                    const totalDelta = fmtDelta(rowPrevTotal, rowCurrTotal);
-                    rowHtml += `<td class="text-end fw-semibold" style="background-color: ${sColor};">${fmtMoney(rowPrevTotal)}</td>`;
-                    rowHtml += `<td class="text-end fw-bold" style="background-color: ${sColor};">${fmtMoney(rowCurrTotal)}</td>`;
+                    rowYearTotals.forEach((val, yi) => {
+                        grandTotals[yi] += val;
+                        chartTotalsByYear[yi].push(val);
+                        const cls = (yi === rowYearTotals.length - 1) ? 'fw-bold' : 'fw-semibold';
+                        rowHtml += `<td class="text-end ${cls}" style="background-color: ${sColor};">${fmtMoney(val)}</td>`;
+                    });
+                    const totPrev = rowYearTotals.length >= 2 ? rowYearTotals[rowYearTotals.length - 2] : 0;
+                    const totCurr = rowYearTotals[rowYearTotals.length - 1] || 0;
+                    const totalDelta = fmtDelta(totPrev, totCurr);
                     rowHtml += `<td class="text-end fw-bold ${totalDelta.cls}">${totalDelta.text}</td>`;
                     rowHtml += `</tr>`;
                     bodyHtml += rowHtml;
@@ -1416,15 +1434,17 @@
 
                 // Итоговая строка за год
                 let totalRow = `<tr class="table-secondary fw-bold"><td>Итого за период</td>`;
-                colTotals.forEach(ct => {
-                    const d = fmtDelta(ct.prev, ct.curr);
-                    totalRow += `<td class="text-end">${fmtMoney(ct.prev)}</td>`;
-                    totalRow += `<td class="text-end">${fmtMoney(ct.curr)}</td>`;
+                colTotals.forEach(ctArr => {
+                    ctArr.forEach(val => {
+                        totalRow += `<td class="text-end">${fmtMoney(val)}</td>`;
+                    });
+                    const d = fmtDelta(ctArr.length >= 2 ? ctArr[ctArr.length - 2] : 0, ctArr[ctArr.length - 1] || 0);
                     totalRow += `<td class="text-end ${d.cls}">${d.text}</td>`;
                 });
-                const grandDelta = fmtDelta(grandPrev, grandCurr);
-                totalRow += `<td class="text-end">${fmtMoney(grandPrev)}</td>`;
-                totalRow += `<td class="text-end">${fmtMoney(grandCurr)}</td>`;
+                grandTotals.forEach(val => {
+                    totalRow += `<td class="text-end">${fmtMoney(val)}</td>`;
+                });
+                const grandDelta = fmtDelta(grandTotals.length >= 2 ? grandTotals[grandTotals.length - 2] : 0, grandTotals[grandTotals.length - 1] || 0);
                 totalRow += `<td class="text-end ${grandDelta.cls}">${grandDelta.text}</td>`;
                 totalRow += `</tr>`;
 
@@ -1432,8 +1452,11 @@
 
                 // Обновляем график ФОТ под выбранные группы
                 if (shmakovFotChartInstance) {
-                    shmakovFotChartInstance.data.datasets[0].data = chartPrevTotals;
-                    shmakovFotChartInstance.data.datasets[1].data = chartCurrTotals;
+                    chartTotalsByYear.forEach((arr, yi) => {
+                        if (shmakovFotChartInstance.data.datasets[yi]) {
+                            shmakovFotChartInstance.data.datasets[yi].data = arr;
+                        }
+                    });
                     shmakovFotChartInstance.update();
                 }
             }
@@ -1473,16 +1496,21 @@
                 if (shmakovRendered || typeof Chart === 'undefined' || !shmakovChart.labels) return;
                 shmakovRendered = true;
 
+                const years = shmakovChart.years || [{{ shmakov_report.prev_year }}, {{ shmakov_report.curr_year }}];
+                const yearColors = ['#94a3b8', '#0d6efd', '#198754', '#fd7e14', '#6f42c1'];
+
                 const fotCtx = document.getElementById('shmakovFotChart');
                 if (fotCtx) {
+                    const fotDatasets = years.map((y, yi) => ({
+                        label: `${y} ₽`,
+                        data: (shmakovChart.totals_by_year && shmakovChart.totals_by_year[String(y)]) || [],
+                        backgroundColor: yearColors[yi % yearColors.length]
+                    }));
                     shmakovFotChartInstance = new Chart(fotCtx.getContext('2d'), {
                         type: 'bar',
                         data: {
                             labels: shmakovChart.labels,
-                            datasets: [
-                                { label: '{{ shmakov_report.prev_year }} ₽', data: shmakovChart.prev_totals || [], backgroundColor: '#94a3b8' },
-                                { label: '{{ shmakov_report.curr_year }} ₽', data: shmakovChart.curr_totals || [], backgroundColor: '#0d6efd' }
-                            ]
+                            datasets: fotDatasets
                         },
                         options: { responsive: true, maintainAspectRatio: false }
                     });
@@ -1491,26 +1519,21 @@
 
                 const cntCtx = document.getElementById('shmakovRealCountChart');
                 if (cntCtx) {
+                    const cntDatasets = years.map((y, yi) => {
+                        const c = yearColors[yi % yearColors.length];
+                        return {
+                            label: `${y} (чел.)`,
+                            data: (shmakovChart.counts_by_year && shmakovChart.counts_by_year[String(y)]) || [],
+                            borderColor: c,
+                            backgroundColor: c,
+                            tension: 0.25
+                        };
+                    });
                     new Chart(cntCtx.getContext('2d'), {
                         type: 'line',
                         data: {
                             labels: shmakovChart.labels || [],
-                            datasets: [
-                                {
-                                    label: '{{ shmakov_report.prev_year }} (чел.)',
-                                    data: shmakovChart.prev_counts || [],
-                                    borderColor: '#64748b',
-                                    backgroundColor: '#64748b',
-                                    tension: 0.25
-                                },
-                                {
-                                    label: '{{ shmakov_report.curr_year }} (чел.)',
-                                    data: shmakovChart.curr_counts || [],
-                                    borderColor: '#198754',
-                                    backgroundColor: '#198754',
-                                    tension: 0.25
-                                }
-                            ]
+                            datasets: cntDatasets
                         },
                         options: {
                             responsive: true,
@@ -1550,8 +1573,10 @@
                     });
                 }
 
-                buildStackedShareChart('shmakovSharePrevChart', shmakovChart.monthly_share_datasets_prev);
-                buildStackedShareChart('shmakovShareCurrChart', shmakovChart.monthly_share_datasets_curr);
+                years.forEach(y => {
+                    const ds = (shmakovChart.share_datasets_by_year && shmakovChart.share_datasets_by_year[String(y)]) || [];
+                    buildStackedShareChart(`shmakovShareChart_${y}`, ds);
+                });
             }
 
             const shmakovTabBtn = document.getElementById('shmakovTabBtn');
@@ -1559,12 +1584,16 @@
                 shmakovTabBtn.addEventListener('shown.bs.tab', renderShmakovCharts);
             }
 
-            // Активация вкладки из URL (?tab=import)
+            // Активация вкладки из URL (?tab=import / ?tab=shmakov)
             const urlTab = new URLSearchParams(window.location.search).get('tab');
             if (urlTab === 'import') {
                 const importBtn = document.querySelector('[data-bs-target="#tab-import"]');
                 if (importBtn && typeof bootstrap !== 'undefined') {
                     new bootstrap.Tab(importBtn).show();
+                }
+            } else if (urlTab === 'shmakov') {
+                if (shmakovTabBtn && typeof bootstrap !== 'undefined') {
+                    new bootstrap.Tab(shmakovTabBtn).show();
                 }
             }
         });

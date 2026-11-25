@@ -422,13 +422,39 @@ def _build_fns_avg_salary_report(year: int, staff_category_id: str = "", search:
     }
 
 
-def _build_shmakov_report(year: int) -> Dict[str, Any]:
-    """Строит сравнительный отчёт для Шмакова Д.А. (текущий год vs предыдущий год) по КНД 1151162.
+def _get_available_years() -> List[int]:
+    """Возвращает отсортированный по убыванию список доступных лет (текущий/прошлый + загруженные в БД)."""
+    return sorted(
+        {datetime.date.today().year, datetime.date.today().year - 1}
+        | set(PayrollReportBatch.objects.values_list("year", flat=True))
+        | set(PayrollODataDetail.objects.values_list("year", flat=True)),
+        reverse=True,
+    )
 
-    Показывает сумму ФОТ, количество человек и долю (%) в каждой группе за оба года.
+
+def _get_compare_years_count(request: HttpRequest) -> int:
+    """Возвращает количество лет для сравнения в динамике ФОТ (по умолчанию 2)."""
+    try:
+        val = int(request.GET.get("compare_years") or 2)
+        return max(2, min(val, 10))
+    except (TypeError, ValueError):
+        return 2
+
+
+def _build_shmakov_report(year: int, compare_years_count: int = 2) -> Dict[str, Any]:
+    """Строит сравнительный отчёт по группам персонала (по умолчанию 2 года, можно выбрать больше) по КНД 1151162.
+
+    Показывает сумму ФОТ, количество человек и долю (%) в каждой группе за выбранное число лет.
     Сотрудники по ГПХ (freelancer) и без назначенной категории автоматически относятся к 'Прочий персонал'.
     """
-    prev_year = year - 1
+    compare_years_count = max(2, compare_years_count)
+    candidate_years = sorted([y for y in _get_available_years() if y <= year])
+    if len(candidate_years) >= compare_years_count:
+        years_list = candidate_years[-compare_years_count:]
+    else:
+        years_list = [year - i for i in range(compare_years_count - 1, -1, -1)]
+    curr_year = years_list[-1]
+    prev_year = years_list[-2] if len(years_list) >= 2 else curr_year - 1
     fixed_groups = ["АУП", "ИТП", "ЧЛЭ", "Прочий персонал"]
     extra_cats = list(
         StaffCategory.objects.filter(is_active=True)
@@ -489,15 +515,16 @@ def _build_shmakov_report(year: int) -> Dict[str, Any]:
                 )
         return month_data
 
-    prev_data = _collect_year_data(prev_year)
-    curr_data = _collect_year_data(year)
+    year_data_map = {y: _collect_year_data(y) for y in years_list}
+    prev_data = year_data_map[prev_year]
+    curr_data = year_data_map[curr_year]
 
     months_rows = []
     for m in range(1, 13):
+        if all(year_data_map[y][m]["total_count"] == 0 for y in years_list):
+            continue
         p_m = prev_data[m]
         c_m = curr_data[m]
-        if p_m["total_count"] == 0 and c_m["total_count"] == 0:
-            continue
         group_cells = []
         for g in group_names:
             p_g = p_m["groups"][g]
@@ -517,6 +544,10 @@ def _build_shmakov_report(year: int) -> Dict[str, Any]:
                 "curr_share": c_g["share_pct"],
                 "diff_amount": diff_amt,
                 "diff_pct": diff_pct,
+                "amounts": [year_data_map[y][m]["groups"][g]["amount"] for y in years_list],
+                "counts": [year_data_map[y][m]["groups"][g]["count"] for y in years_list],
+                "shares": [year_data_map[y][m]["groups"][g]["share_pct"] for y in years_list],
+                "amounts_by_year": {str(y): year_data_map[y][m]["groups"][g]["amount"] for y in years_list},
             })
         months_rows.append({
             "month": m,
@@ -526,6 +557,8 @@ def _build_shmakov_report(year: int) -> Dict[str, Any]:
             "prev_total_count": p_m["total_count"],
             "curr_total_amount": c_m["total_amount"],
             "curr_total_count": c_m["total_count"],
+            "total_amounts_by_year": {str(y): year_data_map[y][m]["total_amount"] for y in years_list},
+            "total_counts_by_year": {str(y): year_data_map[y][m]["total_count"] for y in years_list},
         })
 
     # Итого за год по каждой группе
@@ -567,18 +600,36 @@ def _build_shmakov_report(year: int) -> Dict[str, Any]:
             "backgroundColor": color,
         })
 
+    share_datasets_by_year = {
+        str(y): [
+            {
+                "label": g,
+                "data": [float(r["groups"][idx_g]["shares"][yi]) for r in months_rows],
+                "counts": [r["groups"][idx_g]["counts"][yi] for r in months_rows],
+                "backgroundColor": palette[idx_g % len(palette)],
+            }
+            for idx_g, g in enumerate(group_names)
+        ]
+        for yi, y in enumerate(years_list)
+    }
+
     chart = {
+        "years": years_list,
         "labels": [r["month_name"] for r in months_rows],
         "prev_totals": [float(r["prev_total_amount"]) for r in months_rows],
         "curr_totals": [float(r["curr_total_amount"]) for r in months_rows],
         "prev_counts": [r["prev_total_count"] for r in months_rows],
         "curr_counts": [r["curr_total_count"] for r in months_rows],
+        "totals_by_year": {str(y): [float(r["total_amounts_by_year"][str(y)]) for r in months_rows] for y in years_list},
+        "counts_by_year": {str(y): [r["total_counts_by_year"][str(y)] for r in months_rows] for y in years_list},
         "group_names": group_names,
         "monthly_share_datasets_curr": monthly_share_datasets_curr,
         "monthly_share_datasets_prev": monthly_share_datasets_prev,
+        "share_datasets_by_year": share_datasets_by_year,
         "raw_table": {
+            "years": years_list,
             "prev_year": prev_year,
-            "curr_year": year,
+            "curr_year": curr_year,
             "group_names": group_names,
             "months": [
                 {
@@ -588,6 +639,7 @@ def _build_shmakov_report(year: int) -> Dict[str, Any]:
                         gc["name"]: {
                             "prev": float(gc["prev_amount"]),
                             "curr": float(gc["curr_amount"]),
+                            "by_year": {str(y): float(gc["amounts_by_year"][str(y)]) for y in years_list},
                         }
                         for gc in r["groups"]
                     },
@@ -598,8 +650,11 @@ def _build_shmakov_report(year: int) -> Dict[str, Any]:
     }
 
     return {
+        "years": years_list,
+        "years_count": len(years_list),
+        "years_label": " vs ".join(str(y) for y in years_list),
         "prev_year": prev_year,
-        "curr_year": year,
+        "curr_year": curr_year,
         "group_names": group_names,
         "months_rows": months_rows,
         "year_totals": year_totals,
@@ -732,7 +787,8 @@ def payroll_reports_dashboard(request: HttpRequest) -> HttpResponse:
         staff_category_id=staff_category_id,
         search=search,
     )
-    shmakov_report = _build_shmakov_report(year=year)
+    compare_years_count = _get_compare_years_count(request)
+    shmakov_report = _build_shmakov_report(year=year, compare_years_count=compare_years_count)
     exec_charts = _build_executive_charts_data(
         year=year,
         odata_qs=odata_qs,
@@ -757,12 +813,9 @@ def payroll_reports_dashboard(request: HttpRequest) -> HttpResponse:
     )
     divisions = Division.objects.filter(active=True).order_by("name")
     staff_categories = StaffCategory.objects.filter(is_active=True).order_by("sort_order", "name")
-    available_years = sorted(
-        {datetime.date.today().year, datetime.date.today().year - 1}
-        | set(PayrollReportBatch.objects.values_list("year", flat=True))
-        | set(PayrollODataDetail.objects.values_list("year", flat=True)),
-        reverse=True,
-    )
+    available_years = _get_available_years()
+    max_compare_years = max(2, len([y for y in available_years if y <= year]))
+    compare_years_options = list(range(2, max_compare_years + 1))
 
     return render(
         request,
@@ -773,6 +826,8 @@ def payroll_reports_dashboard(request: HttpRequest) -> HttpResponse:
             "month": month,
             "month_choices": MONTH_NAMES_RU,
             "available_years": available_years,
+            "compare_years_count": compare_years_count,
+            "compare_years_options": compare_years_options,
             "divisions": divisions,
             "selected_division": division_id,
             "staff_categories": staff_categories,
@@ -1076,13 +1131,6 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
             float(r["net_total"]),
             float(r["diff_fns_accrued"]),
         ])
-    _style_excel_sheet(
-        ws,
-        money_cols=(7, 8, 9, 10, 11, 12),
-        center_cols=(3, 4),
-        freeze_cell="B2",
-        enable_filter=True,
-    )
 
     ws_cat = wb.create_sheet("Свод по категориям")
     ws_cat.append(["Категория", "Сотрудников", "КНД 1151162 (ФНС)", "Начислено ЗП (1С)", "Средняя ЗП", "Доля ФОТ %", "Компенсация (отд.)", "Удержано", "К выплате"])
@@ -1098,13 +1146,6 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
             float(c["withheld_total"]),
             float(c["net_total"]),
         ])
-    _style_excel_sheet(
-        ws_cat,
-        money_cols=(3, 4, 5, 7, 8, 9),
-        int_cols=(2,),
-        pct_cols=(6,),
-        freeze_cell="A2",
-    )
 
     ws_avg = wb.create_sheet("Средняя ЗП (КНД 1151162)")
     avg_report = _build_fns_avg_salary_report(year=year, staff_category_id=staff_category_id, search=search)
@@ -1130,18 +1171,10 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
                 float(r["h2"]) if r["h2"] is not None else None,
                 float(r["year_avg"]) if r["year_avg"] is not None else None,
             ])
-    _style_excel_sheet(
-        ws_avg,
-        money_cols=tuple(range(6, 25)),
-        int_cols=(2,),
-        center_cols=(5,),
-        freeze_cell="D2",
-        enable_filter=True,
-        col_fills={18: "F1F5F9", 19: "F1F5F9", 20: "F1F5F9", 21: "F1F5F9", 22: "EFF6FF", 23: "EFF6FF", 24: "DBEAFE"},
-    )
 
     ws_shm = wb.create_sheet("Динамика ФОТ (год к году)")
-    shm = _build_shmakov_report(year=year)
+    compare_years_count = _get_compare_years_count(request)
+    shm = _build_shmakov_report(year=year, compare_years_count=compare_years_count)
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
     thin = Side(style="thin", color="000000")
@@ -1164,15 +1197,19 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
     }
 
     gnames = shm["group_names"]
-    ratio_title_prev = f"{'/'.join(gnames)} ({shm['prev_year']})"
-    ratio_title_curr = f"{'/'.join(gnames)} ({shm['curr_year']})"
-    shm_header = (
-        ["Месяц", f"{shm['prev_year']}г."]
-        + [f"{g}" for g in gnames]
-        + ["Количество персонала в месяце", ratio_title_prev, f"{shm['curr_year']}г."]
-        + [f"{g} " for g in gnames]
-        + ["Количество персонала в месяце", ratio_title_curr]
-    )
+    shm_years = shm["years"]
+    shm_header = ["Месяц"]
+    year_total_cols = set()
+    center_cols_shm = set()
+    for yi, y in enumerate(shm_years):
+        year_total_cols.add(len(shm_header) + 1)
+        shm_header.append(f"{y}г.")
+        shm_header.extend(f"{g}" + (" " * yi) for g in gnames)
+        center_cols_shm.add(len(shm_header) + 1)
+        shm_header.append("Количество персонала в месяце")
+        center_cols_shm.add(len(shm_header) + 1)
+        shm_header.append(f"{'/'.join(gnames)} ({y})")
+
     ws_shm.append(shm_header)
 
     header_font = Font(bold=True, size=10)
@@ -1184,25 +1221,14 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
         c.border = header_border
     ws_shm.row_dimensions[1].height = 48
 
-    prev_total_col = 2
-    prev_cnt_col = 3 + len(gnames)
-    prev_ratio_col = 4 + len(gnames)
-    curr_total_col = 5 + len(gnames)
-    curr_cnt_col = curr_total_col + len(gnames) + 1
-    curr_ratio_col = curr_cnt_col + 1
-
     for r in shm["months_rows"]:
-        prev_vals = [float(gc["prev_amount"]) for gc in r["groups"]]
-        curr_vals = [float(gc["curr_amount"]) for gc in r["groups"]]
-        prev_ratio_str = "/".join(str(gc["prev_count"]) for gc in r["groups"])
-        curr_ratio_str = "/".join(str(gc["curr_count"]) for gc in r["groups"])
-        row_vals = (
-            [r["month_name"].lower(), float(r["prev_total_amount"])]
-            + prev_vals
-            + [r["prev_total_count"], prev_ratio_str, float(r["curr_total_amount"])]
-            + curr_vals
-            + [r["curr_total_count"], curr_ratio_str]
-        )
+        row_vals = [r["month_name"].lower()]
+        for yi, y in enumerate(shm_years):
+            y_key = str(y)
+            row_vals.append(float(r["total_amounts_by_year"][y_key]))
+            row_vals.extend(float(gc["amounts"][yi]) for gc in r["groups"])
+            row_vals.append(r["total_counts_by_year"][y_key])
+            row_vals.append("/".join(str(gc["counts"][yi]) for gc in r["groups"]))
         ws_shm.append(row_vals)
         row_idx = ws_shm.max_row
         s_fill = season_fills.get(r["month"])
@@ -1212,12 +1238,12 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
         for col_idx in range(1, len(shm_header) + 1):
             cell = ws_shm.cell(row=row_idx, column=col_idx)
             cell.border = row_border
-            if col_idx in (1, prev_total_col, curr_total_col) and s_fill:
+            if (col_idx == 1 or col_idx in year_total_cols) and s_fill:
                 cell.fill = s_fill
             if col_idx == 1:
                 cell.alignment = Alignment(horizontal="right", vertical="center")
                 cell.font = Font(bold=True)
-            elif col_idx in (prev_cnt_col, prev_ratio_col, curr_cnt_col, curr_ratio_col):
+            elif col_idx in center_cols_shm:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             else:
                 cell.number_format = "#,##0.00"
@@ -1225,17 +1251,15 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
 
     # Итоговая строка по году
     if shm["months_rows"]:
-        prev_year_sums = [sum(float(r["groups"][i]["prev_amount"]) for r in shm["months_rows"]) for i in range(len(gnames))]
-        curr_year_sums = [sum(float(r["groups"][i]["curr_amount"]) for r in shm["months_rows"]) for i in range(len(gnames))]
-        tot_prev = sum(float(r["prev_total_amount"]) for r in shm["months_rows"])
-        tot_curr = sum(float(r["curr_total_amount"]) for r in shm["months_rows"])
-        ws_shm.append(
-            ["Итого за год", tot_prev]
-            + prev_year_sums
-            + ["", "", tot_curr]
-            + curr_year_sums
-            + ["", ""]
-        )
+        tot_row_vals = ["Итого за год"]
+        for yi, y in enumerate(shm_years):
+            y_key = str(y)
+            tot_y = sum(float(r["total_amounts_by_year"][y_key]) for r in shm["months_rows"])
+            group_sums_y = [sum(float(r["groups"][gi]["amounts"][yi]) for r in shm["months_rows"]) for gi in range(len(gnames))]
+            tot_row_vals.append(tot_y)
+            tot_row_vals.extend(group_sums_y)
+            tot_row_vals.extend(["", ""])
+        ws_shm.append(tot_row_vals)
         tot_row_idx = ws_shm.max_row
         tot_fill = PatternFill("solid", fgColor="E2E8F0")
         for col_idx in range(1, len(shm_header) + 1):
@@ -1243,7 +1267,7 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
             cell.font = Font(bold=True)
             cell.fill = tot_fill
             cell.border = header_border
-            if col_idx not in (1, prev_cnt_col, prev_ratio_col, curr_cnt_col, curr_ratio_col):
+            if col_idx != 1 and col_idx not in center_cols_shm:
                 cell.number_format = "#,##0.00"
                 cell.alignment = Alignment(horizontal="right", vertical="center")
 

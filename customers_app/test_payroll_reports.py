@@ -387,3 +387,45 @@ class PayrollReportsTestCase(TestCase):
 
         avg_rep = _build_fns_avg_salary_report(year=2026)
         self.assertEqual(avg_rep["groups"][0]["name"], "Прочий персонал")
+
+    def test_shmakov_multi_year_comparison(self) -> None:
+        """Динамика ФОТ по умолчанию сравнивает 2 года, а при compare_years=3 — 3 года и выгружает их в Excel."""
+        from customers_app.views_payroll_reports import _build_shmakov_report
+
+        for yr, amt in ((2025, "100000.00"), (2026, "120000.00"), (2027, "150000.00")):
+            b = PayrollReportBatch.objects.create(file_id=f"SHM_{yr}", year=yr, month=1)
+            PayrollFnsLine.objects.create(
+                batch=b,
+                employee=None,
+                person_ref_key="p-ref-1",
+                snils="123-456-789 00",
+                full_name="Абрамов А. А.",
+                total_amount=Decimal(amt),
+            )
+
+        rep2 = _build_shmakov_report(year=2027)
+        self.assertEqual(rep2["years"], [2026, 2027])
+
+        rep3 = _build_shmakov_report(year=2027, compare_years_count=3)
+        self.assertEqual(rep3["years"], [2025, 2026, 2027])
+        self.assertEqual(len(rep3["months_rows"]), 1)
+        row = rep3["months_rows"][0]
+        self.assertEqual(row["total_amounts_by_year"]["2025"], Decimal("100000.00"))
+        self.assertEqual(row["total_amounts_by_year"]["2026"], Decimal("120000.00"))
+        self.assertEqual(row["total_amounts_by_year"]["2027"], Decimal("150000.00"))
+
+        self.client.force_login(self.full_user)
+        resp_dash = self.client.get(reverse("customers_app:payroll_reports_dashboard") + "?year=2027&compare_years=3")
+        self.assertEqual(resp_dash.status_code, 200)
+        self.assertContains(resp_dash, "2025 vs 2026 vs 2027")
+
+        resp_xlsx = self.client.get(reverse("customers_app:payroll_export_excel") + "?year=2027&compare_years=3")
+        self.assertEqual(resp_xlsx.status_code, 200)
+        import io
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(resp_xlsx.content))
+        ws_shm = wb["Динамика ФОТ (год к году)"]
+        headers = [ws_shm.cell(row=1, column=c).value for c in range(1, ws_shm.max_column + 1)]
+        self.assertIn("2025г.", headers)
+        self.assertIn("2026г.", headers)
+        self.assertIn("2027г.", headers)
