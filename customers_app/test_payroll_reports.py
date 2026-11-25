@@ -364,3 +364,26 @@ class PayrollReportsTestCase(TestCase):
         )
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(PayrollReportBatch.objects.count(), 2)
+
+    def test_unmatched_gph_assigned_to_other_personnel(self) -> None:
+        """Физлица без учётной записи на портале (ГПХ/подряд) относятся к 'Прочий персонал'."""
+        from customers_app.models import StaffCategory
+        from customers_app.views_payroll_reports import _build_employee_summary_rows, _build_fns_avg_salary_report
+
+        StaffCategory.objects.get_or_create(short_name="Прочий персонал", defaults={"name": "Прочий персонал", "sort_order": 40})
+        b = PayrollReportBatch.objects.create(file_id="GPH_TEST_1", year=2026, month=5)
+        PayrollFnsLine.objects.create(
+            batch=b,
+            employee=None,
+            person_ref_key="",
+            snils="111-222-333 44",
+            full_name="Подрядчиков Пётр ГПХ",
+            total_amount=Decimal("45000.00"),
+        )
+
+        rows = _build_employee_summary_rows(year=2026, month=5)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["staff_category_name"], "Прочий персонал")
+
+        avg_rep = _build_fns_avg_salary_report(year=2026)
+        self.assertEqual(avg_rep["groups"][0]["name"], "Прочий персонал")

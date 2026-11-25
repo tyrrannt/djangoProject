@@ -103,6 +103,34 @@ def _is_excluded_detail(det: PayrollODataDetail, excluded_keys: set[str]) -> boo
     return "компенсация питания" in (det.calculation_type_name or "").lower()
 
 
+def _get_other_staff_category() -> StaffCategory | None:
+    """Возвращает объект категории 'Прочий персонал' из справочника."""
+    return StaffCategory.objects.filter(short_name="Прочий персонал").first()
+
+
+def _resolve_report_staff_category(emp: DataBaseUser | None, other_cat: StaffCategory | None) -> tuple[int | None, str, int]:
+    """Определяет категорию персонала для отчётов.
+
+    Лица без записи на портале (ГПХ/подряд), внештатники (freelancer) и сотрудники без должности
+    без индивидуальной категории автоматически относятся к 'Прочий персонал'.
+    """
+    if emp is not None:
+        cat = emp.get_staff_category()
+        if cat:
+            return cat.pk, cat.short_name, cat.sort_order
+        wp = getattr(emp, "user_work_profile", None)
+        has_job = bool(wp and wp.job_id)
+        if emp.type_users == "freelancer" or not has_job:
+            if other_cat:
+                return other_cat.pk, other_cat.short_name, other_cat.sort_order
+            return None, "Прочий персонал", 40
+        return None, "Без категории", 9999
+
+    if other_cat:
+        return other_cat.pk, other_cat.short_name, other_cat.sort_order
+    return None, "Прочий персонал", 40
+
+
 def _build_employee_summary_rows(
     year: int,
     month: int,
@@ -136,6 +164,7 @@ def _build_employee_summary_rows(
         odata_qs = odata_qs.filter(Q(division_id=div_int) | Q(employee__user_work_profile__divisions_id=div_int))
 
     people: Dict[str, Dict[str, Any]] = {}
+    other_cat = _get_other_staff_category()
 
     def _get_or_init_person(key: str, emp: DataBaseUser | None, full_name: str, snils: str, inn: str, div_name: str) -> Dict[str, Any]:
         if key not in people:
@@ -144,7 +173,7 @@ def _build_employee_summary_rows(
                 job_name = str(emp.user_work_profile.job)
             if not div_name and emp and emp.user_work_profile and emp.user_work_profile.divisions:
                 div_name = str(emp.user_work_profile.divisions)
-            staff_cat = emp.get_staff_category() if emp else None
+            cat_id, cat_name, _ = _resolve_report_staff_category(emp, other_cat)
             people[key] = {
                 "person_key": key,
                 "employee_id": emp.pk if emp else None,
@@ -153,8 +182,8 @@ def _build_employee_summary_rows(
                 "inn": inn or (emp.user_profile.inn if emp and emp.user_profile else ""),
                 "division": div_name,
                 "job": job_name,
-                "staff_category_id": staff_cat.pk if staff_cat else None,
-                "staff_category_name": staff_cat.short_name if staff_cat else "Без категории",
+                "staff_category_id": cat_id,
+                "staff_category_name": cat_name,
                 "is_active": emp.is_active if emp else False,
                 "fns_total": Decimal("0.00"),
                 "accrued_total": Decimal("0.00"),
@@ -279,20 +308,21 @@ def _build_fns_avg_salary_report(year: int, staff_category_id: str = "", search:
     )
 
     people: Dict[str, Dict[str, Any]] = {}
+    other_cat = _get_other_staff_category()
     for line in lines:
         key = line.person_ref_key or (f"snils:{normalize_snils(line.snils)}" if normalize_snils(line.snils) else f"fio:{line.full_name}")
         emp = line.employee
         if key not in people:
-            cat = emp.get_staff_category() if emp else None
+            cat_id, cat_name, cat_order = _resolve_report_staff_category(emp, other_cat)
             job_name = str(emp.user_work_profile.job) if emp and emp.user_work_profile and emp.user_work_profile.job else ""
             people[key] = {
                 "person_key": key,
                 "full_name": line.full_name or (str(emp) if emp else "Неизвестно"),
                 "job": job_name,
                 "is_active": emp.is_active if emp else False,
-                "staff_category_id": cat.pk if cat else None,
-                "staff_category_name": cat.short_name if cat else "Без категории",
-                "staff_category_order": cat.sort_order if cat else 9999,
+                "staff_category_id": cat_id,
+                "staff_category_name": cat_name,
+                "staff_category_order": cat_order,
                 "months": {m: None for m in range(1, 13)},
             }
         m = line.batch.month
