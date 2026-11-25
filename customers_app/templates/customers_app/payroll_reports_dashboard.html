@@ -225,6 +225,9 @@
                         <li class="nav-item ms-auto" role="presentation">
                             <button class="nav-link text-success fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-import" type="button" role="tab">
                                 <i class="fas fa-cloud-upload-alt me-1"></i>Импорт данных (XML / 1С)
+                                {% if unmatched_lines %}
+                                    <span class="badge bg-warning text-dark ms-1">{{ unmatched_lines|length }}</span>
+                                {% endif %}
                             </button>
                         </li>
                     {% endif %}
@@ -681,6 +684,49 @@
                             </div>
                         {% else %}
                             <div class="alert alert-secondary mb-0">Загруженных XML-файлов за {{ year }} год нет.</div>
+                        {% endif %}
+
+                        {% if unmatched_lines %}
+                            <div class="card border-warning mt-4">
+                                <div class="card-header bg-warning-subtle d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <span class="fw-semibold text-dark">
+                                        <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                                        Несопоставленные с порталом строки КНД 1151162 за {{ year }} г. ({{ unmatched_lines|length }})
+                                    </span>
+                                    <form method="post" action="{% url 'customers_app:payroll_rematch_unmatched' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-sync-alt me-1"></i>Повторить сопоставление
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered align-middle mb-0">
+                                        <thead class="table-light">
+                                        <tr>
+                                            <th>Месяц</th>
+                                            <th>ФИО (из XML)</th>
+                                            <th>СНИЛС</th>
+                                            <th>ИНН</th>
+                                            <th class="text-end">Сумма, ₽</th>
+                                            <th>Файл</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for ul in unmatched_lines %}
+                                            <tr>
+                                                <td>{{ ul.batch.month|stringformat:"02d" }}.{{ ul.batch.year }}</td>
+                                                <td class="fw-semibold">{{ ul.full_name }}</td>
+                                                <td class="small">{{ ul.snils|default:"—" }}</td>
+                                                <td class="small">{{ ul.inn|default:"—" }}</td>
+                                                <td class="text-end">{{ ul.total_amount|floatformat:2 }}</td>
+                                                <td class="small text-muted">{{ ul.batch.raw_filename|default:ul.batch.file_id }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         {% endif %}
                     </div>
                     {% endif %}

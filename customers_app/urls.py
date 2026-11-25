@@ -164,6 +164,7 @@ urlpatterns = [
     path('payroll-reports/employee/<str:person_key>/', views_payroll_reports.payroll_employee_card, name='payroll_employee_card'),
     path('payroll-reports/export/', views_payroll_reports.payroll_export_excel, name='payroll_export_excel'),
     path('payroll-reports/batch/<int:batch_id>/delete/', views_payroll_reports.payroll_delete_batch, name='payroll_delete_batch'),
+    path('payroll-reports/rematch/', views_payroll_reports.payroll_rematch_unmatched, name='payroll_rematch_unmatched'),
 
     # Справочник категорий персонала (АУП, ИТП, ЧЛЭ, Прочий персонал)
     path('staff-categories/', views_staff_categories.staff_categories_manage, name='staff_categories_manage'),

@@ -27,6 +27,7 @@ from customers_app.models import (
 )
 from customers_app.services_payroll_reports import (
     import_knd_1151162_xml,
+    match_employee_for_report,
     normalize_snils,
     sync_1c_odata_payroll_month,
 )
@@ -719,6 +720,11 @@ def payroll_reports_dashboard(request: HttpRequest) -> HttpResponse:
     kpi["net_total"] = kpi["accrued_total"] - kpi["withheld_total"]
 
     batches = PayrollReportBatch.objects.filter(year=year).order_by("-month", "-correction_number", "-uploaded_at")
+    unmatched_lines = list(
+        PayrollFnsLine.objects.filter(batch__year=year, employee__isnull=True)
+        .select_related("batch")
+        .order_by("full_name", "batch__month")
+    )
     divisions = Division.objects.filter(active=True).order_by("name")
     staff_categories = StaffCategory.objects.filter(is_active=True).order_by("sort_order", "name")
     available_years = sorted(
@@ -752,6 +758,7 @@ def payroll_reports_dashboard(request: HttpRequest) -> HttpResponse:
             "shmakov_raw_json": json.dumps(shmakov_report["chart"]["raw_table"], ensure_ascii=False),
             "kpi": kpi,
             "batches": batches,
+            "unmatched_lines": unmatched_lines,
             "can_manage_payroll": access_level == "full",
         },
     )
@@ -1067,3 +1074,29 @@ def payroll_delete_batch(request: HttpRequest, batch_id: int) -> HttpResponse:
     batch.delete()
     messages.success(request, "Загруженный файл отчёта удалён.")
     return redirect("customers_app:payroll_reports_dashboard")
+
+
+@login_required
+@require_POST
+def payroll_rematch_unmatched(request: HttpRequest) -> HttpResponse:
+    """Повторно сопоставляет несопоставленные строки КНД 1151162 с базой сотрудников."""
+    from django.urls import reverse
+
+    _require_payroll_reports_access(request, require_full=True)
+    unmatched = PayrollFnsLine.objects.filter(employee__isnull=True)
+    matched_now = 0
+    for line in unmatched:
+        emp, pkey = match_employee_for_report(
+            snils=line.snils,
+            inn=line.inn,
+            last_name=line.last_name,
+            first_name=line.first_name,
+            surname=line.surname,
+        )
+        if emp:
+            line.employee = emp
+            line.person_ref_key = pkey
+            line.save(update_fields=["employee", "person_ref_key"])
+            matched_now += 1
+    messages.success(request, f"Повторное сопоставление завершено: привязано строк — {matched_now}.")
+    return redirect(f"{reverse('customers_app:payroll_reports_dashboard')}?tab=import")
