@@ -969,6 +969,75 @@ def payroll_employee_card(request: HttpRequest, person_key: str) -> HttpResponse
     )
 
 
+def _style_excel_sheet(
+    ws,
+    money_cols: tuple[int, ...] = (),
+    int_cols: tuple[int, ...] = (),
+    pct_cols: tuple[int, ...] = (),
+    center_cols: tuple[int, ...] = (),
+    freeze_cell: str = "A2",
+    enable_filter: bool = False,
+    col_fills: dict[int, str] | None = None,
+) -> None:
+    """Применяет единое деловое оформление к листу Excel (шапка, рамки, форматы, автоширина)."""
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    thin = Side(style="thin", color="CBD5E1")
+    med = Side(style="medium", color="1E3A5F")
+    cell_border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    head_border = Border(left=thin, right=thin, top=med, bottom=med)
+
+    head_fill = PatternFill("solid", fgColor="1E3A5F")
+    head_font = Font(bold=True, color="FFFFFF", size=10)
+    zebra_fill = PatternFill("solid", fgColor="F8FAFC")
+
+    max_col = ws.max_column
+    max_row = ws.max_row
+
+    for c_idx in range(1, max_col + 1):
+        cell = ws.cell(row=1, column=c_idx)
+        cell.fill = head_fill
+        cell.font = head_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = head_border
+    ws.row_dimensions[1].height = 32
+
+    for r_idx in range(2, max_row + 1):
+        ws.row_dimensions[r_idx].height = 20
+        is_even = (r_idx % 2 == 0)
+        for c_idx in range(1, max_col + 1):
+            cell = ws.cell(row=r_idx, column=c_idx)
+            cell.border = cell_border
+            if col_fills and c_idx in col_fills:
+                cell.fill = PatternFill("solid", fgColor=col_fills[c_idx])
+            elif is_even:
+                cell.fill = zebra_fill
+
+            if c_idx in money_cols:
+                cell.number_format = "#,##0.00"
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            elif c_idx in int_cols:
+                cell.number_format = "#,##0"
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            elif c_idx in pct_cols:
+                cell.number_format = '0.0"%"'
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            elif c_idx in center_cols:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    if freeze_cell:
+        ws.freeze_panes = freeze_cell
+    if enable_filter and max_row >= 1:
+        ws.auto_filter.ref = ws.dimensions
+
+    for c_idx in range(1, max_col + 1):
+        col_letter = openpyxl.utils.get_column_letter(c_idx)
+        max_len = max((len(str(ws.cell(row=ri, column=c_idx).value or "")) for ri in range(1, max_row + 1)), default=10)
+        ws.column_dimensions[col_letter].width = max(12, min(max_len + 4, 42))
+
+
 @login_required
 def payroll_export_excel(request: HttpRequest) -> HttpResponse:
     """Экспортирует сводный отчёт и детализацию видов расчёта в Excel (.xlsx)."""
@@ -1007,6 +1076,13 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
             float(r["net_total"]),
             float(r["diff_fns_accrued"]),
         ])
+    _style_excel_sheet(
+        ws,
+        money_cols=(7, 8, 9, 10, 11, 12),
+        center_cols=(3, 4),
+        freeze_cell="B2",
+        enable_filter=True,
+    )
 
     ws_cat = wb.create_sheet("Свод по категориям")
     ws_cat.append(["Категория", "Сотрудников", "КНД 1151162 (ФНС)", "Начислено ЗП (1С)", "Средняя ЗП", "Доля ФОТ %", "Компенсация (отд.)", "Удержано", "К выплате"])
@@ -1022,6 +1098,13 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
             float(c["withheld_total"]),
             float(c["net_total"]),
         ])
+    _style_excel_sheet(
+        ws_cat,
+        money_cols=(3, 4, 5, 7, 8, 9),
+        int_cols=(2,),
+        pct_cols=(6,),
+        freeze_cell="A2",
+    )
 
     ws_avg = wb.create_sheet("Средняя ЗП (КНД 1151162)")
     avg_report = _build_fns_avg_salary_report(year=year, staff_category_id=staff_category_id, search=search)
@@ -1047,6 +1130,15 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
                 float(r["h2"]) if r["h2"] is not None else None,
                 float(r["year_avg"]) if r["year_avg"] is not None else None,
             ])
+    _style_excel_sheet(
+        ws_avg,
+        money_cols=tuple(range(6, 25)),
+        int_cols=(2,),
+        center_cols=(5,),
+        freeze_cell="D2",
+        enable_filter=True,
+        col_fills={18: "F1F5F9", 19: "F1F5F9", 20: "F1F5F9", 21: "F1F5F9", 22: "EFF6FF", 23: "EFF6FF", 24: "DBEAFE"},
+    )
 
     ws_shm = wb.create_sheet("Динамика ФОТ (год к году)")
     shm = _build_shmakov_report(year=year)
@@ -1054,7 +1146,6 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
 
     thin = Side(style="thin", color="000000")
     medium = Side(style="medium", color="000000")
-    cell_border = Border(left=thin, right=thin, top=thin, bottom=thin)
     header_border = Border(left=thin, right=thin, top=medium, bottom=medium)
 
     season_fills = {
@@ -1073,12 +1164,14 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
     }
 
     gnames = shm["group_names"]
+    ratio_title_prev = f"{'/'.join(gnames)} ({shm['prev_year']})"
+    ratio_title_curr = f"{'/'.join(gnames)} ({shm['curr_year']})"
     shm_header = (
         ["Месяц", f"{shm['prev_year']}г."]
         + [f"{g}" for g in gnames]
-        + ["Количество персонала в месяце", f"{shm['curr_year']}г."]
+        + ["Количество персонала в месяце", ratio_title_prev, f"{shm['curr_year']}г."]
         + [f"{g} " for g in gnames]
-        + ["Количество персонала в месяце", f"{'/'.join(gnames)} ({shm['curr_year']})"]
+        + ["Количество персонала в месяце", ratio_title_curr]
     )
     ws_shm.append(shm_header)
 
@@ -1089,24 +1182,26 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
         c.font = header_font
         c.alignment = header_align
         c.border = header_border
-    ws_shm.row_dimensions[1].height = 42
+    ws_shm.row_dimensions[1].height = 48
 
     prev_total_col = 2
-    curr_total_col = 3 + len(gnames) + 1
     prev_cnt_col = 3 + len(gnames)
+    prev_ratio_col = 4 + len(gnames)
+    curr_total_col = 5 + len(gnames)
     curr_cnt_col = curr_total_col + len(gnames) + 1
-    ratio_col = curr_cnt_col + 1
+    curr_ratio_col = curr_cnt_col + 1
 
     for r in shm["months_rows"]:
         prev_vals = [float(gc["prev_amount"]) for gc in r["groups"]]
         curr_vals = [float(gc["curr_amount"]) for gc in r["groups"]]
-        ratio_str = "/".join(str(gc["curr_count"]) for gc in r["groups"])
+        prev_ratio_str = "/".join(str(gc["prev_count"]) for gc in r["groups"])
+        curr_ratio_str = "/".join(str(gc["curr_count"]) for gc in r["groups"])
         row_vals = (
             [r["month_name"].lower(), float(r["prev_total_amount"])]
             + prev_vals
-            + [r["prev_total_count"], float(r["curr_total_amount"])]
+            + [r["prev_total_count"], prev_ratio_str, float(r["curr_total_amount"])]
             + curr_vals
-            + [r["curr_total_count"], ratio_str]
+            + [r["curr_total_count"], curr_ratio_str]
         )
         ws_shm.append(row_vals)
         row_idx = ws_shm.max_row
@@ -1122,7 +1217,7 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
             if col_idx == 1:
                 cell.alignment = Alignment(horizontal="right", vertical="center")
                 cell.font = Font(bold=True)
-            elif col_idx in (prev_cnt_col, curr_cnt_col, ratio_col):
+            elif col_idx in (prev_cnt_col, prev_ratio_col, curr_cnt_col, curr_ratio_col):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             else:
                 cell.number_format = "#,##0.00"
@@ -1137,7 +1232,7 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
         ws_shm.append(
             ["Итого за год", tot_prev]
             + prev_year_sums
-            + ["", tot_curr]
+            + ["", "", tot_curr]
             + curr_year_sums
             + ["", ""]
         )
@@ -1148,15 +1243,17 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
             cell.font = Font(bold=True)
             cell.fill = tot_fill
             cell.border = header_border
-            if col_idx not in (1, prev_cnt_col, curr_cnt_col, ratio_col):
+            if col_idx not in (1, prev_cnt_col, prev_ratio_col, curr_cnt_col, curr_ratio_col):
                 cell.number_format = "#,##0.00"
                 cell.alignment = Alignment(horizontal="right", vertical="center")
+
+    ws_shm.freeze_panes = "B2"
 
     # Автоширина колонок
     for col_idx in range(1, len(shm_header) + 1):
         col_letter = openpyxl.utils.get_column_letter(col_idx)
         max_len = max((len(str(ws_shm.cell(row=ri, column=col_idx).value or "")) for ri in range(1, ws_shm.max_row + 1)), default=10)
-        ws_shm.column_dimensions[col_letter].width = max(13, min(max_len + 4, 24))
+        ws_shm.column_dimensions[col_letter].width = max(16, min(max_len + 4, 30))
 
     ws_calc = wb.create_sheet("Виды начислений и удержаний")
     ws_calc.append(["Категория", "Группа", "Вид расчёта", "Сумма"])
@@ -1165,6 +1262,12 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
         odata_qs = odata_qs.filter(month=month)
     for item in odata_qs.values("calculation_category", "group_type", "calculation_type_name").annotate(total=Sum("amount")).order_by("calculation_category", "-total"):
         ws_calc.append([item["calculation_category"], item["group_type"], item["calculation_type_name"], float(item["total"] or 0)])
+    _style_excel_sheet(
+        ws_calc,
+        money_cols=(4,),
+        freeze_cell="A2",
+        enable_filter=True,
+    )
 
     buf = io.BytesIO()
     wb.save(buf)
