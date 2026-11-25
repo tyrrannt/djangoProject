@@ -65,6 +65,57 @@
         .avg-salary-table tr.table-secondary td.sticky-col-3 {
             background: #e2e8f0;
         }
+
+        .avg-col-filter-btn {
+            padding: 1px 5px;
+            font-size: 0.72rem;
+            line-height: 1.2;
+            color: #64748b;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .avg-col-filter-btn:hover {
+            color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .avg-col-filter-btn.active {
+            color: #ffffff;
+            background: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .avg-excel-popover {
+            position: fixed;
+            z-index: 1060;
+            width: 280px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.16);
+            padding: 10px;
+            font-size: 0.82rem;
+        }
+
+        .avg-excel-list {
+            max-height: 210px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 6px 8px;
+            background: #f8fafc;
+        }
+
+        .avg-excel-list .form-check {
+            margin-bottom: 4px;
+        }
+
+        .avg-excel-list .form-check-label {
+            cursor: pointer;
+            word-break: break-word;
+        }
     </style>
 {% endblock %}
 
@@ -160,25 +211,25 @@
                     <div class="col-6 col-md-2">
                         <div class="border rounded-3 p-3 bg-white h-100">
                             <div class="text-muted small">КНД 1151162 (ФНС)</div>
-                            <div class="fs-5 fw-bold text-dark">{{ kpi.fns_total|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-dark">{{ kpi.fns_total|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="border rounded-3 p-3 bg-white h-100">
                             <div class="text-muted small">Начислено ЗП (1С OData)</div>
-                            <div class="fs-5 fw-bold text-primary">{{ kpi.accrued_total|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-primary">{{ kpi.accrued_total|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="border rounded-3 p-3 bg-white h-100">
                             <div class="text-muted small">Компенсация питания (отдельно)</div>
-                            <div class="fs-5 fw-bold text-info">{{ kpi.compensation_total|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-info">{{ kpi.compensation_total|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-2">
                         <div class="border rounded-3 p-3 bg-white h-100">
                             <div class="text-muted small">Удержано / НДФЛ</div>
-                            <div class="fs-5 fw-bold text-danger">{{ kpi.withheld_total|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-danger">{{ kpi.withheld_total|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-2">
@@ -253,16 +304,38 @@
 
                             {% for g in avg_salary_groups %}
                                 <div class="avg-group-block mb-4" data-group-id="grp-{{ forloop.counter }}">
-                                    <h5 class="fw-bold text-primary mb-2">
-                                        {{ g.name }} <span class="badge bg-light text-dark border ms-1">{{ g.rows|length }} чел.</span>
-                                    </h5>
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                        <h5 class="fw-bold text-primary mb-0">
+                                            {{ g.name }}
+                                            <span class="badge bg-light text-dark border ms-1 avg-group-count-badge" data-total="{{ g.rows|length }}">
+                                                {{ g.rows|length }} чел.
+                                            </span>
+                                        </h5>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm d-none avg-group-reset-btn">
+                                            <i class="fas fa-times me-1"></i>Сбросить фильтры таблицы
+                                        </button>
+                                    </div>
                                     <div class="avg-salary-wrap">
-                                        <table class="table table-sm table-hover table-bordered avg-salary-table mb-0">
+                                        <table class="table table-sm table-hover table-bordered avg-salary-table mb-0" data-avg-table="grp-{{ forloop.counter }}">
                                             <thead>
                                             <tr>
                                                 <th class="sticky-col-1 text-center">№</th>
-                                                <th class="sticky-col-2">ФИО</th>
-                                                <th class="sticky-col-3">Должность</th>
+                                                <th class="sticky-col-2">
+                                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                                        <span>ФИО</span>
+                                                        <button type="button" class="btn btn-sm avg-col-filter-btn" data-filter-col="fio" title="Фильтр и сортировка по ФИО">
+                                                            <i class="fas fa-filter"></i>
+                                                        </button>
+                                                    </div>
+                                                </th>
+                                                <th class="sticky-col-3">
+                                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                                        <span>Должность</span>
+                                                        <button type="button" class="btn btn-sm avg-col-filter-btn" data-filter-col="job" title="Фильтр и сортировка по должности">
+                                                            <i class="fas fa-filter"></i>
+                                                        </button>
+                                                    </div>
+                                                </th>
                                                 <th class="text-end">Янв</th>
                                                 <th class="text-end">Фев</th>
                                                 <th class="text-end">Мар</th>
@@ -286,7 +359,7 @@
                                             </thead>
                                             <tbody>
                                             {% for r in g.rows %}
-                                                <tr>
+                                                <tr data-avg-row="1" data-orig-idx="{{ r.num }}" data-fio="{{ r.full_name }}" data-job="{{ r.job|default:'—' }}">
                                                     <td class="sticky-col-1 text-center text-muted">{{ r.num }}</td>
                                                     <td class="sticky-col-2">
                                                         <a href="{% url 'customers_app:payroll_employee_card' r.person_key %}?year={{ year }}"
@@ -299,31 +372,31 @@
                                                     </td>
                                                     <td class="sticky-col-3 small text-muted">{{ r.job|default:"—" }}</td>
                                                     {% for mv in r.months_list %}
-                                                        <td class="text-end">{% if mv is not None %}{{ mv|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                                                        <td class="text-end">{% if mv is not None %}{{ mv|floatformat:"2g" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
                                                     {% endfor %}
-                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q1 is not None %}{{ r.q1|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q2 is not None %}{{ r.q2|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q3 is not None %}{{ r.q3|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q4 is not None %}{{ r.q4|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                    <td class="text-end bg-warning-subtle fw-semibold">{% if r.h1 is not None %}{{ r.h1|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                    <td class="text-end bg-warning-subtle fw-semibold">{% if r.h2 is not None %}{{ r.h2|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                    <td class="text-end bg-success-subtle fw-bold">{% if r.year_avg is not None %}{{ r.year_avg|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q1 is not None %}{{ r.q1|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q2 is not None %}{{ r.q2|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q3 is not None %}{{ r.q3|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q4 is not None %}{{ r.q4|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-warning-subtle fw-semibold">{% if r.h1 is not None %}{{ r.h1|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-warning-subtle fw-semibold">{% if r.h2 is not None %}{{ r.h2|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-success-subtle fw-bold">{% if r.year_avg is not None %}{{ r.year_avg|floatformat:"2g" }}{% else %}—{% endif %}</td>
                                                 </tr>
                                             {% endfor %}
-                                            <tr class="table-secondary fw-bold">
+                                            <tr class="table-secondary fw-bold avg-summary-row" data-summary-row="1">
                                                 <td class="sticky-col-1"></td>
                                                 <td class="sticky-col-2">Средняя по группе</td>
                                                 <td class="sticky-col-3"></td>
                                                 {% for gm in g.avg_months %}
-                                                    <td class="text-end">{% if gm is not None %}{{ gm|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end">{% if gm is not None %}{{ gm|floatformat:"2g" }}{% else %}—{% endif %}</td>
                                                 {% endfor %}
-                                                <td class="text-end">{% if g.avg_q1 is not None %}{{ g.avg_q1|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                <td class="text-end">{% if g.avg_q2 is not None %}{{ g.avg_q2|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                <td class="text-end">{% if g.avg_q3 is not None %}{{ g.avg_q3|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                <td class="text-end">{% if g.avg_q4 is not None %}{{ g.avg_q4|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                <td class="text-end">{% if g.avg_h1 is not None %}{{ g.avg_h1|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                <td class="text-end">{% if g.avg_h2 is not None %}{{ g.avg_h2|floatformat:2 }}{% else %}—{% endif %}</td>
-                                                <td class="text-end">{% if g.avg_year is not None %}{{ g.avg_year|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_q1 is not None %}{{ g.avg_q1|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_q2 is not None %}{{ g.avg_q2|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_q3 is not None %}{{ g.avg_q3|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_q4 is not None %}{{ g.avg_q4|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_h1 is not None %}{{ g.avg_h1|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_h2 is not None %}{{ g.avg_h2|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_year is not None %}{{ g.avg_year|floatformat:"2g" }}{% else %}—{% endif %}</td>
                                             </tr>
                                             </tbody>
                                         </table>
@@ -495,7 +568,7 @@
                                                 {% endif %}
                                             </td>
                                             <td class="text-end">{{ item.records }}</td>
-                                            <td class="text-end fw-semibold">{{ item.total|floatformat:2 }}</td>
+                                            <td class="text-end fw-semibold">{{ item.total|floatformat:"2g" }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -531,13 +604,13 @@
                                         <tr>
                                             <td class="fw-bold">{{ c.name }}</td>
                                             <td class="text-end">{{ c.employees_count }}</td>
-                                            <td class="text-end">{{ c.fns_total|floatformat:2 }}</td>
-                                            <td class="text-end text-primary fw-semibold">{{ c.accrued_total|floatformat:2 }}</td>
-                                            <td class="text-end">{{ c.avg_accrued|floatformat:2 }}</td>
+                                            <td class="text-end">{{ c.fns_total|floatformat:"2g" }}</td>
+                                            <td class="text-end text-primary fw-semibold">{{ c.accrued_total|floatformat:"2g" }}</td>
+                                            <td class="text-end">{{ c.avg_accrued|floatformat:"2g" }}</td>
                                             <td class="text-end">{{ c.share_pct|floatformat:1 }}%</td>
-                                            <td class="text-end text-info">{{ c.compensation_total|floatformat:2 }}</td>
-                                            <td class="text-end text-danger">{{ c.withheld_total|floatformat:2 }}</td>
-                                            <td class="text-end fw-semibold">{{ c.net_total|floatformat:2 }}</td>
+                                            <td class="text-end text-info">{{ c.compensation_total|floatformat:"2g" }}</td>
+                                            <td class="text-end text-danger">{{ c.withheld_total|floatformat:"2g" }}</td>
+                                            <td class="text-end fw-semibold">{{ c.net_total|floatformat:"2g" }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -579,11 +652,11 @@
                                             <td><span class="badge bg-light text-dark border">{{ r.staff_category_name }}</span></td>
                                             <td class="small text-muted">{{ r.snils }}</td>
                                             <td class="small">{{ r.division }}</td>
-                                            <td class="text-end">{{ r.fns_total|floatformat:2 }}</td>
-                                            <td class="text-end text-primary">{{ r.accrued_total|floatformat:2 }}</td>
-                                            <td class="text-end text-info fw-semibold">{{ r.compensation_total|floatformat:2 }}</td>
-                                            <td class="text-end text-danger">{{ r.withheld_total|floatformat:2 }}</td>
-                                            <td class="text-end fw-semibold">{{ r.net_total|floatformat:2 }}</td>
+                                            <td class="text-end">{{ r.fns_total|floatformat:"2g" }}</td>
+                                            <td class="text-end text-primary">{{ r.accrued_total|floatformat:"2g" }}</td>
+                                            <td class="text-end text-info fw-semibold">{{ r.compensation_total|floatformat:"2g" }}</td>
+                                            <td class="text-end text-danger">{{ r.withheld_total|floatformat:"2g" }}</td>
+                                            <td class="text-end fw-semibold">{{ r.net_total|floatformat:"2g" }}</td>
                                             <td class="text-center">
                                                 <a href="{% url 'customers_app:payroll_employee_card' r.person_key %}?year={{ year }}&month={{ month }}"
                                                    class="btn btn-outline-primary btn-sm py-0 px-2">
@@ -719,7 +792,7 @@
                                                 <td class="fw-semibold">{{ ul.full_name }}</td>
                                                 <td class="small">{{ ul.snils|default:"—" }}</td>
                                                 <td class="small">{{ ul.inn|default:"—" }}</td>
-                                                <td class="text-end">{{ ul.total_amount|floatformat:2 }}</td>
+                                                <td class="text-end">{{ ul.total_amount|floatformat:"2g" }}</td>
                                                 <td class="small text-muted">{{ ul.batch.raw_filename|default:ul.batch.file_id }}</td>
                                             </tr>
                                         {% endfor %}
@@ -757,6 +830,296 @@
                         block.style.display = (target === 'all' || block.dataset.groupId === target) ? 'block' : 'none';
                     });
                 });
+            });
+
+            // Excel-подобный фильтр и сортировка в таблицах средней зарплаты (ФИО и Должность)
+            const tableStates = new Map();
+            let activePopover = null;
+            let activeContext = null;
+
+            function getTableState(table) {
+                if (!tableStates.has(table)) {
+                    tableStates.set(table, {
+                        fio: null,
+                        job: null,
+                        sortCol: null,
+                        sortDir: null
+                    });
+                }
+                return tableStates.get(table);
+            }
+
+            function closeExcelPopover() {
+                if (activePopover) {
+                    activePopover.remove();
+                    activePopover = null;
+                    activeContext = null;
+                }
+            }
+
+            function applyTableState(table) {
+                const state = getTableState(table);
+                const tbody = table.querySelector('tbody');
+                if (!tbody) return;
+
+                const rows = Array.from(tbody.querySelectorAll('tr[data-avg-row="1"]'));
+                const summaryRow = tbody.querySelector('tr[data-summary-row="1"]');
+
+                rows.sort((a, b) => {
+                    if (state.sortCol && state.sortDir) {
+                        const va = (a.dataset[state.sortCol] || '').trim();
+                        const vb = (b.dataset[state.sortCol] || '').trim();
+                        const cmp = va.localeCompare(vb, 'ru', { sensitivity: 'base' });
+                        if (cmp !== 0) return state.sortDir === 'asc' ? cmp : -cmp;
+                    }
+                    return Number(a.dataset.origIdx || 0) - Number(b.dataset.origIdx || 0);
+                });
+
+                let visibleCount = 0;
+                rows.forEach(row => {
+                    const fioVal = row.dataset.fio || '';
+                    const jobVal = row.dataset.job || '—';
+                    const matchFio = state.fio === null || state.fio.has(fioVal);
+                    const matchJob = state.job === null || state.job.has(jobVal);
+                    const visible = matchFio && matchJob;
+                    row.classList.toggle('d-none', !visible);
+                    if (visible) visibleCount += 1;
+                    if (summaryRow) {
+                        tbody.insertBefore(row, summaryRow);
+                    } else {
+                        tbody.appendChild(row);
+                    }
+                });
+
+                let emptyRow = tbody.querySelector('tr.avg-empty-filter-row');
+                if (visibleCount === 0) {
+                    if (!emptyRow) {
+                        emptyRow = document.createElement('tr');
+                        emptyRow.className = 'avg-empty-filter-row';
+                        emptyRow.innerHTML = '<td colspan="22" class="text-center text-muted py-3">Нет записей, соответствующих выбранному фильтру</td>';
+                    }
+                    if (summaryRow) {
+                        tbody.insertBefore(emptyRow, summaryRow);
+                    } else {
+                        tbody.appendChild(emptyRow);
+                    }
+                } else if (emptyRow) {
+                    emptyRow.remove();
+                }
+
+                table.querySelectorAll('.avg-col-filter-btn').forEach(btn => {
+                    const col = btn.dataset.filterCol;
+                    const isFiltered = state[col] !== null;
+                    const isSorted = state.sortCol === col && state.sortDir !== null;
+                    btn.classList.toggle('active', isFiltered || isSorted);
+                });
+
+                const block = table.closest('.avg-group-block');
+                if (block) {
+                    const badge = block.querySelector('.avg-group-count-badge');
+                    const resetBtn = block.querySelector('.avg-group-reset-btn');
+                    const hasAny = state.fio !== null || state.job !== null || state.sortDir !== null;
+                    if (badge) {
+                        const total = Number(badge.dataset.total || rows.length);
+                        badge.textContent = (state.fio !== null || state.job !== null)
+                            ? `показано ${visibleCount} из ${total} чел.`
+                            : `${total} чел.`;
+                    }
+                    if (resetBtn) {
+                        resetBtn.classList.toggle('d-none', !hasAny);
+                    }
+                }
+            }
+
+            function openExcelPopover(btn) {
+                const table = btn.closest('table.avg-salary-table');
+                const col = btn.dataset.filterCol;
+                if (!table || !col) return;
+
+                if (activeContext && activeContext.table === table && activeContext.col === col) {
+                    closeExcelPopover();
+                    return;
+                }
+                closeExcelPopover();
+
+                const state = getTableState(table);
+                const rows = Array.from(table.querySelectorAll('tbody tr[data-avg-row="1"]'));
+                const valuesSet = new Set();
+                rows.forEach(r => valuesSet.add(r.dataset[col] || (col === 'job' ? '—' : '')));
+                const uniqueValues = Array.from(valuesSet).sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
+
+                const currentSelected = state[col] === null ? new Set(uniqueValues) : new Set(state[col]);
+                let pendingSortDir = state.sortCol === col ? state.sortDir : null;
+
+                const popover = document.createElement('div');
+                popover.className = 'avg-excel-popover';
+                popover.id = 'avgExcelFilterPopover';
+                const colTitle = col === 'fio' ? 'ФИО' : 'Должность';
+
+                popover.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-primary">${colTitle}</span>
+                        <button type="button" class="btn-close btn-sm" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="btn-group btn-group-sm w-100 mb-2" role="group">
+                        <button type="button" class="btn ${pendingSortDir === 'asc' ? 'btn-primary' : 'btn-outline-secondary'}" data-sort="asc">А → Я</button>
+                        <button type="button" class="btn ${pendingSortDir === 'desc' ? 'btn-primary' : 'btn-outline-secondary'}" data-sort="desc">Я → А</button>
+                        <button type="button" class="btn btn-outline-secondary" data-sort="none" title="Исходный порядок">Сброс</button>
+                    </div>
+                    <input type="text" class="form-control form-control-sm mb-2 avg-excel-search" placeholder="Поиск значения...">
+                    <div class="form-check mb-1 ps-4">
+                        <input class="form-check-input avg-excel-select-all" type="checkbox" id="avgExcelAll_${col}">
+                        <label class="form-check-label fw-semibold" for="avgExcelAll_${col}">(Выделить все)</label>
+                    </div>
+                    <div class="avg-excel-list mb-2"></div>
+                    <div class="d-flex justify-content-between gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm avg-excel-clear">Сбросить</button>
+                        <button type="button" class="btn btn-primary btn-sm avg-excel-apply">Применить</button>
+                    </div>
+                `;
+
+                const listEl = popover.querySelector('.avg-excel-list');
+                const searchInput = popover.querySelector('.avg-excel-search');
+                const selectAllCb = popover.querySelector('.avg-excel-select-all');
+
+                function syncSelectAllState() {
+                    const visibleCbs = Array.from(listEl.querySelectorAll('.avg-excel-item-wrap:not(.d-none) .avg-excel-item-cb'));
+                    const checkedCount = visibleCbs.filter(cb => cb.checked).length;
+                    selectAllCb.checked = visibleCbs.length > 0 && checkedCount === visibleCbs.length;
+                    selectAllCb.indeterminate = checkedCount > 0 && checkedCount < visibleCbs.length;
+                }
+
+                uniqueValues.forEach((val, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'form-check avg-excel-item-wrap';
+                    wrap.dataset.searchText = val.toLowerCase();
+
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'form-check-input avg-excel-item-cb';
+                    cb.id = `avgExcelItem_${col}_${idx}`;
+                    cb.value = val;
+                    cb.checked = currentSelected.has(val);
+                    cb.addEventListener('change', syncSelectAllState);
+
+                    const lbl = document.createElement('label');
+                    lbl.className = 'form-check-label';
+                    lbl.htmlFor = cb.id;
+                    lbl.textContent = val || '(Пусто)';
+
+                    wrap.appendChild(cb);
+                    wrap.appendChild(lbl);
+                    listEl.appendChild(wrap);
+                });
+
+                syncSelectAllState();
+
+                searchInput.addEventListener('input', function () {
+                    const q = this.value.trim().toLowerCase();
+                    listEl.querySelectorAll('.avg-excel-item-wrap').forEach(wrap => {
+                        wrap.classList.toggle('d-none', q !== '' && !wrap.dataset.searchText.includes(q));
+                    });
+                    syncSelectAllState();
+                });
+
+                selectAllCb.addEventListener('change', function () {
+                    const checked = this.checked;
+                    listEl.querySelectorAll('.avg-excel-item-wrap:not(.d-none) .avg-excel-item-cb').forEach(cb => {
+                        cb.checked = checked;
+                    });
+                    syncSelectAllState();
+                });
+
+                popover.querySelectorAll('[data-sort]').forEach(sBtn => {
+                    sBtn.addEventListener('click', function () {
+                        const dir = this.dataset.sort;
+                        if (dir === 'none') {
+                            state.sortCol = null;
+                            state.sortDir = null;
+                        } else {
+                            state.sortCol = col;
+                            state.sortDir = dir;
+                        }
+                        applyTableState(table);
+                        closeExcelPopover();
+                    });
+                });
+
+                popover.querySelector('.btn-close').addEventListener('click', closeExcelPopover);
+
+                popover.querySelector('.avg-excel-clear').addEventListener('click', function () {
+                    state[col] = null;
+                    if (state.sortCol === col) {
+                        state.sortCol = null;
+                        state.sortDir = null;
+                    }
+                    applyTableState(table);
+                    closeExcelPopover();
+                });
+
+                popover.querySelector('.avg-excel-apply').addEventListener('click', function () {
+                    const allCbs = Array.from(listEl.querySelectorAll('.avg-excel-item-cb'));
+                    const checkedVals = allCbs.filter(cb => cb.checked).map(cb => cb.value);
+                    state[col] = (checkedVals.length === allCbs.length) ? null : new Set(checkedVals);
+                    applyTableState(table);
+                    closeExcelPopover();
+                });
+
+                document.body.appendChild(popover);
+                activePopover = popover;
+                activeContext = { table, col };
+
+                const rect = btn.getBoundingClientRect();
+                const popRect = popover.getBoundingClientRect();
+                let left = rect.left;
+                let top = rect.bottom + 4;
+                if (left + popRect.width > window.innerWidth - 12) {
+                    left = Math.max(12, window.innerWidth - popRect.width - 12);
+                }
+                if (top + popRect.height > window.innerHeight - 12) {
+                    top = Math.max(12, rect.top - popRect.height - 4);
+                }
+                popover.style.left = `${left}px`;
+                popover.style.top = `${top}px`;
+                searchInput.focus();
+            }
+
+            document.querySelectorAll('.avg-col-filter-btn').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openExcelPopover(this);
+                });
+            });
+
+            document.querySelectorAll('.avg-group-reset-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const block = this.closest('.avg-group-block');
+                    const table = block ? block.querySelector('table.avg-salary-table') : null;
+                    if (!table) return;
+                    const state = getTableState(table);
+                    state.fio = null;
+                    state.job = null;
+                    state.sortCol = null;
+                    state.sortDir = null;
+                    applyTableState(table);
+                    closeExcelPopover();
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (activePopover && !activePopover.contains(e.target) && !e.target.closest('.avg-col-filter-btn')) {
+                    closeExcelPopover();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeExcelPopover();
+                }
+            });
+
+            document.querySelectorAll('.avg-salary-wrap').forEach(wrap => {
+                wrap.addEventListener('scroll', closeExcelPopover, { passive: true });
             });
 
             // Инициализация графиков Chart.js при открытии вкладки

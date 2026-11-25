@@ -31,31 +31,31 @@
                     <div class="col-6 col-md-2">
                         <div class="border rounded-3 p-3 bg-light h-100">
                             <div class="text-muted small">КНД 1151162 за {{ year }} г.</div>
-                            <div class="fs-5 fw-bold">{{ total_fns|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold">{{ total_fns|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="border rounded-3 p-3 bg-light h-100">
                             <div class="text-muted small">Начислено ЗП (1С)</div>
-                            <div class="fs-5 fw-bold text-primary">{{ total_accrued|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-primary">{{ total_accrued|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="border rounded-3 p-3 bg-light h-100">
                             <div class="text-muted small">Компенсация питания (отд.)</div>
-                            <div class="fs-5 fw-bold text-info">{{ total_compensation|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-info">{{ total_compensation|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-2">
                         <div class="border rounded-3 p-3 bg-light h-100">
                             <div class="text-muted small">Удержано / НДФЛ</div>
-                            <div class="fs-5 fw-bold text-danger">{{ total_withheld|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-danger">{{ total_withheld|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-2">
                         <div class="border rounded-3 p-3 bg-light h-100">
                             <div class="text-muted small">К выплате (ЗП)</div>
-                            <div class="fs-5 fw-bold text-success">{{ total_net|floatformat:2 }} ₽</div>
+                            <div class="fs-5 fw-bold text-success">{{ total_net|floatformat:"2g" }} ₽</div>
                         </div>
                     </div>
                 </div>
@@ -80,11 +80,11 @@
                             {% for row in monthly_rows %}
                                 <tr {% if month == row.month %}class="table-primary"{% endif %}>
                                     <td class="fw-semibold">{{ row.month_name }}</td>
-                                    <td class="text-end">{{ row.fns|floatformat:2 }}</td>
-                                    <td class="text-end text-primary">{{ row.accrued|floatformat:2 }}</td>
-                                    <td class="text-end text-info fw-semibold">{{ row.compensation|floatformat:2 }}</td>
-                                    <td class="text-end text-danger">{{ row.withheld|floatformat:2 }}</td>
-                                    <td class="text-end fw-semibold">{{ row.net|floatformat:2 }}</td>
+                                    <td class="text-end">{{ row.fns|floatformat:"2g" }}</td>
+                                    <td class="text-end text-primary">{{ row.accrued|floatformat:"2g" }}</td>
+                                    <td class="text-end text-info fw-semibold">{{ row.compensation|floatformat:"2g" }}</td>
+                                    <td class="text-end text-danger">{{ row.withheld|floatformat:"2g" }}</td>
+                                    <td class="text-end fw-semibold">{{ row.net|floatformat:"2g" }}</td>
                                     <td class="text-center">
                                         <a href="?year={{ year }}&month={{ row.month }}" class="btn btn-outline-primary btn-sm py-0 px-2">
                                             Показать
@@ -136,7 +136,7 @@
                                             <span class="badge bg-info text-dark ms-1">Отдельно (не в базе ЗП)</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-end fw-semibold">{{ item.total|floatformat:2 }}</td>
+                                    <td class="text-end fw-semibold">{{ item.total|floatformat:"2g" }}</td>
                                 </tr>
                             {% endfor %}
                             </tbody>
