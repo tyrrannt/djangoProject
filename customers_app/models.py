@@ -194,6 +194,23 @@ class Affiliation(models.Model):
         return reverse("customers_app:affiliation-list")
 
 
+class StaffCategory(models.Model):
+    """Справочник категорий персонала для группировки сотрудников в отчётах (АУП, ИТП, ЧЛЭ, Прочий персонал)."""
+
+    class Meta:
+        verbose_name = "Категория персонала"
+        verbose_name_plural = "Категории персонала"
+        ordering = ["sort_order", "name"]
+
+    name = models.CharField(verbose_name="Полное наименование", max_length=150)
+    short_name = models.CharField(verbose_name="Краткое обозначение", max_length=30, unique=True)
+    sort_order = models.PositiveSmallIntegerField(verbose_name="Порядок", default=100)
+    is_active = models.BooleanField(verbose_name="Активна", default=True)
+
+    def __str__(self) -> str:
+        return self.short_name or self.name
+
+
 class Job(models.Model):
     """
     Класс должностей
@@ -230,6 +247,14 @@ class Job(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+    )
+    staff_category = models.ForeignKey(
+        StaffCategory,
+        verbose_name="Категория персонала (по умолчанию)",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="jobs",
     )
     date_entry = models.DateField(
         verbose_name="Дата ввода", auto_now_add=True, null=True
@@ -519,6 +544,14 @@ class DataBaseUserWorkProfile(models.Model):
     )
     personal_work_schedule_end = models.TimeField(
         verbose_name="Окончание рабочего времени", default=get_time("18:00:00")
+    )
+    staff_category = models.ForeignKey(
+        StaffCategory,
+        verbose_name="Категория персонала (индивидуально)",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="work_profiles",
     )
 
 
@@ -1300,6 +1333,16 @@ class DataBaseUser(AbstractUser):
 
     def get_absolute_url(self):
         return reverse("customers_app:staff_list")
+
+    def get_staff_category(self):
+        """Возвращает категорию персонала: индивидуальную из рабочего профиля или по умолчанию от должности."""
+        wp = getattr(self, "user_work_profile", None)
+        if wp:
+            if wp.staff_category_id:
+                return wp.staff_category
+            if wp.job_id and wp.job and wp.job.staff_category_id:
+                return wp.job.staff_category
+        return None
 
 
 def rename(file_name, path_name, instance, pfx):
@@ -2413,5 +2456,151 @@ class OrgNodeLeadershipHistory(models.Model):
         job_title = self.job.name if self.job else "Руководитель"
         user_name = self.employee.title or self.employee.get_full_name() or self.employee.username
         return f"{user_name} ({job_title}) [{date_from_str} — {date_to_str}]"
+
+
+class PayrollReportBatch(models.Model):
+    """Загруженный отчёт ФНС КНД 1151162 (Персонифицированные сведения о физлицах)."""
+
+    class Meta:
+        verbose_name = "Пакет отчёта КНД 1151162"
+        verbose_name_plural = "Пакеты отчётов КНД 1151162"
+        ordering = ["-year", "-month", "-correction_number", "-uploaded_at"]
+
+    file_id = models.CharField(verbose_name="Идентификатор файла (ИдФайл)", max_length=255, unique=True)
+    year = models.PositiveSmallIntegerField(verbose_name="Отчётный год", db_index=True)
+    month = models.PositiveSmallIntegerField(verbose_name="Отчётный период (месяц)", db_index=True)
+    correction_number = models.PositiveSmallIntegerField(verbose_name="Номер корректировки", default=0)
+    doc_date = models.DateField(verbose_name="Дата документа", null=True, blank=True)
+    org_name = models.CharField(verbose_name="Организация", max_length=255, blank=True, default="")
+    org_inn = models.CharField(verbose_name="ИНН организации", max_length=12, blank=True, default="")
+    org_kpp = models.CharField(verbose_name="КПП организации", max_length=9, blank=True, default="")
+    raw_filename = models.CharField(verbose_name="Имя файла", max_length=255, blank=True, default="")
+    uploaded_by = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Загрузил",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_payroll_batches",
+    )
+    uploaded_at = models.DateTimeField(verbose_name="Дата загрузки", auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"КНД 1151162 за {self.month:02d}.{self.year} (корр. {self.correction_number})"
+
+
+class PayrollFnsLine(models.Model):
+    """Строка по физическому лицу из загруженного отчёта КНД 1151162."""
+
+    class Meta:
+        verbose_name = "Строка отчёта КНД 1151162"
+        verbose_name_plural = "Строки отчётов КНД 1151162"
+        ordering = ["last_name", "first_name", "surname"]
+        indexes = [
+            models.Index(fields=["snils"]),
+            models.Index(fields=["person_ref_key"]),
+        ]
+
+    batch = models.ForeignKey(
+        PayrollReportBatch,
+        verbose_name="Пакет отчёта",
+        on_delete=models.CASCADE,
+        related_name="lines",
+    )
+    employee = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Сотрудник на портале",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fns_payroll_lines",
+    )
+    person_ref_key = models.CharField(
+        verbose_name="GUID физлица (1С)",
+        max_length=37,
+        blank=True,
+        default="",
+    )
+    inn = models.CharField(verbose_name="ИНН ФЛ", max_length=12, blank=True, default="")
+    snils = models.CharField(verbose_name="СНИЛС", max_length=20, blank=True, default="")
+    last_name = models.CharField(verbose_name="Фамилия", max_length=100, blank=True, default="")
+    first_name = models.CharField(verbose_name="Имя", max_length=100, blank=True, default="")
+    surname = models.CharField(verbose_name="Отчество", max_length=100, blank=True, default="")
+    full_name = models.CharField(verbose_name="ФИО", max_length=255, blank=True, default="")
+    total_amount = models.DecimalField(
+        verbose_name="Сумма выплат (СумВыпл)",
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.full_name} — {self.total_amount}"
+
+
+class PayrollCalculationTypeCache(models.Model):
+    """Кэш справочника видов начислений и удержаний из 1С ЗУП (read-only OData)."""
+
+    class Meta:
+        verbose_name = "Вид расчёта 1С (кэш)"
+        verbose_name_plural = "Виды расчётов 1С (кэш)"
+
+    ref_key = models.CharField(verbose_name="GUID вида расчёта", max_length=37, unique=True)
+    kind = models.CharField(verbose_name="Тип плана видов расчёта", max_length=100, blank=True, default="")
+    description = models.CharField(verbose_name="Наименование", max_length=255, blank=True, default="")
+    exclude_from_salary = models.BooleanField(
+        verbose_name="Выделять отдельно (не включать в общую ЗП)",
+        default=False,
+    )
+    updated_at = models.DateTimeField(verbose_name="Обновлено", auto_now=True)
+
+    def __str__(self) -> str:
+        return self.description or self.ref_key
+
+
+class PayrollODataDetail(models.Model):
+    """Детализация начислений и удержаний сотрудников из 1С ЗУП (OData read-only)."""
+
+    class Meta:
+        verbose_name = "Детализация начислений 1С"
+        verbose_name_plural = "Детализация начислений 1С"
+        indexes = [
+            models.Index(fields=["year", "month"]),
+            models.Index(fields=["person_ref_key", "year", "month"]),
+            models.Index(fields=["group_type"]),
+        ]
+
+    year = models.PositiveSmallIntegerField(verbose_name="Год")
+    month = models.PositiveSmallIntegerField(verbose_name="Месяц")
+    employee = models.ForeignKey(
+        DataBaseUser,
+        verbose_name="Сотрудник на портале",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="odata_payroll_details",
+    )
+    person_ref_key = models.CharField(verbose_name="GUID физлица (1С)", max_length=37, blank=True, default="")
+    employee_ref_key = models.CharField(verbose_name="GUID сотрудника (1С)", max_length=37, blank=True, default="")
+    division = models.ForeignKey(
+        Division,
+        verbose_name="Подразделение",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="odata_payroll_details",
+    )
+    division_ref_key = models.CharField(verbose_name="GUID подразделения (1С)", max_length=37, blank=True, default="")
+    group_type = models.CharField(verbose_name="Группа (Начислено/Удержано/Выплачено)", max_length=64, blank=True, default="")
+    calculation_type_key = models.CharField(verbose_name="GUID вида начисления/удержания", max_length=37, blank=True, default="")
+    calculation_type_name = models.CharField(verbose_name="Вид начисления/удержания", max_length=255, blank=True, default="")
+    calculation_category = models.CharField(verbose_name="Категория (Начисления/Удержания/НДФЛ)", max_length=64, blank=True, default="")
+    amount = models.DecimalField(verbose_name="Сумма", max_digits=14, decimal_places=2, default=0)
+    is_storno = models.BooleanField(verbose_name="Сторно", default=False)
+    synced_at = models.DateTimeField(verbose_name="Синхронизировано", auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.month:02d}.{self.year} | {self.calculation_type_name}: {self.amount}"
+
 
 

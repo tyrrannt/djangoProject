@@ -3,80 +3,194 @@
 {% load custom %}
 
 {% block title %}
-    {{ title }}
+    {{ title|default:"Генератор OData-запросов к 1С" }}
 {% endblock %}
 
 {% block custom_css %}
     <style>
+        .odata-section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .filter-row {
-            margin-bottom: 12px;
-            padding: 12px;
+            margin-bottom: 10px;
+            padding: 10px 12px;
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
         }
 
-        .remove-filter {
+        #objectNameDropdown {
+            max-height: 320px;
+            overflow-y: auto;
             width: 100%;
+            z-index: 1050;
         }
 
-        #resultUrl {
-            white-space: pre-wrap;
-            word-break: break-all;
+        .field-chips-box {
+            max-height: 150px;
+            overflow-y: auto;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 12px;
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+
+        .field-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.78rem;
+            padding: 3px 8px;
+            margin: 2px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #1e293b;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .field-chip:hover {
+            border-color: #0d6efd;
+            background: #eff6ff;
+            color: #0d6efd;
+        }
+
+        .field-chip.is-nav {
+            border-color: #a7f3d0;
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .field-chip-type {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+
+        #resultUrlInput {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.88rem;
+            background: #f8fafc;
             color: #002b49;
-            font-size: 0.9rem;
         }
 
-        #resultParams {
-            white-space: pre-wrap;
-            background: #f8fafc;
+        .odata-response-pre {
+            max-height: 520px;
+            overflow: auto;
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+
+        .odata-table-wrap {
+            max-height: 520px;
+            overflow: auto;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 12px;
-            color: #334155;
-            font-size: 0.9rem;
+            border-radius: 8px;
+        }
+
+        .odata-table-wrap table th {
+            position: sticky;
+            top: 0;
+            background: #f1f5f9;
+            z-index: 2;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .odata-table-wrap table td {
+            font-size: 0.8rem;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <!-- start: page -->
     <div class="row">
         <div class="col-12">
-            <div class="card card-modern">
-                <header class="card-header">
-                    <h2 class="card-title text-primary"><i class="fas fa-code-branch me-2"></i>Генератор OData-запросов к 1С</h2>
-                    <p class="card-subtitle text-muted">Конструктор и тестирование вызовов протокола OData к базам 1С Предприятие</p>
+            <div class="card card-modern shadow-sm">
+                <header class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2 class="card-title text-primary mb-1">
+                            <i class="fas fa-code-branch me-2"></i>Генератор и тестер OData-запросов к 1С
+                        </h2>
+                        <p class="card-subtitle text-muted mb-0">
+                            Конструктор запросов по стандарту OData v3 (1С:Предприятие 8.3–8.5)
+                        </p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <label for="presetSelect" class="form-label mb-0 text-muted small">Быстрый шаблон:</label>
+                        <select id="presetSelect" class="form-select form-select-sm" style="width: auto; min-width: 240px;">
+                            <option value="">— Выберите готовый пример —</option>
+                            <option value="persons">ЗУП: Физические лица (поиск)</option>
+                            <option value="hr_history">ЗУП: Кадровая история сотрудников</option>
+                            <option value="accruals">ЗУП: Начисления и удержания (RecordType)</option>
+                            <option value="vacation_slice">ЗУП: Срез последних (Виртуальная таблица)</option>
+                        </select>
+                    </div>
                 </header>
+
                 <div class="card-body p-4">
                     <form id="odataForm">
-                        <input type="hidden" id="host" value="192.168.10.11">
+                        <input type="hidden" id="host" value="{{ default_host|default:'192.168.10.11' }}">
+
+                        <!-- 1. Источник и объект -->
+                        <div class="odata-section-title">
+                            <span class="badge bg-primary rounded-pill">1</span>
+                            <span>Информационная база и объект метаданных</span>
+                        </div>
 
                         <div class="row g-3 mb-3">
-                            <div class="col-12 col-md-6">
-                                <label for="base" class="form-label font-weight-semibold">Имя базы данных <span class="text-danger">*</span></label>
+                            <div class="col-12 col-md-5">
+                                <label for="base" class="form-label fw-semibold">
+                                    База данных 1С <span class="text-danger">*</span>
+                                </label>
                                 <select class="form-select" id="base" required>
                                     <option value="">Выберите базу...</option>
                                     <option value="72095052-970f-11e3-84fb-00e05301b4e4">Зарплата и управление персоналом (ЗУП)</option>
                                     <option value="59e20093-970f-11e3-84fb-00e05301b4e4">Бухгалтерия</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-6">
-                                <label for="format" class="form-label font-weight-semibold">Формат вывода</label>
+                            <div class="col-12 col-md-4">
+                                <label for="resourceMode" class="form-label fw-semibold">Режим обращения</label>
+                                <select class="form-select" id="resourceMode">
+                                    <option value="list" selected>Список сущностей (набор)</option>
+                                    <option value="record_type">Записи регистра (_RecordType)</option>
+                                    <option value="key">Конкретный объект по ключу (guid)</option>
+                                    <option value="tabular">Табличная часть объекта</option>
+                                    <option value="virtual">Виртуальная таблица (/SliceLast и др.)</option>
+                                    <option value="count">Только количество записей (/$count)</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label for="format" class="form-label fw-semibold">Формат ответа ($format)</label>
                                 <select class="form-select" id="format">
-                                    <option value="json" selected>JSON</option>
-                                    <option value="atom">ATOM</option>
+                                    <option value="json_nometadata" selected>JSON (без метаданных)</option>
+                                    <option value="json">JSON (minimalmetadata)</option>
+                                    <option value="json_fullmetadata">JSON (fullmetadata)</option>
+                                    <option value="atom">ATOM (XML)</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="row g-3 mb-3">
                             <div class="col-12 col-md-4">
-                                <label for="objectType" class="form-label font-weight-semibold">Тип объекта <span class="text-danger">*</span></label>
+                                <label for="objectType" class="form-label fw-semibold">
+                                    Тип объекта <span class="text-danger">*</span>
+                                </label>
                                 <select class="form-select" id="objectType" required>
                                     <option value="">Выберите тип...</option>
                                     <option value="Catalog">Справочник (Catalog)</option>
@@ -96,58 +210,126 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-8 position-relative">
-                                <label for="objectName" class="form-label font-weight-semibold">Имя объекта <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="objectName"
-                                       placeholder="Номенклатура, АвансовыйОтчет и т.д." required
-                                       style="cursor: pointer;">
+                                <label for="objectName" class="form-label fw-semibold">
+                                    Имя объекта <span class="text-danger">*</span>
+                                    <span id="metadataStatus" class="text-muted fw-normal small ms-2"></span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="objectName"
+                                           placeholder="Начните вводить имя объекта (напр. ФизическиеЛица, Сотрудники)..."
+                                           autocomplete="off" required>
+                                    <button type="button" id="loadFieldsBtn" class="btn btn-outline-secondary"
+                                            title="Загрузить поля объекта из $metadata">
+                                        <i class="fas fa-sitemap me-1"></i>Поля ($metadata)
+                                    </button>
+                                </div>
+                                <ul class="dropdown-menu shadow-sm" id="objectNameDropdown"></ul>
                             </div>
                         </div>
 
-                        <div class="row g-3 mb-3">
-                            <div class="col-12 col-md-6">
-                                <label for="top" class="form-label font-weight-semibold">Лимит записей ($top)</label>
-                                <input type="number" class="form-control" id="top" placeholder="Например: 100">
+                        <!-- Дополнительные поля режима ресурса -->
+                        <div id="extraModeFields" class="row g-3 mb-3" style="display: none;">
+                            <div class="col-12 col-md-6 mode-field mode-key" style="display: none;">
+                                <label for="entityKey" class="form-label fw-semibold">Ключ сущности (GUID или составной ключ)</label>
+                                <input type="text" class="form-control" id="entityKey"
+                                       placeholder="Например: 8d04ce3c-6360-11e9-dd92-fa163e8ba11d">
                             </div>
-                            <div class="col-12 col-md-6">
-                                <label for="skip" class="form-label font-weight-semibold">Пропустить записей ($skip)</label>
-                                <input type="number" class="form-control" id="skip" placeholder="Например: 50">
+                            <div class="col-12 col-md-6 mode-field mode-key" style="display: none;">
+                                <label for="propertyPath" class="form-label fw-semibold">Свойство «через точку» (необязательно)</label>
+                                <input type="text" class="form-control" id="propertyPath"
+                                       placeholder="Например: Валюта/Description">
+                            </div>
+                            <div class="col-12 col-md-6 mode-field mode-tabular" style="display: none;">
+                                <label for="tabularName" class="form-label fw-semibold">Имя табличной части</label>
+                                <input type="text" class="form-control" id="tabularName"
+                                       placeholder="Например: Товары или КонтактнаяИнформация">
+                            </div>
+                            <div class="col-12 col-md-8 mode-field mode-virtual" style="display: none;">
+                                <label for="virtualFunc" class="form-label fw-semibold">Функция виртуальной таблицы</label>
+                                <input type="text" class="form-control" id="virtualFunc"
+                                       placeholder="SliceLast() или SliceFirst(Period=datetime'2026-01-01T00:00:00')">
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="selectFields" class="form-label font-weight-semibold">Выбираемые поля ($select)</label>
-                            <input type="text" class="form-control" id="selectFields" placeholder="Ref_Key, Code, Description (через запятую)">
+                        <!-- Блок автоподсказок полей из $metadata -->
+                        <div id="entityFieldsBox" class="mb-4" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-semibold text-muted">
+                                    <i class="fas fa-tags me-1"></i>Поля объекта (клик — добавить в $select; зелёные — ссылки для $expand):
+                                </span>
+                                <input type="text" id="fieldChipSearch" class="form-control form-control-sm"
+                                       style="width: 220px;" placeholder="Поиск поля...">
+                            </div>
+                            <div id="entityFieldsList" class="field-chips-box"></div>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label font-weight-semibold d-flex justify-content-between align-items-center">
-                                <span>Фильтры ($filter)</span>
+                        <datalist id="entityFieldsDatalist"></datalist>
+
+                        <hr class="my-4">
+
+                        <!-- 2. Фильтрация -->
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+                            <div class="odata-section-title mb-0">
+                                <span class="badge bg-primary rounded-pill">2</span>
+                                <span>Фильтрация ($filter)</span>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Режим фильтрации">
+                                <input type="radio" class="btn-check" name="filterMode" id="filterModeBuilder" value="builder" checked>
+                                <label class="btn btn-outline-primary" for="filterModeBuilder">Конструктор</label>
+
+                                <input type="radio" class="btn-check" name="filterMode" id="filterModeRaw" value="raw">
+                                <label class="btn btn-outline-primary" for="filterModeRaw">Ручное выражение</label>
+                            </div>
+                        </div>
+
+                        <div id="builderFilterPane" class="mb-4">
+                            <div class="d-flex justify-content-end mb-2">
                                 <button type="button" id="addFilter" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-plus me-1"></i> Добавить условие
+                                    <i class="fas fa-plus me-1"></i>Добавить условие
                                 </button>
-                            </label>
+                            </div>
                             <div id="filtersContainer">
                                 <div class="filter-row row g-2 align-items-center">
-                                    <div class="col-12 col-md-4">
-                                        <input type="text" class="form-control field-name" placeholder="Имя поля (напр. Date)">
-                                    </div>
-                                    <div class="col-12 col-md-3">
-                                        <select class="form-select operator">
-                                            <option value="eq">= (равно)</option>
-                                            <option value="ne">≠ (не равно)</option>
-                                            <option value="gt">> (больше)</option>
-                                            <option value="ge">≥ (больше или равно)</option>
-                                            <option value="lt">< (меньше)</option>
-                                            <option value="le">≤ (меньше или равно)</option>
-                                            <option value="startswith">начинается с (startswith)</option>
-                                            <option value="contains">содержит (contains)</option>
+                                    <div class="col-12 col-md-1">
+                                        <select class="form-select form-select-sm filter-logic" aria-label="Логическая связка">
+                                            <option value="and" selected>И</option>
+                                            <option value="or">ИЛИ</option>
                                         </select>
                                     </div>
-                                    <div class="col-12 col-md-4">
-                                        <input type="text" class="form-control value" placeholder="Значение фильтра">
+                                    <div class="col-12 col-md-3">
+                                        <input type="text" class="form-control form-control-sm field-name"
+                                               list="entityFieldsDatalist" placeholder="Поле (напр. Period)">
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <select class="form-select form-select-sm operator" aria-label="Оператор">
+                                            <option value="eq">= (равно)</option>
+                                            <option value="ne">≠ (не равно)</option>
+                                            <option value="gt">&gt; (больше)</option>
+                                            <option value="ge">≥ (больше или равно)</option>
+                                            <option value="lt">&lt; (меньше)</option>
+                                            <option value="le">≤ (меньше или равно)</option>
+                                            <option value="substringof">содержит (substringof)</option>
+                                            <option value="startswith">начинается с (startswith)</option>
+                                            <option value="endswith">заканчивается на (endswith)</option>
+                                            <option value="like">шаблон (like)</option>
+                                            <option value="not_eq">не равно (not eq)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <select class="form-select form-select-sm value-type" aria-label="Тип значения">
+                                            <option value="string" selected>Строка</option>
+                                            <option value="number">Число</option>
+                                            <option value="datetime">Дата (datetime)</option>
+                                            <option value="guid">GUID</option>
+                                            <option value="boolean">Булево</option>
+                                            <option value="raw">Без кавычек</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <input type="text" class="form-control form-control-sm value" placeholder="Значение">
                                     </div>
                                     <div class="col-12 col-md-1 text-end">
-                                        <button type="button" class="btn btn-outline-danger remove-filter" title="Удалить условие">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-filter w-100" title="Удалить условие">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
@@ -155,154 +337,507 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="orderBy" class="form-label font-weight-semibold">Сортировка ($orderby)</label>
-                            <div class="row g-2">
-                                <div class="col-12 col-md-8">
-                                    <input type="text" class="form-control" id="orderBy" placeholder="Поле для сортировки (напр. Ref_Key)">
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <select class="form-select" id="orderDirection">
-                                        <option value="asc">По возрастанию (ASC)</option>
-                                        <option value="desc">По убыванию (DESC)</option>
+                        <div id="rawFilterPane" class="mb-4" style="display: none;">
+                            <textarea id="rawFilter" class="form-control font-monospace" rows="2"
+                                      placeholder="Например: year(Period) eq 2026 and (Цена gt 100 or Active eq true)"></textarea>
+                            <div class="form-text">
+                                Поддерживаются функции 1С OData: <code>year()</code>, <code>month()</code>, <code>substringof('текст', Поле) eq true</code>,
+                                <code>like(Поле, 'А%')</code>, <code>any(d: d/Сумма gt 0)</code>, <code>cast(..., 'Catalog_...')</code>.
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- 3. Выборка, связи, сортировка и пагинация -->
+                        <div class="odata-section-title">
+                            <span class="badge bg-primary rounded-pill">3</span>
+                            <span>Поля, связи, сортировка и ограничения</span>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label for="selectFields" class="form-label fw-semibold d-flex justify-content-between">
+                                    <span>Выбираемые поля ($select)</span>
+                                    <span class="d-flex gap-1">
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none quick-select" data-val="*">*</button>
+                                        <span class="text-muted">|</span>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none quick-select" data-val="**">** (без ТЧ)</button>
+                                        <span class="text-muted">|</span>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none quick-select" data-val="*, *____Presentation">+представления</button>
+                                    </span>
+                                </label>
+                                <input type="text" class="form-control" id="selectFields"
+                                       list="entityFieldsDatalist"
+                                       placeholder="Ref_Key, Code, Description (через запятую)">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="expandFields" class="form-label fw-semibold">Раскрытие ссылок ($expand)</label>
+                                <input type="text" class="form-control" id="expandFields"
+                                       placeholder="Например: Организация, Подразделение (через запятую или *)">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-5">
+                                <label for="orderBy" class="form-label fw-semibold">Сортировка ($orderby)</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="orderBy"
+                                           list="entityFieldsDatalist"
+                                           placeholder="Поле (или список: Code asc, Date desc)">
+                                    <select class="form-select" id="orderDirection" style="max-width: 145px;">
+                                        <option value="asc">ASC (возр.)</option>
+                                        <option value="desc">DESC (убыв.)</option>
                                     </select>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label for="top" class="form-label fw-semibold">Лимит ($top)</label>
+                                <input type="number" min="1" class="form-control" id="top" value="20" placeholder="20">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label for="skip" class="form-label fw-semibold">Пропуск ($skip)</label>
+                                <input type="number" min="0" class="form-control" id="skip" placeholder="0">
+                            </div>
+                            <div class="col-12 col-md-3 d-flex flex-column justify-content-end gap-1 pb-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowedOnly">
+                                    <label class="form-check-label small" for="allowedOnly"
+                                           title="Исключить объекты, закрытые RLS (предотвращает HTTP 401)">
+                                        Только разрешённые (<code>$allowedOnly=true</code>)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="inlineCount">
+                                    <label class="form-check-label small" for="inlineCount"
+                                           title="В 1С при $inlinecount=allpages параметры $top и $skip игнорируются">
+                                        Вернуть всего (<code>$inlinecount=allpages</code>)
+                                    </label>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary px-4 py-2">
+                        <div class="d-flex flex-wrap gap-2 pt-2">
+                            <button type="submit" class="btn btn-primary px-4">
                                 <i class="fas fa-bolt me-2"></i>Сгенерировать запрос
+                            </button>
+                            <button type="button" id="generateAndTestBtn" class="btn btn-success px-4">
+                                <i class="fas fa-play me-2"></i>Сгенерировать и выполнить
+                            </button>
+                            <button type="button" id="resetFormBtn" class="btn btn-outline-secondary ms-auto">
+                                <i class="fas fa-undo me-1"></i>Сбросить
                             </button>
                         </div>
                     </form>
 
-                    <div id="resultContainer" class="mt-4 pt-3 border-top" style="display: none;">
-                        <h4 class="text-primary mb-3"><i class="fas fa-terminal me-2"></i>Результат генерации:</h4>
-                        
-                        <div class="card mb-3">
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                <span class="font-weight-semibold">Сгенерированный URL запроса:</span>
-                                <button id="copyBtn" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-copy me-1"></i>Копировать URL
-                                </button>
+                    <!-- 4. Результат генерации и тестирования -->
+                    <div id="resultContainer" class="mt-4 pt-4 border-top" style="display: none;">
+                        <div class="card border-primary-subtle mb-3">
+                            <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <span class="fw-semibold text-primary">
+                                    <i class="fas fa-link me-2"></i>URL запроса (можно редактировать вручную перед проверкой)
+                                </span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" id="copyBtn" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-copy me-1"></i>Копировать URL
+                                    </button>
+                                    <button type="button" id="testRequestBtn" class="btn btn-sm btn-success">
+                                        <i class="fas fa-play me-1"></i>Выполнить запрос
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body p-3">
-                                <pre id="resultUrl" class="mb-0"></pre>
+                                <textarea id="resultUrlInput" class="form-control" rows="2"></textarea>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <h6 class="font-weight-semibold text-muted">Параметры запроса:</h6>
-                            <pre id="resultParams"></pre>
-                        </div>
-
-                        <div class="mt-3">
-                            <button id="testRequestBtn" class="btn btn-success">
-                                <i class="fas fa-play me-2"></i>Протестировать запрос
-                            </button>
-                            <div id="testResult" class="mt-3"></div>
+                        <!-- Панель ответа -->
+                        <div id="testResultWrapper" style="display: none;">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <div id="responseMeta" class="d-flex flex-wrap align-items-center gap-2"></div>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <input type="text" id="responseSearch" class="form-control form-control-sm"
+                                           style="width: 220px;" placeholder="Поиск по ответу...">
+                                    <div class="btn-group btn-group-sm" id="viewSwitchGroup" style="display: none;">
+                                        <button type="button" class="btn btn-outline-secondary active" id="viewRawBtn">JSON / XML</button>
+                                        <button type="button" class="btn btn-outline-secondary" id="viewTableBtn">Таблица</button>
+                                    </div>
+                                    <button type="button" id="downloadResponseBtn" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-download me-1"></i>Скачать
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="testResult"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- end: page -->
 {% endblock %}
 
 {% block custom_script %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Добавление нового фильтра
+            const metadataCache = {};
+            const entityFieldsCache = {};
+            let currentEntityFields = [];
+            let lastResponsePayload = null;
+            let currentViewMode = 'raw';
+
+            const baseEl = document.getElementById('base');
+            const objectTypeEl = document.getElementById('objectType');
+            const objectNameEl = document.getElementById('objectName');
+            const objectDropdownEl = document.getElementById('objectNameDropdown');
+            const metadataStatusEl = document.getElementById('metadataStatus');
+            const resourceModeEl = document.getElementById('resourceMode');
+            const resultUrlInput = document.getElementById('resultUrlInput');
+
+            // Подсказка по первому фильтру (скрываем логическую связку на первой строке)
+            function refreshFilterLogicVisibility() {
+                document.querySelectorAll('.filter-row').forEach((row, idx) => {
+                    const logicEl = row.querySelector('.filter-logic');
+                    if (logicEl) {
+                        logicEl.style.visibility = idx === 0 ? 'hidden' : 'visible';
+                    }
+                });
+            }
+            refreshFilterLogicVisibility();
+
+            // Переключение режима ресурса
+            function updateResourceModeUI() {
+                const mode = resourceModeEl.value;
+                const extraBox = document.getElementById('extraModeFields');
+                document.querySelectorAll('.mode-field').forEach(el => el.style.display = 'none');
+                if (mode === 'key' || mode === 'tabular' || mode === 'virtual') {
+                    extraBox.style.display = 'flex';
+                    document.querySelectorAll('.mode-' + mode).forEach(el => el.style.display = 'block');
+                } else {
+                    extraBox.style.display = 'none';
+                }
+            }
+            resourceModeEl.addEventListener('change', updateResourceModeUI);
+
+            // Переключение режима фильтрации (Конструктор / Ручное)
+            document.querySelectorAll('input[name="filterMode"]').forEach(radio => {
+                radio.addEventListener('change', function () {
+                    const isRaw = this.value === 'raw';
+                    document.getElementById('builderFilterPane').style.display = isRaw ? 'none' : 'block';
+                    document.getElementById('rawFilterPane').style.display = isRaw ? 'block' : 'none';
+                });
+            });
+
+            // Добавление / удаление строк фильтра
             document.getElementById('addFilter').addEventListener('click', function () {
                 const newFilter = document.querySelector('.filter-row').cloneNode(true);
                 newFilter.querySelector('.field-name').value = '';
                 newFilter.querySelector('.value').value = '';
+                newFilter.querySelector('.operator').value = 'eq';
+                newFilter.querySelector('.value-type').value = 'string';
                 document.getElementById('filtersContainer').appendChild(newFilter);
+                refreshFilterLogicVisibility();
             });
 
-            // Удаление фильтра
             document.addEventListener('click', function (e) {
                 const removeBtn = e.target.closest('.remove-filter');
-                if (removeBtn) {
-                    if (document.querySelectorAll('.filter-row').length > 1) {
-                        removeBtn.closest('.filter-row').remove();
-                    } else {
-                        const row = removeBtn.closest('.filter-row');
-                        row.querySelector('.field-name').value = '';
-                        row.querySelector('.value').value = '';
-                        row.querySelector('.operator').value = 'eq';
-                    }
+                if (!removeBtn) return;
+                if (document.querySelectorAll('.filter-row').length > 1) {
+                    removeBtn.closest('.filter-row').remove();
+                } else {
+                    const row = removeBtn.closest('.filter-row');
+                    row.querySelector('.field-name').value = '';
+                    row.querySelector('.value').value = '';
+                    row.querySelector('.operator').value = 'eq';
+                    row.querySelector('.value-type').value = 'string';
+                }
+                refreshFilterLogicVisibility();
+            });
+
+            // Автоподстановка типа значения при выборе поля из $metadata
+            document.addEventListener('change', function (e) {
+                if (!e.target.classList.contains('field-name')) return;
+                const fieldName = e.target.value.trim();
+                const meta = currentEntityFields.find(f => f.name === fieldName);
+                if (!meta) return;
+                const row = e.target.closest('.filter-row');
+                const typeSelect = row.querySelector('.value-type');
+                if (meta.type.includes('Guid')) typeSelect.value = 'guid';
+                else if (meta.type.includes('DateTime')) typeSelect.value = 'datetime';
+                else if (meta.type.includes('Boolean')) typeSelect.value = 'boolean';
+                else if (meta.type.includes('Int') || meta.type.includes('Double') || meta.type.includes('Decimal')) typeSelect.value = 'number';
+                else typeSelect.value = 'string';
+            });
+
+            // Быстрые кнопки для $select
+            document.querySelectorAll('.quick-select').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.getElementById('selectFields').value = this.dataset.val;
+                });
+            });
+
+            // Выпадающий список объектов метаданных с фильтрацией по вводу
+            function getFilteredObjects(metadata, objectType, searchText) {
+                if (!metadata || !Array.isArray(metadata.value)) return [];
+                const prefix = objectType + '_';
+                const query = (searchText || '').trim().toLowerCase();
+                return metadata.value
+                    .filter(item => item.name.startsWith(prefix))
+                    .map(item => item.name.substring(prefix.length))
+                    .filter(shortName => !query || shortName.toLowerCase().includes(query))
+                    .sort((a, b) => a.localeCompare(b, 'ru'));
+            }
+
+            function renderObjectDropdown() {
+                const base = baseEl.value;
+                const objectType = objectTypeEl.value;
+                if (!base || !objectType) {
+                    objectDropdownEl.classList.remove('show');
+                    return;
+                }
+                const metadata = metadataCache[base];
+                if (!metadata) return;
+
+                const items = getFilteredObjects(metadata, objectType, objectNameEl.value);
+                objectDropdownEl.innerHTML = '';
+
+                if (items.length === 0) {
+                    const li = document.createElement('li');
+                    li.innerHTML = '<span class="dropdown-item text-muted">Совпадений не найдено</span>';
+                    objectDropdownEl.appendChild(li);
+                } else {
+                    items.slice(0, 120).forEach(shortName => {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'dropdown-item';
+                        a.href = '#';
+                        a.textContent = shortName;
+                        a.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            objectNameEl.value = shortName;
+                            objectDropdownEl.classList.remove('show');
+                            loadEntityFields();
+                        });
+                        li.appendChild(a);
+                        objectDropdownEl.appendChild(li);
+                    });
+                }
+                objectDropdownEl.classList.add('show');
+            }
+
+            function ensureMetadataLoaded(showDropdownAfter = false) {
+                const base = baseEl.value;
+                const objectType = objectTypeEl.value;
+                if (!base || !objectType) return;
+
+                if (metadataCache[base]) {
+                    if (showDropdownAfter) renderObjectDropdown();
+                    return;
+                }
+                metadataStatusEl.textContent = '(загрузка списка объектов...)';
+                fetch(`/portal/get-metadata/?base=${encodeURIComponent(base)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.error) {
+                            metadataStatusEl.textContent = `(ошибка: ${data.error})`;
+                            return;
+                        }
+                        metadataCache[base] = data;
+                        metadataStatusEl.textContent = `(${(data.value || []).length} объектов загружено)`;
+                        if (showDropdownAfter) renderObjectDropdown();
+                    })
+                    .catch(() => {
+                        metadataStatusEl.textContent = '(ошибка загрузки списка)';
+                    });
+            }
+
+            objectTypeEl.addEventListener('change', () => ensureMetadataLoaded(true));
+            baseEl.addEventListener('change', () => {
+                objectDropdownEl.classList.remove('show');
+                document.getElementById('entityFieldsBox').style.display = 'none';
+                if (objectTypeEl.value) ensureMetadataLoaded(false);
+            });
+            objectNameEl.addEventListener('focus', () => ensureMetadataLoaded(true));
+            objectNameEl.addEventListener('input', () => renderObjectDropdown());
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#objectName') && !e.target.closest('#objectNameDropdown')) {
+                    objectDropdownEl.classList.remove('show');
                 }
             });
 
-            // Отправка формы
-            document.getElementById('odataForm').addEventListener('submit', function (e) {
-                e.preventDefault();
+            // Загрузка полей объекта из $metadata
+            function renderEntityFields(fields, query = '') {
+                const container = document.getElementById('entityFieldsList');
+                const datalist = document.getElementById('entityFieldsDatalist');
+                container.innerHTML = '';
+                datalist.innerHTML = '';
 
+                const q = query.trim().toLowerCase();
+                fields.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.name;
+                    datalist.appendChild(opt);
+
+                    if (q && !f.name.toLowerCase().includes(q)) return;
+                    const chip = document.createElement('span');
+                    chip.className = 'field-chip' + (f.is_navigation ? ' is-nav' : '');
+                    chip.title = f.is_navigation
+                        ? 'Клик — добавить в $expand'
+                        : `Тип: ${f.type}. Клик — добавить в $select`;
+                    chip.innerHTML = `<span>${f.name}</span><span class="field-chip-type">${f.type.replace('Edm.', '')}</span>`;
+                    chip.addEventListener('click', () => {
+                        const targetInput = f.is_navigation
+                            ? document.getElementById('expandFields')
+                            : document.getElementById('selectFields');
+                        const current = targetInput.value.split(',').map(s => s.trim()).filter(Boolean);
+                        if (!current.includes(f.name)) {
+                            current.push(f.name);
+                            targetInput.value = current.join(', ');
+                        }
+                    });
+                    container.appendChild(chip);
+                });
+            }
+
+            function loadEntityFields() {
+                const base = baseEl.value;
+                const objectType = objectTypeEl.value;
+                const objectName = objectNameEl.value.trim();
+                if (!base || !objectType || !objectName) return;
+
+                const cacheKey = `${base}:${objectType}_${objectName}`;
+                const box = document.getElementById('entityFieldsBox');
+                const listEl = document.getElementById('entityFieldsList');
+
+                if (entityFieldsCache[cacheKey]) {
+                    currentEntityFields = entityFieldsCache[cacheKey];
+                    box.style.display = 'block';
+                    renderEntityFields(currentEntityFields, document.getElementById('fieldChipSearch').value);
+                    return;
+                }
+
+                box.style.display = 'block';
+                listEl.innerHTML = '<span class="text-muted small">Загрузка схемы полей из $metadata...</span>';
+
+                fetch(`/portal/get-entity-fields/?base=${encodeURIComponent(base)}&object_type=${encodeURIComponent(objectType)}&object_name=${encodeURIComponent(objectName)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.error) {
+                            listEl.innerHTML = `<span class="text-danger small">${data.error}</span>`;
+                            return;
+                        }
+                        currentEntityFields = data.fields || [];
+                        entityFieldsCache[cacheKey] = currentEntityFields;
+                        if (currentEntityFields.length === 0) {
+                            listEl.innerHTML = '<span class="text-muted small">Поля для этого объекта не найдены в $metadata.</span>';
+                        } else {
+                            renderEntityFields(currentEntityFields);
+                        }
+                    })
+                    .catch(() => {
+                        listEl.innerHTML = '<span class="text-danger small">Не удалось загрузить поля.</span>';
+                    });
+            }
+
+            document.getElementById('loadFieldsBtn').addEventListener('click', loadEntityFields);
+            document.getElementById('fieldChipSearch').addEventListener('input', function () {
+                renderEntityFields(currentEntityFields, this.value);
+            });
+
+            // Генерация URL запроса
+            function buildRequestParams() {
                 const params = new URLSearchParams();
-
-                params.append('host', '192.168.10.11');  // фиксированный хост
-                params.append('base', document.getElementById('base').value);
-                params.append('object_type', document.getElementById('objectType').value);
-                params.append('object_name', document.getElementById('objectName').value);
+                params.append('host', document.getElementById('host').value);
+                params.append('base', baseEl.value);
+                params.append('object_type', objectTypeEl.value);
+                params.append('object_name', objectNameEl.value.trim());
                 params.append('format', document.getElementById('format').value);
+                params.append('resource_mode', resourceModeEl.value);
 
-                const top = document.getElementById('top').value;
-                const skip = document.getElementById('skip').value;
-                const select = document.getElementById('selectFields').value;
-                const orderby = document.getElementById('orderBy').value;
+                const entityKey = document.getElementById('entityKey').value.trim();
+                const propertyPath = document.getElementById('propertyPath').value.trim();
+                const tabularName = document.getElementById('tabularName').value.trim();
+                const virtualFunc = document.getElementById('virtualFunc').value.trim();
+                if (entityKey) params.append('entity_key', entityKey);
+                if (propertyPath) params.append('property_path', propertyPath);
+                if (tabularName) params.append('tabular_name', tabularName);
+                if (virtualFunc) params.append('virtual_func', virtualFunc);
+
+                const top = document.getElementById('top').value.trim();
+                const skip = document.getElementById('skip').value.trim();
+                const select = document.getElementById('selectFields').value.trim();
+                const expand = document.getElementById('expandFields').value.trim();
+                const orderby = document.getElementById('orderBy').value.trim();
                 const direction = document.getElementById('orderDirection').value;
 
                 if (top) params.append('$top', top);
                 if (skip) params.append('$skip', skip);
                 if (select) params.append('$select', select);
-                if (orderby) params.append('$orderby', `${orderby} ${direction}`);
-
-                // Формируем фильтр $filter
-                const filterParts = [];
-
-                document.querySelectorAll('.filter-row').forEach(row => {
-                    const field = row.querySelector('.field-name').value.trim();
-                    const operator = row.querySelector('.operator').value;
-                    const value = row.querySelector('.value').value.trim();
-                    const safeValue = value.replace(/'/g, "''");
-
-                    if (field && value) {
-                        if (operator === 'startswith') {
-                            filterParts.push(`startswith(${field}, '${safeValue}')`);
-                        } else if (operator === 'contains') {
-                            filterParts.push(`contains(${field}, '${safeValue}')`);
-                        } else {
-                            filterParts.push(`${field} ${operator} '${safeValue}'`);
-                        }
-                    }
-                });
-
-                // Добавляем фильтры только если они есть
-                if (filterParts.length > 0) {
-                    params.append('$filter', filterParts.join(' and '));
+                if (expand) params.append('$expand', expand);
+                if (orderby) {
+                    params.append('$orderby', orderby);
+                    params.append('direction', direction);
+                }
+                if (document.getElementById('allowedOnly').checked) {
+                    params.append('$allowedOnly', 'true');
+                }
+                if (document.getElementById('inlineCount').checked) {
+                    params.append('$inlinecount', 'allpages');
                 }
 
-                // Отправляем запрос на сервер
-                fetch('/portal/generate-odata/?' + params.toString())
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('resultUrl').textContent = data.request_url;
-                        document.getElementById('resultParams').textContent = JSON.stringify(data.parameters, null, 2);
-                        document.getElementById('resultContainer').style.display = 'block';
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Произошла ошибка при генерации запроса');
+                const filterMode = document.querySelector('input[name="filterMode"]:checked').value;
+                params.append('filter_mode', filterMode);
+                if (filterMode === 'raw') {
+                    const rawFilter = document.getElementById('rawFilter').value.trim();
+                    if (rawFilter) params.append('raw_filter', rawFilter);
+                } else {
+                    const filterItems = [];
+                    document.querySelectorAll('.filter-row').forEach(row => {
+                        const field = row.querySelector('.field-name').value.trim();
+                        const operator = row.querySelector('.operator').value;
+                        const valueType = row.querySelector('.value-type').value;
+                        const value = row.querySelector('.value').value.trim();
+                        const logic = row.querySelector('.filter-logic').value;
+                        if (field && value !== '') {
+                            filterItems.push({ field, operator, value, value_type: valueType, logic });
+                        }
                     });
+                    if (filterItems.length > 0) {
+                        params.append('filters_json', JSON.stringify(filterItems));
+                    }
+                }
+                return params;
+            }
+
+            async function generateRequest(andTest = false) {
+                const form = document.getElementById('odataForm');
+                if (!form.reportValidity()) return;
+
+                const params = buildRequestParams();
+                try {
+                    const response = await fetch('/portal/generate-odata/?' + params.toString());
+                    const data = await response.json();
+                    if (!response.ok || data.error) {
+                        alert(data.error || 'Ошибка генерации запроса');
+                        return;
+                    }
+                    resultUrlInput.value = data.request_url;
+                    document.getElementById('resultContainer').style.display = 'block';
+                    if (andTest) {
+                        await executeTestRequest();
+                    }
+                } catch (err) {
+                    alert('Ошибка при генерации запроса: ' + err.message);
+                }
+            }
+
+            document.getElementById('odataForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                generateRequest(false);
             });
+            document.getElementById('generateAndTestBtn').addEventListener('click', () => generateRequest(true));
 
             // Копирование URL
             document.getElementById('copyBtn').addEventListener('click', function () {
-                const url = document.getElementById('resultUrl').textContent;
-                navigator.clipboard.writeText(url).then(() => {
+                navigator.clipboard.writeText(resultUrlInput.value).then(() => {
                     const btn = this;
                     btn.innerHTML = '<i class="fas fa-check me-1"></i>Скопировано!';
                     setTimeout(() => {
@@ -311,126 +846,219 @@
                 });
             });
 
-            // Тестирование запроса
-            document.getElementById('testRequestBtn').addEventListener('click', function () {
-                const url = document.getElementById('resultUrl').textContent;
+            // Отрисовка ответа (JSON / XML / Таблица)
+            function renderResponseBody() {
+                const testResult = document.getElementById('testResult');
+                if (!lastResponsePayload) return;
+
+                const query = (document.getElementById('responseSearch').value || '').trim().toLowerCase();
+
+                if (currentViewMode === 'table' && lastResponsePayload.format === 'json' && lastResponsePayload.data && Array.isArray(lastResponsePayload.data.value)) {
+                    let rows = lastResponsePayload.data.value;
+                    if (query) {
+                        rows = rows.filter(r => JSON.stringify(r).toLowerCase().includes(query));
+                    }
+                    if (rows.length === 0) {
+                        testResult.innerHTML = '<div class="alert alert-info mb-0">Записей не найдено.</div>';
+                        return;
+                    }
+                    const cols = Array.from(new Set(rows.slice(0, 50).flatMap(r => Object.keys(r))));
+                    const wrap = document.createElement('div');
+                    wrap.className = 'odata-table-wrap';
+                    const table = document.createElement('table');
+                    table.className = 'table table-sm table-hover table-bordered mb-0';
+                    const thead = document.createElement('thead');
+                    const headTr = document.createElement('tr');
+                    cols.forEach(c => {
+                        const th = document.createElement('th');
+                        th.textContent = c;
+                        headTr.appendChild(th);
+                    });
+                    thead.appendChild(headTr);
+                    table.appendChild(thead);
+
+                    const tbody = document.createElement('tbody');
+                    rows.forEach(r => {
+                        const tr = document.createElement('tr');
+                        cols.forEach(c => {
+                            const td = document.createElement('td');
+                            const val = r[c];
+                            const text = val === null || val === undefined ? '' : (typeof val === 'object' ? JSON.stringify(val) : String(val));
+                            td.textContent = text;
+                            td.title = text;
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                    table.appendChild(tbody);
+                    wrap.appendChild(table);
+                    testResult.innerHTML = '';
+                    testResult.appendChild(wrap);
+                    return;
+                }
+
+                const pre = document.createElement('pre');
+                pre.className = 'odata-response-pre mb-0';
+                let text = lastResponsePayload.format === 'json'
+                    ? JSON.stringify(lastResponsePayload.data, null, 2)
+                    : (lastResponsePayload.raw_text || '');
+
+                if (query) {
+                    const lines = text.split('\n').filter(l => l.toLowerCase().includes(query));
+                    text = lines.length ? lines.join('\n') : 'Совпадений не найдено.';
+                }
+                pre.textContent = text;
+                testResult.innerHTML = '';
+                testResult.appendChild(pre);
+            }
+
+            async function executeTestRequest() {
+                const url = resultUrlInput.value.trim();
                 if (!url) return;
 
+                const wrapper = document.getElementById('testResultWrapper');
+                const metaEl = document.getElementById('responseMeta');
                 const testResult = document.getElementById('testResult');
-                testResult.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>';
+                const viewSwitch = document.getElementById('viewSwitchGroup');
 
-                fetch('/portal/test-odata/?url=' + encodeURIComponent(url))
-                    .then(response => response.json())
-                    .then(data => {
-                        const pre = document.createElement('pre');
-                        pre.className = 'bg-light border rounded p-3 text-dark';
-                        pre.textContent = JSON.stringify(data, null, 2);
-                        testResult.innerHTML = '';
-                        testResult.appendChild(pre);
-                    })
-                    .catch(error => {
-                        testResult.innerHTML = '<div class="alert alert-danger">Ошибка: ' + error.message + '</div>';
-                    });
+                wrapper.style.display = 'block';
+                metaEl.innerHTML = '';
+                testResult.innerHTML = '<div class="d-flex align-items-center gap-2 text-primary"><div class="spinner-border spinner-border-sm"></div><span>Выполнение запроса к 1С...</span></div>';
+
+                try {
+                    const response = await fetch('/portal/test-odata/?url=' + encodeURIComponent(url));
+                    const payload = await response.json();
+
+                    if (payload.error && !payload.status_code) {
+                        metaEl.innerHTML = `<span class="badge bg-danger">Ошибка</span>`;
+                        testResult.innerHTML = `<div class="alert alert-danger mb-0">${payload.error}</div>`;
+                        viewSwitch.style.display = 'none';
+                        return;
+                    }
+
+                    lastResponsePayload = payload;
+                    const ok = payload.status_code >= 200 && payload.status_code < 300;
+                    const statusBadge = `<span class="badge ${ok ? 'bg-success' : 'bg-danger'}">HTTP ${payload.status_code}</span>`;
+                    const timeBadge = `<span class="badge bg-secondary">${payload.elapsed_ms} мс</span>`;
+                    let countBadge = '';
+                    if (payload.format === 'json' && payload.data) {
+                        if (Array.isArray(payload.data.value)) {
+                            countBadge = `<span class="badge bg-info text-dark">Записей: ${payload.data.value.length}</span>`;
+                        }
+                        if (payload.data['odata.count']) {
+                            countBadge += ` <span class="badge bg-primary">Всего в 1С: ${payload.data['odata.count']}</span>`;
+                        }
+                    }
+
+                    metaEl.innerHTML = statusBadge + ' ' + timeBadge + ' ' + countBadge;
+
+                    if (payload.odata_error) {
+                        metaEl.innerHTML += ` <span class="text-danger small fw-semibold">Код 1С ${payload.odata_error.code}: ${payload.odata_error.message}</span>`;
+                    }
+
+                    const hasTable = payload.format === 'json' && payload.data && Array.isArray(payload.data.value);
+                    viewSwitch.style.display = hasTable ? 'inline-flex' : 'none';
+                    if (!hasTable) {
+                        currentViewMode = 'raw';
+                        document.getElementById('viewRawBtn').classList.add('active');
+                        document.getElementById('viewTableBtn').classList.remove('active');
+                    }
+
+                    renderResponseBody();
+                } catch (err) {
+                    testResult.innerHTML = `<div class="alert alert-danger mb-0">Ошибка сети: ${err.message}</div>`;
+                }
+            }
+
+            document.getElementById('testRequestBtn').addEventListener('click', executeTestRequest);
+            document.getElementById('responseSearch').addEventListener('input', renderResponseBody);
+            document.getElementById('viewRawBtn').addEventListener('click', function () {
+                currentViewMode = 'raw';
+                this.classList.add('active');
+                document.getElementById('viewTableBtn').classList.remove('active');
+                renderResponseBody();
             });
-        });
-
-        // Кэш метаданных по базе
-        const metadataCache = {};
-
-        // Функция для получения списка имён объектов по типу
-        function getObjectsByType(metadata, objectType) {
-            return metadata.value
-                .filter(item => item.name.startsWith(objectType + '_'))
-                .map(item => {
-                    const full = item.name;
-                    return {
-                        display: full,
-                        short: full.substring(objectType.length + 1)
-                    };
-                });
-        }
-
-        // Обновление списка имён объектов
-        function updateObjectNameList(objectType, base) {
-            if (!objectType || !base) return;
-
-            const objectNameInput = document.getElementById('objectName');
-            objectNameInput.classList.add('form-control', 'dropdown-toggle');
-            objectNameInput.setAttribute('data-bs-toggle', 'dropdown');
-            objectNameInput.setAttribute('aria-expanded', 'false');
-
-            const dropdown = document.getElementById('objectNameDropdown');
-            if (dropdown) dropdown.remove();
-
-            const menu = document.createElement('ul');
-            menu.className = 'dropdown-menu';
-            menu.id = 'objectNameDropdown';
-
-            const loading = document.createElement('li');
-            loading.className = 'dropdown-item text-muted';
-            loading.textContent = 'Загрузка...';
-            menu.appendChild(loading);
-
-            objectNameInput.parentNode.appendChild(menu);
-
-            const cacheKey = `${base}`;
-            if (metadataCache[cacheKey]) {
-                fillDropdown(menu, metadataCache[cacheKey], objectType);
-            } else {
-                fetch(`/portal/get-metadata/?base=${encodeURIComponent(base)}`)
-                    .then(response => response.json())
-                    .then(metadata => {
-                        metadataCache[cacheKey] = metadata;
-                        fillDropdown(menu, metadata, objectType);
-                    })
-                    .catch(() => {
-                        loading.textContent = 'Ошибка загрузки';
-                    });
-            }
-        }
-
-        function fillDropdown(menu, metadata, objectType) {
-            const items = getObjectsByType(metadata, objectType);
-            menu.innerHTML = '';
-
-            if (items.length === 0) {
-                const item = document.createElement('li');
-                item.className = 'dropdown-item text-muted';
-                item.textContent = 'Не найдено';
-                menu.appendChild(item);
-                return;
-            }
-
-            items.forEach(obj => {
-                const item = document.createElement('li');
-                const link = document.createElement('a');
-                link.className = 'dropdown-item';
-                link.href = '#';
-                link.textContent = obj.short;
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    document.getElementById('objectName').value = obj.short;
-                    menu.innerHTML = '';
-                });
-                item.appendChild(link);
-                menu.appendChild(item);
+            document.getElementById('viewTableBtn').addEventListener('click', function () {
+                currentViewMode = 'table';
+                this.classList.add('active');
+                document.getElementById('viewRawBtn').classList.remove('active');
+                renderResponseBody();
             });
-        }
 
-        document.getElementById('objectType').addEventListener('change', function () {
-            const objectType = this.value;
-            const base = document.getElementById('base').value;
+            // Скачивание ответа
+            document.getElementById('downloadResponseBtn').addEventListener('click', function () {
+                if (!lastResponsePayload) return;
+                const isJson = lastResponsePayload.format === 'json';
+                const content = isJson
+                    ? JSON.stringify(lastResponsePayload.data, null, 2)
+                    : (lastResponsePayload.raw_text || '');
+                const blob = new Blob([content], { type: isJson ? 'application/json;charset=utf-8' : 'text/plain;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `odata_1c_response.${isJson ? 'json' : (lastResponsePayload.format === 'xml' ? 'xml' : 'txt')}`;
+                a.click();
+            });
 
-            if (objectType && base) {
-                updateObjectNameList(objectType, base);
-            }
-        });
+            // Быстрые пресеты
+            const PRESETS = {
+                persons: {
+                    base: '72095052-970f-11e3-84fb-00e05301b4e4',
+                    type: 'Catalog',
+                    name: 'ФизическиеЛица',
+                    mode: 'list',
+                    select: 'Ref_Key, Description, ИНН, СНИЛС',
+                    top: '20'
+                },
+                hr_history: {
+                    base: '72095052-970f-11e3-84fb-00e05301b4e4',
+                    type: 'InformationRegister',
+                    name: 'КадроваяИсторияСотрудников',
+                    mode: 'list',
+                    select: 'Period, Сотрудник_Key, ФизическоеЛицо_Key, ВидСобытия',
+                    top: '20'
+                },
+                accruals: {
+                    base: '72095052-970f-11e3-84fb-00e05301b4e4',
+                    type: 'AccumulationRegister',
+                    name: 'НачисленияУдержанияПоСотрудникам',
+                    mode: 'record_type',
+                    select: 'Period, ФизическоеЛицо_Key, Сотрудник_Key, Начисление_Key, Результат',
+                    top: '20'
+                },
+                vacation_slice: {
+                    base: '72095052-970f-11e3-84fb-00e05301b4e4',
+                    type: 'InformationRegister',
+                    name: 'КадроваяИсторияСотрудников',
+                    mode: 'virtual',
+                    virtual: 'SliceLast()',
+                    select: '',
+                    top: '20'
+                }
+            };
 
-        document.getElementById('base').addEventListener('change', function () {
-            const dropdown = document.getElementById('objectNameDropdown');
-            if (dropdown) dropdown.remove();
-            const objectNameInput = document.getElementById('objectName');
-            objectNameInput.removeAttribute('data-bs-toggle');
+            document.getElementById('presetSelect').addEventListener('change', function () {
+                const p = PRESETS[this.value];
+                if (!p) return;
+                baseEl.value = p.base;
+                objectTypeEl.value = p.type;
+                objectNameEl.value = p.name;
+                resourceModeEl.value = p.mode;
+                updateResourceModeUI();
+                document.getElementById('selectFields').value = p.select || '';
+                document.getElementById('top').value = p.top || '';
+                if (p.virtual) document.getElementById('virtualFunc').value = p.virtual;
+                loadEntityFields();
+                generateRequest(false);
+            });
+
+            // Сброс формы
+            document.getElementById('resetFormBtn').addEventListener('click', function () {
+                document.getElementById('odataForm').reset();
+                updateResourceModeUI();
+                document.getElementById('entityFieldsBox').style.display = 'none';
+                document.getElementById('resultContainer').style.display = 'none';
+                document.getElementById('testResultWrapper').style.display = 'none';
+            });
         });
     </script>
 {% endblock %}

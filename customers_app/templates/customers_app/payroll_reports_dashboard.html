@@ -1,0 +1,1153 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .avg-salary-wrap {
+            max-height: 560px;
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .avg-salary-table th,
+        .avg-salary-table td {
+            white-space: nowrap;
+            font-size: 0.8rem;
+            vertical-align: middle;
+        }
+
+        .avg-salary-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #f1f5f9;
+        }
+
+        .avg-salary-table .sticky-col-1 {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: #ffffff;
+            min-width: 46px;
+        }
+
+        .avg-salary-table .sticky-col-2 {
+            position: sticky;
+            left: 46px;
+            z-index: 2;
+            background: #ffffff;
+            min-width: 210px;
+        }
+
+        .avg-salary-table .sticky-col-3 {
+            position: sticky;
+            left: 256px;
+            z-index: 2;
+            background: #ffffff;
+            min-width: 170px;
+            border-right: 2px solid #cbd5e1;
+        }
+
+        .avg-salary-table thead th.sticky-col-1,
+        .avg-salary-table thead th.sticky-col-2,
+        .avg-salary-table thead th.sticky-col-3 {
+            z-index: 4;
+            background: #f1f5f9;
+        }
+
+        .avg-salary-table tr.table-secondary td.sticky-col-1,
+        .avg-salary-table tr.table-secondary td.sticky-col-2,
+        .avg-salary-table tr.table-secondary td.sticky-col-3 {
+            background: #e2e8f0;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-modern shadow-sm mb-4">
+            <header class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h2 class="card-title text-primary mb-1">
+                        <i class="fas fa-chart-bar me-2"></i>Аналитика начислений (КНД 1151162 + 1С OData)
+                    </h2>
+                    <p class="card-subtitle text-muted mb-0">
+                        {% if can_manage_payroll %}
+                            Загрузка отчётов ФНС, синхронизация с 1С ЗУП (только чтение) и аналитические отчёты
+                        {% else %}
+                            Аналитические отчёты по средней зарплате, категориям персонала и начислениям (только чтение)
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if can_manage_payroll %}
+                        <a href="{% url 'customers_app:staff_categories_manage' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-users-cog me-1"></i>Категории персонала
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'customers_app:payroll_export_excel' %}?year={{ year }}&month={{ month }}&division={{ selected_division }}&staff_category={{ selected_staff_category }}&q={{ search|urlencode }}"
+                       class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-file-excel me-1"></i>Выгрузить в Excel
+                    </a>
+                </div>
+            </header>
+
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Фильтры периода и поиска -->
+                <form method="get" class="row g-2 align-items-end mb-4 p-3 bg-light border rounded-3">
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold mb-1">Год</label>
+                        <select name="year" class="form-select form-select-sm">
+                            {% for y in available_years %}
+                                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold mb-1">Месяц (для 1С/свода)</label>
+                        <select name="month" class="form-select form-select-sm">
+                            <option value="0" {% if month == 0 %}selected{% endif %}>Весь год</option>
+                            {% for m_num, m_name in month_choices.items %}
+                                <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold mb-1">Подразделение</label>
+                        <select name="division" class="form-select form-select-sm">
+                            <option value="">Все подразделения</option>
+                            {% for d in divisions %}
+                                <option value="{{ d.pk }}" {% if selected_division == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="form-label small fw-semibold mb-1">Категория</label>
+                        <select name="staff_category" class="form-select form-select-sm">
+                            <option value="">Все категории</option>
+                            {% for c in staff_categories %}
+                                <option value="{{ c.pk }}" {% if selected_staff_category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.short_name }}</option>
+                            {% endfor %}
+                            <option value="none" {% if selected_staff_category == 'none' %}selected{% endif %}>Без категории</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="form-label small fw-semibold mb-1">Поиск</label>
+                        <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="ФИО / должность...">
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Найти</button>
+                    </div>
+                </form>
+
+                <!-- KPI -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-2">
+                        <div class="border rounded-3 p-3 bg-white h-100">
+                            <div class="text-muted small">КНД 1151162 (ФНС)</div>
+                            <div class="fs-5 fw-bold text-dark">{{ kpi.fns_total|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded-3 p-3 bg-white h-100">
+                            <div class="text-muted small">Начислено ЗП (1С OData)</div>
+                            <div class="fs-5 fw-bold text-primary">{{ kpi.accrued_total|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded-3 p-3 bg-white h-100">
+                            <div class="text-muted small">Компенсация питания (отдельно)</div>
+                            <div class="fs-5 fw-bold text-info">{{ kpi.compensation_total|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="border rounded-3 p-3 bg-white h-100">
+                            <div class="text-muted small">Удержано / НДФЛ</div>
+                            <div class="fs-5 fw-bold text-danger">{{ kpi.withheld_total|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="border rounded-3 p-3 bg-white h-100">
+                            <div class="text-muted small">Сотрудников</div>
+                            <div class="fs-5 fw-bold text-success">{{ kpi.employees_count }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Закладки: Отчёты (для всех) и Импорт (только для полного доступа) -->
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-avg-salary" type="button" role="tab">
+                            <i class="fas fa-table me-1"></i>Средняя зарплата (КНД 1151162)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="shmakovTabBtn" data-bs-toggle="tab" data-bs-target="#tab-shmakov" type="button" role="tab">
+                            <i class="fas fa-balance-scale me-1"></i>Динамика ФОТ и численности (год к году)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="chartsTabBtn" data-bs-toggle="tab" data-bs-target="#tab-charts" type="button" role="tab">
+                            <i class="fas fa-chart-line me-1"></i>Визуализация (Графики)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-calc" type="button" role="tab">
+                            Виды начислений/удержаний ({{ calc_breakdown|length }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cat-summary" type="button" role="tab">
+                            Свод по категориям ({{ category_summary|length }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-emp" type="button" role="tab">
+                            Сотрудники и карточки ({{ employee_rows|length }})
+                        </button>
+                    </li>
+                    {% if can_manage_payroll %}
+                        <li class="nav-item ms-auto" role="presentation">
+                            <button class="nav-link text-success fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-import" type="button" role="tab">
+                                <i class="fas fa-cloud-upload-alt me-1"></i>Импорт данных (XML / 1С)
+                            </button>
+                        </li>
+                    {% endif %}
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Вкладка отчёта 1: Средняя зарплата из КНД 1151162 -->
+                    <div class="tab-pane fade show active" id="tab-avg-salary" role="tabpanel">
+                        {% if avg_salary_groups %}
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                <div class="btn-group btn-group-sm" role="group" id="avgGroupFilter">
+                                    <button type="button" class="btn btn-primary active" data-group="all">Все группы</button>
+                                    {% for g in avg_salary_groups %}
+                                        <button type="button" class="btn btn-outline-primary" data-group="grp-{{ forloop.counter }}">
+                                            {{ g.name }} ({{ g.rows|length }})
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                                <span class="small text-muted">
+                                    Среднее за квартал/полугодие/год считается по месяцам фактического начисления (включая уволенных).
+                                </span>
+                            </div>
+
+                            {% for g in avg_salary_groups %}
+                                <div class="avg-group-block mb-4" data-group-id="grp-{{ forloop.counter }}">
+                                    <h5 class="fw-bold text-primary mb-2">
+                                        {{ g.name }} <span class="badge bg-light text-dark border ms-1">{{ g.rows|length }} чел.</span>
+                                    </h5>
+                                    <div class="avg-salary-wrap">
+                                        <table class="table table-sm table-hover table-bordered avg-salary-table mb-0">
+                                            <thead>
+                                            <tr>
+                                                <th class="sticky-col-1 text-center">№</th>
+                                                <th class="sticky-col-2">ФИО</th>
+                                                <th class="sticky-col-3">Должность</th>
+                                                <th class="text-end">Янв</th>
+                                                <th class="text-end">Фев</th>
+                                                <th class="text-end">Мар</th>
+                                                <th class="text-end">Апр</th>
+                                                <th class="text-end">Май</th>
+                                                <th class="text-end">Июн</th>
+                                                <th class="text-end">Июл</th>
+                                                <th class="text-end">Авг</th>
+                                                <th class="text-end">Сен</th>
+                                                <th class="text-end">Окт</th>
+                                                <th class="text-end">Ноя</th>
+                                                <th class="text-end">Дек</th>
+                                                <th class="text-end bg-info-subtle">1 кв. (ср.)</th>
+                                                <th class="text-end bg-info-subtle">2 кв. (ср.)</th>
+                                                <th class="text-end bg-info-subtle">3 кв. (ср.)</th>
+                                                <th class="text-end bg-info-subtle">4 кв. (ср.)</th>
+                                                <th class="text-end bg-warning-subtle">1 полуг. (ср.)</th>
+                                                <th class="text-end bg-warning-subtle">2 полуг. (ср.)</th>
+                                                <th class="text-end bg-success-subtle">За год (ср.)</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for r in g.rows %}
+                                                <tr>
+                                                    <td class="sticky-col-1 text-center text-muted">{{ r.num }}</td>
+                                                    <td class="sticky-col-2">
+                                                        <a href="{% url 'customers_app:payroll_employee_card' r.person_key %}?year={{ year }}"
+                                                           class="text-decoration-none fw-semibold">
+                                                            {{ r.full_name }}
+                                                        </a>
+                                                        {% if not r.is_active %}
+                                                            <span class="badge bg-light text-muted border ms-1">уволен</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="sticky-col-3 small text-muted">{{ r.job|default:"—" }}</td>
+                                                    {% for mv in r.months_list %}
+                                                        <td class="text-end">{% if mv is not None %}{{ mv|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                                                    {% endfor %}
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q1 is not None %}{{ r.q1|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q2 is not None %}{{ r.q2|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q3 is not None %}{{ r.q3|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-info-subtle fw-semibold">{% if r.q4 is not None %}{{ r.q4|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-warning-subtle fw-semibold">{% if r.h1 is not None %}{{ r.h1|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-warning-subtle fw-semibold">{% if r.h2 is not None %}{{ r.h2|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                    <td class="text-end bg-success-subtle fw-bold">{% if r.year_avg is not None %}{{ r.year_avg|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            <tr class="table-secondary fw-bold">
+                                                <td class="sticky-col-1"></td>
+                                                <td class="sticky-col-2">Средняя по группе</td>
+                                                <td class="sticky-col-3"></td>
+                                                {% for gm in g.avg_months %}
+                                                    <td class="text-end">{% if gm is not None %}{{ gm|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                {% endfor %}
+                                                <td class="text-end">{% if g.avg_q1 is not None %}{{ g.avg_q1|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_q2 is not None %}{{ g.avg_q2|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_q3 is not None %}{{ g.avg_q3|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_q4 is not None %}{{ g.avg_q4|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_h1 is not None %}{{ g.avg_h1|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_h2 is not None %}{{ g.avg_h2|floatformat:2 }}{% else %}—{% endif %}</td>
+                                                <td class="text-end">{% if g.avg_year is not None %}{{ g.avg_year|floatformat:2 }}{% else %}—{% endif %}</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                За {{ year }} год нет загруженных отчётов КНД 1151162.
+                                {% if can_manage_payroll %}Загрузите XML-файлы на вкладке «Импорт данных (XML / 1С)».{% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Вкладка отчёта 2: Отчёт для Шмакова Д.А. (сравнение год к году + соотношение чел./%) -->
+                    <div class="tab-pane fade" id="tab-shmakov" role="tabpanel">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h5 class="fw-bold text-primary mb-0">
+                                    Сравнительный отчёт по группам персонала: {{ shmakov_report.prev_year }} г. vs {{ shmakov_report.curr_year }} г.
+                                </h5>
+                                <div class="small text-muted">
+                                    Источник: КНД 1151162. Работники по договорам ГПХ и без категории автоматически включены в «Прочий персонал».
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if shmakov_report.months_rows %}
+                            <!-- Конструктор колонок таблицы -->
+                            <div class="border rounded-3 p-3 bg-light mb-3" id="shmakovBuilder">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                    <span class="small fw-semibold text-dark">
+                                        <i class="fas fa-sliders-h me-1 text-primary"></i>Конструктор колонок таблицы:
+                                    </span>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" id="shmMergeBtn" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-object-group me-1"></i>Объединить отмеченные в одну колонку
+                                        </button>
+                                        <button type="button" id="shmResetBtn" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-undo me-1"></i>Сбросить (все раздельно)
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-3 align-items-center" id="shmGroupToggles"></div>
+                                <div class="d-flex flex-wrap gap-2 mt-2" id="shmActiveColumnsInfo"></div>
+                            </div>
+
+                            <div class="table-responsive mb-4" style="max-height: 520px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                <table class="table table-sm table-hover table-bordered align-middle mb-0" id="shmakovDynamicTable" style="white-space: nowrap; font-size: 0.78rem;">
+                                    <thead class="table-light sticky-top" id="shmakovThead"></thead>
+                                    <tbody id="shmakovTbody"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="row g-4">
+                                <div class="col-12 col-lg-6">
+                                    <div class="border rounded-3 p-3 bg-white h-100">
+                                        <h6 class="fw-semibold mb-3">Общий ФОТ по месяцам: {{ shmakov_report.prev_year }} vs {{ shmakov_report.curr_year }}</h6>
+                                        <div style="height: 280px;">
+                                            <canvas id="shmakovFotChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-lg-6">
+                                    <div class="border rounded-3 p-3 bg-white h-100">
+                                        <h6 class="fw-semibold mb-3">Фактическая численность персонала по месяцам: {{ shmakov_report.prev_year }} vs {{ shmakov_report.curr_year }} (чел.)</h6>
+                                        <div style="height: 280px;">
+                                            <canvas id="shmakovRealCountChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-lg-6">
+                                    <div class="border rounded-3 p-3 bg-white h-100">
+                                        <h6 class="fw-semibold mb-3">Структура персонала по месяцам ({{ shmakov_report.prev_year }} г., % и чел.)</h6>
+                                        <div style="height: 280px;">
+                                            <canvas id="shmakovSharePrevChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-lg-6">
+                                    <div class="border rounded-3 p-3 bg-white h-100">
+                                        <h6 class="fw-semibold mb-3">Структура персонала по месяцам ({{ shmakov_report.curr_year }} г., % и чел.)</h6>
+                                        <div style="height: 280px;">
+                                            <canvas id="shmakovShareCurrChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                Нет данных КНД 1151162 за {{ shmakov_report.prev_year }}–{{ shmakov_report.curr_year }} годы.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Вкладка отчёта 2: Визуализация (Графики для руководства) -->
+                    <div class="tab-pane fade" id="tab-charts" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-12 col-lg-8">
+                                <div class="border rounded-3 p-3 bg-white h-100">
+                                    <h6 class="fw-semibold mb-3">Структура ФОТ по видам начислений (1С OData, {{ year }} г.)</h6>
+                                    <div style="height: 320px;">
+                                        <canvas id="execAccrualsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <div class="border rounded-3 p-3 bg-white h-100">
+                                    <h6 class="fw-semibold mb-3">Доля ФОТ по категориям ({{ year }} г.)</h6>
+                                    <div style="height: 320px;">
+                                        <canvas id="fotPieChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6">
+                                <div class="border rounded-3 p-3 bg-white h-100">
+                                    <h6 class="fw-semibold mb-3">Топ-10 подразделений по ФОТ (1С OData, {{ year }} г.)</h6>
+                                    <div style="height: 320px;">
+                                        <canvas id="execDivisionsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6">
+                                <div class="border rounded-3 p-3 bg-white h-100">
+                                    <h6 class="fw-semibold mb-3">Начисления ЗП, удержания/НДФЛ и компенсация питания по месяцам (1С OData)</h6>
+                                    <div style="height: 320px;">
+                                        <canvas id="execMonthly1cChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="border rounded-3 p-3 bg-white">
+                                    <h6 class="fw-semibold mb-3">Фактический ФОТ по месяцам в разрезе категорий персонала (КНД 1151162, {{ year }} г.)</h6>
+                                    <div style="height: 300px;">
+                                        <canvas id="execCatFotChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка отчёта 3: Виды начислений и удержаний -->
+                    <div class="tab-pane fade" id="tab-calc" role="tabpanel">
+                        {% if calc_breakdown %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-bordered align-middle">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Категория</th>
+                                        <th>Группа в 1С</th>
+                                        <th>Вид начисления / удержания</th>
+                                        <th class="text-end">Записей</th>
+                                        <th class="text-end">Сумма, ₽</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for item in calc_breakdown %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge {% if item.calculation_category == 'Начисления' %}bg-primary{% elif item.calculation_category == 'НДФЛ' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                                    {{ item.calculation_category }}
+                                                </span>
+                                            </td>
+                                            <td class="text-muted small">{{ item.group_type }}</td>
+                                            <td class="fw-semibold">
+                                                {{ item.calculation_type_name }}
+                                                {% if item.is_excluded %}
+                                                    <span class="badge bg-info text-dark ms-1">Отдельно (не в базе ЗП)</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">{{ item.records }}</td>
+                                            <td class="text-end fw-semibold">{{ item.total|floatformat:2 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                За выбранный период нет детализации из 1С OData.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Вкладка отчёта 4: Свод по категориям -->
+                    <div class="tab-pane fade" id="tab-cat-summary" role="tabpanel">
+                        {% if category_summary %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-bordered align-middle">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Категория персонала</th>
+                                        <th class="text-end">Сотрудников</th>
+                                        <th class="text-end">КНД 1151162 (ФНС)</th>
+                                        <th class="text-end">Начислено ЗП (1С)</th>
+                                        <th class="text-end">Средняя ЗП</th>
+                                        <th class="text-end">Доля ФОТ</th>
+                                        <th class="text-end">Компенсация (отд.)</th>
+                                        <th class="text-end">Удержано (1С)</th>
+                                        <th class="text-end">К выплате</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for c in category_summary %}
+                                        <tr>
+                                            <td class="fw-bold">{{ c.name }}</td>
+                                            <td class="text-end">{{ c.employees_count }}</td>
+                                            <td class="text-end">{{ c.fns_total|floatformat:2 }}</td>
+                                            <td class="text-end text-primary fw-semibold">{{ c.accrued_total|floatformat:2 }}</td>
+                                            <td class="text-end">{{ c.avg_accrued|floatformat:2 }}</td>
+                                            <td class="text-end">{{ c.share_pct|floatformat:1 }}%</td>
+                                            <td class="text-end text-info">{{ c.compensation_total|floatformat:2 }}</td>
+                                            <td class="text-end text-danger">{{ c.withheld_total|floatformat:2 }}</td>
+                                            <td class="text-end fw-semibold">{{ c.net_total|floatformat:2 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">Данных для свода по категориям пока нет.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Вкладка отчёта 5: Сотрудники и карточки -->
+                    <div class="tab-pane fade" id="tab-emp" role="tabpanel">
+                        {% if employee_rows %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-bordered align-middle">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>ФИО</th>
+                                        <th>Категория</th>
+                                        <th>СНИЛС</th>
+                                        <th>Подразделение</th>
+                                        <th class="text-end">КНД 1151162 (ФНС)</th>
+                                        <th class="text-end">Начислено ЗП (1С)</th>
+                                        <th class="text-end">Компенсация (отд.)</th>
+                                        <th class="text-end">Удержано (1С)</th>
+                                        <th class="text-end">К выплате</th>
+                                        <th class="text-center">Карточка</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for r in employee_rows %}
+                                        <tr>
+                                            <td>
+                                                <span class="fw-semibold">{{ r.full_name }}</span>
+                                                {% if not r.is_active %}
+                                                    <span class="badge bg-light text-muted border ms-1">архив/уволен</span>
+                                                {% endif %}
+                                            </td>
+                                            <td><span class="badge bg-light text-dark border">{{ r.staff_category_name }}</span></td>
+                                            <td class="small text-muted">{{ r.snils }}</td>
+                                            <td class="small">{{ r.division }}</td>
+                                            <td class="text-end">{{ r.fns_total|floatformat:2 }}</td>
+                                            <td class="text-end text-primary">{{ r.accrued_total|floatformat:2 }}</td>
+                                            <td class="text-end text-info fw-semibold">{{ r.compensation_total|floatformat:2 }}</td>
+                                            <td class="text-end text-danger">{{ r.withheld_total|floatformat:2 }}</td>
+                                            <td class="text-end fw-semibold">{{ r.net_total|floatformat:2 }}</td>
+                                            <td class="text-center">
+                                                <a href="{% url 'customers_app:payroll_employee_card' r.person_key %}?year={{ year }}&month={{ month }}"
+                                                   class="btn btn-outline-primary btn-sm py-0 px-2">
+                                                    Открыть
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">Данных по сотрудникам за выбранный период пока нет.</div>
+                        {% endif %}
+                    </div>
+
+                    {% if can_manage_payroll %}
+                    <!-- Вкладка импорта (только для полного доступа) -->
+                    <div class="tab-pane fade" id="tab-import" role="tabpanel">
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-lg-6">
+                                <div class="border rounded-3 p-3 bg-light h-100">
+                                    <h6 class="fw-semibold mb-2">
+                                        <i class="fas fa-file-code text-primary me-1"></i>1. Загрузить XML ФНС (КНД 1151162)
+                                    </h6>
+                                    <form method="post" action="{% url 'customers_app:payroll_upload_xml' %}" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+                                        {% csrf_token %}
+                                        <input type="file" name="xml_file" accept=".xml" multiple class="form-control form-control-sm" style="max-width: 340px;" required>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-upload me-1"></i>Загрузить XML
+                                        </button>
+                                    </form>
+                                    <div class="form-text mt-1">Можно выбрать сразу несколько файлов <code>NO_PERSSVFL_*.xml</code> (windows-1251 / UTF-8).</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-6">
+                                <div class="border rounded-3 p-3 bg-light h-100">
+                                    <h6 class="fw-semibold mb-2">
+                                        <i class="fas fa-sync-alt text-success me-1"></i>2. Догрузить детализацию из 1С (OData read-only)
+                                    </h6>
+                                    <form method="post" action="{% url 'customers_app:payroll_sync_odata' %}" class="d-flex flex-wrap gap-2 align-items-center">
+                                        {% csrf_token %}
+                                        <select name="month" class="form-select form-select-sm" style="width: auto;" required>
+                                            {% for m_num, m_name in month_choices.items %}
+                                                <option value="{{ m_num }}" {% if month == m_num %}selected{% elif month == 0 and m_num == 10 %}selected{% endif %}>{{ m_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <select name="year" class="form-select form-select-sm" style="width: auto;" required>
+                                            {% for y in available_years %}
+                                                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-cloud-download-alt me-1"></i>Загрузить из 1С (GET)
+                                        </button>
+                                    </form>
+                                    <div class="form-text mt-1">Выполняются только GET-запросы к регистрам начислений/удержаний 1С ЗУП.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-semibold mb-2">Загруженные XML-файлы КНД 1151162 за {{ year }} год ({{ batches|length }})</h6>
+                        {% if batches %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered align-middle">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Период</th>
+                                        <th>Корр.</th>
+                                        <th>Дата документа</th>
+                                        <th>Файл</th>
+                                        <th>Строк</th>
+                                        <th>Загружен</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for b in batches %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ b.month|stringformat:"02d" }}.{{ b.year }}</td>
+                                            <td>{{ b.correction_number }}</td>
+                                            <td>{{ b.doc_date|date:"d.m.Y"|default:"—" }}</td>
+                                            <td class="small">{{ b.raw_filename|default:b.file_id }}</td>
+                                            <td>{{ b.lines.count }}</td>
+                                            <td class="small text-muted">{{ b.uploaded_at|date:"d.m.Y H:i" }}</td>
+                                            <td class="text-end">
+                                                <form method="post" action="{% url 'customers_app:payroll_delete_batch' b.pk %}"
+                                                      onsubmit="return confirm('Удалить загруженный отчёт?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">Удалить</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-secondary mb-0">Загруженных XML-файлов за {{ year }} год нет.</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Переключение отображаемых групп в таблице средней зарплаты
+            const filterBtns = document.querySelectorAll('#avgGroupFilter button');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    filterBtns.forEach(b => {
+                        b.classList.remove('btn-primary', 'active');
+                        b.classList.add('btn-outline-primary');
+                    });
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-primary', 'active');
+
+                    const target = this.dataset.group;
+                    document.querySelectorAll('.avg-group-block').forEach(block => {
+                        block.style.display = (target === 'all' || block.dataset.groupId === target) ? 'block' : 'none';
+                    });
+                });
+            });
+
+            // Инициализация графиков Chart.js при открытии вкладки
+            const chartData = {{ chart_data_json|default:"{}"|safe }};
+            let chartsRendered = false;
+
+            function renderCharts() {
+                if (chartsRendered || typeof Chart === 'undefined' || !chartData.months) return;
+                chartsRendered = true;
+
+                const accCtx = document.getElementById('execAccrualsChart');
+                if (accCtx) {
+                    new Chart(accCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.accrual_labels || [],
+                            datasets: [{
+                                label: 'Сумма, ₽',
+                                data: chartData.accrual_values || [],
+                                backgroundColor: '#0d6efd'
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                }
+
+                const pieCtx = document.getElementById('fotPieChart');
+                if (pieCtx) {
+                    new Chart(pieCtx.getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: chartData.pie_labels || [],
+                            datasets: [{
+                                data: chartData.pie_values || [],
+                                backgroundColor: ['#0d6efd', '#198754', '#fd7e14', '#6f42c1', '#6c757d']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+
+                const divCtx = document.getElementById('execDivisionsChart');
+                if (divCtx) {
+                    new Chart(divCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.division_labels || [],
+                            datasets: [{
+                                label: 'ФОТ, ₽',
+                                data: chartData.division_values || [],
+                                backgroundColor: '#198754'
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                }
+
+                const m1cCtx = document.getElementById('execMonthly1cChart');
+                if (m1cCtx) {
+                    new Chart(m1cCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.months,
+                            datasets: [
+                                { label: 'Начислено ЗП, ₽', data: chartData.monthly_accrued || [], backgroundColor: '#0d6efd' },
+                                { label: 'Удержано / НДФЛ, ₽', data: chartData.monthly_withheld || [], backgroundColor: '#dc3545' },
+                                { label: 'Компенсация питания, ₽', data: chartData.monthly_comp || [], backgroundColor: '#0dcaf0' }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+
+                const catFotCtx = document.getElementById('execCatFotChart');
+                if (catFotCtx) {
+                    new Chart(catFotCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.months,
+                            datasets: chartData.cat_fot_datasets || []
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { x: { stacked: true }, y: { stacked: true } }
+                        }
+                    });
+                }
+            }
+
+            const chartsTabBtn = document.getElementById('chartsTabBtn');
+            if (chartsTabBtn) {
+                chartsTabBtn.addEventListener('shown.bs.tab', renderCharts);
+            }
+
+            // Динамический конструктор таблицы и графики для вкладки «Динамика ФОТ и численности»
+            const shmakovRaw = {{ shmakov_raw_json|default:"{}"|safe }};
+            const shmakovChart = {{ shmakov_chart_json|default:"{}"|safe }};
+            let shmakovRendered = false;
+            let shmakovFotChartInstance = null;
+
+            const STORAGE_KEY = 'shmakovTableConfig_v1';
+            // Формат колонок: [{ id, label, groups: [...], enabled: true }]
+            let columnSpecs = [];
+
+            function defaultSpecs() {
+                return (shmakovRaw.group_names || []).map(g => ({
+                    id: 'grp_' + g,
+                    label: g,
+                    groups: [g],
+                    enabled: true
+                }));
+            }
+
+            function loadSpecs() {
+                const allGroups = shmakovRaw.group_names || [];
+                try {
+                    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+                    if (Array.isArray(saved) && saved.length > 0) {
+                        const covered = new Set(saved.flatMap(s => s.groups || []));
+                        if (allGroups.every(g => covered.has(g))) {
+                            return saved;
+                        }
+                    }
+                } catch (e) {}
+                return defaultSpecs();
+            }
+
+            function saveSpecs() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(columnSpecs));
+                } catch (e) {}
+            }
+
+            function fmtMoney(num) {
+                return Number(num || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            function fmtDelta(prev, curr) {
+                if (!prev) return { text: '—', cls: '' };
+                const pct = ((curr - prev) / prev) * 100;
+                const cls = pct > 0 ? 'text-success' : (pct < 0 ? 'text-danger' : '');
+                return { text: pct.toFixed(1) + '%', cls };
+            }
+
+            function renderBuilderUI() {
+                const togglesEl = document.getElementById('shmGroupToggles');
+                const infoEl = document.getElementById('shmActiveColumnsInfo');
+                if (!togglesEl) return;
+
+                togglesEl.innerHTML = '';
+                columnSpecs.forEach((spec, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'form-check form-check-inline bg-white border rounded px-2 py-1 m-0 d-inline-flex align-items-center gap-1';
+
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'form-check-input m-0';
+                    cb.id = 'shm_col_' + idx;
+                    cb.checked = spec.enabled;
+                    cb.addEventListener('change', () => {
+                        spec.enabled = cb.checked;
+                        saveSpecs();
+                        renderShmakovTable();
+                    });
+
+                    const lbl = document.createElement('label');
+                    lbl.className = 'form-check-label small fw-semibold ms-1';
+                    lbl.htmlFor = cb.id;
+                    lbl.textContent = spec.label;
+
+                    wrap.appendChild(cb);
+                    wrap.appendChild(lbl);
+
+                    if (spec.groups.length > 1) {
+                        const unmergeBtn = document.createElement('button');
+                        unmergeBtn.type = 'button';
+                        unmergeBtn.className = 'btn btn-link btn-sm text-danger p-0 ms-1 text-decoration-none';
+                        unmergeBtn.title = 'Разъединить колонку';
+                        unmergeBtn.innerHTML = '&times;';
+                        unmergeBtn.addEventListener('click', () => {
+                            const restored = spec.groups.map(g => ({ id: 'grp_' + g, label: g, groups: [g], enabled: true }));
+                            columnSpecs.splice(idx, 1, ...restored);
+                            saveSpecs();
+                            renderBuilderUI();
+                            renderShmakovTable();
+                        });
+                        wrap.appendChild(unmergeBtn);
+                    }
+                    togglesEl.appendChild(wrap);
+                });
+
+                if (infoEl) {
+                    const active = columnSpecs.filter(s => s.enabled);
+                    infoEl.innerHTML = active.length
+                        ? `<span class="small text-muted">Активные колонки: <strong>${active.map(s => s.label).join(' | ')}</strong> + <strong>Итого по выбранным</strong></span>`
+                        : `<span class="small text-danger">Выберите хотя бы одну группу для отображения.</span>`;
+                }
+            }
+
+            function renderShmakovTable() {
+                const thead = document.getElementById('shmakovThead');
+                const tbody = document.getElementById('shmakovTbody');
+                if (!thead || !tbody || !shmakovRaw.months) return;
+
+                const activeSpecs = columnSpecs.filter(s => s.enabled);
+                const py = shmakovRaw.prev_year;
+                const cy = shmakovRaw.curr_year;
+
+                let h1 = `<tr><th rowspan="2" class="align-middle">Месяц</th>`;
+                activeSpecs.forEach(s => {
+                    h1 += `<th colspan="3" class="text-center bg-primary-subtle">${s.label}</th>`;
+                });
+                h1 += `<th colspan="3" class="text-center bg-success-subtle">Всего по выбранным</th></tr>`;
+
+                let h2 = `<tr>`;
+                activeSpecs.forEach(() => {
+                    h2 += `<th class="text-end">${py} ₽</th><th class="text-end">${cy} ₽</th><th class="text-end">Δ %</th>`;
+                });
+                h2 += `<th class="text-end">${py} ₽</th><th class="text-end">${cy} ₽</th><th class="text-end">Δ %</th></tr>`;
+                thead.innerHTML = h1 + h2;
+
+                const colTotals = activeSpecs.map(() => ({ prev: 0, curr: 0 }));
+                let grandPrev = 0;
+                let grandCurr = 0;
+                const chartPrevTotals = [];
+                const chartCurrTotals = [];
+
+                let bodyHtml = '';
+                shmakovRaw.months.forEach(m => {
+                    let rowPrevTotal = 0;
+                    let rowCurrTotal = 0;
+                    let rowHtml = `<tr><td class="fw-semibold">${m.month_name}</td>`;
+
+                    activeSpecs.forEach((spec, idx) => {
+                        let pSum = 0;
+                        let cSum = 0;
+                        spec.groups.forEach(g => {
+                            const cell = m.groups[g];
+                            if (cell) {
+                                pSum += cell.prev;
+                                cSum += cell.curr;
+                            }
+                        });
+                        colTotals[idx].prev += pSum;
+                        colTotals[idx].curr += cSum;
+                        rowPrevTotal += pSum;
+                        rowCurrTotal += cSum;
+
+                        const d = fmtDelta(pSum, cSum);
+                        rowHtml += `<td class="text-end text-muted">${fmtMoney(pSum)}</td>`;
+                        rowHtml += `<td class="text-end fw-semibold">${fmtMoney(cSum)}</td>`;
+                        rowHtml += `<td class="text-end ${d.cls}">${d.text}</td>`;
+                    });
+
+                    grandPrev += rowPrevTotal;
+                    grandCurr += rowCurrTotal;
+                    chartPrevTotals.push(rowPrevTotal);
+                    chartCurrTotals.push(rowCurrTotal);
+
+                    const totalDelta = fmtDelta(rowPrevTotal, rowCurrTotal);
+                    rowHtml += `<td class="text-end text-muted">${fmtMoney(rowPrevTotal)}</td>`;
+                    rowHtml += `<td class="text-end fw-bold">${fmtMoney(rowCurrTotal)}</td>`;
+                    rowHtml += `<td class="text-end fw-bold ${totalDelta.cls}">${totalDelta.text}</td>`;
+                    rowHtml += `</tr>`;
+                    bodyHtml += rowHtml;
+                });
+
+                // Итоговая строка за год
+                let totalRow = `<tr class="table-secondary fw-bold"><td>Итого за период</td>`;
+                colTotals.forEach(ct => {
+                    const d = fmtDelta(ct.prev, ct.curr);
+                    totalRow += `<td class="text-end">${fmtMoney(ct.prev)}</td>`;
+                    totalRow += `<td class="text-end">${fmtMoney(ct.curr)}</td>`;
+                    totalRow += `<td class="text-end ${d.cls}">${d.text}</td>`;
+                });
+                const grandDelta = fmtDelta(grandPrev, grandCurr);
+                totalRow += `<td class="text-end">${fmtMoney(grandPrev)}</td>`;
+                totalRow += `<td class="text-end">${fmtMoney(grandCurr)}</td>`;
+                totalRow += `<td class="text-end ${grandDelta.cls}">${grandDelta.text}</td>`;
+                totalRow += `</tr>`;
+
+                tbody.innerHTML = bodyHtml + totalRow;
+
+                // Обновляем график ФОТ под выбранные группы
+                if (shmakovFotChartInstance) {
+                    shmakovFotChartInstance.data.datasets[0].data = chartPrevTotals;
+                    shmakovFotChartInstance.data.datasets[1].data = chartCurrTotals;
+                    shmakovFotChartInstance.update();
+                }
+            }
+
+            if (shmakovRaw.group_names) {
+                columnSpecs = loadSpecs();
+                renderBuilderUI();
+                renderShmakovTable();
+
+                document.getElementById('shmMergeBtn')?.addEventListener('click', () => {
+                    const checked = columnSpecs.filter(s => s.enabled);
+                    if (checked.length < 2) {
+                        alert('Отметьте минимум 2 группы, чтобы объединить их в одну колонку.');
+                        return;
+                    }
+                    const mergedGroups = Array.from(new Set(checked.flatMap(s => s.groups)));
+                    const mergedLabel = mergedGroups.join(' + ');
+                    const remaining = columnSpecs.filter(s => !s.enabled);
+                    columnSpecs = [
+                        { id: 'merged_' + Date.now(), label: mergedLabel, groups: mergedGroups, enabled: true },
+                        ...remaining
+                    ];
+                    saveSpecs();
+                    renderBuilderUI();
+                    renderShmakovTable();
+                });
+
+                document.getElementById('shmResetBtn')?.addEventListener('click', () => {
+                    columnSpecs = defaultSpecs();
+                    saveSpecs();
+                    renderBuilderUI();
+                    renderShmakovTable();
+                });
+            }
+
+            function renderShmakovCharts() {
+                if (shmakovRendered || typeof Chart === 'undefined' || !shmakovChart.labels) return;
+                shmakovRendered = true;
+
+                const fotCtx = document.getElementById('shmakovFotChart');
+                if (fotCtx) {
+                    shmakovFotChartInstance = new Chart(fotCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: shmakovChart.labels,
+                            datasets: [
+                                { label: '{{ shmakov_report.prev_year }} ₽', data: shmakovChart.prev_totals || [], backgroundColor: '#94a3b8' },
+                                { label: '{{ shmakov_report.curr_year }} ₽', data: shmakovChart.curr_totals || [], backgroundColor: '#0d6efd' }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                    renderShmakovTable();
+                }
+
+                const cntCtx = document.getElementById('shmakovRealCountChart');
+                if (cntCtx) {
+                    new Chart(cntCtx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: shmakovChart.labels || [],
+                            datasets: [
+                                {
+                                    label: '{{ shmakov_report.prev_year }} (чел.)',
+                                    data: shmakovChart.prev_counts || [],
+                                    borderColor: '#64748b',
+                                    backgroundColor: '#64748b',
+                                    tension: 0.25
+                                },
+                                {
+                                    label: '{{ shmakov_report.curr_year }} (чел.)',
+                                    data: shmakovChart.curr_counts || [],
+                                    borderColor: '#198754',
+                                    backgroundColor: '#198754',
+                                    tension: 0.25
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                }
+
+                function buildStackedShareChart(canvasId, datasets) {
+                    const el = document.getElementById(canvasId);
+                    if (!el) return;
+                    new Chart(el.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: shmakovChart.labels || [],
+                            datasets: datasets || []
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { stacked: true },
+                                y: { stacked: true, max: 100, ticks: { callback: v => v + '%' } }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (ctx) {
+                                            const cnt = (ctx.dataset.counts || [])[ctx.dataIndex] ?? 0;
+                                            return `${ctx.dataset.label}: ${cnt} чел. (${ctx.parsed.y}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                buildStackedShareChart('shmakovSharePrevChart', shmakovChart.monthly_share_datasets_prev);
+                buildStackedShareChart('shmakovShareCurrChart', shmakovChart.monthly_share_datasets_curr);
+            }
+
+            const shmakovTabBtn = document.getElementById('shmakovTabBtn');
+            if (shmakovTabBtn) {
+                shmakovTabBtn.addEventListener('shown.bs.tab', renderShmakovCharts);
+            }
+
+            // Активация вкладки из URL (?tab=import)
+            const urlTab = new URLSearchParams(window.location.search).get('tab');
+            if (urlTab === 'import') {
+                const importBtn = document.querySelector('[data-bs-target="#tab-import"]');
+                if (importBtn && typeof bootstrap !== 'undefined') {
+                    new bootstrap.Tab(importBtn).show();
+                }
+            }
+        });
+    </script>
+{% endblock %}

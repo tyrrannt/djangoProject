@@ -242,6 +242,22 @@
                                             <span>Занятость квартир на дату</span>
                                         </a>
                                     </li>
+                                    {% if user.is_superuser or user|has_group:"Аналитика начислений (полный доступ)" or user|has_group:"Аналитика начислений (чтение)" %}
+                                        <li>
+                                            <a class="nav-link" href="{% url 'customers_app:payroll_reports_dashboard' %}">
+                                                <i class="bx bx-bar-chart-alt-2 me-1" aria-hidden="true"></i>
+                                                <span>Аналитика начислений</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    {% if user.is_superuser or user.is_staff or user|has_group:"Аналитика начислений (полный доступ)" %}
+                                        <li>
+                                            <a class="nav-link" href="{% url 'customers_app:staff_categories_manage' %}">
+                                                <i class="bx bx-category me-1" aria-hidden="true"></i>
+                                                <span>Категории персонала</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
                                 </ul>
                             </li>
                             <li>

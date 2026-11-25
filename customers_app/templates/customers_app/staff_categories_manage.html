@@ -1,0 +1,239 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-modern shadow-sm">
+            <header class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h2 class="card-title text-primary mb-1">
+                        <i class="fas fa-users-cog me-2"></i>Категории персонала
+                    </h2>
+                    <p class="card-subtitle text-muted mb-0">
+                        Справочник групп (АУП, ИТП, ЧЛЭ, Прочий персонал): массовая привязка по должностям и индивидуальные исключения
+                    </p>
+                </div>
+                <a href="{% url 'customers_app:payroll_reports_dashboard' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-chart-bar me-1"></i>Перейти в Аналитику начислений
+                </a>
+            </header>
+
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if unassigned_count %}
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Активных сотрудников без назначенной категории: <strong>{{ unassigned_count }}</strong>.
+                        Назначьте категории на вкладке «По должностям» или «По сотрудникам».
+                    </div>
+                {% endif %}
+
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link {% if active_tab == 'categories' %}active{% endif %}"
+                                data-bs-toggle="tab" data-bs-target="#tab-categories" type="button">
+                            1. Справочник групп ({{ categories|length }})
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link {% if active_tab == 'jobs' %}active{% endif %}"
+                                data-bs-toggle="tab" data-bs-target="#tab-jobs" type="button">
+                            2. По должностям ({{ jobs|length }})
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link {% if active_tab == 'employees' %}active{% endif %}"
+                                data-bs-toggle="tab" data-bs-target="#tab-employees" type="button">
+                            3. Индивидуально по сотрудникам ({{ employees|length }})
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Вкладка 1: Справочник -->
+                    <div class="tab-pane fade {% if active_tab == 'categories' %}show active{% endif %}" id="tab-categories">
+                        <form method="post" action="{% url 'customers_app:staff_categories_save' %}" class="row g-2 align-items-end mb-4 p-3 bg-light border rounded-3">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="create_category">
+                            <div class="col-12 col-md-3">
+                                <label class="form-label small fw-semibold mb-1">Краткое обозначение *</label>
+                                <input type="text" name="short_name" class="form-control form-control-sm" placeholder="Например: АУП" required>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label class="form-label small fw-semibold mb-1">Полное наименование</label>
+                                <input type="text" name="name" class="form-control form-control-sm" placeholder="Административно-управленческий персонал">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-semibold mb-1">Порядок</label>
+                                <input type="number" name="sort_order" value="50" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-plus me-1"></i>Добавить
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle">
+                                <thead class="table-light">
+                                <tr>
+                                    <th>Кратко</th>
+                                    <th>Полное наименование</th>
+                                    <th class="text-center">Порядок</th>
+                                    <th class="text-end">Активных сотрудников</th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for c in categories %}
+                                    <tr>
+                                        <td class="fw-bold">{{ c.short_name }}</td>
+                                        <td>{{ c.name }}</td>
+                                        <td class="text-center">{{ c.sort_order }}</td>
+                                        <td class="text-end fw-semibold">{{ c.emp_count }}</td>
+                                        <td class="text-end">
+                                            <form method="post" action="{% url 'customers_app:staff_categories_save' %}"
+                                                  onsubmit="return confirm('Удалить категорию «{{ c.short_name }}»?');">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="delete_category">
+                                                <input type="hidden" name="category_id" value="{{ c.pk }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">Удалить</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка 2: По должностям -->
+                    <div class="tab-pane fade {% if active_tab == 'jobs' %}show active{% endif %}" id="tab-jobs">
+                        <form method="get" class="row g-2 mb-3">
+                            <input type="hidden" name="tab" value="jobs">
+                            <div class="col-9 col-md-5">
+                                <input type="text" name="job_q" value="{{ job_search }}" class="form-control form-control-sm" placeholder="Поиск по названию должности...">
+                            </div>
+                            <div class="col-3 col-md-2">
+                                <button type="submit" class="btn btn-outline-primary btn-sm w-100">Найти</button>
+                            </div>
+                        </form>
+
+                        <form method="post" action="{% url 'customers_app:staff_categories_save' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_assign_jobs">
+                            <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                                <table class="table table-sm table-hover table-bordered align-middle">
+                                    <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Должность</th>
+                                        <th>Состав (из 1С)</th>
+                                        <th style="width: 280px;">Категория по умолчанию</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for j in jobs %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ j.name }}</td>
+                                            <td class="small text-muted">{{ j.get_type_of_job_display|default:"—" }}</td>
+                                            <td>
+                                                <select name="job_cat_{{ j.pk }}" class="form-select form-select-sm">
+                                                    <option value="">— Не задана —</option>
+                                                    {% for c in categories %}
+                                                        <option value="{{ c.pk }}" {% if j.staff_category_id == c.pk %}selected{% endif %}>{{ c.short_name }} ({{ c.name }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success btn-sm px-4">
+                                    <i class="fas fa-save me-1"></i>Сохранить привязку должностей
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Вкладка 3: Индивидуально по сотрудникам -->
+                    <div class="tab-pane fade {% if active_tab == 'employees' %}show active{% endif %}" id="tab-employees">
+                        <form method="get" class="row g-2 mb-3">
+                            <input type="hidden" name="tab" value="employees">
+                            <div class="col-9 col-md-5">
+                                <input type="text" name="emp_q" value="{{ emp_search }}" class="form-control form-control-sm" placeholder="Поиск по ФИО или должности...">
+                            </div>
+                            <div class="col-3 col-md-2">
+                                <button type="submit" class="btn btn-outline-primary btn-sm w-100">Найти</button>
+                            </div>
+                        </form>
+
+                        <form method="post" action="{% url 'customers_app:staff_categories_save' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_assign_employees">
+                            <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                                <table class="table table-sm table-hover table-bordered align-middle">
+                                    <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Сотрудник</th>
+                                        <th>Должность / Подразделение</th>
+                                        <th>От должности</th>
+                                        <th style="width: 280px;">Индивидуальное переопределение</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for emp in employees %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ emp }}</td>
+                                            <td class="small text-muted">
+                                                {{ emp.user_work_profile.job|default:"—" }}
+                                                {% if emp.user_work_profile.divisions %} / {{ emp.user_work_profile.divisions }}{% endif %}
+                                            </td>
+                                            <td class="small">
+                                                {% if emp.user_work_profile.job and emp.user_work_profile.job.staff_category %}
+                                                    <span class="badge bg-light text-dark border">{{ emp.user_work_profile.job.staff_category.short_name }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <select name="emp_cat_{{ emp.pk }}" class="form-select form-select-sm">
+                                                    <option value="">По должности (по умолчанию)</option>
+                                                    {% for c in categories %}
+                                                        <option value="{{ c.pk }}" {% if emp.user_work_profile.staff_category_id == c.pk %}selected{% endif %}>{{ c.short_name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success btn-sm px-4">
+                                    <i class="fas fa-save me-1"></i>Сохранить индивидуальные настройки
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

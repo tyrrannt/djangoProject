@@ -1030,205 +1030,511 @@ def check_my_ip(request):
     return render(request, 'administration_app/check_my_ip.html', context)
 
 
-@login_required
-def odata_request(request):
-    return render(request, 'administration_app/odata.html', )
+ODATA_1C_ALLOWED_OBJECT_TYPES = {
+    "Catalog",
+    "Document",
+    "DocumentJournal",
+    "Constant",
+    "ExchangePlan",
+    "ChartOfAccounts",
+    "ChartOfCalculationTypes",
+    "ChartOfCharacteristicTypes",
+    "InformationRegister",
+    "AccumulationRegister",
+    "CalculationRegister",
+    "AccountingRegister",
+    "BusinessProcess",
+    "Task",
+}
+
+ODATA_1C_FORMAT_MAP = {
+    "json": "json",
+    "json_minimal": "application/json;odata=minimalmetadata",
+    "json_nometadata": "application/json;odata=nometadata",
+    "json_fullmetadata": "application/json;odata=fullmetadata",
+    "atom": "atom",
+}
 
 
-@login_required
-def generate_1c_odata_request(request):
-    """
-    Генерирует OData-запрос к 1С на основе параметров пользователя
+def _check_odata_access(request: HttpRequest) -> bool:
+    """Проверяет права доступа пользователя к разделу конструктора OData 1С."""
+    return bool(request.user and request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser))
 
-    Параметры:
-    - host: адрес сервера 1С (обязательный)
-    - base: имя информационной базы (обязательный)
-    - object_type: тип объекта (Catalog, Document, InformationRegister и т.д.) (обязательный)
-    - object_name: имя объекта (Номенклатура, АвансовыйОтчет и т.д.) (обязательный)
-    - format: формат вывода (json или atom, по умолчанию json)
-    - filters: словарь фильтров (необязательный)
-    - select: список полей для выборки (необязательный)
-    - top: ограничение количества записей (необязательный)
-    - skip: пропуск записей (необязательный)
-    - orderby: поле для сортировки (необязательный)
-    """
 
-    # Получаем параметры из запроса
-    host = request.GET.get('host')
-    base = request.GET.get('base')
-    object_type = request.GET.get('object_type')
-    object_name = request.GET.get('object_name')
-    output_format = request.GET.get('format', 'json')
+def _get_1c_odata_host() -> str:
+    """Возвращает хост сервера 1С для OData-запросов."""
+    return config("ODATA_1C_HOST", default="192.168.10.11").strip()
 
-    # Проверяем обязательные параметры
-    if not all([host, base, object_type, object_name]):
-        return JsonResponse({'error': 'Missing required parameters'}, status=400)
 
-    # Формируем базовый URL
-    base_url = f"http://{host}/{base}/odata/standard.odata/{object_type}_{object_name}"
+def _get_1c_odata_credentials(base_id: str) -> tuple[str, str]:
+    """Возвращает логин и пароль для указанной информационной базы 1С."""
+    if base_id == "72095052-970f-11e3-84fb-00e05301b4e4":
+        return config("HRM_LOGIN"), config("HRM_PASS")
+    return config("ACC_LOGIN"), config("ACC_PASS")
 
-    # Собираем параметры запроса
-    params = []
 
-    # Добавляем фильтры
-
-    filters = request.GET.get('$filter')
-
-    if filters:
+def _format_odata_filter_value(value: str, value_type: str) -> str:
+    """Форматирует значение для выражения $filter согласно протоколу OData v3 в 1С."""
+    raw = str(value).strip()
+    if value_type == "boolean":
+        lowered = raw.lower()
+        if lowered not in ("true", "false"):
+            raise ValueError(f"Булево значение должно быть true или false, получено: {raw}")
+        return lowered
+    if value_type == "number":
         try:
-            filter_parts = []
-            # Разделяем фильтры по ' and '
-            filters = filters.split(' and ')
+            float(raw.replace(",", "."))
+        except ValueError:
+            raise ValueError(f"Значение '{raw}' не является числом")
+        return raw.replace(",", ".")
+    if value_type == "guid":
+        inner = raw
+        if inner.lower().startswith("guid'") and inner.endswith("'"):
+            inner = inner[5:-1]
+        inner = inner.strip("'\"")
+        return f"guid'{inner}'"
+    if value_type == "datetime":
+        inner = raw
+        if inner.lower().startswith("datetime'") and inner.endswith("'"):
+            inner = inner[9:-1]
+        inner = inner.strip("'\"")
+        if len(inner) == 10 and inner[4] == "-" and inner[7] == "-":
+            inner = f"{inner}T00:00:00"
+        return f"datetime'{inner}'"
+    if value_type == "raw":
+        return raw
+    escaped = raw.replace("'", "''")
+    return f"'{escaped}'"
 
-            for filter_part in filters:
-                # Разделяем каждую часть фильтра на field, operator и value
-                parts = filter_part.split(' ')
-                if len(parts) < 3:
-                    raise ValueError("Неверный формат фильтра")
 
-                field = parts[0]
-                operator = parts[1]
-                value = ' '.join(parts[2:]).strip("'")
+def _build_odata_filter_clause(field: str, operator: str, value: str, value_type: str = "string") -> str:
+    """Строит одно условие фильтра $filter по правилам 1С OData v3."""
+    field = field.strip()
+    if not field:
+        raise ValueError("Имя поля фильтра не может быть пустым")
 
-                # Проверяем тип значения для правильного форматирования
-                if operator == 'eq':
-                    if value.lower() == 'true' or value.lower() == 'false':
-                        filter_parts.append(f"{field} eq {value.lower()}")
-                    elif value.startswith('guid'):
-                        filter_parts.append(f"{field} eq {value}")
-                    else:
-                        filter_parts.append(f"{field} eq '{value}'")
-                elif operator in ['gt', 'lt', 'ge', 'le', 'ne']:
-                    # Для числовых значений
-                    try:
-                        numeric_value = float(value)
-                        filter_parts.append(f"{field} {operator} {numeric_value}")
-                    except ValueError:
-                        raise ValueError(f"Значение {value} для оператора {operator} не является числом")
-                elif operator in ['startswith', 'contains']:
-                    filter_parts.append(f"{operator}({field}, '{value}')")
+    if operator in ("eq", "ne", "gt", "ge", "lt", "le"):
+        formatted = _format_odata_filter_value(value, value_type)
+        return f"{field} {operator} {formatted}"
+    if operator == "not_eq":
+        formatted = _format_odata_filter_value(value, value_type)
+        return f"not ({field} eq {formatted})"
+    if operator in ("substringof", "contains"):
+        formatted = _format_odata_filter_value(value, "string")
+        return f"substringof({formatted}, {field}) eq true"
+    if operator == "startswith":
+        formatted = _format_odata_filter_value(value, "string")
+        return f"startswith({field}, {formatted}) eq true"
+    if operator == "endswith":
+        formatted = _format_odata_filter_value(value, "string")
+        return f"endswith({field}, {formatted}) eq true"
+    if operator == "like":
+        formatted = _format_odata_filter_value(value, "string")
+        return f"like({field}, {formatted})"
+
+    raise ValueError(f"Неизвестный оператор фильтра: {operator}")
+
+
+def _extract_1c_odata_error(xml_text: str) -> dict | None:
+    """Извлекает внутренний код и сообщение ошибки 1С OData из XML-ответа (раздел 17.4.10)."""
+    import xml.etree.ElementTree as ET
+
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return None
+
+    code_el = root.find(".//{http://schemas.microsoft.com/ado/2007/08/dataservices/metadata}code")
+    msg_el = root.find(".//{http://schemas.microsoft.com/ado/2007/08/dataservices/metadata}message")
+    if code_el is None and msg_el is None:
+        return None
+    return {
+        "code": code_el.text if code_el is not None else None,
+        "message": msg_el.text if msg_el is not None else "",
+    }
+
+
+def _parse_csdl_entity_fields(xml_text: str, entity_full_name: str) -> list[dict]:
+    """Извлекает список свойств и навигационных ссылок сущности из $metadata (CSDL XML)."""
+    import xml.etree.ElementTree as ET
+
+    root = ET.fromstring(xml_text)
+    edm_ns = "{http://schemas.microsoft.com/ado/2009/11/edm}"
+    # В 1С CSDL используется либо 2009/11/edm, либо 2008/09/edm
+    entity_types = root.findall(f".//{edm_ns}EntityType")
+    if not entity_types:
+        edm_ns = "{http://schemas.microsoft.com/ado/2008/09/edm}"
+        entity_types = root.findall(f".//{edm_ns}EntityType")
+    if not entity_types:
+        edm_ns = "{http://schemas.microsoft.com/ado/2006/04/edm}"
+        entity_types = root.findall(f".//{edm_ns}EntityType")
+
+    target_el = None
+    for et in entity_types:
+        if et.attrib.get("Name") == entity_full_name:
+            target_el = et
+            break
+
+    if target_el is None:
+        return []
+
+    fields: list[dict] = []
+    for prop in target_el.findall(f"{edm_ns}Property"):
+        fields.append({
+            "name": prop.attrib.get("Name", ""),
+            "type": prop.attrib.get("Type", "Edm.String"),
+            "nullable": prop.attrib.get("Nullable", "true") == "true",
+            "is_navigation": False,
+        })
+    for nav in target_el.findall(f"{edm_ns}NavigationProperty"):
+        fields.append({
+            "name": nav.attrib.get("Name", ""),
+            "type": "Navigation",
+            "nullable": True,
+            "is_navigation": True,
+        })
+    return fields
+
+
+@login_required
+def odata_request(request: HttpRequest) -> HttpResponse:
+    """Отображает веб-конструктор и тестер OData-запросов к 1С."""
+    if not _check_odata_access(request):
+        raise PermissionDenied("Доступ к разделу конструктора OData 1С разрешен только администраторам.")
+    return render(
+        request,
+        "administration_app/odata.html",
+        {
+            "title": "Генератор OData-запросов к 1С",
+            "default_host": _get_1c_odata_host(),
+        },
+    )
+
+
+@login_required
+def generate_1c_odata_request(request: HttpRequest) -> JsonResponse:
+    """Генерирует URL OData-запроса к 1С согласно стандарту OData v3 (1С:Предприятие)."""
+    if not _check_odata_access(request):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    host = (request.GET.get("host") or _get_1c_odata_host()).strip()
+    base = (request.GET.get("base") or "").strip()
+    object_type = (request.GET.get("object_type") or "").strip()
+    object_name = (request.GET.get("object_name") or "").strip()
+    output_format = (request.GET.get("format") or "json").strip().lower()
+    resource_mode = (request.GET.get("resource_mode") or "list").strip()
+    entity_key = (request.GET.get("entity_key") or "").strip()
+    tabular_name = (request.GET.get("tabular_name") or "").strip()
+    virtual_func = (request.GET.get("virtual_func") or "").strip()
+    property_path = (request.GET.get("property_path") or "").strip().lstrip("/")
+
+    if not all([host, base, object_type, object_name]):
+        return JsonResponse({"error": "Не заполнены обязательные параметры (база, тип и имя объекта)"}, status=400)
+
+    if object_type not in ODATA_1C_ALLOWED_OBJECT_TYPES:
+        return JsonResponse({"error": f"Недопустимый тип объекта: {object_type}"}, status=400)
+
+    if output_format not in ODATA_1C_FORMAT_MAP:
+        return JsonResponse({"error": "Неверный формат вывода. Используйте json или atom"}, status=400)
+
+    # Формирование пути ресурса согласно 17.4.4, 17.4.8, 17.4.9
+    resource_name = f"{object_type}_{object_name}"
+    if resource_mode == "record_type":
+        if not resource_name.endswith("_RecordType"):
+            resource_name = f"{resource_name}_RecordType"
+    elif resource_mode == "tabular":
+        if not tabular_name:
+            return JsonResponse({"error": "Укажите имя табличной части"}, status=400)
+        resource_name = f"{resource_name}_{tabular_name}"
+    elif resource_mode == "key":
+        if not entity_key:
+            return JsonResponse({"error": "Укажите GUID или составной ключ сущности"}, status=400)
+        if "=" in entity_key or entity_key.lower().startswith("guid'"):
+            key_expr = entity_key
+        else:
+            key_expr = f"guid'{entity_key.strip(chr(39) + chr(34))}'"
+        resource_name = f"{resource_name}({key_expr})"
+        if property_path:
+            resource_name = f"{resource_name}/{property_path}"
+    elif resource_mode == "virtual":
+        func_expr = virtual_func or "SliceLast()"
+        if "(" not in func_expr:
+            func_expr = f"{func_expr}()"
+        resource_name = f"{resource_name}/{func_expr}"
+    elif resource_mode == "count":
+        resource_name = f"{resource_name}/$count"
+
+    base_url = f"http://{host}/{base}/odata/standard.odata/{resource_name}"
+    params: list[str] = []
+
+    # Формирование $filter
+    filter_mode = (request.GET.get("filter_mode") or "builder").strip()
+    filters_json = request.GET.get("filters_json")
+    raw_filter = (request.GET.get("raw_filter") or "").strip()
+    legacy_filter = request.GET.get("$filter")
+
+    final_filter = ""
+    try:
+        if filter_mode == "raw" and raw_filter:
+            final_filter = raw_filter
+        elif filters_json:
+            items = json.loads(filters_json)
+            if not isinstance(items, list):
+                raise ValueError("filters_json должен быть массивом")
+            expr_parts: list[str] = []
+            for idx, item in enumerate(items):
+                field = (item.get("field") or "").strip()
+                operator = (item.get("operator") or "eq").strip()
+                value = str(item.get("value") or "").strip()
+                value_type = (item.get("value_type") or "string").strip()
+                logic = (item.get("logic") or "and").strip().lower()
+                if logic not in ("and", "or"):
+                    logic = "and"
+                if not field or value == "":
+                    continue
+                clause = _build_odata_filter_clause(field, operator, value, value_type)
+                if expr_parts:
+                    expr_parts.append(f" {logic} {clause}")
                 else:
-                    raise ValueError(f"Неизвестный оператор: {operator}")
+                    expr_parts.append(clause)
+            final_filter = "".join(expr_parts)
+        elif legacy_filter:
+            # Обратная совместимость со старым строковым форматом $filter
+            legacy_parts = []
+            for part in legacy_filter.split(" and "):
+                tokens = part.strip().split(" ")
+                if len(tokens) < 3:
+                    raise ValueError("Неверный формат фильтра")
+                field, op = tokens[0], tokens[1]
+                val = " ".join(tokens[2:]).strip("'")
+                if val.lower() in ("true", "false"):
+                    vtype = "boolean"
+                elif val.lower().startswith("guid'") or val.lower().startswith("guid"):
+                    vtype = "guid"
+                elif val.lower().startswith("datetime'"):
+                    vtype = "datetime"
+                else:
+                    try:
+                        float(val)
+                        vtype = "number"
+                    except ValueError:
+                        vtype = "string"
+                legacy_parts.append(_build_odata_filter_clause(field, op, val, vtype))
+            final_filter = " and ".join(legacy_parts)
+    except Exception as exc:
+        return JsonResponse({"error": f"Ошибка в параметре $filter: {exc}"}, status=400)
 
-            if filter_parts:
-                # Собираем финальную строку фильтра
-                filter_string = ' and '.join(filter_parts)
-                # Добавляем параметр фильтра в запрос
-                params.append(f"$filter={filter_string}")
+    if final_filter:
+        params.append(f"$filter={final_filter}")
 
-        except Exception as e:
-            return JsonResponse({'error': f'Invalid filters format: {str(e)}'}, status=400)
-    # Добавляем выбор полей
-    select_fields = request.GET.get('$select')
-    if select_fields and select_fields != 'undefined':
+    # $select и $expand (17.4.6.4, 17.4.8)
+    expand_fields = (request.GET.get("$expand") or "").strip()
+    if expand_fields and expand_fields != "undefined":
+        params.append(f"$expand={expand_fields}")
+
+    select_fields = (request.GET.get("$select") or "").strip()
+    if select_fields and select_fields != "undefined":
         params.append(f"$select={select_fields}")
 
-    # Добавляем пагинацию
-    top = request.GET.get('$top')
-    if top and top != 'undefined':
+    # Пагинация и счётчики (17.4.5.3, 17.4.5.5, 17.4.6.2)
+    top = (request.GET.get("$top") or "").strip()
+    if top and top != "undefined" and resource_mode != "count":
+        if not top.isdigit():
+            return JsonResponse({"error": "Параметр $top должен быть целым числом"}, status=400)
         params.append(f"$top={top}")
 
-    skip = request.GET.get('$skip')
-    if skip and skip != 'undefined':
+    skip = (request.GET.get("$skip") or "").strip()
+    if skip and skip != "undefined" and resource_mode != "count":
+        if not skip.isdigit():
+            return JsonResponse({"error": "Параметр $skip должен быть целым числом"}, status=400)
         params.append(f"$skip={skip}")
 
-    # Добавляем сортировку
-    orderby = request.GET.get('$orderby')
-    if orderby and orderby != 'undefined':
-        direction = request.GET.get('direction', 'asc')
-        params.append(f"$orderby={orderby} {direction}")
+    inlinecount = (request.GET.get("$inlinecount") or "").strip().lower()
+    if inlinecount == "allpages" and resource_mode not in ("key", "count"):
+        params.append("$inlinecount=allpages")
 
-    # Добавляем формат
-    if output_format.lower() == 'json':
-        params.append("$format=json")
-    elif output_format.lower() == 'atom':
-        params.append("$format=atom")
-    else:
-        return JsonResponse({'error': 'Invalid format. Use json or atom'}, status=400)
+    allowed_only = (request.GET.get("$allowedOnly") or "").strip().lower()
+    if allowed_only == "true" and resource_mode not in ("key", "count"):
+        params.append("$allowedOnly=true")
 
-    # Собираем итоговый URL
-    query_string = '&'.join(params)
+    # $orderby (17.4.6.3 — без дублирования направления)
+    orderby = (request.GET.get("$orderby") or "").strip()
+    if orderby and orderby != "undefined" and resource_mode != "count":
+        direction = (request.GET.get("direction") or "").strip().lower()
+        has_dir = any(orderby.lower().endswith(suffix) for suffix in (" asc", " desc"))
+        if "," not in orderby and not has_dir and direction in ("asc", "desc"):
+            params.append(f"$orderby={orderby} {direction}")
+        else:
+            params.append(f"$orderby={orderby}")
+
+    # $format (для /$count формат не добавляется — возвращается число)
+    if resource_mode != "count":
+        params.append(f"$format={ODATA_1C_FORMAT_MAP[output_format]}")
+
+    query_string = "&".join(params)
     full_url = f"{base_url}?{query_string}" if params else base_url
 
-    # Возвращаем результат
     return JsonResponse({
-        'request_url': full_url,
-        'parameters': {
-            'host': host,
-            'base': base,
-            'object_type': object_type,
-            'object_name': object_name,
-            'format': output_format,
-            'filters': filters,
-            'select': select_fields,
-            'top': top,
-            'skip': skip,
-            'orderby': orderby
-        }
+        "request_url": full_url,
+        "parameters": {
+            "host": host,
+            "base": base,
+            "object_type": object_type,
+            "object_name": object_name,
+            "resource_mode": resource_mode,
+            "format": output_format,
+            "filter": final_filter or None,
+            "select": select_fields or None,
+            "expand": expand_fields or None,
+            "top": top or None,
+            "skip": skip or None,
+            "orderby": orderby or None,
+            "inlinecount": inlinecount or None,
+            "allowed_only": allowed_only == "true",
+        },
     })
 
 
 @login_required
-def test_1c_odata_request(request):
-    url = request.GET.get('url')
-    if url.find('72095052-970f-11e3-84fb-00e05301b4e4') > 0:
-        username = config("HRM_LOGIN")
-        password = config("HRM_PASS")
-    else:
-        username = config("ACC_LOGIN")
-        password = config("ACC_PASS")
+def test_1c_odata_request(request: HttpRequest) -> JsonResponse:
+    """Выполняет тестовый GET-запрос к OData 1С и возвращает структурированный результат."""
+    import time
+    from urllib.parse import urlparse
+    import xml.dom.minidom
 
+    if not _check_odata_access(request):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    url = (request.GET.get("url") or "").strip()
     if not url:
-        return JsonResponse({'error': 'URL is required'}, status=400)
+        return JsonResponse({"error": "URL не указан"}, status=400)
 
+    parsed = urlparse(url)
+    allowed_host = _get_1c_odata_host()
+    if parsed.scheme not in ("http", "https") or parsed.hostname != allowed_host or "/odata/standard.odata" not in parsed.path:
+        return JsonResponse({"error": f"Разрешены только OData-запросы к серверу {allowed_host}"}, status=400)
+
+    base_id = "72095052-970f-11e3-84fb-00e05301b4e4" if "72095052-970f-11e3-84fb-00e05301b4e4" in url else ""
+    username, password = _get_1c_odata_credentials(base_id)
+
+    headers = {}
+    if "$format=atom" not in url.lower() and "/$metadata" not in url.lower() and "/$count" not in url.lower():
+        headers["Accept"] = "application/json"
+
+    started = time.monotonic()
     try:
         response = requests.get(
             url,
             auth=(username, password),
-            timeout=15,
-            headers={'Accept': 'application/json'}
+            timeout=20,
+            headers=headers,
         )
-        # Возвращаем JSON от 1С
-        return JsonResponse(
-            response.json() if response.content else {},
-            safe=False,
-            status=response.status_code
-        )
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        content_type = response.headers.get("Content-Type", "")
+        raw_text = response.text or ""
+
+        if "json" in content_type.lower() or raw_text.lstrip().startswith(("{", "[")):
+            try:
+                parsed_json = response.json()
+                return JsonResponse({
+                    "status_code": response.status_code,
+                    "elapsed_ms": elapsed_ms,
+                    "content_type": content_type,
+                    "format": "json",
+                    "data": parsed_json,
+                })
+            except ValueError:
+                pass
+
+        if "xml" in content_type.lower() or raw_text.lstrip().startswith("<"):
+            odata_error = _extract_1c_odata_error(raw_text) if response.status_code >= 400 else None
+            pretty_xml = raw_text
+            try:
+                dom = xml.dom.minidom.parseString(raw_text.encode("utf-8"))
+                pretty_xml = dom.toprettyxml(indent="  ")
+            except Exception:
+                pass
+            return JsonResponse({
+                "status_code": response.status_code,
+                "elapsed_ms": elapsed_ms,
+                "content_type": content_type,
+                "format": "xml",
+                "raw_text": pretty_xml,
+                "odata_error": odata_error,
+            })
+
+        return JsonResponse({
+            "status_code": response.status_code,
+            "elapsed_ms": elapsed_ms,
+            "content_type": content_type,
+            "format": "text",
+            "raw_text": raw_text,
+        })
     except requests.exceptions.ConnectionError:
-        return JsonResponse({'error': 'Не удалось подключиться к 1С. Проверьте адрес и состояние сервера.'}, status=503)
+        return JsonResponse({"error": "Не удалось подключиться к 1С. Проверьте адрес и состояние сервера."}, status=503)
     except requests.exceptions.Timeout:
-        return JsonResponse({'error': 'Таймаут подключения к 1С.'}, status=504)
-    except Exception as e:
-        return JsonResponse({'error': f'Ошибка: {str(e)}'}, status=500)
+        return JsonResponse({"error": "Таймаут подключения к 1С (превышено 20 сек)."}, status=504)
+    except Exception as exc:
+        return JsonResponse({"error": f"Ошибка выполнения запроса: {exc}"}, status=500)
 
 
 @login_required
-def get_1c_metadata(request):
-    base = request.GET.get('base')
-    host = '192.168.10.11'  # или из settings
-    base_index = 0
+def get_1c_metadata(request: HttpRequest) -> JsonResponse:
+    """Возвращает упрощённый список сущностей OData для выбранной базы 1С."""
+    if not _check_odata_access(request):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
 
-    if base == '72095052-970f-11e3-84fb-00e05301b4e4':
-        username = config("HRM_LOGIN")
-        password = config("HRM_PASS")
-    else:
-        username = config("ACC_LOGIN")
-        password = config("ACC_PASS")
-
+    base = (request.GET.get("base") or "").strip()
     if not base:
-        return JsonResponse({'error': 'Base is required'}, status=400)
+        return JsonResponse({"error": "Не указана информационная база"}, status=400)
 
+    host = _get_1c_odata_host()
+    username, password = _get_1c_odata_credentials(base)
     url = f"http://{host}/{base}/odata/standard.odata/?$format=json"
 
     try:
-        response = requests.get(url, auth=(username, password), timeout=10)
+        response = requests.get(url, auth=(username, password), timeout=15)
         if response.status_code != 200:
-            return JsonResponse({'error': 'Cannot fetch metadata'}, status=response.status_code)
+            return JsonResponse({"error": f"Не удалось получить список объектов (HTTP {response.status_code})"}, status=response.status_code)
+        return JsonResponse(response.json())
+    except requests.exceptions.Timeout:
+        return JsonResponse({"error": "Таймаут при загрузке списка объектов 1С"}, status=504)
+    except Exception as exc:
+        return JsonResponse({"error": str(exc)}, status=500)
 
-        data = response.json()
-        return JsonResponse(data)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def get_1c_entity_fields(request: HttpRequest) -> JsonResponse:
+    """Возвращает список полей и навигационных ссылок объекта 1С из $metadata (с кэшированием)."""
+    from django.core.cache import cache
+
+    if not _check_odata_access(request):
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    base = (request.GET.get("base") or "").strip()
+    object_type = (request.GET.get("object_type") or "").strip()
+    object_name = (request.GET.get("object_name") or "").strip()
+    if not all([base, object_type, object_name]):
+        return JsonResponse({"error": "Укажите base, object_type и object_name"}, status=400)
+
+    cache_key = f"odata_1c_metadata_xml_{base}"
+    xml_text = cache.get(cache_key)
+    if xml_text is None:
+        host = _get_1c_odata_host()
+        username, password = _get_1c_odata_credentials(base)
+        url = f"http://{host}/{base}/odata/standard.odata/$metadata"
+        try:
+            response = requests.get(url, auth=(username, password), timeout=25)
+            if response.status_code != 200:
+                return JsonResponse({"error": f"Ошибка загрузки $metadata (HTTP {response.status_code})"}, status=response.status_code)
+            xml_text = response.text
+            cache.set(cache_key, xml_text, timeout=600)
+        except Exception as exc:
+            return JsonResponse({"error": f"Ошибка загрузки $metadata: {exc}"}, status=500)
+
+    entity_full_name = f"{object_type}_{object_name}"
+    fields = _parse_csdl_entity_fields(xml_text, entity_full_name)
+    return JsonResponse({"entity": entity_full_name, "fields": fields})
 
 from django.http import JsonResponse
 from administration_app.models import PortalProperty

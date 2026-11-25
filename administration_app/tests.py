@@ -366,6 +366,189 @@ class WebTerminalTestCase(TestCase):
         self.assertIn("super_test_user [tmux]", str(session))
 
 
+class ODataBuilderViewsTestCase(TestCase):
+    """Тестирование конструктора и тестера OData-запросов (/portal/odata/)."""
+
+    def setUp(self) -> None:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.regular_user = User.objects.create_user(
+            username="odata_regular",
+            password="Password123!",
+            first_name="Обычный",
+            last_name="Пользователь",
+        )
+        self.staff_user = User.objects.create_user(
+            username="odata_staff",
+            password="Password123!",
+            first_name="Админ",
+            last_name="Сотрудник",
+            is_staff=True,
+        )
+        self.base_zup = "72095052-970f-11e3-84fb-00e05301b4e4"
+
+    def test_odata_access_control(self) -> None:
+        """Обычному пользователю доступ к /portal/odata/ и API запрещён."""
+        from django.urls import reverse
+
+        self.client.force_login(self.regular_user)
+        resp_page = self.client.get(reverse("administration_app:1c_odata_request"))
+        self.assertEqual(resp_page.status_code, 403)
+
+        resp_gen = self.client.get(reverse("administration_app:generate_1c_odata_request"))
+        self.assertEqual(resp_gen.status_code, 403)
+
+        self.client.force_login(self.staff_user)
+        resp_ok = self.client.get(reverse("administration_app:1c_odata_request"))
+        self.assertEqual(resp_ok.status_code, 200)
+        self.assertTemplateUsed(resp_ok, "administration_app/odata.html")
+
+    def test_generate_odata_filters_and_orderby(self) -> None:
+        """Проверяет генерацию $filter (datetime, guid, substringof, or), $orderby без дублей и опции."""
+        import json
+        from django.urls import reverse
+
+        self.client.force_login(self.staff_user)
+        filters = [
+            {"field": "Period", "operator": "ge", "value": "2026-11-01", "value_type": "datetime", "logic": "and"},
+            {"field": "ФизическоеЛицо_Key", "operator": "eq", "value": "11111111-1111-1111-1111-111111111111", "value_type": "guid", "logic": "and"},
+            {"field": "Description", "operator": "substringof", "value": "Иванов", "value_type": "string", "logic": "or"},
+        ]
+        resp = self.client.get(
+            reverse("administration_app:generate_1c_odata_request"),
+            {
+                "base": self.base_zup,
+                "object_type": "AccumulationRegister",
+                "object_name": "НачисленияУдержанияПоСотрудникам",
+                "resource_mode": "record_type",
+                "format": "json_nometadata",
+                "filters_json": json.dumps(filters),
+                "$orderby": "Period desc",
+                "direction": "asc",
+                "$expand": "ФизическоеЛицо",
+                "$allowedOnly": "true",
+                "$inlinecount": "allpages",
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        url = resp.json()["request_url"]
+        self.assertIn("AccumulationRegister_НачисленияУдержанияПоСотрудникам_RecordType?", url)
+        self.assertIn("$filter=Period ge datetime'2026-11-01T00:00:00' and ФизическоеЛицо_Key eq guid'11111111-1111-1111-1111-111111111111' or substringof('Иванов', Description) eq true", url)
+        self.assertIn("$orderby=Period desc", url)
+        self.assertNotIn("Period desc asc", url)
+        self.assertIn("$expand=ФизическоеЛицо", url)
+        self.assertIn("$allowedOnly=true", url)
+        self.assertIn("$inlinecount=allpages", url)
+        self.assertIn("$format=application/json;odata=nometadata", url)
+
+    def test_generate_odata_key_and_count_modes(self) -> None:
+        """Проверяет режимы key (с навигацией) и /$count."""
+        from django.urls import reverse
+
+        self.client.force_login(self.staff_user)
+        resp_key = self.client.get(
+            reverse("administration_app:generate_1c_odata_request"),
+            {
+                "base": self.base_zup,
+                "object_type": "Catalog",
+                "object_name": "Сотрудники",
+                "resource_mode": "key",
+                "entity_key": "8d04ce3c-6360-11e9-dd92-fa163e8ba11d",
+                "property_path": "ФизическоеЛицо/Description",
+                "format": "atom",
+            },
+        )
+        self.assertEqual(resp_key.status_code, 200)
+        self.assertIn(
+            "/Catalog_Сотрудники(guid'8d04ce3c-6360-11e9-dd92-fa163e8ba11d')/ФизическоеЛицо/Description?$format=atom",
+            resp_key.json()["request_url"],
+        )
+
+        resp_count = self.client.get(
+            reverse("administration_app:generate_1c_odata_request"),
+            {
+                "base": self.base_zup,
+                "object_type": "Catalog",
+                "object_name": "Сотрудники",
+                "resource_mode": "count",
+            },
+        )
+        self.assertEqual(resp_count.status_code, 200)
+        self.assertTrue(resp_count.json()["request_url"].endswith("/Catalog_Сотрудники/$count"))
+
+    @patch("administration_app.views.requests.get")
+    def test_test_1c_odata_request_ssrf_and_xml_error(self, mock_get: MagicMock) -> None:
+        """Проверяет защиту от SSRF и разбор XML-ошибки 1С OData."""
+        from django.urls import reverse
+
+        self.client.force_login(self.staff_user)
+
+        # Пустой URL
+        resp_empty = self.client.get(reverse("administration_app:test_1c_odata_request"))
+        self.assertEqual(resp_empty.status_code, 400)
+
+        # Сторонний хост (SSRF)
+        resp_ssrf = self.client.get(
+            reverse("administration_app:test_1c_odata_request"),
+            {"url": "http://evil.example.com/odata/standard.odata/Catalog_Users"},
+        )
+        self.assertEqual(resp_ssrf.status_code, 400)
+
+        # Ошибка 1С OData в XML
+        mock_get.return_value.status_code = 404
+        mock_get.return_value.headers = {"Content-Type": "application/xml"}
+        mock_get.return_value.text = (
+            '<m:error xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">'
+            "<m:code>9</m:code>"
+            "<m:message>Экземпляр сущности не найден</m:message>"
+            "</m:error>"
+        )
+        resp_err = self.client.get(
+            reverse("administration_app:test_1c_odata_request"),
+            {"url": f"http://192.168.10.11/{self.base_zup}/odata/standard.odata/Catalog_Сотрудники"},
+        )
+        self.assertEqual(resp_err.status_code, 200)
+        payload = resp_err.json()
+        self.assertEqual(payload["status_code"], 404)
+        self.assertEqual(payload["format"], "xml")
+        self.assertEqual(payload["odata_error"]["code"], "9")
+        self.assertIn("не найден", payload["odata_error"]["message"])
+
+    @patch("administration_app.views.requests.get")
+    def test_get_1c_entity_fields_csdl(self, mock_get: MagicMock) -> None:
+        """Проверяет парсинг полей сущности из CSDL $metadata."""
+        from django.core.cache import cache
+        from django.urls import reverse
+
+        cache.clear()
+        self.client.force_login(self.staff_user)
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.text = """<?xml version="1.0" encoding="utf-8"?>
+        <edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx">
+          <edmx:DataServices>
+            <Schema Namespace="StandardODATA" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+              <EntityType Name="Catalog_Сотрудники">
+                <Property Name="Ref_Key" Type="Edm.Guid" Nullable="false"/>
+                <Property Name="Description" Type="Edm.String" Nullable="true"/>
+                <NavigationProperty Name="ФизическоеЛицо"/>
+              </EntityType>
+            </Schema>
+          </edmx:DataServices>
+        </edmx:Edmx>"""
+
+        resp = self.client.get(
+            reverse("administration_app:get_1c_entity_fields"),
+            {"base": self.base_zup, "object_type": "Catalog", "object_name": "Сотрудники"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        fields = resp.json()["fields"]
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(fields[0]["name"], "Ref_Key")
+        self.assertEqual(fields[0]["type"], "Edm.Guid")
+        self.assertTrue(fields[2]["is_navigation"])
+
+
+
 
 
 

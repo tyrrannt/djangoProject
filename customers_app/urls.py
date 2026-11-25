@@ -9,6 +9,8 @@ from . import cades_views
 from . import views_org_structure
 from . import views_onboarding
 from . import views_onboarding_docs
+from . import views_payroll_reports
+from . import views_staff_categories
 from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
     BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
     BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView, \
@@ -154,6 +156,18 @@ urlpatterns = [
     path('api/org-structure/node/assign-leader/', views_org_structure.OrgStructureAssignLeaderApiView.as_view(), name='api_org_structure_assign_leader'),
     path('api/org-structure/node/<int:node_id>/history/', views_org_structure.OrgStructureNodeHistoryApiView.as_view(), name='api_org_structure_node_history'),
     path('api/org-structure/create-version/', views_org_structure.OrgStructureCreateVersionApiView.as_view(), name='api_org_structure_create_version'),
+
+    # Аналитика начислений и отчёты (КНД 1151162 + 1С OData read-only)
+    path('payroll-reports/', views_payroll_reports.payroll_reports_dashboard, name='payroll_reports_dashboard'),
+    path('payroll-reports/upload-xml/', views_payroll_reports.payroll_upload_xml, name='payroll_upload_xml'),
+    path('payroll-reports/sync-odata/', views_payroll_reports.payroll_sync_odata, name='payroll_sync_odata'),
+    path('payroll-reports/employee/<str:person_key>/', views_payroll_reports.payroll_employee_card, name='payroll_employee_card'),
+    path('payroll-reports/export/', views_payroll_reports.payroll_export_excel, name='payroll_export_excel'),
+    path('payroll-reports/batch/<int:batch_id>/delete/', views_payroll_reports.payroll_delete_batch, name='payroll_delete_batch'),
+
+    # Справочник категорий персонала (АУП, ИТП, ЧЛЭ, Прочий персонал)
+    path('staff-categories/', views_staff_categories.staff_categories_manage, name='staff_categories_manage'),
+    path('staff-categories/save/', views_staff_categories.staff_categories_save_action, name='staff_categories_save'),
 ]
 
 # Нативное мобильное REST API (Android/iOS) и JWT — подключается только при ENABLE_MOBILE_API=True

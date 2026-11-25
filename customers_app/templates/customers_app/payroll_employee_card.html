@@ -1,0 +1,154 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-modern shadow-sm mb-4">
+            <header class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h2 class="card-title text-primary mb-1">
+                        <i class="fas fa-user-chart me-2"></i>{{ person_title }}
+                    </h2>
+                    <p class="card-subtitle text-muted mb-0">
+                        Сводная динамика начислений и детализация по видам расчёта за {{ year }} год
+                        (данные объединены по физлицу через все кадровые переводы и повторные приёмы)
+                    </p>
+                </div>
+                <a href="{% url 'customers_app:payroll_reports_dashboard' %}?year={{ year }}&month={{ month }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Назад к своду
+                </a>
+            </header>
+
+            <div class="card-body p-4">
+                <!-- Итоги за год -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-2">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">КНД 1151162 за {{ year }} г.</div>
+                            <div class="fs-5 fw-bold">{{ total_fns|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">Начислено ЗП (1С)</div>
+                            <div class="fs-5 fw-bold text-primary">{{ total_accrued|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">Компенсация питания (отд.)</div>
+                            <div class="fs-5 fw-bold text-info">{{ total_compensation|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">Удержано / НДФЛ</div>
+                            <div class="fs-5 fw-bold text-danger">{{ total_withheld|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">К выплате (ЗП)</div>
+                            <div class="fs-5 fw-bold text-success">{{ total_net|floatformat:2 }} ₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Помесячная динамика -->
+                <h5 class="fw-semibold mb-3">Динамика по месяцам ({{ year }} г.)</h5>
+                {% if monthly_rows %}
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-hover table-bordered align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Месяц</th>
+                                <th class="text-end">КНД 1151162 (ФНС)</th>
+                                <th class="text-end">Начислено ЗП (1С)</th>
+                                <th class="text-end">Компенсация (отд.)</th>
+                                <th class="text-end">Удержано (1С)</th>
+                                <th class="text-end">К выплате (ЗП)</th>
+                                <th class="text-center">Детализация</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in monthly_rows %}
+                                <tr {% if month == row.month %}class="table-primary"{% endif %}>
+                                    <td class="fw-semibold">{{ row.month_name }}</td>
+                                    <td class="text-end">{{ row.fns|floatformat:2 }}</td>
+                                    <td class="text-end text-primary">{{ row.accrued|floatformat:2 }}</td>
+                                    <td class="text-end text-info fw-semibold">{{ row.compensation|floatformat:2 }}</td>
+                                    <td class="text-end text-danger">{{ row.withheld|floatformat:2 }}</td>
+                                    <td class="text-end fw-semibold">{{ row.net|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <a href="?year={{ year }}&month={{ row.month }}" class="btn btn-outline-primary btn-sm py-0 px-2">
+                                            Показать
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-4">Помесячных данных за {{ year }} год нет.</div>
+                {% endif %}
+
+                <!-- Детализация по видам начислений и удержаний -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-semibold mb-0">
+                        Детализация по видам начислений и удержаний
+                        {% if month %}({{ month|stringformat:"02d" }}.{{ year }}){% else %}(за весь {{ year }} год){% endif %}
+                    </h5>
+                    {% if month %}
+                        <a href="?year={{ year }}&month=0" class="btn btn-sm btn-outline-secondary">Показать весь год</a>
+                    {% endif %}
+                </div>
+
+                {% if calc_items %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Категория</th>
+                                <th>Группа</th>
+                                <th>Вид начисления / удержания</th>
+                                <th class="text-end">Сумма, ₽</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in calc_items %}
+                                <tr>
+                                    <td>
+                                        <span class="badge {% if item.calculation_category == 'Начисления' %}bg-primary{% elif item.calculation_category == 'НДФЛ' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                            {{ item.calculation_category }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">{{ item.group_type }}</td>
+                                    <td class="fw-semibold">
+                                        {{ item.calculation_type_name }}
+                                        {% if item.is_excluded %}
+                                            <span class="badge bg-info text-dark ms-1">Отдельно (не в базе ЗП)</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end fw-semibold">{{ item.total|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-secondary mb-0">
+                        Детализация видов расчёта из 1С за выбранный период отсутствует.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
