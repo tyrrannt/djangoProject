@@ -918,6 +918,13 @@
                 return { text: pct.toFixed(1) + '%', cls };
             }
 
+            function getSeasonColor(monthNum) {
+                if (monthNum === 12 || monthNum === 1 || monthNum === 2) return '#D9E1F2'; // Зима
+                if (monthNum >= 3 && monthNum <= 5) return '#C6E0B4'; // Весна
+                if (monthNum >= 6 && monthNum <= 8) return '#F8CBAD'; // Лето
+                return '#FFE699'; // Осень (9, 10, 11)
+            }
+
             function renderBuilderUI() {
                 const togglesEl = document.getElementById('shmGroupToggles');
                 const infoEl = document.getElementById('shmActiveColumnsInfo');
@@ -1003,9 +1010,12 @@
 
                 let bodyHtml = '';
                 shmakovRaw.months.forEach(m => {
+                    const sColor = getSeasonColor(m.month);
+                    const isSeasonEnd = (m.month === 2 || m.month === 5 || m.month === 8 || m.month === 11);
+                    const rowStyle = isSeasonEnd ? ' style="border-bottom: 2px solid #475569;"' : '';
                     let rowPrevTotal = 0;
                     let rowCurrTotal = 0;
-                    let rowHtml = `<tr><td class="fw-semibold">${m.month_name}</td>`;
+                    let rowHtml = `<tr${rowStyle}><td class="fw-semibold" style="background-color: ${sColor};">${m.month_name}</td>`;
 
                     activeSpecs.forEach((spec, idx) => {
                         let pSum = 0;
@@ -1034,8 +1044,8 @@
                     chartCurrTotals.push(rowCurrTotal);
 
                     const totalDelta = fmtDelta(rowPrevTotal, rowCurrTotal);
-                    rowHtml += `<td class="text-end text-muted">${fmtMoney(rowPrevTotal)}</td>`;
-                    rowHtml += `<td class="text-end fw-bold">${fmtMoney(rowCurrTotal)}</td>`;
+                    rowHtml += `<td class="text-end fw-semibold" style="background-color: ${sColor};">${fmtMoney(rowPrevTotal)}</td>`;
+                    rowHtml += `<td class="text-end fw-bold" style="background-color: ${sColor};">${fmtMoney(rowCurrTotal)}</td>`;
                     rowHtml += `<td class="text-end fw-bold ${totalDelta.cls}">${totalDelta.text}</td>`;
                     rowHtml += `</tr>`;
                     bodyHtml += rowHtml;

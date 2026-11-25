@@ -1050,29 +1050,113 @@ def payroll_export_excel(request: HttpRequest) -> HttpResponse:
 
     ws_shm = wb.create_sheet("Динамика ФОТ (год к году)")
     shm = _build_shmakov_report(year=year)
-    shm_header = ["Месяц"]
-    for g in shm["group_names"]:
-        shm_header.extend([
-            f"{g} ({shm['prev_year']} ₽)", f"{g} ({shm['prev_year']} чел.)", f"{g} ({shm['prev_year']} %)",
-            f"{g} ({shm['curr_year']} ₽)", f"{g} ({shm['curr_year']} чел.)", f"{g} ({shm['curr_year']} %)",
-        ])
-    shm_header.extend([
-        f"Всего {shm['prev_year']} ₽", f"Всего {shm['prev_year']} чел.",
-        f"Всего {shm['curr_year']} ₽", f"Всего {shm['curr_year']} чел.",
-    ])
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    thin = Side(style="thin", color="000000")
+    medium = Side(style="medium", color="000000")
+    cell_border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    header_border = Border(left=thin, right=thin, top=medium, bottom=medium)
+
+    season_fills = {
+        12: PatternFill("solid", fgColor="D9E1F2"),
+        1: PatternFill("solid", fgColor="D9E1F2"),
+        2: PatternFill("solid", fgColor="D9E1F2"),
+        3: PatternFill("solid", fgColor="C6E0B4"),
+        4: PatternFill("solid", fgColor="C6E0B4"),
+        5: PatternFill("solid", fgColor="C6E0B4"),
+        6: PatternFill("solid", fgColor="F8CBAD"),
+        7: PatternFill("solid", fgColor="F8CBAD"),
+        8: PatternFill("solid", fgColor="F8CBAD"),
+        9: PatternFill("solid", fgColor="FFE699"),
+        10: PatternFill("solid", fgColor="FFE699"),
+        11: PatternFill("solid", fgColor="FFE699"),
+    }
+
+    gnames = shm["group_names"]
+    shm_header = (
+        ["Месяц", f"{shm['prev_year']}г."]
+        + [f"{g}" for g in gnames]
+        + ["Количество персонала в месяце", f"{shm['curr_year']}г."]
+        + [f"{g} " for g in gnames]
+        + ["Количество персонала в месяце", f"{'/'.join(gnames)} ({shm['curr_year']})"]
+    )
     ws_shm.append(shm_header)
+
+    header_font = Font(bold=True, size=10)
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    for col_idx in range(1, len(shm_header) + 1):
+        c = ws_shm.cell(row=1, column=col_idx)
+        c.font = header_font
+        c.alignment = header_align
+        c.border = header_border
+    ws_shm.row_dimensions[1].height = 42
+
+    prev_total_col = 2
+    curr_total_col = 3 + len(gnames) + 1
+    prev_cnt_col = 3 + len(gnames)
+    curr_cnt_col = curr_total_col + len(gnames) + 1
+    ratio_col = curr_cnt_col + 1
+
     for r in shm["months_rows"]:
-        row_vals = [r["month_name"]]
-        for gc in r["groups"]:
-            row_vals.extend([
-                float(gc["prev_amount"]), gc["prev_count"], float(gc["prev_share"]),
-                float(gc["curr_amount"]), gc["curr_count"], float(gc["curr_share"]),
-            ])
-        row_vals.extend([
-            float(r["prev_total_amount"]), r["prev_total_count"],
-            float(r["curr_total_amount"]), r["curr_total_count"],
-        ])
+        prev_vals = [float(gc["prev_amount"]) for gc in r["groups"]]
+        curr_vals = [float(gc["curr_amount"]) for gc in r["groups"]]
+        ratio_str = "/".join(str(gc["curr_count"]) for gc in r["groups"])
+        row_vals = (
+            [r["month_name"].lower(), float(r["prev_total_amount"])]
+            + prev_vals
+            + [r["prev_total_count"], float(r["curr_total_amount"])]
+            + curr_vals
+            + [r["curr_total_count"], ratio_str]
+        )
         ws_shm.append(row_vals)
+        row_idx = ws_shm.max_row
+        s_fill = season_fills.get(r["month"])
+        bottom_side = medium if r["month"] in (2, 5, 8, 11) else thin
+        row_border = Border(left=thin, right=thin, top=thin, bottom=bottom_side)
+
+        for col_idx in range(1, len(shm_header) + 1):
+            cell = ws_shm.cell(row=row_idx, column=col_idx)
+            cell.border = row_border
+            if col_idx in (1, prev_total_col, curr_total_col) and s_fill:
+                cell.fill = s_fill
+            if col_idx == 1:
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+                cell.font = Font(bold=True)
+            elif col_idx in (prev_cnt_col, curr_cnt_col, ratio_col):
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                cell.number_format = "#,##0.00"
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+
+    # Итоговая строка по году
+    if shm["months_rows"]:
+        prev_year_sums = [sum(float(r["groups"][i]["prev_amount"]) for r in shm["months_rows"]) for i in range(len(gnames))]
+        curr_year_sums = [sum(float(r["groups"][i]["curr_amount"]) for r in shm["months_rows"]) for i in range(len(gnames))]
+        tot_prev = sum(float(r["prev_total_amount"]) for r in shm["months_rows"])
+        tot_curr = sum(float(r["curr_total_amount"]) for r in shm["months_rows"])
+        ws_shm.append(
+            ["Итого за год", tot_prev]
+            + prev_year_sums
+            + ["", tot_curr]
+            + curr_year_sums
+            + ["", ""]
+        )
+        tot_row_idx = ws_shm.max_row
+        tot_fill = PatternFill("solid", fgColor="E2E8F0")
+        for col_idx in range(1, len(shm_header) + 1):
+            cell = ws_shm.cell(row=tot_row_idx, column=col_idx)
+            cell.font = Font(bold=True)
+            cell.fill = tot_fill
+            cell.border = header_border
+            if col_idx not in (1, prev_cnt_col, curr_cnt_col, ratio_col):
+                cell.number_format = "#,##0.00"
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+
+    # Автоширина колонок
+    for col_idx in range(1, len(shm_header) + 1):
+        col_letter = openpyxl.utils.get_column_letter(col_idx)
+        max_len = max((len(str(ws_shm.cell(row=ri, column=col_idx).value or "")) for ri in range(1, ws_shm.max_row + 1)), default=10)
+        ws_shm.column_dimensions[col_letter].width = max(13, min(max_len + 4, 24))
 
     ws_calc = wb.create_sheet("Виды начислений и удержаний")
     ws_calc.append(["Категория", "Группа", "Вид расчёта", "Сумма"])
